@@ -534,7 +534,16 @@ public class SalesDashboardService {
      */
     private List<String> scopedUsers(String instituteId, String teamId, String callerUserId) {
         if (teamId != null && !teamId.isBlank()) {
-            return scopeService.usersInTeams(java.util.List.of(teamId));
+            List<String> teamUsers = scopeService.usersInTeams(java.util.List.of(teamId));
+            // A scoped caller may only drill into the part of a team inside their own scope.
+            if (callerUserId != null && !callerUserId.isBlank()
+                    && scopeService.isScopedCaller(instituteId, callerUserId)) {
+                Set<String> allowed = new HashSet<>(
+                        scopeService.scopedCounsellorUserIds(instituteId, callerUserId));
+                teamUsers = teamUsers.stream().filter(allowed::contains).toList();
+            }
+            // An empty team (or none of it in scope) means zero rows, never "no filter".
+            return teamUsers.isEmpty() ? NO_USERS : teamUsers;
         }
         if (callerUserId != null && !callerUserId.isBlank()
                 && scopeService.isScopedCaller(instituteId, callerUserId)) {
@@ -551,22 +560,28 @@ public class SalesDashboardService {
 
     /**
      * "Scope to this single counsellor" override used by the per-counsellor
-     * widgets in the detail drawer. Falls back to the caller's full scope
-     * if the requested counsellor is outside the caller's RBAC subtree —
-     * silently denying the narrow rather than throwing keeps the widget
-     * graceful when a manager picks someone they shouldn't see anyway.
+     * widgets in the detail drawer. Returns {@link #NO_USERS} (zero rows) when the requested counsellor is
+     * outside the caller's RBAC subtree, so the widget renders empty instead of
+     * throwing and never widens to the whole institute.
      */
     private List<String> narrowToCounsellor(String instituteId, String callerUserId, String counsellorUserId) {
         if (callerUserId != null && !callerUserId.isBlank()
                 && scopeService.isScopedCaller(instituteId, callerUserId)) {
             Set<String> allowed = new HashSet<>(
                     scopeService.scopedCounsellorUserIds(instituteId, callerUserId));
-            if (!allowed.isEmpty() && !allowed.contains(counsellorUserId)) {
-                return Collections.emptyList();
+            if (!allowed.contains(counsellorUserId)) {
+                // Outside the caller's scope: zero rows. An empty list would mean "no filter".
+                return NO_USERS;
             }
         }
         return List.of(counsellorUserId);
     }
+
+    /**
+     * Matches no user id, so the scope clause yields zero rows. Used where an empty
+     * scope must mean nothing visible; a plain empty list means no filter at all.
+     */
+    private static final List<String> NO_USERS = List.of("__no_user__");
 
     private String userScopeClause(List<String> users) {
         return userScopeClause(users, "assigned_counselor_id");

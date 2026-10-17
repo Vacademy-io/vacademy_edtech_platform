@@ -42,6 +42,7 @@
             "setup_steps": [],
             "routes": [
               "/manage-contacts",
+              "/manage-contacts/dashboard",
               "/user-tags/institute",
               "/user-tags/link",
               "/manage-students/invite"
@@ -58,7 +59,8 @@
           "default_on": true,
           "governs": {
             "nav": [
-              "manage-institute"
+              "manage-institute",
+              "manage-institute/institute-overview"
             ],
             "widgets": [
               "roleTypeUsers"
@@ -67,7 +69,8 @@
             "assistant_groups": [],
             "setup_steps": [],
             "routes": [
-              "/manage-institute/teams"
+              "/manage-institute/teams",
+              "/manage-institute/overview"
             ]
           },
           "setting_keys": []
@@ -222,7 +225,8 @@
           "governs": {
             "nav": [
               "learning-reports",
-              "institute-pulse"
+              "institute-pulse",
+              "lms-dashboard"
             ],
             "widgets": [],
             "quick_actions": [
@@ -232,7 +236,8 @@
             "setup_steps": [],
             "routes": [
               "/study-library/reports",
-              "/institute-pulse"
+              "/institute-pulse",
+              "/lms-dashboard"
             ]
           },
           "setting_keys": [
@@ -454,7 +459,8 @@
           "default_on": true,
           "governs": {
             "nav": [
-              "meetings"
+              "meetings",
+              "meetings/meetings-dashboard"
             ],
             "widgets": [],
             "quick_actions": [],
@@ -462,7 +468,8 @@
             "setup_steps": [],
             "routes": [
               "/meetings/my-schedule",
-              "/meetings/team"
+              "/meetings/team",
+              "/meetings/dashboard"
             ]
           },
           "setting_keys": []
@@ -537,7 +544,8 @@
           "governs": {
             "nav": [
               "calling",
-              "leads/call-log"
+              "leads/call-log",
+              "calling/calling-dashboard"
             ],
             "widgets": [],
             "quick_actions": [],
@@ -545,7 +553,8 @@
             "setup_steps": [],
             "routes": [
               "/audience-manager/call-log",
-              "/calling/call-queue"
+              "/calling/call-queue",
+              "/calling/dashboard"
             ]
           },
           "setting_keys": [
@@ -718,14 +727,16 @@
           "default_on": true,
           "governs": {
             "nav": [
-              "communications/notification-hub"
+              "communications/notification-hub",
+              "communications/messaging-dashboard"
             ],
             "widgets": [],
             "quick_actions": [],
             "assistant_groups": [],
             "setup_steps": [],
             "routes": [
-              "/communication/notification-hub"
+              "/communication/notification-hub",
+              "/communication/dashboard"
             ]
           },
           "setting_keys": []
@@ -746,14 +757,16 @@
           "default_on": true,
           "governs": {
             "nav": [
-              "automations/workflow-list"
+              "automations/workflow-list",
+              "automations/automation-dashboard"
             ],
             "widgets": [],
             "quick_actions": [],
             "assistant_groups": [],
             "setup_steps": [],
             "routes": [
-              "/workflow/list"
+              "/workflow/list",
+              "/automation/dashboard"
             ]
           },
           "setting_keys": []
@@ -792,7 +805,8 @@
             "setup_steps": [],
             "routes": [
               "/engagement-engines",
-              "/engagement-engines/inbox"
+              "/engagement-engines/inbox",
+              "/engagement-engines/dashboard"
             ]
           },
           "setting_keys": []
