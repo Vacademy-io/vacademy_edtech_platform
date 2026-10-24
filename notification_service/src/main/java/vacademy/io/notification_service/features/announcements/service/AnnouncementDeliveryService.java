@@ -300,15 +300,12 @@ public class AnnouncementDeliveryService {
                         continue;
                     }
 
+                    // No link for this member: send exactly as before this change (placeholder
+                    // untouched) rather than fail a message that used to go out.
                     Map<String, String> referral = referralLinks.get(message.getUserId());
                     if (needsReferral && referral == null) {
-                        // Never send a referral email with a placeholder where the link should be.
-                        batchFailed++;
-                        message.setStatus(MessageStatus.FAILED);
-                        message.setErrorMessage("No referral link for this member");
-                        recipientMessageRepository.save(message);
-                        createEmailNotificationLog(announcement, message, userEmail, "FAILED", message.getErrorMessage(), resolvedFromAddress);
-                        continue;
+                        log.warn("Announcement {}: no referral link for user {} — placeholders left as is",
+                                announcement.getId(), message.getUserId());
                     }
 
                     // Process HTML content with variables (use cached users - no additional API calls)
@@ -498,16 +495,12 @@ public class AnnouncementDeliveryService {
                         continue;
                     }
 
+                    // No link for this member: send exactly as before this change (placeholder
+                    // untouched) rather than fail a message that used to go out.
                     Map<String, String> referral = referralLinks.get(message.getUserId());
                     if (needsReferral && referral == null) {
-                        // Never send a referral message with a placeholder where the link should be.
-                        message.setMediumType(MediumType.WHATSAPP);
-                        message.setStatus(MessageStatus.FAILED);
-                        message.setErrorMessage("No referral link for this member");
-                        recipientMessageRepository.save(message);
-                        createNotificationLog(announcement, message, "WHATSAPP", "FAILED", message.getErrorMessage());
-                        totalFailed++;
-                        continue;
+                        log.warn("Announcement {}: no referral link for user {} — placeholders left as is",
+                                announcement.getId(), message.getUserId());
                     }
 
                     Map<String, String> userSpecificValues = prepareDynamicValues(

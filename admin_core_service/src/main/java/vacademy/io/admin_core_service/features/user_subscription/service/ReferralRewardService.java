@@ -24,7 +24,7 @@ import java.util.Optional;
  * Referral discounts that are spent on a LATER charge than the enrolment that earned them.
  *
  * <p>Two cases, both riding the admin-discount rail (an {@link AppliedCouponDiscount} row
- * with {@code discount_source = 'REFERRAL'}), so the gateway amount, the negative
+ * with {@code discount_source = 'REFERRAL_REWARD'}), so the gateway amount, the negative
  * payment_log_line_item, the invoice line and the cycle counting are all reused:
  * <ul>
  *   <li><b>Referee on a trial.</b> Signup only takes a Rs 1 mandate authorisation, so a

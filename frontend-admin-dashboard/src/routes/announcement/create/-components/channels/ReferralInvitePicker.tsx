@@ -54,10 +54,14 @@ export function ReferralInvitePicker({
 }) {
     const { t } = useTranslation('announcementCreateConstants');
     const [search, setSearch] = useState('');
+    // Nothing is fetched until the admin actually opens the picker or searches, so an
+    // announcement that never uses referral links makes no extra request.
+    const [touched, setTouched] = useState(Boolean(value));
     const { data: invites = [], isLoading } = useQuery({
         queryKey: ['announcement-referral-invites', search],
         queryFn: () => searchInvites(search.trim()),
         staleTime: 60_000,
+        enabled: touched,
     });
 
     return (
@@ -67,17 +71,21 @@ export function ReferralInvitePicker({
             </Label>
             <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                    setTouched(true);
+                    setSearch(e.target.value);
+                }}
                 placeholder={t('referralInvite.search', { defaultValue: 'Search invites by name' })}
             />
             <Select
                 value={value || MEMBER_OWN_INVITE}
                 onValueChange={(picked) => onChange(picked === MEMBER_OWN_INVITE ? '' : picked)}
+                onOpenChange={(open) => open && setTouched(true)}
             >
                 <SelectTrigger>
                     <SelectValue
                         placeholder={
-                            isLoading
+                            touched && isLoading
                                 ? t('referralInvite.loading', { defaultValue: 'Loading invites…' })
                                 : t('referralInvite.choose', { defaultValue: 'Choose an invite' })
                         }

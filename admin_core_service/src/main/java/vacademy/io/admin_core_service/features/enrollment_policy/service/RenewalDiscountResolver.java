@@ -70,7 +70,17 @@ public class RenewalDiscountResolver {
         if (discount == null) {
             return grossAmount;
         }
-        double scale = planChangeService.pendingTargetPlan(plan) == null ? RegionalPriceLock.scale(plan) : 1.0;
+        // A plan's own discount only resolves when no change is pending, so for it this is
+        // exactly RegionalPriceLock.applyDiscount(plan, ...), as before. A lookup failure
+        // falls back to that same call rather than failing the charge.
+        double scale;
+        try {
+            scale = planChangeService.pendingTargetPlan(plan) == null ? RegionalPriceLock.scale(plan) : 1.0;
+        } catch (Exception e) {
+            log.warn("[RenewalDiscount] Plan {} plan-change lookup failed — using the plan's own scale: {}",
+                    plan.getId(), e.getMessage());
+            scale = RegionalPriceLock.scale(plan);
+        }
         return RegionalPriceLock.applyDiscount(grossAmount, scale, discount);
     }
 

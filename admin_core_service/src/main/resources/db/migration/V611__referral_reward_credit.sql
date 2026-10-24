@@ -5,7 +5,7 @@
 -- referrer's own next renewal, possibly months later and possibly several times
 -- over (one credit per successful referral, one credit per renewal). The rule
 -- itself is an ordinary applied_coupon_discount row with discount_source =
--- 'REFERRAL', so the charge rides the same rail as an admin discount: the
+-- 'REFERRAL_REWARD', so the charge rides the same rail as an admin discount: the
 -- gateway amount, the negative payment_log_line_item, the invoice discount line.
 --
 -- Lifecycle:

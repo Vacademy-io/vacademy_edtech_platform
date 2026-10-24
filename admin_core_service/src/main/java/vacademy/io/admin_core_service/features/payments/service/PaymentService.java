@@ -176,10 +176,10 @@ public class PaymentService {
                         // row up in calculateDiscountAmount AND resolves the code via
                         // buildDiscountDescription. Admin rows: type contains "DISCOUNT",
                         // which calculateDiscountAmount and buildLineItems also pick up.
-                        // Referral rows: type "REFERRAL_DISCOUNT", which InvoiceService already
-                        // treats as a discount line.
-                        item.setType(admin ? "ADMIN_DISCOUNT" : referral ? "REFERRAL_DISCOUNT" : "COUPON_DISCOUNT");
-                        item.setSource(admin ? "ADMIN_DISCOUNT" : referral ? "REFERRAL" : "COUPON_CODE");
+                        // Referral rows: type "REFERRAL_REWARD_DISCOUNT", which InvoiceService's
+                        // "contains DISCOUNT" checks already treat as a discount line.
+                        item.setType(admin ? "ADMIN_DISCOUNT" : referral ? "REFERRAL_REWARD_DISCOUNT" : "COUPON_DISCOUNT");
+                        item.setSource(admin ? "ADMIN_DISCOUNT" : referral ? "REFERRAL_REWARD" : "COUPON_CODE");
                         item.setSourceId(discount.getId());
                         // Stored as negative — calculateDiscountAmount's "< 0" branch is the
                         // canonical convention for this column.

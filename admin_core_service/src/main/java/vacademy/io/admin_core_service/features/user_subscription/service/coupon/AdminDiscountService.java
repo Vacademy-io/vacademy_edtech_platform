@@ -40,9 +40,11 @@ public class AdminDiscountService {
     /**
      * A referral reward (V611): cycle-limited like an ADMIN row and, unlike a coupon,
      * allowed on renewals, because a trial's referral discount is meant for the FIRST
-     * real charge, which is a renewal. See ReferralRewardService.
+     * real charge, which is a renewal. See ReferralRewardService. Deliberately a value no
+     * earlier code ever wrote (the column's old comment mentions "referral"), so no existing
+     * row can start discounting renewals because of this constant.
      */
-    public static final String SOURCE_REFERRAL = "REFERRAL";
+    public static final String SOURCE_REFERRAL = "REFERRAL_REWARD";
     public static final String MODE_PERCENTAGE = "PERCENTAGE";
     public static final String MODE_FLAT = "FLAT";
     public static final String MODE_COUPON = "COUPON";

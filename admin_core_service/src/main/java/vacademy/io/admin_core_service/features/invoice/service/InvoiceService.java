@@ -241,7 +241,7 @@ public class InvoiceService {
         if ("ADMIN_DISCOUNT".equals(type)) {
             return "Discount";
         }
-        if ("REFERRAL_DISCOUNT".equals(type)) {
+        if ("REFERRAL_REWARD_DISCOUNT".equals(type)) {
             return "Referral discount";
         }
         boolean looksLikeCoupon = (type != null && type.toUpperCase().contains("COUPON"))
