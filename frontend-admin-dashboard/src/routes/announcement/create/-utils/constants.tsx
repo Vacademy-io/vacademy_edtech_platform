@@ -231,6 +231,20 @@ export const WHATSAPP_VALUE_SOURCES = [
         group: 'Recipient',
     },
     { value: 'RECIPIENT_ID', label: 'User id', token: '{{student_id}}', group: 'Recipient' },
+    // Referral: the recipient's own link and code. A recipient without one is marked failed
+    // rather than sent a blank link.
+    {
+        value: 'REFERRAL_SHORT_LINK',
+        label: 'Referral link (short)',
+        token: '{{short_referral_link}}',
+        group: 'Referral',
+    },
+    {
+        value: 'REFERRAL_CODE',
+        label: 'Referral code',
+        token: '{{referral_code}}',
+        group: 'Referral',
+    },
     // Announcement
     {
         value: 'ANNOUNCEMENT_TITLE',
@@ -259,7 +273,7 @@ export function buildWhatsAppValueSources(t: TFunction) {
     }));
 }
 
-export const WHATSAPP_VALUE_GROUPS = ['Recipient', 'Announcement', 'General'] as const;
+export const WHATSAPP_VALUE_GROUPS = ['Recipient', 'Referral', 'Announcement', 'General'] as const;
 
 export const CRON_PRESETS = [
     { id: 'DAILY_9', label: 'Every day, 9:00 AM', expression: '0 0 9 * * ?' },

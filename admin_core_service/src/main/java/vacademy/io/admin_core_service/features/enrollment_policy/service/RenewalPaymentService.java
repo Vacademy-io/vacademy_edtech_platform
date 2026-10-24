@@ -64,6 +64,15 @@ public class RenewalPaymentService {
     @Lazy
     private vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService userPlanService;
 
+    /** Lazy for the same bean-cycle reason as userPlanService; only used after commit. */
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.user_subscription.service.ReferralMappingService referralMappingService;
+
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.user_subscription.service.ReferralRewardService referralRewardService;
+
     /** Same dunning ceiling as RenewalChargeService (policy override not yet snapshotted). */
     private static final int MAX_RENEWAL_ATTEMPTS = 3;
 
@@ -96,10 +105,14 @@ public class RenewalPaymentService {
             }
             paymentLog.setPaymentStatus(PaymentStatusEnum.PAID.name());
             paymentLog.setStatus(PaymentLogStatusEnum.SUCCESS.name());
+            // Read before handleSuccessfulRenewal clears it: the first paid charge after a
+            // trial is the referee's conversion.
+            boolean wasTrial = userPlan != null && Boolean.TRUE.equals(userPlan.getIsTrial());
             recordRenewalOnLedger(paymentLog, userPlan, instituteId);
             countDiscountedCycle(paymentLog, userPlan);
             handleSuccessfulRenewal(userPlan, instituteId);
             scheduleRenewalInvoicing(orderId, instituteId);
+            scheduleReferralFollowUp(userPlan, orderId, wasTrial);
         } else if (paymentStatus == PaymentStatusEnum.FAILED) {
             // Record the failure on the log itself, mirroring the PAID branch above.
             // Without this the row keeps the PAYMENT_PENDING it was created with, so a
@@ -207,6 +220,43 @@ public class RenewalPaymentService {
             });
         } else {
             runRenewalInvoicing(orderId, instituteId);
+        }
+    }
+
+    /**
+     * Referral bookkeeping for a PAID renewal, after commit and best-effort (the money is
+     * taken; a referral problem must never undo the renewal): spend the referrer credit this
+     * charge used, and on a trial's first paid charge activate the referral, which releases
+     * the referrer's reward and sends the referral emails.
+     */
+    private void scheduleReferralFollowUp(UserPlan userPlan, String orderId, boolean wasTrial) {
+        if (userPlan == null) {
+            return;
+        }
+        Runnable followUp = () -> {
+            try {
+                referralRewardService.consumeCreditsForPaidRenewal(userPlan.getId(), orderId);
+            } catch (Exception e) {
+                log.error("Renewal {} paid but referral credit not marked consumed: {}", orderId, e.getMessage(), e);
+            }
+            if (wasTrial) {
+                try {
+                    referralMappingService.activateOnTrialConversion(userPlan);
+                } catch (Exception e) {
+                    log.error("Trial plan {} converted but referral activation failed: {}",
+                            userPlan.getId(), e.getMessage(), e);
+                }
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    followUp.run();
+                }
+            });
+        } else {
+            followUp.run();
         }
     }
 

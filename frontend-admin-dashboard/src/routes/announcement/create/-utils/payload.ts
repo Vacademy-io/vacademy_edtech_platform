@@ -213,6 +213,9 @@ export function buildCreatePayload(
                     fromName: sender?.name,
                     template: input.email.templateName || undefined,
                     previewText: input.previewText || undefined,
+                    ...(input.email.referralInviteId
+                        ? { referral_enroll_invite_id: input.email.referralInviteId }
+                        : {}),
                 },
             };
         }
@@ -228,6 +231,9 @@ export function buildCreatePayload(
                     template_name: input.whatsapp.templateName,
                     language_code: input.whatsapp.languageCode || 'en',
                     dynamic_values: buildWhatsAppValues(input.whatsapp, input.selectedWaTemplate),
+                    ...(input.whatsapp.referralInviteId
+                        ? { referral_enroll_invite_id: input.whatsapp.referralInviteId }
+                        : {}),
                     ...(headerKind
                         ? {
                               header_type: headerKind,

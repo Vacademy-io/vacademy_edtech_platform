@@ -64,6 +64,8 @@
         "RECIPIENT_EMAIL": "ईमेल पता",
         "RECIPIENT_PHONE": "मोबाइल नंबर",
         "RECIPIENT_ID": "यूज़र आईडी",
+        "REFERRAL_SHORT_LINK": "रेफ़रल लिंक (छोटा)",
+        "REFERRAL_CODE": "रेफ़रल कोड",
         "ANNOUNCEMENT_TITLE": "घोषणा का शीर्षक",
         "ANNOUNCEMENT_CONTENT": "घोषणा की सामग्री",
         "SENDER_NAME": "प्रेषक का नाम",

@@ -15,8 +15,6 @@ import vacademy.io.admin_core_service.features.user_subscription.dto.MandateInfo
 import vacademy.io.admin_core_service.features.user_subscription.util.TrialStartResolver;
 import vacademy.io.admin_core_service.features.user_subscription.entity.AppliedCouponDiscount;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
-import vacademy.io.admin_core_service.features.user_subscription.repository.AppliedCouponDiscountRepository;
-import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService;
 import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanStatusEnum;
@@ -59,8 +57,8 @@ public class RenewalChargeService {
     private final AuthService authService;
     private final RenewalGracePolicy gracePolicy;
     private final RenewalFailureRecorder renewalFailureRecorder;
-    private final AppliedCouponDiscountRepository appliedCouponDiscountRepository;
     private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService paymentLogService;
+    private final RenewalDiscountResolver renewalDiscountResolver;
 
     /** Default dunning ceiling when the plan/policy doesn't specify one. */
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
@@ -324,13 +322,12 @@ public class RenewalChargeService {
             log.warn("[RenewalCharge] Plan {} has non-positive amount — skipping", plan.getId());
             return Outcome.SKIPPED;
         }
-        // Discount for this cycle: only an admin discount granted for N cycles (or every
-        // cycle). Coupons never reach renewals, as before. A scheduled plan change ends it.
-        AppliedCouponDiscount renewalDiscount = resolveRenewalDiscount(plan);
+        // Discount for this cycle: an admin or referral discount granted for N cycles (or
+        // every cycle), else one of the member's referrer credits. Coupons never reach
+        // renewals, as before. A scheduled plan change ends the plan's own discount.
+        AppliedCouponDiscount renewalDiscount = renewalDiscountResolver.resolve(plan, instituteId);
         // No discount: charge exactly what was charged before (no rounding introduced).
-        double amount = renewalDiscount == null
-                ? grossAmount
-                : RegionalPriceLock.applyDiscount(plan, grossAmount, renewalDiscount);
+        double amount = renewalDiscountResolver.applyDiscount(plan, grossAmount, renewalDiscount);
         // A regionally priced membership renews in the currency it was bought in.
         String currency = RegionalPriceLock.currency(plan,
                 StringUtils.hasText(invite.getCurrency()) ? invite.getCurrency()
@@ -487,31 +484,6 @@ public class RenewalChargeService {
         Object status = d.get("status");
         return status != null && ("succeeded".equalsIgnoreCase(status.toString())
                 || "captured".equalsIgnoreCase(status.toString()));
-    }
-
-    /**
-     * What to charge this cycle. A downgrade booked for the end of the cycle lands at
-     * exactly this renewal, so the learner is billed the plan they are moving TO — charging
-     * the old price here would take money for a plan they will not be on the moment the
-     * charge settles.
-     */
-    private AppliedCouponDiscount resolveRenewalDiscount(UserPlan plan) {
-        if (!StringUtils.hasText(plan.getAppliedCouponDiscountId())) {
-            return null;
-        }
-        try {
-            if (planChangeService.pendingTargetPlan(plan) != null) {
-                return null;
-            }
-            AppliedCouponDiscount discount = appliedCouponDiscountRepository
-                    .findById(plan.getAppliedCouponDiscountId()).orElse(null);
-            return AdminDiscountService.discountForNextCharge(plan, discount);
-        } catch (Exception e) {
-            // Fall back to the full price rather than skipping the renewal.
-            log.error("[RenewalCharge] Plan {} discount lookup failed — charging full price: {}",
-                    plan.getId(), e.getMessage());
-            return null;
-        }
     }
 
     private double resolveAmount(UserPlan plan) {

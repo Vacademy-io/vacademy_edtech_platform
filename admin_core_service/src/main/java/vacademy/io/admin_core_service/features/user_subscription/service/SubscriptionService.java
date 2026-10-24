@@ -59,6 +59,7 @@ public class SubscriptionService {
     private final vacademy.io.admin_core_service.features.payments.manager.EwayPaymentManager ewayPaymentManager;
     private final vacademy.io.admin_core_service.features.institute.repository.InstituteRepository instituteRepository;
     private final PaymentLogService paymentLogService;
+    private final vacademy.io.admin_core_service.features.enrollment_policy.service.RenewalDiscountResolver renewalDiscountResolver;
 
 
     /**
@@ -471,7 +472,13 @@ public class SubscriptionService {
         double payableAmount = regionalRenewal
                 ? RegionalPriceLock.listPrice(plan)
                 : payablePlan.getActualPrice();
-        request.setAmount(payableAmount);
+        // A referral reward due on this renewal (the plan's own referral discount, else a
+        // referrer credit). Admin discounts are deliberately left out: manual renewals have
+        // always been full price for them, and that is unchanged. No referral = no discount =
+        // exactly the old amount. payableAmount stays the gross the mandate ceiling is sized on.
+        var renewalDiscount = renewalDiscountResolver.resolveReferralOnly(plan, instituteId);
+        double chargeAmount = renewalDiscountResolver.applyDiscount(plan, payableAmount, renewalDiscount);
+        request.setAmount(chargeAmount);
         // Invite currency first, then the PLAN's own currency, and only then INR. Vet
         // Education has invites with a blank currency (e.g. "Individual Membership",
         // 82725a60) whose plan is priced in AUD -- falling straight back to INR there would
@@ -495,6 +502,12 @@ public class SubscriptionService {
         request.setVendor(vendor);
         request.setVendorId(gateway.getVendorId());
         request.setPaymentType(vacademy.io.common.payment.enums.PaymentType.RENEWAL);
+
+        if (chargeAmount <= 0) {
+            // Fully discounted: gateways reject a zero charge, so settle it here exactly as the
+            // autopay sweep does and extend the plan.
+            return settleFullyDiscountedRenewal(plan, instituteId, request, user, renewalDiscount, payableAmount);
+        }
 
         // Whether this renewal also arms autopay. Two rules, and the gateway decides which:
         //
@@ -526,7 +539,8 @@ public class SubscriptionService {
         // the request carried only a RazorpayRequestDTO, so EwayPaymentManager dereferenced a
         // null ewayRequest and every "Pay to continue" on eWay threw an NPE.
         if (isStoredTokenGateway(vendor)) {
-            return startHostedCheckoutRenewal(plan, instituteId, request, user, armAutopay);
+            return withDiscountLine(startHostedCheckoutRenewal(plan, instituteId, request, user, armAutopay),
+                    request, renewalDiscount, payableAmount, plan);
         }
 
         var razorpayRequest = new vacademy.io.common.payment.dto.RazorpayRequestDTO();
@@ -547,9 +561,57 @@ public class SubscriptionService {
             }
             mandateRequestDefaults.applyMethod(request, mandateMethod,
                     plan.getUserId(), instituteId, invite.getVendor());
-            return paymentService.handleMandatePayment(user, instituteId, invite, plan, request);
+            return withDiscountLine(paymentService.handleMandatePayment(user, instituteId, invite, plan, request),
+                    request, renewalDiscount, payableAmount, plan);
         }
-        return paymentService.handleUserPlanPayment(request, instituteId, userDetails, userPlanId);
+        return withDiscountLine(paymentService.handleUserPlanPayment(request, instituteId, userDetails, userPlanId),
+                request, renewalDiscount, payableAmount, plan);
+    }
+
+    /**
+     * Records the renewal's discount line on the order this checkout raised, so the invoice
+     * shows it and confirming the payment counts the cycle / spends the referral credit. A
+     * bookkeeping failure must not cost the learner their checkout.
+     */
+    private vacademy.io.common.payment.dto.PaymentResponseDTO withDiscountLine(
+            vacademy.io.common.payment.dto.PaymentResponseDTO response,
+            PaymentInitiationRequestDTO request,
+            vacademy.io.admin_core_service.features.user_subscription.entity.AppliedCouponDiscount discount,
+            double grossAmount, UserPlan plan) {
+        if (discount == null) {
+            return response;
+        }
+        String orderId = response != null && StringUtils.hasText(response.getOrderId())
+                ? response.getOrderId() : request.getOrderId();
+        try {
+            paymentService.recordRenewalDiscountLineItem(orderId, discount, grossAmount, plan);
+        } catch (Exception e) {
+            log.error("Manual renewal for plan {} (order {}): discount line not recorded: {}",
+                    plan.getId(), orderId, e.getMessage());
+        }
+        return response;
+    }
+
+    private vacademy.io.common.payment.dto.PaymentResponseDTO settleFullyDiscountedRenewal(
+            UserPlan plan, String instituteId, PaymentInitiationRequestDTO request,
+            vacademy.io.common.auth.dto.UserDTO user,
+            vacademy.io.admin_core_service.features.user_subscription.entity.AppliedCouponDiscount discount,
+            double grossAmount) {
+        String orderId = paymentLogService.createPaymentLog(user.getId(), 0.0, request.getVendor(),
+                request.getVendorId(), request.getCurrency(), plan, null);
+        paymentService.recordRenewalDiscountLineItem(orderId, discount, grossAmount, plan);
+        renewalPaymentService.handleRenewalPaymentConfirmation(orderId, instituteId, PaymentStatusEnum.PAID, null);
+        log.info("Manual renewal for plan {} settled without a charge — discount covers the full {}",
+                plan.getId(), grossAmount);
+        Map<String, Object> data = new HashMap<>();
+        data.put("paymentStatus", PaymentStatusEnum.PAID.name());
+        data.put("orderId", orderId);
+        data.put("amount", 0.0);
+        data.put("currency", request.getCurrency());
+        var response = new vacademy.io.common.payment.dto.PaymentResponseDTO();
+        response.setOrderId(orderId);
+        response.setResponseData(data);
+        return response;
     }
 
     /**

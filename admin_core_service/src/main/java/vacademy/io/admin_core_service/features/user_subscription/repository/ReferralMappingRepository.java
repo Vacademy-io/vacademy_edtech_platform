@@ -21,6 +21,18 @@ public interface ReferralMappingRepository extends JpaRepository<ReferralMapping
     Optional<ReferralMapping> findByUserPlanIdAndStatusIn(@Param("userPlanId") String userPlanId,
                                                           @Param("status") List<String> status);
 
+    /** Whether this person was already referred into the programme's institute (or other source). */
+    @Query("""
+    SELECT COUNT(rm) > 0
+    FROM ReferralMapping rm
+    WHERE rm.refereeUserId = :refereeUserId
+      AND rm.referralOption.sourceId = :sourceId
+      AND rm.status IN :status
+""")
+    boolean existsRefereeAtSource(@Param("refereeUserId") String refereeUserId,
+                                  @Param("sourceId") String sourceId,
+                                  @Param("status") List<String> status);
+
     List<ReferralMapping> findByRefereeUserIdAndStatusInOrderByCreatedAtDesc(
             String refereeUserId,
             List<String> statusList

@@ -87,6 +87,8 @@ export interface EmailConfig {
     fromKey: string;
     /** Blank = reuse the announcement title. */
     subjectOverride: string;
+    /** Enroll invite that {{short_referral_link}} opens; '' = each member's own invite. */
+    referralInviteId: string;
 }
 
 /** Derived from WHATSAPP_VALUE_SOURCES so the two can never drift apart. */
@@ -102,6 +104,8 @@ export interface WhatsAppConfig {
     templateName: string;
     languageCode: string;
     headerUrl: string;
+    /** Enroll invite that referral-link variables open; '' = each member's own invite. */
+    referralInviteId: string;
     /** Keyed by the template's variable name. */
     variables: Record<string, WhatsAppVariableBinding>;
 }

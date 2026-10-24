@@ -18,6 +18,7 @@ import { TemplateSearchableSelect } from '@/components/templates/TemplateSearcha
 import type { MessageTemplate } from '@/types/message-template-types';
 import type { EmailConfiguration } from '@/services/email-configuration-service';
 import { EmptyState, FieldError, FieldHint, LoadFailure } from '../primitives';
+import { ReferralInvitePicker } from './ReferralInvitePicker';
 import type { EmailConfig, FieldErrors } from '../../-types';
 
 const WRITE_FROM_SCRATCH = 'custom';
@@ -173,6 +174,15 @@ export function EmailChannelCard({
                 />
                 <FieldHint>{t('subjectHint')}</FieldHint>
             </div>
+
+            <ReferralInvitePicker
+                value={config.referralInviteId}
+                onChange={(referralInviteId) => onChange({ referralInviteId })}
+                hint={t('referralInviteHint', {
+                    defaultValue:
+                        'Only used when the email contains a referral placeholder (short_referral_link, referral_link or referral_code). Members without a referral link are skipped.',
+                })}
+            />
         </div>
     );
 }
