@@ -112,16 +112,22 @@ public class PaymentService {
                 if (discount == null) {
                         return;
                 }
+                // A trial's referral discount belongs to the first REAL charge (a renewal at
+                // trial end), never to the Rs 1 mandate authorisation taken at signup.
+                if (AdminDiscountService.SOURCE_REFERRAL.equals(discount.getDiscountSource())
+                                && Boolean.TRUE.equals(userPlan.getIsTrial())) {
+                        return;
+                }
                 if (paymentLogLineItemRepository
                                 .existsByPaymentLog_UserPlan_IdAndSourceId(userPlan.getId(), discount.getId())) {
                         log.debug("Discount line item already recorded for userPlan={} discount={} — skipping",
                                         userPlan.getId(), discount.getId());
                         return;
                 }
-                // Cycles only matter for admin discounts (renewals never apply coupons), so a
-                // coupon enrollment is left exactly as it was — no extra counter write.
+                // Cycles only matter for admin and referral discounts (renewals never apply
+                // coupons), so a coupon enrollment is left exactly as it was — no extra counter write.
                 if (saveDiscountLineItem(paymentLogId, discount, grossAmount, RegionalPriceLock.scale(userPlan))
-                                && AdminDiscountService.SOURCE_ADMIN.equals(discount.getDiscountSource())) {
+                                && AdminDiscountService.reachesRenewals(discount)) {
                         markDiscountedCycle(userPlan);
                 }
         }
@@ -156,9 +162,10 @@ public class PaymentService {
         private boolean saveDiscountLineItem(String paymentLogId, AppliedCouponDiscount discount, double grossAmount,
                         double scale) {
                 boolean admin = AdminDiscountService.SOURCE_ADMIN.equals(discount.getDiscountSource());
+                boolean referral = AdminDiscountService.SOURCE_REFERRAL.equals(discount.getDiscountSource());
                 double computed = CouponDiscountUtil.computeDiscount(discount, grossAmount / scale) * scale;
-                // Coupons: same figure as before. Admin discounts: never more than the price.
-                double amount = admin ? Math.min(computed, grossAmount) : computed;
+                // Coupons: same figure as before. Admin/referral discounts: never more than the price.
+                double amount = (admin || referral) ? Math.min(computed, grossAmount) : computed;
                 if (amount <= 0.0) {
                         return false;
                 }
@@ -169,8 +176,10 @@ public class PaymentService {
                         // row up in calculateDiscountAmount AND resolves the code via
                         // buildDiscountDescription. Admin rows: type contains "DISCOUNT",
                         // which calculateDiscountAmount and buildLineItems also pick up.
-                        item.setType(admin ? "ADMIN_DISCOUNT" : "COUPON_DISCOUNT");
-                        item.setSource(admin ? "ADMIN_DISCOUNT" : "COUPON_CODE");
+                        // Referral rows: type "REFERRAL_DISCOUNT", which InvoiceService already
+                        // treats as a discount line.
+                        item.setType(admin ? "ADMIN_DISCOUNT" : referral ? "REFERRAL_DISCOUNT" : "COUPON_DISCOUNT");
+                        item.setSource(admin ? "ADMIN_DISCOUNT" : referral ? "REFERRAL" : "COUPON_CODE");
                         item.setSourceId(discount.getId());
                         // Stored as negative — calculateDiscountAmount's "< 0" branch is the
                         // canonical convention for this column.

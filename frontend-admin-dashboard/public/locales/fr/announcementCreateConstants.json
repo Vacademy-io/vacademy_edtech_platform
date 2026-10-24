@@ -64,6 +64,8 @@
         "RECIPIENT_EMAIL": "Adresse e-mail",
         "RECIPIENT_PHONE": "Numéro de mobile",
         "RECIPIENT_ID": "Identifiant utilisateur",
+        "REFERRAL_SHORT_LINK": "Lien de parrainage (court)",
+        "REFERRAL_CODE": "Code de parrainage",
         "ANNOUNCEMENT_TITLE": "Titre de l'annonce",
         "ANNOUNCEMENT_CONTENT": "Contenu de l'annonce",
         "SENDER_NAME": "Nom de l'expéditeur",

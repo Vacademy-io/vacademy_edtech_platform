@@ -353,6 +353,12 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                     <p className="text-sm text-gray-600">
                                         {t('refereeSection.subtitle')}
                                     </p>
+                                    <p className="text-xs text-gray-500">
+                                        {t('refereeSection.timingNote', {
+                                            defaultValue:
+                                                'On a trial plan, the discount is applied to the first paid charge after the trial.',
+                                        })}
+                                    </p>
                                 </div>
                                 {/* Only show Remove button if the reward exists */}
                                 {formData.refereeReward && (
@@ -416,6 +422,12 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                     </CardTitle>
                                     <p className="text-sm text-gray-600">
                                         {t('referrerSection.subtitle')}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {t('referrerSection.timingNote', {
+                                            defaultValue:
+                                                "The discount is applied to the referrer's own next renewal after the friend's first payment, one per referral.",
+                                        })}
                                     </p>
                                 </div>
                             </div>

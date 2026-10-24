@@ -136,11 +136,13 @@ export function useAnnouncementDraft() {
         templateName: '',
         fromKey: '',
         subjectOverride: '',
+        referralInviteId: '',
     });
     const [whatsapp, setWhatsapp] = useState<WhatsAppConfig>({
         templateName: '',
         languageCode: 'en',
         headerUrl: '',
+        referralInviteId: '',
         variables: {},
     });
 

@@ -64,6 +64,8 @@
         "RECIPIENT_EMAIL": "Email address",
         "RECIPIENT_PHONE": "Mobile number",
         "RECIPIENT_ID": "User id",
+        "REFERRAL_SHORT_LINK": "Referral link (short)",
+        "REFERRAL_CODE": "Referral code",
         "ANNOUNCEMENT_TITLE": "Announcement title",
         "ANNOUNCEMENT_CONTENT": "Announcement content",
         "SENDER_NAME": "Sender name",

@@ -24,6 +24,7 @@ import type { WhatsAppTemplateDTO } from '@/routes/communication/whatsapp-templa
 import { WHATSAPP_VALUE_GROUPS, WHATSAPP_VALUE_SOURCES } from '../../-utils/constants';
 import { whatsAppHeaderKind, whatsAppVariableNames } from '../../-utils/validation';
 import { EmptyState, FieldError, FieldHint, LoadFailure } from '../primitives';
+import { ReferralInvitePicker } from './ReferralInvitePicker';
 import type { FieldErrors, WhatsAppConfig, WhatsAppValueSource } from '../../-types';
 
 interface WhatsAppChannelCardProps {
@@ -267,6 +268,20 @@ export function WhatsAppChannelCard({
                     <FieldError message={err('whatsapp.headerUrl')} />
                     <FieldHint>{t('headerUrl.requiredHint')}</FieldHint>
                 </div>
+            )}
+
+            {Object.values(config.variables).some(
+                (binding) =>
+                    binding.source === 'REFERRAL_SHORT_LINK' || binding.source === 'REFERRAL_CODE'
+            ) && (
+                <ReferralInvitePicker
+                    value={config.referralInviteId}
+                    onChange={(referralInviteId) => onChange({ referralInviteId })}
+                    hint={t('referralInviteHint', {
+                        defaultValue:
+                            'Pick the invite a friend should join (e.g. the trial). Members without a referral link are skipped.',
+                    })}
+                />
             )}
 
             {selectedTemplate && variableNames.length > 0 && (

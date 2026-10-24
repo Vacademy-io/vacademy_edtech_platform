@@ -12,6 +12,8 @@ import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralB
 import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralStatusEnum;
 import vacademy.io.admin_core_service.features.user_subscription.service.MultiChannelDeliveryService;
 import vacademy.io.admin_core_service.features.user_subscription.service.ReferralBenefitLogService;
+import vacademy.io.admin_core_service.features.user_subscription.service.ReferralRewardService;
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.dto.learner.LearnerPackageSessionsEnrollDTO;
 
@@ -27,6 +29,9 @@ public class PercentageDiscountHandler implements ReferralBenefitHandler {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ReferralRewardService referralRewardService;
+
     @Override
     public void processBenefit(LearnerPackageSessionsEnrollDTO learnerPackageSessionsEnrollDTO,
                                ReferralOption referralOption,
@@ -40,11 +45,20 @@ public class PercentageDiscountHandler implements ReferralBenefitHandler {
                                String status) {
         try {
             BenefitConfigDTO.PercentageDiscountValue percentageDiscountValue = objectMapper.convertValue(benefitDTO.getValue(), BenefitConfigDTO.PercentageDiscountValue.class);
-            double discountedAmount = getDiscountedAmount(learnerPackageSessionsEnrollDTO, percentageDiscountValue);
 
-            learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(
-                    learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount() - discountedAmount
-            );
+            // Only a referee on a non-trial plan is discounted at this checkout. A trial's
+            // discount waits for its first real charge, and a referrer's reward is their own
+            // next renewal — see ReferralRewardService.
+            boolean atCheckout = referralRewardService.routeDiscountBenefit(
+                    referralMapping, referrer.getId(), instituteId, beneficiary, status,
+                    AdminDiscountService.MODE_PERCENTAGE,
+                    percentageDiscountValue.getPercentage(), percentageDiscountValue.getMaxDiscount());
+            if (atCheckout && hasCheckoutAmount(learnerPackageSessionsEnrollDTO)) {
+                double discountedAmount = getDiscountedAmount(learnerPackageSessionsEnrollDTO, percentageDiscountValue);
+                learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().setAmount(
+                        learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount() - discountedAmount
+                );
+            }
 
             // If the benefit is active, send a notification email.
             if (status.equalsIgnoreCase(ReferralStatusEnum.ACTIVE.name())) {
@@ -78,12 +92,20 @@ public class PercentageDiscountHandler implements ReferralBenefitHandler {
         }
     }
 
+    private static boolean hasCheckoutAmount(LearnerPackageSessionsEnrollDTO dto) {
+        return dto.getPaymentInitiationRequest() != null && dto.getPaymentInitiationRequest().getAmount() != null;
+    }
+
     private double getDiscountedAmount(LearnerPackageSessionsEnrollDTO learnerPackageSessionsEnrollDTO, BenefitConfigDTO.PercentageDiscountValue percentageDiscountValue) {
         double amount = learnerPackageSessionsEnrollDTO.getPaymentInitiationRequest().getAmount();
         double discount = amount * percentageDiscountValue.getPercentage() / 100.0;
 
-        if (percentageDiscountValue.getMaxDiscount() != null && discount > percentageDiscountValue.getMaxDiscount()) {
-            return percentageDiscountValue.getMaxDiscount();
+        // See ReferralRewardService.effectiveCap: no cap when empty, 0, or the legacy
+        // "cap = percentage" value the admin app used to save.
+        Double cap = ReferralRewardService.effectiveCap(
+                percentageDiscountValue.getPercentage(), percentageDiscountValue.getMaxDiscount());
+        if (cap != null && discount > cap) {
+            return cap;
         }
         return discount;
     }

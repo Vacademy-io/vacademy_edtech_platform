@@ -258,6 +258,36 @@ public class AdminCoreServiceClient {
     }
 
     /**
+     * Members' personal referral links, {@code userId -> {referral_code, short_referral_link,
+     * referral_link}}, for filling referral placeholders per recipient. With an enroll invite
+     * the links open that invite (e.g. the trial). Empty map on any failure: the caller fails
+     * those recipients rather than send a message with a blank link.
+     */
+    public Map<String, Map<String, String>> getReferralLinks(String instituteId, List<String> userIds,
+                                                             String enrollInviteId) {
+        if (instituteId == null || userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("instituteId", instituteId);
+            body.put("userIds", userIds);
+            body.put("enrollInviteId", enrollInviteId);
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(clientName, "POST",
+                    adminCoreServiceBaseUrl, "/admin-core-service/internal/referral/links", body);
+            if (response == null || response.getBody() == null || response.getBody().isBlank()) {
+                return Map.of();
+            }
+            return new ObjectMapper().readValue(response.getBody(),
+                    new TypeReference<Map<String, Map<String, String>>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to fetch referral links for {} users at institute {}: {}",
+                    userIds.size(), instituteId, e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /**
      * Get user IDs by tags for a given institute
      */
     @Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))

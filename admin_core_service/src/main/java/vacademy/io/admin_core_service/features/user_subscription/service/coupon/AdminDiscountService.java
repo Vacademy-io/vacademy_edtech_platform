@@ -37,6 +37,12 @@ import java.util.Date;
 public class AdminDiscountService {
 
     public static final String SOURCE_ADMIN = "ADMIN";
+    /**
+     * A referral reward (V611): cycle-limited like an ADMIN row and, unlike a coupon,
+     * allowed on renewals, because a trial's referral discount is meant for the FIRST
+     * real charge, which is a renewal. See ReferralRewardService.
+     */
+    public static final String SOURCE_REFERRAL = "REFERRAL";
     public static final String MODE_PERCENTAGE = "PERCENTAGE";
     public static final String MODE_FLAT = "FLAT";
     public static final String MODE_COUPON = "COUPON";
@@ -166,14 +172,14 @@ public class AdminDiscountService {
     // ── Billing-cycle limit ───────────────────────────────────────────────
 
     /**
-     * How many charges the discount may reduce. ADMIN rows carry their own limit
-     * (null = every cycle). Coupons keep their historical first-payment-only rule.
+     * How many charges the discount may reduce. ADMIN and REFERRAL rows carry their own
+     * limit (null = every cycle). Coupons keep their historical first-payment-only rule.
      */
     public static Integer cycleLimit(AppliedCouponDiscount discount) {
         if (discount == null) {
             return 0;
         }
-        if (SOURCE_ADMIN.equals(discount.getDiscountSource())) {
+        if (reachesRenewals(discount)) {
             return discount.getApplyForCycles();
         }
         return 1;
@@ -188,14 +194,20 @@ public class AdminDiscountService {
         if (userPlan == null || discount == null) {
             return null;
         }
-        // Renewals are discounted by ADMIN discounts only. Coupons keep their existing
-        // behaviour exactly: never applied to a renewal (including a trial's first charge).
-        if (!SOURCE_ADMIN.equals(discount.getDiscountSource())) {
+        // Renewals are discounted by ADMIN and REFERRAL discounts only. Coupons keep their
+        // existing behaviour exactly: never applied to a renewal (including a trial's first charge).
+        if (!reachesRenewals(discount)) {
             return null;
         }
         Integer limit = cycleLimit(discount);
         int used = userPlan.getDiscountCyclesApplied() != null ? userPlan.getDiscountCyclesApplied() : 0;
         return (limit == null || used < limit) ? discount : null;
+    }
+
+    /** ADMIN and REFERRAL rows discount renewals; coupon rules never do. */
+    public static boolean reachesRenewals(AppliedCouponDiscount discount) {
+        return discount != null && (SOURCE_ADMIN.equals(discount.getDiscountSource())
+                || SOURCE_REFERRAL.equals(discount.getDiscountSource()));
     }
 
     // ── internals ─────────────────────────────────────────────────────────

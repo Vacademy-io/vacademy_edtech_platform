@@ -64,6 +64,8 @@
         "RECIPIENT_EMAIL": "البريد الإلكتروني",
         "RECIPIENT_PHONE": "رقم الجوال",
         "RECIPIENT_ID": "معرّف المستخدم",
+        "REFERRAL_SHORT_LINK": "رابط الإحالة (قصير)",
+        "REFERRAL_CODE": "رمز الإحالة",
         "ANNOUNCEMENT_TITLE": "عنوان الإعلان",
         "ANNOUNCEMENT_CONTENT": "محتوى الإعلان",
         "SENDER_NAME": "اسم المُرسِل",

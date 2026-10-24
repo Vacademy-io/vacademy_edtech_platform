@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.notification_service.constants.NotificationConstants;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
 import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.entity.AnnouncementMedium;
@@ -62,6 +63,11 @@ public class AnnouncementDeliveryService {
 
     // Service clients for user resolution
     private final AuthServiceClient authServiceClient;
+    private final AdminCoreServiceClient adminCoreServiceClient;
+
+    /** Per-recipient referral placeholders, resolved from admin-core only when a template uses one. */
+    private static final List<String> REFERRAL_TOKENS =
+            List.of("{{short_referral_link}}", "{{referral_link}}", "{{referral_code}}");
     
     // Configuration for batch processing
     @Value("${notification.user.batch.size:100}")
@@ -177,6 +183,10 @@ public class AnnouncementDeliveryService {
         String resolvedEmailType = determineEmailType((String) emailConfig.get("emailType"));
         String templateName = (String) emailConfig.get("template");
         String previewText = (String) emailConfig.get("previewText");
+        // Same referral placeholders as the WhatsApp path, fetched only when the email uses one.
+        boolean needsReferral = content.getContent() != null
+                && REFERRAL_TOKENS.stream().anyMatch(content.getContent()::contains);
+        String referralInviteId = (String) emailConfig.get("referral_enroll_invite_id");
         
         log.info("Delivering announcement {} via email with type: {}, from: {}, subject: {}", 
                  announcement.getId(), resolvedEmailType, fromEmail, subject);
@@ -250,6 +260,9 @@ public class AnnouncementDeliveryService {
             Map<String, String> passwordByUserId = needsPasswords
                     ? batchResolvePasswords(userIds)
                     : Map.of();
+            Map<String, Map<String, String>> referralLinks = needsReferral
+                    ? adminCoreServiceClient.getReferralLinks(announcement.getInstituteId(), userIds, referralInviteId)
+                    : Map.of();
 
             // Process each message in this batch
             int batchSuccess = 0;
@@ -287,8 +300,21 @@ public class AnnouncementDeliveryService {
                         continue;
                     }
 
+                    Map<String, String> referral = referralLinks.get(message.getUserId());
+                    if (needsReferral && referral == null) {
+                        // Never send a referral email with a placeholder where the link should be.
+                        batchFailed++;
+                        message.setStatus(MessageStatus.FAILED);
+                        message.setErrorMessage("No referral link for this member");
+                        recipientMessageRepository.save(message);
+                        createEmailNotificationLog(announcement, message, userEmail, "FAILED", message.getErrorMessage(), resolvedFromAddress);
+                        continue;
+                    }
+
                     // Process HTML content with variables (use cached users - no additional API calls)
-                    String processedContent = processHtmlVariables(content.getContent(), message, announcement, userEmailMap, passwordByUserId, resolvedInstituteEmail);
+                    String processedContent = applyReferralTokens(
+                            processHtmlVariables(content.getContent(), message, announcement, userEmailMap, passwordByUserId, resolvedInstituteEmail),
+                            referral);
 
                         // RATE LIMITING: Acquire permit before sending (blocks if limit exceeded)
                         rateLimiter.acquire();
@@ -399,6 +425,11 @@ public class AnnouncementDeliveryService {
         // supplied on the send, so thread the admin's chosen media through.
         String headerType = (String) whatsAppConfig.get("header_type");
         String headerUrl = (String) whatsAppConfig.get("header_url");
+        // Members' referral links are fetched only when the template asks for one. An optional
+        // referral_enroll_invite_id makes the links open that invite (e.g. the trial a friend
+        // should join) instead of whichever invite the member enrolled through.
+        boolean needsReferral = usesReferralTokens(dynamicValues);
+        String referralInviteId = (String) whatsAppConfig.get("referral_enroll_invite_id");
 
         if (templateName == null) {
             log.error("WhatsApp medium for announcement {} has no template_name in its config ({}); "
@@ -432,6 +463,10 @@ public class AnnouncementDeliveryService {
             // template asking for {{name}} or {{email}} received the literal placeholder.
             Map<String, User> userCache = batchResolveUsers(
                     batch.stream().map(RecipientMessage::getUserId).distinct().toList());
+            Map<String, Map<String, String>> referralLinks = needsReferral
+                    ? adminCoreServiceClient.getReferralLinks(instituteId,
+                            batch.stream().map(RecipientMessage::getUserId).distinct().toList(), referralInviteId)
+                    : Map.of();
 
             // Build unified send recipients for this batch
             List<UnifiedSendRequest.Recipient> recipients = new java.util.ArrayList<>();
@@ -463,9 +498,21 @@ public class AnnouncementDeliveryService {
                         continue;
                     }
 
+                    Map<String, String> referral = referralLinks.get(message.getUserId());
+                    if (needsReferral && referral == null) {
+                        // Never send a referral message with a placeholder where the link should be.
+                        message.setMediumType(MediumType.WHATSAPP);
+                        message.setStatus(MessageStatus.FAILED);
+                        message.setErrorMessage("No referral link for this member");
+                        recipientMessageRepository.save(message);
+                        createNotificationLog(announcement, message, "WHATSAPP", "FAILED", message.getErrorMessage());
+                        totalFailed++;
+                        continue;
+                    }
+
                     Map<String, String> userSpecificValues = prepareDynamicValues(
                             dynamicValues, message, announcement, content,
-                            userCache.get(message.getUserId()), userPhone);
+                            userCache.get(message.getUserId()), userPhone, referral);
 
                     recipients.add(UnifiedSendRequest.Recipient.builder()
                             .phone(userPhone)
@@ -828,9 +875,23 @@ public class AnnouncementDeliveryService {
      * an announcement email also works in an announcement WhatsApp template — previously only four
      * tokens resolved here, and everything else was delivered as the literal placeholder text.
      */
+    private static String applyReferralTokens(String html, Map<String, String> referral) {
+        if (html == null || referral == null) {
+            return html;
+        }
+        return html.replace("{{short_referral_link}}", nullToEmpty(referral.get("short_referral_link")))
+                .replace("{{referral_link}}", nullToEmpty(referral.get("referral_link")))
+                .replace("{{referral_code}}", nullToEmpty(referral.get("referral_code")));
+    }
+
+    private static boolean usesReferralTokens(Map<String, String> dynamicValues) {
+        return dynamicValues != null && dynamicValues.values().stream()
+                .anyMatch(v -> v != null && REFERRAL_TOKENS.stream().anyMatch(v::contains));
+    }
+
     private Map<String, String> prepareDynamicValues(Map<String, String> template, RecipientMessage message,
                                                     Announcement announcement, RichTextData content,
-                                                    User user, String userPhone) {
+                                                    User user, String userPhone, Map<String, String> referral) {
         Map<String, String> values = new HashMap<>();
         if (template == null) return values;
 
@@ -874,6 +935,11 @@ public class AnnouncementDeliveryService {
         tokens.put("{{mobile_number}}", phone);
         tokens.put("{{student_phone}}", phone);
         tokens.put("{{student_id}}", user != null ? nullToEmpty(user.getId()) : nullToEmpty(message.getUserId()));
+        if (referral != null) {
+            tokens.put("{{short_referral_link}}", nullToEmpty(referral.get("short_referral_link")));
+            tokens.put("{{referral_link}}", nullToEmpty(referral.get("referral_link")));
+            tokens.put("{{referral_code}}", nullToEmpty(referral.get("referral_code")));
+        }
 
         for (Map.Entry<String, String> entry : template.entrySet()) {
             String value = entry.getValue();
