@@ -1,5 +1,6 @@
 import { Slide } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-hooks/use-slides';
 import { Dispatch, RefObject, SetStateAction } from 'react';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { UseMutateAsyncFunction } from '@tanstack/react-query';
 import {
@@ -56,15 +57,14 @@ export const handlePublishSlide = async (
     addUpdateAudioSlide: UseMutateAsyncFunction<SlideResponse, Error, AudioSlidePayload, unknown>,
     addUpdateScormSlide: UseMutateAsyncFunction<SlideResponse, Error, ScormSlidePayload, unknown>,
     SaveDraft: (activeItem: Slide) => Promise<void>,
-    playerRef?: RefObject<YTPlayer>, // Optional YouTube player ref
-    addUpdateAssessmentSlide?: UseMutateAsyncFunction<
-        SlideResponse,
-        Error,
-        AssessmentSlidePayload,
-        unknown
-    >,
+    playerRef: RefObject<YTPlayer> | undefined, // YouTube player ref (may be undefined)
+    addUpdateAssessmentSlide:
+        | UseMutateAsyncFunction<SlideResponse, Error, AssessmentSlidePayload, unknown>
+        | undefined,
     /** Called only after the publish network call SUCCEEDS (e.g. to clear the local draft). */
-    onPublishSuccess?: () => void
+    onPublishSuccess: (() => void) | undefined,
+    /** Translation function bound to the caller's `studyLibraryHandlePublishSlide` namespace. */
+    t: TFunction
 ) => {
     const status = 'PUBLISHED';
 
@@ -80,7 +80,7 @@ export const handlePublishSlide = async (
             // @ts-expect-error
             await updateQuestionOrder(convertedData!);
         } catch {
-            toast.error('Error saving slide');
+            toast.error(t('errorSavingSlide'));
         }
         return;
     }
@@ -96,7 +96,7 @@ export const handlePublishSlide = async (
         // Without this, an empty serialization would send
         // data:null, published_data:null and clobber the slide on the server.
         if (!publishedData) {
-            toast.error('Could not read editor content. Please try again.');
+            toast.error(t('couldNotReadContent'));
             return;
         }
 
@@ -128,7 +128,7 @@ export const handlePublishSlide = async (
 
         try {
             await publishDocumentSlide(false);
-            toast.success(`Slide published successfully!`);
+            toast.success(t('slidePublished'));
             setIsOpen(false);
             onPublishSuccess?.();
         } catch (error) {
@@ -142,27 +142,25 @@ export const handlePublishSlide = async (
             )?.response;
             const serverMessage = response?.data?.ex || response?.data?.message;
             if (response?.status === 409 && serverMessage) {
-                const confirmed = window.confirm(
-                    `To prevent accidental data loss, please confirm.\n\n${serverMessage}\n\nAre you sure you want to publish this version?`
-                );
+                const confirmed = window.confirm(t('confirmForcePublish', { serverMessage }));
                 if (!confirmed) return;
                 try {
                     await publishDocumentSlide(true);
-                    toast.success('Slide published (forced override).');
+                    toast.success(t('slidePublishedForced'));
                     setIsOpen(false);
                     onPublishSuccess?.();
                 } catch {
-                    toast.error('Error in publishing the slide');
+                    toast.error(t('errorPublishingSlide'));
                 }
                 return;
             }
-            toast.error(serverMessage || `Error in publishing the slide`);
+            toast.error(serverMessage || t('errorPublishingSlide'));
         }
     }
 
     if (activeItem?.source_type === 'VIDEO') {
         if (!activeItem.video_slide) {
-            toast.error('Video slide data is missing.');
+            toast.error(t('videoSlideMissing'));
             return;
         }
 
@@ -194,10 +192,10 @@ export const handlePublishSlide = async (
 
         try {
             await addUpdateVideoSlide(convertedData);
-            toast.success(`Slide published successfully!`);
+            toast.success(t('slidePublished'));
             setIsOpen(false);
         } catch {
-            toast.error(`Error in publishing the slide`);
+            toast.error(t('errorPublishingSlide'));
         }
     }
 
@@ -212,10 +210,10 @@ export const handlePublishSlide = async (
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             await updateAssignmentOrder(convertedData!);
-            toast.success(`Slide published successfully!`);
+            toast.success(t('slidePublished'));
             setIsOpen(false);
         } catch {
-            toast.error(`Error in publishing the slide`);
+            toast.error(t('errorPublishingSlide'));
         }
     }
 
@@ -230,17 +228,17 @@ export const handlePublishSlide = async (
             // Call the API to publish the quiz slide (forward the notify choice —
             // createQuizSlidePayload doesn't carry it).
             await addUpdateQuizSlide({ ...payload, notify });
-            toast.success('Quiz published successfully!');
+            toast.success(t('quizPublished'));
             setIsOpen(false);
         } catch (error) {
             console.error('Error publishing quiz slide:', error);
-            toast.error('Failed to publish quiz');
+            toast.error(t('quizPublishFailed'));
         }
     }
 
     if (activeItem?.source_type === 'AUDIO') {
         if (!activeItem.audio_slide) {
-            toast.error('Audio slide data is missing.');
+            toast.error(t('audioSlideMissing'));
             return;
         }
 
@@ -264,16 +262,16 @@ export const handlePublishSlide = async (
                     transcript: activeItem.audio_slide.transcript || null,
                 },
             });
-            toast.success('Slide published successfully!');
+            toast.success(t('slidePublished'));
             setIsOpen(false);
         } catch {
-            toast.error('Error in publishing the slide');
+            toast.error(t('errorPublishingSlide'));
         }
     }
 
     if (activeItem?.source_type === 'SCORM') {
         if (!activeItem.scorm_slide) {
-            toast.error('SCORM slide data is missing.');
+            toast.error(t('scormSlideMissing'));
             return;
         }
 
@@ -291,16 +289,16 @@ export const handlePublishSlide = async (
                     id: activeItem.scorm_slide.id,
                 },
             });
-            toast.success('SCORM slide published successfully!');
+            toast.success(t('scormSlidePublished'));
             setIsOpen(false);
         } catch {
-            toast.error('Error in publishing the SCORM slide');
+            toast.error(t('errorPublishingScormSlide'));
         }
     }
 
     if (activeItem?.source_type === 'ASSESSMENT') {
         if (!activeItem.assessment_slide || !addUpdateAssessmentSlide) {
-            toast.error('Assessment slide data is missing.');
+            toast.error(t('assessmentSlideMissing'));
             return;
         }
         try {
@@ -322,10 +320,10 @@ export const handlePublishSlide = async (
                     show_result: activeItem.assessment_slide.show_result ?? true,
                 },
             });
-            toast.success('Assessment slide published successfully!');
+            toast.success(t('assessmentSlidePublished'));
             setIsOpen(false);
         } catch {
-            toast.error('Error in publishing the assessment slide');
+            toast.error(t('errorPublishingAssessmentSlide'));
         }
     }
 };

@@ -1,0 +1,23 @@
+{
+    "loading": "جارٍ تحميل العملاء المحتملين…",
+    "empty": "لا توجد عملاء محتملون مفتوحون.",
+    "table": {
+        "expandRow": "توسيع الصف",
+        "lead": "عميل محتمل",
+        "status": "الحالة",
+        "score": "النتيجة",
+        "campaign": "الحملة",
+        "assigned": "تم الإسناد",
+        "actions": "الإجراءات",
+        "hideTransferHistory": "إخفاء سجل التحويلات",
+        "showTransferHistory": "إظهار سجل التحويلات",
+        "transferHistory": "سجل التحويلات",
+        "openLead": "فتح العميل المحتمل",
+        "call": "اتصال",
+        "reassign": "إعادة الإسناد"
+    },
+    "pagination": {
+        "showingRange": "عرض {{from}}–{{to}} من {{total}}",
+        "loadingSuffix": " · جارٍ التحميل…"
+    }
+}

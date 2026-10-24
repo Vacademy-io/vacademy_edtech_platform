@@ -3,9 +3,23 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import {
+    ArrowsClockwise,
+    CalendarDots,
+    CaretLeft,
+    CaretRight,
+    Check,
+    PencilSimple,
+    Plus,
+    Stamp,
+    Trash,
+    X,
+} from '@phosphor-icons/react';
 import { AnnouncementService, type ModeType } from '@/services/announcement';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MyButton } from '@/components/design-system/button';
 import {
     Select,
     SelectContent,
@@ -13,13 +27,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import { isUserAdmin } from '@/utils/userDetails';
+import { buildModeMeta } from '../create/-utils/constants';
+import { AnnouncementStatusChip, EnumChips, modeTone } from '../history/-components/primitives';
 
 type Announcement = {
     id: string;
@@ -49,15 +64,25 @@ export const Route = createLazyFileRoute('/announcement/schedule/')({
 
 type ViewType = 'week' | '3day' | 'day' | 'month';
 
+const VIEWS: Array<{ value: ViewType; key: string }> = [
+    { value: 'day', key: 'tabs.day' },
+    { value: '3day', key: 'tabs.threeDay' },
+    { value: 'week', key: 'tabs.week' },
+    { value: 'month', key: 'tabs.month' },
+];
+
 function AnnouncementSchedulePage() {
+    const { t } = useTranslation('announcementScheduleIndex');
+    const { t: tConstants } = useTranslation('announcementCreateConstants');
+    const modeMeta = buildModeMeta(tConstants);
     const { setNavHeading } = useNavHeadingStore();
     const { toast } = useToast();
     const navigate = useNavigate();
     const admin = isUserAdmin();
 
     useEffect(() => {
-        setNavHeading('Schedule Announcement');
-    }, [setNavHeading]);
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
     const [view, setView] = useState<ViewType>('week');
     const [modeFilter, setModeFilter] = useState<ModeType | 'ALL'>('ALL');
@@ -135,13 +160,13 @@ function AnnouncementSchedulePage() {
         setDeleting(true);
         try {
             await AnnouncementService.remove(deleteFor.id);
-            toast({ title: 'Scheduled announcement deleted' });
+            toast({ title: t('toast.deleted') });
             setDeleteFor(null);
             refetch();
         } catch (e) {
             toast({
-                title: 'Delete failed',
-                description: e instanceof Error ? e.message : 'Try again',
+                title: t('toast.deleteFailedTitle'),
+                description: e instanceof Error ? e.message : t('toast.deleteFailedFallback'),
                 variant: 'destructive',
             });
         } finally {
@@ -152,22 +177,22 @@ function AnnouncementSchedulePage() {
     const onApprove = async (a: Announcement) => {
         try {
             await AnnouncementService.approve(a.id, 'ADMIN');
-            toast({ title: 'Approved' });
+            toast({ title: t('toast.approved') });
             refetch();
         } catch (e) {
-            toast({ title: 'Approve failed', variant: 'destructive' });
+            toast({ title: t('toast.approveFailed'), variant: 'destructive' });
         }
     };
     const onReject = async () => {
         if (!rejectFor) return;
         try {
             await AnnouncementService.reject(rejectFor.id, 'ADMIN', rejectReason || '');
-            toast({ title: 'Rejected' });
+            toast({ title: t('toast.rejected') });
             setRejectReason('');
             setRejectFor(null);
             refetch();
         } catch (e) {
-            toast({ title: 'Reject failed', variant: 'destructive' });
+            toast({ title: t('toast.rejectFailed'), variant: 'destructive' });
         }
     };
 
@@ -226,62 +251,136 @@ function AnnouncementSchedulePage() {
 
     const grouped = useMemo(() => groupByDay(planned, range.from, range.to), [planned, range]);
 
-    return (
-        <div className="p-4">
-            <h2 className="mb-4 text-xl font-semibold">Schedule Announcements</h2>
+    const pending = planned.filter((a) => a.status === 'PENDING_APPROVAL');
+    const upcoming = [...planned]
+        .filter((a) => a.scheduling?.startDate)
+        .sort(
+            (x, y) =>
+                Date.parse(x.scheduling?.startDate ?? '') -
+                Date.parse(y.scheduling?.startDate ?? '')
+        )
+        .slice(0, 8);
 
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                    <Button variant="secondary" onClick={goPrev}>
-                        Prev
-                    </Button>
-                    <Button variant="secondary" onClick={goToday}>
-                        Today
-                    </Button>
-                    <Button variant="secondary" onClick={goNext}>
-                        Next
-                    </Button>
+    return (
+        <div className="flex flex-col gap-5 p-4 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-500">
+                        <CalendarDots className="size-6" weight="duotone" />
+                    </span>
+                    <div className="min-w-0">
+                        <h1 className="text-h2-semibold text-neutral-900">{t('pageHeading')}</h1>
+                        <p className="mt-1 text-body text-neutral-500">{t('subheading')}</p>
+                    </div>
                 </div>
-                <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-                    <TabsList>
-                        <TabsTrigger value="day">Day</TabsTrigger>
-                        <TabsTrigger value="3day">3-day</TabsTrigger>
-                        <TabsTrigger value="week">Week</TabsTrigger>
-                        <TabsTrigger value="month">Month</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-                <div className="text-lg font-medium">{formatMonthYear(startDate)}</div>
-                <div className="ml-auto flex items-center gap-2">
+                <MyButton
+                    buttonType="primary"
+                    scale="medium"
+                    onClick={() => goToCreateAt(new Date())}
+                >
+                    <Plus className="size-4" weight="bold" />
+                    {t('scheduleNew')}
+                </MyButton>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+                <span className="text-h3-semibold text-neutral-900">
+                    {formatMonthYear(startDate)}
+                </span>
+                <div className="flex items-center gap-1">
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        layoutVariant="icon"
+                        onClick={goPrev}
+                        aria-label={t('nav.prev')}
+                        title={t('nav.prev')}
+                    >
+                        <CaretLeft className="size-4" />
+                    </MyButton>
+                    <MyButton buttonType="secondary" scale="medium" onClick={goToday}>
+                        {t('nav.today')}
+                    </MyButton>
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        layoutVariant="icon"
+                        onClick={goNext}
+                        aria-label={t('nav.next')}
+                        title={t('nav.next')}
+                    >
+                        <CaretRight className="size-4" />
+                    </MyButton>
+                </div>
+                <div
+                    role="tablist"
+                    aria-label={t('viewLabel')}
+                    className="flex rounded-lg border border-neutral-200 bg-white p-0.5"
+                >
+                    {VIEWS.map((v) => (
+                        <button
+                            key={v.value}
+                            type="button"
+                            role="tab"
+                            aria-selected={view === v.value}
+                            onClick={() => setView(v.value)}
+                            className={cn(
+                                'rounded-md px-3 py-1 text-caption font-medium transition-colors',
+                                view === v.value
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-neutral-600 hover:bg-neutral-100'
+                            )}
+                        >
+                            {t(v.key)}
+                        </button>
+                    ))}
+                </div>
+                <div className="ml-auto w-full sm:w-56">
                     <Select
                         value={modeFilter}
                         onValueChange={(v) => setModeFilter(v as ModeType | 'ALL')}
                     >
-                        <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Mode filter" />
+                        <SelectTrigger
+                            className="bg-white"
+                            aria-label={t('modeFilter.placeholder')}
+                        >
+                            <SelectValue placeholder={t('modeFilter.placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All modes</SelectItem>
-                            <SelectItem value="SYSTEM_ALERT">SYSTEM_ALERT</SelectItem>
-                            <SelectItem value="DASHBOARD_PIN">DASHBOARD_PIN</SelectItem>
-                            <SelectItem value="APP_OVERLAY">APP_OVERLAY</SelectItem>
-                            <SelectItem value="DM">DM</SelectItem>
-                            <SelectItem value="STREAM">STREAM</SelectItem>
-                            <SelectItem value="RESOURCES">RESOURCES</SelectItem>
-                            <SelectItem value="COMMUNITY">COMMUNITY</SelectItem>
-                            <SelectItem value="TASKS">TASKS</SelectItem>
+                            <SelectItem value="ALL">{t('modeFilter.all')}</SelectItem>
+                            {modeMeta.map((m) => (
+                                <SelectItem key={m.type} value={m.type}>
+                                    {m.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
-                    <Button onClick={() => goToCreateAt(new Date())}>Schedule new</Button>
                 </div>
             </div>
 
-            <Separator className="mb-3" />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-caption text-neutral-600">
+                {modeMeta.map((m) => (
+                    <span key={m.type} className="flex items-center gap-1.5">
+                        <span className={cn('size-2.5 rounded-sm', modeTone(m.type).dot)} />
+                        {m.label}
+                    </span>
+                ))}
+                <span className="flex items-center gap-1.5">
+                    <ArrowsClockwise className="size-3.5" />
+                    {t('legend.recurring')}
+                </span>
+            </div>
 
             {view === 'month' ? (
                 <MonthGrid
                     start={startOfMonth(startDate)}
                     events={planned}
+                    loading={isLoading}
                     onCreate={(d) => goToCreateAt(d)}
+                    onOpenDay={(d) => {
+                        setStartDate(startOfDay(d));
+                        setView('day');
+                    }}
                     onApprove={onApprove}
                     onReject={(a) => setRejectFor(a)}
                     admin={admin}
@@ -290,6 +389,7 @@ function AnnouncementSchedulePage() {
                 <Agenda
                     start={range.from}
                     end={range.to}
+                    view={view}
                     grouped={grouped}
                     onCreate={(d) => goToCreateAt(d)}
                     onApprove={onApprove}
@@ -302,23 +402,138 @@ function AnnouncementSchedulePage() {
                 />
             )}
 
+            <p className="text-caption text-neutral-500">
+                {t('showingRange', { range: formatRange(range.from, range.to) })}
+                {!isLoading && ` · ${t('countInView', { count: planned.length })}`}
+            </p>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <section className="flex flex-col rounded-xl border border-neutral-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-3">
+                        <CalendarDots className="size-5 text-primary-500" weight="duotone" />
+                        <h2 className="text-subtitle font-semibold text-neutral-900">
+                            {t('lists.upNext.title')}
+                        </h2>
+                    </div>
+                    {isLoading ? (
+                        <div className="flex flex-col gap-2 p-4">
+                            {[0, 1, 2].map((i) => (
+                                <Skeleton key={i} className="h-10 w-full" />
+                            ))}
+                        </div>
+                    ) : upcoming.length === 0 ? (
+                        <p className="p-4 text-body text-neutral-500">{t('lists.upNext.empty')}</p>
+                    ) : (
+                        <ul className="divide-y divide-neutral-100">
+                            {upcoming.map((a) => (
+                                <li key={a.id} className="flex items-center gap-3 px-4 py-2.5">
+                                    <span
+                                        className={cn(
+                                            'size-2.5 shrink-0 rounded-full',
+                                            modeTone(a.modes?.[0]?.modeType).dot
+                                        )}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-body font-medium text-neutral-900">
+                                            {a.title}
+                                        </p>
+                                        <p className="truncate text-caption text-neutral-500">
+                                            {formatScheduleTime(t, a.scheduling)}
+                                        </p>
+                                    </div>
+                                    <AnnouncementStatusChip status={a.status} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section className="flex flex-col rounded-xl border border-neutral-200 bg-white shadow-sm">
+                    <div className="flex items-center justify-between gap-2 border-b border-neutral-100 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                            <Stamp className="size-5 text-warning-500" weight="duotone" />
+                            <h2 className="text-subtitle font-semibold text-neutral-900">
+                                {t('lists.pending.title')}
+                            </h2>
+                        </div>
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            onClick={() => navigate({ to: '/announcement/approval' })}
+                        >
+                            {t('lists.pending.openQueue')}
+                        </MyButton>
+                    </div>
+                    {isLoading ? (
+                        <div className="flex flex-col gap-2 p-4">
+                            {[0, 1].map((i) => (
+                                <Skeleton key={i} className="h-10 w-full" />
+                            ))}
+                        </div>
+                    ) : pending.length === 0 ? (
+                        <p className="p-4 text-body text-neutral-500">{t('lists.pending.empty')}</p>
+                    ) : (
+                        <ul className="divide-y divide-neutral-100">
+                            {pending.map((a) => (
+                                <li
+                                    key={a.id}
+                                    className="flex flex-wrap items-center gap-3 px-4 py-2.5"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-body font-medium text-neutral-900">
+                                            {a.title}
+                                        </p>
+                                        <p className="truncate text-caption text-warning-700">
+                                            {[
+                                                formatScheduleTime(t, a.scheduling),
+                                                t('lists.pending.notSentYet'),
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' · ')}
+                                        </p>
+                                    </div>
+                                    {admin && (
+                                        <div className="flex items-center gap-2">
+                                            <MyButton
+                                                buttonType="primary"
+                                                scale="small"
+                                                onClick={() => onApprove(a)}
+                                            >
+                                                {t('actions.approve')}
+                                            </MyButton>
+                                            <MyButton
+                                                buttonType="secondary"
+                                                scale="small"
+                                                onClick={() => setRejectFor(a)}
+                                            >
+                                                {t('actions.reject')}
+                                            </MyButton>
+                                        </div>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            </div>
+
             <Dialog open={!!rejectFor} onOpenChange={(open) => !open && setRejectFor(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Reject Announcement</DialogTitle>
+                        <DialogTitle>{t('rejectDialog.title')}</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-2">
                         <Textarea
-                            placeholder="Reason"
+                            placeholder={t('rejectDialog.reasonPlaceholder')}
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                         />
                         <div className="flex justify-end gap-2">
                             <Button variant="secondary" onClick={() => setRejectFor(null)}>
-                                Cancel
+                                {t('rejectDialog.cancel')}
                             </Button>
                             <Button variant="destructive" onClick={onReject}>
-                                Reject
+                                {t('rejectDialog.reject')}
                             </Button>
                         </div>
                     </div>
@@ -328,13 +543,15 @@ function AnnouncementSchedulePage() {
             <Dialog open={!!deleteFor} onOpenChange={(open) => !open && setDeleteFor(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete scheduled announcement?</DialogTitle>
+                        <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-3">
                         <p className="text-sm text-neutral-700">
-                            This will permanently cancel and delete{' '}
-                            <span className="font-medium">{deleteFor?.title || 'this announcement'}</span>.
-                            It will not be delivered and cannot be restored.
+                            {t('deleteDialog.bodyPrefix')}{' '}
+                            <span className="font-medium">
+                                {deleteFor?.title || t('deleteDialog.defaultTitle')}
+                            </span>
+                            {t('deleteDialog.bodySuffix')}
                         </p>
                         <div className="flex justify-end gap-2">
                             <Button
@@ -342,10 +559,10 @@ function AnnouncementSchedulePage() {
                                 onClick={() => setDeleteFor(null)}
                                 disabled={deleting}
                             >
-                                Cancel
+                                {t('deleteDialog.cancel')}
                             </Button>
                             <Button variant="destructive" onClick={onDelete} disabled={deleting}>
-                                {deleting ? 'Deleting…' : 'Delete'}
+                                {deleting ? t('deleteDialog.deleting') : t('deleteDialog.delete')}
                             </Button>
                         </div>
                     </div>
@@ -358,6 +575,7 @@ function AnnouncementSchedulePage() {
 function Agenda(props: {
     start: Date;
     end: Date;
+    view: ViewType;
     grouped: { date: Date; items: Announcement[] }[];
     onCreate: (d: Date) => void;
     onApprove: (a: Announcement) => void;
@@ -371,6 +589,7 @@ function Agenda(props: {
     const {
         start,
         end,
+        view,
         grouped,
         onCreate,
         onApprove,
@@ -381,58 +600,115 @@ function Agenda(props: {
         admin,
         loading,
     } = props;
-    return (
-        <div className="grid gap-4">
-            <div className="text-sm text-neutral-600">Showing {formatRange(start, end)}</div>
-            {loading ? (
-                <div className="text-sm">Loading…</div>
-            ) : grouped.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 rounded border border-dashed py-12 text-center">
-                    <div className="text-sm font-medium text-neutral-700">
-                        No scheduled announcements in this range
-                    </div>
-                    <div className="text-xs text-neutral-500">
-                        Pick a different range, or schedule a new campaign.
-                    </div>
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        className="mt-2"
-                        onClick={() => onCreate(atMidday(start))}
-                    >
-                        Schedule new
-                    </Button>
+    const { t } = useTranslation('announcementScheduleIndex');
+    const days: Date[] = [];
+    for (let d = new Date(start); d <= end; d = addDays(d, 1)) days.push(new Date(d));
+    const columns = cn(
+        'grid gap-3',
+        view === 'day'
+            ? 'grid-cols-1'
+            : view === '3day'
+              ? 'grid-cols-1 md:grid-cols-3'
+              : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-7'
+    );
+
+    if (loading) {
+        return (
+            <div className={columns}>
+                {days.map((d) => (
+                    <Skeleton key={d.toISOString()} className="h-40 w-full rounded-xl" />
+                ))}
+            </div>
+        );
+    }
+
+    if (grouped.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-200 bg-white py-12 text-center">
+                <span className="flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-400">
+                    <CalendarDots className="size-6" weight="duotone" />
+                </span>
+                <div className="text-body font-semibold text-neutral-700">
+                    {t('emptyState.title')}
                 </div>
-            ) : (
-                grouped.map(({ date, items }, idx) => (
-                    <div key={idx} className="rounded border">
-                        <div className="flex items-center justify-between border-b bg-muted p-2 text-sm">
-                            <div>{date.toDateString()}</div>
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => onCreate(atMidday(date))}
+                <div className="text-caption text-neutral-500">{t('emptyState.description')}</div>
+                <MyButton
+                    buttonType="secondary"
+                    scale="small"
+                    className="mt-2"
+                    onClick={() => onCreate(atMidday(start))}
+                >
+                    <Plus className="size-3.5" />
+                    {t('scheduleNew')}
+                </MyButton>
+            </div>
+        );
+    }
+
+    const today = new Date();
+    return (
+        <div className={columns}>
+            {days.map((date) => {
+                const items = grouped.find((g) => isSameDay(g.date, date))?.items ?? [];
+                const isToday = isSameDay(date, today);
+                return (
+                    <div
+                        key={date.toISOString()}
+                        className={cn(
+                            'flex min-w-0 flex-col rounded-xl border bg-white shadow-sm',
+                            isToday ? 'border-primary-300' : 'border-neutral-200'
+                        )}
+                    >
+                        <div
+                            className={cn(
+                                'flex items-center justify-between gap-2 rounded-t-xl border-b px-3 py-2',
+                                isToday
+                                    ? 'border-primary-100 bg-primary-50'
+                                    : 'border-neutral-100 bg-neutral-50'
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    'truncate text-caption font-semibold',
+                                    isToday ? 'text-primary-600' : 'text-neutral-700'
+                                )}
                             >
-                                Schedule here
-                            </Button>
+                                {formatDayLabel(date)}
+                            </span>
+                            <MyButton
+                                buttonType="text"
+                                scale="small"
+                                layoutVariant="icon"
+                                onClick={() => onCreate(atMidday(date))}
+                                aria-label={t('scheduleHere')}
+                                title={t('scheduleHere')}
+                            >
+                                <Plus className="size-4" weight="bold" />
+                            </MyButton>
                         </div>
-                        <div className="grid gap-2 p-2">
-                            {items.map((a) => (
-                                <EventCard
-                                    key={a.id}
-                                    a={a}
-                                    onApprove={onApprove}
-                                    onReject={onReject}
-                                    onEdit={onEdit}
-                                    onDelete={onDelete}
-                                    canEdit={canEdit(a)}
-                                    admin={admin}
-                                />
-                            ))}
+                        <div className="flex flex-col gap-2 p-2">
+                            {items.length === 0 ? (
+                                <p className="py-6 text-center text-caption text-neutral-400">
+                                    {t('nothingScheduled')}
+                                </p>
+                            ) : (
+                                items.map((a) => (
+                                    <EventCard
+                                        key={a.id}
+                                        a={a}
+                                        onApprove={onApprove}
+                                        onReject={onReject}
+                                        onEdit={onEdit}
+                                        onDelete={onDelete}
+                                        canEdit={canEdit(a)}
+                                        admin={admin}
+                                    />
+                                ))
+                            )}
                         </div>
                     </div>
-                ))
-            )}
+                );
+            })}
         </div>
     );
 }
@@ -440,61 +716,118 @@ function Agenda(props: {
 function MonthGrid(props: {
     start: Date;
     events: Announcement[];
+    loading: boolean;
     onCreate: (d: Date) => void;
+    onOpenDay: (d: Date) => void;
     onApprove: (a: Announcement) => void;
     onReject: (a: Announcement) => void;
     admin: boolean;
 }) {
-    const { start, events, onCreate } = props;
+    const { start, events, loading, onCreate, onOpenDay } = props;
+    const { t } = useTranslation('announcementScheduleIndex');
     const { firstOfMonth, lastOfMonth } = useMemo(() => getMonthMeta(start), [start]);
     const byDay = useMemo(
         () => groupByDay(events, firstOfMonth, lastOfMonth),
         [events, firstOfMonth, lastOfMonth]
     );
     const cells = useMemo(() => buildMonthCells(firstOfMonth), [firstOfMonth]);
+    const weekdayLabels = [
+        t('weekdays.sun'),
+        t('weekdays.mon'),
+        t('weekdays.tue'),
+        t('weekdays.wed'),
+        t('weekdays.thu'),
+        t('weekdays.fri'),
+        t('weekdays.sat'),
+    ];
+    const today = new Date();
     return (
-        <div className="grid gap-2">
-            <div className="grid grid-cols-7 gap-2 text-xs text-neutral-500">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                    <div key={d} className="px-2">
+        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <div className="grid grid-cols-7 border-b border-neutral-200 bg-neutral-50">
+                {weekdayLabels.map((d) => (
+                    <div
+                        key={d}
+                        className="p-2 text-center text-caption font-semibold text-neutral-500"
+                    >
                         {d}
                     </div>
                 ))}
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7">
                 {cells.map((cell: Date | null, idx: number) => {
                     if (!cell) {
                         return (
                             <div
                                 key={idx}
-                                className="min-h-[120px] rounded border p-2 opacity-30"
+                                className="min-h-28 border-b border-r border-neutral-100 bg-neutral-50"
                             />
                         );
                     }
-                    const bucket = byDay.find((g) => isSameDay(g.date, cell));
+                    const items = byDay.find((g) => isSameDay(g.date, cell))?.items ?? [];
+                    const isToday = isSameDay(cell, today);
                     return (
-                        <Card key={idx} className="min-h-[120px] p-2">
-                            <div className="mb-1 flex items-center justify-between text-xs">
-                                <div>{cell.getDate()}</div>
-                                <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => onCreate(atMidday(cell))}
+                        <div
+                            key={idx}
+                            className={cn(
+                                'group flex min-h-28 min-w-0 flex-col gap-1 border-b border-r border-neutral-100 p-1.5',
+                                isToday && 'bg-primary-50'
+                            )}
+                        >
+                            <div className="flex items-center justify-between gap-1">
+                                <span
+                                    className={cn(
+                                        'text-caption font-semibold',
+                                        isToday ? 'text-primary-600' : 'text-neutral-600'
+                                    )}
                                 >
-                                    +
-                                </Button>
+                                    {cell.getDate()}
+                                </span>
+                                <MyButton
+                                    buttonType="text"
+                                    scale="small"
+                                    layoutVariant="icon"
+                                    onClick={() => onCreate(atMidday(cell))}
+                                    aria-label={t('scheduleHere')}
+                                    title={t('scheduleHere')}
+                                >
+                                    <Plus className="size-3.5" weight="bold" />
+                                </MyButton>
                             </div>
-                            <div className="flex flex-col gap-1">
-                                {(bucket?.items ?? []).slice(0, 3).map((a) => (
-                                    <EventPill key={a.id} a={a} />
-                                ))}
-                                {bucket && (bucket.items?.length ?? 0) > 3 && (
-                                    <div className="text-xs text-neutral-500">
-                                        +{bucket.items.length - 3} more
+                            {loading ? (
+                                idx % 3 === 0 && <Skeleton className="h-4 w-full" />
+                            ) : (
+                                <>
+                                    {/* Phones get coloured dots; wider screens the titles. */}
+                                    {items.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 sm:hidden">
+                                            {items.slice(0, 4).map((a) => (
+                                                <span
+                                                    key={a.id}
+                                                    className={cn(
+                                                        'size-2 rounded-full',
+                                                        modeTone(a.modes?.[0]?.modeType).dot
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="hidden flex-col gap-1 sm:flex">
+                                        {items.slice(0, 3).map((a) => (
+                                            <EventPill key={a.id} a={a} />
+                                        ))}
                                     </div>
-                                )}
-                            </div>
-                        </Card>
+                                    {items.length > 3 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onOpenDay(cell)}
+                                            className="text-left text-caption font-semibold text-primary-600 hover:underline"
+                                        >
+                                            {t('moreCount', { count: items.length - 3 })}
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     );
                 })}
             </div>
@@ -519,92 +852,103 @@ function EventCard({
     canEdit: boolean;
     admin: boolean;
 }) {
-    const color = colorForAnnouncement(a);
+    const { t } = useTranslation('announcementScheduleIndex');
+    const tone = modeTone(a.modes?.[0]?.modeType);
     // Prefer external-channel badges (EMAIL / WHATSAPP / PUSH_NOTIFICATION) since those are
     // what the recipient actually experiences. Fall back to the in-app mode for announcements
     // with no external channel (pure SYSTEM_ALERT / DASHBOARD_PIN / DM / etc).
-    const badgeLabels: string[] =
-        a.mediumTypes && a.mediumTypes.length > 0
-            ? a.mediumTypes
-            : (a.modes || []).map((m) => m.modeType);
-    const timeLabel = formatScheduleTime(a.scheduling);
+    const hasMediums = (a.mediumTypes?.length ?? 0) > 0;
+    const timeLabel = formatScheduleTime(t, a.scheduling);
+    const recurring = a.scheduling?.scheduleType === 'RECURRING';
+    const canReview = a.status === 'PENDING_APPROVAL' && admin;
     return (
-        <div className="flex items-start justify-between gap-3 rounded border p-3">
-            <div className="flex-1">
-                <div className="flex items-center gap-2">
-                    <span className={`inline-block size-2 rounded-full ${color}`} />
-                    <div className="font-medium">{a.title}</div>
-                    {a.status && a.status !== 'DRAFT' && (
-                        <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${statusPillClasses(a.status)}`}
+        <div className={cn('flex flex-col gap-1.5 rounded-lg border-l-4 p-2.5', tone.event)}>
+            {timeLabel && (
+                <span className="flex items-center gap-1 text-caption font-semibold text-neutral-600">
+                    {recurring && <ArrowsClockwise className="size-3.5 shrink-0" />}
+                    <span className="truncate">{timeLabel}</span>
+                </span>
+            )}
+            <p className="break-words text-body font-semibold text-neutral-900">{a.title}</p>
+            <div className="flex flex-wrap items-center gap-1">
+                {a.status && a.status !== 'DRAFT' && <AnnouncementStatusChip status={a.status} />}
+                <EnumChips
+                    group={hasMediums ? 'mediums' : 'modes'}
+                    variant="outline"
+                    values={
+                        hasMediums ? a.mediumTypes ?? [] : (a.modes || []).map((m) => m.modeType)
+                    }
+                />
+            </div>
+            <p className="break-words text-caption text-neutral-500">
+                {renderSchedule(t, a.scheduling)}
+            </p>
+            {(canEdit || canReview) && (
+                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                    {canEdit && (
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            layoutVariant="icon"
+                            onClick={() => onEdit(a)}
+                            aria-label={t('actions.edit')}
+                            title={t('actions.edit')}
+                            className="bg-white"
                         >
-                            {a.status.replace('_', ' ')}
-                        </span>
+                            <PencilSimple className="size-3.5" />
+                        </MyButton>
+                    )}
+                    {canEdit && (
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            layoutVariant="icon"
+                            onClick={() => onDelete(a)}
+                            aria-label={t('actions.delete')}
+                            title={t('actions.delete')}
+                            className="bg-white !text-danger-600"
+                        >
+                            <Trash className="size-3.5" />
+                        </MyButton>
+                    )}
+                    {canReview && (
+                        <>
+                            <MyButton
+                                buttonType="primary"
+                                scale="small"
+                                layoutVariant="icon"
+                                onClick={() => onApprove(a)}
+                                aria-label={t('actions.approve')}
+                                title={t('actions.approve')}
+                            >
+                                <Check className="size-3.5" weight="bold" />
+                            </MyButton>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                layoutVariant="icon"
+                                onClick={() => onReject(a)}
+                                aria-label={t('actions.reject')}
+                                title={t('actions.reject')}
+                                className="bg-white !text-danger-600"
+                            >
+                                <X className="size-3.5" weight="bold" />
+                            </MyButton>
+                        </>
                     )}
                 </div>
-                {timeLabel && (
-                    <div className="mt-1 text-sm font-medium text-neutral-800">{timeLabel}</div>
-                )}
-                <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-neutral-600">
-                    {badgeLabels.map((label, i) => (
-                        <Badge key={i} variant="outline">
-                            {label}
-                        </Badge>
-                    ))}
-                </div>
-                <div className="mt-1 text-xs text-neutral-500">{renderSchedule(a.scheduling)}</div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-                {canEdit && (
-                    <Button size="sm" variant="secondary" onClick={() => onEdit(a)}>
-                        Edit
-                    </Button>
-                )}
-                {canEdit && (
-                    <Button size="sm" variant="destructive" onClick={() => onDelete(a)}>
-                        Delete
-                    </Button>
-                )}
-                {a.status === 'PENDING_APPROVAL' && admin && (
-                    <>
-                        <Button size="sm" onClick={() => onApprove(a)}>
-                            Approve
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => onReject(a)}>
-                            Reject
-                        </Button>
-                    </>
-                )}
-            </div>
+            )}
         </div>
     );
 }
 
-function statusPillClasses(status: string): string {
-    switch (status) {
-        case 'SCHEDULED':
-            return 'bg-blue-100 text-blue-800';
-        case 'ACTIVE':
-            return 'bg-green-100 text-green-800';
-        case 'PENDING_APPROVAL':
-            return 'bg-amber-100 text-amber-800';
-        case 'DRAFT':
-            return 'bg-neutral-200 text-neutral-700';
-        case 'INACTIVE':
-        case 'EXPIRED':
-            return 'bg-neutral-200 text-neutral-500';
-        case 'REJECTED':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-neutral-200 text-neutral-700';
-    }
-}
-
-function formatScheduleTime(s?: Announcement['scheduling']): string {
+function formatScheduleTime(t: TFunction, s?: Announcement['scheduling']): string {
     if (!s) return '';
-    if (s.scheduleType === 'IMMEDIATE') return 'Immediate';
+    if (s.scheduleType === 'IMMEDIATE') return t('schedule.immediate');
     if (s.scheduleType === 'RECURRING') {
-        return s.cronExpression ? `Recurring · ${s.cronExpression}` : 'Recurring';
+        return s.cronExpression
+            ? t('schedule.recurringWithCron', { cron: s.cronExpression })
+            : t('schedule.recurring');
     }
     // ONE_TIME — prefer just the local-formatted time, no awkward "→ -" tail
     if (!s.startDate) return '';
@@ -621,12 +965,41 @@ function formatScheduleTime(s?: Announcement['scheduling']): string {
 }
 
 function EventPill({ a }: { a: Announcement }) {
-    const color = colorForAnnouncement(a);
+    const tone = modeTone(a.modes?.[0]?.modeType);
+    const time = shortTime(a.scheduling?.startDate);
+    const recurring = a.scheduling?.scheduleType === 'RECURRING';
     return (
-        <div className={`truncate rounded px-2 py-1 text-xs ${bgForColor(color)} text-white`}>
-            {a.title}
-        </div>
+        <span
+            title={time ? `${a.title} · ${time}` : a.title}
+            className={cn(
+                'flex min-w-0 items-center gap-1 rounded-md border-l-2 px-1.5 py-0.5 text-caption text-neutral-800',
+                tone.event
+            )}
+        >
+            {recurring && <ArrowsClockwise className="size-3 shrink-0" />}
+            {time && <span className="shrink-0 font-semibold">{time}</span>}
+            <span className="truncate">{a.title}</span>
+        </span>
     );
+}
+
+function shortTime(v?: string) {
+    if (!v) return '';
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatDayLabel(d: Date) {
+    try {
+        return d.toLocaleDateString(undefined, {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+        });
+    } catch {
+        return d.toDateString();
+    }
 }
 
 // Helpers
@@ -665,11 +1038,13 @@ function formatRange(from: Date, to: Date) {
     return `${f} → ${t}`;
 }
 
-function renderSchedule(s?: Announcement['scheduling']) {
+function renderSchedule(t: TFunction, s?: Announcement['scheduling']) {
     if (!s) return '-';
     const tzSuffix = s.timezone ? ` · ${s.timezone}` : '';
     if (s.scheduleType === 'RECURRING') {
-        const cron = s.cronExpression ? `CRON ${s.cronExpression}` : 'Recurring';
+        const cron = s.cronExpression
+            ? t('schedule.cronWithLabel', { cron: s.cronExpression })
+            : t('schedule.recurring');
         return `${cron}${tzSuffix}`;
     }
     if (s.scheduleType === 'ONE_TIME') {
@@ -679,7 +1054,7 @@ function renderSchedule(s?: Announcement['scheduling']) {
             ? `${fmt(s.startDate)} → ${fmt(s.endDate)}${tzSuffix}`
             : `${fmt(s.startDate)}${tzSuffix}`;
     }
-    return `Immediate${tzSuffix}`;
+    return `${t('schedule.immediate')}${tzSuffix}`;
 }
 
 function fmt(v?: string) {
@@ -744,32 +1119,6 @@ function formatMonthYear(d: Date) {
     }
 }
 
-function colorForAnnouncement(a: Announcement) {
-    const mode = a.modes?.[0]?.modeType;
-    switch (mode) {
-        case 'SYSTEM_ALERT':
-            return 'bg-red-500';
-        case 'DASHBOARD_PIN':
-            return 'bg-amber-500';
-        case 'APP_OVERLAY':
-            return 'bg-primary-500';
-        case 'DM':
-            return 'bg-blue-500';
-        case 'STREAM':
-            return 'bg-green-600';
-        case 'RESOURCES':
-            return 'bg-purple-600';
-        case 'COMMUNITY':
-            return 'bg-pink-600';
-        case 'TASKS':
-            return 'bg-teal-600';
-        default:
-            return 'bg-neutral-500';
-    }
-}
-function bgForColor(c: string) {
-    return c;
-}
 function atMidday(d: Date) {
     const x = new Date(d);
     x.setHours(12, 0, 0, 0);

@@ -1,0 +1,61 @@
+{
+    "button": {
+        "tat": "TAT रिपोर्ट एक्सपोर्ट करें",
+        "sla": "SLA रिपोर्ट एक्सपोर्ट करें",
+        "overdue": "ओवरड्यू फ़ॉलो-अप एक्सपोर्ट करें"
+    },
+    "exporting": "एक्सपोर्ट हो रहा है…",
+    "teamNotSupported": "हर लीड की पंक्तियाँ एक्सपोर्ट करने के लिए टीम फ़िल्टर हटाएँ।",
+    "columns": {
+        "name": "नाम",
+        "phone": "फ़ोन",
+        "email": "ईमेल",
+        "source": "स्रोत",
+        "counsellor": "काउंसलर",
+        "leadStatus": "लीड स्टेटस",
+        "enquiredAt": "पूछताछ का समय",
+        "tatDueAt": "TAT की समय-सीमा",
+        "firstResponseAt": "पहला जवाब",
+        "responseMinutes": "जवाब का समय (मिनट)",
+        "tatStatus": "TAT स्थिति",
+        "followUpDueAt": "फ़ॉलो-अप की तारीख",
+        "slaStage": "SLA चरण",
+        "tatOverdue": "TAT ओवरड्यू",
+        "followUpOverdue": "फ़ॉलो-अप ओवरड्यू",
+        "offClock": "SLA से बाहर (Lost / Converted)",
+        "daysOverdue": "कितने दिन ओवरड्यू",
+        "followUpNote": "फ़ॉलो-अप नोट",
+        "studentResponse": "छात्र की प्रतिक्रिया",
+        "nextAction": "अगली कार्रवाई",
+        "interestLevel": "रुचि का स्तर"
+    },
+    "values": {
+        "yes": "हाँ",
+        "no": "नहीं",
+        "met": "समय पर",
+        "breached": "देरी से",
+        "breachedNoResponse": "देरी (अभी जवाब नहीं)",
+        "pending": "बाकी",
+        "responded": "जवाब दिया",
+        "closed": "बंद",
+        "priorActivity": "पहले से संपर्क (दोबारा आई लीड)"
+    },
+    "stages": {
+        "onTrack": "समय पर",
+        "tatDueSoon": "TAT जल्द",
+        "tatOverdue": "TAT ओवरड्यू",
+        "followUpDueSoon": "फ़ॉलो-अप जल्द",
+        "followUpOverdue": "फ़ॉलो-अप ओवरड्यू",
+        "offClock": "SLA से बाहर (Lost / Converted)"
+    },
+    "progress": "{{total}} में से {{done}} पंक्तियाँ एक्सपोर्ट हो रही हैं…",
+    "running": "एक्सपोर्ट हो रहा है…",
+    "done_one": "{{count}} पंक्ति एक्सपोर्ट हुई",
+    "done_other": "{{count}} पंक्तियाँ एक्सपोर्ट हुईं",
+    "failed": "एक्सपोर्ट नहीं हो सका — फिर से कोशिश करें",
+    "alreadyRunning": "यह एक्सपोर्ट पहले से चल रहा है",
+    "truncated_one": "पहली {{count}} पंक्ति एक्सपोर्ट हुई (सीमा पूरी)",
+    "truncated_other": "पहली {{count}} पंक्तियाँ एक्सपोर्ट हुईं (सीमा पूरी)",
+    "partial_one": "एक्सपोर्ट बीच में रुका — {{count}} पंक्ति सेव हुई",
+    "partial_other": "एक्सपोर्ट बीच में रुका — {{count}} पंक्तियाँ सेव हुईं"
+}

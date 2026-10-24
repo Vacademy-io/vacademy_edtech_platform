@@ -1,0 +1,15 @@
+{
+    "heading": "Critères d'évaluation",
+    "invalidFormat": {
+        "title": "Format de critères invalide",
+        "description": "La structure des données des critères n'est pas valide. Veuillez régénérer ou créer les critères manuellement."
+    },
+    "totalMarksLabel": "Note totale :",
+    "totalMarksValue_one": "{{count}} point",
+    "totalMarksValue_many": "{{count}} points",
+    "totalMarksValue_other": "{{count}} points",
+    "breakdownHeading": "Répartition des critères :",
+    "itemMarks_one": "{{count}} point",
+    "itemMarks_many": "{{count}} points",
+    "itemMarks_other": "{{count}} points"
+}

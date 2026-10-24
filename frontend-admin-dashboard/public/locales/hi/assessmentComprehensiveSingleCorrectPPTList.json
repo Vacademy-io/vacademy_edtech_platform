@@ -1,0 +1,29 @@
+{
+    "header": {
+        "questionsSettings": "प्रश्न सेटिंग्स",
+        "questionTypeLabel": "प्रश्न प्रकार",
+        "marksLabel": "अंक",
+        "negativeMarkingLabel": "नकारात्मक अंकन"
+    },
+    "timeLimit": {
+        "title": "समय सीमा",
+        "hrs": "घंटे",
+        "min": "मिनट"
+    },
+    "comprehensionText": "अवबोधन पाठ",
+    "question": {
+        "label": "प्रश्न"
+    },
+    "answer": {
+        "label": "उत्तर:"
+    },
+    "explanation": {
+        "label": "व्याख्या:"
+    },
+    "optionLabels": {
+        "a": "(a.)",
+        "b": "(b.)",
+        "c": "(c.)",
+        "d": "(d.)"
+    }
+}

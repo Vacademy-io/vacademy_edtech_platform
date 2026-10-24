@@ -1,0 +1,79 @@
+{
+    "modes": {
+        "SYSTEM_ALERT": {
+            "label": "Alerte système",
+            "description": "S'affiche dans le centre de notifications avec une priorité et une expiration facultative."
+        },
+        "DASHBOARD_PIN": {
+            "label": "Épingle sur le tableau de bord",
+            "description": "Épinglé sur le tableau de bord pour une période définie."
+        },
+        "APP_OVERLAY": {
+            "label": "Superposition d'application",
+            "description": "Message plein écran affiché à la prochaine ouverture de l'application."
+        },
+        "DM": {
+            "label": "Message direct",
+            "description": "Arrive dans la boîte de réception comme un message. Les réponses peuvent être autorisées."
+        },
+        "STREAM": {
+            "label": "Fil de discussion",
+            "description": "Publié dans le fil de discussion d'un groupe ou d'une classe."
+        },
+        "RESOURCES": {
+            "label": "Ressources",
+            "description": "Classe l'annonce dans un dossier de ressources."
+        },
+        "COMMUNITY": {
+            "label": "Communauté",
+            "description": "Publié dans un fil communautaire."
+        },
+        "TASKS": {
+            "label": "Tâches",
+            "description": "Crée une tâche avec une heure de mise en ligne et une échéance."
+        }
+    },
+    "mediums": {
+        "PUSH_NOTIFICATION": {
+            "label": "Notification push",
+            "description": "Push mobile et web. Gratuit, instantané, idéal pour les rappels courts."
+        },
+        "EMAIL": {
+            "label": "E-mail",
+            "description": "E-mail HTML enrichi depuis l'une de vos adresses d'expéditeur vérifiées."
+        },
+        "WHATSAPP": {
+            "label": "WhatsApp",
+            "description": "Envoyé via un modèle WhatsApp Business approuvé."
+        }
+    },
+    "presets": {
+        "GENERAL": {
+            "label": "Annonce générale",
+            "description": "Mises à jour et informations générales"
+        },
+        "PINNED": {
+            "label": "Mise à jour épinglée",
+            "description": "Mises à jour importantes épinglées en haut"
+        }
+    },
+    "whatsappValues": {
+        "RECIPIENT_NAME": "Nom du destinataire",
+        "RECIPIENT_FULL_NAME": "Nom complet",
+        "RECIPIENT_USERNAME": "Nom d'utilisateur",
+        "RECIPIENT_EMAIL": "Adresse e-mail",
+        "RECIPIENT_PHONE": "Numéro de mobile",
+        "RECIPIENT_ID": "Identifiant utilisateur",
+        "ANNOUNCEMENT_TITLE": "Titre de l'annonce",
+        "ANNOUNCEMENT_CONTENT": "Contenu de l'annonce",
+        "SENDER_NAME": "Nom de l'expéditeur",
+        "CURRENT_DATE": "Date du jour",
+        "CURRENT_TIME": "Heure actuelle",
+        "CUSTOM": "Texte personnalisé…"
+    },
+    "cronPresets": {
+        "DAILY_9": "Tous les jours, 9h00",
+        "MON_9": "Tous les lundis, 9h00",
+        "HOURLY": "Toutes les heures"
+    }
+}

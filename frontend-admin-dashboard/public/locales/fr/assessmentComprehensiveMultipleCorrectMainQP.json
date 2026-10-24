@@ -1,0 +1,22 @@
+{
+    "emptyState": {
+        "message": "Veuillez ajouter une question pour afficher les détails de la question"
+    },
+    "comprehension": {
+        "title": "Texte de compréhension",
+        "hint": "Le passage auquel chaque question de cet ensemble se réfère.",
+        "placeholder": "Texte de compréhension"
+    },
+    "question": {
+        "title": "Question",
+        "placeholder": "Rédigez la question"
+    },
+    "explanation": {
+        "hint": "Affiché aux apprenants avec leur résultat.",
+        "placeholder": "Explication"
+    },
+    "defaults": {
+        "answersType": "Réponse",
+        "explanationsType": "Explication"
+    }
+}

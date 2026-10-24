@@ -1,0 +1,53 @@
+{
+    "navHeading": "Créer une annonce",
+    "fixIssues_one": "Corrigez {{count}} problème avant de créer cette annonce.",
+    "fixIssues_many": "Corrigez {{count}} problèmes avant de créer cette annonce.",
+    "fixIssues_other": "Corrigez {{count}} problèmes avant de créer cette annonce.",
+    "toast": {
+        "createdImmediate": "Annonce créée et mise en file d'attente pour l'envoi.",
+        "scheduled": "Annonce planifiée."
+    },
+    "sections": {
+        "howItWillLook": "Aperçu du rendu"
+    },
+    "actions": {
+        "reviewAndPreview": "Vérifier et prévisualiser",
+        "keepEditing": "Continuer la modification",
+        "createAndSend": "Créer et envoyer",
+        "scheduleAnnouncement": "Planifier l'annonce",
+        "creating": "Création…"
+    },
+    "dialog": {
+        "reviewHeading": "Vérifier et prévisualiser"
+    },
+    "header": {
+        "subtitle": "One message to in-app placements, push, email and WhatsApp — for any mix of audiences, now, later or on repeat."
+    },
+    "steps": {
+        "label": "Announcement progress",
+        "message": "Message",
+        "recipients": "Recipients",
+        "placements": "Placements",
+        "channels": "Channels",
+        "schedule": "Schedule",
+        "review": "Review"
+    },
+    "rail": {
+        "livePreview": "Live preview",
+        "soFar": "So far",
+        "audiences": "Audiences",
+        "audienceCount_one": "{{count}} audience",
+        "audienceCount_other": "{{count}} audiences",
+        "none": "None yet",
+        "appearsIn": "Appears in",
+        "channels": "Delivered via",
+        "inProductOnly": "In-product only",
+        "when": "When"
+    },
+    "footer": {
+        "blocked_one": "{{count}} issue to fix before creating.",
+        "blocked_other": "{{count}} issues to fix before creating.",
+        "ready": "Ready to go",
+        "progress": "{{done}} of {{total}} steps complete"
+    }
+}

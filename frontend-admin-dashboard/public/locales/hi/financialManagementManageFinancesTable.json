@@ -1,0 +1,60 @@
+{
+    "installmentStatus": {
+        "paid": "भुगतान किया गया",
+        "partial": "आंशिक",
+        "overdue": "अतिदेय",
+        "pending": "लंबित",
+        "waived": "माफ किया गया"
+    },
+    "legend": {
+        "installmentStatus": "किस्त की स्थिति:"
+    },
+    "expandedRow": {
+        "loadFailed": "किस्त विवरण लोड करने में विफल।",
+        "noInstallments": "कोई किस्त नहीं मिली।",
+        "columns": {
+            "feeType": "शुल्क प्रकार",
+            "expected": "अपेक्षित",
+            "paid": "भुगतान किया गया",
+            "due": "बकाया",
+            "overdue": "अतिदेय",
+            "installments": "किस्तें"
+        }
+    },
+    "installmentTooltip": "#{{number}}: {{label}}",
+    "columns": {
+        "package": "कोर्स / पैकेज",
+        "cpoName": "सीपीओ / योजना",
+        "expected": "अपेक्षित",
+        "paid": "भुगतान किया गया",
+        "due": "बकाया",
+        "overdue": "अतिदेय",
+        "status": "स्थिति",
+        "progress": "प्रगति"
+    },
+    "actions": {
+        "viewInstallments": "किस्तें देखें"
+    },
+    "error": {
+        "title": "भुगतान डेटा लोड करने में असमर्थ",
+        "genericMessage": "कृपया पुनः प्रयास करें।"
+    },
+    "empty": {
+        "title": "कोई भुगतान रिकॉर्ड नहीं मिला।",
+        "subtitle": "अधिक परिणाम देखने के लिए अपने फ़िल्टर समायोजित करें।"
+    },
+    "pagination": {
+        "showingRange_one": "<b>{{start}}</b> – <b>{{end}}</b> दिखाया जा रहा है, कुल <b>{{count}}</b> रिकॉर्ड में से",
+        "showingRange_other": "<b>{{start}}</b> – <b>{{end}}</b> दिखाया जा रहा है, कुल <b>{{count}}</b> रिकॉर्ड में से"
+    },
+    "progressBar": {
+        "paidTooltip": "भुगतान: {{percent}}%",
+        "overdueTooltip": "अतिदेय: {{percent}}%",
+        "dueTooltip": "बकाया: {{percent}}%",
+        "paidLabel": "{{percent}}% भुगतान किया गया"
+    },
+    "redesign": {
+        "rosterTitle": "शुल्क रोस्टर",
+        "rosterHint": "· शुल्क-प्रकार का विवरण देखने के लिए पंक्ति पर, हर किस्त के लिए आंख आइकन पर क्लिक करें"
+    }
+}

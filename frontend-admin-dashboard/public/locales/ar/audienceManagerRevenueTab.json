@@ -1,0 +1,33 @@
+{
+    "column": {
+        "revenue": "الإيرادات",
+        "payingLeads": "العملاء المحتملون الدافعون",
+        "payments": "المدفوعات",
+        "avgDealValue": "متوسط قيمة الصفقة",
+        "source": "المصدر",
+        "counsellor": "المستشار"
+    },
+    "kpi": {
+        "revenueSub": "محصّلة من العملاء المحتملين المحوّلين"
+    },
+    "dailyRevenue": {
+        "title": "الإيرادات اليومية",
+        "barTooltip_zero": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_one": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_two": "{{date}}: {{amount}} ({{count}} دفعتان)",
+        "barTooltip_few": "{{date}}: {{amount}} ({{count}} دفعات)",
+        "barTooltip_many": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_other": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "footnote": "يُسجَّل الإيراد بتاريخ الدفع للعملاء المحتملين الذين تم تحويل ملفاتهم."
+    },
+    "bySource": {
+        "title": "الإيرادات حسب المصدر"
+    },
+    "byCounsellor": {
+        "title": "الإيرادات حسب المستشار"
+    },
+    "empty": {
+        "noRevenue": "لا توجد إيرادات في هذا النطاق الزمني.",
+        "noCounsellorRevenue": "لا توجد إيرادات منسوبة إلى مستشار في هذا النطاق الزمني."
+    }
+}

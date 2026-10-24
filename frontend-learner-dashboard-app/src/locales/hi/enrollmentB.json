@@ -1,0 +1,162 @@
+{
+  "toast": {
+    "enrollmentSuccessRedirecting": "नामांकन सफल रहा! डैशबोर्ड पर रीडायरेक्ट किया जा रहा है...",
+    "loginSuccessRedirecting": "लॉगिन सफल रहा! डैशबोर्ड पर रीडायरेक्ट किया जा रहा है...",
+    "autoRenewalConsentRequired": "जारी रखने के लिए कृपया ऑटो-रिन्यूअल की शर्तों से सहमत हों।"
+  },
+  "errors": {
+    "failedToLoadInstallmentSchedule": "किस्त शेड्यूल लोड करने में विफल। कृपया फिर से प्रयास करें।",
+    "selectAtLeastOneInstallment": "कृपया भुगतान के लिए कम से कम एक किस्त चुनें।",
+    "paymentAmountMustBePositive": "भुगतान राशि शून्य से अधिक होनी चाहिए।",
+    "noCpoPaymentOptionFound": "कोई किस्त भुगतान विकल्प नहीं मिला।",
+    "enrollmentSucceededNoUserPlanId": "नामांकन सफल रहा लेकिन userPlanId वापस नहीं मिली। कृपया फिर से प्रयास करें।",
+    "noPendingInstallmentsGenerated": "कोई लंबित किस्त जनरेट नहीं हुई। कृपया सहायता से संपर्क करें।",
+    "failedToCreateRazorpayOrder": "Razorpay ऑर्डर बनाने में विफल",
+    "failedToInitiatePayment": "भुगतान शुरू करने में विफल",
+    "stripeNotReady": "Stripe भुगतान अभी तैयार नहीं है। कृपया प्रतीक्षा करें और फिर से प्रयास करें।",
+    "paymentProcessingFailed": "भुगतान प्रोसेसिंग विफल रही",
+    "paymentFailed": "भुगतान विफल रहा",
+    "completePaymentForm": "कृपया भुगतान फ़ॉर्म पूरा करें",
+    "cpoVendorNotSupported": "किस्त नामांकन के लिए यह भुगतान गेटवे समर्थित नहीं है। कृपया सहायता से संपर्क करें।",
+    "enrollmentFailed": "नामांकन विफल रहा",
+    "phonepeCheckoutFailed": "PhonePe चेकआउट शुरू नहीं हो सका। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।",
+    "failedToInitiatePhonepePayment": "PhonePe भुगतान शुरू करने में विफल",
+    "enrollmentCreatedNoUserPlanId": "नामांकन बन गया लेकिन यूज़र प्लान आईडी प्राप्त नहीं हुई। कृपया सहायता से संपर्क करें।",
+    "emailRequiredForPayment": "भुगतान के लिए ईमेल आवश्यक है।",
+    "loginRequiredForPayment": "भुगतान पूरा करने के लिए कृपया लॉगिन करें।",
+    "failedToInitializePaymentContactSupport": "भुगतान आरंभ करने में विफल। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।",
+    "failedToLoadCashfree": "Cashfree भुगतान गेटवे लोड करने में विफल।",
+    "paymentInitializationFailed": "भुगतान आरंभ करने में विफलता हुई।",
+    "failedToInitiateCashfreePayment": "Cashfree भुगतान शुरू करने में विफल",
+    "razorpayComponentNotReady": "Razorpay कॉम्पोनेंट तैयार नहीं है",
+    "failedToCompleteEnrollment": "नामांकन पूरा करने में विफल",
+    "userPlanIdNotReceived": "यूज़र प्लान आईडी प्राप्त नहीं हुई।",
+    "paymentSessionMissingLoginRequired": "प्रतिक्रिया में भुगतान सत्र नहीं मिला। भुगतान पूरा करने के लिए कृपया लॉगिन करें।",
+    "emailRequired": "ईमेल आवश्यक है।",
+    "failedToInitializePayment": "भुगतान आरंभ करने में विफलता हुई।",
+    "failedToInitializePaymentFallback": "भुगतान आरंभ करने में विफलता हुई"
+  },
+  "autopay": {
+    "trialBanner": "₹{{authAmount}} के साथ अपना {{trialDays}}-दिन का मुफ़्त ट्रायल शुरू करें, {{trialDays}} दिनों के भीतर कभी भी रद्द करें।",
+    "setupHeading": "आप ऑटो-रिन्यूअल कैसे सेट करना चाहेंगे?",
+    "upiLabel": "UPI ऑटोपे",
+    "upiHint": "GPay, PhonePe, Paytm",
+    "cardLabel": "कार्ड",
+    "cardHint": "डेबिट / क्रेडिट कार्ड",
+    "consentTrial": {
+      "agreePrefix": "मैं सहमत हूं:",
+      "authorizedToday": "आज अधिकृत किया जाएगा",
+      "refundedSuffix": "(वापस किया जाएगा)",
+      "toStartMy": "मेरे",
+      "trialDaysLabel": "{{days}}-दिन के मुफ़्त ट्रायल को",
+      "fromDay": " शुरू करने के लिए। दिन",
+      "listSeparator": " से,",
+      "willBeChargedCycle": "हर बिलिंग चक्र में मेरे सेव किए गए भुगतान माध्यम से लिया जाएगा, जब तक कि मैं उससे पहले रद्द न कर दूं।"
+    },
+    "consentAutoRenew": {
+      "agreePrefix": "मैं ऑटो-रिन्यूअल के लिए सहमत हूं:",
+      "willBeChargedPeriod": "हर बिलिंग अवधि में मेरे सेव किए गए भुगतान माध्यम से लिया जाएगा। मैं अपनी प्रोफ़ाइल से कभी भी रद्द कर सकता/सकती हूं।"
+    }
+  },
+  "stepBadge": {
+    "ofThree": "चरण {{step}} / 3",
+    "ofTwo": "चरण {{step}} / 2"
+  },
+  "wizardPills": {
+    "details": "विवरण",
+    "plan": "प्लान",
+    "confirm": "पुष्टि करें",
+    "pay": "भुगतान करें"
+  },
+  "bundledCourses": {
+    "whatsIncluded": "इसमें क्या शामिल है",
+    "detailsLoading": "{{course}} विवरण लोड हो रहा है...",
+    "fallbackLabel": "{{course}} {{index}}"
+  },
+  "badges": {
+    "installmentPlan": "किस्त योजना",
+    "free": "मुफ़्त"
+  },
+  "footer": {
+    "privacyPolicy": "गोपनीयता नीति",
+    "termsAndConditions": "नियम एवं शर्तें"
+  },
+  "defaultCourseEnrollmentName": "{{course}} नामांकन",
+  "defaultCourseEnrollmentDescription": "{{course}} नामांकन के लिए भुगतान",
+  "defaultThisCourse": "यह {{course}}",
+  "planDuration": {
+    "days_one": "{{count}} दिन",
+    "days_other": "{{count}} दिन",
+    "months_one": "{{count}} महीना",
+    "months_other": "{{count}} महीने"
+  },
+  "planDescriptions": {
+    "payInInstallments": "किस्तों में भुगतान करें",
+    "donationPlan": "दान योजना तक पहुंच।",
+    "freePlan": "मुफ़्त योजना तक पहुंच।",
+    "oneTimePlan": "एकमुश्त भुगतान योजना तक पहुंच।",
+    "subscriptionPlan": "सदस्यता योजना तक पहुंच।"
+  },
+  "subscriptionPlan": {
+    "discount": {
+      "percentageOff": "{{amount}}% छूट",
+      "fixedOff": "{{currency}}{{amount}} छूट"
+    },
+    "unit": {
+      "month": "महीना",
+      "days": "दिन"
+    }
+  },
+  "successStep": {
+    "title": "नामांकन अनुरोध सबमिट किया गया!",
+    "defaultMessage": {
+      "intro": "{{courseName}} में आपकी रुचि के लिए धन्यवाद। आपका नामांकन अनुरोध सफलतापूर्वक सबमिट कर दिया गया है। आपके लॉगिन क्रेडेंशियल आपके पंजीकृत ईमेल पते पर भेज दिए गए हैं",
+      "outro": "। कृपया दिए गए ईमेल और पासवर्ड का उपयोग करके लॉगिन करें"
+    },
+    "approvalRequired": {
+      "title": "अनुमोदन आवश्यक",
+      "body": "आपके नामांकन अनुरोध की समीक्षा हमारी टीम द्वारा की जा रही है। अनुमोदन होते ही आपको एक ईमेल सूचना प्राप्त होगी।"
+    },
+    "redirectingToDashboard": "डैशबोर्ड पर रीडायरेक्ट किया जा रहा है...",
+    "continue": "जारी रखें",
+    "loginNow": "अभी लॉगिन करें"
+  },
+  "cardValidator": {
+    "tooShort": "कार्ड नंबर बहुत छोटा है",
+    "typeNotRecognized": "कार्ड प्रकार पहचाना नहीं गया",
+    "invalidLength": "{{cardType}} के लिए कार्ड की लंबाई अमान्य है",
+    "invalidNumber": "कार्ड नंबर अमान्य है",
+    "invalidMonth": "अमान्य महीना",
+    "expired": "कार्ड की समय-सीमा समाप्त हो चुकी है",
+    "cvvRequired": "CVV आवश्यक है",
+    "cvvLength": "CVV {{expectedLength}} अंकों का होना चाहिए",
+    "brands": {
+      "visa": "Visa",
+      "mastercard": "Mastercard",
+      "amex": "American Express",
+      "discover": "Discover",
+      "diners": "Diners Club",
+      "jcb": "JCB",
+      "unknown": "अज्ञात"
+    }
+  },
+  "fieldValidation": {
+    "required": "यह फ़ील्ड आवश्यक है",
+    "invalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+    "invalidPhone": "कृपया एक मान्य फ़ोन नंबर दर्ज करें",
+    "invalidUrl": "कृपया एक मान्य URL दर्ज करें",
+    "invalidNumber": "कृपया एक मान्य संख्या दर्ज करें",
+    "invalidDate": "कृपया एक मान्य तारीख़ दर्ज करें"
+  },
+  "ewayEncryption": {
+    "libraryUnavailable": "एन्क्रिप्शन लाइब्रेरी उपलब्ध नहीं है। कृपया पेज को रीफ़्रेश करें और फिर से प्रयास करें।",
+    "encryptFailed": "भुगतान जानकारी एन्क्रिप्ट करने में विफल। कृपया फिर से प्रयास करें।",
+    "unexpectedError": "एक अनपेक्षित त्रुटि हुई। कृपया फिर से प्रयास करें।"
+  },
+  "useStripePayment": {
+    "notInitialized": "Stripe शुरू नहीं हुआ है। कृपया पेज को रीफ़्रेश करें।",
+    "cardElementNotFound": "कार्ड एलिमेंट नहीं मिला। कृपया पेज को रीफ़्रेश करें।",
+    "processingFailed": "भुगतान प्रोसेसिंग विफल रही",
+    "unexpectedError": "एक अनपेक्षित त्रुटि हुई"
+  }
+}

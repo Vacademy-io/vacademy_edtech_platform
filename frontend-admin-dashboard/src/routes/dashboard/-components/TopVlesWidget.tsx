@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, Trophy } from '@phosphor-icons/react';
@@ -15,14 +17,35 @@ import { cn } from '@/lib/utils';
 
 const nfmt = (n: number) => n.toLocaleString('en-IN');
 
-const planChip = (raw: string | null | undefined): { label: string; cls: string } => {
-    const k = (raw ?? '').toUpperCase().trim();
-    if (k === 'ACTIVE') return { label: 'Active', cls: 'bg-success-50 text-success-700 ring-success-200' };
-    if (k === 'PENDING') return { label: 'Pending', cls: 'bg-warning-50 text-warning-700 ring-warning-200' };
-    if (k === 'EXPIRED') return { label: 'Expired', cls: 'bg-danger-50 text-danger-700 ring-danger-200' };
-    if (!k) return { label: 'No plan', cls: 'bg-neutral-100 text-neutral-600 ring-neutral-200' };
-    return { label: k.charAt(0) + k.slice(1).toLowerCase(), cls: 'bg-info-50 text-info-700 ring-info-200' };
-};
+const buildPlanChip =
+    (t: TFunction) =>
+    (raw: string | null | undefined): { label: string; cls: string } => {
+        const k = (raw ?? '').toUpperCase().trim();
+        if (k === 'ACTIVE')
+            return {
+                label: t('planStatus.active'),
+                cls: 'bg-success-50 text-success-700 ring-success-200',
+            };
+        if (k === 'PENDING')
+            return {
+                label: t('planStatus.pending'),
+                cls: 'bg-warning-50 text-warning-700 ring-warning-200',
+            };
+        if (k === 'EXPIRED')
+            return {
+                label: t('planStatus.expired'),
+                cls: 'bg-danger-50 text-danger-700 ring-danger-200',
+            };
+        if (!k)
+            return {
+                label: t('planStatus.none'),
+                cls: 'bg-neutral-100 text-neutral-600 ring-neutral-200',
+            };
+        return {
+            label: k.charAt(0) + k.slice(1).toLowerCase(),
+            cls: 'bg-info-50 text-info-700 ring-info-200',
+        };
+    };
 
 /**
  * PARENT-admin ranked list of the largest VLEs by seats used. Shares the
@@ -31,6 +54,7 @@ const planChip = (raw: string | null | undefined): { label: string; cls: string 
  */
 export default function TopVlesWidget() {
     const navigate = useNavigate();
+    const { t } = useTranslation('dashboardTopVlesWidget');
     const instituteId = getCurrentInstituteId();
 
     const { data, isLoading, isError } = useQuery({
@@ -46,7 +70,7 @@ export default function TopVlesWidget() {
         const ranked = items
             .map((it) => ({
                 id: it.suborg_id ?? it.name ?? '',
-                name: (it.name ?? '').trim() || 'Unnamed',
+                name: (it.name ?? '').trim() || t('unnamedName'),
                 used: it.used_seats ?? 0,
                 total: it.total_seats ?? 0,
                 plan: it.plan_status,
@@ -55,9 +79,10 @@ export default function TopVlesWidget() {
             .slice(0, 6);
         const maxUsed = Math.max(1, ...ranked.map((r) => r.used));
         return { ranked, maxUsed };
-    }, [items]);
+    }, [items, t]);
 
     const plural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
+    const planChip = useMemo(() => buildPlanChip(t), [t]);
 
     if (isError || (!isLoading && items.length === 0)) return null;
 
@@ -70,9 +95,9 @@ export default function TopVlesWidget() {
                     </span>
                     <div className="min-w-0">
                         <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900">
-                            Top {plural}
+                            {t('heading', { plural })}
                         </h3>
-                        <p className="line-clamp-1 text-xs text-neutral-500">By seats used</p>
+                        <p className="line-clamp-1 text-xs text-neutral-500">{t('subtitle')}</p>
                     </div>
                 </div>
                 <button
@@ -80,7 +105,7 @@ export default function TopVlesWidget() {
                     onClick={() => navigate({ to: '/manage-custom-teams' })}
                     className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
-                    View all
+                    {t('viewAll')}
                     <ArrowRight size={12} weight="bold" />
                 </button>
             </div>

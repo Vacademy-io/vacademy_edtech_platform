@@ -1,0 +1,9 @@
+{
+    "optionMarker": {
+        "fallback": "({{label}}.)"
+    },
+    "dropdownMenu": {
+        "duplicateSlide": "تكرار الشريحة",
+        "deleteSlide": "حذف الشريحة"
+    }
+}

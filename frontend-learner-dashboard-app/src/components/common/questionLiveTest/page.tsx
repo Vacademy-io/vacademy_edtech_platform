@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isUntimedPlayMode } from "@/lib/untimed-play-mode";
+import { readStoredPlayMode } from "@/hooks/use-stored-play-mode";
+import { useTranslation } from "react-i18next";
 import { QuestionDisplay } from "./question-display";
 import { SectionTabs } from "./section-tabs";
 import { Navbar } from "./navbar";
@@ -14,6 +17,7 @@ import { useAssessmentStore } from "@/stores/assessment-store";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { cn } from "@/lib/utils";
 import { useImmersiveMode } from "@/hooks/use-immersive-mode";
+import { useIOSSafeAreaInsets } from "@/hooks/use-ios-safe-area-insets";
 import { topSafeAreaInset } from "@/utils/safe-area";
 import NetworkStatus from "./network-status";
 import { Preferences } from "@capacitor/preferences";
@@ -21,6 +25,7 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { ASSESSMENT_SAVE } from "@/constants/urls";
 import { toast } from "sonner";
 import { safeParse } from "@/lib/storage";
+import { ProctorLayer } from "@/components/common/proctoring/ProctorLayer";
 import {
   LOCAL_SAVE_INTERVAL_MS,
   REMOTE_SAVE_INTERVAL_MS,
@@ -70,9 +75,14 @@ export const formatDataFromStore = async (
 
   const state = useAssessmentStore.getState();
   const attemptId = state.assessment?.attempt_id;
+  // With a clock, elapsed = duration - remaining. Without one (practice,
+  // survey) count from the server start time, so the report's "time taken"
+  // is real instead of 0.
   const timeElapsedInSeconds = state.assessment?.duration
     ? state.assessment.duration * 60 - state.entireTestTimer
-    : 0;
+    : start_time > 0
+      ? Math.max(0, Math.round((Date.now() - start_time) / 1000))
+      : 0;
   const clientLastSync = new Date(
     start_time + timeElapsedInSeconds * 1000
   ).toISOString();
@@ -173,6 +183,7 @@ export default function Page() {
 }
 
 function LiveTestShell() {
+  const { t } = useTranslation("questionTest");
   const { loadState, saveState, currentQuestion } = useAssessmentStore();
   const {
     settings,
@@ -183,6 +194,8 @@ function LiveTestShell() {
     setScratchpad,
     isPaletteOpen,
     setPaletteOpen,
+    isRailOpen,
+    setRailOpen,
   } = useLiveTestUi();
   const setLiveTest = useLiveTestStore((s) => s.setLiveTest);
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
@@ -191,7 +204,10 @@ function LiveTestShell() {
   // down the next question, often mid-options. Reset it on every change.
   const questionScrollRef = useRef<HTMLElement>(null);
   const [playMode, setPlayMode] = useState<string>("");
+  // Read by the autosave interval, whose closure is created once.
+  const playModeRef = useRef<string>("");
   const [evaluationType, setEvaluationType] = useState<string>("");
+  const [assessmentIdForProctor, setAssessmentIdForProctor] = useState<string>("");
   // Latches so we show the "save failed" toast exactly once per failure streak
   // and the "recovered" toast exactly once when it clears.
   const hasShownSaveFailureToastRef = useRef(false);
@@ -259,7 +275,7 @@ function LiveTestShell() {
         await sendFormattedData();
         if (hasShownSaveFailureToastRef.current) {
           hasShownSaveFailureToastRef.current = false;
-          toast.success("Your responses are being saved again");
+          toast.success(t("page.toast.savingResumed"));
         }
       } catch (error) {
         console.error("Error in periodic data sending:", error);
@@ -267,16 +283,24 @@ function LiveTestShell() {
         // NetworkStatus banner keeps the user informed after that.
         if (!hasShownSaveFailureToastRef.current) {
           hasShownSaveFailureToastRef.current = true;
-          toast.error("Your responses are not being recorded");
+          toast.error(t("page.toast.savingFailed"));
         }
       }
     };
 
     const sent = async () => {
-      // Check if isSubmitted is false and time is not up before sending data
+      // Save while the attempt is open and the clock (if it has one) is still
+      // running. Practice tests and surveys have no clock, so their timer is 0
+      // from the start - skipping them here left those answers unsaved.
       const state = useAssessmentStore.getState();
+      if (!playModeRef.current) {
+        playModeRef.current = (await readStoredPlayMode()) ?? "";
+      }
 
-      if (!isSubmitted && state.entireTestTimer > 0) {
+      if (
+        !isSubmitted &&
+        (state.entireTestTimer > 0 || isUntimedPlayMode(playModeRef.current))
+      ) {
         await sendData();
       }
     };
@@ -355,10 +379,13 @@ function LiveTestShell() {
       const parsedData = safeParse<{
         play_mode?: string;
         evaluation_type?: string;
+        assessment_id?: string;
       } | null>(storedMode.value, null);
       if (parsedData) {
         setPlayMode(parsedData.play_mode ?? "");
+        playModeRef.current = parsedData.play_mode ?? "";
         setEvaluationType(parsedData.evaluation_type ?? "");
+        setAssessmentIdForProctor(parsedData.assessment_id ?? "");
       }
     };
 
@@ -383,9 +410,11 @@ function LiveTestShell() {
   // Take Android's system bars down for the attempt — they otherwise sit on top
   // of this shell's own header and footer.
   useImmersiveMode(hideAppChrome);
+  useIOSSafeAreaInsets();
 
   const showPalette = settings.questionPalette.enabled;
-  const showDesktopPalette = showPalette && !isCompact;
+  // The header's panel toggle brings a collapsed rail back (see Navbar).
+  const showDesktopPalette = showPalette && !isCompact && isRailOpen;
 
   const toolPanel =
     activeTool === "calculator" && settings.calculator.enabled ? (
@@ -412,6 +441,8 @@ function LiveTestShell() {
       }}
     >
       <Navbar playMode={playMode} evaluationType={evaluationType} />
+      {/* Renders nothing unless the assessment is proctored (V48). */}
+      {assessmentIdForProctor && <ProctorLayer assessmentId={assessmentIdForProctor} />}
       <NetworkStatus onRetrySave={sendFormattedData} />
       <SectionTabs />
 
@@ -451,6 +482,7 @@ function LiveTestShell() {
           <aside className="flex w-reg-320 flex-none flex-col border-s border-neutral-200">
             <QuestionNavigator
               onClose={() => {}}
+              onCollapse={() => setRailOpen(false)}
               evaluationType={evaluationType}
             />
           </aside>

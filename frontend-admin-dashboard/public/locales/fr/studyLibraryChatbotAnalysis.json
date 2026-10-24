@@ -1,0 +1,92 @@
+{
+    "description": "Comment les étudiants utilisent le tuteur IA, et ce qu'ils demandent.",
+    "dayRange": {
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "last90": "90 derniers jours",
+        "last365": "365 derniers jours"
+    },
+    "filters": {
+        "searchPlaceholder": "Rechercher un nom d'étudiant ou un e-mail",
+        "status": {
+            "all": "Toutes les discussions",
+            "active": "Active",
+            "closed": "Fermée"
+        },
+        "mode": {
+            "all": "Tous les modes",
+            "textChat": "Discussion écrite",
+            "mockInterview": "Entretien simulé",
+            "voiceDoubt": "Question vocale",
+            "oralTest": "Test oral"
+        }
+    },
+    "summary": {
+        "loading": "Chargement du résumé…",
+        "error": "Impossible de charger le résumé du chatbot.",
+        "retry": "Réessayer",
+        "chats": "Discussions",
+        "allTime": "{{count}} au total",
+        "studentsReached": "Étudiants touchés",
+        "studentMessages": "Messages des étudiants",
+        "messagesPerChat_one": "{{count}} message par discussion",
+        "messagesPerChat_many": "{{count}} messages par discussion",
+        "messagesPerChat_other": "{{count}} messages par discussion",
+        "doubtsAsked": "Questions posées",
+        "practiceQuizzesTaken": "Quiz d'entraînement effectués",
+        "averageScore": "{{percent}} % de score moyen",
+        "noQuizSubmittedYet": "Aucun quiz soumis pour l'instant",
+        "aiReplies": "Réponses de l'IA",
+        "toolLookups_one": "{{count}} appel d'outil",
+        "toolLookups_many": "{{count}} appels d'outil",
+        "toolLookups_other": "{{count}} appels d'outil",
+        "activeChats": "Discussions actives",
+        "notYetClosed": "Pas encore fermée par l'étudiant",
+        "quizzesGenerated": "Quiz générés",
+        "submittedCount_one": "{{count}} soumis",
+        "submittedCount_many": "{{count}} soumis",
+        "submittedCount_other": "{{count}} soumis",
+        "chatModes": "Modes de discussion",
+        "whereStudentsChat": "Où les étudiants discutent",
+        "mostAskedTopics": "Sujets les plus demandés",
+        "noTopicsYet": "Aucun sujet enregistré pour l'instant. Les sujets apparaissent dès que les étudiants posent des questions ou font des quiz d'entraînement.",
+        "topicQuiz": "quiz",
+        "topicDoubt": "question",
+        "dailyActivity": "Activité quotidienne",
+        "noChatsYet": "Aucune discussion sur cette période pour l'instant."
+    },
+    "activity": {
+        "empty": "Aucune activité de discussion sur cette période pour l'instant.",
+        "tooltip": {
+            "studentMessages_one": "{{count}} message d'étudiant",
+            "studentMessages_many": "{{count}} messages d'étudiants",
+            "studentMessages_other": "{{count}} messages d'étudiants",
+            "chats_one": "{{count}} discussion",
+            "chats_many": "{{count}} discussions",
+            "chats_other": "{{count}} discussions"
+        },
+        "peak_one": "Pic de {{count}} message/jour",
+        "peak_many": "Pic de {{count}} messages/jour",
+        "peak_other": "Pic de {{count}} messages/jour"
+    },
+    "table": {
+        "student": "Étudiant",
+        "chatAbout": "Sujet de la discussion",
+        "noStudentMessage": "Aucun message de l'étudiant",
+        "mode": "Mode",
+        "messages": "Messages",
+        "fromStudent": "{{count}} de l'étudiant",
+        "quizzes": "Quiz",
+        "status": "Statut",
+        "lastActive": "Dernière activité",
+        "viewChat": "Voir la discussion"
+    },
+    "recentChats": {
+        "title": "Discussions récentes",
+        "error": "Impossible de charger les discussions récentes.",
+        "retry": "Réessayer",
+        "emptyTitle": "Aucune discussion trouvée",
+        "emptyFiltered": "Essayez d'effacer la recherche ou les filtres.",
+        "emptyUnfiltered": "Les discussions apparaissent ici dès que les étudiants commencent à utiliser le tuteur IA."
+    }
+}

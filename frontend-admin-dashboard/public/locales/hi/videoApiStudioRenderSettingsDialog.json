@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "title": "रेंडर सेटिंग्स",
+        "description": "रेंडर करने से पहले वीडियो आउटपुट कॉन्फ़िगर करें।"
+    },
+    "resolution": {
+        "label": "रिज़ॉल्यूशन",
+        "optionLabel": "{{resolution}} ({{dimensions}})"
+    },
+    "fps": {
+        "label": "फ़्रेम दर",
+        "optionLabel": "{{fps}} fps"
+    },
+    "captions": {
+        "label": "कैप्शन"
+    },
+    "captionPreview": {
+        "ariaLabel": "कैप्शन पूर्वावलोकन",
+        "sampleText": "इस आकार में आपका कैप्शन ऐसा दिखेगा।"
+    },
+    "stylePreset": {
+        "label": "स्टाइल प्रीसेट",
+        "customBadge": "कस्टम",
+        "customTooltip": "सेटिंग्स को किसी भी नामित प्रीसेट से आगे बदला गया है"
+    },
+    "position": {
+        "label": "स्थिति",
+        "top": "ऊपर",
+        "bottom": "नीचे"
+    },
+    "size": {
+        "label": "आकार",
+        "small": "छोटा",
+        "medium": "मध्यम",
+        "large": "बड़ा"
+    },
+    "textColor": {
+        "label": "टेक्स्ट रंग"
+    },
+    "background": {
+        "label": "पृष्ठभूमि",
+        "opacityLabel": "पृष्ठभूमि अपारदर्शिता: {{value}}%"
+    },
+    "displayMode": {
+        "label": "डिस्प्ले मोड",
+        "phrase": "वाक्यांश",
+        "karaoke": "कराओके"
+    },
+    "font": {
+        "label": "फ़ॉन्ट",
+        "system": "सिस्टम"
+    },
+    "weight": {
+        "label": "मोटाई"
+    },
+    "textOutline": {
+        "label": "टेक्स्ट आउटलाइन: {{width}}px",
+        "colorTitle": "आउटलाइन रंग"
+    },
+    "highlightColor": {
+        "label": "हाइलाइट रंग (कराओके का सक्रिय शब्द)"
+    },
+    "watermark": {
+        "label": "वॉटरमार्क"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "startRender": "रेंडर शुरू करें"
+    }
+}

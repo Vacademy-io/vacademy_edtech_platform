@@ -1,0 +1,37 @@
+{
+    "navHeading": "ऑफ़लाइन डेटा प्रविष्टि",
+    "defaults": {
+        "assessmentName": "मूल्यांकन"
+    },
+    "selectStudent": {
+        "subtitle": "ऑफ़लाइन डेटा प्रविष्टि — शुरू करने के लिए एक छात्र चुनें",
+        "bulkImport": "बल्क इम्पोर्ट"
+    },
+    "completed": {
+        "title": "सबमिशन पूर्ण",
+        "summaryPrefix": "",
+        "summarySuffix": " के ऑफ़लाइन उत्तर सबमिट और स्कोर कर दिए गए हैं।",
+        "enterAnotherStudent": "एक और छात्र दर्ज करें",
+        "backToAssessments": "मूल्यांकनों पर वापस जाएं"
+    },
+    "responses": {
+        "back": "वापस",
+        "viewMode": {
+            "table": "तालिका",
+            "preview": "पूर्वावलोकन"
+        },
+        "scoringMode": {
+            "auto": "ऑटो",
+            "directMarks": "सीधे अंक"
+        },
+        "submitAll": "सभी उत्तर सबमिट करें",
+        "noQuestionsInSection": "इस सेक्शन में कोई प्रश्न नहीं है।"
+    },
+    "toasts": {
+        "submitSuccess": "ऑफ़लाइन उत्तर सफलतापूर्वक सबमिट किए गए"
+    },
+    "errors": {
+        "uploadFailed": "\"{{fileName}}\" अपलोड नहीं किया जा सका",
+        "submitFailed": "ऑफ़लाइन उत्तर सबमिट करने में विफल"
+    }
+}

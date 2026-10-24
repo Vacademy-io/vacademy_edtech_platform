@@ -10,7 +10,17 @@ import type { LeadCardVM } from '@/components/shared/leads';
  * same.
  */
 
-export type FollowUpBucket = 'overdue' | 'today' | 'upcoming' | 'all';
+/**
+ * 'completed' is the odd one out: the other four are slices of work still open
+ * and come from the leads query, while completed follow-ups are events and come
+ * from their own endpoint. It lives in the same vocabulary because it is the
+ * same row of cards to the user.
+ */
+export type FollowUpBucket = 'overdue' | 'today' | 'upcoming' | 'all' | 'completed';
+
+/** The buckets that can be derived from a lead on screen. Completed cannot: it
+ *  counts closed follow-up events, which the leads query never returns. */
+export type PendingFollowUpBucket = Exclude<FollowUpBucket, 'completed'>;
 
 /**
  * Effective due time for a lead — prefer the next follow-up deadline; fall back
@@ -32,7 +42,7 @@ export const effectiveDueMs = (vm: LeadCardVM): number => {
 export const isPendingFollowUp = (vm: LeadCardVM): boolean => !!vm.tatDueAt || !!vm.followUpDueAt;
 
 /** Classify a lead into a bucket based on its effective due time and the SLA flags. */
-export const classify = (vm: LeadCardVM, now: Date = new Date()): FollowUpBucket => {
+export const classify = (vm: LeadCardVM, now: Date = new Date()): PendingFollowUpBucket => {
     if (vm.tatOverdue || vm.followUpOverdue) return 'overdue';
     const dueMs = effectiveDueMs(vm);
     if (!Number.isFinite(dueMs)) return 'upcoming';
@@ -49,8 +59,8 @@ export const classify = (vm: LeadCardVM, now: Date = new Date()): FollowUpBucket
 export const bucketCounts = (
     vms: LeadCardVM[],
     now: Date = new Date()
-): Record<FollowUpBucket, number> => {
-    const counts: Record<FollowUpBucket, number> = {
+): Record<PendingFollowUpBucket, number> => {
+    const counts: Record<PendingFollowUpBucket, number> = {
         overdue: 0,
         today: 0,
         upcoming: 0,
@@ -61,6 +71,44 @@ export const bucketCounts = (
         if (b !== 'all') counts[b] += 1;
     }
     return counts;
+};
+
+/**
+ * The schedule_time window a bucket stands for, in the USER's clock. Sent to the server so
+ * counts and paging are over the whole institute rather than whatever happened to be on the
+ * first fetched page — and so an Asia/Kolkata counsellor's "today" is their today.
+ */
+export const bucketWindow = (
+    bucket: FollowUpBucket,
+    now: Date = new Date()
+): { from?: string; to?: string } => {
+    const endOfToday = new Date(now);
+    endOfToday.setHours(23, 59, 59, 999);
+    switch (bucket) {
+        case 'overdue':
+            return { to: now.toISOString() };
+        case 'today':
+            return { from: now.toISOString(), to: endOfToday.toISOString() };
+        case 'upcoming':
+            return { from: endOfToday.toISOString() };
+        // 'completed' never reaches the leads query, and 'all' means no window.
+        default:
+            return {};
+    }
+};
+
+/**
+ * A bucket's window narrowed by the due-date filter: the later `from`, the earlier `to`.
+ * A range outside the bucket (Upcoming + last week) comes back with from > to, which the
+ * server answers with nothing — the right answer, not an error.
+ */
+export const intersectWindows = (
+    a: { from?: string; to?: string },
+    b: { from?: string; to?: string }
+): { from?: string; to?: string } => {
+    const later = (x?: string, y?: string) => (!x ? y : !y ? x : x > y ? x : y);
+    const earlier = (x?: string, y?: string) => (!x ? y : !y ? x : x < y ? x : y);
+    return { from: later(a.from, b.from), to: earlier(a.to, b.to) };
 };
 
 /** Filter VMs to a specific bucket (or all). */

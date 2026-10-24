@@ -29,6 +29,8 @@ import {
 } from '@phosphor-icons/react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { getMessageTemplates, getMessageTemplate } from '@/services/message-template-service';
 import type { MessageTemplate } from '@/types/message-template-types';
 import {
@@ -41,30 +43,34 @@ import { useDialogStore } from '../../../../-hooks/useDialogStore';
 // Multi-step compose flow modelled on the audience-manager SendMessageDialog, but
 // email-only and wired to bulkEmailService so it targets the *selected* students
 // (with automatic per-student variable enrichment) rather than a saved audience.
-const STEP_TITLES = ['Compose Email', 'Map Variables', 'Review & Send'];
+const buildStepTitles = (t: TFunction): string[] => [
+    t('steps.composeEmail'),
+    t('steps.mapVariables'),
+    t('steps.reviewSend'),
+];
 
 // Student fields a {{placeholder}} can be mapped to. The value after `field:` is the
 // canonical variable name that bulkEmailService auto-resolves per recipient on send.
-const STUDENT_FIELDS: { value: string; label: string }[] = [
-    { value: 'field:name', label: 'Full Name' },
-    { value: 'field:email', label: 'Email' },
-    { value: 'field:mobile_number', label: 'Mobile Number' },
-    { value: 'field:username', label: 'Username' },
-    { value: 'field:enrollment_number', label: 'Enrollment Number' },
-    { value: 'field:registration_date', label: 'Registration Date' },
-    { value: 'field:student_referral_code', label: 'Referral Code' },
-    { value: 'field:course_name', label: 'Course Name' },
-    { value: 'field:batch_name', label: 'Batch Name' },
-    { value: 'field:batch_start_date', label: 'Batch Start Date' },
-    { value: 'field:batch_end_date', label: 'Batch End Date' },
-    { value: 'field:institute_name', label: 'Institute Name' },
-    { value: 'field:institute_email', label: 'Institute Email' },
-    { value: 'field:institute_phone', label: 'Institute Phone' },
-    { value: 'field:attendance_percentage', label: 'Attendance %' },
-    { value: 'field:attendance_attended_classes', label: 'Classes Attended' },
-    { value: 'field:attendance_total_classes', label: 'Total Classes' },
-    { value: 'field:current_date', label: 'Current Date' },
-    { value: 'field:support_email', label: 'Support Email' },
+const buildStudentFields = (t: TFunction): { value: string; label: string }[] => [
+    { value: 'field:name', label: t('studentFields.fullName') },
+    { value: 'field:email', label: t('studentFields.email') },
+    { value: 'field:mobile_number', label: t('studentFields.mobileNumber') },
+    { value: 'field:username', label: t('studentFields.username') },
+    { value: 'field:enrollment_number', label: t('studentFields.enrollmentNumber') },
+    { value: 'field:registration_date', label: t('studentFields.registrationDate') },
+    { value: 'field:student_referral_code', label: t('studentFields.referralCode') },
+    { value: 'field:course_name', label: t('studentFields.courseName') },
+    { value: 'field:batch_name', label: t('studentFields.batchName') },
+    { value: 'field:batch_start_date', label: t('studentFields.batchStartDate') },
+    { value: 'field:batch_end_date', label: t('studentFields.batchEndDate') },
+    { value: 'field:institute_name', label: t('studentFields.instituteName') },
+    { value: 'field:institute_email', label: t('studentFields.instituteEmail') },
+    { value: 'field:institute_phone', label: t('studentFields.institutePhone') },
+    { value: 'field:attendance_percentage', label: t('studentFields.attendancePercentage') },
+    { value: 'field:attendance_attended_classes', label: t('studentFields.classesAttended') },
+    { value: 'field:attendance_total_classes', label: t('studentFields.totalClasses') },
+    { value: 'field:current_date', label: t('studentFields.currentDate') },
+    { value: 'field:support_email', label: t('studentFields.supportEmail') },
 ];
 
 // Pull unique {{placeholder}} keys out of a string.
@@ -88,14 +94,23 @@ function applyMapping(text: string, mapping: Record<string, string>): string {
     });
 }
 
-const fieldLabel = (val: string): string => {
-    if (val.startsWith('static:')) return `Static: "${val.slice('static:'.length)}"`;
-    return STUDENT_FIELDS.find((o) => o.value === val)?.label ?? val;
-};
-
 export const SendEmailDialog = () => {
+    const { t } = useTranslation('manageStudentsSendEmailDialogList');
     const { isSendEmailOpen, bulkActionInfo, selectedStudent, isBulkAction, closeAllDialogs } =
         useDialogStore();
+
+    const STEP_TITLES = useMemo(() => buildStepTitles(t), [t]);
+    const STUDENT_FIELDS = useMemo(() => buildStudentFields(t), [t]);
+
+    const fieldLabel = useCallback(
+        (val: string): string => {
+            if (val.startsWith('static:')) {
+                return t('reviewStep.staticValueLabel', { value: val.slice('static:'.length) });
+            }
+            return STUDENT_FIELDS.find((o) => o.value === val)?.label ?? val;
+        },
+        [STUDENT_FIELDS, t]
+    );
 
     // Step
     const [step, setStep] = useState(1);
@@ -178,7 +193,7 @@ export const SendEmailDialog = () => {
                 if (!cancelled) setTemplates(res.templates);
             })
             .catch(() => {
-                if (!cancelled) toast.error('Failed to load email templates');
+                if (!cancelled) toast.error(t('toasts.loadTemplatesFailed'));
             })
             .finally(() => {
                 if (!cancelled) setLoadingTemplates(false);
@@ -186,36 +201,39 @@ export const SendEmailDialog = () => {
         return () => {
             cancelled = true;
         };
-    }, [isSendEmailOpen]);
+    }, [isSendEmailOpen, t]);
 
     // -----------------------------------------------------------------------
     // Apply a saved template (load full content -> prefill subject + body)
     // -----------------------------------------------------------------------
-    const handleTemplateSelect = useCallback(async (templateId: string) => {
-        setSelectedTemplateId(templateId);
-        // Placeholders change with the template, so drop any prior mapping.
-        setVariableMapping({});
+    const handleTemplateSelect = useCallback(
+        async (templateId: string) => {
+            setSelectedTemplateId(templateId);
+            // Placeholders change with the template, so drop any prior mapping.
+            setVariableMapping({});
 
-        if (templateId === 'custom') {
-            setSubject('');
-            setBody('');
-            setBodyView('edit');
-            return;
-        }
+            if (templateId === 'custom') {
+                setSubject('');
+                setBody('');
+                setBodyView('edit');
+                return;
+            }
 
-        setLoadingTemplateContent(true);
-        try {
-            const full = await getMessageTemplate(templateId);
-            setSubject(full.subject ?? '');
-            setBody(full.content ?? '');
-            // Default to the rendered preview when a saved template loads.
-            setBodyView('preview');
-        } catch {
-            toast.error('Failed to load template content');
-        } finally {
-            setLoadingTemplateContent(false);
-        }
-    }, []);
+            setLoadingTemplateContent(true);
+            try {
+                const full = await getMessageTemplate(templateId);
+                setSubject(full.subject ?? '');
+                setBody(full.content ?? '');
+                // Default to the rendered preview when a saved template loads.
+                setBodyView('preview');
+            } catch {
+                toast.error(t('toasts.templateContentFailed'));
+            } finally {
+                setLoadingTemplateContent(false);
+            }
+        },
+        [t]
+    );
 
     // -----------------------------------------------------------------------
     // Navigation
@@ -247,7 +265,7 @@ export const SendEmailDialog = () => {
     // -----------------------------------------------------------------------
     const handleSend = useCallback(async () => {
         if (recipients.length === 0) {
-            toast.error('No valid recipients to send email to.');
+            toast.error(t('toasts.noValidRecipients'));
             return;
         }
         setIsSending(true);
@@ -275,19 +293,17 @@ export const SendEmailDialog = () => {
             });
             setSendResult(result);
             if (result.success) {
-                toast.success('Email sent successfully');
+                toast.success(t('toasts.sendSuccess'));
             } else {
                 const validationError = result.errors?.find((e) => e.studentId === 'validation');
-                toast.error(validationError?.error ?? 'Failed to send email. Please try again.');
+                toast.error(validationError?.error ?? t('toasts.sendFailed'));
             }
         } catch (err) {
-            toast.error(
-                err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
-            );
+            toast.error(err instanceof Error ? err.message : t('toasts.unexpectedError'));
         } finally {
             setIsSending(false);
         }
-    }, [recipients, body, subject, variableMapping]);
+    }, [recipients, body, subject, variableMapping, t]);
 
     // -----------------------------------------------------------------------
     // Step indicator
@@ -336,20 +352,20 @@ export const SendEmailDialog = () => {
     const renderCompose = () => (
         <div className="space-y-4">
             <div className="space-y-2">
-                <Label>Template</Label>
+                <Label>{t('composeStep.templateLabel')}</Label>
                 {loadingTemplates ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <CircleNotch className="size-4 animate-spin" />
-                        Loading templates...
+                        {t('composeStep.loadingTemplates')}
                     </div>
                 ) : (
                     <TemplateSearchableSelect
                         options={toTemplateOptions(templates, 'id')}
                         value={selectedTemplateId}
                         onChange={handleTemplateSelect}
-                        placeholder="Select a template"
-                        emptyText="No template matches your search."
-                        noneOption={{ value: 'custom', label: 'Custom — write from scratch' }}
+                        placeholder={t('composeStep.selectPlaceholder')}
+                        emptyText={t('composeStep.emptyText')}
+                        noneOption={{ value: 'custom', label: t('composeStep.noneOptionLabel') }}
                         disabled={loadingTemplateContent}
                         portal={false}
                     />
@@ -357,30 +373,30 @@ export const SendEmailDialog = () => {
                 {loadingTemplateContent && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <CircleNotch className="size-3 animate-spin" />
-                        Loading template content...
+                        {t('composeStep.loadingTemplateContent')}
                     </div>
                 )}
             </div>
 
             <div className="space-y-2">
-                <Label>Subject</Label>
+                <Label>{t('composeStep.subjectLabel')}</Label>
                 <Input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Enter email subject..."
+                    placeholder={t('composeStep.subjectPlaceholder')}
                 />
             </div>
 
             <div className="space-y-2">
-                <Label>Body</Label>
+                <Label>{t('composeStep.bodyLabel')}</Label>
                 <Tabs
                     value={bodyView}
                     onValueChange={(v) => setBodyView(v as 'preview' | 'edit')}
                     className="w-full"
                 >
                     <TabsList className="grid w-fit grid-cols-2">
-                        <TabsTrigger value="preview">Preview</TabsTrigger>
-                        <TabsTrigger value="edit">Edit HTML</TabsTrigger>
+                        <TabsTrigger value="preview">{t('composeStep.previewTab')}</TabsTrigger>
+                        <TabsTrigger value="edit">{t('composeStep.editTab')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="preview" className="mt-2">
                         {body.trim() ? (
@@ -390,7 +406,7 @@ export const SendEmailDialog = () => {
                             />
                         ) : (
                             <div className="flex min-h-64 items-center justify-center rounded-md border bg-muted/20 text-sm text-muted-foreground">
-                                Pick a template or switch to Edit HTML to write content.
+                                {t('composeStep.previewEmptyState')}
                             </div>
                         )}
                     </TabsContent>
@@ -398,27 +414,28 @@ export const SendEmailDialog = () => {
                         <Textarea
                             value={body}
                             onChange={(e) => setBody(e.target.value)}
-                            placeholder="Enter email body HTML... use {{variable}} for placeholders"
+                            placeholder={t('composeStep.bodyPlaceholder', {
+                                example: '{{variable}}',
+                            })}
                             className="min-h-64 font-mono text-sm"
                         />
                     </TabsContent>
                 </Tabs>
                 <p className="text-xs text-muted-foreground">
-                    Use placeholders like <code className="font-mono">{'{{name}}'}</code> — you can
-                    map them to student fields (course, batch, attendance &amp; more) in the next
-                    step.
+                    {t('composeStep.placeholderHintPrefix')}{' '}
+                    <code className="font-mono">{'{{name}}'}</code>{' '}
+                    {t('composeStep.placeholderHintSuffix')}
                 </p>
             </div>
 
             <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm">
                 <span className="font-medium text-foreground">
-                    {recipients.length} recipient{recipients.length === 1 ? '' : 's'}
+                    {t('composeStep.recipientsNotice', { count: recipients.length })}
                 </span>
-                <span className="text-muted-foreground"> will receive this email.</span>
                 {skippedCount > 0 && (
                     <span className="text-muted-foreground">
                         {' '}
-                        ({skippedCount} skipped — no email address)
+                        {t('composeStep.skippedNotice', { count: skippedCount })}
                     </span>
                 )}
             </div>
@@ -433,7 +450,7 @@ export const SendEmailDialog = () => {
             return (
                 <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
                     <CheckCircle className="size-8" />
-                    <p className="text-sm">No variables to map. You can proceed.</p>
+                    <p className="text-sm">{t('variableMappingStep.noVariables')}</p>
                 </div>
             );
         }
@@ -441,14 +458,14 @@ export const SendEmailDialog = () => {
         return (
             <div className="space-y-1">
                 <p className="mb-3 text-sm text-muted-foreground">
-                    Map each placeholder to a student field, or set a fixed value. Standard names
-                    you leave unmapped (e.g. <code className="font-mono">{'{{name}}'}</code>) still
-                    resolve automatically.
+                    {t('variableMappingStep.mapHintPrefix')}{' '}
+                    <code className="font-mono">{'{{name}}'}</code>
+                    {t('variableMappingStep.mapHintSuffix')}
                 </p>
                 <div className="rounded-md border">
                     <div className="grid grid-cols-2 gap-4 border-b bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground">
-                        <span>Variable</span>
-                        <span>Mapped Field</span>
+                        <span>{t('variableMappingStep.columnVariable')}</span>
+                        <span>{t('variableMappingStep.columnMappedField')}</span>
                     </div>
                     {variableKeys.map((varKey) => {
                         const currentValue = variableMapping[varKey] ?? '';
@@ -477,10 +494,16 @@ export const SendEmailDialog = () => {
                                         }
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select field..." />
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'variableMappingStep.selectFieldPlaceholder'
+                                                )}
+                                            />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="__static__">Static value…</SelectItem>
+                                            <SelectItem value="__static__">
+                                                {t('variableMappingStep.staticValueOption')}
+                                            </SelectItem>
                                             {STUDENT_FIELDS.map((opt) => (
                                                 <SelectItem key={opt.value} value={opt.value}>
                                                     {opt.label}
@@ -497,7 +520,9 @@ export const SendEmailDialog = () => {
                                                     `static:${e.target.value}`
                                                 )
                                             }
-                                            placeholder='e.g. "Student"'
+                                            placeholder={t(
+                                                'variableMappingStep.staticValuePlaceholder'
+                                            )}
                                         />
                                     )}
                                 </div>
@@ -526,19 +551,25 @@ export const SendEmailDialog = () => {
                         <XCircle className="size-12 text-danger-500" />
                     )}
                     <h3 className="text-lg font-semibold">
-                        {isSuccess ? 'Email Sent' : 'Send Completed'}
+                        {isSuccess ? t('reviewStep.emailSent') : t('reviewStep.sendCompleted')}
                     </h3>
                     <div className="w-full max-w-sm space-y-2 rounded-md border p-4 text-sm">
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Recipients</span>
+                            <span className="text-muted-foreground">
+                                {t('reviewStep.recipientsLabel')}
+                            </span>
                             <span className="font-medium">{sendResult.totalStudents}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Sent</span>
+                            <span className="text-muted-foreground">
+                                {t('reviewStep.sentLabel')}
+                            </span>
                             <span className="font-medium text-success-600">{sent}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Failed</span>
+                            <span className="text-muted-foreground">
+                                {t('reviewStep.failedLabel')}
+                            </span>
                             <span className="font-medium text-danger-600">
                                 {sendResult.failedStudents}
                             </span>
@@ -557,7 +588,7 @@ export const SendEmailDialog = () => {
                         </div>
                     )}
                     <Button variant="outline" onClick={() => closeAllDialogs()} className="mt-2">
-                        Close
+                        {t('reviewStep.close')}
                     </Button>
                 </div>
             );
@@ -569,30 +600,39 @@ export const SendEmailDialog = () => {
                     <div className="flex items-center gap-3">
                         <Envelope className="size-5 text-primary" />
                         <div>
-                            <p className="text-sm font-semibold">Email</p>
-                            <p className="text-xs text-muted-foreground">Channel</p>
+                            <p className="text-sm font-semibold">
+                                {t('reviewStep.channelLabel')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                {t('reviewStep.channelHeading')}
+                            </p>
                         </div>
                     </div>
                     <div className="border-t pt-3">
-                        <p className="text-xs text-muted-foreground">Subject</p>
+                        <p className="text-xs text-muted-foreground">
+                            {t('reviewStep.subjectLabel')}
+                        </p>
                         <p className="text-sm font-medium">{subject || '-'}</p>
                     </div>
                     <div className="border-t pt-3">
-                        <p className="text-xs text-muted-foreground">Recipients</p>
+                        <p className="text-xs text-muted-foreground">
+                            {t('reviewStep.recipientsLabel')}
+                        </p>
                         <p className="text-sm font-medium">
-                            {recipients.length} selected student
-                            {recipients.length === 1 ? '' : 's'}
+                            {t('reviewStep.selectedStudentsCount', { count: recipients.length })}
                             {skippedCount > 0 && (
                                 <span className="text-muted-foreground">
                                     {' '}
-                                    ({skippedCount} skipped — no email)
+                                    {t('reviewStep.skippedNotice', { count: skippedCount })}
                                 </span>
                             )}
                         </p>
                     </div>
                     {variableKeys.some((k) => variableMapping[k]) && (
                         <div className="border-t pt-3">
-                            <p className="mb-2 text-xs text-muted-foreground">Variable Mappings</p>
+                            <p className="mb-2 text-xs text-muted-foreground">
+                                {t('reviewStep.variableMappingsLabel')}
+                            </p>
                             <div className="space-y-1">
                                 {variableKeys
                                     .filter((k) => variableMapping[k])
@@ -617,13 +657,12 @@ export const SendEmailDialog = () => {
                     {isSending ? (
                         <>
                             <CircleNotch className="mr-2 size-4 animate-spin" />
-                            Sending...
+                            {t('reviewStep.sending')}
                         </>
                     ) : (
                         <>
                             <PaperPlaneTilt className="mr-2 size-4" />
-                            Send to {recipients.length} student
-                            {recipients.length === 1 ? '' : 's'}
+                            {t('reviewStep.sendButton', { count: recipients.length })}
                         </>
                     )}
                 </Button>
@@ -635,10 +674,8 @@ export const SendEmailDialog = () => {
         <Dialog open={isSendEmailOpen} onOpenChange={handleClose}>
             <DialogContent className="max-h-screen w-full overflow-y-auto overflow-x-hidden sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Send Email</DialogTitle>
-                    <DialogDescription>
-                        Compose and send an email to the selected students.
-                    </DialogDescription>
+                    <DialogTitle>{t('dialogTitle')}</DialogTitle>
+                    <DialogDescription>{t('dialogDescription')}</DialogDescription>
                 </DialogHeader>
 
                 {renderStepIndicator()}
@@ -659,7 +696,7 @@ export const SendEmailDialog = () => {
                                     disabled={isSending}
                                 >
                                     <CaretLeft className="mr-1 size-4" />
-                                    Back
+                                    {t('footer.back')}
                                 </Button>
                             )}
                         </div>
@@ -670,7 +707,7 @@ export const SendEmailDialog = () => {
                                     onClick={() => setStep((s) => s + 1)}
                                     disabled={!canProceed}
                                 >
-                                    Next
+                                    {t('footer.next')}
                                     <CaretRight className="ml-1 size-4" />
                                 </Button>
                             )}

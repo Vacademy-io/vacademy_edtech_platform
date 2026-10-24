@@ -69,6 +69,11 @@ public class InvoiceNumberContext {
     // ── Lazy: only invoked when the format needs them ───────────────────────
     private Supplier<String> enrollmentNumberSupplier;
     private Supplier<InvoicePackageContextProjection> packageContextSupplier;
+    /**
+     * The learner's value of a custom field (by field id), for picking a numbering series.
+     * Only called when the institute has series configured; null when there is no learner.
+     */
+    private java.util.function.Function<String, String> learnerFieldLookup;
 
     /** Sample context used by the settings preview so admins never burn a real number. */
     public static InvoiceNumberContext sample(String instituteId, String instituteName, String instituteCode) {

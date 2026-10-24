@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { cn } from "@/lib/utils";
 
 export function OneWordInput() {
+  const { t } = useTranslation("questionTest");
   const { currentQuestion, answers, setAnswer, setQuestionState } =
     useAssessmentStore();
   const currentAnswer =
@@ -10,7 +12,7 @@ export function OneWordInput() {
   return (
     <div>
       <p className="mb-2 text-3xs font-bold uppercase tracking-wide text-neutral-400">
-        Your answer
+        {t("common.yourAnswer")}
       </p>
       <input
         type="text"
@@ -20,8 +22,8 @@ export function OneWordInput() {
           setAnswer(currentQuestion.question_id, [event.target.value]);
           setQuestionState(currentQuestion.question_id, { isVisited: true });
         }}
-        placeholder="Type your one-word answer"
-        aria-label="Your answer"
+        placeholder={t("oneWord.placeholder")}
+        aria-label={t("common.yourAnswer")}
         // Copy/cut/paste stay blocked here for the same reason as the rest of
         // the live test — pasted answers defeat the proctoring rules.
         onCopy={(event) => event.preventDefault()}

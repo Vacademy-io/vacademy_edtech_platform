@@ -1,0 +1,38 @@
+{
+    "defaults": {
+        "title": "Review Script",
+        "subtitle": "Edit the script below, then proceed to generate audio & visuals.",
+        "ctaLabel": "Proceed to Video",
+        "discardLabel": "Start Over"
+    },
+    "counts": {
+        "words_one": "{{count}} word",
+        "words_other": "{{count}} words",
+        "sentences_one": "{{count}} sentence",
+        "sentences_other": "{{count}} sentences"
+    },
+    "approxDuration": "≈ {{time}}",
+    "prompt": {
+        "toggleLabel": "Original prompt"
+    },
+    "viewToggle": {
+        "timeline": "Timeline",
+        "editRaw": "Edit raw",
+        "estimatesNote": "Times are estimates (≈{{wpm}} wpm). Real timings come from TTS in the next stage."
+    },
+    "timeline": {
+        "empty": "No sentences detected. Switch to <strong>Edit raw</strong> to add narration."
+    },
+    "sentenceRow": {
+        "shortFragment": "short fragment",
+        "longSentence": "long sentence — consider splitting",
+        "editTitle": "Edit",
+        "insertTitle": "Insert sentence below",
+        "deleteTitle": "Delete sentence",
+        "newSentencePlaceholder": "New sentence."
+    },
+    "rawView": {
+        "placeholder": "Script will appear here..."
+    },
+    "resuming": "Resuming..."
+}

@@ -5,6 +5,8 @@ import type React from 'react';
 import { MyButton } from '@/components/design-system/button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { useSlidesMutations } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-hooks/use-slides';
@@ -20,12 +22,13 @@ import {
     getNextSlideOrder,
 } from '../../-helper/slide-naming-utils';
 
-const formSchema = z.object({
-    videoName: z.string().min(1, 'File name is required'),
-    videoFile: z.instanceof(File, { message: 'Video file is required' }),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        videoName: z.string().min(1, t('validation.fileNameRequired')),
+        videoFile: z.instanceof(File, { message: t('validation.videoFileRequired') }),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 const INSTITUTE_ID = 'your-institute-id'; // Replace this in real usage
 
@@ -58,6 +61,7 @@ const readVideoDurationMillis = (file: File): Promise<number> => {
 };
 
 export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) => void }) => {
+    const { t } = useTranslation('studyLibraryAddVideoFileDialog');
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } = Route.useSearch();
     const { addUpdateVideoSlide, updateSlideOrder } = useSlidesMutations(
@@ -76,7 +80,7 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(buildFormSchema(t)),
         defaultValues: {
             videoName: '',
         },
@@ -122,7 +126,7 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
                 setActiveItem(getSlideById(newSlideId));
             }, 500);
         } catch (error) {
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toast.reorderFailed'));
         }
     };
 
@@ -137,9 +141,7 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
             try {
                 durationMillis = await readVideoDurationMillis(data.videoFile);
             } catch {
-                toast.error(
-                    'Could not read video duration. Please try a different file or re-encode it.'
-                );
+                toast.error(t('toast.durationReadFailed'));
                 return;
             }
 
@@ -181,13 +183,13 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
             if (response) {
                 await reorderSlidesAfterNewSlide(response);
                 openState?.(false);
-                toast.success('Video uploaded successfully!');
+                toast.success(t('toast.uploadSuccess'));
             }
 
             form.reset();
             setSelectedFile(null);
         } catch (error) {
-            toast.error('Failed to upload video');
+            toast.error(t('toast.uploadFailed'));
         } finally {
             setIsUploading(false);
         }
@@ -223,11 +225,13 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
                                 />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-medium text-orange-500">Import your file</h3>
-                        <p className="mt-1 text-gray-500">Drag or click to upload</p>
+                        <h3 className="text-xl font-medium text-orange-500">
+                            {t('importYourFile')}
+                        </h3>
+                        <p className="mt-1 text-gray-500">{t('dragOrClickToUpload')}</p>
                         {selectedFile && (
                             <p className="mt-2 text-sm font-medium text-gray-700">
-                                Selected: {selectedFile.name}
+                                {t('selected', { name: selectedFile.name })}
                             </p>
                         )}
                     </div>
@@ -271,10 +275,10 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
                     {isUploading ? (
                         <div className="flex items-center justify-center gap-2">
                             <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            Uploading...
+                            {t('uploading')}
                         </div>
                     ) : (
-                        'Upload Video'
+                        t('uploadVideo')
                     )}
                 </MyButton>
             </form>

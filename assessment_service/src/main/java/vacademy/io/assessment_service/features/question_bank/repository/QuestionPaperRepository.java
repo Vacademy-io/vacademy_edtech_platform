@@ -97,4 +97,19 @@ public interface QuestionPaperRepository extends JpaRepository<QuestionPaper, St
     @Query(value = "UPDATE institute_question_paper SET status = :status, updated_on = CURRENT_TIMESTAMP WHERE institute_id = :instituteId AND question_paper_id = :questionPaperId", nativeQuery = true)
     void updateStatusForInstituteQuestionPaper(String instituteId, String questionPaperId, String status);
 
+    /**
+     * Does this paper already belong to this institute?
+     * <p>
+     * linkInstituteToQuestionPaper is a bare INSERT with a fresh UUID, so calling it on
+     * every update piled up duplicate institute_question_paper rows for the same pair —
+     * which the paper-listing query then multiplies through its LEFT JOIN.
+     */
+    @Query(value = "SELECT COUNT(*) FROM institute_question_paper WHERE question_paper_id = :questionPaperId AND institute_id = :instituteId", nativeQuery = true)
+    long countInstituteQuestionPaperLink(@Param("questionPaperId") String questionPaperId, @Param("instituteId") String instituteId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE institute_question_paper SET status = :status, level_id = :levelId, subject_id = :subjectId, updated_on = CURRENT_TIMESTAMP WHERE question_paper_id = :questionPaperId AND institute_id = :instituteId", nativeQuery = true)
+    void updateInstituteQuestionPaperLink(@Param("questionPaperId") String questionPaperId, @Param("instituteId") String instituteId, @Param("status") String status, @Param("levelId") String levelId, @Param("subjectId") String subjectId);
+
 }

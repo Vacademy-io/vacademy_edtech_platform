@@ -1,0 +1,17 @@
+{
+    "title": "हाल की शिक्षार्थी गतिविधि",
+    "subtitle": "आपके दर्शकों से नवीनतम WhatsApp संदेश और ईमेल जवाब",
+    "emptyState": "अभी तक कोई आने वाली शिक्षार्थी गतिविधि नहीं।",
+    "loadingMore": "लोड हो रहा है…",
+    "loadMore": "और लोड करें",
+    "noMoreActivity": "अब और गतिविधि नहीं",
+    "time": {
+        "now": "अभी",
+        "minutes_one": "{{count}} मि",
+        "minutes_other": "{{count}} मि",
+        "hours_one": "{{count}} घं",
+        "hours_other": "{{count}} घं",
+        "days_one": "{{count}} दि",
+        "days_other": "{{count}} दि"
+    }
+}

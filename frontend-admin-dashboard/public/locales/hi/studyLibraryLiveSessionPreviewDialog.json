@@ -1,0 +1,83 @@
+{
+    "reviewAndConfirm": "समीक्षा करें और पुष्टि करें",
+    "reviewAndConfirmDescription": "सुनिश्चित करें कि सब कुछ सही दिख रहा है। बनाने के लिए पुष्टि करें — या वापस जाकर बदलें।",
+    "confirmAndCreate": "पुष्टि करें और बनाएं",
+    "creating": "बनाया जा रहा है…",
+    "backToEdit": "बदलने के लिए वापस जाएं",
+    "channels": {
+        "email": "ईमेल",
+        "whatsapp": "व्हाट्सएप",
+        "push": "पुश",
+        "system": "सिस्टम"
+    },
+    "triggers": {
+        "onCreate": "बनाते समय",
+        "beforeLive": "लाइव से पहले ({{times}})",
+        "onLive": "लाइव होते समय",
+        "onAttendance": "उपस्थिति पर"
+    },
+    "playback": {
+        "rewind": "रिवाइंड",
+        "pause": "पॉज़",
+        "unrestricted": "कोई प्रतिबंध नहीं",
+        "blocked": "अवरुद्ध: {{items}}"
+    },
+    "sessionCount_one": "{{count}} सेशन",
+    "sessionCount_other": "{{count}} सेशन",
+    "fullyFilledCount": "{{count}} पूरी तरह भरे गए",
+    "schedule": "शेड्यूल",
+    "timezone": "टाइमज़ोन",
+    "access": "एक्सेस",
+    "sessionFeatures": "सेशन सुविधाएं",
+    "waitingRoom": "वेटिंग रूम",
+    "waitingRoomOpensBefore": "{{minutes}} मिनट पहले खुलेगा",
+    "disabled": "अक्षम",
+    "playbackLabel": "प्लेबैक",
+    "feedback": "फीडबैक",
+    "defaultForm": "डिफ़ॉल्ट फ़ॉर्म",
+    "off": "बंद",
+    "on": "चालू",
+    "recording": "रिकॉर्डिंग",
+    "notifications": "सूचनाएं",
+    "channelsLabel": "चैनल",
+    "triggersLabel": "ट्रिगर",
+    "none": "कोई नहीं",
+    "description": "विवरण",
+    "daysLabel": "दिन:",
+    "endsLabel": "समाप्त:",
+    "weeklySchedule": "साप्ताहिक शेड्यूल",
+    "sessionToBeCreated": "बनाया जाने वाला सेशन",
+    "sessionsToBeCreated": "बनाए जाने वाले सेशन",
+    "slotCount_one": "{{count}} स्लॉट",
+    "slotCount_other": "{{count}} स्लॉट",
+    "rowCount_one": "{{count}} row",
+    "rowCount_other": "{{count}} rows",
+    "table": {
+        "title": "शीर्षक",
+        "subject": "विषय",
+        "when": "कब",
+        "duration": "अवधि",
+        "platform": "प्लेटफ़ॉर्म",
+        "link": "लिंक",
+        "batches": "बैच"
+    },
+    "courseFallback": "कोर्स",
+    "durationHoursMinutes": "{{hours}}घं {{minutes}}मि",
+    "durationMinutes": "{{minutes}}मि",
+    "emptyTitle": "(खाली)",
+    "noBatches": "कोई बैच नहीं",
+    "perClassDescriptions": "प्रत्येक क्लास का विवरण",
+    "missingFieldsWarning_one": "{{count}} row में अभी भी आवश्यक फ़ील्ड नहीं भरी गई हैं। पूरी तरह भरी गई rows के लिए सेशन फिर भी बनाए जाएंगे; विफल rows रिजल्ट डायलॉग में दिखेंगी।",
+    "missingFieldsWarning_other": "{{count}} rows में अभी भी आवश्यक फ़ील्ड नहीं भरी गई हैं। पूरी तरह भरी गई rows के लिए सेशन फिर भी बनाए जाएंगे; विफल rows रिजल्ट डायलॉग में दिखेंगी।",
+    "footerNote": {
+        "recurring_one": "पुष्टि करने पर, सिस्टम इस दोहराई जाने वाली क्लास को {{count}} साप्ताहिक स्लॉट के साथ बनाएगा और एक्सेस व सूचना सेटिंग्स लागू करेगा।",
+        "recurring_other": "पुष्टि करने पर, सिस्टम इस दोहराई जाने वाली क्लास को {{count}} साप्ताहिक स्लॉट्स के साथ बनाएगा और एक्सेस व सूचना सेटिंग्स लागू करेगा।",
+        "single": "पुष्टि करने पर, सिस्टम यह लाइव क्लास बनाएगा और एक्सेस व सूचना सेटिंग्स लागू करेगा।",
+        "multiple_one": "पुष्टि करने पर, सिस्टम {{count}} सेशन बनाएगा और प्रत्येक पर एक्सेस व सूचना सेटिंग्स लागू करेगा।",
+        "multiple_other": "पुष्टि करने पर, सिस्टम {{count}} सेशन बनाएगा और प्रत्येक पर एक्सेस व सूचना सेटिंग्स लागू करेगा।"
+    },
+    "attendanceOnly": {
+        "title": "छात्रों को नहीं दिखेगी — सिर्फ़ अटेंडेंस के लिए",
+        "description": "यह लाइव क्लास छात्रों को नहीं दिखेगी और इसकी कोई नोटिफ़िकेशन उन्हें नहीं जाएगी। यह सिर्फ़ अटेंडेंस लगाने के लिए बनाई जा रही है; छात्रों को सिर्फ़ अपनी अटेंडेंस दिखेगी।"
+    }
+}

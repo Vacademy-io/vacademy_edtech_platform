@@ -307,6 +307,12 @@ public interface UserRepository extends CrudRepository<User, String> {
         @Query("UPDATE User u SET u.lastTokenUpdateTime = CURRENT_TIMESTAMP WHERE u.id IN :userIds")
         void updateLastTokenUpdateTime(@Param("userIds") List<String> userIds);
 
+        /** Stamps a successful sign-in; one narrow UPDATE, no entity load. */
+        @Modifying
+        @Transactional
+        @Query("UPDATE User u SET u.lastLoginTime = CURRENT_TIMESTAMP WHERE u.id = :userId")
+        int updateLastLoginTime(@Param("userId") String userId);
+
         Optional<User> findFirstByEmailOrderByCreatedAtDesc(String email);
 
         /**
@@ -411,6 +417,7 @@ public interface UserRepository extends CrudRepository<User, String> {
         @Query(value = """
                         SELECT u.* FROM users u
                         WHERE u.mobile_number IS NOT NULL AND TRIM(u.mobile_number) != ''
+                        AND RIGHT(REGEXP_REPLACE(u.mobile_number, '[^0-9]', '', 'g'), 10) = RIGHT(:digitsOnly, 10)
                         AND (
                             REGEXP_REPLACE(u.mobile_number, '[^0-9]', '', 'g') = :digitsOnly
                             OR (
@@ -423,6 +430,13 @@ public interface UserRepository extends CrudRepository<User, String> {
                         LIMIT 1
                         """, nativeQuery = true)
         Optional<User> findLatestUserByMobileNumber(@Param("digitsOnly") String digitsOnly);
+
+        // Both phone lookups carry a leading RIGHT(..., 10) = RIGHT(:digitsOnly, 10). The OR
+        // below already implies it (an exact match shares its last 10 digits; the second branch
+        // compares them directly), so it changes no result -- it gives idx_users_mobile_last10
+        // (auth V25) an indexable predicate. Without it every phone login normalised all 254k
+        // users' numbers with REGEXP_REPLACE: ~350 ms, now under 20 ms. Keep the expression
+        // byte-for-byte equal to the index definition or the planner will not match it.
 
         /**
          * Same phone matching as {@link #findLatestUserByMobileNumber}, but only
@@ -440,6 +454,7 @@ public interface UserRepository extends CrudRepository<User, String> {
                         SELECT u.* FROM users u
                         JOIN user_role ur ON ur.user_id = u.id
                         WHERE u.mobile_number IS NOT NULL AND TRIM(u.mobile_number) != ''
+                        AND RIGHT(REGEXP_REPLACE(u.mobile_number, '[^0-9]', '', 'g'), 10) = RIGHT(:digitsOnly, 10)
                         AND ur.institute_id = :instituteId
                         AND ur.status IN ('ACTIVE', 'INVITED')
                         AND (

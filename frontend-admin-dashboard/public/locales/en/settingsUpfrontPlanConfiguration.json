@@ -1,0 +1,18 @@
+{
+    "title": "One-Time Payment Configuration",
+    "fullPrice": {
+        "label": "Full Price ({{currency}}) *",
+        "placeholder": "Enter price",
+        "hint": "The total amount students will pay to enroll"
+    },
+    "courseAccess": {
+        "label": "Course Access *",
+        "lifetime": "Lifetime access",
+        "limited": "Limited access"
+    },
+    "accessDuration": {
+        "label": "Access Duration (Days) *",
+        "placeholder": "Enter number of days",
+        "hint": "Access ends this many days after the learner enrolls. Admins can extend it later from the learner's profile."
+    }
+}

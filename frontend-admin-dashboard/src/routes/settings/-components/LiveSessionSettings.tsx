@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     VideoCamera,
     ChatTeardrop,
@@ -16,6 +17,7 @@ import {
     MonitorPlay,
     PlugsConnected,
     UserCheck,
+    EyeSlash,
 } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -47,22 +49,27 @@ import {
 } from '@/services/live-session-settings';
 import { LIVE_SESSION_SETTINGS_QUERY_KEY } from '@/hooks/useLiveSessionSettings';
 import {
-    TIMEZONE_OPTIONS,
-    WAITING_ROOM_OPTIONS,
-    WAITING_ROOM_TYPE_OPTIONS,
+    buildTimezoneOptions,
+    buildWaitingRoomOptions,
+    buildWaitingRoomTypeOptions,
 } from '@/routes/study-library/live-session/schedule/-constants/options';
 import { WaitingRoomType } from '@/routes/study-library/live-session/-constants/enums';
 import { ZoomIntegrationCard } from './zoom/ZoomIntegrationCard';
 import { GoogleMeetIntegrationCard } from './google/GoogleMeetIntegrationCard';
+import { listGoogleAccounts, updateGoogleAccountSettings } from '@/services/google-accounts';
 import { DefaultRecordingDestinationPicker } from './DefaultRecordingDestinationPicker';
+import { LiveSessionVisibilityCard } from './LiveSessionVisibilityCard';
+import { getInstituteId } from '@/constants/helper';
 
-const PLATFORM_LABELS: Record<PlatformKey, string> = {
-    youtube: 'YouTube',
-    'google meet': 'Google Meet',
-    zoom: 'Zoom',
-    zoho: 'Zoho',
-    bbb: 'Vacademy Meet',
-    other: 'Other (custom link)',
+// Maps each platform key to its translation-catalog key (the JSON key can't
+// hold a literal space, so 'google meet' -> 'googleMeet').
+const PLATFORM_LABEL_KEYS: Record<PlatformKey, string> = {
+    youtube: 'youtube',
+    'google meet': 'googleMeet',
+    zoom: 'zoom',
+    zoho: 'zoho',
+    bbb: 'bbb',
+    other: 'other',
 };
 
 // Sentinel used for the "no reminder" option, because Radix Select can't hold
@@ -70,12 +77,7 @@ const PLATFORM_LABELS: Record<PlatformKey, string> = {
 const NO_REMINDER = '__none__';
 // Reminder offsets mirror the scheduling forms' TimeOptions so the default
 // picked here is one the per-class UI can render.
-const REMINDER_OPTIONS = [
-    { label: '5 minutes before', value: '5m' },
-    { label: '10 minutes before', value: '10m' },
-    { label: '30 minutes before', value: '30m' },
-    { label: '1 hour before', value: '1h' },
-];
+const REMINDER_OPTION_VALUES = ['5m', '10m', '30m', '1h'] as const;
 
 const SettingRow = ({
     title,
@@ -110,6 +112,13 @@ interface LiveSessionSettingsProps {
 }
 
 export default function LiveSessionSettings({ embedded = false }: LiveSessionSettingsProps = {}) {
+    const { t } = useTranslation('settingsLiveSession');
+    // These option lists carry translated labels, so they are built from the
+    // shared options namespace instead of being module-level constants.
+    const { t: tOptions } = useTranslation('studyLibraryOptions');
+    const TIMEZONE_OPTIONS = buildTimezoneOptions(tOptions);
+    const WAITING_ROOM_OPTIONS = buildWaitingRoomOptions(tOptions);
+    const WAITING_ROOM_TYPE_OPTIONS = buildWaitingRoomTypeOptions(tOptions);
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<LiveSessionSettingsType>(
         DEFAULT_LIVE_SESSION_SETTINGS
@@ -117,6 +126,16 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
     const [initial, setInitial] = useState<LiveSessionSettingsType>(DEFAULT_LIVE_SESSION_SETTINGS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    // Google Meet auto-record lives on each connected Google account (not in this settings
+    // document). Unsaved switch changes are kept here, keyed by account id, and written with
+    // the rest of the page on Save.
+    const { data: googleAccounts = [], isSuccess: googleAccountsLoaded } = useQuery({
+        queryKey: ['google-accounts'],
+        queryFn: listGoogleAccounts,
+        retry: false,
+    });
+    const activeGoogleAccounts = googleAccounts.filter((a) => a.status === 'ACTIVE');
+    const [googleRecordDrafts, setGoogleRecordDrafts] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         let cancelled = false;
@@ -136,7 +155,17 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
         };
     }, []);
 
-    const dirty = JSON.stringify(settings) !== JSON.stringify(initial);
+    const dirty =
+        JSON.stringify(settings) !== JSON.stringify(initial) ||
+        Object.keys(googleRecordDrafts).length > 0;
+
+    const setGoogleRecordDraft = (accountId: string, saved: boolean, next: boolean) => {
+        setGoogleRecordDrafts((prev) => {
+            const rest = { ...prev };
+            delete rest[accountId];
+            return next === saved ? rest : { ...rest, [accountId]: next };
+        });
+    };
 
     const togglePlatform = (key: PlatformKey, allowed: boolean) => {
         setSettings((prev) => {
@@ -167,7 +196,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
         }));
     };
 
-    const reset = () => setSettings(initial);
+    const reset = () => {
+        setSettings(initial);
+        setGoogleRecordDrafts({});
+    };
 
     const save = async () => {
         // Single/Bulk schedule entry-point visibility is now configured
@@ -176,7 +208,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
         // Guard: at least one platform must remain allowed.
         const anyPlatform = Object.values(settings.allowedPlatforms).some(Boolean);
         if (!anyPlatform) {
-            toast.error('At least one streaming platform must be allowed.');
+            toast.error(t('toast.atLeastOnePlatform'));
             return;
         }
         // Defensive: never persist a default platform that isn't allowed.
@@ -193,10 +225,29 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
             setSettings(toSave);
             setInitial(toSave);
             await queryClient.invalidateQueries({ queryKey: LIVE_SESSION_SETTINGS_QUERY_KEY });
-            toast.success('Live session settings saved');
+            // The settings document is saved by now; the Google accounts are separate writes.
+            // Keep only the drafts that failed so a retry re-sends just those.
+            const recordChanges = Object.entries(googleRecordDrafts);
+            if (recordChanges.length > 0) {
+                const results = await Promise.allSettled(
+                    recordChanges.map(([id, recordingEnabled]) =>
+                        updateGoogleAccountSettings(id, { recordingEnabled })
+                    )
+                );
+                const failed = Object.fromEntries(
+                    recordChanges.filter((_, i) => results[i]?.status === 'rejected')
+                );
+                setGoogleRecordDrafts(failed);
+                await queryClient.invalidateQueries({ queryKey: ['google-accounts'] });
+                if (Object.keys(failed).length > 0) {
+                    toast.error(t('toast.googleAutoRecordSaveFailed'));
+                    return;
+                }
+            }
+            toast.success(t('toast.saveSuccess'));
         } catch (err) {
             console.error(err);
-            toast.error('Failed to save live session settings.');
+            toast.error(t('toast.saveFailed'));
         } finally {
             setSaving(false);
         }
@@ -225,17 +276,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                 {!embedded && (
                     <div>
                         <h2 className="text-xl font-semibold text-neutral-800">
-                            Live Session Settings
+                            {t('header.title')}
                         </h2>
-                        <p className="text-sm text-neutral-500">
-                            Control which scheduling modes, platforms and features are available to
-                            admins when creating live classes.
-                        </p>
+                        <p className="text-sm text-neutral-500">{t('header.description')}</p>
                     </div>
                 )}
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={reset} disabled={!dirty || saving}>
-                        Reset
+                        {t('header.reset')}
                     </Button>
                     <Button
                         size="sm"
@@ -243,7 +291,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         disabled={!dirty || saving}
                         className="bg-primary-500 hover:bg-primary-600"
                     >
-                        {saving ? 'Saving…' : 'Save changes'}
+                        {saving ? t('header.saving') : t('header.saveChanges')}
                     </Button>
                 </div>
             </div>
@@ -255,11 +303,8 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <Globe size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Default Timezone</CardTitle>
-                        <CardDescription>
-                            Pre-fills the timezone field on every new live-class form. Admins can
-                            still change it per class while scheduling.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('timezone.title')}</CardTitle>
+                        <CardDescription>{t('timezone.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
@@ -274,11 +319,11 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                             }
                         >
                             <SelectTrigger className="h-9 w-full sm:w-80">
-                                <SelectValue placeholder="Select default timezone" />
+                                <SelectValue placeholder={t('timezone.selectPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="__browser__">
-                                    Use admin's browser timezone
+                                    {t('timezone.browserOption')}
                                 </SelectItem>
                                 {TIMEZONE_OPTIONS.map((opt) => (
                                     <SelectItem key={opt._id} value={opt.value}>
@@ -288,11 +333,11 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                             </SelectContent>
                         </Select>
                         <span className="text-xs text-neutral-500">
-                            Currently:{' '}
+                            {t('timezone.currently')}{' '}
                             <strong>
                                 {settings.defaultTimeZone
                                     ? settings.defaultTimeZone
-                                    : "admin's browser timezone"}
+                                    : t('timezone.currentlyBrowser')}
                             </strong>
                         </span>
                     </div>
@@ -306,14 +351,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <VideoCamera size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Allowed Streaming Platforms</CardTitle>
-                        <CardDescription>
-                            Hidden platforms won&apos;t appear in the Live Stream Platform dropdown
-                            when admins schedule a class.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('platforms.title')}</CardTitle>
+                        <CardDescription>{t('platforms.description')}</CardDescription>
                     </div>
                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                        {platformAllowedCount}/{PLATFORM_KEYS.length} allowed
+                        {t('platforms.allowedCount', {
+                            count: platformAllowedCount,
+                            total: PLATFORM_KEYS.length,
+                        })}
                     </span>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
@@ -333,7 +378,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 >
                                     <div>
                                         <div className="text-sm font-medium text-neutral-800">
-                                            {PLATFORM_LABELS[key]}
+                                            {t(`platformLabels.${PLATFORM_LABEL_KEYS[key]}`)}
                                         </div>
                                         <div className="text-xs text-neutral-500">{key}</div>
                                     </div>
@@ -352,12 +397,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         point at a hidden one. */}
                     <div className="mt-4 flex flex-col gap-1.5 border-t border-neutral-100 pt-4">
                         <span className="text-sm font-medium text-neutral-800">
-                            Default platform
+                            {t('platforms.defaultPlatform')}
                         </span>
                         <span className="text-xs text-neutral-500">
-                            Pre-selected in the &quot;Live Stream Platform&quot; dropdown when
-                            admins schedule a class (single and bulk). Admins can still change it
-                            per class.
+                            {t('platforms.defaultPlatformDescription')}
                         </span>
                         <Select
                             value={settings.defaultPlatform}
@@ -369,14 +412,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                             }
                         >
                             <SelectTrigger className="mt-1 h-9 w-full sm:w-80">
-                                <SelectValue placeholder="Select default platform" />
+                                <SelectValue placeholder={t('platforms.selectDefaultPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {PLATFORM_KEYS.filter(
                                     (k) => settings.allowedPlatforms[k] !== false
                                 ).map((k) => (
                                     <SelectItem key={k} value={k}>
-                                        {PLATFORM_LABELS[k]}
+                                        {t(`platformLabels.${PLATFORM_LABEL_KEYS[k]}`)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -394,35 +437,41 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
             <GoogleMeetIntegrationCard />
 
             {/* Recurring */}
+            {/* Role-based session visibility. Additive: with nothing configured
+                every role keeps seeing every session, exactly as before. */}
+            <LiveSessionVisibilityCard
+                instituteId={getInstituteId() ?? ''}
+                value={settings.roleVisibility}
+                onChange={(roleVisibility) => setSettings((prev) => ({ ...prev, roleVisibility }))}
+            />
+
             <Card className="border-neutral-200 shadow-none">
                 <CardHeader className="flex-row items-start gap-3 space-y-0 p-5 pb-4">
                     <div className="flex size-9 items-center justify-center rounded-md bg-primary-50 text-primary-500">
                         <ArrowsClockwise size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Recurring Classes</CardTitle>
-                        <CardDescription>
-                            Weekly recurring schedule and the per-day default class link.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('recurring.title')}</CardTitle>
+                        <CardDescription>{t('recurring.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Recurring weekly schedule"
-                        description="Show the 'Recurring Class' radio under Single Class mode."
+                        title={t('recurring.weeklyScheduleTitle')}
+                        description={t('recurring.weeklyScheduleDescription')}
                         checked={settings.recurringEnabled}
                         onChange={(v) => togglePrimitive('recurringEnabled', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Default class link for the day"
-                        description="Show the 'Default Class Link' card inside each selected day in the recurring schedule, where admins can set a fallback link and class name shared across all sessions on that day."
+                        title={t('recurring.defaultLinkTitle')}
+                        description={t('recurring.defaultLinkDescription')}
                         checked={settings.defaultDayButtonEnabled}
                         onChange={(v) => togglePrimitive('defaultDayButtonEnabled', v)}
                         disabled={!settings.recurringEnabled}
                         disabledReason={
                             !settings.recurringEnabled
-                                ? 'Disabled because Recurring weekly schedule is off.'
+                                ? t('recurring.disabledBecauseWeeklyOff')
                                 : undefined
                         }
                     />
@@ -438,32 +487,29 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                             <ClipboardText size={18} />
                         </div>
                         <div className="flex-1">
-                            <CardTitle className="text-base">Disclaimer Video</CardTitle>
-                            <CardDescription>
-                                Shown before a learner joins a class they have not attended
-                                yet, and not again once they are marked present in it. One
-                                video for every live class, including classes created
-                                automatically by a workflow.
-                            </CardDescription>
+                            <CardTitle className="text-base">{t('disclaimer.title')}</CardTitle>
+                            <CardDescription>{t('disclaimer.description')}</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="border-t border-neutral-100 p-5">
                         <SettingRow
-                            title="Show a disclaimer before joining a class"
-                            description="When on, a learner watches the video below before joining a class they have not attended yet. Marking them present retires it for that class."
+                            title={t('disclaimer.showBeforeJoinTitle')}
+                            description={t('disclaimer.showBeforeJoinDescription')}
                             checked={settings.disclaimerVideoEnabled}
                             onChange={(v) => togglePrimitive('disclaimerVideoEnabled', v)}
                         />
                         <Separator />
                         <div className="py-4">
-                            <div className="text-sm font-medium text-neutral-800">Video link</div>
+                            <div className="text-sm font-medium text-neutral-800">
+                                {t('disclaimer.videoLinkLabel')}
+                            </div>
                             <div className="mb-2 mt-0.5 text-caption text-neutral-500">
-                                YouTube or any direct video URL.
+                                {t('disclaimer.videoLinkHint')}
                             </div>
                             <MyInput
                                 inputType="text"
                                 input={settings.disclaimerVideoUrl}
-                                inputPlaceholder="https://www.youtube.com/watch?v=..."
+                                inputPlaceholder={t('disclaimer.videoLinkPlaceholder')}
                                 onChangeFunction={(e) =>
                                     setSettings((prev) => ({
                                         ...prev,
@@ -476,11 +522,37 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                             {settings.disclaimerVideoEnabled &&
                                 !settings.disclaimerVideoUrl.trim() && (
                                     <div className="mt-1.5 text-caption text-warning-600">
-                                        No link set — nothing is shown to learners until you add
-                                        one.
+                                        {t('disclaimer.noLinkWarning')}
                                     </div>
                                 )}
                         </div>
+                </CardContent>
+            </Card>
+
+            {/* Attendance-only mode: classes exist only to record offline
+                attendance, so learners see their attendance but no classes. */}
+            <Card className="border-neutral-200 shadow-none">
+                <CardHeader className="flex-row items-start gap-3 space-y-0 p-5 pb-4">
+                    <div className="flex size-9 items-center justify-center rounded-md bg-primary-50 text-primary-500">
+                        <EyeSlash size={18} />
+                    </div>
+                    <div className="flex-1">
+                        <CardTitle className="text-base">{t('attendanceOnly.title')}</CardTitle>
+                        <CardDescription>{t('attendanceOnly.description')}</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent className="border-t border-neutral-100 p-5">
+                    <SettingRow
+                        title={t('attendanceOnly.toggleTitle')}
+                        description={t('attendanceOnly.toggleDescription')}
+                        checked={settings.attendanceOnlyMode}
+                        onChange={(v) => togglePrimitive('attendanceOnlyMode', v)}
+                    />
+                    {settings.attendanceOnlyMode && (
+                        <div className="mt-1 rounded-md border border-warning-200 bg-warning-50 px-3 py-2 text-caption text-warning-700">
+                            {t('attendanceOnly.onWarning')}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -491,23 +563,20 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <ClipboardText size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Recurring Attendance Default</CardTitle>
-                        <CardDescription>
-                            Pre-fills the per-session "Daily attendance" toggle on every newly added
-                            session in a recurring schedule. Admins can still flip it per session.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('attendanceDefault.title')}</CardTitle>
+                        <CardDescription>{t('attendanceDefault.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Count daily attendance by default"
-                        description="When on, new sessions inside a recurring class start with daily attendance counting enabled."
+                        title={t('attendanceDefault.countByDefaultTitle')}
+                        description={t('attendanceDefault.countByDefaultDescription')}
                         checked={settings.defaultDailyAttendanceCounting}
                         onChange={(v) => togglePrimitive('defaultDailyAttendanceCounting', v)}
                         disabled={!settings.recurringEnabled}
                         disabledReason={
                             !settings.recurringEnabled
-                                ? 'Disabled because Recurring weekly schedule is off.'
+                                ? t('recurring.disabledBecauseWeeklyOff')
                                 : undefined
                         }
                     />
@@ -521,16 +590,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <Article size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Class Description</CardTitle>
-                        <CardDescription>
-                            Whether admins can attach a rich-text description to a live class.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('description.title')}</CardTitle>
+                        <CardDescription>{t('description.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Show description field"
-                        description="Hides the Description editor in single-class scheduling, the bulk default-description card, and the per-row description column. Existing descriptions on saved classes aren't deleted."
+                        title={t('description.showFieldTitle')}
+                        description={t('description.showFieldDescription')}
                         checked={settings.descriptionEnabled}
                         onChange={(v) => togglePrimitive('descriptionEnabled', v)}
                     />
@@ -544,31 +611,29 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <ChatTeardrop size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Feedback &amp; Engagement</CardTitle>
-                        <CardDescription>
-                            Post-session feedback collection from learners.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('feedback.title')}</CardTitle>
+                        <CardDescription>{t('feedback.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Learner feedback after class"
-                        description="Shows the 'Learner Feedback Settings' card while scheduling, and presents the feedback form to learners after the session ends."
+                        title={t('feedback.afterClassTitle')}
+                        description={t('feedback.afterClassDescription')}
                         checked={settings.feedbackEnabled}
                         onChange={(v) => togglePrimitive('feedbackEnabled', v)}
                     />
                     {settings.feedbackEnabled && (
                         <div className="mt-4 border-t border-neutral-100 pt-4">
                             <SettingRow
-                                title="Enable feedback by default"
-                                description="Pre-fills the per-session 'Learner Feedback' toggle to ON, so new live classes collect post-session feedback unless the admin turns it off. Applies to single and bulk scheduling."
+                                title={t('feedback.enableByDefaultTitle')}
+                                description={t('feedback.enableByDefaultDescription')}
                                 checked={settings.defaultFeedbackEnabled}
                                 onChange={(v) => togglePrimitive('defaultFeedbackEnabled', v)}
                             />
                             <Separator />
                             <SettingRow
-                                title="Make feedback compulsory by default"
-                                description="Pre-fills the per-session 'Make feedback compulsory' toggle to ON. When enabled, learners cannot skip the feedback form."
+                                title={t('feedback.compulsoryByDefaultTitle')}
+                                description={t('feedback.compulsoryByDefaultDescription')}
                                 checked={settings.defaultFeedbackCompulsory}
                                 onChange={(v) => togglePrimitive('defaultFeedbackCompulsory', v)}
                             />
@@ -584,17 +649,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <Door size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Waiting Room</CardTitle>
-                        <CardDescription>
-                            Pre-fills the waiting-room behaviour and timing on new live classes
-                            (single and bulk scheduling). Admins can still change these per class.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('waitingRoom.title')}</CardTitle>
+                        <CardDescription>{t('waitingRoom.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Enable waiting room by default"
-                        description="New live classes start with 'Enable Waiting Room or Pre-Joining' turned on."
+                        title={t('waitingRoom.enableByDefaultTitle')}
+                        description={t('waitingRoom.enableByDefaultDescription')}
                         checked={settings.defaultWaitingRoomEnabled}
                         onChange={(v) => togglePrimitive('defaultWaitingRoomEnabled', v)}
                     />
@@ -602,7 +664,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                     <div className="grid gap-4 pt-4 sm:grid-cols-2">
                         <div className="flex flex-col gap-1.5">
                             <span className="text-sm font-medium text-neutral-800">
-                                Waiting room type
+                                {t('waitingRoom.typeLabel')}
                             </span>
                             <Select
                                 value={settings.defaultWaitingRoomType}
@@ -614,7 +676,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 }
                             >
                                 <SelectTrigger className="h-9 w-full">
-                                    <SelectValue placeholder="Select waiting room type" />
+                                    <SelectValue placeholder={t('waitingRoom.typePlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {WAITING_ROOM_TYPE_OPTIONS.map((opt) => (
@@ -627,7 +689,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <span className="text-sm font-medium text-neutral-800">
-                                Open waiting room before
+                                {t('waitingRoom.openBeforeLabel')}
                             </span>
                             <Select
                                 value={settings.defaultWaitingRoomTime}
@@ -639,7 +701,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 }
                             >
                                 <SelectTrigger className="h-9 w-full">
-                                    <SelectValue placeholder="Select duration" />
+                                    <SelectValue placeholder={t('waitingRoom.durationPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {WAITING_ROOM_OPTIONS.map((opt) => (
@@ -651,10 +713,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                             </Select>
                         </div>
                     </div>
-                    <p className="mt-3 text-xs text-neutral-500">
-                        The type and timing apply whenever the waiting room is enabled on a class —
-                        even if it isn&apos;t enabled by default above.
-                    </p>
+                    <p className="mt-3 text-xs text-neutral-500">{t('waitingRoom.footnote')}</p>
                 </CardContent>
             </Card>
 
@@ -665,61 +724,55 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <Broadcast size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">
-                            Vacademy Meet Recording &amp; Controls
-                        </CardTitle>
-                        <CardDescription>
-                            Defaults applied when a live class is hosted on Vacademy Meet. Other
-                            platforms ignore these. Admins can still change them per class (single
-                            and bulk scheduling).
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('bbb.title')}</CardTitle>
+                        <CardDescription>{t('bbb.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Record the session by default"
-                        description="New Vacademy Meet classes start with recording turned on."
+                        title={t('bbb.recordByDefaultTitle')}
+                        description={t('bbb.recordByDefaultDescription')}
                         checked={settings.defaultBbbRecordEnabled}
                         onChange={(v) => togglePrimitive('defaultBbbRecordEnabled', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Auto-start recording"
-                        description="Begin recording automatically when the meeting starts."
+                        title={t('bbb.autoStartRecordingTitle')}
+                        description={t('bbb.autoStartRecordingDescription')}
                         checked={settings.defaultBbbAutoStartRecording}
                         onChange={(v) => togglePrimitive('defaultBbbAutoStartRecording', v)}
                         disabled={!settings.defaultBbbRecordEnabled}
                         disabledReason={
                             !settings.defaultBbbRecordEnabled
-                                ? 'Disabled because recording is off by default.'
+                                ? t('bbb.disabledBecauseRecordingOff')
                                 : undefined
                         }
                     />
                     <Separator />
                     <SettingRow
-                        title="Mute participants when they join"
-                        description="Everyone except the host joins muted."
+                        title={t('bbb.muteOnStartTitle')}
+                        description={t('bbb.muteOnStartDescription')}
                         checked={settings.defaultBbbMuteOnStart}
                         onChange={(v) => togglePrimitive('defaultBbbMuteOnStart', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Only host can share webcam"
-                        description="Restrict webcam sharing to the moderator/host."
+                        title={t('bbb.webcamsOnlyModeratorTitle')}
+                        description={t('bbb.webcamsOnlyModeratorDescription')}
                         checked={settings.defaultBbbWebcamsOnlyForModerator}
                         onChange={(v) => togglePrimitive('defaultBbbWebcamsOnlyForModerator', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Participants join in listen-only mode"
-                        description="Participants can hear the class but can't turn their microphone on. Recommended for large lectures and webinars, where open mics are the main source of avoidable server load."
+                        title={t('bbb.listenOnlyTitle')}
+                        description={t('bbb.listenOnlyDescription')}
                         checked={settings.defaultBbbDisableMic}
                         onChange={(v) => togglePrimitive('defaultBbbDisableMic', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Participants can't turn on their camera"
-                        description="Only the host's camera can be on. Recommended alongside listen-only mode for lecture-style classes."
+                        title={t('bbb.disableCamTitle')}
+                        description={t('bbb.disableCamDescription')}
                         checked={settings.defaultBbbDisableCam}
                         onChange={(v) => togglePrimitive('defaultBbbDisableCam', v)}
                     />
@@ -727,10 +780,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                     <div className="flex items-start justify-between gap-4 py-3">
                         <div className="flex-1">
                             <div className="text-sm font-medium text-neutral-800">
-                                Guest admission policy
+                                {t('bbb.guestPolicyTitle')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
-                                How guests are admitted when they try to join the class.
+                                {t('bbb.guestPolicyDescription')}
                             </div>
                         </div>
                         <Select
@@ -746,46 +799,50 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="ALWAYS_ACCEPT">Always accept</SelectItem>
-                                <SelectItem value="ASK_MODERATOR">
-                                    Ask host to approve
+                                <SelectItem value="ALWAYS_ACCEPT">
+                                    {t('bbb.guestPolicyAlwaysAccept')}
                                 </SelectItem>
-                                <SelectItem value="ALWAYS_DENY">Always deny guests</SelectItem>
+                                <SelectItem value="ASK_MODERATOR">
+                                    {t('bbb.guestPolicyAskModerator')}
+                                </SelectItem>
+                                <SelectItem value="ALWAYS_DENY">
+                                    {t('bbb.guestPolicyAlwaysDeny')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <Separator />
                     <SettingRow
-                        title="Participants can't private message each other"
-                        description="Blocks private chat between participants. The host can still message anyone."
+                        title={t('bbb.disablePrivateChatTitle')}
+                        description={t('bbb.disablePrivateChatDescription')}
                         checked={settings.defaultBbbDisablePrivateChat}
                         onChange={(v) => togglePrimitive('defaultBbbDisablePrivateChat', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Participants can't send messages in class chat"
-                        description="Participants can read the class chat but not type in it. The host can still send messages."
+                        title={t('bbb.disablePublicChatTitle')}
+                        description={t('bbb.disablePublicChatDescription')}
                         checked={settings.defaultBbbDisablePublicChat}
                         onChange={(v) => togglePrimitive('defaultBbbDisablePublicChat', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Participants can't edit shared notes"
-                        description="Participants can view the shared notes but not change them."
+                        title={t('bbb.disableSharedNotesTitle')}
+                        description={t('bbb.disableSharedNotesDescription')}
                         checked={settings.defaultBbbDisableSharedNotes}
                         onChange={(v) => togglePrimitive('defaultBbbDisableSharedNotes', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Participants can't see who else is in the class"
-                        description="Hides the participant list from everyone except the host."
+                        title={t('bbb.hideUserListTitle')}
+                        description={t('bbb.hideUserListDescription')}
                         checked={settings.defaultBbbHideUserList}
                         onChange={(v) => togglePrimitive('defaultBbbHideUserList', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="End class automatically after the host leaves"
-                        description="The class ends about 10 minutes after the last host leaves, so it never runs unattended."
+                        title={t('bbb.endWhenNoModeratorTitle')}
+                        description={t('bbb.endWhenNoModeratorDescription')}
                         checked={settings.defaultBbbEndWhenNoModerator}
                         onChange={(v) => togglePrimitive('defaultBbbEndWhenNoModerator', v)}
                     />
@@ -799,35 +856,31 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <MonitorPlay size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Zoom Meeting Controls</CardTitle>
-                        <CardDescription>
-                            Defaults pre-filled in the Zoom settings panel when a single class is
-                            hosted on Zoom with a connected account. Admins can still change them
-                            per class. (Bulk scheduling doesn&apos;t provision Zoom meetings.)
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('zoom.title')}</CardTitle>
+                        <CardDescription>{t('zoom.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Entry &amp; security
+                        {t('zoom.entrySecurityGroup')}
                     </div>
                     <SettingRow
-                        title="Enable waiting room"
-                        description="Participants wait until the host admits them."
+                        title={t('zoom.waitingRoomTitle')}
+                        description={t('zoom.waitingRoomDescription')}
                         checked={settings.defaultZoomWaitingRoom}
                         onChange={(v) => togglePrimitive('defaultZoomWaitingRoom', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Allow join before host"
-                        description="Participants can enter before the host starts the meeting."
+                        title={t('zoom.joinBeforeHostTitle')}
+                        description={t('zoom.joinBeforeHostDescription')}
                         checked={settings.defaultZoomJoinBeforeHost}
                         onChange={(v) => togglePrimitive('defaultZoomJoinBeforeHost', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Require Zoom login to join"
-                        description="Only authenticated Zoom users can join."
+                        title={t('zoom.authenticationTitle')}
+                        description={t('zoom.authenticationDescription')}
                         checked={settings.defaultZoomMeetingAuthentication}
                         onChange={(v) => togglePrimitive('defaultZoomMeetingAuthentication', v)}
                     />
@@ -835,10 +888,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                     <div className="flex items-start justify-between gap-4 py-3">
                         <div className="flex-1">
                             <div className="text-sm font-medium text-neutral-800">
-                                Registration approval
+                                {t('zoom.approvalTitle')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
-                                How registrations are approved for the meeting.
+                                {t('zoom.approvalDescription')}
                             </div>
                         </div>
                         <Select
@@ -854,42 +907,44 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="2">No registration required</SelectItem>
-                                <SelectItem value="0">Automatically approve</SelectItem>
-                                <SelectItem value="1">Manually approve</SelectItem>
+                                <SelectItem value="2">{t('zoom.approvalNoneRequired')}</SelectItem>
+                                <SelectItem value="0">{t('zoom.approvalAutomatic')}</SelectItem>
+                                <SelectItem value="1">{t('zoom.approvalManual')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="mt-4 border-t border-neutral-100 pt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Audio / Video
+                        {t('zoom.audioVideoGroup')}
                     </div>
                     <SettingRow
-                        title="Mute participants on entry"
-                        description="Participants join muted."
+                        title={t('zoom.muteUponEntryTitle')}
+                        description={t('zoom.muteUponEntryDescription')}
                         checked={settings.defaultZoomMuteUponEntry}
                         onChange={(v) => togglePrimitive('defaultZoomMuteUponEntry', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Start host video on"
-                        description="The host's camera turns on automatically."
+                        title={t('zoom.hostVideoTitle')}
+                        description={t('zoom.hostVideoDescription')}
                         checked={settings.defaultZoomHostVideo}
                         onChange={(v) => togglePrimitive('defaultZoomHostVideo', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Start participant video on"
-                        description="Participants' cameras turn on automatically."
+                        title={t('zoom.participantVideoTitle')}
+                        description={t('zoom.participantVideoDescription')}
                         checked={settings.defaultZoomParticipantVideo}
                         onChange={(v) => togglePrimitive('defaultZoomParticipantVideo', v)}
                     />
                     <Separator />
                     <div className="flex items-start justify-between gap-4 py-3">
                         <div className="flex-1">
-                            <div className="text-sm font-medium text-neutral-800">Audio</div>
+                            <div className="text-sm font-medium text-neutral-800">
+                                {t('zoom.audioLabel')}
+                            </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
-                                Which audio methods participants can use.
+                                {t('zoom.audioDescription')}
                             </div>
                         </div>
                         <Select
@@ -905,40 +960,40 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="both">Computer + Telephony</SelectItem>
-                                <SelectItem value="voip">Computer audio only</SelectItem>
-                                <SelectItem value="telephony">Telephony only</SelectItem>
+                                <SelectItem value="both">{t('zoom.audioBoth')}</SelectItem>
+                                <SelectItem value="voip">{t('zoom.audioVoip')}</SelectItem>
+                                <SelectItem value="telephony">{t('zoom.audioTelephony')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="mt-4 border-t border-neutral-100 pt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        In-meeting
+                        {t('zoom.inMeetingGroup')}
                     </div>
                     <SettingRow
-                        title="Enable breakout rooms"
-                        description="Allow splitting participants into breakout rooms."
+                        title={t('zoom.breakoutRoomTitle')}
+                        description={t('zoom.breakoutRoomDescription')}
                         checked={settings.defaultZoomBreakoutRoom}
                         onChange={(v) => togglePrimitive('defaultZoomBreakoutRoom', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Start in focus mode"
-                        description="Participants only see the host and shared content."
+                        title={t('zoom.focusModeTitle')}
+                        description={t('zoom.focusModeDescription')}
                         checked={settings.defaultZoomFocusMode}
                         onChange={(v) => togglePrimitive('defaultZoomFocusMode', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Allow join from multiple devices"
-                        description="A participant can be signed in from more than one device."
+                        title={t('zoom.multipleDevicesTitle')}
+                        description={t('zoom.multipleDevicesDescription')}
                         checked={settings.defaultZoomAllowMultipleDevices}
                         onChange={(v) => togglePrimitive('defaultZoomAllowMultipleDevices', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Add identity watermark"
-                        description="Overlay each participant's identity on shared content."
+                        title={t('zoom.watermarkTitle')}
+                        description={t('zoom.watermarkDescription')}
                         checked={settings.defaultZoomWatermark}
                         onChange={(v) => togglePrimitive('defaultZoomWatermark', v)}
                     />
@@ -946,10 +1001,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                     <div className="flex items-start justify-between gap-4 py-3">
                         <div className="flex-1">
                             <div className="text-sm font-medium text-neutral-800">
-                                Automatic recording
+                                {t('zoom.autoRecordingTitle')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
-                                Whether and where the meeting is recorded automatically.
+                                {t('zoom.autoRecordingDescription')}
                             </div>
                         </div>
                         <Select
@@ -965,14 +1020,118 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="cloud">Record to Zoom cloud</SelectItem>
-                                <SelectItem value="local">
-                                    Local recording (host machine)
-                                </SelectItem>
-                                <SelectItem value="none">Don&apos;t record</SelectItem>
+                                <SelectItem value="cloud">{t('zoom.autoRecordingCloud')}</SelectItem>
+                                <SelectItem value="local">{t('zoom.autoRecordingLocal')}</SelectItem>
+                                <SelectItem value="none">{t('zoom.autoRecordingNone')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Google Meet control defaults (single-class Meet sessions with a connected account) */}
+            <Card className="border-neutral-200 shadow-none">
+                <CardHeader className="flex-row items-start gap-3 space-y-0 p-5 pb-4">
+                    <div className="flex size-9 items-center justify-center rounded-md bg-primary-50 text-primary-500">
+                        <VideoCamera size={18} />
+                    </div>
+                    <div className="flex-1">
+                        <CardTitle className="text-base">{t('googleMeet.title')}</CardTitle>
+                        <CardDescription>{t('googleMeet.description')}</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent className="border-t border-neutral-100 p-5">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                        {t('googleMeet.recordingGroup')}
+                    </div>
+                    {/* Load errors are shown by the Google Meet Integration card above. */}
+                    {googleAccountsLoaded && activeGoogleAccounts.length === 0 && (
+                        <div className="py-3 text-xs text-neutral-500">
+                            {t('googleMeet.noAccount')}
+                        </div>
+                    )}
+                    {activeGoogleAccounts.map((a) => (
+                        <div key={a.id}>
+                            <SettingRow
+                                title={t('googleMeet.autoRecordTitle', {
+                                    email: a.organizerEmail,
+                                })}
+                                description={t('googleMeet.autoRecordDescription')}
+                                checked={googleRecordDrafts[a.id] ?? !!a.recordingEnabled}
+                                onChange={(v) =>
+                                    setGoogleRecordDraft(a.id, !!a.recordingEnabled, v)
+                                }
+                            />
+                            <Separator />
+                        </div>
+                    ))}
+                    <SettingRow
+                        title={t('googleMeet.transcriptionTitle')}
+                        description={t('googleMeet.transcriptionDescription')}
+                        checked={settings.defaultGoogleMeetTranscription}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetTranscription', v)}
+                    />
+                    <Separator />
+                    <SettingRow
+                        title={t('googleMeet.smartNotesTitle')}
+                        description={t('googleMeet.smartNotesDescription')}
+                        checked={settings.defaultGoogleMeetSmartNotes}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetSmartNotes', v)}
+                    />
+                    <Separator />
+                    <SettingRow
+                        title={t('googleMeet.attendanceReportTitle')}
+                        description={t('googleMeet.attendanceReportDescription')}
+                        checked={settings.defaultGoogleMeetAttendanceReport}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetAttendanceReport', v)}
+                    />
+                    <div className="py-2 text-xs text-neutral-500">{t('googleMeet.planHint')}</div>
+
+                    <div className="mt-4 border-t border-neutral-100 pt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                        {t('googleMeet.hostControlsGroup')}
+                    </div>
+                    <SettingRow
+                        title={t('googleMeet.hostManagementTitle')}
+                        description={t('googleMeet.hostManagementDescription')}
+                        checked={settings.defaultGoogleMeetHostManagement}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetHostManagement', v)}
+                    />
+                    <Separator />
+                    <SettingRow
+                        title={t('googleMeet.chatHostsOnlyTitle')}
+                        description={t('googleMeet.chatHostsOnlyDescription')}
+                        checked={settings.defaultGoogleMeetChatHostsOnly}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetChatHostsOnly', v)}
+                        disabled={!settings.defaultGoogleMeetHostManagement}
+                        disabledReason={t('googleMeet.disabledBecauseHostControlsOff')}
+                    />
+                    <Separator />
+                    <SettingRow
+                        title={t('googleMeet.reactionsHostsOnlyTitle')}
+                        description={t('googleMeet.reactionsHostsOnlyDescription')}
+                        checked={settings.defaultGoogleMeetReactionsHostsOnly}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetReactionsHostsOnly', v)}
+                        disabled={!settings.defaultGoogleMeetHostManagement}
+                        disabledReason={t('googleMeet.disabledBecauseHostControlsOff')}
+                    />
+                    <Separator />
+                    <SettingRow
+                        title={t('googleMeet.presentHostsOnlyTitle')}
+                        description={t('googleMeet.presentHostsOnlyDescription')}
+                        checked={settings.defaultGoogleMeetPresentHostsOnly}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetPresentHostsOnly', v)}
+                        disabled={!settings.defaultGoogleMeetHostManagement}
+                        disabledReason={t('googleMeet.disabledBecauseHostControlsOff')}
+                    />
+                    <Separator />
+                    <SettingRow
+                        title={t('googleMeet.joinAsViewerTitle')}
+                        description={t('googleMeet.joinAsViewerDescription')}
+                        checked={settings.defaultGoogleMeetJoinAsViewer}
+                        onChange={(v) => togglePrimitive('defaultGoogleMeetJoinAsViewer', v)}
+                        disabled={!settings.defaultGoogleMeetHostManagement}
+                        disabledReason={t('googleMeet.disabledBecauseHostControlsOff')}
+                    />
                 </CardContent>
             </Card>
 
@@ -983,65 +1142,62 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <BellRinging size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Notifications</CardTitle>
-                        <CardDescription>
-                            Default channels and triggers pre-selected when admins schedule a live
-                            class (single and bulk). Admins can still change them per class.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('notifications.title')}</CardTitle>
+                        <CardDescription>{t('notifications.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Channels
+                        {t('notifications.channelsGroup')}
                     </div>
                     <SettingRow
-                        title="Notify via Email"
-                        description="Send live-class notifications over email by default."
+                        title={t('notifications.emailTitle')}
+                        description={t('notifications.emailDescription')}
                         checked={settings.defaultNotifyByEmail}
                         onChange={(v) => togglePrimitive('defaultNotifyByEmail', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Notify via WhatsApp"
-                        description="Send live-class notifications over WhatsApp by default."
+                        title={t('notifications.whatsappTitle')}
+                        description={t('notifications.whatsappDescription')}
                         checked={settings.defaultNotifyByWhatsapp}
                         onChange={(v) => togglePrimitive('defaultNotifyByWhatsapp', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Notify via Push Notification"
-                        description="Send live-class push notifications by default."
+                        title={t('notifications.pushTitle')}
+                        description={t('notifications.pushDescription')}
                         checked={settings.defaultNotifyByPush}
                         onChange={(v) => togglePrimitive('defaultNotifyByPush', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Notify via System Notification"
-                        description="Send in-app system notifications by default."
+                        title={t('notifications.systemTitle')}
+                        description={t('notifications.systemDescription')}
                         checked={settings.defaultNotifyBySystem}
                         onChange={(v) => togglePrimitive('defaultNotifyBySystem', v)}
                     />
 
                     <div className="mt-4 border-t border-neutral-100 pt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                        Triggers
+                        {t('notifications.triggersGroup')}
                     </div>
                     <SettingRow
-                        title="When the live class is created"
-                        description="Fire a notification as soon as the class is scheduled."
+                        title={t('notifications.onCreateTitle')}
+                        description={t('notifications.onCreateDescription')}
                         checked={settings.defaultNotifyOnCreate}
                         onChange={(v) => togglePrimitive('defaultNotifyOnCreate', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="When the class goes live"
-                        description="Fire a notification the moment the class starts."
+                        title={t('notifications.onLiveTitle')}
+                        description={t('notifications.onLiveDescription')}
                         checked={settings.defaultNotifyOnLive}
                         onChange={(v) => togglePrimitive('defaultNotifyOnLive', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="When attendance is marked"
-                        description="Notify learners when they're marked present/absent."
+                        title={t('notifications.onAttendanceTitle')}
+                        description={t('notifications.onAttendanceDescription')}
                         checked={settings.defaultNotifyOnAttendance}
                         onChange={(v) => togglePrimitive('defaultNotifyOnAttendance', v)}
                     />
@@ -1049,11 +1205,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                     <div className="flex items-start justify-between gap-4 py-3">
                         <div className="flex-1">
                             <div className="text-sm font-medium text-neutral-800">
-                                Reminder before class
+                                {t('notifications.reminderTitle')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
-                                Pre-seed one &quot;notify before&quot; reminder on new classes.
-                                Admins can add more or remove it per class.
+                                {t('notifications.reminderDescription')}
                             </div>
                         </div>
                         <Select
@@ -1069,10 +1224,12 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value={NO_REMINDER}>No reminder</SelectItem>
-                                {REMINDER_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                        {opt.label}
+                                <SelectItem value={NO_REMINDER}>
+                                    {t('notifications.noReminder')}
+                                </SelectItem>
+                                {REMINDER_OPTION_VALUES.map((value) => (
+                                    <SelectItem key={value} value={value}>
+                                        {t(`reminderOptions.${value}`)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -1088,17 +1245,16 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <CursorClick size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Custom Action Button</CardTitle>
-                        <CardDescription>
-                            An optional configurable button shown to learners on the Live Session
-                            screen.
-                        </CardDescription>
+                        <CardTitle className="text-base">
+                            {t('customActionButton.title')}
+                        </CardTitle>
+                        <CardDescription>{t('customActionButton.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Custom action button card"
-                        description="Show the 'Custom Action Button' card while scheduling so admins can configure the button's text, URL and colors."
+                        title={t('customActionButton.cardTitle')}
+                        description={t('customActionButton.cardDescription')}
                         checked={settings.customActionButtonEnabled}
                         onChange={(v) => togglePrimitive('customActionButtonEnabled', v)}
                     />
@@ -1112,19 +1268,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <FileText size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Recording Transcription</CardTitle>
-                        <CardDescription>
-                            Generates a searchable transcript and English translation from each
-                            Vacademy Meet recording using Whisper. Costs compute per minute of
-                            audio, so this is off by default — turn on when you&apos;re ready to use
-                            transcripts for assessment generation or study notes.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('transcription.title')}</CardTitle>
+                        <CardDescription>{t('transcription.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Show the 'Process Recording' button"
-                        description="Adds a Process Recording action next to each recording in the live-session view so admins/teachers can kick off transcription. Existing transcripts remain viewable regardless of this setting — only the entry point to start new ones is hidden when off."
+                        title={t('transcription.buttonTitle')}
+                        description={t('transcription.buttonDescription')}
                         checked={settings.recordingTranscriptionEnabled}
                         onChange={(v) => togglePrimitive('recordingTranscriptionEnabled', v)}
                     />
@@ -1138,22 +1289,14 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <UserCheck size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">Minimum Attendance</CardTitle>
-                        <CardDescription>
-                            By default a learner is marked present the moment they click Join, even
-                            if they never actually reach the class or leave after a minute. Turn
-                            this on to require that they were genuinely in the class for a share of
-                            its scheduled length. Works for Vacademy Meet and Zoom; Google Meet
-                            doesn&apos;t report who was in the room, so those classes are
-                            unaffected. A teacher&apos;s manual mark always wins, and teachers are
-                            never marked absent.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('attendance.title')}</CardTitle>
+                        <CardDescription>{t('attendance.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4 border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Require a minimum attendance"
-                        description="Applies to classes scheduled from now on. Turning it off later returns new classes to the current behaviour and never re-decides a class that already happened."
+                        title={t('attendance.requireTitle')}
+                        description={t('attendance.requireDescription')}
                         checked={settings.defaultAttendanceCriteria.enabled}
                         onChange={(v) =>
                             setSettings((prev) => ({
@@ -1170,13 +1313,10 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                             <div className="flex-1">
                                 <div className="text-sm font-medium text-neutral-800">
-                                    Minimum share of the class
+                                    {t('attendance.minShareLabel')}
                                 </div>
                                 <div className="mt-0.5 text-xs text-neutral-500">
-                                    Measured against the scheduled class length. A learner below
-                                    this is marked absent — including anyone who clicked Join but
-                                    never entered. Note a class that finishes early still measures
-                                    everyone against the full scheduled slot.
+                                    {t('attendance.minShareDescription')}
                                 </div>
                             </div>
                             <Select
@@ -1199,7 +1339,7 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                                 <SelectContent>
                                     {[25, 40, 50, 60, 70, 75, 80, 90].map((pct) => (
                                         <SelectItem key={pct} value={String(pct)}>
-                                            {pct}% of the class
+                                            {t('attendance.percentOfClass', { percent: pct })}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -1216,41 +1356,36 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
                         <PlugsConnected size={18} />
                     </div>
                     <div className="flex-1">
-                        <CardTitle className="text-base">LMS Connection</CardTitle>
-                        <CardDescription>
-                            Lets teachers push live-class content into course chapters right from
-                            the session page. Off by default — turn on the features you want.
-                            Turning one off hides its entry point only; recordings and materials
-                            already added to chapters stay there.
-                        </CardDescription>
+                        <CardTitle className="text-base">{t('lms.title')}</CardTitle>
+                        <CardDescription>{t('lms.description')}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="border-t border-neutral-100 p-5">
                     <SettingRow
-                        title="Add recordings to course"
-                        description="Shows an 'Add to course' action next to each recording on the live-session view, so teachers can link the recording into chapters of the session's batches."
+                        title={t('lms.addRecordingsTitle')}
+                        description={t('lms.addRecordingsDescription')}
                         checked={settings.lmsConnection.recordingAddToCourseEnabled}
                         onChange={(v) => toggleLmsConnection('recordingAddToCourseEnabled', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Class materials"
-                        description="Shows the Class Materials card on the live-session view, where teachers upload a PDF or video (or paste a YouTube link) and add it to chapters."
+                        title={t('lms.classMaterialsTitle')}
+                        description={t('lms.classMaterialsDescription')}
                         checked={settings.lmsConnection.classMaterialsEnabled}
                         onChange={(v) => toggleLmsConnection('classMaterialsEnabled', v)}
                     />
                     <Separator />
                     <SettingRow
-                        title="Auto-upload recordings to course"
-                        description="Automatically adds a finished class recording as a slide in a chapter once it's ready — no manual 'Add to course' click needed. Sessions can pick their own destination while scheduling; otherwise the default below is used."
+                        title={t('lms.autoUploadTitle')}
+                        description={t('lms.autoUploadDescription')}
                         checked={settings.lmsConnection.autoUploadRecordingsEnabled}
                         onChange={(v) => toggleLmsConnection('autoUploadRecordingsEnabled', v)}
                     />
                     {settings.lmsConnection.autoUploadRecordingsEnabled && (
                         <div className="pl-4">
                             <SettingRow
-                                title="Notify learners on auto-upload"
-                                description="Emails enrolled learners ('New Study Material Available') when a recording is auto-added via the default destination below. Sessions with their own destination use the notify choice made while scheduling."
+                                title={t('lms.notifyOnAutoUploadTitle')}
+                                description={t('lms.notifyOnAutoUploadDescription')}
                                 checked={settings.lmsConnection.autoUploadNotifyLearners}
                                 onChange={(v) => toggleLmsConnection('autoUploadNotifyLearners', v)}
                             />
@@ -1277,8 +1412,8 @@ export default function LiveSessionSettings({ embedded = false }: LiveSessionSet
 
             <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-500">
                 <CursorClick size={14} className="-mt-0.5 mr-1 inline" />
-                Changes apply only to <strong>new</strong> live classes scheduled after saving.
-                Existing classes are unaffected.
+                {t('footer.notePrefix')} <strong>{t('footer.noteBold')}</strong>{' '}
+                {t('footer.noteSuffix')}
             </div>
         </div>
     );

@@ -2,6 +2,7 @@
 
 import type React from 'react';
 
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,6 +44,7 @@ type FormValues = z.infer<typeof formSchema>;
 const INSTITUTE_ID = 'your-institute-id'; // Replace in real usage
 
 export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => void }) => {
+    const { t } = useTranslation('addAudioDialog');
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } = Route.useSearch();
     const { addUpdateAudioSlide, updateSlideOrder } = useSlidesMutations(
@@ -135,7 +137,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                 setActiveItem(getSlideById(newSlideId));
             }, 500);
         } catch (error) {
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toasts.reorderFailed'));
         }
     };
 
@@ -196,7 +198,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
             if (response) {
                 await reorderSlidesAfterNewSlide(slideId);
                 openState?.(false);
-                toast.success('Audio slide created successfully!');
+                toast.success(t('toasts.createSuccess'));
             }
 
             form.reset();
@@ -205,7 +207,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
             setAudioDuration(0);
         } catch (error) {
             console.error('Error creating audio slide:', error);
-            toast.error('Failed to create audio slide');
+            toast.error(t('toasts.createFailed'));
         } finally {
             setIsUploading(false);
         }
@@ -229,23 +231,25 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                             <MusicNotes size={48} weight="duotone" />
                         </div>
                         <h3 className="text-xl font-medium text-primary-500">
-                            Import your audio file
+                            {t('dropzone.title')}
                         </h3>
-                        <p className="mt-1 text-gray-500">Drag or click to upload</p>
+                        <p className="mt-1 text-gray-500">{t('dropzone.hint')}</p>
                         <p className="mt-1 text-xs text-gray-400">
-                            Supports MP3, WAV, OGG, AAC, M4A
+                            {t('dropzone.formats')}
                         </p>
                         {selectedAudioFile && (
                             <div className="mt-3 rounded-md bg-primary-50 p-2">
                                 <p className="text-sm font-medium text-primary-700">
-                                    Selected: {selectedAudioFile.name}
+                                    {t('dropzone.selected', { fileName: selectedAudioFile.name })}
                                 </p>
                                 {audioDuration > 0 && (
                                     <p className="text-xs text-primary-600">
-                                        Duration: {Math.floor(audioDuration / 60000)}:
-                                        {String(
-                                            Math.floor((audioDuration % 60000) / 1000)
-                                        ).padStart(2, '0')}
+                                        {t('dropzone.duration', {
+                                            minutes: Math.floor(audioDuration / 60000),
+                                            seconds: String(
+                                                Math.floor((audioDuration % 60000) / 1000)
+                                            ).padStart(2, '0'),
+                                        })}
                                     </p>
                                 )}
                             </div>
@@ -279,11 +283,11 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Title</FormLabel>
+                            <FormLabel>{t('fields.title')}</FormLabel>
                             <FormControl>
                                 <MyInput
                                     inputType="text"
-                                    inputPlaceholder="Enter audio title"
+                                    inputPlaceholder={t('fields.titlePlaceholder')}
                                     input={field.value}
                                     onChangeFunction={field.onChange}
                                     size="large"
@@ -300,10 +304,10 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Description (Optional)</FormLabel>
+                            <FormLabel>{t('fields.description')}</FormLabel>
                             <FormControl>
                                 <Textarea
-                                    placeholder="Enter a description for this audio..."
+                                    placeholder={t('fields.descriptionPlaceholder')}
                                     className="min-h-[80px] resize-none"
                                     {...field}
                                 />
@@ -319,7 +323,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                     name="thumbnailFile"
                     render={() => (
                         <FormItem>
-                            <FormLabel>Cover Image (Optional)</FormLabel>
+                            <FormLabel>{t('fields.coverImage')}</FormLabel>
                             <FormControl>
                                 <div className="flex items-center gap-4">
                                     <input
@@ -339,7 +343,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                                                 ?.click()
                                         }
                                     >
-                                        {selectedThumbnailFile ? 'Change Image' : 'Upload Image'}
+                                        {selectedThumbnailFile ? t('fields.changeImage') : t('fields.uploadImage')}
                                     </MyButton>
                                     {selectedThumbnailFile && (
                                         <span className="text-sm text-gray-600">
@@ -358,10 +362,10 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                     name="transcript"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Transcript (Optional)</FormLabel>
+                            <FormLabel>{t('fields.transcript')}</FormLabel>
                             <FormControl>
                                 <Textarea
-                                    placeholder="Paste or type the audio transcript here..."
+                                    placeholder={t('fields.transcriptPlaceholder')}
                                     className="min-h-[100px] resize-none"
                                     {...field}
                                 />
@@ -389,10 +393,10 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
                     {isUploading ? (
                         <div className="flex items-center justify-center gap-2">
                             <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                            Uploading...
+                            {t('actions.uploading')}
                         </div>
                     ) : (
-                        'Create Audio Slide'
+                        t('actions.submit')
                     )}
                 </MyButton>
             </form>

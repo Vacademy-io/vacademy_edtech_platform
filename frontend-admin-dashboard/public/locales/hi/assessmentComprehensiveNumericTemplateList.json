@@ -1,0 +1,29 @@
+{
+    "emptyState": {
+        "message": "सवाल का विवरण दिखाने के लिए कृपया एक सवाल जोड़ें"
+    },
+    "header": {
+        "questionsSettings": "प्रश्न सेटिंग्स",
+        "questionTypeLabel": "प्रश्न का प्रकार",
+        "numericalTypeLabel": "संख्यात्मक प्रकार"
+    },
+    "timeLimit": {
+        "title": "समय सीमा",
+        "hrs": "घंटे",
+        "min": "मिनट"
+    },
+    "comprehensionText": "गद्यांश पाठ",
+    "question": {
+        "label": "प्रश्न"
+    },
+    "answer": {
+        "label": "उत्तर:"
+    },
+    "explanation": {
+        "label": "स्पष्टीकरण:"
+    },
+    "editor": {
+        "showMore": "अधिक दिखाएं",
+        "showLess": "कम दिखाएं"
+    }
+}

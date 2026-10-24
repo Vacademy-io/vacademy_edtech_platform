@@ -1,0 +1,31 @@
+{
+    "toasts": {
+        "pdfExportSuccess": "छात्र प्रश्न इनसाइट्स डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया"
+    },
+    "questionCard": {
+        "heading": "प्रश्न ({{number}}.)",
+        "correctAnswerLabel": "सही उत्तर:",
+        "explanationLabel": "व्याख्या:",
+        "topResponsesTitle": "शीर्ष 3 तेज़ सही उत्तर",
+        "secondsSuffix_one": "{{count}} सेकंड",
+        "secondsSuffix_other": "{{count}} सेकंड"
+    },
+    "summary": {
+        "totalAttempts_one": "कुल प्रयास: {{count}} छात्र",
+        "totalAttempts_other": "कुल प्रयास: {{count}} छात्र"
+    },
+    "respondents": {
+        "correctLabel": "सही उत्तर देने वाले: ",
+        "partialLabel": "आंशिक रूप से सही उत्तर देने वाले: ",
+        "wrongLabel": "गलत उत्तर देने वाले: ",
+        "skippedLabel": "छोड़ा गया: ",
+        "viewList": "सूची देखें",
+        "notAvailable": "उपलब्ध नहीं"
+    },
+    "dialogs": {
+        "correctTitle": "सही उत्तर देने वाले",
+        "partialTitle": "आंशिक रूप से सही उत्तर देने वाले",
+        "wrongTitle": "गलत उत्तर देने वाले",
+        "skippedTitle": "प्रश्न छोड़ने वाले"
+    }
+}

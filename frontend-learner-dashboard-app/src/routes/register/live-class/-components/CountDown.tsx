@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 interface TimerProps {
   startTime: string;
@@ -31,6 +32,7 @@ const TimeSeparator: React.FC = () => (
 );
 
 const CountdownTimer: React.FC<TimerProps> = ({ startTime }) => {
+  const { t } = useTranslation("registrationA");
   const calculateTimeLeft = () => {
     if (!startTime) return null;
     const now = dayjs();
@@ -58,7 +60,7 @@ const CountdownTimer: React.FC<TimerProps> = ({ startTime }) => {
     return (
       <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-5 py-2.5 rounded-full text-sm font-semibold border border-green-200 shadow-sm">
         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-        Live now
+        {t("common.liveNow")}
       </div>
     );
   }
@@ -66,28 +68,28 @@ const CountdownTimer: React.FC<TimerProps> = ({ startTime }) => {
   return (
     <div className="flex flex-col items-center gap-4">
       <p className="text-sm text-gray-500 font-medium tracking-wide">
-        Starts in
+        {t("liveClass.countdown.startsIn")}
       </p>
       <div className="flex items-center gap-2 sm:gap-3">
         {timeLeft.days > 0 && (
           <>
-            <TimeUnit value={String(timeLeft.days)} label="Days" />
+            <TimeUnit value={String(timeLeft.days)} label={t("liveClass.countdown.days")} />
             <TimeSeparator />
           </>
         )}
         <TimeUnit
           value={String(timeLeft.hours).padStart(2, "0")}
-          label="Hours"
+          label={t("liveClass.countdown.hours")}
         />
         <TimeSeparator />
         <TimeUnit
           value={String(timeLeft.minutes).padStart(2, "0")}
-          label="Mins"
+          label={t("liveClass.countdown.mins")}
         />
         <TimeSeparator />
         <TimeUnit
           value={String(timeLeft.seconds).padStart(2, "0")}
-          label="Secs"
+          label={t("liveClass.countdown.secs")}
         />
       </div>
     </div>

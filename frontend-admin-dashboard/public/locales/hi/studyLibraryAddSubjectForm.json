@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "subjectNameRequired": "विषय का नाम आवश्यक है"
+    },
+    "nameLabel": "{{subject}} का नाम",
+    "namePlaceholder": "{{subject}} का नाम दर्ज करें",
+    "imageLabel": "{{subject}} इमेज (वैकल्पिक)",
+    "clickToUpload": "इमेज अपलोड करने के लिए क्लिक करें",
+    "uploadHint": "PNG, JPG, GIF 10MB तक · 16:9 सुझाया गया",
+    "previewAlt": "प्रिव्यू",
+    "uploading": "अपलोड हो रहा है...",
+    "saveChanges": "बदलाव सहेजें",
+    "add": "जोड़ें",
+    "cropTitle": "विषय थंबनेल क्रॉप करें"
+}

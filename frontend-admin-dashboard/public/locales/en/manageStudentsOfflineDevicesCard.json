@@ -1,0 +1,28 @@
+{
+    "heading": "Offline devices",
+    "loading": "Loading devices…",
+    "emptyState": "No devices registered for offline downloads.",
+    "device": {
+        "fallbackName": "Device",
+        "checkinInfo": "Last check-in {{checkinDate}} · offline access until {{leaseDate}}"
+    },
+    "status": {
+        "active": "Active",
+        "revoked": "Revoked"
+    },
+    "actions": {
+        "revoke": "Revoke",
+        "cancel": "Cancel",
+        "revokeDevice": "Revoke device",
+        "revoking": "Revoking…"
+    },
+    "confirmDialog": {
+        "heading": "Revoke offline device?",
+        "body": "All downloaded content on <strong>{{deviceName}}</strong> will be deleted the next time it comes online, and it will stop counting against the learner's device limit. Course permissions are unaffected.",
+        "fallbackDeviceName": "this device"
+    },
+    "toast": {
+        "revokeSuccess": "Device revoked — content purges at its next check-in",
+        "revokeFailed": "Failed to revoke device"
+    }
+}

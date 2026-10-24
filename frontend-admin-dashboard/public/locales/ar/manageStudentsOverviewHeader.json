@@ -1,0 +1,46 @@
+{
+    "tiles": {
+        "courseProgress": {
+            "label": "تقدّم الدورة",
+            "hint": {
+                "onTrack": "ضمن المسار الصحيح",
+                "paceCheckNeeded": "يلزم مراجعة الوتيرة",
+                "behindSchedule": "متأخر عن الجدول"
+            }
+        },
+        "attendance": {
+            "label": "الحضور",
+            "hint": {
+                "aboveTarget": "فوق الهدف",
+                "watchList": "قيد المتابعة",
+                "belowTarget": "دون الهدف"
+            }
+        },
+        "tests": {
+            "label": "الاختبارات",
+            "hint": {
+                "pending_zero": "{{count}} اختبار متبقٍ",
+                "pending_one": "{{count}} اختبار واحد متبقٍ",
+                "pending_two": "{{count}} اختباران متبقيان",
+                "pending_few": "{{count}} اختبارات متبقية",
+                "pending_many": "{{count}} اختبارًا متبقيًا",
+                "pending_other": "{{count}} اختبار متبقٍ"
+            }
+        },
+        "outstanding": {
+            "label": "المبلغ المستحق",
+            "hint": {
+                "actionRequired": "يتطلب إجراءً",
+                "paidInFull": "مدفوع بالكامل"
+            }
+        },
+        "leadScore": {
+            "label": "نقاط العميل المحتمل",
+            "hint": {
+                "hotLead": "عميل محتمل نشط",
+                "nurture": "بحاجة إلى متابعة",
+                "cold": "عميل محتمل بارد"
+            }
+        }
+    }
+}

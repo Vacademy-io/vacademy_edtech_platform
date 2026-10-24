@@ -1,0 +1,30 @@
+{
+    "heading": "रोजगार स्थिति बदलें",
+    "fallbackEmployeeLabel": "यह कर्मचारी",
+    "notSet": "सेट नहीं है",
+    "currentStatus": "वर्तमान में <1>{{name}}</1> के लिए {{status}}।",
+    "actions": {
+        "cancel": "रद्द करें",
+        "updating": "अपडेट किया जा रहा है…",
+        "updateStatus": "स्थिति अपडेट करें"
+    },
+    "fields": {
+        "newStatus": "नई स्थिति",
+        "lastWorkingDate": "अंतिम कार्य तिथि",
+        "exitReason": "निकास कारण",
+        "exitReasonPlaceholder": "जैसे, नई भूमिका के लिए इस्तीफा दिया"
+    },
+    "exitNotice": "यह रोजगार समाप्त करता है। अंतिम कार्य तिथि और कारण फुल एंड फाइनल सेटलमेंट में उपयोग होते हैं, इसलिए दोनों आवश्यक हैं।",
+    "toast": {
+        "exitStatusUpdated": "{{name}} अब {{status}} है। उनका फुल एंड फाइनल सेटलमेंट पेरोल में तैयार किया जा सकता है।",
+        "statusUpdated": "स्थिति {{status}} में अपडेट की गई"
+    },
+    "errors": {
+        "updateFailed": "रोजगार स्थिति नहीं बदली जा सकी"
+    },
+    "validation": {
+        "pickStatus": "एक स्थिति चुनें",
+        "lastWorkingDateRequired": "देय राशि निपटाने के लिए अंतिम कार्य तिथि आवश्यक है",
+        "exitReasonRequired": "रिकॉर्ड करें कि रोजगार क्यों समाप्त हुआ"
+    }
+}

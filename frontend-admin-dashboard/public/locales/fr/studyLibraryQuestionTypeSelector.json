@@ -1,0 +1,15 @@
+{
+    "addQuestion": "Ajouter une question",
+    "quickAccess": "Accès rapide",
+    "mcqSingleCorrect": "QCM (une réponse correcte)",
+    "mcqMultipleCorrect": "QCM (plusieurs réponses correctes)",
+    "numerical": "Numérique",
+    "trueFalse": "Vrai Faux",
+    "writingSkills": "Compétences rédactionnelles",
+    "longAnswer": "Réponse longue",
+    "singleWord": "Un seul mot",
+    "readingSkills": "Compétences de lecture",
+    "comprehensionMcqSingleCorrect": "QCM de compréhension (une réponse correcte)",
+    "comprehensionMcqMultipleCorrect": "QCM de compréhension (plusieurs réponses correctes)",
+    "comprehensionNumeric": "Numérique de compréhension"
+}

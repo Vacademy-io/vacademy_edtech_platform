@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Check, Loader2 } from 'lucide-react';
+import { Warning, Check, CircleNotch } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useTheme } from '@/providers/theme/theme-provider';
 import {
     getWhatsAppProviderStatus,
@@ -23,25 +25,26 @@ type Props = { isTab?: boolean };
 
 const PROVIDER_ORDER = ['COMBOT', 'WATI', 'META'] as const;
 
-const PROVIDER_CONFIG: Record<
-    string,
-    { name: string; description: string }
-> = {
-    COMBOT: {
-        name: 'Combot',
-        description: 'Com.bot WhatsApp Business API provider',
-    },
-    WATI: {
-        name: 'WATI',
-        description: 'WATI WhatsApp Business API provider',
-    },
-    META: {
-        name: 'Meta',
-        description: 'Direct Meta WhatsApp Cloud API',
-    },
-};
+function buildProviderConfig(t: TFunction): Record<string, { name: string; description: string }> {
+    return {
+        COMBOT: {
+            name: t('providers.COMBOT.name'),
+            description: t('providers.COMBOT.description'),
+        },
+        WATI: {
+            name: t('providers.WATI.name'),
+            description: t('providers.WATI.description'),
+        },
+        META: {
+            name: t('providers.META.name'),
+            description: t('providers.META.description'),
+        },
+    };
+}
 
 export default function WhatsAppSettings({ isTab = false }: Props) {
+    const { t } = useTranslation('settingsWhatsApp');
+    const PROVIDER_CONFIG = buildProviderConfig(t);
     const { getPrimaryColorCode } = useTheme();
     const primaryColor = getPrimaryColorCode();
     const [loading, setLoading] = useState(true);
@@ -62,7 +65,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
             setProviders(data.providers || []);
         } catch (e) {
             console.error(e);
-            setError('Failed to load WhatsApp provider settings');
+            setError(t('errors.loadStatus'));
         } finally {
             setLoading(false);
         }
@@ -78,12 +81,14 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
         try {
             await switchWhatsAppProvider(providerName);
             toast.success(
-                `Switched active provider to ${PROVIDER_CONFIG[providerName]?.name || providerName}`
+                t('toasts.switchedProvider', {
+                    provider: PROVIDER_CONFIG[providerName]?.name || providerName,
+                })
             );
             await loadStatus();
         } catch (e: any) {
             const msg =
-                e?.response?.data?.message || e?.message || 'Failed to switch provider';
+                e?.response?.data?.message || e?.message || t('errors.switchProvider');
             toast.error(msg);
         } finally {
             setSwitching(null);
@@ -94,7 +99,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
         const fields = PROVIDER_CREDENTIAL_FIELDS[providerName] || [];
         const hasEmpty = fields.some((f) => !credentials[f.key]?.trim());
         if (hasEmpty) {
-            toast.error('Please fill in all fields');
+            toast.error(t('errors.fillAllFields'));
             return;
         }
 
@@ -105,15 +110,17 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                 credentials,
             });
             toast.success(
-                `${PROVIDER_CONFIG[providerName]?.name || providerName} credentials saved`
+                t('toasts.credentialsSaved', {
+                    provider: PROVIDER_CONFIG[providerName]?.name || providerName,
+                })
             );
             setEditingProvider(null);
             setCredentials({});
-    
+
             await loadStatus();
         } catch (e: any) {
             const msg =
-                e?.response?.data?.message || e?.message || 'Failed to save credentials';
+                e?.response?.data?.message || e?.message || t('errors.saveCredentials');
             toast.error(msg);
         } finally {
             setSaving(false);
@@ -134,8 +141,8 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
     if (loading) {
         return (
             <div className="flex items-center justify-center p-8">
-                <Loader2 className="size-6 animate-spin text-gray-400" />
-                <span className="ml-2 text-gray-500">Loading WhatsApp settings...</span>
+                <CircleNotch className="size-6 animate-spin text-gray-400" />
+                <span className="ms-2 text-gray-500">{t('loading')}</span>
             </div>
         );
     }
@@ -144,16 +151,14 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
         <div className="space-y-6">
             {isTab && (
                 <div>
-                    <h2 className="text-xl font-bold">WhatsApp Settings</h2>
-                    <p className="text-sm text-gray-600">
-                        Configure and switch between WhatsApp providers for your institute
-                    </p>
+                    <h2 className="text-xl font-bold">{t('header.title')}</h2>
+                    <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
                 </div>
             )}
 
             {error && (
                 <Alert variant="destructive">
-                    <AlertTriangle className="size-4" />
+                    <Warning className="size-4" />
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
@@ -164,13 +169,13 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                     <Check className="size-5 text-green-600" />
                     <div>
                         <p className="text-sm font-medium text-gray-900">
-                            Active Provider:{' '}
+                            {t('banner.activeProviderLabel')}{' '}
                             <span className="font-bold">
                                 {PROVIDER_CONFIG[activeProvider]?.name || activeProvider}
                             </span>
                         </p>
                         <p className="text-xs text-gray-600">
-                            All outgoing WhatsApp messages are routed through this provider
+                            {t('banner.activeProviderDescription')}
                         </p>
                     </div>
                 </div>
@@ -218,10 +223,12 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                         }
                                         title={
                                             !isConfigured
-                                                ? 'Configure credentials first'
+                                                ? t('card.radio.configureFirst')
                                                 : isActive
-                                                  ? 'Currently active'
-                                                  : `Switch to ${config.name}`
+                                                  ? t('card.radio.currentlyActive')
+                                                  : t('card.radio.switchTo', {
+                                                        provider: config.name,
+                                                    })
                                         }
                                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
                                             isActive
@@ -239,7 +246,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                             />
                                         )}
                                         {switching === providerName && (
-                                            <Loader2
+                                            <CircleNotch
                                                 className="h-3 w-3 animate-spin"
                                                 style={{ color: primaryColor }}
                                             />
@@ -250,7 +257,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                             {config.name}
                                             {isActive && (
                                                 <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                                                    Active
+                                                    {t('card.badge.active')}
                                                 </Badge>
                                             )}
                                             {isConfigured && !isActive && (
@@ -258,7 +265,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                                     variant="secondary"
                                                     className="bg-gray-100 text-gray-600"
                                                 >
-                                                    Configured
+                                                    {t('card.badge.configured')}
                                                 </Badge>
                                             )}
                                             {!isConfigured && (
@@ -266,7 +273,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                                     variant="outline"
                                                     className="text-gray-400"
                                                 >
-                                                    Not Configured
+                                                    {t('card.badge.notConfigured')}
                                                 </Badge>
                                             )}
                                         </CardTitle>
@@ -281,7 +288,7 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                             size="sm"
                                             onClick={() => startEditing(providerName)}
                                         >
-                                            Configure
+                                            {t('card.configure')}
                                         </Button>
                                     )}
                                 </div>
@@ -293,14 +300,14 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                             <CardContent className="border-t pt-4">
                                 <div className="mb-3 flex items-center justify-between">
                                     <p className="text-xs font-medium text-muted-foreground">
-                                        Provider Credentials
+                                        {t('card.credentialsTitle')}
                                     </p>
                                     <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => startEditing(providerName)}
                                     >
-                                        Edit
+                                        {t('card.edit')}
                                     </Button>
                                 </div>
                                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -337,8 +344,8 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                 <div className="space-y-4">
                                     <p className="text-xs text-muted-foreground">
                                         {isConfigured
-                                            ? 'Update your provider credentials below.'
-                                            : 'Enter your provider credentials to configure this provider.'}
+                                            ? t('editMode.updateDescription')
+                                            : t('editMode.enterDescription')}
                                     </p>
                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                                         {fields.map((field: CredentialField) => (
@@ -375,10 +382,9 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                             onClick={() => {
                                                 setEditingProvider(null);
                                                 setCredentials({});
-                                        
                                             }}
                                         >
-                                            Cancel
+                                            {t('editMode.cancel')}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -388,9 +394,9 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                                             disabled={saving}
                                         >
                                             {saving ? (
-                                                <Loader2 className="mr-1 size-3 animate-spin" />
+                                                <CircleNotch className="me-1 size-3 animate-spin" />
                                             ) : null}
-                                            Save Credentials
+                                            {t('editMode.saveCredentials')}
                                         </Button>
                                     </div>
                                 </div>
@@ -407,11 +413,13 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
             <Card className="rounded-lg border-gray-200 bg-gray-50">
                 <CardContent className="py-4">
                     <p className="text-xs text-muted-foreground">
-                        <strong>Note:</strong> Switching the active provider instantly routes
-                        all outgoing WhatsApp messages through the selected provider. Make sure
-                        the same message templates exist on the new provider before switching.
-                        Inbound messages (user replies) are handled automatically via the smart
-                        fallback system.
+                        <Trans i18nKey="settingsWhatsApp:info.note">
+                            <strong>Note:</strong> Switching the active provider instantly routes
+                            all outgoing WhatsApp messages through the selected provider. Make sure
+                            the same message templates exist on the new provider before switching.
+                            Inbound messages (user replies) are handled automatically via the smart
+                            fallback system.
+                        </Trans>
                     </p>
                 </CardContent>
             </Card>

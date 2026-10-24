@@ -73,6 +73,11 @@ public class ScormTrackingService {
                 ? new HashMap<>(dto.getCmiJson())
                 : new HashMap<>();
         cmi.put("cmi.entry", isResume ? "resume" : "ab-initio");
+        // Learner identity (1.2 and 2004 spellings). Packages that keep their
+        // own browser-storage copy of progress key it on this; without it every
+        // account opened in the same browser reads the same copy.
+        cmi.put("cmi.core.student_id", userId);
+        cmi.put("cmi.learner_id", userId);
         dto.setCmiJson(cmi);
         return dto;
     }

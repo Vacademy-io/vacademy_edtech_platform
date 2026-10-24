@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Plus, FormInput, AlertCircle, Loader2, Info, X } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowUp,
+    PencilSimple,
+    ShieldCheck,
+    Textbox as FormInput,
+    Info,
+    CircleNotch as Loader2,
+    Plus,
+    Trash as Trash2,
+    WarningCircle as AlertCircle,
+    X,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { useToast } from '@/hooks/use-toast';
 import { fetchInstituteDefaultFields } from '@/services/custom-field-mappings';
@@ -10,6 +22,8 @@ import {
     createAndLinkCustomField,
     getProductPage,
     removeCustomFieldFromProductPage,
+    reorderProductPageCustomFields,
+    updateProductPageCustomField,
 } from '../-services/product-pages-service';
 import {
     Dialog,
@@ -21,6 +35,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ProductPageAggregatedField } from '../-types/product-page-types';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface Props {
     productPageId: string;
@@ -31,6 +47,41 @@ type DialogTab = 'existing' | 'create';
 
 const HAS_OPTIONS = (t: CustomFieldType) =>
     t === 'dropdown' || t === 'radio' || t === 'multi_select';
+
+/**
+ * `config` is a JSON blob shared by several features — dropdown options, help
+ * text, file limits, and now the verification block. Always parse, merge and
+ * re-serialise it; never build a fresh object, or an edit here silently drops
+ * whatever another feature stored.
+ */
+const parseConfigObject = (config?: string | null): Record<string, unknown> => {
+    if (!config) return {};
+    try {
+        const parsed = JSON.parse(config);
+        // The legacy dropdown-only format is a bare array of options.
+        if (Array.isArray(parsed)) return { options: parsed };
+        return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
+    } catch {
+        return {};
+    }
+};
+
+interface VerificationConfig {
+    required?: boolean;
+    channel?: string;
+    templateName?: string;
+    languageCode?: string;
+}
+
+const parseVerification = (config?: string | null): VerificationConfig | undefined =>
+    parseConfigObject(config).verification as VerificationConfig | undefined;
+
+/**
+ * Field types where asking the visitor to prove ownership makes sense. A code
+ * has to be deliverable TO the value, so it is only offered where the value is
+ * a contact address.
+ */
+const CAN_VERIFY = (t: string | null | undefined) => t === 'phone' || t === 'tel';
 
 export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: Props) => {
     const queryClient = useQueryClient();
@@ -49,6 +100,15 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
         { id: crypto.randomUUID(), value: '' },
     ]);
 
+    // Edit dialog — one field's label, type, required-ness and verification.
+    const [editTarget, setEditTarget] = useState<ProductPageAggregatedField | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editType, setEditType] = useState<CustomFieldType>('text');
+    const [editRequired, setEditRequired] = useState(false);
+    const [editVerify, setEditVerify] = useState(false);
+    const [editVerifyTemplate, setEditVerifyTemplate] = useState('');
+    const [editVerifyLanguage, setEditVerifyLanguage] = useState('');
+
     // Delete confirmation
     const [deleteTarget, setDeleteTarget] = useState<ProductPageAggregatedField | null>(null);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -60,7 +120,16 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
         staleTime: 60 * 1000,
     });
 
-    const aggregatedFields = page?.aggregated_custom_fields ?? [];
+    // Shown in the order the learner is asked, so this list IS the form preview.
+    // The mapping's individual_order wins; the field's own institute-wide
+    // formOrder is the fallback for anything nobody has ordered yet.
+    const aggregatedFields = (page?.aggregated_custom_fields ?? [])
+        .slice()
+        .sort(
+            (a, b) =>
+                (a.field.individual_order ?? a.field.custom_field?.formOrder ?? 0) -
+                (b.field.individual_order ?? b.field.custom_field?.formOrder ?? 0)
+        );
     const alreadyAddedIds = new Set(aggregatedFields.map((f) => f.field.field_id));
     const hasNoInvites = !page?.mappings?.length;
 
@@ -72,6 +141,80 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
     });
 
     const availableToAdd = defaultFields.filter((f) => !alreadyAddedIds.has(f.custom_field.id));
+
+    const openEdit = (agg: ProductPageAggregatedField) => {
+        const cf = agg.field.custom_field;
+        const verification = parseVerification(cf?.config);
+        setEditTarget(agg);
+        setEditName(cf?.fieldName ?? '');
+        setEditType(((cf?.fieldType ?? 'text') as CustomFieldType) || 'text');
+        setEditRequired(cf?.isMandatory ?? false);
+        setEditVerify(!!verification?.required);
+        setEditVerifyTemplate(verification?.templateName ?? '');
+        setEditVerifyLanguage(verification?.languageCode ?? '');
+    };
+
+    const updateMutation = useMutation({
+        mutationFn: () => {
+            const cf = editTarget!.field.custom_field;
+            // Merge, never replace: `config` also carries dropdown options, help
+            // text and file limits, and rewriting it wholesale would drop them.
+            const existing = parseConfigObject(cf?.config);
+            const config = {
+                ...existing,
+                // Also cleared when the type is changed to one a code cannot be
+                // delivered to — the UI hides the switch then, but a stale `true`
+                // would otherwise leave a gate nobody can pass.
+                verification: editVerify && CAN_VERIFY(editType)
+                    ? {
+                          required: true,
+                          channel: 'WHATSAPP',
+                          ...(editVerifyTemplate.trim()
+                              ? { templateName: editVerifyTemplate.trim() }
+                              : {}),
+                          ...(editVerifyLanguage.trim()
+                              ? { languageCode: editVerifyLanguage.trim() }
+                              : {}),
+                      }
+                    : undefined,
+            };
+            if (!editVerify || !CAN_VERIFY(editType)) delete config.verification;
+
+            return updateProductPageCustomField(
+                productPageId,
+                editTarget!.field.field_id,
+                instituteId,
+                {
+                    field_name: editName.trim(),
+                    field_type: editType,
+                    is_mandatory: editRequired,
+                    config: JSON.stringify(config),
+                }
+            );
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['productPage', productPageId] });
+            toast({
+                title: 'Field updated',
+                description: 'Applied everywhere in this institute that uses this field',
+            });
+            setEditTarget(null);
+        },
+        onError: () => {
+            toast({ title: 'Error', description: 'Failed to update field', variant: 'destructive' });
+        },
+    });
+
+    /** Moves one field and sends the WHOLE new order — positions are absolute. */
+    const moveField = (index: number, delta: number) => {
+        const target = index + delta;
+        if (target < 0 || target >= aggregatedFields.length) return;
+        const next = aggregatedFields.slice();
+        const [row] = next.splice(index, 1);
+        if (!row) return;
+        next.splice(target, 0, row);
+        reorderMutation.mutate(next.map((f) => f.field.field_id));
+    };
 
     const resetAddDialog = () => {
         setAddOpen(false);
@@ -138,8 +281,23 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
         },
     });
 
+    const reorderMutation = useMutation({
+        mutationFn: (orderedCustomFieldIds: string[]) =>
+            reorderProductPageCustomFields(productPageId, instituteId, orderedCustomFieldIds),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['productPage', productPageId] });
+        },
+        onError: () => {
+            toast({ title: 'Error', description: 'Failed to reorder fields', variant: 'destructive' });
+        },
+    });
+
     const isMutating =
-        addExistingMutation.isPending || createMutation.isPending || removeMutation.isPending;
+        addExistingMutation.isPending ||
+        createMutation.isPending ||
+        removeMutation.isPending ||
+        reorderMutation.isPending ||
+        updateMutation.isPending;
 
     const canSubmitCreate =
         newFieldName.trim().length > 0 &&
@@ -168,12 +326,26 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
                     {hasNoInvites ? (
                         <p className="flex items-center gap-1.5 text-xs text-warning-600">
                             <AlertCircle className="size-3.5 shrink-0" />
-                            Add courses under the <strong>Courses</strong> tab and save the page first.
+                            Add{' '}
+                            {getTerminologyPlural(
+                                ContentTerms.Course,
+                                SystemTerms.Course
+                            ).toLocaleLowerCase()}{' '}
+                            under the{' '}
+                            <strong>
+                                {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}
+                            </strong>{' '}
+                            tab and save the page first.
                         </p>
                     ) : (
                         <p className="flex items-center gap-1.5 text-xs text-neutral-400">
                             <Info className="size-3.5 shrink-0" />
-                            If you added new courses, save the page first so changes are reflected here.
+                            If you added new{' '}
+                            {getTerminologyPlural(
+                                ContentTerms.Course,
+                                SystemTerms.Course
+                            ).toLocaleLowerCase()}
+                            , save the page first so changes are reflected here.
                         </p>
                     )}
                 </div>
@@ -199,11 +371,29 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {aggregatedFields.map((agg) => {
+                    <p className="text-caption text-neutral-500">
+                        Learners are asked in this order. Two fields that collect the same thing
+                        are shown once on the form — remove the spares here.
+                    </p>
+                    {aggregatedFields.map((agg, index) => {
                         const cf = agg.field.custom_field;
                         const fieldName = cf?.fieldName ?? '—';
                         const fieldType = cf?.fieldType ?? '—';
-                        const isMandatory = agg.field.is_mandatory ?? cf?.isMandatory ?? false;
+                        // The custom field's own flag, NOT the mapping's: that is
+                        // the one the learner form validates against, and the two
+                        // disagree often enough that reading the mapping here showed
+                        // "Required" on a field the form let through empty.
+                        const isMandatory = cf?.isMandatory ?? agg.field.is_mandatory ?? false;
+                        // Another row collecting the SAME answer. They share one
+                        // value and the form draws only the first, so the extras
+                        // are dead weight an admin cannot otherwise spot — the
+                        // labels are usually different ("Email" vs "email").
+                        const duplicateOfKey =
+                            cf?.fieldKey &&
+                            aggregatedFields.some(
+                                (other, j) =>
+                                    j < index && other.field.custom_field?.fieldKey === cf.fieldKey
+                            );
                         return (
                             <div
                                 key={agg.field.field_id}
@@ -225,23 +415,219 @@ export const ProductPageCustomFieldsManager = ({ productPageId, instituteId }: P
                                         {agg.enroll_invite_ids.length} invite
                                         {agg.enroll_invite_ids.length !== 1 ? 's' : ''}
                                     </span>
+                                    {duplicateOfKey && (
+                                        <span className="rounded bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-600">
+                                            Duplicate — not shown on the form
+                                        </span>
+                                    )}
+                                    {parseVerification(cf?.config)?.required && (
+                                        <span className="flex items-center gap-1 rounded bg-success-50 px-2 py-0.5 text-xs font-medium text-success-600">
+                                            <ShieldCheck className="size-3" />
+                                            WhatsApp OTP
+                                        </span>
+                                    )}
                                 </div>
-                                <MyButton
-                                    buttonType="secondary"
-                                    scale="small"
-                                    layoutVariant="icon"
-                                    onClick={() => {
-                                        setDeleteTarget(agg);
-                                        setDeleteConfirmText('');
-                                    }}
-                                >
-                                    <Trash2 className="size-3.5 text-danger-500" />
-                                </MyButton>
+                                <div className="flex shrink-0 items-center gap-1">
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        layoutVariant="icon"
+                                        disable={isMutating}
+                                        onClick={() => openEdit(agg)}
+                                        aria-label={`Edit ${fieldName}`}
+                                    >
+                                        <PencilSimple className="size-3.5" />
+                                    </MyButton>
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        layoutVariant="icon"
+                                        disable={index === 0 || isMutating}
+                                        onClick={() => moveField(index, -1)}
+                                        aria-label={`Move ${fieldName} up`}
+                                    >
+                                        <ArrowUp className="size-3.5" />
+                                    </MyButton>
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        layoutVariant="icon"
+                                        disable={index === aggregatedFields.length - 1 || isMutating}
+                                        onClick={() => moveField(index, 1)}
+                                        aria-label={`Move ${fieldName} down`}
+                                    >
+                                        <ArrowDown className="size-3.5" />
+                                    </MyButton>
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        layoutVariant="icon"
+                                        onClick={() => {
+                                            setDeleteTarget(agg);
+                                            setDeleteConfirmText('');
+                                        }}
+                                    >
+                                        <Trash2 className="size-3.5 text-danger-500" />
+                                    </MyButton>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             )}
+
+            {/* ── Edit Field Dialog ─────────────────────────────────────────────── */}
+            <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Field</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-2 rounded-lg border border-info-200 bg-info-50 p-3 text-xs text-info-700">
+                            <Info className="mt-0.5 size-4 shrink-0" />
+                            <span>
+                                These settings live on the field itself, so the change applies to
+                                every form in this institute that uses it — not just this page.
+                            </span>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="edit-field-name">Label</Label>
+                            <Input
+                                id="edit-field-name"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                placeholder="Phone Number"
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="edit-field-type">Input type</Label>
+                            <select
+                                id="edit-field-type"
+                                value={editType}
+                                onChange={(e) => setEditType(e.target.value as CustomFieldType)}
+                                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-300"
+                            >
+                                {CUSTOM_FIELD_TYPES.map((t) => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                ))}
+                            </select>
+                            {editType === 'number' && CAN_VERIFY(editTarget?.field.custom_field?.fieldType) && (
+                                <p className="text-caption text-warning-600">
+                                    &ldquo;Number&rdquo; drops the country-code picker. Use
+                                    &ldquo;Phone Number&rdquo; to collect a dialable number.
+                                </p>
+                            )}
+                        </div>
+
+                        <label className="flex items-center gap-2 text-sm text-neutral-700">
+                            <input
+                                type="checkbox"
+                                checked={editRequired}
+                                onChange={(e) => setEditRequired(e.target.checked)}
+                                className="size-4 rounded border-neutral-300 accent-primary-500"
+                            />
+                            Required
+                        </label>
+
+                        {/* Verification is only offered where a code can actually be
+                            delivered to the value the visitor typed. */}
+                        {CAN_VERIFY(editType) ? (
+                            <div className="space-y-2 rounded-lg border border-neutral-200 p-3">
+                                <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={editVerify}
+                                        onChange={(e) => setEditVerify(e.target.checked)}
+                                        className="size-4 rounded border-neutral-300 accent-primary-500"
+                                    />
+                                    Verify with a WhatsApp code
+                                </label>
+                                <p className="text-caption text-neutral-500">
+                                    The visitor gets a one-time code on WhatsApp and must enter it
+                                    before the form can be submitted.
+                                </p>
+                                {editVerify && (
+                                    <>
+                                        {/* The gate blocks submission, so a template that
+                                            cannot send leaves the visitor with a form they
+                                            can never complete. Say so before it is saved —
+                                            there is no lookup for this from here, and the
+                                            resolver does NOT fall back to a platform
+                                            default: it fails outright. */}
+                                        <div className="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3 text-xs text-warning-700">
+                                            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                                            <span>
+                                                Check first that this institute has an approved
+                                                WhatsApp OTP template and an <code>OTP_REQUEST</code>{' '}
+                                                notification config. Without one the code cannot be
+                                                sent — and because verification is required to
+                                                submit, nobody will be able to complete this form.
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="edit-verify-template" className="text-xs">
+                                                Template name
+                                            </Label>
+                                            <Input
+                                                id="edit-verify-template"
+                                                value={editVerifyTemplate}
+                                                onChange={(e) => setEditVerifyTemplate(e.target.value)}
+                                                placeholder="e.g. otp_verification"
+                                            />
+                                            <p className="text-caption text-neutral-500">
+                                                An approved WhatsApp template on this institute&apos;s
+                                                own business account. Naming one here skips the
+                                                OTP_REQUEST config entirely. Leave blank only if that
+                                                config already exists.
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="edit-verify-language" className="text-xs">
+                                                Template language (optional)
+                                            </Label>
+                                            <Input
+                                                id="edit-verify-language"
+                                                value={editVerifyLanguage}
+                                                onChange={(e) => setEditVerifyLanguage(e.target.value)}
+                                                placeholder="en"
+                                            />
+                                            <p className="text-caption text-neutral-500">
+                                                Meta approves a template per language. Blank means
+                                                English; use e.g. <code>en_US</code> if that is how
+                                                yours was approved.
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-caption text-neutral-400">
+                                Verification is available on phone fields, where a code can be
+                                delivered to the value entered.
+                            </p>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <MyButton buttonType="secondary" scale="medium" onClick={() => setEditTarget(null)}>
+                            Cancel
+                        </MyButton>
+                        <MyButton
+                            scale="medium"
+                            disable={!editName.trim() || isMutating}
+                            onClick={() => updateMutation.mutate()}
+                        >
+                            {updateMutation.isPending ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                            ) : null}
+                            Save
+                        </MyButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* ── Add Field Dialog ──────────────────────────────────────────────── */}
             <Dialog open={addOpen} onOpenChange={(open) => { if (!open) resetAddDialog(); else setAddOpen(true); }}>

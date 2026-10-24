@@ -1,0 +1,16 @@
+{
+    "heading": "हाल के लेन-देन",
+    "viewAll": "सभी देखें",
+    "description": "आपके संस्थान की नवीनतम भुगतान गतिविधि",
+    "emptyState": "अभी तक कोई लेन-देन नहीं है।",
+    "status": {
+        "success": "सफल",
+        "pending": "लंबित",
+        "failed": "विफल",
+        "cancelled": "रद्द"
+    },
+    "fallback": {
+        "unknownUser": "अज्ञात",
+        "manualVendor": "मैनुअल"
+    }
+}

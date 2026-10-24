@@ -1,0 +1,25 @@
+{
+    "rejectHeading": "Reject this request",
+    "approveHeading": "Approve this request",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "rejectRequest": "Reject request",
+    "approveRequest": "Approve request",
+    "employee": "Employee",
+    "unknownDate": "Unknown date",
+    "noRecord": "No record",
+    "times": "Times {{originalIn}}–{{originalOut}} → {{requestedIn}}–{{requestedOut}}",
+    "rejectNotice": "The attendance record stays exactly as it is. Your remarks are what the employee sees.",
+    "approveNotice": "Approving rewrites the attendance record for that day — the requested status and times replace what is stored, and the day counts that way in payroll.",
+    "remarksLabel": "Remarks",
+    "remarksPlaceholderReject": "Why this cannot be accepted",
+    "remarksPlaceholderApprove": "Optional note for the record",
+    "toasts": {
+        "rejected": "Request rejected",
+        "approved": "Request approved"
+    },
+    "errors": {
+        "remarksRequired": "Tell them why this was rejected",
+        "saveFailed": "Could not record the decision."
+    }
+}

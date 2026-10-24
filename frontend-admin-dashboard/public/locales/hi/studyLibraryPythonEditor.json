@@ -1,0 +1,18 @@
+{
+    "running": "चल रहा है...",
+    "run": "चलाएं",
+    "view": "देखें",
+    "edit": "संपादित करें",
+    "loadingEditor": "एडिटर लोड हो रहा है...",
+    "loadingEditorLower": "एडिटर लोड हो रहा है...",
+    "outputLabel": "आउटपुट:",
+    "previewLabel": "पूर्वावलोकन:",
+    "previewTitle": "पूर्वावलोकन",
+    "cssPreviewArea": "CSS पूर्वावलोकन क्षेत्र",
+    "failedToLoadCodeEditor": "कोड एडिटर लोड करने में विफल",
+    "compileErrorPrefix": "संकलन त्रुटि: ",
+    "noOutputProduced": "कोई आउटपुट उत्पन्न नहीं हुआ",
+    "noOutput": "कोई आउटपुट नहीं",
+    "errorPrefix": "त्रुटि: ",
+    "errorRunningCodePrefix": "कोड चलाने में त्रुटि: "
+}

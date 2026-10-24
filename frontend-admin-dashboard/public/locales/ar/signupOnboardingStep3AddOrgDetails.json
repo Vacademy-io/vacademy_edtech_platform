@@ -1,0 +1,23 @@
+{
+    "heading": "أنشئ ملفك الشخصي في المؤسسة",
+    "fullNameLabel": "الاسم الكامل",
+    "fullNamePlaceholder": "الاسم الكامل (الأول والأخير)",
+    "usernameLabel": "اسم المستخدم",
+    "usernamePlaceholder": "أدخل اسم المستخدم",
+    "emailLabel": "البريد الإلكتروني",
+    "emailPlaceholder": "أدخل البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "confirmPasswordLabel": "تأكيد كلمة المرور",
+    "finish": "إنهاء",
+    "schema": {
+        "nameRequired": "الاسم مطلوب",
+        "usernameRequired": "اسم المستخدم مطلوب",
+        "usernameNoUppercase": "يجب ألا يحتوي اسم المستخدم على أحرف كبيرة",
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "emailInvalid": "صيغة البريد الإلكتروني غير صحيحة",
+        "passwordMinLength": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
+        "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
+        "roleTypeRequired": "مطلوب نوع دور واحد على الأقل",
+        "passwordsMismatch": "كلمتا المرور غير متطابقتين"
+    }
+}

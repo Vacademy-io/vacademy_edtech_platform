@@ -1,0 +1,10 @@
+{
+  "title": "Image de marque de l'institut",
+  "includeLogo": {
+    "label": "Inclure le logo de l'institut."
+  },
+  "blendHeader": {
+    "label": "Faire correspondre l'en-tête au fond du thème.",
+    "description": "Place l'en-tête du logo et le titre de l'invitation sur le fond de la page au lieu du blanc. Seul le formulaire reste blanc."
+  }
+}

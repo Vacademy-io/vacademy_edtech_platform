@@ -1,0 +1,43 @@
+{
+    "toast": {
+        "engineCreated": "Engine created",
+        "createEngineFailed": "Failed to create engine",
+        "engineUpdated": "Engine updated",
+        "changeStatusFailed": "Could not change status",
+        "autonomyOff": "Auto-send off — copilot only",
+        "autonomyOn": "Auto-send allowed",
+        "autonomyFailed": "Could not change autonomy",
+        "enrollResult": "Audience resolved: {{added}} added, {{exited}} exited ({{total}} total)",
+        "enrollFailed": "Enrollment failed",
+        "promptUpdated": "Amendment added to the brief",
+        "promptUpdateFailed": "Could not update the brief",
+        "engineArchived": "Engine archived",
+        "archiveFailed": "Could not archive",
+        "taskActionFailed": "Action failed",
+        "templatesProposed": "AI proposed templates",
+        "proposeTemplatesFailed": "Could not propose templates",
+        "alternativesProposed": "New options proposed",
+        "alternativesFailed": "Could not get alternatives",
+        "templateUpdated": "Template updated",
+        "templateSaveFailed": "Could not save the template",
+        "templateApproved": "Template approved",
+        "approveFailed": "Could not approve",
+        "submittedToMeta": "Submitted to Meta",
+        "submitFailed": "Submission failed",
+        "templateWithdrawn": "Template withdrawn",
+        "withdrawFailed": "Could not withdraw",
+        "syncFailed": "Could not check Meta",
+        "noChangesFromMeta": "No changes from Meta yet",
+        "templatesUpdated_one": "{{count}} template updated",
+        "templatesUpdated_other": "{{count}} templates updated"
+    },
+    "taskAction": {
+        "ack": "Task acknowledged",
+        "done": "Marked done",
+        "dismiss": "Dismissed",
+        "reopen": "Reopened",
+        "send": "Sent",
+        "default": "Done",
+        "sendNotConfirmed": "Not confirmed as sent. The task is now under Failed. Check the message log before sending again."
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "kind": {
+        "video": "vidéo",
+        "pdf": "PDF"
+    },
+    "action": {
+        "watch": "regarder",
+        "read": "lire"
+    },
+    "toggle": {
+        "title": "Enseignant IA : ce que cette {{what}} enseigne",
+        "described": "décrit",
+        "notDescribedYet": "pas encore décrit",
+        "hide": "Masquer",
+        "edit": "Modifier"
+    },
+    "description": "L’enseignant IA ne peut ni regarder ni lire cette {{what}}. Rédigez les points qu’elle couvre (3 à 10 phrases). En mode tuteur, l’enseignant demande à l’apprenant de la {{action}}, puis vérifie ces points avant de continuer.",
+    "placeholder": "Cette {{what}} explique…",
+    "save": "Enregistrer",
+    "toast": {
+        "saved": "Enregistré. Ouvrez l’onglet Mode Tuteur du cours et appuyez sur « Préparer l’enseignement ».",
+        "saveError": "Impossible d’enregistrer"
+    }
+}

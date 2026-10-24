@@ -1,0 +1,330 @@
+{
+    "hero": {
+        "eyebrow": "Analyse des cours en direct",
+        "title": "Tableau de bord : {{term}}",
+        "compared": "comparé à {{range}}"
+    },
+    "presets": {
+        "today": "Aujourd'hui",
+        "last5": "5 derniers jours",
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "next7": "7 prochains jours",
+        "custom": "Personnalisé"
+    },
+    "filters": {
+        "rangeLabel": "Période",
+        "allOf": "Tous : {{term}}",
+        "noTeachers": "Personne n'a enseigné sur cette période",
+        "clear": "Effacer",
+        "refresh": "Actualiser",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "apply": "Appliquer",
+        "invalidRange": "La date de fin doit être égale ou postérieure à la date de début",
+        "rangeTooLong": "Choisissez une période de {{days}} jours maximum",
+        "updatedAt": "Mis à jour à {{time}} · actualisé chaque minute"
+    },
+    "units": {
+        "hourShort": "h",
+        "minuteShort": "min"
+    },
+    "delta": {
+        "points": "{{v}} pts",
+        "percent": "{{v}} %",
+        "plain": "{{v}}",
+        "vs": "par rapport à {{range}}"
+    },
+    "kpis": {
+        "classes": "{{term}}",
+        "classesDetail": "{{completed}} terminés · {{live}} en direct · {{upcoming}} à venir",
+        "attendance": "Présence",
+        "attendanceDetail": "{{present}} présents sur {{expected}} attendus",
+        "noCompleted": "Aucun cours terminé sur cette période",
+        "avgJoined": "Participants moyens par cours",
+        "avgJoinedDetail": "Connexions au total : {{joined}}",
+        "avgJoinedDetailGuests": "Connexions au total : {{joined}} (invités : {{guests}})",
+        "timeInClass": "Temps moyen en cours",
+        "timeInClassDetail": "sur {{scheduled}} prévus · {{rate}} du cours",
+        "noDurationData": "Le temps passé en cours n'est pas disponible pour ces cours",
+        "engagement": "Engagement",
+        "engagementBreakdown": "Parlé {{spoke}} · Chat {{chatted}}",
+        "engagementNotTracked": "L'engagement n'est suivi que pour les cours Vacademy Meet",
+        "rating": "Note moyenne",
+        "ratingDetail": "{{n}} réponses · {{rate}} des participants",
+        "noFeedback": "Aucun avis pour l'instant"
+    },
+    "insights": {
+        "best": "Meilleure présence",
+        "lowest": "À surveiller",
+        "topTeacher": "Mieux noté",
+        "busiestDay": "Jour le plus chargé",
+        "zeroJoin": "Cours vides",
+        "classMeta": "{{rate}} de présence · {{date}}",
+        "teacherMeta": "★ {{rating}} · {{n}} notes",
+        "busiestMeta": "{{n}} éléments ({{term}}) programmés",
+        "zeroJoinTitle": "{{n}} éléments ({{term}}) sans personne",
+        "zeroJoinNone": "Chaque cours a eu des apprenants",
+        "zeroJoinMeta": "Cours terminés sans aucune connexion"
+    },
+    "trend": {
+        "title": "Évolution de la présence",
+        "present": "Présents",
+        "expected": "Attendus",
+        "rateLine": "Présence {{rate}}",
+        "subtitles": {
+            "attendance": "Apprenants attendus et présents par jour (cours terminés)",
+            "rate": "Présence en % par jour (cours terminés)",
+            "classes": "Cours programmés par jour",
+            "rating": "Note moyenne des avis par jour"
+        },
+        "metrics": {
+            "attendance": "Présents / attendus",
+            "rate": "Présence %",
+            "classes": "{{term}}",
+            "rating": "Note"
+        }
+    },
+    "heatmap": {
+        "title": "Quand ont lieu les cours",
+        "subtitle": "{{term}} par jour et heure de début — survolez un créneau pour voir la présence",
+        "cellClasses": "{{n}} ({{term}})",
+        "cellAttendance": "Présence {{rate}}",
+        "fewer": "Moins",
+        "more": "Plus"
+    },
+    "empty": {
+        "noClassesInRange": "Aucun élément ({{term}}) sur cette période",
+        "noMatch": "Aucun élément ({{term}}) ne correspond à ces filtres",
+        "noBatches": "Aucune donnée ({{term}}) sur cette période"
+    },
+    "donut": {
+        "title": "Répartition de la présence",
+        "subtitle": "Apprenants attendus aux cours terminés",
+        "present": "Présents",
+        "belowRule": "Connectés, sous le seuil de présence",
+        "notJoined": "Non connectés",
+        "center": "présence",
+        "guestsNote": "Également connectés (invités ou apprenants hors de ces groupes) : {{n}}"
+    },
+    "ratings": {
+        "title": "Notes des avis",
+        "subtitle": "{{n}} réponses · {{rate}} des participants"
+    },
+    "engagement": {
+        "title": "Engagement",
+        "subtitle": "{{rate}} des participants ont interagi · Participants suivis : {{n}}",
+        "talks": "Ont parlé au micro",
+        "chats": "Ont écrit dans le chat",
+        "raiseHands": "Ont levé la main",
+        "pollVotes": "Ont voté à un sondage",
+        "emojis": "Ont réagi",
+        "totals": "Messages de chat : {{chats}} · Mains levées : {{hands}} · Votes : {{votes}}"
+    },
+    "platforms": {
+        "title": "Plateformes",
+        "subtitle": "{{term}} par plateforme",
+        "names": {
+            "bbb": "Vacademy Meet",
+            "youtube": "YouTube",
+            "google_meet": "Google Meet",
+            "zoom": "Zoom",
+            "zoho": "Zoho",
+            "recorded": "Vidéo enregistrée",
+            "other": "Autre"
+        }
+    },
+    "liveNow": {
+        "none": "Aucun élément ({{term}}) en direct pour le moment",
+        "title": "En direct",
+        "autoRefresh": "Les connexions se mettent à jour chaque minute",
+        "joinedOf": "{{joined}} sur {{expected}} connectés",
+        "joinedCount": "{{n}} connectés",
+        "open": "Ouvrir le cours"
+    },
+    "status": {
+        "LIVE": "En direct",
+        "UPCOMING": "À venir",
+        "COMPLETED": "Terminé",
+        "ALL": "Tous"
+    },
+    "table": {
+        "title": "Tous : {{term}}",
+        "subtitle": "Affichés : {{n}}",
+        "truncated": "Affichage des {{limit}} plus récents — réduisez la période pour voir le reste",
+        "when": "Date et heure",
+        "class": "Cours",
+        "status": "Statut",
+        "attendance": "Présence",
+        "avgTime": "Temps moyen",
+        "engagement": "Engagement",
+        "feedback": "Note",
+        "untitled": "Cours sans titre",
+        "search": "Rechercher un cours, une matière ou {{term}}"
+    },
+    "teachers": {
+        "title": "Classement : {{term}}",
+        "subtitle": "Classés par nombre de cours, avec la présence de leurs éléments ({{term}})",
+        "classesCount": "{{n}} ({{term}})",
+        "joinsCount": "{{n}} connexions",
+        "avgTime": "{{time}} de présence moyenne"
+    },
+    "batches": {
+        "title": "Présence : {{term}}",
+        "subtitle": "Uniquement les éléments terminés ({{term}})",
+        "unknown": "Autre groupe",
+        "meta": "{{n}} ({{term}}) · {{present}} présents sur {{expected}} attendus",
+        "sort": {
+            "lowest": "Plus faible d'abord",
+            "highest": "Plus forte d'abord",
+            "largest": "Plus grands"
+        }
+    },
+    "error": {
+        "title": "Impossible de charger le tableau de bord",
+        "body": "Vérifiez votre connexion et réessayez.",
+        "retry": "Réessayer"
+    },
+    "share": {
+        "csv": "Exporter CSV",
+        "pdf": "Télécharger le PDF"
+    },
+    "actions": {
+        "whatsapp": "WhatsApp",
+        "email": "E-mail",
+        "csv": "CSV",
+        "learnersCount": "{{n}} apprenants",
+        "nobodyToMessage": "Aucun apprenant à contacter dans cette liste"
+    },
+    "drilldown": {
+        "guest": "Invité",
+        "guestNote": "Invité / inscription publique",
+        "notExpected": "Hors de ces groupes",
+        "joined": "Connectés",
+        "openFull": "Ouvrir la page du cours",
+        "search": "Rechercher un nom, e-mail ou téléphone",
+        "empty": "Aucun apprenant dans cette liste",
+        "timeInClass": "Temps en cours",
+        "filters": {
+            "ALL": "Tous",
+            "PRESENT": "Présents",
+            "BELOW_RULE": "Sous le seuil",
+            "NOT_JOINED": "Absents"
+        },
+        "status": {
+            "PRESENT": "Présent",
+            "BELOW_RULE": "Sous le seuil",
+            "NOT_JOINED": "Absent"
+        },
+        "activeness": "Activité",
+        "activenessOnScreen": "À l'écran {{value}} %",
+        "activenessAttention": "Attention {{value}} %",
+        "activenessTracked": "suivi {{duration}}",
+        "activenessAway": "absent {{count}}×"
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "batch": "Groupe",
+        "status": "Statut",
+        "minutesInClass": "Minutes en cours",
+        "talks": "Prises de parole",
+        "chats": "Messages de chat",
+        "hands": "Mains levées",
+        "pollVotes": "Votes",
+        "rating": "Note",
+        "feedback": "Avis",
+        "expected": "Attendus",
+        "attended": "Présent",
+        "missed": "Manqués",
+        "attendance": "Présence %",
+        "missStreak": "Manqués d'affilée",
+        "lastAttended": "Dernière présence",
+        "date": "Date",
+        "start": "Début",
+        "end": "Fin",
+        "class": "Cours",
+        "subject": "Matière",
+        "teachers": "Enseignants",
+        "batches": "Groupes",
+        "platform": "Plateforme",
+        "joined": "Connectés",
+        "present": "Présents",
+        "avgMinutes": "Minutes moyennes",
+        "scheduledMinutes": "Minutes prévues",
+        "engagement": "Engagement %",
+        "feedbackCount": "Réponses",
+        "activeness": "Activité %",
+        "activenessOnScreen": "À l'écran %",
+        "activenessAttention": "Attention %",
+        "activenessMinutesTracked": "Minutes de suivi caméra",
+        "activenessAwayCount": "Nombre d'absences",
+        "activenessStatus": "Statut d'activité"
+    },
+    "atRisk": {
+        "title": "Apprenants à risque",
+        "none": "Aucun apprenant n'a manqué {{missed}}+ éléments terminés ({{term}}) sur cette période",
+        "loading": "Recherche des apprenants qui manquent souvent…",
+        "threshold": "Manqués au moins",
+        "missedPlus": "{{n}}+ manqués",
+        "messageAll": "WhatsApp à tous ({{n}})",
+        "showingTop": "Affichage des {{shown}} premiers sur {{total}}",
+        "missedOf": "Manqués {{missed}}/{{expected}}",
+        "streak": "{{n}} d'affilée",
+        "lastAttended": "Dernière présence le {{date}}",
+        "neverAttended": "Absent sur toute la période",
+        "rate": "Présence {{rate}}",
+        "viewLabel": "Afficher",
+        "views": {
+            "DROPPED": "Ne viennent plus",
+            "NEVER": "Jamais venus",
+            "ALL": "Tous"
+        },
+        "subtitles": {
+            "DROPPED": "{{n}} apprenants venaient, puis ont manqué {{missed}}+ éléments terminés ({{term}})",
+            "NEVER": "{{n}} apprenants n'ont rejoint aucun de leurs {{missed}}+ éléments terminés ({{term}})",
+            "ALL": "{{n}} apprenants ont manqué {{missed}}+ éléments terminés ({{term}}) sur cette période"
+        }
+    },
+    "wall": {
+        "title": "Ce que disent les apprenants",
+        "subtitle": "Derniers avis écrits sur les éléments ({{term}}) de cette période",
+        "filters": {
+            "all": "Tous",
+            "low": "Mal notés",
+            "doubts": "Questions"
+        },
+        "empty": "Aucun avis écrit sur cette période",
+        "showMore": "Afficher {{n}} de plus",
+        "showLess": "Afficher moins",
+        "anonymous": "Apprenant"
+    },
+    "page": {
+        "description": "Présence, temps en cours, engagement et avis des cours en direct, par enseignant et par groupe."
+    },
+    "activenessState": {
+        "1": "Mesuré",
+        "2": "Désactivé par l'apprenant",
+        "3": "Téléphone/tablette — non mesuré",
+        "4": "Caméra bloquée",
+        "5": "Pas de caméra",
+        "6": "Caméra utilisée par une autre application",
+        "7": "Appareil trop lent",
+        "8": "Chargement impossible",
+        "9": "Caméra arrêtée",
+        "10": "Caméra non autorisée"
+    },
+    "activenessStateShort": {
+        "1": "Mesuré",
+        "2": "Désactivé",
+        "3": "Téléphone",
+        "4": "Caméra bloquée",
+        "5": "Pas de caméra",
+        "6": "Caméra occupée",
+        "7": "Trop lent",
+        "8": "Non chargé",
+        "9": "Caméra arrêtée",
+        "10": "Non autorisée"
+    }
+}

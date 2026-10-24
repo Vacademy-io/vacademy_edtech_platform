@@ -66,8 +66,70 @@ class Settings:
     # never does), which Smart Turn and the turn-gate both benefit from. Flip
     # per test call via env; nothing else changes.
     stt_provider: str = field(default_factory=lambda: _env("STT_PROVIDER", "sarvam"))
+    # Waterfall: a second STT vendor that takes over for the rest of the call
+    # when the primary fails — its socket errors (pipecat's failover strategy)
+    # or an audible caller utterance producing no transcript (the orphan
+    # re-ask, our own signal). Empty = no failover. Founder 2026-09-15 after
+    # call 28570ec0 (Smallest deaf for the last 70 s): "sarvam stt and have
+    # waterfall if sarvam fails to smallest".
+    stt_fallback_provider: str = field(default_factory=lambda: _env("STT_FALLBACK_PROVIDER", ""))
+    # The STT vendor's socket I/O runs in its own task (providers.decoupled_stt_io)
+    # and a send that has not completed in this many seconds is a stuck socket:
+    # the queued caller audio goes to the fallback STT and the waterfall fails
+    # over. Call 3e327e8a (2026-10-02): Sarvam closed the stream ("Credits
+    # exhausted") and held the TCP open; every send waited 10 s, and so did the
+    # opening and everything else queued behind the STT. A healthy socket
+    # finishes a send in microseconds whether or not the caller is talking.
+    # Kill switch: STT_STALL_SECS=0 (sends inline again, as pipecat does).
+    stt_stall_secs: float = field(default_factory=lambda: float(_env("STT_STALL_SECS", "1.5")))
     google_stt_language: str = field(
         default_factory=lambda: _env("GOOGLE_STT_LANGUAGE", "hi-IN"))
+    # Smallest Pulse STT (STT_PROVIDER=smallest). Chosen 2026-09-12 from a
+    # three-way bench on 4 real AI-call recordings (63-114 turns) driven through
+    # the pipecat services exactly like a live call: final-after-VAD-stop median
+    # 0.12 s / p90 0.23 s vs Sarvam 0.14 / 1.86 (11 of 67 turns over 1 s, up to
+    # 3.8 s) and Gnani 0.65 / 0.80; word error 0.74 vs Sarvam 0.99; hears the lone
+    # "haan" Sarvam drops every time; clean mixed-script text instead of English
+    # forced into Devanagari; ~₹20/hr vs ₹30. Known: a lone "haan" finalises ~2.5 s
+    # late, two real turns took 5-7 s; 16 kHz was WORSE (median 0.76 s) — stay 8 kHz.
+    # Pulse's "hi" covers Hindi-English code-switching; "multi" auto-detects.
+    smallest_stt_language: str = field(
+        default_factory=lambda: _env("SMALLEST_STT_LANGUAGE", "hi"))
+    # Turn-stop hold for Pulse's final (see sarvam_ttfs_p99): measured p90 0.23 s
+    # on real recordings; 0.5 keeps parity with Sarvam's hold, the slow outliers
+    # are beyond any sane hold and Smart Turn's own cap covers them.
+    smallest_ttfs_p99: float = field(
+        default_factory=lambda: float(_env("SMALLEST_TTFS_P99", "0.5")))
+    # Pulse decodes what it has when our VAD stop sends `finalize`. On a SHORT
+    # answer that is ~0.3 s of audio, and it either answers ~2.5 s late or not
+    # at all — bench: "haan" 2.50 s every run; live call a59696ed (2026-09-13):
+    # the caller's "Yes" produced NO transcript, 5.6 s of silence, they said
+    # "hello" and only that was heard. 2 of 13 closed turns in the day's logs
+    # had no transcript within 2.5 s.
+    # Asking AGAIN when nothing has come back fixes it at no cost to healthy
+    # turns — measured on the same clips:
+    #   finalize once (pipecat)  haan 2.50 s   yes 0.11 s
+    #   hold finalize 0.5 s      haan 0.73 s   yes 0.72 s   <- taxes every turn
+    #   ask again after 0.7 s    haan 0.81 s   yes 0.11 s   <- this
+    # SMALLEST_FINALIZE_RETRY_SECS=0 restores pipecat's behaviour exactly.
+    smallest_finalize_retry_secs: float = field(
+        default_factory=lambda: float(_env("SMALLEST_FINALIZE_RETRY_SECS", "0.7")))
+    smallest_finalize_retries: int = field(
+        default_factory=lambda: int(_env("SMALLEST_FINALIZE_RETRIES", "3")))
+    # A VAD stop inside the first `hold_below` s of a turn is usually a breath
+    # ("Uh," … "I think mix"). Finalizing there made Pulse return an empty final
+    # and drop the REST of the sentence: 5-6 s utterances with no transcript on
+    # calls 82c1f95a (twice), 91d1541e, 15aadcdb. Hold the finalize `hold_secs`;
+    # a new onset inside the hold cancels it. Costs that hold on a genuine
+    # one-word answer only. SMALLEST_HOLD_BELOW_SECS=0 disables.
+    # DEFAULT OFF: on the bench it cost +0.6 s on every one-word answer (yes
+    # 0.11 -> 0.72 s; real-recording p90 0.19 -> 0.74 s) and the drops could
+    # not be reproduced there to prove the benefit. The orphan re-ask is the
+    # live mitigation; set SMALLEST_HOLD_BELOW_SECS=1.5 on the box to trial it.
+    smallest_hold_below_secs: float = field(
+        default_factory=lambda: float(_env("SMALLEST_HOLD_BELOW_SECS", "0")))
+    smallest_hold_secs: float = field(
+        default_factory=lambda: float(_env("SMALLEST_HOLD_SECS", "0.5")))
     # "telephony", NOT "latest_long": measured on the caller channel of real call
     # 31a1acf1 (8 kHz Hindi phone audio), latest_long dropped most of every
     # utterance ("क्या बात कर रहा है?" for a 15-word sentence) while telephony
@@ -83,6 +145,15 @@ class Settings:
     # added dead air EVERY turn; the founder POC ships 0.5.
     sarvam_ttfs_p99: float = field(
         default_factory=lambda: float(_env("SARVAM_TTFS_P99", "0.5")))
+    # Mark the final Sarvam sends in answer to our flush (after the VAD stop,
+    # before the caller speaks again) as finalized, so the turn closes on it
+    # instead of waiting out sarvam_ttfs_p99 - vad_stop_secs = 0.30 s. The 22
+    # Sep batch: that 0.30 s sat between "Smart Turn: COMPLETE" and the model
+    # starting on EVERY turn, while the final itself had arrived 0.08 s after
+    # the voice stopped. Finals that arrive mid-utterance are left unflagged,
+    # so they keep the safety wait. Kill switch.
+    sarvam_final_on_flush: bool = field(
+        default_factory=lambda: _env("SARVAM_FINAL_ON_FLUSH", "1") not in ("0", "false", "no"))
     # Smart Turn v3 semantic end-of-turn: max silence it may wait before forcing
     # the turn closed (the model usually decides much earlier).
     smart_turn_stop_secs: float = field(
@@ -105,9 +176,68 @@ class Settings:
     sarvam_stt_mode: str = field(default_factory=lambda: _env("SARVAM_STT_MODE", "transcribe"))
     sarvam_stt_language: str = field(default_factory=lambda: _env("SARVAM_STT_LANGUAGE", "hi-IN"))
     sarvam_llm_model: str = field(default_factory=lambda: _env("SARVAM_LLM_MODEL", "sarvam-105b"))
+    # POC (2026-09-10): route ONLY these agent ids to the Sarvam LLM while every
+    # other agent stays on LLM_PROVIDER. Measured from the box with the real
+    # 25K-char yoga prompt: sarvam-105b TTFT 0.34s med vs gemini-2.5-flash 0.43s,
+    # at ₹29.28/₹73.2 per 1M in/out (cached input ₹10.98) vs Gemini's ~3x dearer
+    # output. Comma-separated; empty = off. Sarvam's open-source models
+    # (deepseekv4-flash, gemma4, glm5.2) sit on /v2 which is beta-gated — the
+    # account needs Sarvam support to enable it before they can be tried.
+    sarvam_llm_agents: tuple = field(
+        default_factory=lambda: tuple(
+            a.strip() for a in _env("SARVAM_LLM_AGENTS").split(",") if a.strip()))
+    # Same routing by INSTITUTE id — founder decision 2026-09-10 after the POC
+    # ("move the sales agents to sarvam-105b"): every agent of a listed institute
+    # (Vacademy's own outbound sales agents) uses Sarvam, so a new agent under
+    # that institute cannot silently land back on Gemini. Customer institutes
+    # stay on LLM_PROVIDER until they are listed here.
+    sarvam_llm_institutes: tuple = field(
+        default_factory=lambda: tuple(
+            a.strip() for a in _env("SARVAM_LLM_INSTITUTES").split(",") if a.strip()))
+    # ── Amazon Bedrock, Mumbai (ap-south-1) — LLM_PROVIDER="bedrock" ─────────
+    # POC 2026-09-10 (founder: "models available in India region, more
+    # intelligent than gemini 2.5 flash, up to 2x the cost"). Measured from the
+    # box with the real 25K-char prompt and the 10-scenario call eval:
+    #   moonshotai.kimi-k2.5   TTFT 0.48s, 10/10 + 9/9 repeats clean (never
+    #                          invented a price or a time, right weekday 3/3,
+    #                          on-script Hindi) — $0.72/$3.60 per 1M in Mumbai
+    #                          ≈ 2.2x Gemini per call
+    #   qwen.qwen3-235b-…      0.64s, invented a time 1/3, ≈1.7x
+    #   zai.glm-4.7-flash      0.53s, ≈0.25x, but wrong weekday 2/3, answered a
+    #                          Hindi caller in English 2/3, hung up on a
+    #                          wrong-person turn — not for a sales agent
+    #   deepseek/mistral/qwen3-32b invented prices; minimax 1.5s TTFT;
+    #   Claude/Nova Pro only via global profiles (1-1.8s) and over budget.
+    # Auth: a Bedrock API key in AWS_BEARER_TOKEN_BEDROCK (boto/aiobotocore
+    # read it natively) — or the usual AWS_ACCESS_KEY_ID / SECRET.
+    bedrock_model: str = field(
+        default_factory=lambda: _env("BEDROCK_MODEL", "moonshotai.kimi-k2.5"))
+    bedrock_region: str = field(default_factory=lambda: _env("BEDROCK_REGION", "ap-south-1"))
+    # Model-specific request fields as JSON. Kimi/GLM/DeepSeek THINK by default
+    # (seconds before the first spoken token) — off for a scripted sales call.
+    bedrock_extra_json: str = field(
+        default_factory=lambda: _env("BEDROCK_EXTRA_JSON", '{"thinking": {"type": "disabled"}}'))
+    bedrock_llm_agents: tuple = field(
+        default_factory=lambda: tuple(
+            a.strip() for a in _env("BEDROCK_LLM_AGENTS").split(",") if a.strip()))
+    bedrock_llm_institutes: tuple = field(
+        default_factory=lambda: tuple(
+            a.strip() for a in _env("BEDROCK_LLM_INSTITUTES").split(",") if a.strip()))
     sarvam_llm_base_url: str = field(
         default_factory=lambda: _env("SARVAM_LLM_BASE_URL", "https://api.sarvam.ai/v1")
     )
+    # Sarvam's OPEN-SOURCE models (gemma4, deepseekv4-flash, glm5.x) live on
+    # /v2 under a SEPARATE sk_… subscription from the account's SARVAM_API_KEY
+    # — and that key also backs the Sarvam TTS fallback, so the LLM gets its
+    # own. Falls back to SARVAM_API_KEY when unset (the /v1 sarvam-m path).
+    # Benched 2026-09-14 from Mumbai on the real 18K-char agent prompt, 45 sim
+    # runs each vs gemini-2.5-flash: gemma4 judge 7.2 vs 6.1, hard-fail runs
+    # 1 vs 4, TTFT median 521 vs 528 ms, p90 639 vs 711 ms. glm5.x always
+    # reason (no parameter turns it off; TTFT 1.7-6.7 s) — unusable for voice.
+    #   LLM_PROVIDER=sarvam SARVAM_LLM_BASE_URL=https://api.sarvam.ai/v2
+    #   SARVAM_LLM_MODEL=gemma4 SARVAM_LLM_API_KEY=sk_…
+    sarvam_llm_api_key: str = field(
+        default_factory=lambda: _env("SARVAM_LLM_API_KEY") or _env("SARVAM_API_KEY"))
     # Sarvam-side fast endpointing: server endpointing (~0.65-0.76s from end of speech)
     # is the measured binding constraint on reply latency — high VAD sensitivity asks
     # Sarvam to finalize sooner. Env-off if it starts clipping slow speakers.
@@ -173,6 +303,15 @@ class Settings:
     # Key is env-only (NEVER in code) — the one pasted in chat on 2026-08-13
     # must be treated as compromised and rotated, same as the Smallest key above.
     deepgram_api_key: str = field(default_factory=lambda: _env("DEEPGRAM_API_KEY"))
+    # Navana (Bodhi) TTS — Indian-language voices, one voice id across ten
+    # languages. Streams over wss://tts.navana.ai/v1 through their own Pipecat
+    # service (bodhi-api-sdk). NOTE the account default of TWO concurrent
+    # connections, and a live call holds one for its whole duration: ask Navana
+    # to raise it before putting more than two concurrent calls on this engine.
+    # Several keys (separate accounts) comma-separated — "k1,k2" — add 2 streams
+    # each: providers.NAVANA_KEYS gives every connection the least-loaded key.
+    navana_api_key: str = field(default_factory=lambda: _env("NAVANA_API_KEY") or _env("BODHI_API_KEY"))
+    navana_tts_voice: str = field(default_factory=lambda: _env("NAVANA_TTS_VOICE", "bhavana"))
     deepgram_tts_voice: str = field(
         default_factory=lambda: _env("DEEPGRAM_TTS_VOICE", "aura-2-asteria-en"))
     # Aura-2 emits 24 kHz linear16; the transport resamples to 8 kHz for Plivo.
@@ -186,6 +325,27 @@ class Settings:
     # win over rules), so the fix is a replacement at the synthesis boundary —
     # deterministic, testable, and invisible to transcripts/context (which keep
     # the written form). Longest-first; extend via env: "देवनागरी=Latin;…".
+    # Pronunciation fixes applied to EVERY engine at the synthesis boundary.
+    #
+    # rumik_term_map below solves one vendor's Devanagari problem and is applied only
+    # on Rumik paths. This one exists because the same class of bug is not vendor-
+    # specific: Shiksha Nation's agent runs on smallest_pro, which reads "शिक्षा नेशन"
+    # as "shiksha-NAI-shan". Rewriting the prompt to spell the name in Latin did NOT
+    # fix it — the model composes Hindi and transliterates the name back — which is the
+    # third time in this codebase that a prompt rule has lost to the model on exactly
+    # this problem ("Prompt rules failed to stop the transliteration twice").
+    #
+    # So the replacement happens where the model cannot reach it: on the text handed to
+    # the vendor. Transcripts, the LLM context and the report all keep the written form.
+    #
+    # EMPTY by default — every existing agent is unaffected until an entry is added.
+    # Format matches RUMIK_TERM_MAP: "from=to;from=to". Longest-first so a longer key
+    # wins over a prefix of itself.
+    speech_term_map: tuple = field(default_factory=lambda: tuple(sorted(
+        ((p.split("=", 1)[0].strip(), p.split("=", 1)[1].strip())
+         for p in _env("SPEECH_TERM_MAP", "").split(";") if "=" in p),
+        key=lambda kv: -len(kv[0]))))
+
     rumik_term_map: tuple = field(default_factory=lambda: tuple(sorted(
         ((p.split("=", 1)[0].strip(), p.split("=", 1)[1].strip())
          for p in _env(
@@ -221,6 +381,21 @@ class Settings:
     # google = Gemini's OpenAI-compat endpoint hit directly (no proxy hop);
     # openrouter = proxy fallback (routing lottery spiked TTFT to 7.9s once).
     llm_provider: str = field(default_factory=lambda: _env("LLM_PROVIDER", "sarvam"))
+    # Second LLM for the rest of a call once the first one errors or stalls
+    # (call f58ca825, 2026-09-22: Sarvam 34 s → 49 s → 403 with nothing to
+    # catch it). Empty = no waterfall. Same values as LLM_PROVIDER.
+    llm_fallback_provider: str = field(default_factory=lambda: _env("LLM_FALLBACK_PROVIDER", ""))
+    # A reply whose first token has not arrived by then is a vendor failure,
+    # not a slow reply: it errors, and the waterfall takes over. 0 = off.
+    llm_first_token_timeout_secs: float = field(
+        default_factory=lambda: float(_env("LLM_FIRST_TOKEN_TIMEOUT_SECS", "6.0")))
+    # Vertex primary WITH a fallback: give up on Gemini after this long with no
+    # first token and let the waterfall answer on the fallback. 23 Sep batch:
+    # one 429 RESOURCE_EXHAUSTED (asia-south1 shared capacity) took 7.1 s to
+    # surface, uncovered by the 6 s guard above (OpenAI-compatible services
+    # only). Gemini's own first token: p50 0.49 s, p95 0.80 s. 0 = off.
+    vertex_first_token_timeout_secs: float = field(
+        default_factory=lambda: float(_env("VERTEX_FIRST_TOKEN_TIMEOUT_SECS", "3.0")))
     openrouter_api_key: str = field(default_factory=lambda: _env("OPENROUTER_API_KEY"))
     openrouter_base_url: str = field(
         default_factory=lambda: _env("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -333,6 +508,48 @@ class Settings:
     filler_voice_live_secs: float = field(
         default_factory=lambda: float(_env("FILLER_VOICE_LIVE_SECS", "0.4"))
     )
+    # Latency bridge: a reply has been composing this long with NO audio on the
+    # line → say "Just a second." once (watchdog LLM_BRIDGE). Unlike the
+    # probabilistic filler above this is deterministic and fires only when we
+    # are already late. Call c130e39f (2026-09-09): Vertex 5.4s to first token,
+    # then ~8s to finish a 3-sentence reply — 16s of dead air. 0 disables.
+    llm_bridge_after_secs: float = field(
+        default_factory=lambda: float(_env("LLM_BRIDGE_AFTER_SECS", "2.0"))
+    )
+    # ── Room tone ─────────────────────────────────────────────────────────
+    # A low-level office ambience loop mixed under EVERY call's outbound audio
+    # (assets/office_ambience_8k_mono.wav, 8 kHz mono PCM, ~88 s seamless loop,
+    # −32 dBFS RMS). Pure digital silence between turns reads as a machine;
+    # room tone reads as a person on a line. Mixed inside the output transport
+    # (pipecat SoundfileMixer), so STT/LLM/TTS are untouched. AMBIENCE_VOLUME
+    # is the mixer gain: 0.15 on the −32 dBFS file ≈ −48 dBFS RMS — well under
+    # the voice. While the bot speaks it is ducked to 0.6x (app/ambience.py).
+    ambience_enabled: bool = field(
+        default_factory=lambda: _env("AMBIENCE_ENABLED", "true").lower() == "true")
+    ambience_volume: float = field(
+        default_factory=lambda: float(_env("AMBIENCE_VOLUME", "0.15")))
+    # A room is never at exactly one level. Slow +/- drift (dB) over
+    # AMBIENCE_DRIFT_PERIOD_SECS, phase randomised per call so two calls never
+    # breathe in step. 0 disables and the bed sits at a fixed gain.
+    ambience_drift_db: float = field(
+        default_factory=lambda: float(_env("AMBIENCE_DRIFT_DB", "2.0")))
+    ambience_drift_period_secs: float = field(
+        default_factory=lambda: float(_env("AMBIENCE_DRIFT_PERIOD_SECS", "40")))
+    # ── Telephone-band EQ on the bot's voice (app/voice_eq.py) ──────────────
+    # Our TTS carries 30.8% of its energy below 300 Hz; a real recording
+    # through real mics carries 15.3%, because handsets and analog hybrids roll
+    # that band off. Matching the caller's band is the biggest remaining
+    # "this is a recording" cue. Measured defaults — see the module docstring.
+    voice_eq_enabled: bool = field(
+        default_factory=lambda: _env("VOICE_EQ_ENABLED", "true").lower() == "true")
+    voice_eq_highpass_hz: float = field(
+        default_factory=lambda: float(_env("VOICE_EQ_HIGHPASS_HZ", "300")))
+    voice_eq_presence_db: float = field(
+        default_factory=lambda: float(_env("VOICE_EQ_PRESENCE_DB", "2.5")))
+    # Puts back the ~3 dB the high-pass removes, so the bot does not merely get
+    # quieter. Measured peak after makeup: -4.5 dBFS.
+    voice_eq_makeup_db: float = field(
+        default_factory=lambda: float(_env("VOICE_EQ_MAKEUP_DB", "2.0")))
     filler_phrases: tuple = field(
         default_factory=lambda: tuple(
             p.strip() for p in _env("FILLER_PHRASES", "Hmm…").split(",") if p.strip()
@@ -426,16 +643,176 @@ class Settings:
     # re-delivered the intro on calls 17be14f2/761decff — see bot.RunGuard.
     run_guard_enabled: bool = field(
         default_factory=lambda: _env("RUN_GUARD_ENABLED", "true").lower() == "true")
+    # Short-answer grace (bot.RunGuard): a run whose new caller words are at
+    # most SHORT_ANSWER_MAX_WORDS is held this long, and dropped if the caller's
+    # voice resumes inside it — "Yes." + breath + the real answer must be
+    # answered once, as one turn. 0 = off. Bare yes/haan replies pay the grace
+    # (less the silence already elapsed when their final lands). 0.8 covers a
+    # 0.45 s breath plus the VAD's 0.2 s onset; 0.6 lost the race once in three
+    # real-STT sim runs (2026-09-15).
+    # RESUMING AFTER A BACKCHANNEL. "हम्म" / "ठीक है" / "Okay" over a reply
+    # cancels it at the VAD onset (INTERRUPT_ON_VAD, a measured decision). What
+    # follows used to be a full LLM round trip to "carry on", which on call
+    # 1e374b99 (2026-09-17) cost 1.7-5.9 s of silence FIFTEEN times and — worse
+    # — let the no-echo trimmer delete the opening of the re-generated sentence,
+    # so the parent heard "नाम क्या है…" without the clause before it and had to
+    # ask "किसका नाम?". Instead: say the exact words that were cut, no model.
+    backchannel_resume_verbatim: bool = field(
+        default_factory=lambda: _env("BACKCHANNEL_RESUME_VERBATIM", "true").lower() == "true")
+    # Do not wait for the transcript to know it was a backchannel: if the voice
+    # lasted at most this long AND the bot was cut before finishing a question
+    # (so they cannot be answering one), resume the moment the VAD says they
+    # stopped. A real turn's final still interrupts, as any barge-in does.
+    # 0 disables. The STT final is the whole remaining wait: 0.25-4.07 s on
+    # Sarvam in that call.
+    backchannel_resume_on_stop_secs: float = field(
+        default_factory=lambda: float(_env("BACKCHANNEL_RESUME_ON_STOP_SECS", "1.0")))
+    # pipecat clears the TTS queue and reconnects the vendor socket while it
+    # handles an interruption, and anything pushed into that window is dropped
+    # with no error — the resume was lost that way on 3 of its first 4 live
+    # attempts. Wait this long after the cut before speaking the words.
+    # Close the caller's turn in the aggregator when the turn-gate swallows a
+    # final (backchannel, carrier line, scrap, repeat). Otherwise pipecat keeps
+    # it open for user_turn_stop_timeout (5 s) and nothing we say in that
+    # window is heard. Kill switch only.
+    # A short voice burst with no transcript is judged "noise" only after the
+    # STT has had this long to deliver a final for it (call bd9e6a0d).
+    noise_reask_wait_secs: float = field(
+        default_factory=lambda: float(_env("NOISE_REASK_WAIT_SECS", "1.0")))
+    # Most body sentences one model reply may speak; the closing question is
+    # still asked. 0 disables. (call bd9e6a0d: a 30 s, five-sentence pitch)
+    max_sentences_per_reply: int = field(
+        default_factory=lambda: int(_env("MAX_SENTENCES_PER_REPLY", "3")))
+    # Length budget per reply, in characters: after the first sentence, no
+    # sentence that would take the reply past this (closing question still
+    # asked). 0 disables. Call 3c2f5b82 (2026-09-24): stacked pitch lines,
+    # "समझ में नहीं आया", hang-up. Shreya p95 = 228 chars; 2 sentences max was
+    # tried first and cut required content out of scripted turns (timing sim).
+    max_reply_chars: int = field(
+        default_factory=lambda: int(_env("MAX_REPLY_CHARS", "240")))
+    turn_release_on_absorb: bool = field(
+        default_factory=lambda: _env("TURN_RELEASE_ON_ABSORB", "1") not in ("0", "false", "no"))
+    backchannel_resume_settle_secs: float = field(
+        default_factory=lambda: float(_env("BACKCHANNEL_RESUME_SETTLE_SECS", "0.6")))
+    backchannel_resume_max_chars: int = field(
+        default_factory=lambda: int(_env("BACKCHANNEL_RESUME_MAX_CHARS", "600")))
+    short_answer_grace_secs: float = field(
+        default_factory=lambda: float(_env("SHORT_ANSWER_GRACE_SECS", "0.8")))
+    short_answer_max_words: int = field(
+        default_factory=lambda: int(_env("SHORT_ANSWER_MAX_WORDS", "3")))
+    # A short answer's run waits for the caller's voice to go quiet — but not
+    # forever: a noisy line keeps the VAD "on" (call 59888de8: the last answer
+    # waited out the hang-up). Past this, the voice is noise; the run goes.
+    # 3.0 -> 6.0 (2026-09-26): in production 5 of the 6 releases since 22 Sep
+    # were a caller still TALKING ("हाँ जी" then a 4 s answer), not noise — the
+    # bot answered the bare "हाँ" (re-asking the name and class) and then the
+    # real answer, back to back (calls 23a3ffd9, 8b8533fc).
+    short_answer_noise_cap_secs: float = field(
+        default_factory=lambda: float(_env("SHORT_ANSWER_NOISE_CAP_SECS", "6.0")))
+    # Cushion questions in context instead of firing them bare ("Do you take live
+    # classes?") — founder 2026-09-08, "it's asking questions as if she is my
+    # mother... humanize the prompt, inculcate this into AI calling in general".
+    # Prompt rule, injected for every agent; kill switch keeps the same shape.
+    warm_questions_enabled: bool = field(
+        default_factory=lambda: _env("WARM_QUESTIONS_ENABLED", "true").lower() == "true")
+    # Clients, 2026-09-11: "the tone is very simple, very linear — bot like". The
+    # TTS (Smallest lightning_v3.1_pro) exposes no prosody control beyond speed;
+    # the only steering it takes is the TEXT. Measured on the live engine, voice
+    # mrunal, 3 runs each: plain prose 2.8 st of pitch spread; the same words
+    # with an ellipsis before the key phrase, one '!' and a lead-in question
+    # 3.2 st (+15%). Prompt rule, every agent; kill switch keeps the same shape.
+    prosody_hints_enabled: bool = field(
+        default_factory=lambda: _env("PROSODY_HINTS_ENABLED", "true").lower() == "true")
+    # Latency lever, 2026-09-12. TTS starts at the first sentence boundary, so the
+    # caller waits for however long the model's FIRST sentence is. Measured on the
+    # simulator with today's soft rule: median 5 words, p90 11 (about 1 s of
+    # generation before audio). This asks for a COMPLETE sentence of at most four
+    # words — real substance, never a filler noise — then the detail. Prompt-only:
+    # no gate, splitter or TTS change. `false` restores the previous rule text.
+    fast_opener_enabled: bool = field(
+        default_factory=lambda: _env("FAST_OPENER_ENABLED", "true").lower() == "true")
+    # Voice modulation on the AUDIO (app/prosody.py) — the vendor-agnostic fix
+    # for the same complaint: pitch excursions around the voice's median are
+    # scaled by this factor. 1.0 = off; 1.6 = conversational. The dashboard's
+    # per-agent voiceModulation (V504) overrides it; this is the default for
+    # agents that have not set one, and the box-wide value ops can force.
+    prosody_expand: float = field(
+        default_factory=lambda: float(_env("PROSODY_EXPAND", "1.0")))
     # Edge read-aloud default voice. hi-IN-SwaraNeural (F) / hi-IN-MadhurNeural (M)
     # are the only Hindi ones; the en-IN trio is Neerja, NeerjaExpressive, Prabhat.
     edge_tts_voice: str = field(
         default_factory=lambda: _env("EDGE_TTS_VOICE", "hi-IN-SwaraNeural"))
     vertex_thinking_budget: int = field(
         default_factory=lambda: int(_env("VERTEX_THINKING_BUDGET", "0")))
+    # Single-flight replies, step 3 (2026-10-01): "is a reply in progress?" also
+    # counts a run that passed and is still composing (NoRepeatGate's run ledger)
+    # and is measured from the reply's own audio START. 0 = the old test.
+    reply_ledger: bool = field(default_factory=lambda: _env("REPLY_LEDGER", "1") == "1")
+    # Single-flight step 4: while the caller's turn is still FORMING (words in
+    # the user aggregator, not yet pushed) a run waits for it, and an absorb-
+    # class "हाँ" joins it instead of firing a cue run of its own. The cap is
+    # pipecat's 5 s user-turn stop timeout + 0.5 s.
+    run_forming_hold: bool = field(default_factory=lambda: _env("RUN_FORMING_HOLD", "1") == "1")
+    # Single-flight step 2: a waterfall primary retires on its first failed
+    # request — a request queued behind the failure is dropped, not run beside
+    # the fallback's re-run (providers.with_retire).
+    llm_retire_primary: bool = field(default_factory=lambda: _env("LLM_RETIRE_PRIMARY", "1") == "1")
+    # After a failover, the caller's next turn goes back to the PRIMARY (call
+    # a4ce0279, 2026-10-13: one 3 s Vertex stall at 0:21 put the rest of the
+    # call on the fallback, which repeated a pitch line verbatim and wrote Hindi
+    # in Latin letters). Not before LLM_RETURN_AFTER_SECS — the failover re-run
+    # itself must stay on the fallback — and not after LLM_MAX_FAILOVERS stalls
+    # in one call: a primary that keeps stalling is left alone.
+    llm_return_to_primary: bool = field(default_factory=lambda: _env("LLM_RETURN_TO_PRIMARY", "1") == "1")
+    llm_return_after_secs: float = field(default_factory=lambda: float(_env("LLM_RETURN_AFTER_SECS", "5")))
+    llm_max_failovers: int = field(default_factory=lambda: int(_env("LLM_MAX_FAILOVERS", "2")))
+    # Single-flight step 5: the bot's OWN runs (next-step cues, the noise
+    # re-ask, the lost-resume cue) pass one door — RunGuard drops them when a
+    # reply is already on its way or the call is ending, holds them while the
+    # caller's turn forms; the idle handler does not nudge over a pending reply.
+    cue_one_door: bool = field(default_factory=lambda: _env("CUE_ONE_DOOR", "1") == "1")
+    forming_hold_cap_secs: float = field(
+        default_factory=lambda: float(_env("FORMING_HOLD_CAP_SECS", "5.5")))
+    # Single-flight step 6 (2026-10-08): ONE reply per caller turn, however many
+    # pieces it arrives in. A caller run supersedes an earlier run whose reply
+    # has not put a sound on the line yet (RunGuard cancels it — the LLM's
+    # queue too — before the newer run goes through), and a held short answer
+    # is never released while the rest of the turn is still forming. Calls
+    # 84e52d17, b51093dc, 0ae77e88, e11cc15b: two runs ~0.55 s apart, both
+    # replies played back to back. Kill switch: RUN_SUPERSEDE=0.
+    run_supersede: bool = field(default_factory=lambda: _env("RUN_SUPERSEDE", "1") == "1")
     reply_inflight_grace_secs: float = field(
         default_factory=lambda: float(_env("REPLY_INFLIGHT_GRACE_SECS", "6.0")))
+    # FloorGate: a reply whose first audio is ready while the caller is talking
+    # waits for them to stop instead of starting over them (call 358e5026: a
+    # parent speaking in pieces got a stub of a reply to every piece). The
+    # cap is for lines whose "voice" never stops. Kill switch: FLOOR_HOLD_ENABLED=0.
+    floor_hold_enabled: bool = field(
+        default_factory=lambda: _env("FLOOR_HOLD_ENABLED", "1") not in ("0", "false", "no"))
+    floor_hold_cap_secs: float = field(
+        default_factory=lambda: float(_env("FLOOR_HOLD_CAP_SECS", "3.0")))
     interrupt_on_vad: bool = field(
         default_factory=lambda: _env("INTERRUPT_ON_VAD", "true").lower() == "true")
+    # WHEN the caller's voice stops the bot.
+    #   "voice" — the bot keeps talking through a short sound; it stops when
+    #             the words turn out to be a real interruption, or once the
+    #             caller has talked for barge_in_voice_secs. "हाँ", "जी",
+    #             "हम्म", "Hello" never stop it.
+    #   "onset" — the old behaviour: any sound over 0.2 s stops the bot and the
+    #             words are judged afterwards (then the cut words are resumed).
+    # The 22 Sep paid batch (107 calls): 473 cuts, 54% of them acknowledgements
+    # or noise, each followed by a median 0.8 s / p90 3.9 s stall; the opening
+    # was cut by the pickup "Hello" in 18 calls. Acknowledgement bursts last
+    # p90 0.60 s / p95 0.70 s, so at 0.7 s 95% of those stops disappear.
+    # Rollback: BARGE_IN_MODE=onset.
+    barge_in_mode: str = field(
+        default_factory=lambda: _env("BARGE_IN_MODE", "voice").strip().lower())
+    barge_in_voice_secs: float = field(
+        default_factory=lambda: float(_env("BARGE_IN_VOICE_SECS", "0.7")))
+    # An acknowledgement that began this close to the end of a reply that ended
+    # on a question is the caller's ANSWER to it ("हाँ" over "…जुड़ना चाहेंगे?").
+    ack_answer_window_secs: float = field(
+        default_factory=lambda: float(_env("ACK_ANSWER_WINDOW_SECS", "3.0")))
 
     duck_enabled: bool = field(
         default_factory=lambda: _env("DUCK_ENABLED", "true").lower() == "true")
@@ -466,8 +843,10 @@ class Settings:
         default_factory=lambda: float(_env("STOP_REISSUE_EVERY_SECS", "3.0")))
     orphan_min_utterance_secs: float = field(
         default_factory=lambda: float(_env("ORPHAN_MIN_UTTERANCE_SECS", "0.4")))
+    # 3.5 s: past the p90 of a Smallest final that needed the finalize retry
+    # (2.26 s on 2026-09-15), so a late transcript is not mistaken for a lost one.
     orphan_window_lo_secs: float = field(
-        default_factory=lambda: float(_env("ORPHAN_WINDOW_LO_SECS", "2.5")))
+        default_factory=lambda: float(_env("ORPHAN_WINDOW_LO_SECS", "3.5")))
     orphan_window_hi_secs: float = field(
         default_factory=lambda: float(_env("ORPHAN_WINDOW_HI_SECS", "10.0")))
     orphan_bot_quiet_secs: float = field(
@@ -506,6 +885,17 @@ class Settings:
     # (voicemail/IVR pickups were booking demos onto real leads). Kill-switch.
     report_require_conversation: bool = field(
         default_factory=lambda: _env("REPORT_REQUIRE_CONVERSATION", "true").lower() == "true")
+
+    # Stricter sibling of the above: refuse a substantive disposition when the caller
+    # DID speak but said nothing beyond a greeting or a bare "yes"/"haan". A one-word
+    # "Hello." satisfied report_require_conversation, reached the classifier, and came
+    # back as a Demo_Booked with an invented name, member count and meeting time
+    # (institute 3716991c, 2026-09-09 — 13 such calls got a decisive label).
+    # Negations are exempt, so a bare "no" still classifies and still stops the retry.
+    # Separate kill-switch: this gate is newer and strictly stricter than the
+    # caller-turn test, so it can be reverted without disabling that one.
+    report_require_substance: bool = field(
+        default_factory=lambda: _env("REPORT_REQUIRE_SUBSTANCE", "true").lower() == "true")
 
     # Hard per-call ceiling when the agent config doesn't set maxCallMinutes —
     # bounds telephony + STT/LLM/TTS spend on a runaway conversation.
@@ -588,10 +978,23 @@ class Settings:
 
     # How many times a sentence must be seen — COMPLETE, uninterrupted, confirmed
     # played to the caller, on a call with a healthy verdict — before we spend one
-    # off-call render on it. Break-even is 3 uses. 2 catches recurring names and
-    # script lines early; raise it if the ledger shows a fat twice-only tail.
+    # off-call render on it.
+    #
+    # 1, because the arithmetic favours it. Counting vendor payments for a
+    # sentence spoken N times: no cache costs N; at 2 it costs 3 (two live plus
+    # the render) and is free from the third use; at 1 it costs 2 and is free
+    # from the SECOND. So 1 wins whenever a sentence recurs at all, and loses
+    # exactly one render for each that never does.
+    #
+    # Measured on shreya-v3's first day: 54 of 73 sentences sat at one sighting,
+    # so 2 was holding back the entire backlog. Rendering all 54 speculatively
+    # costs 4,237 chars — about Rs 7 — and happens off-call, where it buys no
+    # latency penalty. The hedge was costing more than it saved.
+    #
+    # Raise it if the ledger ever shows a fat never-recurring tail; that is the
+    # signal this trade has flipped.
     tts_cache_min_seen: int = field(
-        default_factory=lambda: int(_env("TTS_CACHE_MIN_SEEN", "2")))
+        default_factory=lambda: int(_env("TTS_CACHE_MIN_SEEN", "1")))
 
     # Own budget, because _evict_tts_cache only sweeps *.mp3 — this namespace
     # would otherwise grow until the volume is full. 8 kHz s16 = 16 KB/s, so

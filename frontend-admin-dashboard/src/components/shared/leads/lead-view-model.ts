@@ -28,6 +28,12 @@ export interface LeadCardVM {
     email: string;
     phone: string;
     audience: string;
+    /** The audience's campaign type — the channel the lead came in through ('-' when unset). */
+    campaignType: string;
+    /** Latest UTM campaign this lead was tagged with ('-' when untagged). */
+    utmCampaign: string;
+    /** utm_source for the same row — shown as the campaign cell's tooltip. */
+    utmSource?: string;
     /** Human-readable submitted date, already formatted for display ('-' when unknown). */
     submittedDisplay: string;
     /** Raw ISO submitted timestamp (when available) for relative-time + sorting. */
@@ -36,12 +42,22 @@ export interface LeadCardVM {
     responseId?: string;
     /** Current custom pipeline status (key or label); drives the editable status chip. */
     leadStatus?: string | null;
+    /** This enquiry repeats an existing lead (audience_response.is_duplicate). */
+    isDuplicate?: boolean | null;
+    /** Live duplicate enquiries that repeat this lead (recent-leads list only). */
+    duplicateCount?: number | null;
+    /** Has an open priority follow-up (opened for a reattempt); the Follow-ups page lists it first. */
+    followUpPriority?: boolean | null;
     // ── TAT / follow-up SLA (visual only; computed on the backend) ───────────
     tatOverdue?: boolean | null;
     tatDueSoon?: boolean | null;
     followUpOverdue?: boolean | null;
-    /** ISO deadline to first reach out (submitted_at + tatHours). */
+    /** Lead is Lost / Converted: off the SLA clock, so the SLA cells never say Pending / Overdue. */
+    slaClosed?: boolean | null;
+    /** ISO deadline to first reach out (admin override, else working-hours aware). */
     tatDueAt?: string | null;
+    /** True when an admin set tatDueAt by hand. */
+    tatDueOverridden?: boolean | null;
     /** First counsellor activity timestamp — drives the "Reach out in" cell.
      *  When set, the cell shows the actual contact time ("✓ Contacted · 2:28 PM");
      *  when null, the cell shows Pending / Overdue based on tatDueAt. */
@@ -82,6 +98,8 @@ export const recentLeadPhone = (lead: RecentLeadDetail) =>
     lead.user?.mobile_number || lead.parent_mobile || '-';
 export const recentLeadAudience = (lead: RecentLeadDetail) =>
     lead.campaign_name || lead.source_audience_name || '-';
+export const recentLeadCampaignType = (lead: RecentLeadDetail) => lead.campaign_type || '-';
+export const recentLeadUtmCampaign = (lead: RecentLeadDetail) => lead.utm_campaign || '-';
 
 // Truncate a display name for table/card views (full name is preserved in
 // the `title` tooltip and in CSV exports — only the on-screen label is cut).
@@ -164,6 +182,10 @@ export const mapRecentLeadToStudent = (lead: RecentLeadDetail): StudentTable => 
     (result as unknown as Record<string, unknown>)._response_fields = responseFields;
     (result as unknown as Record<string, unknown>)._audience_campaign_name =
         lead.campaign_name ?? lead.source_audience_name ?? null;
+    (result as unknown as Record<string, unknown>)._audience_campaign_type =
+        lead.campaign_type ?? null;
+    (result as unknown as Record<string, unknown>)._utm_campaign = lead.utm_campaign ?? null;
+    (result as unknown as Record<string, unknown>)._utm_source = lead.utm_source ?? null;
     (result as unknown as Record<string, unknown>)._response_id = lead.response_id ?? null;
     return result;
 };
@@ -225,6 +247,10 @@ export const mapCampaignRowToStudent = (row: CampaignUserTable): StudentTable =>
     (result as unknown as Record<string, unknown>)._response_fields = row._response_fields;
     (result as unknown as Record<string, unknown>)._audience_campaign_name =
         row._audience_campaign_name;
+    (result as unknown as Record<string, unknown>)._audience_campaign_type =
+        row._audience_campaign_type;
+    (result as unknown as Record<string, unknown>)._utm_campaign = row._utm_campaign;
+    (result as unknown as Record<string, unknown>)._utm_source = row._utm_source;
     (result as unknown as Record<string, unknown>)._response_id = row._response_id ?? null;
     return result;
 };
@@ -246,14 +272,22 @@ export const recentLeadToVM = (lead: RecentLeadDetail): LeadCardVM => {
         email: recentLeadEmail(lead),
         phone: recentLeadPhone(lead),
         audience: recentLeadAudience(lead),
+        campaignType: recentLeadCampaignType(lead),
+        utmCampaign: recentLeadUtmCampaign(lead),
+        utmSource: lead.utm_source ?? undefined,
         submittedDisplay: formatSubmitted(lead.submitted_at_local),
         submittedIso: lead.submitted_at_local,
         responseId: lead.response_id,
         leadStatus: lead.lead_status,
+        isDuplicate: lead.is_duplicate,
+        duplicateCount: lead.duplicate_count,
+        followUpPriority: lead.follow_up_priority,
         tatOverdue: lead.tat_overdue,
         tatDueSoon: lead.tat_due_soon,
         followUpOverdue: lead.follow_up_overdue,
+        slaClosed: lead.sla_closed,
         tatDueAt: lead.tat_due_at,
+        tatDueOverridden: lead.tat_due_overridden,
         firstResponseAt: lead.first_response_at,
         followUpDueAt: lead.follow_up_due_at,
         toStudent: () => mapRecentLeadToStudent(lead),
@@ -277,6 +311,9 @@ export const campaignRowToVM = (row: CampaignUserTable): LeadCardVM => {
         email: (row.email as string) || row._user?.email || '-',
         phone: (row.phone_number as string) || row._user?.mobile_number || '-',
         audience: (row._audience_campaign_name as string) || (row.opted_out_from as string) || '-',
+        campaignType: (row._audience_campaign_type as string) || '-',
+        utmCampaign: (row._utm_campaign as string) || '-',
+        utmSource: (row._utm_source as string) || undefined,
         submittedDisplay: row.submittedAt || '-',
         // `row.submittedAt` is the formatted display string. The raw ISO lives
         // on `_submitted_iso` (set by the campaign-users row transformation);
@@ -284,10 +321,14 @@ export const campaignRowToVM = (row: CampaignUserTable): LeadCardVM => {
         submittedIso: typeof row._submitted_iso === 'string' ? row._submitted_iso : undefined,
         responseId: row._response_id ?? undefined,
         leadStatus: row._lead_status,
+        isDuplicate: row._is_duplicate,
+        followUpPriority: row._follow_up_priority,
         tatOverdue: row._tat_overdue,
         tatDueSoon: row._tat_due_soon,
         followUpOverdue: row._follow_up_overdue,
+        slaClosed: row._sla_closed,
         tatDueAt: row._tat_due_at,
+        tatDueOverridden: row._tat_due_overridden,
         firstResponseAt: row._first_response_at,
         followUpDueAt: row._follow_up_due_at,
         toStudent: () => mapCampaignRowToStudent(row),

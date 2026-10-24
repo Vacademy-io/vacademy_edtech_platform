@@ -32,6 +32,11 @@ import {
     MAX_POST_SUBMIT_BUTTONS,
     type PostSubmitButton,
 } from '@/services/audience-post-submit-settings';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface PostSubmitConfigurationEditorProps {
     value: AudiencePostSubmitConfiguration;
@@ -226,7 +231,12 @@ export const PostSubmitConfigurationEditor = ({
                 {value.buttons.length === 0 ? (
                     <HelpText>
                         Optional. Send respondents somewhere next — a WhatsApp group, a brochure,
-                        your course catalogue.
+                        your{' '}
+                        {getTerminology(
+                            ContentTerms.Course,
+                            SystemTerms.Course
+                        ).toLocaleLowerCase()}{' '}
+                        catalogue.
                     </HelpText>
                 ) : (
                     value.buttons.map((button, index) => {
@@ -242,7 +252,7 @@ export const PostSubmitConfigurationEditor = ({
                                     <Input
                                         value={button.text}
                                         disabled={disabled}
-                                        placeholder="Explore Courses"
+                                        placeholder={`Explore ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`}
                                         onChange={(e) =>
                                             patchButton(button.id, { text: e.target.value })
                                         }

@@ -9,16 +9,20 @@ import {
   ArrowClockwise,
   ChatSlash,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CourseLeaderboard } from "@/routes/study-library/courses/course-details/-components/CourseLeaderboard";
 import { toast } from "sonner";
 import { getChatUser } from "@/services/chat/getChatUser";
 import {
+  CONVERSATIONS_KEY,
+  UNREAD_COUNT_KEY,
   listConversations,
   getMessages,
   sendMessage,
   deleteMessage,
+  editMessage,
   markRead,
   openCommunityConversation,
   getRules,
@@ -38,21 +42,19 @@ import { NewChatModal } from "./NewChatModal";
 import { CommunityRulesPanel } from "./CommunityRulesPanel";
 import { initialsOf } from "./chatUtils";
 
-const CONVERSATIONS_KEY = ["chat", "conversations"] as const;
-
 /**
  * Known rule-rejection reason codes the backend returns as the
  * ResponseStatusException reason (Spring surfaces it in `data.message`),
- * mapped to a learner-friendly toast.
+ * mapped to the `ruleRejection.*` catalog key for a learner-friendly toast.
  */
-const RULE_REJECTION_MESSAGES: Record<string, string> = {
-  SLOW_MODE: "Slow mode is on — please wait before sending again",
-  BLOCKED_BY_MODERATION: "Message blocked: it contains a banned word",
-  RULES_NOT_ACKNOWLEDGED: "Please accept the community rules first",
-  LINKS_NOT_ALLOWED: "Links aren't allowed here",
-  ATTACHMENTS_NOT_ALLOWED: "Attachments aren't allowed here",
-  NEW_MEMBER_READONLY: "New members can't post yet",
-  CHAT_DISABLED: "Chat is disabled for this institute",
+const RULE_REJECTION_KEYS: Record<string, string> = {
+  SLOW_MODE: "ruleRejection.slowMode",
+  BLOCKED_BY_MODERATION: "ruleRejection.blockedByModeration",
+  RULES_NOT_ACKNOWLEDGED: "ruleRejection.rulesNotAcknowledged",
+  LINKS_NOT_ALLOWED: "ruleRejection.linksNotAllowed",
+  ATTACHMENTS_NOT_ALLOWED: "ruleRejection.attachmentsNotAllowed",
+  NEW_MEMBER_READONLY: "ruleRejection.newMemberReadonly",
+  CHAT_DISABLED: "ruleRejection.chatDisabled",
 };
 
 /** Extracts the Spring ResponseStatusException reason from an error, if present. */
@@ -72,7 +74,7 @@ function isDeterministicRejection(err: unknown): boolean {
   const status = err.response?.status;
   if (status == null || status < 400 || status >= 500) return false;
   const reason = reasonOf(err);
-  return !!reason && reason in RULE_REJECTION_MESSAGES;
+  return !!reason && reason in RULE_REJECTION_KEYS;
 }
 
 function upsertConversation(
@@ -92,9 +94,13 @@ export function ChatScreen({
   /** Open this conversation on load (e.g. from a chat push deep-link ?conversationId=). */
   initialConversationId?: string;
 } = {}) {
+  const { t } = useTranslation("chatFeatureA");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState("");
+  // Read from callbacks (loadThread) without making them depend on it.
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newChatOpen, setNewChatOpen] = useState(false);
 
@@ -182,9 +188,11 @@ export function ChatScreen({
         latestSeqRef.current =
           page.latestSeq ?? page.messages[page.messages.length - 1]?.seq;
 
-        // Mark the newest message read.
+        // Mark the newest message read. Not gated on the (possibly stale, cached) unreadCount alone: a
+        // newest message from someone else may be unread even when the cached row says 0. markRead is
+        // idempotent server-side.
         const newest = page.messages[page.messages.length - 1];
-        if (newest && conv.unreadCount > 0) {
+        if (newest && (conv.unreadCount > 0 || newest.senderId !== currentUserIdRef.current)) {
           markRead(conv.id, newest.id).catch(() => undefined);
           queryClient.setQueryData<ChatConversationResponse[]>(
             CONVERSATIONS_KEY,
@@ -196,7 +204,7 @@ export function ChatScreen({
         }
       } catch (err) {
         console.error("Failed to load messages:", err);
-        toast.error("Couldn't load this conversation.");
+        toast.error(t("screen.loadThreadError"));
       } finally {
         setLoadingThreadId((id) => (id === conv.id ? null : id));
       }
@@ -208,7 +216,7 @@ export function ChatScreen({
           .catch(() => setRules(null));
       }
     },
-    [queryClient],
+    [queryClient, t],
   );
 
   const handleSelect = useCallback(
@@ -362,10 +370,14 @@ export function ChatScreen({
   );
 
   const handleReconnect = useCallback(() => {
-    // After a reconnect, refetch the list and the open thread to catch up.
-    void refetchConversations();
+    // After a reconnect, catch up the open thread, mark what arrived while paused as read (the user is
+    // looking at it — otherwise the server pushes it and the list/badge show it unread), THEN refetch
+    // the list so its unread counts reflect that read.
     const openId = selectedIdRef.current;
-    if (!openId) return;
+    if (!openId) {
+      void refetchConversations();
+      return;
+    }
     // sinceCursor must be the NEWEST loaded seq so we fetch only messages that
     // arrived while disconnected (read from a ref — threadMeta here is stale).
     getMessages(openId, { sinceCursor: latestSeqRef.current, limit: 40 })
@@ -403,13 +415,49 @@ export function ChatScreen({
           return { ...prev, [openId]: next };
         });
         if (page.latestSeq != null) latestSeqRef.current = page.latestSeq;
+        const newest = page.messages[page.messages.length - 1];
+        if (newest && selectedIdRef.current === openId && !document.hidden) {
+          return markRead(openId, newest.id).catch(() => undefined);
+        }
+        return undefined;
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        void refetchConversations();
+      });
   }, [refetchConversations]);
+
+  // Leaving /chat: the sidebar badge switches back to the polled unread total, which may predate what was
+  // read here — refresh it.
+  useEffect(
+    () => () => {
+      void queryClient.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
+    },
+    [queryClient],
+  );
+
+  // ── SSE: an existing message changed in place (edited / deleted) ───────────
+  // Deliberately NOT handleIncoming: that path treats the payload as a new arrival — it bumps the
+  // unread badge, rewrites the conversation-list preview and floats the thread to the top, none of
+  // which is right for a message the list already knows about.
+  const handleMessageUpdated = useCallback((payload: ChatMessagePayload) => {
+    const msg = payload.message;
+    const convId = payload.conversationId;
+    if (!msg || !convId) return;
+    setThreads((prev) => {
+      const existing = prev[convId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [convId]: existing.map((m) => (m.id === msg.id ? { ...m, ...msg } : m)),
+      };
+    });
+  }, []);
 
   useChatStream({
     enabled: currentUserId.length > 0,
     onMessage: handleIncoming,
+    onMessageUpdated: handleMessageUpdated,
     onRead: handleRead,
     onReconnect: handleReconnect,
   });
@@ -489,10 +537,8 @@ export function ChatScreen({
         console.error("Failed to send message:", err);
 
         const reason = reasonOf(err);
-        toast.error(
-          (reason && RULE_REJECTION_MESSAGES[reason]) ||
-            "Message failed to send.",
-        );
+        const reasonKey = reason && RULE_REJECTION_KEYS[reason];
+        toast.error(reasonKey ? t(reasonKey) : t("screen.sendGenericError"));
 
         if (isDeterministicRejection(err)) {
           // A rule rejection (e.g. banned word / slow mode) will never succeed
@@ -516,7 +562,7 @@ export function ChatScreen({
         }
       }
     },
-    [queryClient],
+    [queryClient, t],
   );
 
   const handleSend = useCallback(
@@ -588,9 +634,30 @@ export function ChatScreen({
       }));
     } catch (err) {
       console.error("Failed to delete message:", err);
-      toast.error("Couldn't delete the message. Please try again.");
+      toast.error(t("screen.deleteError"));
     }
-  }, []);
+  }, [t]);
+
+  const handleEdit = useCallback(
+    async (row: UiChatMessage, text: string) => {
+      const convId = row.conversationId;
+      try {
+        const updated = await editMessage(convId, row.id, { text });
+        setThreads((prev) => ({
+          ...prev,
+          [convId]: (prev[convId] ?? []).map((m) =>
+            m.id === updated.id ? { ...m, ...updated } : m,
+          ),
+        }));
+      } catch (err) {
+        console.error("Failed to edit message:", err);
+        toast.error(t("screen.editError"));
+        // Rethrow so the dialog stays open on the text the user is still trying to save.
+        throw err;
+      }
+    },
+    [t],
+  );
 
   // ── Community acknowledgement ──────────────────────────────────────────────
   const handleAcknowledge = useCallback(async () => {
@@ -601,11 +668,11 @@ export function ChatScreen({
       setRules(updated);
     } catch (err) {
       console.error("Failed to acknowledge rules:", err);
-      toast.error("Couldn't accept the guidelines. Please try again.");
+      toast.error(t("screen.acknowledgeError"));
     } finally {
       setAcking(false);
     }
-  }, [selectedConv]);
+  }, [selectedConv, t]);
 
   // ── Composer gating ────────────────────────────────────────────────────────
   const ackGateActive =
@@ -619,8 +686,8 @@ export function ChatScreen({
   const composerDisabledReason = !selectedConv
     ? ""
     : ackGateActive
-      ? "Accept the community guidelines above to start posting."
-      : "You don't have permission to post here.";
+      ? t("screen.ackGateReason")
+      : t("common.noPermissionToPost");
 
   const threadMessages = selectedConv ? (threads[selectedConv.id] ?? []) : [];
   const selectedMeta = selectedConv ? threadMeta[selectedConv.id] : undefined;
@@ -642,10 +709,10 @@ export function ChatScreen({
     selectedConv?.title?.trim() ||
     dmOtherName ||
     (selectedConv?.type === "COMMUNITY"
-      ? "Community"
+      ? t("common.typeCommunity")
       : selectedConv?.type === "BATCH_GROUP"
-        ? "Group"
-        : "Direct message");
+        ? t("screen.headerGroupFallback")
+        : t("common.typeDirectMessage"));
 
   // ── Kill-switch: chat turned off for the institute ─────────────────────────
   if (chatDisabled) {
@@ -653,16 +720,16 @@ export function ChatScreen({
       <div
         className={cn(
           "flex w-full flex-col items-center justify-center gap-3 bg-background p-6 text-center",
-          "h-[calc(100dvh-3.5rem)]", // design-lint-ignore: full viewport height minus the 3.5rem top navbar; no token equivalent
+          // Fills the fillViewport column LayoutContainer gives the /chat route.
+          "min-h-0 flex-1",
         )}
       >
         <ChatSlash size={40} weight="duotone" className="text-muted-foreground" />
         <p className="text-body font-medium text-foreground">
-          In-App Messages are turned off for your institute
+          {t("screen.chatDisabledTitle")}
         </p>
         <p className="max-w-xs text-caption text-muted-foreground">
-          Messaging isn't available right now. Check back later or reach out to
-          your institute admin.
+          {t("screen.chatDisabledDescription")}
         </p>
       </div>
     );
@@ -672,7 +739,8 @@ export function ChatScreen({
     <div
       className={cn(
         "flex w-full overflow-hidden",
-        "h-[calc(100dvh-3.5rem)]", // design-lint-ignore: full viewport height minus the 3.5rem top navbar; no token equivalent
+        // Fills the fillViewport column LayoutContainer gives the /chat route.
+        "min-h-0 flex-1",
       )}
     >
       {/* ── Conversation list pane ── */}
@@ -683,13 +751,13 @@ export function ChatScreen({
         )}
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h1 className="text-h3 font-semibold text-foreground">Messages</h1>
+          <h1 className="text-h3 font-semibold text-foreground">{t("screen.header.messages")}</h1>
           <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="Refresh"
+              aria-label={t("screen.header.refreshAria")}
               onClick={() => refetchConversations()}
             >
               <ArrowClockwise size={18} />
@@ -698,7 +766,7 @@ export function ChatScreen({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="New message"
+              aria-label={t("screen.newMessage")}
               onClick={() => setNewChatOpen(true)}
             >
               <PencilSimpleLine size={18} />
@@ -724,18 +792,17 @@ export function ChatScreen({
         )}
       >
         {!selectedConv ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-stack p-6 text-center">
             <Megaphone size={40} weight="duotone" className="text-muted-foreground" />
             <p className="text-body font-medium text-foreground">
-              Select a conversation
+              {t("screen.emptySelection.title")}
             </p>
             <p className="max-w-xs text-caption text-muted-foreground">
-              Pick a conversation from the list, open the community channel, or
-              start a new direct message.
+              {t("screen.emptySelection.description")}
             </p>
             <Button type="button" onClick={() => setNewChatOpen(true)}>
               <PencilSimpleLine size={18} className="me-1.5" />
-              New message
+              {t("screen.newMessage")}
             </Button>
           </div>
         ) : (
@@ -746,7 +813,7 @@ export function ChatScreen({
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label="Back"
+                aria-label={t("screen.header.backAria")}
                 className="sm:hidden"
                 onClick={() => setSelectedId(null)}
               >
@@ -768,10 +835,10 @@ export function ChatScreen({
                 </p>
                 <p className="truncate text-caption text-muted-foreground">
                   {selectedConv.type === "COMMUNITY"
-                    ? "Institute community"
+                    ? t("screen.header.communitySubtitle")
                     : selectedConv.type === "BATCH_GROUP"
-                      ? "Group messages"
-                      : "Direct message"}
+                      ? t("common.typeGroupMessages")
+                      : t("common.typeDirectMessage")}
                 </p>
               </div>
               {selectedConv.type === "BATCH_GROUP" && selectedConv.referenceId && (
@@ -801,6 +868,7 @@ export function ChatScreen({
               onRetry={handleRetry}
               onDismissFailed={handleDismissFailed}
               onDelete={handleDelete}
+              onEdit={handleEdit}
             />
 
             <MessageComposer

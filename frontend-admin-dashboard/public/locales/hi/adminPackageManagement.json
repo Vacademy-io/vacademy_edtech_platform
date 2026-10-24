@@ -1,0 +1,17 @@
+{
+    "title": "{{package}} प्रबंधन",
+    "badge_one": "{{count}} {{packages}}",
+    "badge_other": "{{count}} {{packages}}",
+    "subtitle": "हर {{batch}} जो आप बेचते हैं — कीमत, ऑफ़र, आमंत्रण, सामग्री और फ़ैकल्टी एक ही तालिका में।",
+    "actions": {
+        "offers": "ऑफ़र कीमत लागू करें",
+        "bulkCreate": "एक साथ बनाएँ"
+    },
+    "empty": {
+        "title": "कोई {{packages}} नहीं मिला",
+        "text": "आपके मौजूदा फ़िल्टर से कोई {{packages}} मेल नहीं खाता। खोज बदलकर देखें।",
+        "clear": "फ़िल्टर हटाएँ"
+    },
+    "loading": "{{packages}} लोड हो रहे हैं…",
+    "showing": "{{total}} {{packages}} में से {{from}} – {{to}} दिखाए जा रहे हैं"
+}

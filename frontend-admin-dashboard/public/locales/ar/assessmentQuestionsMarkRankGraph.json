@@ -1,0 +1,14 @@
+{
+    "chart": {
+        "markLabel": "الدرجة",
+        "rankAxis": "الترتيب",
+        "marksObtainedAxis": "الدرجات المحصلة"
+    },
+    "header": {
+        "title": "الرسم البياني للدرجات والترتيب"
+    },
+    "toasts": {
+        "pdfExportSuccess": "تم تصدير بيانات ترتيب ودرجات الطلاب بصيغة PDF بنجاح",
+        "csvExportSuccess": "تم تصدير بيانات ترتيب ودرجات الطلاب بصيغة CSV بنجاح"
+    }
+}

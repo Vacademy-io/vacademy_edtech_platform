@@ -42,7 +42,22 @@ from typing import Any, Dict, List, NamedTuple, Optional
 # ~76% of its payload was social tokens or abandoned fragments. Consent and refusal
 # are explicitly still counted — see _lost_carries_meaning. Compare ANSWER_DELETED
 # rates across the v4/v5 boundary with care.
-RULES_VERSION = 5
+# v6 (2026-10-02): LIKELY_MACHINE no longer fires on a machine marker that a
+# person then answered past (person_turns, see machine_score) — a call screener
+# followed by a real conversation (calls b5b43ae1, 34452119). Compare
+# LIKELY_MACHINE rates across the v5/v6 boundary with care.
+# v7 (2026-10-14): four labels that misled on the 2026-10-14 sweep. ANSWER_DELETED
+# no longer counts the hold recording the gate absorbed on purpose (22f80a85,
+# d8146538, 68bdcbcf) nor a stutter whose two halves reached the model in
+# separate messages (4a594125); HANDBACK_LOOP counts only handback lines the
+# caller heard, not internal next-step requests (4a594125); DEAD_AIR no longer
+# charges the bot for the idle wait on a caller who did not answer its question
+# (afa21bf4, d8146538: "dead air 8.0s" at every nudge) nor for the quiet of a
+# hold (68bdcbcf); OPENING_REPLAYED no longer counts the bot's own deliberate
+# re-says (opening_resaid: cut at pickup, or re-said to the person a screener
+# handed over). New fault CALLER_IGNORED. Compare all five across the v6/v7
+# boundary with care.
+RULES_VERSION = 7
 
 # ── fault codes: CLOSED, APPEND-ONLY ─────────────────────────────────────────
 # Renaming one silently breaks every row already stored. test_diagnostics.py
@@ -84,11 +99,28 @@ REPLY_LOOP = "REPLY_LOOP"
 # fragment, DEAD_AIR named the symptom, LIKELY_MACHINE was simply wrong. The
 # thing that actually broke the call had no counter at all.
 HANDBACK_LOOP = "HANDBACK_LOOP"
+# 2026-09-15, six founder-found defects in one day that the counters above did
+# not name. Both computed from the PLAYED transcript at report time — what the
+# caller actually heard, the same invariants sim.replay checks offline.
+# The opening was said again after the person had already spoken (call
+# 196838de: a screener flag left armed; the father's "Hello?" 2 min in
+# replayed the whole opening and he hung up).
+OPENING_REPLAYED = "OPENING_REPLAYED"
+# A sentence of five or more words was played twice and the caller had not
+# asked for it (calls f28888b2, af7e93bd: heard lines un-recorded and said
+# again; 71e8f39b: the same restatement five times).
+REPEATED_LINE = "REPEATED_LINE"
+# The caller spoke and the bot swallowed their turn, waiting for an opening that
+# nothing was going to say (2026-10-14: 5e979e3e, 662d1c80, 4cb132a2, a11e6709 —
+# 14-18 s of silence while the person kept saying hello, and three of the four
+# scored GREEN because no counter here saw it).
+CALLER_IGNORED = "CALLER_IGNORED"
 
 ALL_FAULTS = (
     CRASH, TTS_WEDGE, REPLY_UNPLAYED, ANSWER_DELETED, DEAD_AIR, FALSE_REASK,
     LIKELY_MACHINE, STT_DEAF, SLOW_TTS, SLOW_LLM, TRANSFER_FAILED, PROMPT_UNFILLED,
-    BOT_SILENT, REPLY_LOOP, HANDBACK_LOOP,
+    BOT_SILENT, REPLY_LOOP, HANDBACK_LOOP, OPENING_REPLAYED, REPEATED_LINE,
+    CALLER_IGNORED,
 )
 
 # Headline = the first FIRED fault in this order, so UI copy is deterministic.
@@ -98,10 +130,13 @@ ALL_FAULTS = (
 # "hybrid model" four times and we never once transcribed it.
 # HANDBACK_LOOP outranks ANSWER_DELETED and DEAD_AIR deliberately: on call
 # 3148ccd4 all three fired, and the other two describe consequences of it.
+# CALLER_IGNORED sits with BOT_SILENT and STT_DEAF: the caller talked and got
+# nothing back, which is the whole story of those calls.
 HEADLINE_PRIORITY = (
-    CRASH, BOT_SILENT, STT_DEAF, REPLY_LOOP, HANDBACK_LOOP, TTS_WEDGE, REPLY_UNPLAYED,
-    ANSWER_DELETED, DEAD_AIR, FALSE_REASK, LIKELY_MACHINE, SLOW_TTS, SLOW_LLM,
-    TRANSFER_FAILED, PROMPT_UNFILLED,
+    CRASH, BOT_SILENT, STT_DEAF, CALLER_IGNORED, REPLY_LOOP, OPENING_REPLAYED, HANDBACK_LOOP,
+    REPEATED_LINE,
+    TTS_WEDGE, REPLY_UNPLAYED, ANSWER_DELETED, DEAD_AIR, FALSE_REASK, LIKELY_MACHINE,
+    SLOW_TTS, SLOW_LLM, TRANSFER_FAILED, PROMPT_UNFILLED,
 )
 
 GREEN, AMBER, RED = "GREEN", "AMBER", "RED"
@@ -147,6 +182,10 @@ class CallDiagnostics:
     tts_stalls: int = 0                 # STALL_RECOVER decisions
     tts_stall_cap_hit: bool = False     # gave up: permanently silent from here
     tts_silent_generations: int = 0     # generated, no audio ever followed
+    # A paused TTS ended an utterance with zero audio and was resumed so the
+    # reply behind it could play (providers._silent_context_resume; call
+    # c6847f91, 2026-10-14: a silent bridge line held the reply ~16 s).
+    tts_silent_resumes: int = 0
 
     # ── playout truth ──
     replies_generated: int = 0
@@ -184,6 +223,14 @@ class CallDiagnostics:
     # context. NOTE the name must match bump()'s argument EXACTLY — bump() is
     # getattr/setattr with a bare except, so a typo silently counts nothing.
     carrier_announcements: int = 0
+    # The person put the call on hold: holds entered, pieces of the network's hold
+    # recording kept out of the model, and returns from hold (call 6d81124d).
+    holds: int = 0
+    hold_lines: int = 0
+    hold_returns: int = 0
+    # Runs (replies, cues, re-asks) dropped at RunGuard's door while on hold —
+    # each one would have played into the hold (calls 68bdcbcf, d8146538).
+    runs_dropped_on_hold: int = 0
     # Sentences dropped because the bot had already said them this call.
     repeats_suppressed: int = 0
     # Replies that were ENTIRELY suppressed, so the caller got "Ji, boliye." —
@@ -193,6 +240,24 @@ class CallDiagnostics:
     # could not tell that story: it counts sentences, and what matters is TURNS
     # the caller could not answer.
     handbacks: int = 0
+    empty_replies: int = 0        # genuinely empty model answers re-asked for the next line
+    # The gate suppressed the whole reply and asked the model for a fresh line
+    # (all-repeat / answer-question / restatement). Nothing was said to the
+    # caller, so not a handback — HANDBACK_LOOP counted these until call
+    # 4a594125 (2026-10-14) headlined "kept asking the caller to talk" over two
+    # of them with no handback line ever spoken.
+    next_step_requests: int = 0
+    forming_holds: int = 0        # runs held because the caller's turn was still forming
+    forming_hold_cap_releases: int = 0   # …released by the cap, not by the turn (expect ~0)
+    retired_runs_dropped: int = 0  # requests a failed LLM primary dropped (the fallback answered)
+    cue_runs_dropped: int = 0      # the bot's own runs dropped at the door (a reply was on its way)
+    # A caller's next piece arrived before the earlier run's reply made a sound:
+    # that run was cancelled and the newer one answers the whole turn, once.
+    runs_superseded: int = 0
+    short_answer_forming_waits: int = 0  # a held short answer waited for the rest of the turn
+    # <<SEND:…>>s fired by a reply that was then superseded (they still go —
+    # the marker follows the caller's agreement; counted to watch the rate).
+    sends_from_superseded_reply: int = 0
     # Times we said a repeat anyway rather than hand back twice running. Healthy
     # in ones; a run of them means the model is stuck on a line it cannot get past.
     repeat_escalations: int = 0
@@ -211,6 +276,66 @@ class CallDiagnostics:
     # unchanged — call 17be14f2). Each one is a reply-to-nothing that used to
     # re-deliver the intro. Evidence, not a fault.
     empty_runs_blocked: int = 0
+    # Runs held because the scripted opening had not been heard yet and the
+    # caller's words did not take over (room chatter at pickup, call 4243a436).
+    runs_held_for_opening: int = 0
+    # Of those, caller turns that got NO model reply because the opening played
+    # over them (it was the reply). Before 2026-10-14 every held run ended this
+    # way even when nothing ever said the opening — calls 4cb132a2, a11e6709,
+    # 5e979e3e: 3.5-18 s of silence on calls that scored GREEN.
+    turns_swallowed_for_opening: int = 0
+    # Caller runs let through although the opening was still owed, because
+    # nothing was going to say it (spent re-says, a killed re-say, a voicemail
+    # prompt over it) — each was a silent swallow before 2026-10-14.
+    opening_unsaid_runs: int = 0
+    # Runs that carried "the person has not heard who you are" to the model.
+    intro_cues: int = 0
+    # Caller turns left to the opening (turns_swallowed_for_opening) after which
+    # NOTHING of ours played for 5 s — the caller talked into silence. Checked
+    # against played audio by RunGuard._check_swallowed, so the ordinary
+    # pickup "हाँ जी" the opening answers never counts. Drives CALLER_IGNORED.
+    swallowed_turns: int = 0
+    # Short-answer holds released because the line never went quiet (noise).
+    short_answer_noise_releases: int = 0
+    # Voice-mode barge-in: acknowledgements the bot talked straight through, and
+    # stops made because the caller kept talking past barge_in_voice_secs.
+    acks_talked_through: int = 0
+    # FloorGate: replies held because the caller was talking when they were
+    # ready; then dropped (caller took the turn), released (caller stopped) or
+    # capped (the line never went quiet).
+    # "<name>" copied from the prompt's script lines, replaced before the TTS.
+    placeholders_filled: int = 0
+    # "करतो/करते"-style either-or pairs reduced to one form before the TTS.
+    alternatives_collapsed: int = 0
+    # Replies whose later sentences had to be committed to the model's history
+    # after their response ended (per-sentence TTS contexts).
+    late_reply_commits: int = 0
+    floor_holds: int = 0
+    floor_holds_dropped: int = 0
+    # Shadow mode (2026-10-01): the caller's gender from voice pitch and from
+    # their own words — measured and reported, not yet used. app/caller_gender.py
+    caller_gender: dict = field(default_factory=dict)
+    floor_holds_released: int = 0
+    floor_holds_capped: int = 0
+    voice_cuts: int = 0
+    # Short-answer runs ("Yes." + a breath) dropped because the caller's voice
+    # resumed inside the grace — the whole turn was answered once instead
+    # (bot.RunGuard, 2026-09-15). The fix working, not a fault.
+    short_answer_holds: int = 0
+    # Resumed words that had to be sent to the TTS twice because the first
+    # frame was swallowed by the vendor socket reconnecting after the
+    # interruption (call 3b5fb592). Evidence, not a fault.
+    resume_respoken: int = 0
+    # Resumed words that never reached the line at all and were handed back to
+    # the model (call b41b481f). A fault symptom, not a fault by itself.
+    resume_lost: int = 0
+    sentences_capped: int = 0
+    # From the PLAYED transcript at report time (report._played_invariants):
+    # the opening said again after a substantive caller turn; 5+-word
+    # sentences played twice without a caller "hello?"/"say again" between.
+    opening_replays: int = 0
+    repeated_lines: int = 0
+    repeated_line_samples: List[str] = field(default_factory=list)
     # Opening clauses dropped because they only parroted the caller's own answer
     # back at them ("ओके, सुबोध अभी आठवीं क्लास में है, तो …"). A high count is the
     # model reaching for the restatement on every turn despite the prompt rule —
@@ -232,6 +357,9 @@ class CallDiagnostics:
     first_user_secs: Optional[float] = None
     longest_user_secs: float = 0.0
     machine_markers: List[str] = field(default_factory=list)
+    # Times a person answered the bot after the machine greeting (report.
+    # _person_turns). None = not measured, and then the markers count as before.
+    person_turns: Optional[int] = None
 
     # ── latency reservoirs ──
     llm_ttfb: List[float] = field(default_factory=list)
@@ -247,6 +375,10 @@ class CallDiagnostics:
     # a bare 0 would read as a free call, which is a lie we would then bill on.
     tts_vendor: str = ""
     tts_vendor_credits: Optional[float] = None
+    # "provider/model" the call's replies came from (bot.run_bot). Exists so a
+    # per-agent LLM POC (config.sarvam_llm_agents) is visible in the report and
+    # a latency comparison can be made per vendor instead of by memory.
+    llm_vendor: str = ""
     tts_meter_frames: int = 0
     tts_audio_secs: float = 0.0
     tts_chars: int = 0
@@ -264,6 +396,24 @@ class CallDiagnostics:
 
     # ── infrastructure ──
     stt_reconnects: int = 0
+    # The STT waterfall took over mid-call (STT_FALLBACK_PROVIDER): primary
+    # failed audibly (no transcript for a heard utterance) or on its socket.
+    stt_failovers: int = 0
+    # The STT vendor's socket stopped finishing sends (providers.decoupled_stt_io)
+    # — call 3e327e8a's "Credits exhausted" close that held the TCP open.
+    stt_stalls: int = 0
+    stt_vendor_final: str = ""
+    llm_failovers: int = 0
+    llm_returns: int = 0          # turns handed back to the primary after a failover
+    llm_vendor_final: str = ""
+    # Token usage summed over the call's LLM runs, from pipecat's usage
+    # metrics. cached = prompt tokens the vendor served from its prompt cache
+    # (Gemini implicit caching bills them at ~10%; Sarvam reports none) — the
+    # only per-call answer to "is caching lowering the LLM bill?".
+    llm_runs: int = 0
+    llm_prompt_tokens: int = 0
+    llm_cached_tokens: int = 0
+    llm_completion_tokens: int = 0
     hearing_failures: int = 0     # times we gave up and closed out honestly
     # Caller utterances DETECTED by VAD that produced no transcript at all. This
     # is the only signal that separates "nobody answered" from "we went deaf".
@@ -277,6 +427,12 @@ class CallDiagnostics:
     # and skips ahead — see bot._greet_when_ready. Counted, not scored: it is a
     # normal thing for a caller to do, and the correction handles it.
     opening_truncated: int = 0
+    # The caller's pickup "hello" cut the opening at its start and the opening
+    # was spoken again (call 9e566e32, 2026-09-09). At most 1 per call.
+    opening_resaid: int = 0
+    # "Just a second." spoken because a reply was composing with no audio for
+    # LLM_BRIDGE_AFTER_SECS (call c130e39f, 2026-09-09). One per slow reply.
+    llm_bridges: int = 0
     prompt_unfilled: List[str] = field(default_factory=list)
     crash: Optional[str] = None
     transfer_requested: bool = False
@@ -496,6 +652,35 @@ def _lost_carries_meaning(text: str) -> bool:
     return len(_norm_answer(words[0])) > _SCRAP_MAX_CHARS
 
 
+def _consume_words(words: List[List[Optional[str]]], seq: List[str]) -> bool:
+    """Find `seq` as a contiguous run of still-unconsumed words in one of the
+    delivered messages; blank those words (None) and return True. Whole words
+    only — "हाँ" never matches inside "हाय", which is what the substring pass
+    could not promise for short keys."""
+    n = len(seq)
+    for ws in words:
+        for i in range(len(ws) - n + 1):
+            if ws[i:i + n] == seq:
+                ws[i:i + n] = [None] * n
+                return True
+    return False
+
+
+def _delivered_in_two_pieces(words: List[List[Optional[str]]], hw: List[str]) -> bool:
+    """Split `hw` once so each half is a whole-word run of the unconsumed
+    messages (any order, any message); consume both and return True. All or
+    nothing: a half that does not fit leaves `words` untouched."""
+    for i in range(1, len(hw)):
+        head, tail = hw[:i], hw[i:]
+        if min(len("".join(head)), len("".join(tail))) < _CONTAIN_MIN_CHARS:
+            continue
+        trial = [list(ws) for ws in words]
+        if _consume_words(trial, head) and _consume_words(trial, tail):
+            words[:] = trial
+            return True
+    return False
+
+
 class Lost(NamedTuple):
     """What the reconciliation found, split by whether losing it cost anything."""
     answers: int
@@ -504,7 +689,8 @@ class Lost(NamedTuple):
     fragment_samples: List[str]
 
 
-def max_reply_restarts(transcript: List[Dict[str, Any]], threshold: float = 0.82) -> int:
+def max_reply_restarts(transcript: List[Dict[str, Any]], threshold: float = 0.82,
+                       skip_like: str = "") -> int:
     """PURE. Longest run of consecutive bot turns that said the SAME thing.
 
     Post-hoc rather than frame-plumbed on purpose: the played transcript already
@@ -524,13 +710,23 @@ def max_reply_restarts(transcript: List[Dict[str, Any]], threshold: float = 0.82
     breaking the run: they legitimately repeat, and on the live call a "Hmm…"
     landed in the middle of the loop. Skipping keeps the run intact; resetting
     on them hid it.
+
+    ``skip_like`` (the opening) is skipped the same way: the bot's deliberate
+    re-says of an opening cut at pickup sit next to each other in the played
+    transcript once an acknowledgement over them stops splitting the entries
+    (2026-10-14), and three deliveries of the opening read as a REPLY_LOOP —
+    which marks the outcome untrustworthy and re-dials the lead (replay of
+    7fb703a4: GREEN on the old build, RED on identical audio).
     """
+    skip = " ".join((skip_like or "").split()).casefold()[:120]
     heads: List[str] = []
     for entry in transcript or []:
         if (entry or {}).get("role") != "assistant":
             continue
         text = " ".join(((entry or {}).get("text") or "").split()).casefold()
         if len(text) < 24:
+            continue
+        if skip and difflib.SequenceMatcher(None, skip, text[:120]).ratio() >= threshold:
             continue
         heads.append(text[:120])
     best = run = 0
@@ -592,11 +788,24 @@ def split_lost(heard: List[str], delivered: List[str]) -> Lost:
     # message that exact-matched is spoken for and must not also absorb fragments,
     # so only UNCONSUMED copies are searchable).
     spans: List[str] = []
+    # Whole-word view of the same unconsumed messages, for the short tokens
+    # the substring pass must not touch. Verified live (call ee6f561c,
+    # 2026-09-11): saaras emitted "But." / "बच्चा भी।" / "ठीक।" / "fifth class
+    # में पढ़ रहा है।" as four finals, the aggregator joined them into one
+    # message and the model answered "fifth class" — yet "ठीक।" was reported
+    # DELETED, because it normalizes to 2 chars and substring matching is
+    # (rightly) off below 4. Over 7 days the top "deleted answers" were
+    # "Yes." x8, "हाँ।" x3, "Yeah." x3 — every one a 3-char-or-shorter key that
+    # this pass can now place as a whole word, so the fault reports real
+    # losses only. A word is consumed once, so a repeated "yes" still needs
+    # its own copy.
+    words: List[List[Optional[str]]] = []
     for m in delivered:
         k = _norm_answer(m)
         if k and pool.get(k, 0) > 0:
             pool[k] -= 1
             spans.append(k)
+            words.append([w for w in (_norm_answer(t) for t in m.split()) if w])
     missing: List[str] = []
     for h, k in leftovers:
         if len(k) >= _CONTAIN_MIN_CHARS:
@@ -607,8 +816,42 @@ def split_lost(heard: List[str], delivered: List[str]) -> Lost:
                     break
             else:
                 missing.append(h)
-        else:
-            missing.append(h)
+            continue
+        hw = [w for w in (_norm_answer(t) for t in h.split()) if w]
+        if hw and _consume_words(words, hw):
+            continue
+        missing.append(h)
+    # Pass 3, the reverse split: the transcript JOINS a fragment continuation
+    # onto its head ("मेरा बच्चा mobile" + "बाईस से।" -> one entry) while the
+    # model received the pieces as separate messages. Call 2983bf1f
+    # (2026-09-24) reported that line lost; the run that followed had all 17
+    # of the caller's words. Search the unconsumed messages joined in order.
+    if missing and spans:
+        joined = "".join(spans)
+        still: List[str] = []
+        for h in missing:
+            k = _norm_answer(h)
+            j = joined.find(k) if len(k) >= _CONTAIN_MIN_CHARS else -1
+            if j >= 0:
+                joined = joined[:j] + joined[j + len(k):]
+            else:
+                still.append(h)
+        missing = still
+    # Pass 4, the same join out of order: a stutter's tail went to the model the
+    # moment it landed (a fragment continuation), its head later with the rest of
+    # the turn, while the transcript glued them into one line (two words + the
+    # same two words again). Call 4a594125 (2026-10-14) reported that line lost;
+    # the run that followed had every word and the reply answered it. Both
+    # halves must be a whole-word run of some unconsumed message and at least
+    # _CONTAIN_MIN_CHARS long, so a real lost "हाँ जी" is never explained away by
+    # a stray "हाँ" and "जी" somewhere else.
+    if missing and words:
+        still = []
+        for h in missing:
+            hw = [w for w in (_norm_answer(t) for t in h.split()) if w]
+            if not _delivered_in_two_pieces(words, hw):
+                still.append(h)
+        missing = still
     answers = [h for h in missing if _lost_carries_meaning(h)]
     scraps = [h for h in missing if not _lost_carries_meaning(h)]
     return Lost(len(answers), answers[:_MAX_DELETED_ANSWERS],
@@ -623,11 +866,21 @@ def reconcile_answers(heard: List[str], delivered: List[str]) -> tuple:
     return lost.answers, lost.answer_samples
 
 
+# A machine greeting that a person then answered past this many times was a
+# call screener (or a pickup after the operator's line), not an answering
+# machine. Live calls b5b43ae1 and 34452119 (2026-10-02) were AMBER
+# LIKELY_MACHINE on the screener's marker alone, through 18 and 15 caller
+# turns of a real conversation. 3, not 1: a screen with nobody behind it
+# still relays a line or two after our opening ("Thanks. Arushi.", "I'm
+# sorry." — 787aa111 scored 2), and a person answers us far more than that.
+_PERSON_TURNS_OVER_MACHINE = 3
+
+
 def machine_score(d: CallDiagnostics) -> float:
     """Bounded 0..1 heuristic that a machine, not a person, answered. INFERRED —
     v1 is EVIDENCE ONLY and never changes status or disposition."""
     score = 0.0
-    if d.machine_markers:
+    if d.machine_markers and (d.person_turns or 0) < _PERSON_TURNS_OVER_MACHINE:
         score += 0.5
     if d.user_turns <= 1 and d.bot_turns >= 2:
         score += 0.2
@@ -667,6 +920,13 @@ def verdict(d: CallDiagnostics) -> Dict[str, Any]:
     elif d.tts_stalls == 1 or d.tts_wedges >= 1 or d.tts_letterless_skipped >= 1:
         fire(TTS_WEDGE, AMBER)
 
+    if d.opening_replays >= 1:
+        fire(OPENING_REPLAYED, RED)
+    if d.repeated_lines >= 2:
+        fire(REPEATED_LINE, RED)
+    elif d.repeated_lines == 1:
+        fire(REPEATED_LINE, AMBER)
+
     if d.replies_never_played >= 2:
         fire(REPLY_UNPLAYED, RED)
     elif d.replies_never_played == 1:
@@ -680,6 +940,15 @@ def verdict(d: CallDiagnostics) -> Dict[str, Any]:
         fire(HANDBACK_LOOP, RED)
     elif d.handbacks >= 2:
         fire(HANDBACK_LOOP, AMBER)
+
+    # A swallowed turn is a person talking into silence (audio-checked, see
+    # swallowed_turns); one is already a fault the caller felt, two is the
+    # 14-18 s lock of 2026-10-14 (a11e6709: four hellos, two swallowed runs,
+    # then a reply with no introduction).
+    if d.swallowed_turns >= 2:
+        fire(CALLER_IGNORED, RED)
+    elif d.swallowed_turns >= 1:
+        fire(CALLER_IGNORED, AMBER)
 
     if d.answers_deleted is not None:          # None = not measured: never fires
         if d.answers_deleted >= 3:
@@ -771,7 +1040,10 @@ _HEADLINE_TEXT = {
     PROMPT_UNFILLED: "Agent prompt has unresolved placeholders",
     BOT_SILENT: "The agent never spoke — the caller heard nothing",
     REPLY_LOOP: "The agent kept restarting the same reply",
+    OPENING_REPLAYED: "The agent said its opening again mid-call",
+    REPEATED_LINE: "The agent said the same line twice",
     HANDBACK_LOOP: "The agent had nothing to say and kept asking the caller to talk",
+    CALLER_IGNORED: "The caller spoke and the agent stayed silent",
 }
 
 
@@ -787,6 +1059,7 @@ def to_payload(d: CallDiagnostics) -> Dict[str, Any]:
             "faultLevels": v["faults"],
             "headline": v["headline"],
             "headlineText": _HEADLINE_TEXT.get(v["headline"]) if v["headline"] else None,
+            "llm": {"vendor": d.llm_vendor or None},
             "tts": {
                 "letterlessSkipped": d.tts_letterless_skipped,
                 "wedges": d.tts_wedges,
@@ -794,6 +1067,7 @@ def to_payload(d: CallDiagnostics) -> Dict[str, Any]:
                 "stalls": d.tts_stalls,
                 "stallCapHit": d.tts_stall_cap_hit,
                 "silentGenerations": d.tts_silent_generations,
+                "silentResumes": d.tts_silent_resumes,
                 "ttfbP50": _p(d.tts_ttfb, 50), "ttfbP95": _p(d.tts_ttfb, 95),
                 "ttfbMax": round(max(d.tts_ttfb), 3) if d.tts_ttfb else None,
                 "vendor": d.tts_vendor or None,
@@ -824,13 +1098,48 @@ def to_payload(d: CallDiagnostics) -> Dict[str, Any]:
                 "duckAbsorbs": d.duck_absorbs,
                 "duckTimeoutResumes": d.duck_timeout_resumes,
                 "carrierAnnouncements": d.carrier_announcements,
+                "holds": d.holds,
+                "holdLines": d.hold_lines,
+                "holdReturns": d.hold_returns,
+                "runsDroppedOnHold": d.runs_dropped_on_hold,
                 "repeatsSuppressed": d.repeats_suppressed,
                 "echoesTrimmed": d.echoes_trimmed,
                 "handbacks": d.handbacks,
+                "nextStepRequests": d.next_step_requests,
                 "repeatEscalations": d.repeat_escalations,
                 "contentFreeTurns": d.content_free_turns,
                 "unsaidReverted": d.unsaid_reverted,
                 "emptyRunsBlocked": d.empty_runs_blocked,
+                "runsHeldForOpening": d.runs_held_for_opening,
+                "turnsSwallowedForOpening": d.turns_swallowed_for_opening,
+                "openingUnsaidRuns": d.opening_unsaid_runs,
+                "introCues": d.intro_cues,
+                "swallowedTurns": d.swallowed_turns,
+                "shortAnswerNoiseReleases": d.short_answer_noise_releases,
+                "acksTalkedThrough": d.acks_talked_through,
+                "placeholdersFilled": d.placeholders_filled,
+                "alternativesCollapsed": d.alternatives_collapsed,
+                "lateReplyCommits": d.late_reply_commits,
+                "floorHolds": d.floor_holds,
+                "floorHoldsDropped": d.floor_holds_dropped,
+                "callerGender": d.caller_gender or None,
+                "formingHolds": d.forming_holds,
+                "formingHoldCapReleases": d.forming_hold_cap_releases,
+                "retiredRunsDropped": d.retired_runs_dropped,
+                "cueRunsDropped": d.cue_runs_dropped,
+                "runsSuperseded": d.runs_superseded,
+                "shortAnswerFormingWaits": d.short_answer_forming_waits,
+                "sendsFromSupersededReply": d.sends_from_superseded_reply,
+                "floorHoldsReleased": d.floor_holds_released,
+                "floorHoldsCapped": d.floor_holds_capped,
+                "voiceCuts": d.voice_cuts,
+                "shortAnswerHolds": d.short_answer_holds,
+                "resumeRespoken": d.resume_respoken,
+                "resumeLost": d.resume_lost,
+                "sentencesCapped": d.sentences_capped,
+                "openingReplays": d.opening_replays,
+                "repeatedLines": d.repeated_lines,
+                "repeatedLineSamples": d.repeated_line_samples[:3],
                 "maxReplyRestarts": d.max_reply_restarts,
                 "orphanReasks": d.orphan_reasks,
                 "orphanFalseReasks": d.orphan_false_reasks,
@@ -857,16 +1166,33 @@ def to_payload(d: CallDiagnostics) -> Dict[str, Any]:
                 "greetDelaySecs": d.greet_delay_secs,
                 "setupSecs": d.setup_secs,
                 "openingTruncated": d.opening_truncated,
+                "openingResaid": d.opening_resaid,
+                "llmBridges": d.llm_bridges,
             },
             "machine": {
                 "score": machine_score(d),
                 "markers": d.machine_markers or None,
+                "personTurns": d.person_turns,
                 "firstUserSecs": d.first_user_secs,
                 "longestUserSecs": round(d.longest_user_secs, 2) or None,
                 "src": "inferred",
             },
             "infra": {
                 "sttReconnects": d.stt_reconnects,
+                "sttFailovers": d.stt_failovers,
+                "sttStalls": d.stt_stalls,
+                "sttVendorFinal": d.stt_vendor_final or None,
+                "llmFailovers": d.llm_failovers,
+                "llmReturns": d.llm_returns,
+                "llmVendorFinal": d.llm_vendor_final or None,
+                "llmUsage": {
+                    "runs": d.llm_runs,
+                    "promptTokens": d.llm_prompt_tokens,
+                    "cachedTokens": d.llm_cached_tokens,
+                    "completionTokens": d.llm_completion_tokens,
+                    "cachedPct": (round(100.0 * d.llm_cached_tokens / d.llm_prompt_tokens, 1)
+                                  if d.llm_prompt_tokens else None),
+                } if d.llm_runs else None,
                 "hearingFailures": d.hearing_failures,
                 "unheardUtterances": d.unheard_utterances,
                 "promptUnfilled": d.prompt_unfilled or None,

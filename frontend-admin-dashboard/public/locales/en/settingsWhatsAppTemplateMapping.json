@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Template Mapping",
+        "templateBody": "Template Body",
+        "noBodyContent": "No body content"
+    },
+    "errors": {
+        "loadFields": "Failed to load available fields",
+        "saveMapping": "Failed to save template mapping. Please try again."
+    },
+    "mappings": {
+        "sectionTitle": "Map Dynamic Values",
+        "vacademyDataField": "Vacademy Data Field",
+        "dataCategory": "Data Category",
+        "selectCategoryPlaceholder": "Select data category...",
+        "field": "Field",
+        "selectFieldPlaceholder": "Select field...",
+        "mappedTo": "Mapped to:"
+    },
+    "preview": {
+        "title": "WhatsApp Message Preview",
+        "completeAllToSeePreview": "Complete all mappings to see the full preview"
+    },
+    "completionStatus": {
+        "title": "Completion Status",
+        "mapped": "mapped",
+        "pending": "pending",
+        "allComplete": "All mappings complete!"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "saveMapping": "Save Mapping"
+    }
+}

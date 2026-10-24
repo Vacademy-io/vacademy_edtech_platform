@@ -11,6 +11,7 @@
  */
 import { Fragment, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { CaretDown, CaretRight, ArrowsLeftRight, Lightbulb, Target } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import CallIntelligenceTab from './call-intelligence-tab';
@@ -43,17 +44,21 @@ function reachTone(reach: number | null): string {
 
 // ── Per-counsellor "what they can improve" (lazy, on expand) ──────────────
 function CoachingDrillIn({ counsellorUserId }: { counsellorUserId: string }) {
+    const { t } = useTranslation('audienceManagerCrmIntelligenceReportTab');
     const { data, isLoading } = useQuery({
         queryKey: ['counsellor-coaching', counsellorUserId, 'report-drillin'],
         queryFn: () => fetchCounsellorCoaching(counsellorUserId),
         staleTime: 60 * 1000,
     });
 
-    if (isLoading) return <div className="p-3 text-xs text-neutral-400">Loading coaching…</div>;
+    if (isLoading)
+        return (
+            <div className="p-3 text-xs text-neutral-400">{t('coachingDrillIn.loading')}</div>
+        );
     if (!data || data.totalAnalyzed === 0) {
         return (
             <div className="p-3 text-xs text-neutral-400">
-                No analyzed calls yet — no coaching for this rep.
+                {t('coachingDrillIn.noAnalyzedCalls')}
             </div>
         );
     }
@@ -63,24 +68,28 @@ function CoachingDrillIn({ counsellorUserId }: { counsellorUserId: string }) {
         <div className="flex flex-col gap-2 bg-neutral-50 px-4 py-3">
             {weakest.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="font-medium text-neutral-600">Weakest:</span>
+                    <span className="font-medium text-neutral-600">
+                        {t('coachingDrillIn.weakestLabel')}
+                    </span>
                     {weakest.map((q) => (
                         <span
                             key={q.key}
                             className="rounded-full bg-white px-2 py-0.5 text-neutral-600"
                         >
                             {q.key.replace(/_/g, ' ')} ·{' '}
-                            {q.avgScore == null ? '—' : q.avgScore.toFixed(1)}/10
+                            {t('coachingDrillIn.scoreOutOfTen', {
+                                score: q.avgScore == null ? '—' : q.avgScore.toFixed(1),
+                            })}
                         </span>
                     ))}
                 </div>
             )}
             {tips.length > 0 && (
                 <ul className="space-y-1">
-                    {tips.map((t, i) => (
+                    {tips.map((tip, i) => (
                         <li key={i} className="flex items-start gap-1.5 text-xs text-neutral-700">
                             <Target className="mt-0.5 size-3.5 shrink-0 text-primary-400" />
-                            <span>{t.text}</span>
+                            <span>{tip.text}</span>
                         </li>
                     ))}
                 </ul>
@@ -97,6 +106,7 @@ function CounsellorWorkPatterns({
     teamId,
     counsellorUserId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerCrmIntelligenceReportTab');
     const [expanded, setExpanded] = useState<string | null>(null);
     const query = useQuery({
         queryKey: [
@@ -153,20 +163,33 @@ function CounsellorWorkPatterns({
         return <ReportErrorState error={query.error} onRetry={() => query.refetch()} />;
 
     return (
-        <ReportSection title="Counsellor work patterns" icon={<ArrowsLeftRight size={16} />}>
+        <ReportSection
+            title={t('workPatterns.sectionTitle')}
+            icon={<ArrowsLeftRight size={16} />}
+        >
             {rows.length === 0 ? (
-                <EmptyHint message="No counsellor activity in this range." />
+                <EmptyHint message={t('workPatterns.emptyMessage')} />
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-neutral-200 text-xs uppercase tracking-wide text-neutral-500">
                                 <th className="w-8 py-2" />
-                                <th className="py-2 text-left">Counsellor</th>
-                                <th className="py-2 text-right">Leads dispositioned</th>
-                                <th className="py-2 text-right">Calls</th>
-                                <th className="py-2 text-right">Connected</th>
-                                <th className="py-2 text-right">Reach</th>
+                                <th className="py-2 text-start">
+                                    {t('workPatterns.columns.counsellor')}
+                                </th>
+                                <th className="py-2 text-end">
+                                    {t('workPatterns.columns.leadsDispositioned')}
+                                </th>
+                                <th className="py-2 text-end">
+                                    {t('workPatterns.columns.calls')}
+                                </th>
+                                <th className="py-2 text-end">
+                                    {t('workPatterns.columns.connected')}
+                                </th>
+                                <th className="py-2 text-end">
+                                    {t('workPatterns.columns.reach')}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -208,8 +231,8 @@ function CounsellorWorkPatterns({
                                             <tr>
                                                 <td colSpan={6} className="p-0">
                                                     <div className="flex items-center gap-1.5 px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                                        <Lightbulb size={13} /> What they can
-                                                        improve
+                                                        <Lightbulb size={13} />{' '}
+                                                        {t('workPatterns.improveHeading')}
                                                     </div>
                                                     <CoachingDrillIn counsellorUserId={r.userId} />
                                                 </td>
@@ -227,8 +250,8 @@ function CounsellorWorkPatterns({
 }
 
 const toMillis = (d: string, endOfDay = false): number | undefined => {
-    const t = new Date(endOfDay ? `${d}T23:59:59` : d).getTime();
-    return Number.isNaN(t) ? undefined : t;
+    const ms = new Date(endOfDay ? `${d}T23:59:59` : d).getTime();
+    return Number.isNaN(ms) ? undefined : ms;
 };
 
 export default function CrmIntelligenceReportTab(props: ReportTabProps) {

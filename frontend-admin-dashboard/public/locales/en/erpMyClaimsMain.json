@@ -1,0 +1,31 @@
+{
+    "intro": "Expenses you have claimed back, and anything you are repaying through your salary.",
+    "tabs": {
+        "reimbursements": "Reimbursements",
+        "loans": "Loans & advances"
+    },
+    "reimbursementsIntro": "Money you spent on work that the institute pays back. Approved claims are paid out with a future month's salary.",
+    "newClaim": "New claim",
+    "reimbursementsLoadError": "Couldn't load your claims.",
+    "emptyClaimsTitle": "You haven't claimed anything",
+    "emptyClaimsDescription": "Claim a work expense back and it appears here with its status, from Pending through to paid.",
+    "makeClaim": "Make a claim",
+    "defaultExpenseType": "Expense",
+    "spentOn": "Spent {{date}}",
+    "noExpenseDate": "No expense date recorded",
+    "turnedDown": "Turned down: {{reason}}",
+    "loansInfo": "Loans and salary advances are set up by your HR team — there is nothing to apply for here. Each month's EMI is deducted from your salary automatically until the balance reaches zero.",
+    "loansLoadError": "Couldn't load your loans.",
+    "emptyLoansTitle": "You have no loans or advances",
+    "emptyLoansDescription": "Nothing is being deducted from your salary for repayment. If your HR team sets up a loan, it appears here.",
+    "defaultLoanType": "Loan",
+    "stats": {
+        "borrowed": "Borrowed",
+        "monthlyEmi": "Monthly EMI",
+        "stillToRepay": "Still to repay",
+        "over": "Over"
+    },
+    "tenureMonths_one": "{{count}} month",
+    "tenureMonths_other": "{{count}} months",
+    "fromDate": "from {{month}}/{{year}}"
+}

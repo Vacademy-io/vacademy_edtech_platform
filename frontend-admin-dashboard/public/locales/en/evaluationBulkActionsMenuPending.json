@@ -1,0 +1,6 @@
+{
+    "sendReminder": "Send Reminder",
+    "removeParticipants": "Remove Participants",
+    "studentsCount_one": "{{count}} student",
+    "studentsCount_other": "{{count}} students"
+}

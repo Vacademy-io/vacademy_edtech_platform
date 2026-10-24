@@ -1,0 +1,169 @@
+{
+  "leaderboard": {
+    "trigger": {
+      "compactAriaLabel": "Classement du {{course}}",
+      "compactTitle": "Classement",
+      "cardTitle": "Classement",
+      "cardSubtitleRanked_one": "Vous êtes {{rank}} · {{count}} badge",
+      "cardSubtitleRanked_many": "Vous êtes {{rank}} · {{count}} badges",
+      "cardSubtitleRanked_other": "Vous êtes {{rank}} · {{count}} badges",
+      "cardSubtitleDefault": "Découvrez votre classement dans ce {{course}}",
+      "unranked": "non classé"
+    },
+    "dialog": {
+      "title": "Classement du {{course}}",
+      "copyLinkTitle": "Copier le lien public",
+      "shareTitle": "Partager",
+      "shareAriaLabel": "Partager le classement",
+      "loading": "Chargement du classement…",
+      "emptyText": "Aucune activité de classement pour l'instant — apprenez pour grimper dans le classement !",
+      "rankingLabel": "Classement",
+      "learnersCount": "{{count}} {{learners}}",
+      "footer": "Classé selon l'activité d'apprentissage • progresse à mesure que vous apprenez"
+    },
+    "standing": {
+      "label": "Votre position",
+      "unranked": "Non classé",
+      "badgesEarned_one": "badge obtenu",
+      "badgesEarned_many": "badges obtenus",
+      "badgesEarned_other": "badges obtenus",
+      "viewYourBadgesTitle": "Voir vos badges"
+    },
+    "row": {
+      "viewBadgesTitle": "Voir les badges"
+    },
+    "badgesDialog": {
+      "yourBadges": "Vos badges",
+      "othersBadges": "Badges de {{name}}",
+      "defaultName": "Apprenant",
+      "empty": "Aucun badge obtenu pour l'instant."
+    },
+    "toast": {
+      "linkCopied": "Lien du classement copié"
+    }
+  },
+  "subscriptionCancel": {
+    "autoRenewing": "Abonnement à renouvellement automatique",
+    "renewsOn": "Se renouvelle le {{date}}",
+    "recurringActive": "Abonnement récurrent actif",
+    "cancelButton": "Annuler l'abonnement",
+    "cancelling": "Annulation en cours...",
+    "confirmTitle": "Annuler cet abonnement ?",
+    "confirmDescription": "Le renouvellement automatique s'arrêtera. Vous conserverez l'accès jusqu'au {{endDate}}, et ne serez plus débité par la suite.",
+    "endOfCurrentPeriod": "la fin de votre période en cours",
+    "keepButton": "Conserver l'abonnement",
+    "toast": {
+      "successTitle": "Prélèvement automatique annulé",
+      "successDescription": "Vous conserverez l'accès jusqu'à la fin de votre période en cours.",
+      "errorTitle": "Impossible d'annuler le prélèvement automatique",
+      "errorDescription": "Veuillez réessayer dans un instant."
+    }
+  },
+  "certificate": {
+    "completedTitle": "{{course}} terminé !",
+    "congratsMessage": "Félicitations ! Vous avez obtenu un certificat.",
+    "viewCertificate": "Voir le certificat",
+    "downloadCertificate": "Télécharger le certificat",
+    "previewAriaLabel": "Aperçu du certificat",
+    "previewTitle": "Aperçu du certificat",
+    "previewHeading": "{{courseTitle}} — Aperçu du certificat",
+    "refreshAriaLabel": "Actualiser le certificat",
+    "refreshTitle": "Réémettre avec le modèle le plus récent",
+    "refreshing": "Actualisation",
+    "refresh": "Actualiser",
+    "closePreviewAriaLabel": "Fermer l'aperçu",
+    "close": "Fermer",
+    "courseFieldLabel": "{{course}} :",
+    "sessionFieldLabel": "Session :",
+    "levelFieldLabel": "Niveau :"
+  },
+  "contentSections": {
+    "aboutThisCourse": "À propos de ce {{course}}",
+    "whatYoullLearn": "Ce que vous allez apprendre",
+    "whoShouldJoin": "Qui devrait rejoindre"
+  },
+  "detailsCollapsible": {
+    "highlights": "Points forts de ce {{course}}"
+  },
+  "detailsPage": {
+    "heading": "Détails du {{course}}"
+  },
+  "ratings": {
+    "heading": "Notes et avis",
+    "subheading": "Retours et notes de la communauté",
+    "form": {
+      "feedbackLabel": "Votre avis",
+      "feedbackPlaceholder": "Écrivez votre avis...",
+      "ratingLabel": "Note",
+      "starCount_one": "{{count}} étoile",
+      "starCount_many": "{{count}} étoiles",
+      "starCount_other": "{{count}} étoiles",
+      "submitting": "Envoi en cours...",
+      "submit": "Envoyer l'avis"
+    },
+    "reviewsCount": "{{count}} avis",
+    "empty": {
+      "title": "Aucun avis pour l'instant",
+      "description": "Soyez le premier à partager votre expérience de ce {{course}}"
+    },
+    "toast": {
+      "submitFailed": "Échec de l'envoi de la note",
+      "unexpectedError": "Une erreur inattendue s'est produite",
+      "thankYou": "Merci pour votre avis !",
+      "selectRatingFirst": "Veuillez choisir une note avant d'envoyer"
+    }
+  },
+  "detailsSkeleton": {
+    "loadingAriaLabel": "Chargement du contenu du {{course}}"
+  },
+  "enrollment": {
+    "configurationTitle": "Configuration du {{course}}",
+    "previewMode": "Mode aperçu du {{course}}",
+    "previewNotice": "Parcourez la structure. Inscrivez-vous pour accéder aux {{slides}} et aux ressources.",
+    "classSection": "Classe / Section",
+    "classSectionPlaceholder": "Sélectionner une classe ou une section",
+    "noActiveSessions": "Aucun(e) {{sessions}} actif(ve)",
+    "notEnrolled": "Non inscrit",
+    "requiresConfiguration": "Ce {{course}} nécessite une configuration.",
+    "contactTeacherToEnroll": "Veuillez contacter votre {{teacher}} pour vous inscrire.",
+    "enrollNow": "S'inscrire maintenant"
+  },
+  "header": {
+    "viewLess": "Voir moins",
+    "viewMore": "Voir plus",
+    "courseMediaAlt": "Média du {{course}}",
+    "courseBannerAlt": "Bannière du {{course}}"
+  },
+  "sidebar": {
+    "overview": "Aperçu du {{course}}",
+    "author": "Auteur",
+    "courseTime": "Durée du {{course}}",
+    "enrollNow": "S'inscrire maintenant",
+    "courseProgress": "Progression du {{course}}",
+    "completion": "Achèvement",
+    "certificateOnCompletion": "Le certificat sera généré à la fin",
+    "unknownInstructor": "{{teacher}} inconnu"
+  },
+  "statsSidebar": {
+    "overview": "Aperçu du {{course}}",
+    "author": "Auteur",
+    "courseTime": "Durée du {{course}}"
+  },
+  "schema": {
+    "invalidEmail": "Adresse e-mail invalide.",
+    "instructorNameRequired": "Le nom du formateur est requis.",
+    "levelNameRequired": "Le nom du niveau est requis.",
+    "durationNonNegative": "La durée doit être un entier non négatif.",
+    "sessionNameRequired": "Le nom de la session est requis.",
+    "statusNameRequired": "Le nom du statut est requis.",
+    "startDateFormat": "La date de début doit être au format AAAA-MM-JJ.",
+    "levelDetailRequired": "Au moins un détail de niveau est requis par session.",
+    "titleRequired": "Le titre est requis.",
+    "descriptionMinLength": "La description doit comporter au moins 10 caractères.",
+    "tagRequired": "Au moins un tag est requis.",
+    "invalidImageUrl": "L'URL de l'image doit être valide.",
+    "instructorRequired": "Au moins un formateur est requis.",
+    "sessionRequired": "Au moins une session est requise.",
+    "mockCourseTitleRequired": "Le titre du {{course}} fictif est requis."
+  }
+}

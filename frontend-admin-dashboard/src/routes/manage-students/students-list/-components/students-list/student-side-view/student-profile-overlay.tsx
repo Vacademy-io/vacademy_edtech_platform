@@ -11,6 +11,7 @@
  * shows; only the layout differs.
  */
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { X, CaretLeft, CaretRight } from '@phosphor-icons/react';
@@ -42,13 +43,8 @@ function initialsOf(name: string | null | undefined): string {
     return ((parts[0]![0] ?? '') + (parts[parts.length - 1]![0] ?? '')).toUpperCase();
 }
 
-/** Tier → tonal classes for the inline lead-tier pill. */
-const TIER_PILL: Record<'HOT' | 'WARM' | 'COLD', string> = {
-    HOT: 'bg-danger-100 text-danger-700',
-    WARM: 'bg-warning-100 text-warning-700',
-    COLD: 'bg-info-100 text-info-700',
-};
 import { GroupedNavRail } from './grouped-nav-rail';
+import { normalizeTierKey, tierChipStyle, useLeadTiers } from '@/hooks/use-lead-tiers';
 import { SECTION_REGISTRY } from './nav-groups';
 
 // Tab body components — same source of truth used by the drawer.
@@ -122,6 +118,7 @@ function resolveInitialSection(settings: StudentSideViewSettings): StudentSideVi
 }
 
 export const StudentProfileOverlay = () => {
+    const { t } = useTranslation('manageStudentsProfileOverlay');
     const {
         selectedStudent,
         isOverlayOpen,
@@ -133,8 +130,7 @@ export const StudentProfileOverlay = () => {
     } = useStudentSidebar();
     const hasPrev = !!learnerListPosition && learnerListPosition.index > 0;
     const hasNext =
-        !!learnerListPosition &&
-        learnerListPosition.index < learnerListPosition.total - 1;
+        !!learnerListPosition && learnerListPosition.index < learnerListPosition.total - 1;
     const leadSettings = useLeadSettings();
     const parentSettings = useParentSettings();
     const onboardingSettings = useOnboardingSettings();
@@ -152,12 +148,14 @@ export const StudentProfileOverlay = () => {
         !!leadSettings.enabled
     );
     const leadHeaderProfile = headerUserId ? leadProfilesMap[headerUserId] : undefined;
-    const tier = leadHeaderProfile?.lead_tier?.toUpperCase() as
-        | 'HOT'
-        | 'WARM'
-        | 'COLD'
-        | undefined;
+    // Header pill only for an EXPLICIT tier override (unchanged rule) — label/colour
+    // now come from the institute catalog so custom tiers render correctly.
+    const tierCatalog = useLeadTiers();
+    const tier = leadHeaderProfile?.lead_tier
+        ? normalizeTierKey(leadHeaderProfile.lead_tier) || undefined
+        : undefined;
     const isActive = (selectedStudent?.status || '').toUpperCase() === 'ACTIVE';
+    const tierLabel = tier ? tierCatalog.labelFor(tier) : undefined;
 
     // Load display settings (which sections are visible + order) when the overlay opens.
     useEffect(() => {
@@ -215,8 +213,7 @@ export const StudentProfileOverlay = () => {
         const onKey = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement | null;
             const tag = (target?.tagName || '').toLowerCase();
-            if (tag === 'input' || tag === 'textarea' || target?.isContentEditable)
-                return;
+            if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
             if (e.key === 'ArrowLeft' && hasPrev) {
                 e.preventDefault();
                 goPrevLearner();
@@ -264,7 +261,9 @@ export const StudentProfileOverlay = () => {
             case 'application':
                 return <StudentApplication />;
             case 'lead':
-                return <StudentLeadProfile userId={selectedStudent.user_id || selectedStudent.id} />;
+                return (
+                    <StudentLeadProfile userId={selectedStudent.user_id || selectedStudent.id} />
+                );
             case 'fullHistory':
                 return (
                     <StudentFullHistory
@@ -273,9 +272,7 @@ export const StudentProfileOverlay = () => {
                 );
             case 'parent':
                 return (
-                    <StudentParentProfile
-                        userId={selectedStudent.user_id || selectedStudent.id}
-                    />
+                    <StudentParentProfile userId={selectedStudent.user_id || selectedStudent.id} />
                 );
             case 'onboarding':
                 return (
@@ -335,7 +332,7 @@ export const StudentProfileOverlay = () => {
                                     ) : imageUrl ? (
                                         <img
                                             src={imageUrl}
-                                            alt={selectedStudent.full_name || 'Profile'}
+                                            alt={selectedStudent.full_name || t('header.photoAlt')}
                                             className="size-full object-cover"
                                         />
                                     ) : selectedStudent.full_name ? (
@@ -358,7 +355,12 @@ export const StudentProfileOverlay = () => {
                                 pills inline per handoff identity row. */}
                             <div className="flex min-w-0 flex-1 flex-col gap-1">
                                 <span className="text-xs font-bold uppercase tracking-widest text-primary-700">
-                                    {`${getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Profile`}
+                                    {t('header.title', {
+                                        term: getTerminology(
+                                            RoleTerms.Learner,
+                                            SystemTerms.Learner
+                                        ),
+                                    })}
                                 </span>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h1
@@ -370,24 +372,26 @@ export const StudentProfileOverlay = () => {
                                         )}
                                         title={selectedStudent.full_name || undefined}
                                     >
-                                        {selectedStudent.full_name || 'Unknown'}
+                                        {selectedStudent.full_name || t('header.unknownName')}
                                     </h1>
                                     {selectedStudent.status && (
                                         <StatusChips status={selectedStudent.status} />
                                     )}
                                     {tier && (
                                         <span
-                                            className={cn(
-                                                'rounded-full px-2 py-0.5 text-xs font-semibold',
-                                                TIER_PILL[tier]
-                                            )}
-                                            title={`Lead tier ${tier}${
+                                            className="rounded-full border px-2 py-0.5 text-xs font-semibold"
+                                            // Inline style: tier colour is admin-picked hex (no design token).
+                                            style={tierChipStyle(tierCatalog.colorFor(tier))}
+                                            title={
                                                 typeof leadHeaderProfile?.best_score === 'number'
-                                                    ? ` · score ${leadHeaderProfile.best_score}`
-                                                    : ''
-                                            }`}
+                                                    ? t('leadTier.titleWithScore', {
+                                                          tier: tierLabel,
+                                                          score: leadHeaderProfile.best_score,
+                                                      })
+                                                    : t('leadTier.titleSimple', { tier: tierLabel })
+                                            }
                                         >
-                                            {tier}
+                                            {tierLabel}
                                             {typeof leadHeaderProfile?.best_score === 'number'
                                                 ? ` · ${leadHeaderProfile.best_score}`
                                                 : ''}
@@ -416,13 +420,13 @@ export const StudentProfileOverlay = () => {
                                             type="button"
                                             onClick={goPrevLearner}
                                             disabled={!hasPrev}
-                                            aria-label="Previous learner (←)"
-                                            title="Previous learner (←)"
-                                            className="flex size-9 items-center justify-center text-neutral-600 transition-colors hover:bg-muted hover:text-card-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                                            aria-label={t('nav.prevLearner')}
+                                            title={t('nav.prevLearner')}
+                                            className="flex size-9 items-center justify-center text-neutral-600 transition-colors hover:bg-muted hover:text-card-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                                         >
                                             <CaretLeft className="size-4" weight="bold" />
                                         </button>
-                                        <span className="select-none border-x border-neutral-200 px-3 py-1.5 text-caption font-semibold text-card-foreground tabular-nums">
+                                        <span className="select-none border-x border-neutral-200 px-3 py-1.5 text-caption font-semibold tabular-nums text-card-foreground">
                                             {learnerListPosition.index + 1} /{' '}
                                             {learnerListPosition.total}
                                         </span>
@@ -430,9 +434,9 @@ export const StudentProfileOverlay = () => {
                                             type="button"
                                             onClick={goNextLearner}
                                             disabled={!hasNext}
-                                            aria-label="Next learner (→)"
-                                            title="Next learner (→)"
-                                            className="flex size-9 items-center justify-center text-neutral-600 transition-colors hover:bg-muted hover:text-card-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                                            aria-label={t('nav.nextLearner')}
+                                            title={t('nav.nextLearner')}
+                                            className="flex size-9 items-center justify-center text-neutral-600 transition-colors hover:bg-muted hover:text-card-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                                         >
                                             <CaretRight className="size-4" weight="bold" />
                                         </button>
@@ -447,8 +451,8 @@ export const StudentProfileOverlay = () => {
                                     type="button"
                                     onClick={closeOverlay}
                                     className="flex size-9 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
-                                    aria-label="Close (Esc)"
-                                    title="Close (Esc)"
+                                    aria-label={t('nav.close')}
+                                    title={t('nav.close')}
                                 >
                                     <X className="size-5" />
                                 </button>
@@ -460,11 +464,11 @@ export const StudentProfileOverlay = () => {
                             items={
                                 [
                                     selectedStudent.institute_enrollment_number && {
-                                        label: 'Enrollment No',
+                                        label: t('contextStrip.enrollmentNo'),
                                         value: selectedStudent.institute_enrollment_number,
                                     },
                                     selectedStudent.created_at && {
-                                        label: 'Joined',
+                                        label: t('contextStrip.joined'),
                                         value: new Date(
                                             selectedStudent.created_at
                                         ).toLocaleDateString(undefined, {
@@ -474,15 +478,15 @@ export const StudentProfileOverlay = () => {
                                         }),
                                     },
                                     selectedStudent.city && {
-                                        label: 'City',
+                                        label: t('contextStrip.city'),
                                         value: selectedStudent.city,
                                     },
                                     selectedStudent.email && {
-                                        label: 'Email',
+                                        label: t('contextStrip.email'),
                                         value: selectedStudent.email,
                                     },
                                     selectedStudent.mobile_number && {
-                                        label: 'Phone',
+                                        label: t('contextStrip.phone'),
                                         value: selectedStudent.mobile_number,
                                     },
                                 ] as Array<ContextStripItem | false | null | undefined>
@@ -523,7 +527,8 @@ export const StudentProfileOverlay = () => {
                                         // separate from the lead system on purpose.
                                         if (
                                             id === 'onboarding' &&
-                                            (onboardingSettings.isLoading || !onboardingSettings.enabled)
+                                            (onboardingSettings.isLoading ||
+                                                !onboardingSettings.enabled)
                                         ) {
                                             return false;
                                         }

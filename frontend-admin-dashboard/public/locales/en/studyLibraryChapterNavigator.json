@@ -1,0 +1,19 @@
+{
+    "untitledSlide": "Untitled",
+    "previousChapterTitle": "Previous: {{name}}",
+    "noPreviousChapter": "No previous {{term}}",
+    "nextChapterTitle": "Next: {{name}}",
+    "noNextChapter": "No next {{term}}",
+    "selectChapter": "Select {{term}}",
+    "searchAllPlaceholder": "Search all {{term}}...",
+    "loading": "Loading…",
+    "couldNotLoadSubject": "Couldn't load this {{term}}",
+    "retry": "Retry",
+    "noChaptersFound": "No {{term}} found",
+    "showSlidesTitle": "Show {{term}}",
+    "unsavedCount_one": "{{count}} unsaved",
+    "unsavedCount_other": "{{count}} unsaved",
+    "unsavedChangesTitle": "Unsaved changes",
+    "couldNotLoadRetry": "Couldn't load — retry",
+    "noSlidesYet": "No {{term}} yet"
+}

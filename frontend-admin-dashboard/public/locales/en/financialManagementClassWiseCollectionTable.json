@@ -1,0 +1,10 @@
+{
+    "heading": "Class-wise Performance",
+    "columns": {
+        "className": "Class Name",
+        "projected": "Projected",
+        "expected": "Expected",
+        "collected": "Collected",
+        "collectionRate": "Collection Rate"
+    }
+}

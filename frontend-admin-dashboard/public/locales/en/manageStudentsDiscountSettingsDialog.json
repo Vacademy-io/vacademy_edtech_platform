@@ -1,0 +1,15 @@
+{
+    "title": "Select Discount Settings",
+    "description": "Choose a discount coupon or create a new one",
+    "badge": {
+        "active": "Active"
+    },
+    "discount": {
+        "percentOff": "{{value}}% off",
+        "rupeesOff": "₹{{value}} off",
+        "expires": "Expires: {{date}}"
+    },
+    "actions": {
+        "addNew": "+ Add New Discount"
+    }
+}

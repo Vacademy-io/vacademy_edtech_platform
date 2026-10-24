@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Star } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { reportApiError } from "@/lib/report-api-error";
 import { MyButton } from "@/components/design-system/button";
 import { MyDialog } from "@/components/design-system/dialog";
@@ -10,7 +11,7 @@ import {
     submitSessionFeedback,
     type PendingFeedback,
 } from "../-services/my-mentors-service";
-import { RATING_LABELS, MAX_FEEDBACK_COMMENT } from "../-utils/feedback";
+import { MAX_FEEDBACK_COMMENT } from "../-utils/feedback";
 
 /**
  * Rate one finished mentor session. Stars are real buttons rather than a hover
@@ -29,9 +30,18 @@ export function RateSessionDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
     const queryClient = useQueryClient();
+
+    const ratingLabels: Record<number, string> = {
+        1: t("myMentors.rateDialog.rating.1"),
+        2: t("myMentors.rateDialog.rating.2"),
+        3: t("myMentors.rateDialog.rating.3"),
+        4: t("myMentors.rateDialog.rating.4"),
+        5: t("myMentors.rateDialog.rating.5"),
+    };
 
     useEffect(() => {
         if (open) {
@@ -49,7 +59,7 @@ export function RateSessionDialog({
                 comment: comment.trim() || undefined,
             }),
         onSuccess: () => {
-            toast.success("Thanks — your feedback helps your mentor");
+            toast.success(t("myMentors.rateDialog.toast.thanks"));
             queryClient.invalidateQueries({ queryKey: ["GET_PENDING_MENTOR_FEEDBACK"] });
             onOpenChange(false);
         },
@@ -58,7 +68,7 @@ export function RateSessionDialog({
                 feature: "mentorship",
                 tags: { "mentorship.action": "submit-feedback" },
                 extra: { bookingInstanceId: session?.booking_instance_id, rating },
-                fallbackMessage: "Couldn't save your feedback. Please try again.",
+                fallbackMessage: t("myMentors.rateDialog.toast.saveFailed"),
             }),
     });
 
@@ -66,7 +76,7 @@ export function RateSessionDialog({
 
     return (
         <MyDialog
-            heading="Rate your session"
+            heading={t("myMentors.rateDialog.heading")}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-md"
@@ -78,7 +88,7 @@ export function RateSessionDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Not now
+                        {t("myMentors.rateDialog.notNow")}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -86,27 +96,35 @@ export function RateSessionDialog({
                         scale="medium"
                         onClick={() => submit.mutate()}
                         disable={rating === 0 || submit.isPending || !instituteId}
-                        title={rating === 0 ? "Pick a star rating first" : undefined}
+                        title={rating === 0 ? t("myMentors.rateDialog.pickStarFirst") : undefined}
                     >
-                        {submit.isPending ? "Saving…" : "Submit feedback"}
+                        {submit.isPending
+                            ? t("myMentors.rateDialog.saving")
+                            : t("myMentors.rateDialog.submit")}
                     </MyButton>
                 </div>
             }
         >
             <div className="flex flex-col gap-4 p-1">
                 <p className="text-body text-neutral-600">
-                    How was <b>{session.session_title || "your session"}</b> with{" "}
-                    <b>{session.mentor_name || "your mentor"}</b>?
+                    {t("myMentors.rateDialog.question", {
+                        session: session.session_title || t("myMentors.common.yourSession"),
+                        mentor: session.mentor_name || t("myMentors.common.yourMentor"),
+                    })}
                 </p>
 
                 <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1" role="group" aria-label="Star rating">
+                    <div
+                        className="flex items-center gap-1"
+                        role="group"
+                        aria-label={t("myMentors.rateDialog.starRatingAriaLabel")}
+                    >
                         {[1, 2, 3, 4, 5].map((star) => (
                             <button
                                 key={star}
                                 type="button"
                                 onClick={() => setRating(star)}
-                                aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                                aria-label={t("myMentors.rateDialog.starAriaLabel", { count: star })}
                                 aria-pressed={rating === star}
                                 className="rounded p-1 transition-transform hover:scale-110"
                             >
@@ -121,7 +139,7 @@ export function RateSessionDialog({
                         ))}
                     </div>
                     <span className="min-h-5 text-caption text-neutral-500">
-                        {rating > 0 ? RATING_LABELS[rating] : "Tap a star to rate"}
+                        {rating > 0 ? ratingLabels[rating] : t("myMentors.rateDialog.tapToRate")}
                     </span>
                 </div>
 
@@ -130,18 +148,18 @@ export function RateSessionDialog({
                         htmlFor="session-feedback-comment"
                         className="text-caption font-medium text-neutral-600"
                     >
-                        Anything you want to add?
+                        {t("myMentors.rateDialog.commentLabel")}
                     </label>
                     <Textarea
                         id="session-feedback-comment"
                         value={comment}
                         maxLength={MAX_FEEDBACK_COMMENT}
                         onChange={(e) => setComment(e.target.value)}
-                        placeholder="What worked, and what would help next time?"
+                        placeholder={t("myMentors.rateDialog.commentPlaceholder")}
                         className="min-h-20 resize-none"
                     />
                     <span className="flex items-center justify-between text-caption text-neutral-400">
-                        <span>Optional. Shared with your institute, not other learners.</span>
+                        <span>{t("myMentors.rateDialog.commentHelper")}</span>
                         <span>
                             {comment.length}/{MAX_FEEDBACK_COMMENT}
                         </span>

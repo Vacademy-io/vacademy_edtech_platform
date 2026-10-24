@@ -13,8 +13,8 @@
  */
 
 import { useState } from 'react';
-import { ListChecks, FileText, ExternalLink } from 'lucide-react';
-import { Phone, Robot } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { ListChecks, FileText, ArrowSquareOut, Phone, Robot } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -52,8 +52,8 @@ const isUrlValue = (value: string | null) =>
  * "text" field for the phone column.
  */
 const isPhoneField = (field: LeadResponseField): boolean => {
-    const t = (field.type ?? '').toLowerCase().trim();
-    if (t === 'phone' || t === 'mobile' || t === 'telephone') return true;
+    const fieldType = (field.type ?? '').toLowerCase().trim();
+    if (fieldType === 'phone' || fieldType === 'mobile' || fieldType === 'telephone') return true;
     const n = (field.name ?? '').toLowerCase();
     return /\bphone\b|\bmobile\b|\btelephone\b/.test(n);
 };
@@ -75,6 +75,7 @@ interface CallAction {
  * recognise it as the "place a call" affordance.
  */
 const CallButton = ({ call }: { call: CallAction }) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
     const muted = call.disabled || call.isPending;
     return (
         <CallPickerPopover
@@ -85,8 +86,8 @@ const CallButton = ({ call }: { call: CallAction }) => {
             trigger={
                 <button
                     type="button"
-                    title={call.reason ?? 'Call this lead'}
-                    aria-label="Call lead"
+                    title={call.reason ?? t('callButton.title')}
+                    aria-label={t('callButton.ariaLabel')}
                     disabled={muted}
                     className={cn(
                         'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
@@ -96,7 +97,7 @@ const CallButton = ({ call }: { call: CallAction }) => {
                     )}
                 >
                     <Phone weight="fill" className="size-3.5" />
-                    {call.isPending ? 'Connecting…' : 'Call now'}
+                    {call.isPending ? t('callButton.connecting') : t('callButton.callNow')}
                 </button>
             }
         />
@@ -123,6 +124,7 @@ const AI_PILL_ACTIVE = 'border-primary-200 bg-primary-50 text-primary-700 hover:
  * away with the defaults. Rendered only when AI calling's lead-list surface is enabled.
  */
 const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
     const muted = ai.disabled || ai.isPending;
     const { needsChooser } = useAiCallChooser();
     const [open, setOpen] = useState(false);
@@ -132,7 +134,7 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
     const label = (
         <>
             <Robot weight="fill" className="size-3.5" />
-            {ai.isPending ? 'Calling…' : 'AI call'}
+            {ai.isPending ? t('aiCallButton.calling') : t('aiCallButton.aiCall')}
         </>
     );
 
@@ -140,8 +142,8 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
         return (
             <button
                 type="button"
-                title={ai.reason ?? 'Place an AI voice-agent call to this lead'}
-                aria-label="AI call lead"
+                title={ai.reason ?? t('aiCallButton.title')}
+                aria-label={t('aiCallButton.ariaLabel')}
                 disabled={muted}
                 onClick={() => ai.onCall()}
                 className={cn(AI_PILL, muted ? AI_PILL_MUTED : AI_PILL_ACTIVE)}
@@ -165,8 +167,8 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    title="Place an AI voice-agent call to this lead"
-                    aria-label="AI call lead"
+                    title={t('aiCallButton.title')}
+                    aria-label={t('aiCallButton.ariaLabel')}
                     disabled={ai.disabled}
                     className={cn(AI_PILL, ai.disabled ? AI_PILL_MUTED : AI_PILL_ACTIVE)}
                 >
@@ -175,7 +177,9 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72">
                 <div className="flex flex-col gap-3">
-                    <p className="text-caption font-medium text-neutral-700">AI call options</p>
+                    <p className="text-caption font-medium text-neutral-700">
+                        {t('aiCallButton.optionsHeading')}
+                    </p>
                     <AiCallChooserFields
                         agentId={agentId}
                         onAgentChange={setAgentId}
@@ -191,7 +195,7 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
                             setOpen(false);
                         }}
                     >
-                        {ai.isPending ? 'Calling…' : 'Place AI call'}
+                        {ai.isPending ? t('aiCallButton.calling') : t('aiCallButton.placeAiCall')}
                     </MyButton>
                 </div>
             </PopoverContent>
@@ -208,6 +212,8 @@ const Row = ({
     call?: CallAction;
     aiCall?: AiCallAction;
 }) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
+    const { t: tFormat } = useTranslation('audienceManagerFormatCustomFieldValue');
     const { name, type, rawValue } = field;
     const normalized = (type ?? '').toLowerCase();
 
@@ -219,7 +225,7 @@ const Row = ({
                     <ListChecks className="size-3.5" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                    <p className="text-2xs font-medium uppercase tracking-wider text-neutral-500">
                         {name}
                     </p>
                     {items.length > 0 ? (
@@ -235,7 +241,7 @@ const Row = ({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm italic text-neutral-400">Not provided</p>
+                        <p className="text-sm italic text-neutral-400">{t('row.notProvided')}</p>
                     )}
                 </div>
             </div>
@@ -249,7 +255,7 @@ const Row = ({
                     <FileText className="size-3.5" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                    <p className="text-2xs font-medium uppercase tracking-wider text-neutral-500">
                         {name}
                     </p>
                     <a
@@ -258,15 +264,15 @@ const Row = ({
                         rel="noopener noreferrer"
                         className="inline-flex max-w-full items-center gap-1.5 truncate text-sm font-medium text-primary-600 hover:underline"
                     >
-                        <span className="truncate">View attachment</span>
-                        <ExternalLink className="size-3.5 shrink-0" />
+                        <span className="truncate">{t('row.viewAttachment')}</span>
+                        <ArrowSquareOut className="size-3.5 shrink-0" />
                     </a>
                 </div>
             </div>
         );
     }
 
-    const display = formatCustomFieldValue(rawValue, type);
+    const display = formatCustomFieldValue(rawValue, type, tFormat);
     const showCall = !!call && isPhoneField(field) && display !== '-';
     return (
         <div className="flex items-start gap-3 px-3 py-2.5">
@@ -274,14 +280,14 @@ const Row = ({
                 <FileText className="size-3.5" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                <p className="text-2xs font-medium uppercase tracking-wider text-neutral-500">
                     {name}
                 </p>
                 <div className="flex items-center gap-2">
                     <p className="min-w-0 flex-1 break-words text-sm font-medium text-neutral-900">
                         {display === '-' ? (
                             <span className="font-normal italic text-neutral-400">
-                                Not provided
+                                {t('row.notProvided')}
                             </span>
                         ) : (
                             display
@@ -300,6 +306,7 @@ const Row = ({
 };
 
 export const LeadFormResponseCard = () => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
     const { selectedStudent } = useStudentSidebar();
     // Loose access — `_response_fields` / `_audience_campaign_name` /
     // `_response_id` are attached by audience-list flows only and aren't part
@@ -314,6 +321,7 @@ export const LeadFormResponseCard = () => {
     const ext = selectedStudent as unknown as {
         _response_fields?: LeadResponseField[];
         _audience_campaign_name?: string;
+        _audience_campaign_type?: string;
         _response_id?: string | null;
     } | null;
     const fields = ext?._response_fields;
@@ -329,6 +337,9 @@ export const LeadFormResponseCard = () => {
     if (!fields || fields.length === 0) return null;
 
     const campaignName = ext?._audience_campaign_name;
+    // Channel › list, so the side view reads the same hierarchy as the leads table.
+    const campaignType = ext?._audience_campaign_type;
+    const campaignTrail = [campaignType, campaignName].filter(Boolean).join(' › ');
 
     // The Call button shows on the phone-number row only (see {@link isPhoneField}).
     // We disable it pre-emptively when we don't have a response id (the backend
@@ -336,9 +347,7 @@ export const LeadFormResponseCard = () => {
     const call: CallAction = {
         leadUserId,
         disabled: !responseId,
-        reason: !responseId
-            ? 'No campaign response linked — cannot place a call from here.'
-            : undefined,
+        reason: !responseId ? t('errors.noResponseForCall') : undefined,
         isPending: placeCallMutation.isPending,
         onCall: (preferredNumberId) => {
             if (!responseId) return;
@@ -355,9 +364,7 @@ export const LeadFormResponseCard = () => {
     const aiCall: AiCallAction | undefined = aiEnabled
         ? {
               disabled: !responseId,
-              reason: !responseId
-                  ? 'No campaign response linked — cannot place an AI call from here.'
-                  : undefined,
+              reason: !responseId ? t('errors.noResponseForAiCall') : undefined,
               isPending: placeAiCallMutation.isPending,
               onCall: (campaignId, preferredNumberId) => {
                   if (!responseId) return;
@@ -376,10 +383,10 @@ export const LeadFormResponseCard = () => {
             <CardHeader className="px-4 pb-3 pt-4">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
                     <ListChecks className="size-4 text-primary-500" />
-                    Form Response
-                    {campaignName && (
+                    {t('card.title')}
+                    {campaignTrail && (
                         <span className="text-xs font-normal text-neutral-500">
-                            · {campaignName}
+                            · {campaignTrail}
                         </span>
                     )}
                 </CardTitle>

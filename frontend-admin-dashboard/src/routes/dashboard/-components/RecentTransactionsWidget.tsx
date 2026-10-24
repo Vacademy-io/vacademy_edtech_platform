@@ -1,5 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, Receipt } from '@phosphor-icons/react';
@@ -50,14 +52,18 @@ const statusTone = (status: string | null | undefined): string => {
     return 'bg-neutral-100 text-neutral-700 border-neutral-200';
 };
 
-const statusLabel = (status: string | null | undefined): string => {
-    const s = (status || '').toUpperCase();
-    if (s === 'PAID') return 'Success';
-    if (s === 'PAYMENT_PENDING' || s === 'NOT_INITIATED') return 'Pending';
-    if (s === 'FAILED') return 'Failed';
-    if (s === 'CANCELLED') return 'Cancelled';
-    return status || '—';
-};
+const buildStatusLabel =
+    (t: TFunction) =>
+    (status: string | null | undefined): string => {
+        const s = (status || '').toUpperCase();
+        if (s === 'PAID') return t('status.success');
+        if (s === 'PAYMENT_PENDING' || s === 'NOT_INITIATED') return t('status.pending');
+        // A stale, unfinished checkout — neither pending nor failed. Neutral tone, plain label.
+        if (s === 'ABANDONED') return 'Abandoned';
+        if (s === 'FAILED') return t('status.failed');
+        if (s === 'CANCELLED') return t('status.cancelled');
+        return status || '—';
+    };
 
 const initials = (name: string | null | undefined): string => {
     if (!name) return '?';
@@ -67,6 +73,8 @@ const initials = (name: string | null | undefined): string => {
 
 export default function RecentTransactionsWidget({ instituteId }: RecentTransactionsWidgetProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('dashboardRecentTransactionsWidget');
+    const statusLabel = buildStatusLabel(t);
     const { data, isLoading, isError } = useQuery({
         queryKey: ['DASHBOARD_RECENT_PAYMENTS', instituteId],
         queryFn: () => fetchPaymentLogs(0, 5, {}),
@@ -87,19 +95,19 @@ export default function RecentTransactionsWidget({ instituteId }: RecentTransact
                         <span className="flex size-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                             <Receipt size={14} weight="duotone" />
                         </span>
-                        <CardTitle className="text-sm font-semibold">Recent transactions</CardTitle>
+                        <CardTitle className="text-sm font-semibold">{t('heading')}</CardTitle>
                     </div>
                     <button
                         type="button"
                         onClick={() => navigate({ to: '/manage-payments' })}
-                        className="flex items-center gap-1 text-[11px] font-medium text-primary-600 hover:text-primary-700"
+                        className="flex items-center gap-1 text-2xs font-medium text-primary-600 hover:text-primary-700"
                     >
-                        View all
+                        {t('viewAll')}
                         <ArrowRight size={12} weight="bold" />
                     </button>
                 </div>
-                <CardDescription className="text-[11px] text-neutral-500 sm:text-xs">
-                    Latest payment activity across your institute
+                <CardDescription className="text-2xs text-neutral-500 sm:text-xs">
+                    {t('description')}
                 </CardDescription>
             </CardHeader>
             <div className="px-2 pb-3">
@@ -119,7 +127,7 @@ export default function RecentTransactionsWidget({ instituteId }: RecentTransact
                     </ul>
                 ) : rows.length === 0 ? (
                     <div className="py-6 text-center text-xs text-neutral-500">
-                        No transactions yet.
+                        {t('emptyState')}
                     </div>
                 ) : (
                     <ul className="space-y-0.5">
@@ -127,7 +135,8 @@ export default function RecentTransactionsWidget({ instituteId }: RecentTransact
                             const log = entry.payment_log;
                             const user = entry.user;
                             const status = entry.current_payment_status || log.payment_status;
-                            const fullName = user?.full_name || user?.username || 'Unknown';
+                            const fullName =
+                                user?.full_name || user?.username || t('fallback.unknownUser');
                             return (
                                 <li key={log.id}>
                                     <button
@@ -135,15 +144,18 @@ export default function RecentTransactionsWidget({ instituteId }: RecentTransact
                                         onClick={() => navigate({ to: '/manage-payments' })}
                                         className="group flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors hover:bg-neutral-50"
                                     >
-                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[11px] font-semibold text-primary-700">
+                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-100 text-2xs font-semibold text-primary-700">
                                             {initials(fullName)}
                                         </span>
                                         <span className="flex min-w-0 flex-1 flex-col">
                                             <span className="line-clamp-1 text-xs font-medium text-neutral-800">
                                                 {fullName}
                                             </span>
-                                            <span className="line-clamp-1 text-[11px] text-neutral-500">
-                                                {(log.vendor || 'Manual').replace(/_/g, ' ')}
+                                            <span className="line-clamp-1 text-2xs text-neutral-500">
+                                                {(log.vendor || t('fallback.manualVendor')).replace(
+                                                    /_/g,
+                                                    ' '
+                                                )}
                                                 {/* created_at is a real instant and carries the
                                                     payment's clock time; `date` is a DATE column
                                                     (UTC midnight) with no usable time. */}
@@ -158,7 +170,7 @@ export default function RecentTransactionsWidget({ instituteId }: RecentTransact
                                             {formatAmount(entry)}
                                         </span>
                                         <span
-                                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${statusTone(status)}`}
+                                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-2xs font-medium ${statusTone(status)}`}
                                         >
                                             {statusLabel(status)}
                                         </span>

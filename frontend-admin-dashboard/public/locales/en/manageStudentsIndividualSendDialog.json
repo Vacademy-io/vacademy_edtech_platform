@@ -1,0 +1,151 @@
+{
+    "dialogTitle": "Send {{channelLabel}}",
+    "dialogDescription": {
+        "withStudent": "Send a {{contentType}} to {{name}}.",
+        "noStudent": "No learner selected."
+    },
+    "channelLabel": {
+        "EMAIL": "Email",
+        "WHATSAPP": "WhatsApp"
+    },
+    "contentType": {
+        "EMAIL": "templated email",
+        "WHATSAPP": "templated WhatsApp message"
+    },
+    "steps": {
+        "selectTemplate": "Select Template",
+        "composeContent": "Compose Content",
+        "mapVariables": "Map Variables",
+        "reviewSend": "Review & Send"
+    },
+    "systemFields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "city": "City",
+        "region": "Region",
+        "gender": "Gender",
+        "enrollmentId": "Enrollment ID",
+        "fathersName": "Father's Name",
+        "mothersName": "Mother's Name",
+        "username": "Username",
+        "password": "Password"
+    },
+    "toasts": {
+        "loadEmailTemplatesFailed": "Failed to load email templates",
+        "loadWaTemplatesFailed": "Failed to load WhatsApp templates",
+        "loadTemplateContentFailed": "Failed to load template content",
+        "noEmailAddress": "This learner has no email address.",
+        "noMobileNumber": "This learner has no mobile number.",
+        "emailSent": "Email sent",
+        "selectWaTemplateFirst": "Select a WhatsApp template first",
+        "whatsappSent": "WhatsApp message sent",
+        "sendFailed": "Failed to send",
+        "whatsappQueued": "WhatsApp accepted the message — delivery is confirmed separately",
+        "whatsappRejected": "WhatsApp rejected this message — it was not sent",
+        "whatsappRejectedWithReason": "WhatsApp rejected this message: {{reason}}",
+        "emailRejected": "Email was not accepted for delivery",
+        "emailRejectedWithReason": "Email was not accepted: {{reason}}"
+    },
+    "emailTemplateStep": {
+        "templateLabel": "Template",
+        "loadingTemplates": "Loading templates...",
+        "selectPlaceholder": "Select a template",
+        "emptyText": "No template matches your search.",
+        "customOption": "Custom — write from scratch",
+        "loadingContent": "Loading template content..."
+    },
+    "emailComposeStep": {
+        "emailTypeLabel": "Email Type",
+        "emailTypeUtility": "Utility Email",
+        "emailTypePromotional": "Promotional Email",
+        "emailTypeTransactional": "Transactional Email",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "Enter email subject...",
+        "bodyLabel": "Body",
+        "previewTab": "Preview",
+        "editTab": "Edit HTML",
+        "emptyBodyPreview": "Pick a template or switch to Edit HTML to write content.",
+        "bodyPlaceholder": "Enter email body HTML... use {{varSyntax}} for placeholders",
+        "bodyHelpPrefix": "Placeholders like",
+        "bodyHelpSuffix": "are replaced with the learner's data on send. Map them in the next step."
+    },
+    "waTemplateStep": {
+        "templateLabel": "Template",
+        "loadingTemplates": "Loading templates...",
+        "selectPlaceholder": "Select an approved template",
+        "emptyText": "No approved template matches your search.",
+        "languageCodeLabel": "Language Code",
+        "templatePreviewLabel": "Template Preview",
+        "previewHint": "Highlighted parts are placeholders — the next step fills them with this learner's details.",
+        "headerBadge": "{{kind}} header"
+    },
+    "mediaKind": {
+        "image": "image",
+        "video": "video",
+        "document": "document"
+    },
+    "headerMediaField": {
+        "label": "Header {{kind}} URL",
+        "helpText": "This template has a {{kind}} header, which WhatsApp requires on every send — the message fails without it. Pre-filled with the media approved alongside the template.",
+        "previewAlt": "Header preview"
+    },
+    "variableMappingStep": {
+        "noVariables": "No variables to map. You can proceed.",
+        "mapHint": "Map each placeholder to a learner field, or enter a literal value.",
+        "columnVariable": "Variable",
+        "columnSource": "Source",
+        "columnResolvedValue": "Resolved Value",
+        "sourcePlaceholder": "Select source...",
+        "literalOption": "Literal value...",
+        "literalPlaceholder": "Type a value",
+        "unresolved": "(unresolved)",
+        "livePreviewLabel": "Message preview",
+        "sourceSearchPlaceholder": "Search fields...",
+        "sourceNoMatch": "No field matches your search."
+    },
+    "reviewStep": {
+        "messageSent": "Message Sent",
+        "sendCompleted": "Send Completed",
+        "statusLabel": "Status",
+        "acceptedLabel": "Accepted",
+        "failedLabel": "Failed",
+        "close": "Close",
+        "noSubject": "(no subject)",
+        "channelHeading": "Channel",
+        "subjectLabel": "Subject",
+        "templateLabel": "Template",
+        "recipientLabel": "Recipient",
+        "variablesLabel": "Variables",
+        "empty": "(empty)",
+        "sending": "Sending...",
+        "sendTo": "Send to {{name}}",
+        "delivered": "Delivered",
+        "notDelivered": "Not delivered",
+        "confirmingDelivery": "Confirming delivery…",
+        "deliveryLabel": "Delivery",
+        "sendFailed": "Message Not Sent",
+        "noReason": "No reason reported by the provider.",
+        "deliveryStatus": {
+            "SENT": "Sent",
+            "DELIVERED": "Delivered",
+            "READ": "Read",
+            "FAILED": "Failed"
+        },
+        "messagePreviewLabel": "Message that will be sent"
+    },
+    "footer": {
+        "back": "Back",
+        "next": "Next"
+    },
+    "templatePicker": {
+        "showFullMessage": "Show full message",
+        "showLess": "Show less"
+    },
+    "waPreview": {
+        "image": "Image",
+        "video": "Video",
+        "document": "Document",
+        "emptyBody": "This template has no message body."
+    }
+}

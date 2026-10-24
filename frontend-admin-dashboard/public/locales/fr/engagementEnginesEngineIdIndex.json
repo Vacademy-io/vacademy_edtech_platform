@@ -1,0 +1,90 @@
+{
+    "navHeading": "Moteur",
+    "backToAll": "Tous les moteurs",
+    "loadError": "Impossible de charger ce moteur.",
+    "viewTaskInbox": "Voir la boîte de tâches",
+    "detail": {
+        "activeMember_one": "membre actif",
+        "activeMember_many": "membres actifs",
+        "activeMember_other": "membres actifs",
+        "resolveAudience": "Résoudre l'audience",
+        "resolving": "Résolution en cours…"
+    },
+    "statusActions": {
+        "DRY_RUN": "Lancer un essai à blanc",
+        "ACTIVE": "Activer",
+        "PAUSED": "Mettre en pause",
+        "ARCHIVED": "Archiver"
+    },
+    "templatesPendingBanner": "Ce moteur envoie des messages sur WhatsApp — approuvez au moins un modèle ci-dessous avant sa mise en ligne.",
+    "brief": {
+        "title": "Le brief",
+        "amend": "Modifier",
+        "empty": "Aucun brief défini.",
+        "version": "version {{version}}"
+    },
+    "config": {
+        "title": "Configuration",
+        "channels": "Canaux",
+        "noChannels": "Aucun",
+        "language": "Langue",
+        "cadenceLabel": "Cadence",
+        "cadence": "toutes les {{hours}} h",
+        "quietHours": "Quiet hours",
+        "dataPoints": "Data points"
+    },
+    "amendDialog": {
+        "heading": "Modifier le brief",
+        "description": "Le brief s'enrichit par ajout — le texte original n'est jamais réécrit. La modification s'applique au prochain point de contact naturel de chaque personne.",
+        "placeholder": "ex. : mentionner aussi le nouveau groupe du week-end qui démarre le mois prochain.",
+        "cancel": "Annuler",
+        "submit": "Ajouter la modification",
+        "saving": "Enregistrement…"
+    },
+    "autonomy": {
+        "title": "Autonomie",
+        "allowAutoSend": "Autoriser l'envoi automatique",
+        "keepAsCopilot": "Garder en mode copilote",
+        "autoSendChannels": "Canaux d'envoi automatique",
+        "noAutoSend": "Aucun canal d'envoi automatique — ce moteur ne fait que préparer des tâches que vous envoyez vous-même.",
+        "holdout": "Groupe témoin",
+        "holdoutValue": "{{pct}} % (inscrits, jamais contactés)",
+        "badge": {
+            "off": "Autonomie désactivée (copilote)",
+            "ramping": "Montée en puissance · {{approved}}/{{target}} approuvés",
+            "sendingAutonomously": "Envoi autonome en cours",
+            "dryRun": "Essai à blanc (simulé)",
+            "onEngineStatus": "Autonomie activée · moteur {{status}}"
+        },
+        "statusFor": "Statut {{channel}}",
+        "rampingHintChannel_one": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillon {{channel}} approuvé de plus et ce canal passera à l'envoi autonome.",
+        "rampingHintChannel_many": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillons {{channel}} approuvés de plus et ce canal passera à l'envoi autonome.",
+        "rampingHintChannel_other": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillons {{channel}} approuvés de plus et ce canal passera à l'envoi autonome."
+    },
+    "archiveDialog": {
+        "title": "Archiver ce moteur ?",
+        "description": "Il cesse définitivement de décider et d'envoyer. Les tâches déjà dans la boîte de réception et les messages envoyés sont conservés.",
+        "cancel": "Le garder",
+        "confirm": "Archiver"
+    },
+    "kpi": {
+        "members": "Active members",
+        "holdout": "{{pct}}% held out (never messaged)",
+        "noHoldout": "No holdout",
+        "approved": "Approved sends",
+        "graduateAfter": "A channel auto-sends after {{n}} approved sends",
+        "cadence": "Check-in cadence",
+        "quiet": "Quiet hours {{window}}",
+        "nextRun": "Next check-in",
+        "notScheduled": "Not scheduled",
+        "lastRun": "Last run {{when}}"
+    },
+    "status": {
+        "title": "Status & audience",
+        "sources": "Sources",
+        "people": "people",
+        "change": "Change status",
+        "noTransitions": "Archived engines can’t change status.",
+        "footnote": "Pause stops the engine deciding and sending. “Keep as copilot” only stops auto-sending."
+    }
+}

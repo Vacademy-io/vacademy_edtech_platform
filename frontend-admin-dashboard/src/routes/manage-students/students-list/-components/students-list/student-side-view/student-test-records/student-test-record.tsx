@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { ChipToggleGroup, StatusChips } from '@/components/design-system/chips';
 import { TestReportDialog } from './test-report-dialog';
@@ -11,7 +13,11 @@ import {
     viewStudentReport,
 } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
 import { MyPagination } from '@/components/design-system/pagination';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    resolveSubjectName,
+    unresolvedSubjectIds,
+    useSubjectNamesByIds,
+} from '@/services/subject-names';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { AssessmentReportStudentInterface } from '@/types/assessments/assessment-overview';
 import { getAssessmentDetailsData } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
@@ -50,17 +56,21 @@ function scoreTone(pct: number): ScoreTone {
 // Filter chip definitions — drives the secondary control bar.
 type FilterKey = 'ALL' | 'ENDED' | 'PENDING' | 'LIVE';
 
-const FILTER_CHIPS: {
+type FilterChip = {
     key: FilterKey;
     label: string;
     statuses: string[];
     icon?: React.ComponentType<{ className?: string }>;
-}[] = [
-    { key: 'ALL', label: 'All', statuses: [] },
-    { key: 'ENDED', label: 'Completed', statuses: ['ENDED'], icon: CheckCircle },
-    { key: 'PENDING', label: 'Pending', statuses: ['PENDING'], icon: Clock },
-    { key: 'LIVE', label: 'Live', statuses: ['LIVE'], icon: Radio },
-];
+};
+
+function buildFilterChips(t: TFunction): FilterChip[] {
+    return [
+        { key: 'ALL', label: t('filters.all'), statuses: [] },
+        { key: 'ENDED', label: t('filters.completed'), statuses: ['ENDED'], icon: CheckCircle },
+        { key: 'PENDING', label: t('filters.pending'), statuses: ['PENDING'], icon: Clock },
+        { key: 'LIVE', label: t('filters.live'), statuses: ['LIVE'], icon: Radio },
+    ];
+}
 
 export const StudentTestRecord = ({
     selectedTab,
@@ -71,6 +81,9 @@ export const StudentTestRecord = ({
     examType: string | undefined;
     isStudentList?: boolean;
 }) => {
+    const { t } = useTranslation('manageStudentsTestRecord');
+    const FILTER_CHIPS = buildFilterChips(t);
+
     // Institute data with error handling
     const {
         data: instituteDetails,
@@ -232,6 +245,18 @@ export const StudentTestRecord = ({
         }
     }, [data]);
 
+    // Subject labels. Must run before the guards below (hook order), and cannot come from
+    // the institute list alone: that list keeps one subject per distinct name and drops
+    // subjects whose course was deleted, so most stored ids need the direct lookup.
+    const subjectNamesById = useSubjectNamesByIds(
+        unresolvedSubjectIds(
+            instituteDetails?.subjects,
+            (studentReportData.content ?? []).map(
+                (report: AssessmentReportStudentInterface) => report.subject_id
+            )
+        )
+    );
+
     // ── Four-state guards ──────────────────────────────────────────────────────
 
     if (isLoading || instituteLoading || viewStudentTestReportMutation.status === 'pending') {
@@ -244,11 +269,11 @@ export const StudentTestRecord = ({
         const isUnauthorized = err?.response?.status === 403;
         return (
             <ProfileError
-                title={isUnauthorized ? 'Access Restricted' : "Couldn't load institute details"}
+                title={isUnauthorized ? t('common.accessRestricted') : t('errors.institute.title')}
                 hint={
                     isUnauthorized
-                        ? "You don't have permission to view institute details. Contact your administrator."
-                        : 'Something went wrong fetching institute details. Please try again.'
+                        ? t('errors.institute.hintRestricted')
+                        : t('errors.institute.hint')
                 }
                 onRetry={isUnauthorized ? undefined : () => refetchInstitute()}
             />
@@ -261,11 +286,11 @@ export const StudentTestRecord = ({
         const isUnauthorized = err?.response?.status === 403;
         return (
             <ProfileError
-                title={isUnauthorized ? 'Access Restricted' : "Couldn't load test records"}
+                title={isUnauthorized ? t('common.accessRestricted') : t('errors.report.title')}
                 hint={
                     isUnauthorized
-                        ? "You don't have permission to view test records. Contact your administrator."
-                        : 'Something went wrong fetching test records. Please try again.'
+                        ? t('errors.report.hintRestricted')
+                        : t('errors.report.hint')
                 }
                 onRetry={isUnauthorized ? undefined : () => refetchReport()}
             />
@@ -297,7 +322,7 @@ export const StudentTestRecord = ({
                 Hero is a PASSIVE summary card — the average score IS the
                 title, attempt count is the subtitle, no per-row action. */}
             <ProfileHero
-                eyebrow="TEST PERFORMANCE"
+                eyebrow={t('hero.eyebrow')}
                 icon={Trophy}
                 tone={
                     attemptedCount > 0
@@ -311,18 +336,18 @@ export const StudentTestRecord = ({
                 title={
                     attemptedCount > 0 ? (
                         <span className="text-subtitle font-semibold leading-none text-card-foreground">
-                            {avgScore.toFixed(1)} avg score
+                            {t('hero.avgScore', { score: avgScore.toFixed(1) })}
                         </span>
                     ) : (
                         <span className="text-body font-semibold leading-none text-muted-foreground">
-                            No attempts yet
+                            {t('hero.noAttempts')}
                         </span>
                     )
                 }
                 subtitle={
                     attemptedCount > 0
-                        ? `${attemptedCount} test${attemptedCount === 1 ? '' : 's'} recorded`
-                        : 'Tests assigned to this learner will appear below.'
+                        ? t('hero.testsRecorded', { count: attemptedCount })
+                        : t('hero.testsAssignedHint')
                 }
             />
 
@@ -340,7 +365,7 @@ export const StudentTestRecord = ({
                         label: c.label,
                         icon: c.icon,
                     }))}
-                    ariaLabel="Filter test attempts by status"
+                    ariaLabel={t('filters.ariaLabel')}
                 />
             </div>
 
@@ -348,8 +373,8 @@ export const StudentTestRecord = ({
             {records.length === 0 ? (
                 <ProfileEmpty
                     icon={Trophy}
-                    title="No tests yet"
-                    hint="This learner hasn't taken any assessments yet."
+                    title={t('empty.title')}
+                    hint={t('empty.hint')}
                 />
             ) : (
                 <div className="flex flex-col gap-2.5">
@@ -359,10 +384,11 @@ export const StudentTestRecord = ({
                             const isPending = studentReport.attempt_status === 'PENDING';
 
                             const subjectName =
-                                getSubjectNameById(
-                                    instituteDetails?.subjects || [],
+                                resolveSubjectName(
+                                    instituteDetails?.subjects,
+                                    subjectNamesById,
                                     studentReport.subject_id
-                                ) || 'N/A';
+                                ) || t('list.subjectFallback');
 
                             // Subtitle date: prefer attempt_date for ENDED rows,
                             // fall back to scheduled start_time so every card shows
@@ -415,7 +441,13 @@ export const StudentTestRecord = ({
                                                       ? 'Attempted'
                                                       : 'Not Attempted'
                                             }
-                                        />
+                                        >
+                                            {isPending
+                                                ? t('status.pending')
+                                                : isEnded
+                                                  ? t('status.attempted')
+                                                  : t('status.notAttempted')}
+                                        </StatusChips>
                                         {isEnded && (
                                             <MyButton
                                                 buttonType="text"
@@ -429,7 +461,7 @@ export const StudentTestRecord = ({
                                                     )
                                                 }
                                             >
-                                                View Report
+                                                {t('actions.viewReport')}
                                             </MyButton>
                                         )}
                                         {isPending && (
@@ -438,7 +470,7 @@ export const StudentTestRecord = ({
                                                 scale="small"
                                                 layoutVariant="default"
                                             >
-                                                Send Reminder
+                                                {t('actions.sendReminder')}
                                             </MyButton>
                                         )}
                                     </div>

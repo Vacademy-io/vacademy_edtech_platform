@@ -1,0 +1,63 @@
+{
+    "columns": {
+        "email": "Email",
+        "fullName": "Full Name",
+        "mobileNumber": "Mobile Number",
+        "username": "Username",
+        "password": "Password",
+        "address": "Address",
+        "pinCode": "PIN Code",
+        "paymentDate": "Payment Date (dd/MM/yyyy)",
+        "transactionId": "Transaction ID",
+        "gender": "Gender",
+        "dateOfBirth": "Date of Birth",
+        "city": "City",
+        "region": "State/Region",
+        "linkedInstituteName": "College/School",
+        "fathersName": "Father's Name",
+        "mothersName": "Mother's Name",
+        "fathersMobile": "Father's Mobile",
+        "fathersEmail": "Father's Email",
+        "mothersMobile": "Mother's Mobile",
+        "mothersEmail": "Mother's Email"
+    },
+    "template": {
+        "downloadTitle": "Download Template",
+        "instructions": "Fill in the template and re-upload. Required columns:",
+        "optionalCount": "+ {{count}} optional",
+        "customFieldsIncluded_one": "(incl. {{count}} custom field)",
+        "customFieldsIncluded_other": "(incl. {{count}} custom fields)",
+        "templateButton": "Template"
+    },
+    "picker": {
+        "title": "Choose template columns",
+        "description": "Required columns are always included; the upload still accepts any subset.",
+        "clearOptional": "Clear optional",
+        "selectAll": "Select all",
+        "required": "Required",
+        "columnsSelected_one": "{{count}} column",
+        "columnsSelected_other": "{{count}} columns",
+        "cancel": "Cancel",
+        "download": "Download"
+    },
+    "dropzone": {
+        "dragDrop": "Drag & drop a CSV file here",
+        "orBrowse": "or click to browse"
+    },
+    "errors": {
+        "missingRequiredColumn": "Missing required column: \"{{column}}\"",
+        "rowFieldRequired": "Row {{rowNum}}: {{field}} is required",
+        "rowUsernameSpaces": "Row {{rowNum}}: username cannot contain spaces",
+        "rowInvalidPaymentDate": "Row {{rowNum}}: invalid payment_date format \"{{value}}\"",
+        "notCsvFile": "Please upload a .csv file"
+    },
+    "preview": {
+        "rowsDetected_one": "{{count}} valid row detected",
+        "rowsDetected_other": "{{count}} valid rows detected",
+        "addLearners_one": "Add {{count}} learner",
+        "addLearners_other": "Add {{count}} learners",
+        "customFieldsCount_one": "({{count}} custom field)",
+        "customFieldsCount_other": "({{count}} custom fields)",
+        "andMore": "…and {{count}} more"
+    }
+}

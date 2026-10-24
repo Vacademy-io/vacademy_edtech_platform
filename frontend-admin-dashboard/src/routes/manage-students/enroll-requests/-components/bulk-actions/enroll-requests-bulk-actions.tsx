@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { CaretUpDown, XCircle } from '@phosphor-icons/react';
 import { StudentTable } from '@/types/student-table-types';
 import { EnrollRequestsBulkActionsMenu } from './enroll-requests-bulk-actions-menu';
+import { useTranslation } from 'react-i18next';
 
 interface BulkActionsProps {
     selectedCount: number;
@@ -19,6 +20,8 @@ export const EnrollRequestsBulkActions = ({
     onReset,
     isAssessment,
 }: BulkActionsProps) => {
+    const { t } = useTranslation('manageStudentsEnrollRequestsBulkActions');
+
     if (selectedCount === 0) {
         return null;
     }
@@ -26,7 +29,7 @@ export const EnrollRequestsBulkActions = ({
     return (
         <div className="flex items-center gap-5 text-neutral-600">
             <div className="flex gap-1">
-                [{selectedCount}] <div>Selected</div>
+                <div>{t('selectedCount', { count: selectedCount })}</div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -37,7 +40,7 @@ export const EnrollRequestsBulkActions = ({
                     className="flex items-center"
                     onClick={onReset}
                 >
-                    Reset
+                    {t('reset')}
                     <XCircle />
                 </MyButton>
 
@@ -53,7 +56,7 @@ export const EnrollRequestsBulkActions = ({
                                 layoutVariant="default"
                                 className="flex w-full cursor-pointer items-center justify-between"
                             >
-                                <p>Bulk Actions</p>
+                                <p>{t('bulkActions')}</p>
                                 <CaretUpDown />
                             </MyButton>
                         }

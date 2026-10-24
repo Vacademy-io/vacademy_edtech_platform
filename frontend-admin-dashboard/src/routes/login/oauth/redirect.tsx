@@ -3,11 +3,13 @@ import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { handleLoginOAuthCallback } from '@/hooks/login/oauth-login';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/login/oauth/redirect')({
     component: OAuthRedirectHandler,
 });
 function OAuthRedirectHandler() {
+    const { t } = useTranslation('loginOauthRedirect');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -37,11 +39,11 @@ function OAuthRedirectHandler() {
                 navigate({ to: redirectUrl });
                 return;
             } else {
-                toast.error('OAuth failed. Redirecting to login...');
+                toast.error(t('oauthFailed'));
                 navigate({ to: '/login' });
             }
             } catch (error) {
-                toast.error('OAuth processing failed. Redirecting to login...');
+                toast.error(t('oauthProcessingFailed'));
                 navigate({ to: '/login' });
             }
         };
@@ -51,7 +53,7 @@ function OAuthRedirectHandler() {
 
     return (
         <div className="flex min-h-screen items-center justify-center">
-            <p className="text-lg font-medium">Handling OAuth redirect...</p>
+            <p className="text-lg font-medium">{t('handlingOauthRedirect')}</p>
         </div>
     );
 }

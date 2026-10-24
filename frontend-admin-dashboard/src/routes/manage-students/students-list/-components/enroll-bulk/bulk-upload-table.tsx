@@ -1,5 +1,8 @@
 // editable-bulk-upload-table.tsx
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import i18n from '@/i18n';
 import { type Header } from '@/routes/manage-students/students-list/-schemas/student-bulk-enroll/csv-bulk-init';
 import { useBulkUploadStore } from '@/routes/manage-students/students-list/-stores/enroll-students-bulk/useBulkUploadStore';
 import { StudentSearchBox } from '@/components/common/student-search-box';
@@ -23,6 +26,17 @@ import { StatusColumnRenderer } from './status-column-rendered';
 import { ErrorDetailsDialog } from './error-details-dialog';
 import { Warning } from '@phosphor-icons/react';
 
+const NAMESPACE = 'manageStudentsBulkUploadTable';
+const COLUMNS_NAMESPACE = 'manageStudentsBulkUploadColumns';
+
+/**
+ * Fallback translate function for call sites that live outside a React
+ * render tree (e.g. the zustand store) and therefore cannot use the
+ * `useTranslation` hook. Uses the shared i18next singleton directly.
+ */
+const globalT: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
+
 interface EditableBulkUploadTableProps {
     headers: Header[];
     onEdit?: (rowIndex: number, columnId: string, value: string) => void;
@@ -36,14 +50,20 @@ interface RowWithError extends SchemaFields {
 const ITEMS_PER_PAGE = 10;
 
 /**
- * Validate a single cell value based on header definition
+ * Validate a single cell value based on header definition.
+ *
+ * Accepts an optional translate function so it can be called both from
+ * inside the React tree (pass the component's `t`) and from call sites
+ * that sit outside it, such as the zustand store (falls back to `globalT`).
  */
 export const validateCellValue = (
     value: string,
     header: Header,
-    rowIndex: number
+    rowIndex: number,
+    t: TFunction = globalT
 ): ValidationError | null => {
     const fieldName = header.column_name;
+    const fieldLabel = fieldName.replace(/_/g, ' ');
 
     // Skip validation if the field is optional and empty
     if (header.optional && (!value || value.trim() === '')) {
@@ -54,9 +74,9 @@ export const validateCellValue = (
     if (!header.optional && (!value || value.trim() === '')) {
         return {
             path: [rowIndex, fieldName],
-            message: `${fieldName.replace(/_/g, ' ')} is required`,
-            resolution: `Please provide a value for ${fieldName.replace(/_/g, ' ')}`,
-            currentVal: 'N/A',
+            message: t('validation.fieldRequired.message', { field: fieldLabel }),
+            resolution: t('validation.fieldRequired.resolution', { field: fieldLabel }),
+            currentVal: t('validation.notApplicable'),
             format: '',
         };
     }
@@ -68,8 +88,10 @@ export const validateCellValue = (
             if (!header.options.includes(value)) {
                 return {
                     path: [rowIndex, fieldName],
-                    message: `Invalid value for ${fieldName.replace(/_/g, ' ')}`,
-                    resolution: `Value must be one of: ${header.options.join(', ')}`,
+                    message: t('validation.invalidValue.message', { field: fieldLabel }),
+                    resolution: t('validation.invalidValue.resolution', {
+                        options: header.options.join(', '),
+                    }),
                     currentVal: value,
                     format: header.options.join(', '),
                 };
@@ -83,8 +105,8 @@ export const validateCellValue = (
             if (!isValidDateFormat(formattedDate, header.format)) {
                 return {
                     path: [rowIndex, fieldName],
-                    message: `Invalid date format for ${fieldName.replace(/_/g, ' ')}`,
-                    resolution: `Date must be in format: ${header.format}`,
+                    message: t('validation.invalidDate.message', { field: fieldLabel }),
+                    resolution: t('validation.invalidDate.resolution', { format: header.format }),
                     currentVal: value,
                     format: header.format,
                 };
@@ -100,8 +122,8 @@ export const validateCellValue = (
                         path: [rowIndex, fieldName],
                         message:
                             header.regex_error_message ||
-                            `Invalid format for ${fieldName.replace(/_/g, ' ')}`,
-                        resolution: `Please check the format`,
+                            t('validation.invalidFormat.message', { field: fieldLabel }),
+                        resolution: t('validation.invalidFormat.resolution'),
                         currentVal: value,
                         format: header.regex,
                     };
@@ -122,7 +144,8 @@ export const validateCellValue = (
 export const validateRowData = (
     rowData: SchemaFields,
     headers: Header[],
-    rowIndex: number
+    rowIndex: number,
+    t: TFunction = globalT
 ): ValidationError[] => {
     const errors: ValidationError[] = [];
 
@@ -136,7 +159,7 @@ export const validateRowData = (
         }
 
         const value = rowData[fieldName] as string;
-        const error = validateCellValue(value, header, rowIndex);
+        const error = validateCellValue(value, header, rowIndex, t);
 
         if (error) {
             errors.push(error);
@@ -149,12 +172,16 @@ export const validateRowData = (
 /**
  * Revalidate all data in the CSV
  */
-export const revalidateAllData = (data: SchemaFields[], headers: Header[]): ValidationError[] => {
+export const revalidateAllData = (
+    data: SchemaFields[],
+    headers: Header[],
+    t: TFunction = globalT
+): ValidationError[] => {
     let allErrors: ValidationError[] = [];
 
     // Validate each row
     data.forEach((row, rowIndex) => {
-        const rowErrors = validateRowData(row, headers, rowIndex);
+        const rowErrors = validateRowData(row, headers, rowIndex, t);
         allErrors = [...allErrors, ...rowErrors];
     });
 
@@ -199,6 +226,12 @@ export function EditableBulkUploadTable({
     onEdit,
     affectedRows,
 }: EditableBulkUploadTableProps) {
+    const { t } = useTranslation([NAMESPACE, COLUMNS_NAMESPACE]);
+    // `createEditableBulkUploadColumns` owns its own namespace
+    // (COLUMNS_NAMESPACE); wrap `t` so its keys resolve there while every
+    // other call in this file keeps resolving against NAMESPACE by default.
+    const tColumns: TFunction = ((key: string, options?: Record<string, unknown>) =>
+        t(key, { ns: COLUMNS_NAMESPACE, ...options })) as TFunction;
     const { csvData, csvErrors, setIsEditing, isEditing, setCsvData } = useBulkUploadStore();
     const [page, setPage] = useState(0);
     const [searchInput, setSearchInput] = useState('');
@@ -241,7 +274,7 @@ export function EditableBulkUploadTable({
             );
 
             // Validate the new value
-            const cellError = validateCellValue(value, header, rowIndex);
+            const cellError = validateCellValue(value, header, rowIndex, t);
 
             // Set updated errors
             setCsvErrors(cellError ? [...updatedErrors, cellError] : updatedErrors);
@@ -293,8 +326,18 @@ export function EditableBulkUploadTable({
             onViewErrors: handleViewErrors,
             currentPage: page,
             ITEMS_PER_PAGE: ITEMS_PER_PAGE,
+            t: tColumns,
         });
-    }, [csvErrors, headers, statusColumnRenderer, isEditing, editCell, csvData, handleCellEdit]);
+    }, [
+        csvErrors,
+        headers,
+        statusColumnRenderer,
+        isEditing,
+        editCell,
+        csvData,
+        handleCellEdit,
+        tColumns,
+    ]);
 
     const filteredData = useMemo(() => {
         if (!csvData) return [];
@@ -362,7 +405,7 @@ export function EditableBulkUploadTable({
                 if (errorMessages[index]) {
                     const errorRow: RowWithError = {
                         ...row,
-                        ERROR: errorMessages[index]?.join(', ') || 'Unknown error',
+                        ERROR: errorMessages[index]?.join(', ') || t('errors.unknownError'),
                     };
                     return errorRow;
                 }
@@ -389,10 +432,12 @@ export function EditableBulkUploadTable({
     };
 
     return paginatedData.content.length === 0 ? (
-        <p className="w-full text-center text-subtitle text-primary-500">No uploaded data found!</p>
+        <p className="w-full text-center text-subtitle text-primary-500">
+            {t('emptyState.noData')}
+        </p>
     ) : (
         <div className="flex flex-col gap-6 pr-10">
-            <div className="fixed top-[55px] z-50 flex w-[78vw] items-center justify-between border-b border-b-neutral-300 bg-white py-2">
+            <div className="fixed top-14 z-50 flex w-[78vw] items-center justify-between border-b border-b-neutral-300 bg-white py-2">{/* design-lint-ignore: viewport-relative fixed toolbar spanning the table area (excludes sidebar), no fixed-width token fits */}
                 <div className="flex items-center gap-2">
                     <StudentSearchBox
                         searchInput={searchInput}
@@ -408,11 +453,11 @@ export function EditableBulkUploadTable({
                             id="edit-mode"
                         />
                         <Label htmlFor="edit-mode" className="font-medium text-neutral-900">
-                            Enable Editing Mode
+                            {t('editingMode.label')}
                         </Label>
                     </div>
                     {isEditing && (
-                        <div className="text-sm text-primary-500">Click on cell to edit</div>
+                        <div className="text-sm text-primary-500">{t('editingMode.hint')}</div>
                     )}
                 </div>
                 <div className="flex items-center gap-4">
@@ -421,8 +466,12 @@ export function EditableBulkUploadTable({
                             <div className="flex items-center">
                                 <Warning className="size-5 text-danger-500" />
                                 <h3 className="ml-2 text-sm font-medium text-danger-700">
-                                    Found {csvErrors.length} validation issues in {affectedRows}{' '}
-                                    rows
+                                    {t('summary.foundIssuesInRows', {
+                                        issues: t('summary.issuesCount', {
+                                            count: csvErrors.length,
+                                        }),
+                                        rows: t('summary.rowsCount', { count: affectedRows }),
+                                    })}
                                 </h3>
                             </div>
                         </div>
@@ -434,7 +483,7 @@ export function EditableBulkUploadTable({
                             layoutVariant="default"
                             onClick={downloadErrorCases}
                         >
-                            Download Error Cases
+                            {t('buttons.downloadErrorCases')}
                         </MyButton>
                     )}
                     {csvData && csvData.length > 0 && csvErrors.length === 0 && (
@@ -444,7 +493,7 @@ export function EditableBulkUploadTable({
                             layoutVariant="default"
                             onClick={downloadValidData}
                         >
-                            Download Valid Data
+                            {t('buttons.downloadValidData')}
                         </MyButton>
                     )}
                 </div>
@@ -458,13 +507,13 @@ export function EditableBulkUploadTable({
                         isLoading={false}
                         error={null}
                         columnWidths={{
-                            STATUS: 'w-[100px]',
-                            status: 'w-[100px]',
-                            error: 'w-[200px]',
+                            STATUS: 'w-24',
+                            status: 'w-24',
+                            error: 'w-48',
                             ...headers.reduce(
                                 (acc, header) => ({
                                     ...acc,
-                                    [header.column_name]: 'min-w-[220px]',
+                                    [header.column_name]: 'min-w-56',
                                 }),
                                 {}
                             ),
@@ -474,7 +523,7 @@ export function EditableBulkUploadTable({
                 </div>
             </div>
 
-            <div className="fixed bottom-0 left-[30vw] right-0 z-50 w-fit bg-white py-2">
+            <div className="fixed bottom-0 left-[30vw] end-0 z-50 w-fit bg-white py-2">{/* design-lint-ignore: viewport-relative offset aligning the fixed pagination bar under the table, no fixed-width token fits */}
                 <MyPagination
                     currentPage={page}
                     totalPages={paginatedData.total_pages}

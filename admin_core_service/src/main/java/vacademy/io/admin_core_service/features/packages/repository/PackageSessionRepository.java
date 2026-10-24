@@ -183,14 +183,52 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             @Param("instituteId") String instituteId,
             @Param("statuses") List<String> statuses);
 
+    /**
+     * Batch cards for one course: name, status, learner count and the invite code
+     * to share.
+     *
+     * <p>Two things this deliberately does not do, both of which used to leave the
+     * Manage Batches page unusable for institutes whose data was migrated in bulk:
+     *
+     * <ul>
+     * <li><b>It does not throw away the batch name.</b> The title used to be
+     * level + course. An institute migrated in bulk carries the level name
+     * "default" on every session, so every batch of a course rendered with an
+     * identical title and nothing on the page told them apart - while
+     * package_session.name held the real, distinct name all along. The name wins
+     * when it is set; the placeholder names "DEFAULT" and "General" fall back to
+     * level + course, which is what those institutes already see today.
+     * <li><b>It does not require a DEFAULT-tagged invite.</b> The tag is a
+     * preference in the ORDER BY, not a filter. Requiring it blanked the invite
+     * code on every batch of an institute whose invites carry no tag - 2,935 of
+     * them on one - even though those invites were ACTIVE and usable. Note the
+     * code is per invite, not per batch, so batches sharing a course-level invite
+     * legitimately show the same code.
+     * </ul>
+     *
+     * <p>Prose stays here rather than inside the query text: an apostrophe in a SQL
+     * comment inside a {@code @Query} string crash-loops the service at boot.
+     */
     @Query(value = """
             SELECT
                 ps.id AS packageSessionId,
-                CONCAT(l.level_name, ' ', p.package_name) AS batchName,
+                CASE
+                    WHEN COALESCE(TRIM(ps.name), '') <> ''
+                     AND UPPER(TRIM(ps.name)) NOT IN ('DEFAULT', 'GENERAL')
+                    THEN ps.name
+                    ELSE CONCAT(l.level_name, ' ', p.package_name)
+                END AS batchName,
                 ps.status AS batchStatus,
                 ps.start_time AS startDate,
                 COUNT(ssigm.id) AS countStudents,
-                ei.invite_code AS inviteCode,
+                (SELECT ei.invite_code
+                   FROM package_session_learner_invitation_to_payment_option psli
+                   JOIN enroll_invite ei ON ei.id = psli.enroll_invite_id
+                  WHERE psli.package_session_id = ps.id
+                    AND psli.status = 'ACTIVE'
+                    AND ei.status = 'ACTIVE'
+                  ORDER BY (ei.tag = 'DEFAULT') DESC NULLS LAST, ei.created_at DESC
+                  LIMIT 1) AS inviteCode,
                 ps.is_parent AS isParent,
                 ps.parent_id AS parentId
             FROM package_session ps
@@ -199,16 +237,9 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             LEFT JOIN student_session_institute_group_mapping ssigm
                 ON ssigm.package_session_id = ps.id
                 AND ssigm.status IN (:studentSessionStatuses)
-            LEFT JOIN package_session_learner_invitation_to_payment_option psli
-                ON psli.package_session_id = ps.id
-                AND psli.status = 'ACTIVE'
-            LEFT JOIN enroll_invite ei
-                ON ei.id = psli.enroll_invite_id
-                AND ei.tag = 'DEFAULT'
-                AND ei.status = 'ACTIVE'
             WHERE p.id = :packageId
               AND ps.status IN (:packageSessionStatuses)
-            GROUP BY ps.id, batchName, ps.status, ps.start_time, ei.invite_code, ps.is_parent, ps.parent_id
+            GROUP BY ps.id, ps.name, l.level_name, p.package_name, ps.status, ps.start_time, ps.is_parent, ps.parent_id
             ORDER BY ps.start_time DESC
             """, nativeQuery = true)
     List<BatchProjection> findBatchDetailsWithLatestInviteCode(
@@ -341,8 +372,21 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
     List<PackageSession> findAllInvitedByPackageIds(@Param("packageIds") Set<String> packageIds);
 
     /**
-     * Autocomplete search for packages by name with relevance scoring
-     * Optimized for 20,000+ packages with database indexing and LIMIT 10
+     * Autocomplete search for batches with relevance scoring.
+     *
+     * Matches any part of the course name (substring), not just a prefix, so the batch filter
+     * finds "Advanced Nursing Care" from "nursing". Relevance still ranks an exact name first,
+     * then a prefix match, then a match that starts a word inside the name, then any substring.
+     *
+     * It also matches, and returns, the batch's OWN name (package_session.name). An institute
+     * whose batches are all one course could not find a single one of them here: every row the
+     * search returned carried the same course name and the same level name, so the picker showed
+     * a column of identical entries and typing the batch name found nothing at all.
+     *
+     * The selective predicate here is package_institute.institute_id (idx_package_institute_access),
+     * which bounds the scan to one institute's packages before the name filter runs — the
+     * LOWER(package_name) b-tree from V84 no longer helps a leading-wildcard LIKE. The added
+     * batch-name match is OR-ed into that same already-bounded row set, so it costs no extra scan.
      */
     @Query(value = """
                         SELECT
@@ -353,10 +397,14 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
                 l.level_name AS levelName,
                 s.id AS sessionId,
                 s.session_name AS sessionName,
+                ps.name AS batchName,
                 CASE
                     WHEN LOWER(p.package_name) = LOWER(:query) THEN 100
+                    WHEN LOWER(COALESCE(ps.name, '')) = LOWER(:query) THEN 100
                     WHEN LOWER(p.package_name) LIKE LOWER(CONCAT(:query, '%')) THEN 90
-                    ELSE 50
+                    WHEN LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT(:query, '%')) THEN 90
+                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT('% ', :query, '%')) THEN 80
+                    ELSE 70
                 END AS matchScore
             FROM package_session ps
             JOIN package p ON ps.package_id = p.id
@@ -365,11 +413,12 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             JOIN session s ON ps.session_id = s.id
                         WHERE
                             pi.institute_id = :instituteId
-                            AND LOWER(p.package_name) LIKE LOWER(CONCAT(:query, '%'))
+                            AND (LOWER(p.package_name) LIKE LOWER(CONCAT('%', :query, '%'))
+                                 OR LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT('%', :query, '%')))
                             AND (:sessionId IS NULL OR :sessionId = '' OR ps.session_id = :sessionId)
                             AND (:levelId IS NULL OR :levelId = '' OR ps.level_id = :levelId)
                             AND ps.status IN ('ACTIVE', 'HIDDEN','DRAFT')
-                        ORDER BY matchScore DESC, p.package_name ASC
+                        ORDER BY matchScore DESC, p.package_name ASC, ps.name ASC
                         LIMIT :limit
                         """, nativeQuery = true)
     List<vacademy.io.admin_core_service.features.packages.dto.PackageAutocompleteProjection> autocompletePackages(
@@ -524,6 +573,9 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
      * {@code idx_package_session_content_copied_from} from V237.
      */
     boolean existsByContentCopiedFromPackageSessionId(String sourcePackageSessionId);
+
+    /** True when any batch of any course still uses this session in one of the given statuses. */
+    boolean existsBySession_IdAndStatusIn(String sessionId, List<String> statuses);
 
     /**
      * Reverse-lookup for content-copy lineage with package/session/level joined

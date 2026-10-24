@@ -1,10 +1,16 @@
+import i18n from '@/i18n';
 import type { AssignmentResult } from '../-types/mentorship-types';
+
+const NAMESPACE = 'mentorshipAssignmentResult';
 
 /**
  * Human summary of an assignment run. Every selected student must be accounted
  * for: assigned, skipped (already paired with that mentor), or blocked because the
  * mentor is at their mentee limit. Capacity is the newest of the three and the one
  * an admin can act on, so it always names the fix.
+ *
+ * Called from AssignMenteesDialog/BulkAssignDialog outside this batch, so it
+ * reads strings from the i18n singleton rather than a threaded `t`.
  */
 export function assignmentResultMessage(
     result: AssignmentResult,
@@ -15,15 +21,19 @@ export function assignmentResultMessage(
     const skipped = result.skipped ?? 0;
     const capacityFull = result.capacity_full ?? 0;
 
-    const parts: string[] = [`Assigned ${assigned}`];
+    const parts: string[] = [i18n.t('assigned', { ns: NAMESPACE, count: assigned })];
     if (skipped > 0) {
-        parts.push(variant === 'manual' ? `${skipped} already assigned` : `${skipped} skipped`);
+        parts.push(
+            variant === 'manual'
+                ? i18n.t('alreadyAssigned', { ns: NAMESPACE, count: skipped })
+                : i18n.t('skipped', { ns: NAMESPACE, count: skipped })
+        );
     }
     if (capacityFull > 0) {
         parts.push(
-            `${capacityFull} left out — ${
-                variant === 'manual' ? 'mentor is at their limit' : 'all mentors at their limit'
-            }`
+            variant === 'manual'
+                ? i18n.t('leftOutManual', { ns: NAMESPACE, count: capacityFull })
+                : i18n.t('leftOutBulk', { ns: NAMESPACE, count: capacityFull })
         );
     }
     return parts.join(', ');

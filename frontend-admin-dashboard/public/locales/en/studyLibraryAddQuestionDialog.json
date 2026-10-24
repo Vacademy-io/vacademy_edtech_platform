@@ -1,0 +1,18 @@
+{
+    "autoTitle": "{{type}} Question {{index}}",
+    "questionWord": "Question",
+    "addSuccess": "Question added successfully!",
+    "addError": "Failed to add question",
+    "quickAccess": "Quick Access",
+    "mcqSingleCorrect": "Multiple Choice Questions (Single correct)",
+    "mcqMultipleCorrect": "Multiple Choice Questions (Multiple correct)",
+    "numerical": "Numerical",
+    "trueFalse": "True False",
+    "writingSkills": "Writing Skills",
+    "longAnswer": "Long Answer",
+    "singleWord": "Single Word",
+    "readingSkills": "Reading Skills",
+    "comprehensionSingleCorrect": "Comprehension MCQ (Single correct)",
+    "comprehensionMultipleCorrect": "Comprehension MCQ (Multiple correct)",
+    "comprehensionNumeric": "Comprehension Numeric"
+}

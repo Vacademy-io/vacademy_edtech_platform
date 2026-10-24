@@ -1,0 +1,46 @@
+{
+    "dialogHeading": "Historique des versions",
+    "description": "Chaque version est un instantané du contenu de cette diapositive pris juste avant qu'elle ne soit remplacée. La restauration copie un instantané dans le brouillon actuel — le contenu publié n'est pas modifié tant que vous ne publiez pas à nouveau.",
+    "retry": "Réessayer",
+    "trigger": {
+        "title": "Afficher et restaurer les versions précédentes",
+        "label": "Historique"
+    },
+    "history": {
+        "loadError": "Impossible de charger l'historique des versions.",
+        "empty": "Aucune version précédente pour le moment. Une version est enregistrée à chaque modification du contenu de cette diapositive."
+    },
+    "entry": {
+        "draftSize": "Brouillon : {{size}}",
+        "publishedSize": "Publié : {{size}}"
+    },
+    "size": {
+        "empty": "vide",
+        "chars_one": "{{count}} caractère",
+        "chars_many": "{{count}} caractères",
+        "chars_other": "{{count}} caractères",
+        "kChars": "{{value}} k caractères"
+    },
+    "preview": {
+        "selectPrompt": "Sélectionnez une version pour la prévisualiser",
+        "loadError": "Impossible de charger cette version.",
+        "iframeTitle": "Aperçu de la version",
+        "noContent": {
+            "draft": "Cet instantané n'a pas de contenu de brouillon",
+            "published": "Cet instantané n'a pas de contenu publié"
+        }
+    },
+    "source": {
+        "draft": "Brouillon",
+        "published": "Publié"
+    },
+    "restore": {
+        "restoring": "Restauration…",
+        "confirm": "Confirmer la restauration vers le brouillon ?",
+        "action": "Restaurer cette version"
+    },
+    "toast": {
+        "restoreSuccess": "Version restaurée comme brouillon actuel. Vérifiez-la, puis publiez.",
+        "restoreFailed": "Impossible de restaurer cette version"
+    }
+}

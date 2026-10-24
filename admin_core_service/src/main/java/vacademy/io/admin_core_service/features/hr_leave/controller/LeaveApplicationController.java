@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.hr_leave.dto.*;
 import vacademy.io.admin_core_service.features.hr_leave.service.CompOffService;
 import vacademy.io.admin_core_service.features.hr_leave.service.LeaveApplicationService;
@@ -13,6 +13,11 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
 
+/**
+ * Authorization is enforced inside the services via {@code HrAccessGuard}:
+ * every method validates institute membership, role, and entity-to-institute
+ * ownership before touching data — controllers stay thin.
+ */
 @RestController
 @RequestMapping("/admin-core-service/api/v1/hr/leaves")
 public class LeaveApplicationController {
@@ -26,17 +31,13 @@ public class LeaveApplicationController {
     @Autowired
     private CompOffService compOffService;
 
-    @Autowired
-    private InstituteAccessValidator instituteAccessValidator;
-
     // --- Leave Application endpoints ---
 
     @PostMapping("/apply")
     public ResponseEntity<String> applyLeave(@RequestBody LeaveApplyDTO dto,
                                               @RequestParam String instituteId,
                                               @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String id = leaveApplicationService.applyLeave(dto, instituteId);
+        String id = leaveApplicationService.applyLeave(dto, instituteId, user);
         return ResponseEntity.ok(id);
     }
 
@@ -48,9 +49,8 @@ public class LeaveApplicationController {
             @RequestParam(defaultValue = "0") int pageNo,
             @RequestParam(defaultValue = "20") int pageSize,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
         Page<LeaveApplicationDTO> page = leaveApplicationService.getLeaveApplications(
-                instituteId, status, employeeId, pageNo, pageSize);
+                instituteId, status, employeeId, pageNo, pageSize, user);
         return ResponseEntity.ok(page);
     }
 
@@ -59,8 +59,7 @@ public class LeaveApplicationController {
                                                       @RequestBody LeaveActionDTO actionDTO,
                                                       @RequestParam String instituteId,
                                                       @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = leaveApplicationService.approveRejectLeave(id, actionDTO, user.getUserId());
+        String resultId = leaveApplicationService.approveRejectLeave(id, actionDTO, instituteId, user);
         return ResponseEntity.ok(resultId);
     }
 
@@ -68,56 +67,67 @@ public class LeaveApplicationController {
     public ResponseEntity<String> cancelLeave(@PathVariable String id,
                                                @RequestParam String instituteId,
                                                @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = leaveApplicationService.cancelLeave(id);
+        String resultId = leaveApplicationService.cancelLeave(id, instituteId, user);
         return ResponseEntity.ok(resultId);
     }
 
     @GetMapping("/applications/pending")
     public ResponseEntity<List<LeaveApplicationDTO>> getPendingForManager(
             @RequestParam String instituteId,
+            @RequestParam(required = false) String approverId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        List<LeaveApplicationDTO> pending = leaveApplicationService.getPendingForManager(user.getUserId());
+        List<LeaveApplicationDTO> pending = leaveApplicationService.getPendingForManager(
+                instituteId, approverId, user);
         return ResponseEntity.ok(pending);
     }
 
     // --- Leave Balance endpoints ---
 
     @GetMapping("/balances")
-    public ResponseEntity<List<LeaveBalanceDTO>> getBalances(@RequestParam String employeeId,
+    public ResponseEntity<List<LeaveBalanceDTO>> getBalances(@RequestParam(required = false) String employeeId,
                                                               @RequestParam Integer year,
                                                               @RequestParam String instituteId,
                                                               @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        List<LeaveBalanceDTO> balances = leaveBalanceService.getBalances(employeeId, year);
+        List<LeaveBalanceDTO> balances = leaveBalanceService.getBalances(employeeId, year, instituteId, user);
         return ResponseEntity.ok(balances);
     }
 
     @PutMapping("/balances/{id}/adjust")
+    @Auditable(
+            entityType = "HR_LEAVE_BALANCE",
+            action = "ADJUST",
+            entityIdExpr = "#id",
+            descriptionExpr = "'adjusted leave balance by ' + #dto?.adjustment + (#dto?.reason != null ? ' (' + #dto.reason + ')' : '')")
     public ResponseEntity<String> adjustBalance(@PathVariable String id,
                                                  @RequestBody LeaveBalanceAdjustDTO dto,
                                                  @RequestParam String instituteId,
                                                  @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = leaveBalanceService.adjustBalance(id, dto);
+        String resultId = leaveBalanceService.adjustBalance(id, dto, instituteId, user);
         return ResponseEntity.ok(resultId);
     }
 
     @PostMapping("/accrue")
+    @Auditable(
+            entityType = "HR_LEAVE",
+            action = "ACCRUE",
+            entityIdExpr = "#instituteId",
+            descriptionExpr = "'triggered monthly leave accrual'")
     public ResponseEntity<String> accrueLeaves(@RequestParam String instituteId,
                                                 @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String result = leaveBalanceService.accrueLeaves(instituteId);
+        String result = leaveBalanceService.accrueLeaves(instituteId, user);
         return ResponseEntity.ok(result);
     }
 
     @PostMapping("/year-end-process")
+    @Auditable(
+            entityType = "HR_LEAVE",
+            action = "YEAR_END",
+            entityIdExpr = "#instituteId",
+            descriptionExpr = "'ran year-end leave process for year ' + #year")
     public ResponseEntity<String> yearEndProcess(@RequestParam String instituteId,
                                                   @RequestParam Integer year,
                                                   @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String result = leaveBalanceService.yearEndProcess(instituteId, year);
+        String result = leaveBalanceService.yearEndProcess(instituteId, year, user);
         return ResponseEntity.ok(result);
     }
 
@@ -127,8 +137,7 @@ public class LeaveApplicationController {
     public ResponseEntity<String> requestCompOff(@RequestBody CompOffDTO dto,
                                                   @RequestParam String instituteId,
                                                   @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String id = compOffService.requestCompOff(dto, instituteId);
+        String id = compOffService.requestCompOff(dto, instituteId, user);
         return ResponseEntity.ok(id);
     }
 
@@ -137,8 +146,7 @@ public class LeaveApplicationController {
                                                         @RequestBody CompOffActionDTO actionDTO,
                                                         @RequestParam String instituteId,
                                                         @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = compOffService.approveRejectCompOff(id, actionDTO, user.getUserId());
+        String resultId = compOffService.approveRejectCompOff(id, actionDTO, instituteId, user);
         return ResponseEntity.ok(resultId);
     }
 
@@ -146,8 +154,7 @@ public class LeaveApplicationController {
     public ResponseEntity<List<CompOffDTO>> getCompOffs(@RequestParam String employeeId,
                                                          @RequestParam String instituteId,
                                                          @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        List<CompOffDTO> compOffs = compOffService.getCompOffs(employeeId);
+        List<CompOffDTO> compOffs = compOffService.getCompOffs(employeeId, instituteId, user);
         return ResponseEntity.ok(compOffs);
     }
 }

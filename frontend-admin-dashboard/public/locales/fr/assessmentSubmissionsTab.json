@@ -1,0 +1,78 @@
+{
+    "tabs": {
+        "attempted": "Tentés",
+        "ongoing": "En cours",
+        "pending": "En attente"
+    },
+    "participantType": {
+        "internal": "Interne",
+        "external": "Externe"
+    },
+    "selectionMode": {
+        "batch": "Sélection par lot",
+        "individual": "Sélection individuelle"
+    },
+    "filters": {
+        "evaluationStatus": {
+            "label": "Statut d'évaluation",
+            "options": {
+                "pending": "En attente",
+                "evaluating": "En cours d'évaluation",
+                "evaluated": "Évalué"
+            }
+        },
+        "submissionStatus": {
+            "label": "Réponse",
+            "options": {
+                "submitted": "Soumis",
+                "notSubmitted": "Non soumis"
+            }
+        }
+    },
+    "buttons": {
+        "offlineEntry": "Saisie hors ligne",
+        "revaluate": "Réévaluer",
+        "aiEvaluations": "Évaluations IA",
+        "bulkAiCheck": "Vérification IA en masse",
+        "bulkAiCheckTooltip": "Téléversez de nombreuses copies ; les noms sont lus et associés, les corrections tournent en arrière-plan",
+        "bulkAiBatches": "Lots"
+    },
+    "dialogs": {
+        "revaluate": {
+            "title": "Réévaluer le résultat"
+        }
+    },
+    "aiReport": {
+        "title": "Rapport IA de l’évaluation",
+        "download": "Rapport IA",
+        "intro": "Une analyse rédigée par l’IA de toute cette évaluation, pour l’enseignant qui prendra cette classe ensuite.",
+        "bulletWeakness": "Faiblesses de la classe par section, thème et question — des plus faibles aux plus fortes",
+        "bulletMisconceptions": "Les erreurs commises par de nombreux élèves pour la même raison, et comment y remédier",
+        "bulletPlan": "Un plan d’action hiérarchisé et la liste complète des participants",
+        "checking": "Vérification de l’existence d’un rapport…",
+        "costs_one": "Générer ce rapport consomme {{count}} crédit IA. Facturé une seule fois — tous les téléchargements suivants sont gratuits.",
+        "costs_other": "Générer ce rapport consomme {{count}} crédits IA. Facturé une seule fois — tous les téléchargements suivants sont gratuits.",
+        "balance_one": "Solde : {{count}} crédit",
+        "balance_other": "Solde : {{count}} crédits",
+        "insufficient": "Votre établissement n’a pas assez de crédits IA pour ce rapport. Rechargez pour continuer.",
+        "ready": "Rapport prêt — généré le {{date}}. Le télécharger à nouveau est gratuit.",
+        "stale": "Généré le {{date}}, mais les résultats ont changé depuis. Vous pouvez télécharger cette version gratuitement ou l’actualiser au coût indiqué.",
+        "downloadFree": "Télécharger (gratuit)",
+        "generate_one": "Générer · {{count}} crédit",
+        "generate_other": "Générer · {{count}} crédits",
+        "refresh_one": "Actualiser · {{count}} crédit",
+        "refresh_other": "Actualiser · {{count}} crédits",
+        "generating": "Génération…",
+        "preparing": "Préparation…",
+        "cancel": "Annuler",
+        "failed": "Impossible de générer le rapport IA. Veuillez réessayer.",
+        "generateNoPrice": "Générer le rapport",
+        "refreshNoPrice": "Actualiser le rapport",
+        "costsUnavailable": "Générer ce rapport consomme des crédits IA. Le coût exact n’a pas pu être chargé — il est facturé une fois, et les téléchargements suivants sont gratuits.",
+        "historyTitle": "Générés précédemment",
+        "historyDownload": "Télécharger"
+    },
+    "selectAll": {
+        "failed": "Impossible de sélectionner tous les apprenants en attente. Veuillez réessayer."
+    }
+}

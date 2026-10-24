@@ -1,0 +1,4 @@
+{
+    "providerModelFallback": "Modèle {{provider}}",
+    "defaultModelFallback": "Modèle par défaut"
+}

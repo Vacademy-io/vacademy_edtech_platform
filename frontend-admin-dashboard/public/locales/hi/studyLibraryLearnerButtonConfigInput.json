@@ -1,0 +1,16 @@
+{
+    "defaultButtonText": "क्लास सामग्री देखें",
+    "addCustomButton": "कस्टम बटन जोड़ें",
+    "customButtonConfiguration": "कस्टम बटन कॉन्फ़िगरेशन",
+    "addCustomActionButtonNote": "शिक्षार्थियों के लिए एक कस्टम एक्शन बटन जोड़ें",
+    "remove": "हटाएं",
+    "buttonText": "बटन टेक्स्ट",
+    "buttonTextPlaceholder": "जैसे, क्लास सामग्री देखें",
+    "charactersCount_one": "{{count}}/{{max}} अक्षर",
+    "charactersCount_other": "{{count}}/{{max}} अक्षर",
+    "buttonUrl": "बटन URL",
+    "buttonUrlPlaceholder": "https://example.com/class-link...",
+    "backgroundColor": "बैकग्राउंड रंग",
+    "textColor": "टेक्स्ट रंग",
+    "preview": "पूर्वावलोकन"
+}

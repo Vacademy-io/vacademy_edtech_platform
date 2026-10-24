@@ -1,0 +1,26 @@
+{
+    "start": "البداية",
+    "issueCount_zero": "{{count}} مشكلة",
+    "issueCount_one": "مشكلة واحدة",
+    "issueCount_two": "مشكلتان",
+    "issueCount_few": "{{count}} مشكلات",
+    "issueCount_many": "{{count}} مشكلة",
+    "issueCount_other": "{{count}} مشكلة",
+    "issues": {
+        "selectTriggerEvent": "اختر حدث مُشغّل",
+        "selectQuery": "اختر استعلامًا",
+        "selectRecipientsSource": "اختر مصدر بيانات للمستلمين",
+        "selectWhatsappTemplate": "اختر قالب واتساب",
+        "setRecipientsExpression": "حدد تعبير المستلمين",
+        "enterUrl": "أدخل رابط URL",
+        "setSourceExpression": "حدد تعبير المصدر",
+        "setFilterCondition": "حدد شرط التصفية",
+        "setConditionExpression": "حدد تعبير الشرط",
+        "setDelayValue": "حدد قيمة التأخير",
+        "selectTable": "اختر جدولًا",
+        "enterNotificationTitle": "أدخل عنوان الإشعار",
+        "enterNotificationBody": "أدخل نص الإشعار",
+        "setDelayDuration": "حدد مدة التأخير",
+        "selectLeadStatus": "اختر حالة العميل المحتمل"
+    }
+}

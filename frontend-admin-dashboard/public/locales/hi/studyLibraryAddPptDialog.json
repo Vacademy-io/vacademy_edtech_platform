@@ -1,0 +1,37 @@
+{
+    "toast": {
+        "reorderFailed": "स्लाइड बन गई लेकिन पुनः क्रमबद्ध करना विफल रहा",
+        "fileSelected": "PPT फ़ाइल सफलतापूर्वक चुनी गई",
+        "selectFileFirst": "कृपया पहले एक फ़ाइल चुनें",
+        "uploadSuccess": "PPT सफलतापूर्वक अपलोड हो गई!"
+    },
+    "errors": {
+        "onlyPptOrPptx": "कृपया केवल PPT या PPTX फ़ाइलें अपलोड करें",
+        "uploadFailed": "रूपांतरण के लिए प्रस्तुति अपलोड करने में विफल रहा।",
+        "resolveUrlFailed": "अपलोड की गई प्रस्तुति का URL प्राप्त करने में विफल रहा।",
+        "conversionDidNotStart": "रूपांतरण शुरू नहीं हुआ।",
+        "lostContact": "रूपांतरण सेवा से संपर्क टूट गया।",
+        "serviceNotResponding": "रूपांतरण सेवा प्रतिक्रिया नहीं दे रही है।",
+        "conversionFailed": "प्रस्तुति रूपांतरण विफल रहा।",
+        "conversionTimedOut": "प्रस्तुति रूपांतरण का समय समाप्त हो गया।",
+        "uploadConvertedPdfFailed": "रूपांतरित PDF अपलोड करने में विफल रहा।",
+        "uploadFailedRetry": "अपलोड विफल रहा। कृपया पुनः प्रयास करें।"
+    },
+    "status": {
+        "uploadingPresentation": "प्रस्तुति अपलोड हो रही है…",
+        "convertingAnimated": "रूपांतरित किया जा रहा है (एनिमेशन सुरक्षित)…",
+        "creatingSlide": "स्लाइड बनाई जा रही है…",
+        "convertingToPdf": "PPT को PDF में बदला जा रहा है…",
+        "analyzingPdfPages": "PDF पृष्ठों का विश्लेषण किया जा रहा है…",
+        "uploadingConvertedPdf": "रूपांतरित PDF अपलोड हो रही है…",
+        "fallingBackToPdf": "PDF पर वापस स्विच किया जा रहा है…",
+        "processing": "संसाधित किया जा रहा है..."
+    },
+    "dropzone": {
+        "title": "अपनी PPT फ़ाइल यहाँ छोड़ें, या ब्राउज़ करने के लिए क्लिक करें",
+        "subtitle": ".ppt और .pptx फ़ाइलें समर्थित हैं (20 MB तक)"
+    },
+    "actions": {
+        "uploadPpt": "PPT अपलोड करें"
+    }
+}

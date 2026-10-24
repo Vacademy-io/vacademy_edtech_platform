@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { SignupSettings } from "@/config/signup/defaultSignupSettings";
 import { useUnifiedRegistration } from "@/components/common/auth/signup/hooks/use-unified-registration";
 // import { handlePostSignupAuth } from "@/services/signup-api"; // Keep for later use
@@ -43,18 +45,18 @@ interface OtpFormData {
 // Dynamic schema based on signup mode
 const createEmailOtpSchema = (signupMode: "direct" | "askCredentials") => {
   const baseSchema = {
-    email: z.string().email("Please enter a valid email address"),
-    fullName: z.string().min(2, "Full name must be at least 2 characters"),
+    email: z.string().email(i18n.t("authExtraB:common.emailInvalid")),
+    fullName: z.string().min(2, i18n.t("authExtraB:common.fullNameMinLength")),
   };
 
   if (signupMode === "askCredentials") {
     return z.object({
       ...baseSchema,
-      username: z.string().min(3, "Username must be at least 3 characters"),
-      password: z.string().min(8, "Password must be at least 8 characters"),
+      username: z.string().min(3, i18n.t("authExtraB:common.usernameMinLength")),
+      password: z.string().min(8, i18n.t("authExtraB:common.passwordMinLength")),
       confirmPassword: z.string(),
     }).refine((data) => data.password === data.confirmPassword, {
-      message: "Passwords don't match",
+      message: i18n.t("authExtraB:common.passwordsDontMatch"),
       path: ["confirmPassword"],
     });
   }
@@ -75,6 +77,7 @@ export function EmailOtpSignupProvider({
   className = "",
   initialEmail = ""
 }: EmailOtpSignupProviderProps) {
+  const { t } = useTranslation("authExtraB");
   const { isRegistering, registerUser: registerUserUnified } = useUnifiedRegistration();
   const [currentStep, setCurrentStep] = useState<"otp" | "final" | "success">("otp");
   const [timer, setTimer] = useState(30); // Start with 30 second timer since OTP was already sent
@@ -118,7 +121,7 @@ export function EmailOtpSignupProvider({
         // Check enrollment before proceeding
         const isEnrolled = await checkEnrollment(initialEmail);
         if (isEnrolled) {
-          toast.error("User already enrolled. Please sign in instead.");
+          toast.error(t("emailOtpSignup.toast.alreadyEnrolled"));
           onBackToProviders?.();
           return;
         }
@@ -131,7 +134,7 @@ export function EmailOtpSignupProvider({
       // Get OTP from individual digits
       const otp = otpDigits.join("");
       if (otp.length !== 6) {
-        toast.error("Please enter the complete 6-digit code");
+        toast.error(t("emailOtpSignup.toast.otpIncomplete"));
         return;
       }
       
@@ -154,10 +157,10 @@ export function EmailOtpSignupProvider({
       
       setVerifiedEmail(initialEmail);
       setCurrentStep("final");
-      toast.success("Email verified successfully!");
+      toast.success(t("emailOtpSignup.toast.emailVerified"));
     } catch (error) {
       console.error("Error verifying OTP:", error);
-      toast.error("Invalid verification code");
+      toast.error(t("common.invalidOtpToast"));
     } finally {
       setIsSubmitting(false);
     }
@@ -178,11 +181,11 @@ export function EmailOtpSignupProvider({
       });
 
       // Success: show toast and close modal only (no redirect/navigation)
-      toast.success("Account created successfully!");
+      toast.success(t("emailOtpSignup.toast.accountCreated"));
       onSignupSuccess?.();
     } catch (error) {
       console.error("Error creating account:", error);
-      toast.error("Failed to create account");
+      toast.error(t("emailOtpSignup.toast.accountCreateFailed"));
     }
   };
 
@@ -224,10 +227,10 @@ export function EmailOtpSignupProvider({
       );
       
       setTimer(30);
-      toast.success("Verification code resent!");
+      toast.success(t("common.resendSuccessToast"));
     } catch (error) {
       console.error("Error resending OTP:", error);
-      toast.error("Failed to resend verification code");
+      toast.error(t("common.resendFailedToast"));
     } finally {
       setIsSubmitting(false);
     }
@@ -289,10 +292,10 @@ export function EmailOtpSignupProvider({
         </motion.div>
         <div className="space-y-1">
           <h3 className="text-lg font-semibold text-gray-900">
-            Check your email
+            {t("emailOtpSignup.otpStep.checkEmail")}
           </h3>
           <p className="text-sm text-gray-600">
-            We've sent a 6-digit code to
+            {t("emailOtpSignup.otpStep.codeSentTo")}
           </p>
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -394,7 +397,7 @@ export function EmailOtpSignupProvider({
               <svg className="w-3 h-3 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to email
+              {t("emailOtpSignup.otpStep.backToEmail")}
             </motion.button>
             <span className="text-gray-300">|</span>
             <motion.button
@@ -409,7 +412,7 @@ export function EmailOtpSignupProvider({
                   : "text-gray-700 hover:text-gray-900"
               }`}
             >
-              {timer > 0 ? `Resend in ${timer}s` : "Resend code"}
+              {timer > 0 ? t("emailOtpSignup.otpStep.resendIn", { seconds: timer }) : t("emailOtpSignup.otpStep.resendCode")}
             </motion.button>
           </div>
         </motion.div>
@@ -443,7 +446,7 @@ export function EmailOtpSignupProvider({
                   </svg>
                 </motion.div>
                 <span className="text-sm">
-                  Verifying...
+                  {t("emailOtpSignup.otpStep.verifying")}
                 </span>
               </div>
             ) : (
@@ -451,7 +454,7 @@ export function EmailOtpSignupProvider({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                <span className="text-sm">Verify OTP</span>
+                <span className="text-sm">{t("emailOtpSignup.otpStep.verifyOtp")}</span>
               </div>
             )}
           </motion.button>
@@ -481,16 +484,16 @@ export function EmailOtpSignupProvider({
           type="button"
           onClick={handleBackToEmail}
           className="absolute start-0 top-0 inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 font-medium"
-          aria-label="Back to email"
+          aria-label={t("emailOtpSignup.otpStep.backToEmail")}
         >
           <svg className="w-4 h-4 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Back
+          {t("common.back")}
         </button>
         <div className="text-center space-y-1">
-          <h3 className="text-lg font-semibold text-gray-900">Complete Your Profile</h3>
-          <p className="text-sm text-gray-600">Please provide your details to complete registration</p>
+          <h3 className="text-lg font-semibold text-gray-900">{t("common.completeYourProfileTitle")}</h3>
+          <p className="text-sm text-gray-600">{t("emailOtpSignup.finalStep.subtitle")}</p>
         </div>
       </motion.div>
 
@@ -502,11 +505,11 @@ export function EmailOtpSignupProvider({
           transition={{ delay: 0.2 }}
           className="space-y-2"
         >
-          <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name *</Label>
+          <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">{t("emailOtpSignup.finalStep.fullNameLabelRequired")}</Label>
           <Input
             id="fullName"
             {...emailOtpForm.register("fullName")}
-            placeholder="Enter your full name"
+            placeholder={t("emailOtpSignup.finalStep.fullNamePlaceholderEnter")}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           {emailOtpForm.formState.errors.fullName && (
@@ -522,11 +525,11 @@ export function EmailOtpSignupProvider({
             transition={{ delay: 0.3 }}
             className="space-y-2"
           >
-            <Label htmlFor="username" className="text-sm font-medium text-gray-700">Username *</Label>
+            <Label htmlFor="username" className="text-sm font-medium text-gray-700">{t("common.usernameLabel")}</Label>
             <Input
               id="username"
               {...emailOtpForm.register("username")}
-              placeholder="Choose a username"
+              placeholder={t("common.usernamePlaceholder")}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {emailOtpForm.formState.errors.username && (
@@ -544,20 +547,20 @@ export function EmailOtpSignupProvider({
               transition={{ delay: 0.4 }}
               className="space-y-2"
             >
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password *</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">{t("common.passwordLabel")}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   {...emailOtpForm.register("password")}
-                  placeholder="Create a password"
+                  placeholder={t("common.passwordPlaceholder")}
                   className="w-full px-3 py-2 pe-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
                   className="absolute inset-y-0 end-0 px-3 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("emailOtpSignup.finalStep.hidePassword") : t("emailOtpSignup.finalStep.showPassword")}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -582,20 +585,20 @@ export function EmailOtpSignupProvider({
               transition={{ delay: 0.5 }}
               className="space-y-2"
             >
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">Confirm Password *</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">{t("common.confirmPasswordLabel")}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   {...emailOtpForm.register("confirmPassword")}
-                  placeholder="Confirm your password"
+                  placeholder={t("common.confirmPasswordPlaceholder")}
                   className="w-full px-3 py-2 pe-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((p) => !p)}
                   className="absolute inset-y-0 end-0 px-3 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  aria-label={showConfirmPassword ? t("emailOtpSignup.finalStep.hideConfirmPassword") : t("emailOtpSignup.finalStep.showConfirmPassword")}
                 >
                   {showConfirmPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -627,7 +630,7 @@ export function EmailOtpSignupProvider({
             className="w-full bg-gray-900 hover:bg-black text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             disabled={isRegistering}
           >
-            {isRegistering ? "Creating Account..." : "Create Account"}
+            {isRegistering ? t("common.creatingAccount") : t("common.createAccount")}
           </Button>
         </motion.div>
       </form>
@@ -647,8 +650,8 @@ export function EmailOtpSignupProvider({
         </svg>
       </div>
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Account Created Successfully!</h3>
-        <p className="text-sm text-gray-600">Welcome to our platform</p>
+        <h3 className="text-lg font-semibold text-gray-900">{t("emailOtpSignup.successStep.title")}</h3>
+        <p className="text-sm text-gray-600">{t("emailOtpSignup.successStep.subtitle")}</p>
       </div>
     </motion.div>
   );

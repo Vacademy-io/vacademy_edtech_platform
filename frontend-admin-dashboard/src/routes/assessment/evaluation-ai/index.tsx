@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { ArrowClockwise, ArrowSquareOut, WarningCircle } from '@phosphor-icons/react';
+import i18next from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { MyButton } from '@/components/design-system/button';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -35,15 +37,23 @@ const CHIP_CLASSES: Record<ChipTone, string> = {
 function statusChip(status: string, needsReview: number): { label: string; tone: ChipTone } {
     if (status === 'COMPLETED') {
         return needsReview > 0
-            ? { label: `Needs review (${needsReview})`, tone: 'warning' }
-            : { label: 'Completed', tone: 'success' };
+            ? {
+                  label: i18next.t('assessmentEvaluationAiIndex:status.needsReview', {
+                      count: needsReview,
+                  }),
+                  tone: 'warning',
+              }
+            : { label: i18next.t('assessmentEvaluationAiIndex:status.completed'), tone: 'success' };
     }
-    if (status === 'FAILED') return { label: 'Failed', tone: 'danger' };
-    if (status === 'CANCELLED') return { label: 'Cancelled', tone: 'neutral' };
-    return { label: 'In progress', tone: 'info' };
+    if (status === 'FAILED')
+        return { label: i18next.t('assessmentEvaluationAiIndex:status.failed'), tone: 'danger' };
+    if (status === 'CANCELLED')
+        return { label: i18next.t('assessmentEvaluationAiIndex:status.cancelled'), tone: 'neutral' };
+    return { label: i18next.t('assessmentEvaluationAiIndex:status.inProgress'), tone: 'info' };
 }
 
 function RouteComponent() {
+    const { t } = useTranslation('assessmentEvaluationAiIndex');
     const { assessmentId } = Route.useSearch();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -65,10 +75,9 @@ function RouteComponent() {
     });
 
     const retryMutation = useMutation({
-        mutationFn: (attemptId: string) =>
-            triggerAIEvaluation([attemptId], 'google/gemini-3.1-pro-preview'),
+        mutationFn: (attemptId: string) => triggerAIEvaluation([attemptId]),
         onSuccess: (processIds, attemptId) => {
-            toast.success('AI evaluation restarted');
+            toast.success(t('toasts.restartSuccess'));
             queryClient.invalidateQueries({ queryKey: ['EVALUATION_PROCESSES', assessmentId] });
             const newProcessId = processIds?.[0];
             if (newProcessId) {
@@ -78,7 +87,7 @@ function RouteComponent() {
                 });
             }
         },
-        onError: () => toast.error('Failed to restart evaluation. Please try again.'),
+        onError: () => toast.error(t('toasts.restartError')),
     });
 
     const openProcess = (row: EvaluationProcessSummary) => {
@@ -92,18 +101,14 @@ function RouteComponent() {
         <LayoutContainer>
             <div className="flex flex-col gap-4 p-1">
                 <div>
-                    <h1 className="text-h3 font-semibold text-neutral-700">AI Evaluations</h1>
-                    <p className="text-body text-neutral-500">
-                        Every AI evaluation run for this assessment. Open a run to review and adjust
-                        marks before releasing the result.
-                    </p>
+                    <h1 className="text-h3 font-semibold text-neutral-700">{t('header.title')}</h1>
+                    <p className="text-body text-neutral-500">{t('header.subtitle')}</p>
                 </div>
 
                 {!assessmentId ? (
                     <Card>
                         <CardContent className="p-6 text-center text-neutral-500">
-                            No assessment selected. Open this page from an assessment&apos;s
-                            Submissions tab.
+                            {t('emptyStates.noAssessment')}
                         </CardContent>
                     </Card>
                 ) : isLoading ? (
@@ -111,13 +116,13 @@ function RouteComponent() {
                 ) : error ? (
                     <Card>
                         <CardContent className="p-6 text-center text-danger-600">
-                            Failed to load evaluations. Please try again.
+                            {t('emptyStates.error')}
                         </CardContent>
                     </Card>
                 ) : !processes || processes.length === 0 ? (
                     <Card>
                         <CardContent className="p-6 text-center text-neutral-500">
-                            No AI evaluations have been started for this assessment yet.
+                            {t('emptyStates.noEvaluations')}
                         </CardContent>
                     </Card>
                 ) : (
@@ -126,19 +131,19 @@ function RouteComponent() {
                             <thead className="bg-neutral-50">
                                 <tr>
                                     <th className="p-3 text-left text-caption font-semibold uppercase text-neutral-500">
-                                        Participant
+                                        {t('table.columns.participant')}
                                     </th>
                                     <th className="p-3 text-left text-caption font-semibold uppercase text-neutral-500">
-                                        Status
+                                        {t('table.columns.status')}
                                     </th>
                                     <th className="p-3 text-left text-caption font-semibold uppercase text-neutral-500">
-                                        Progress
+                                        {t('table.columns.progress')}
                                     </th>
                                     <th className="p-3 text-left text-caption font-semibold uppercase text-neutral-500">
-                                        Started
+                                        {t('table.columns.started')}
                                     </th>
                                     <th className="p-3 text-right text-caption font-semibold uppercase text-neutral-500">
-                                        Actions
+                                        {t('table.columns.actions')}
                                     </th>
                                 </tr>
                             </thead>
@@ -150,7 +155,7 @@ function RouteComponent() {
                                     return (
                                         <tr key={row.process_id} className="hover:bg-neutral-50">
                                             <td className="p-3 text-body font-medium text-neutral-700">
-                                                {row.participant_name || 'Unknown'}
+                                                {row.participant_name || t('table.unknownParticipant')}
                                             </td>
                                             <td className="p-3">
                                                 <span
@@ -165,14 +170,14 @@ function RouteComponent() {
                                             <td className="p-3 text-body text-neutral-600">
                                                 {row.questions_total
                                                     ? `${row.questions_completed ?? 0}/${row.questions_total}`
-                                                    : '—'}
+                                                    : t('table.notAvailable')}
                                             </td>
                                             <td className="p-3 text-body text-neutral-500">
                                                 {row.started_at
                                                     ? formatDistanceToNow(new Date(row.started_at), {
                                                           addSuffix: true,
                                                       })
-                                                    : '—'}
+                                                    : t('table.notAvailable')}
                                             </td>
                                             <td className="p-3">
                                                 <div className="flex justify-end gap-2">
@@ -183,7 +188,7 @@ function RouteComponent() {
                                                         onClick={() => openProcess(row)}
                                                     >
                                                         <ArrowSquareOut size={14} className="mr-1" />
-                                                        Open
+                                                        {t('actions.open')}
                                                     </MyButton>
                                                     {isFailed && (
                                                         <MyButton
@@ -199,7 +204,7 @@ function RouteComponent() {
                                                                 size={14}
                                                                 className="mr-1"
                                                             />
-                                                            Retry
+                                                            {t('actions.retry')}
                                                         </MyButton>
                                                     )}
                                                 </div>

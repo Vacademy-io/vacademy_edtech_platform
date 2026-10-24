@@ -1,0 +1,23 @@
+{
+    "loading": "Loading leads…",
+    "empty": "No open leads.",
+    "table": {
+        "expandRow": "Expand row",
+        "lead": "Lead",
+        "status": "Status",
+        "score": "Score",
+        "campaign": "Campaign",
+        "assigned": "Assigned",
+        "actions": "Actions",
+        "hideTransferHistory": "Hide transfer history",
+        "showTransferHistory": "Show transfer history",
+        "transferHistory": "Transfer history",
+        "openLead": "Open lead",
+        "call": "Call",
+        "reassign": "Reassign"
+    },
+    "pagination": {
+        "showingRange": "Showing {{from}}–{{to}} of {{total}}",
+        "loadingSuffix": " · loading…"
+    }
+}

@@ -1,0 +1,1284 @@
+{
+  "_about": "Sync golden for the site-strings collector. Inputs are hand-written; outputs are produced by the admin's collectSiteStrings / isTextKey / looksLikeData (site-strings-sync.test.ts, UPDATE_SITE_STRINGS_GOLDEN=1 rewrites them) and checked against the Python port in ai_service (tests/test_site_strings.py).",
+  "synthetic": {
+    "config": {
+      "globalSettings": {
+        "layout": {
+          "header": {
+            "id": "header-1",
+            "type": "header",
+            "enabled": true,
+            "props": {
+              "title": "Smart Academy",
+              "logo": "https://cdn.example.org/logo.png",
+              "navigation": [
+                {
+                  "label": "Courses",
+                  "route": "courses"
+                },
+                {
+                  "label": "Streams",
+                  "route": "/courses",
+                  "type": "megaMenu",
+                  "megaMenu": {
+                    "libraryId": "lib-1",
+                    "libraryName": "Knowledge Streams",
+                    "eyebrow": "Six streams",
+                    "ctaLabelPattern": "Explore {stream}",
+                    "categoriesHeading": "Categories in {stream}",
+                    "streamLinkPattern": "/courses?stream={stream}"
+                  }
+                }
+              ],
+              "authLinks": [
+                {
+                  "label": "Login",
+                  "route": "login"
+                }
+              ]
+            }
+          },
+          "footer": {
+            "id": "footer-1",
+            "type": "footer",
+            "props": {
+              "variant": "brand",
+              "bottomNote": "© Smart Academy",
+              "newsletter": {
+                "title": "Stay in touch",
+                "placeholder": "Your email",
+                "audienceId": "camp-1",
+                "audienceName": "Newsletter"
+              },
+              "rightSection1": {
+                "title": "Explore",
+                "links": [
+                  {
+                    "label": "About",
+                    "route": "about"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "courseLanguages": {
+          "enabled": true
+        },
+        "courseFormats": {
+          "ebook": {
+            "label": "E-books",
+            "levels": [
+              "eBook"
+            ]
+          },
+          "video": {
+            "label": " Video "
+          },
+          "bad": "x",
+          "num": {
+            "label": "123"
+          }
+        },
+        "naming": {
+          "level": "Format",
+          "course": "Programme",
+          "url": "https://x.org"
+        },
+        "whatsapp": {
+          "phone": "+91 99999",
+          "message": "Hi! I have a question",
+          "label": "Chat with us"
+        },
+        "courseFinder": {
+          "enabled": false,
+          "stepLabels": {
+            "goal": "Your goal"
+          }
+        },
+        "introPage": {
+          "enabled": true,
+          "imageSlider": {
+            "images": [
+              {
+                "caption": "Welcome aboard"
+              },
+              {
+                "caption": "42"
+              }
+            ]
+          }
+        },
+        "leadCollection": {
+          "enabled": true,
+          "fields": [
+            {
+              "label": "Full name",
+              "value": "fullName",
+              "placeholder": "Type here"
+            },
+            {
+              "label": "   "
+            }
+          ]
+        },
+        "theme": {
+          "preset": "default",
+          "palette": {
+            "text": "#111111"
+          }
+        },
+        "i18n": {
+          "enabled": true,
+          "defaultLocale": "en",
+          "locales": [
+            {
+              "code": "en",
+              "label": "EN"
+            },
+            {
+              "code": "hi",
+              "label": "हिन्दी"
+            }
+          ],
+          "strings": {
+            "hi": {
+              "Courses": "पाठ्यक्रम"
+            }
+          }
+        }
+      },
+      "pages": [
+        {
+          "id": "p1",
+          "route": "home",
+          "title": "Home",
+          "seo": {
+            "metaTitle": "Smart Academy — Learn",
+            "metaDescription": "Learn with us.",
+            "ogImage": "https://x.org/a.png"
+          },
+          "components": [
+            {
+              "id": "hero",
+              "type": "heroSection",
+              "enabled": true,
+              "props": {
+                "left": {
+                  "title": "Learn the Indian way",
+                  "titleAccent": "Indian",
+                  "description": "Courses in English and हिन्दी.",
+                  "buttons": [
+                    {
+                      "text": "Start free",
+                      "action": "openForm",
+                      "audienceId": "camp-1",
+                      "backgroundColor": "#883000"
+                    }
+                  ],
+                  "eyebrow": {
+                    "text": "NEW",
+                    "style": "rule"
+                  }
+                },
+                "statChips": [
+                  {
+                    "value": "1,200+",
+                    "label": "Learners"
+                  },
+                  {
+                    "value": "4.8",
+                    "label": "Rating"
+                  }
+                ],
+                "style": {
+                  "textColor": "#ffffff",
+                  "note": "Opaque Text"
+                },
+                "visibleWhen": [
+                  {
+                    "param": "stream",
+                    "op": "empty",
+                    "value": "Some Value"
+                  }
+                ],
+                "iconName": "GraduationCap"
+              }
+            },
+            {
+              "id": "cat",
+              "type": "courseCatalog",
+              "enabled": true,
+              "props": {
+                "title": "All courses",
+                "search": {
+                  "placeholder": "Search courses"
+                },
+                "streams": {
+                  "source": "folderLibrary",
+                  "libraryId": "lib-1",
+                  "allLabel": "सभी",
+                  "allSubtitle": "All courses"
+                },
+                "render": {
+                  "card": {
+                    "formatLabels": {
+                      "video": "Video",
+                      "ebook": "eBook"
+                    },
+                    "ctaLabels": {
+                      "default": "View course"
+                    },
+                    "freeLabel": "Free",
+                    "descriptions": {
+                      "2": "Two",
+                      "10": "Ten",
+                      "pkg-1": "A short course."
+                    }
+                  },
+                  "pagination": {
+                    "loadMoreLabel": "Load more",
+                    "countLabel": "{shown} of {total}"
+                  },
+                  "gridHeading": {
+                    "title": "Showing {count} courses",
+                    "sortLabels": {
+                      "popular": "Most popular"
+                    }
+                  },
+                  "other": {
+                    "label": "Not collected"
+                  }
+                },
+                "columnSections": [
+                  {
+                    "kind": "coming-soon",
+                    "title": "Coming soon",
+                    "items": [
+                      {
+                        "title": "Yoga",
+                        "titleNative": "योग",
+                        "notifyLabel": "Notify me"
+                      }
+                    ]
+                  }
+                ],
+                "customFilters": [
+                  {
+                    "label": "Format",
+                    "levels": [
+                      "eBook",
+                      "Short Film"
+                    ],
+                    "formats": [
+                      "video"
+                    ],
+                    "order": [
+                      "priceRange"
+                    ]
+                  }
+                ],
+                "badges": {
+                  "types": [
+                    "bestseller",
+                    "new"
+                  ]
+                },
+                "sortLabels": {
+                  "newest": "Newest first"
+                }
+              }
+            },
+            {
+              "id": "cols",
+              "type": "columnLayout",
+              "enabled": true,
+              "props": {
+                "slots": [
+                  [
+                    {
+                      "id": "child-1",
+                      "type": "textBlock",
+                      "props": {
+                        "content": "<p>Rich <b>text</b></p>",
+                        "title": "Inside a column"
+                      }
+                    }
+                  ],
+                  [
+                    {
+                      "id": "child-2",
+                      "type": "textBlock",
+                      "enabled": false,
+                      "props": {
+                        "title": "Hidden child"
+                      }
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": "contact",
+              "type": "contactForm",
+              "enabled": true,
+              "props": {
+                "heading": "Talk to us",
+                "fields": [
+                  {
+                    "name": "fullName",
+                    "label": "Your name",
+                    "type": "text"
+                  },
+                  {
+                    "name": "City",
+                    "label": "City"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "news",
+              "type": "announcementFeed",
+              "enabled": true,
+              "props": {
+                "announcements": [
+                  {
+                    "tag": "News",
+                    "title": "Admissions open"
+                  }
+                ],
+                "tag": "notice"
+              }
+            },
+            {
+              "id": "hidden",
+              "type": "ctaBanner",
+              "enabled": false,
+              "props": {
+                "heading": "Hidden banner"
+              }
+            },
+            {
+              "id": "cta-a",
+              "type": "ctaBanner",
+              "props": {
+                "heading": "Join today",
+                "button": {
+                  "text": "Join",
+                  "link": "/join"
+                }
+              }
+            },
+            {
+              "id": "cta-b",
+              "type": "ctaBanner",
+              "props": {
+                "heading": "Join today",
+                "subheading": "  spaced text  ",
+                "slug": "Not Text",
+                "productPageCode": "ABC Def",
+                "courseIds": [
+                  "Mixed Case"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "p2",
+          "route": "secret",
+          "title": "Unpublished page",
+          "published": false,
+          "components": [
+            {
+              "id": "t",
+              "type": "textBlock",
+              "props": {
+                "title": "Secret text",
+                "items": [
+                  "First item",
+                  "second",
+                  "Third item"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "p3",
+          "route": "empty",
+          "title": "  ",
+          "components": [
+            null,
+            "junk",
+            {
+              "id": "x",
+              "type": "textBlock"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "classifier": [
+    {
+      "key": "title",
+      "text": "Learn more"
+    },
+    {
+      "key": "heading",
+      "text": "Admissions open"
+    },
+    {
+      "key": "backgroundColor",
+      "text": "#883000"
+    },
+    {
+      "key": "productPageCode",
+      "text": "ABC"
+    },
+    {
+      "key": "image_url",
+      "text": "Photo"
+    },
+    {
+      "key": "ctaLabelPattern",
+      "text": "Explore {stream}"
+    },
+    {
+      "key": "categoriesHeading",
+      "text": "Categories"
+    },
+    {
+      "key": "iconName",
+      "text": "GraduationCap"
+    },
+    {
+      "key": "label",
+      "text": "email"
+    },
+    {
+      "key": "label",
+      "text": "Email"
+    },
+    {
+      "key": "label",
+      "text": "package_name"
+    },
+    {
+      "key": "label",
+      "text": "true"
+    },
+    {
+      "key": "label",
+      "text": "{{count}}"
+    },
+    {
+      "key": "label",
+      "text": "{price} {currency}"
+    },
+    {
+      "key": "label",
+      "text": "₹ 1,200"
+    },
+    {
+      "key": "label",
+      "text": "१२३"
+    },
+    {
+      "key": "label",
+      "text": "https://x.org"
+    },
+    {
+      "key": "label",
+      "text": "/courses"
+    },
+    {
+      "key": "label",
+      "text": "#ABCDEF"
+    },
+    {
+      "key": "label",
+      "text": "#GGG"
+    },
+    {
+      "key": "label",
+      "text": "rgba(0,0,0,.5)"
+    },
+    {
+      "key": "label",
+      "text": "var(--x)"
+    },
+    {
+      "key": "label",
+      "text": "﻿42﻿"
+    },
+    {
+      "key": "label",
+      "text": " "
+    },
+    {
+      "key": "label",
+      "text": "a b"
+    },
+    {
+      "key": "label",
+      "text": "Ab"
+    },
+    {
+      "key": "label",
+      "text": "हिन्दी"
+    },
+    {
+      "key": "label",
+      "text": "ſ"
+    },
+    {
+      "key": "subtitle",
+      "text": "MAILTO:x"
+    },
+    {
+      "key": "levels",
+      "text": "eBook"
+    },
+    {
+      "key": "titleNative",
+      "text": "योग"
+    },
+    {
+      "key": "formats",
+      "text": "Video"
+    },
+    {
+      "key": "Tags",
+      "text": "News"
+    },
+    {
+      "key": "myTags",
+      "text": "x y"
+    },
+    {
+      "key": "CTA_label",
+      "text": "Go now"
+    },
+    {
+      "key": "cta_url",
+      "text": "Go now"
+    },
+    {
+      "key": "somethingFr",
+      "text": "1fr 2fr"
+    },
+    {
+      "key": "leftFr",
+      "text": "Left"
+    },
+    {
+      "key": null,
+      "text": "Plain"
+    },
+    {
+      "key": 3,
+      "text": "Item"
+    },
+    {
+      "key": "style",
+      "text": "Text"
+    },
+    {
+      "key": "render",
+      "text": "Text"
+    },
+    {
+      "key": "note",
+      "text": "x"
+    },
+    {
+      "key": "note",
+      "text": "x1"
+    },
+    {
+      "key": "note",
+      "text": "x 1"
+    },
+    {
+      "key": "note",
+      "text": "1.5x"
+    }
+  ],
+  "expected": {
+    "synthetic": {
+      "visible": [
+        "Smart Academy",
+        "Courses",
+        "Streams",
+        "Six streams",
+        "Explore {stream}",
+        "Categories in {stream}",
+        "Login",
+        "Home",
+        "Learn the Indian way",
+        "Indian",
+        "Courses in English and हिन्दी.",
+        "Start free",
+        "NEW",
+        "Learners",
+        "Rating",
+        "All courses",
+        "Search courses",
+        "सभी",
+        "Coming soon",
+        "Yoga",
+        "Notify me",
+        "Format",
+        "Newest first",
+        "Video",
+        "eBook",
+        "View course",
+        "Free",
+        "Two",
+        "Ten",
+        "A short course.",
+        "Load more",
+        "{shown} of {total}",
+        "Showing {count} courses",
+        "Most popular",
+        "<p>Rich <b>text</b></p>",
+        "Inside a column",
+        "Talk to us",
+        "Your name",
+        "City",
+        "News",
+        "Admissions open",
+        "Join today",
+        "Join",
+        "  spaced text  ",
+        "Smart Academy — Learn",
+        "Learn with us.",
+        "Secret text",
+        "First item",
+        "Third item",
+        "© Smart Academy",
+        "Stay in touch",
+        "Your email",
+        "Explore",
+        "About",
+        "English",
+        "EN",
+        "Hindi",
+        "हिं",
+        "E-books",
+        "Programme",
+        "Hi! I have a question",
+        "Chat with us",
+        "Welcome aboard",
+        "Full name",
+        "Type here"
+      ],
+      "includeHidden": [
+        "Smart Academy",
+        "Courses",
+        "Streams",
+        "Six streams",
+        "Explore {stream}",
+        "Categories in {stream}",
+        "Login",
+        "Home",
+        "Learn the Indian way",
+        "Indian",
+        "Courses in English and हिन्दी.",
+        "Start free",
+        "NEW",
+        "Learners",
+        "Rating",
+        "All courses",
+        "Search courses",
+        "सभी",
+        "Coming soon",
+        "Yoga",
+        "Notify me",
+        "Format",
+        "Newest first",
+        "Video",
+        "eBook",
+        "View course",
+        "Free",
+        "Two",
+        "Ten",
+        "A short course.",
+        "Load more",
+        "{shown} of {total}",
+        "Showing {count} courses",
+        "Most popular",
+        "<p>Rich <b>text</b></p>",
+        "Inside a column",
+        "Hidden child",
+        "Talk to us",
+        "Your name",
+        "City",
+        "News",
+        "Admissions open",
+        "Hidden banner",
+        "Join today",
+        "Join",
+        "  spaced text  ",
+        "Smart Academy — Learn",
+        "Learn with us.",
+        "Unpublished page",
+        "Secret text",
+        "First item",
+        "Third item",
+        "© Smart Academy",
+        "Stay in touch",
+        "Your email",
+        "Explore",
+        "About",
+        "English",
+        "EN",
+        "Hindi",
+        "हिं",
+        "E-books",
+        "Programme",
+        "Hi! I have a question",
+        "Chat with us",
+        "Your goal",
+        "Welcome aboard",
+        "Full name",
+        "Type here"
+      ]
+    },
+    "brahmVarchas": {
+      "visible": [
+        "Knowledge Streams",
+        "Six streams of knowledge",
+        "Not sure where to begin? Find your path",
+        "श्रेणी · Categories in {stream}",
+        "Coming soon subjects: click to be notified when they launch.",
+        "Courses",
+        "Learning Paths",
+        "Resources",
+        "About Us",
+        "Login",
+        "Become a member",
+        "Home",
+        "सभी",
+        "All courses",
+        "Price",
+        "Language",
+        "Category  ·  श्रेणी",
+        "+ Show all {count} categories",
+        "Format",
+        "For",
+        "Parents",
+        "Women's health",
+        "Students",
+        "Teachers",
+        "Brahm Varchas app",
+        "Your learning, in your pocket",
+        "Pick up where you left off, and learn in English or Hindi wherever you are.",
+        "Get the app",
+        "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi.",
+        "courses & resources",
+        "knowledge streams",
+        "Search courses, topics or teachers, e.g. “parenting”, “Gita”, “Ayurveda”",
+        "Holistic Parenting",
+        "Bhagwadgeeta",
+        "Garbha Vigyan",
+        "Gurukul Education",
+        "Free",
+        "Most popular",
+        "Quick filters:",
+        "New here? Start free",
+        "Try a free E-learning course, film or article before you enrol.",
+        "Watch free",
+        "Read free",
+        "Flagship program",
+        "Rajaswala Paricharya",
+        "Menstrual care and wellbeing, the Ayurvedic way. E-Learning with a live session, in English and Hindi.",
+        "Enrol for {price}",
+        "Rajaswala survey",
+        "E-Learning course",
+        "Live session",
+        "Included",
+        "Coming soon",
+        "Be the first to know when these open.",
+        "E-Learning",
+        "E-book",
+        "Video",
+        "Animation",
+        "Articles - essays",
+        "Merchandise",
+        "Audio Book",
+        "The Vedic science of conception, pregnancy and newborn care.",
+        "The gurukul system of education and its methods, fully documented.",
+        "Swasthavritta: Ayurvedic principles of daily and seasonal living.",
+        "How the Rishis used Vedic knowledge responsibly, in harmony with nature.",
+        "A live learning intensive on the Raghuveer Gadyam, in praise of Shri Ram.",
+        "A short film on Kashmir's great Sun temple and its story.",
+        "A travelogue of the Narmada parikrama.",
+        "Not sure which course is right for you?",
+        "Answer one question about where you are in life and we'll suggest where to begin.",
+        "Find your path",
+        "Talk to us",
+        "Courses | Brahm Varchas",
+        "Learning paths",
+        "Not sure where to start?",
+        "Follow a path.",
+        "<p>A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free, and always know what comes next.</p>",
+        "Courses in the right order",
+        "Step 1 free on most paths",
+        "English & हिन्दी",
+        "Find my path",
+        "Browse all courses",
+        "An example learning path: from the seed to the fruit",
+        "What do you want to achieve?",
+        "All paths",
+        "Raise my child",
+        "Care for my health",
+        "Read the shastras",
+        "Discover India of temples",
+        "Teach the gurukul way",
+        "Most popular path",
+        "Sanskrit Language teaching",
+        "More learning paths",
+        "New paths are added as courses launch",
+        "View path",
+        "Add whole path to cart",
+        "Enrol in this path",
+        "New learning paths will appear here.",
+        "For schools & institutions",
+        "Need a path for your teachers or students?",
+        "We design custom learning paths in Indian Knowledge Systems for schools, universities and organisations.",
+        "Partner with us",
+        "Walk your path, one step at a time, from your phone.",
+        "Open your next step wherever you are, and learn in English or Hindi.",
+        "The Brahm Varchas app on a phone",
+        "How a learning path works",
+        "Start with step one",
+        "Most paths open with a free course, film or workshop. Try it before you commit.",
+        "Learn in order, at your pace",
+        "Each step builds on the last. Your progress is saved, so you can pause and return anytime.",
+        "Finish and keep going",
+        "Complete the path, then pick a related path to go deeper.",
+        "Still not sure which path fits you?",
+        "Tell us where you are in life and we'll suggest where to begin.",
+        "Learning paths | Brahm Varchas",
+        "A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free.",
+        "Brahm Varchas",
+        "<p>A modern learning platform rooted in Bharatiya Knowledge Systems. Structured learning journeys inspired by Bharatiya knowledge traditions.</p>",
+        "Translate Knowledge • Transform Society",
+        "Stay connected",
+        "Join us for new courses, knowledge resources, live sessions and occasional updates.",
+        "Your email address",
+        "Subscribe",
+        "No clutter. Just thoughtful updates from Brahm Varchas.",
+        "Thank you. We'll keep you posted, with no clutter.",
+        "Explore",
+        "Learn",
+        "E-books",
+        "Live sessions",
+        "Articles-essays",
+        "Short film / Animation",
+        "About",
+        "Team",
+        "Testimonials",
+        "Contact Us",
+        "Support",
+        "FAQ",
+        "Privacy Policy",
+        "Terms of Use",
+        "Refund Policy",
+        "© 2026 Brahm Varchas. All rights reserved.",
+        "Translate Knowledge → Transform Society",
+        "English",
+        "EN",
+        "Hindi",
+        "हिं",
+        "Interactive, self-paced E-learning",
+        "Merchandise (in collaboration)"
+      ],
+      "includeHidden": [
+        "Knowledge Streams",
+        "Six streams of knowledge",
+        "Not sure where to begin? Find your path",
+        "श्रेणी · Categories in {stream}",
+        "Coming soon subjects: click to be notified when they launch.",
+        "Courses",
+        "Learning Paths",
+        "Resources",
+        "About Us",
+        "Login",
+        "Become a member",
+        "Home",
+        "सभी",
+        "All courses",
+        "Price",
+        "Language",
+        "Category  ·  श्रेणी",
+        "+ Show all {count} categories",
+        "Format",
+        "For",
+        "Parents",
+        "Women's health",
+        "Students",
+        "Teachers",
+        "Brahm Varchas app",
+        "Your learning, in your pocket",
+        "Pick up where you left off, and learn in English or Hindi wherever you are.",
+        "Get the app",
+        "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi.",
+        "courses & resources",
+        "knowledge streams",
+        "Search courses, topics or teachers, e.g. “parenting”, “Gita”, “Ayurveda”",
+        "Holistic Parenting",
+        "Bhagwadgeeta",
+        "Garbha Vigyan",
+        "Gurukul Education",
+        "Free",
+        "Most popular",
+        "Quick filters:",
+        "New here? Start free",
+        "Try a free E-learning course, film or article before you enrol.",
+        "Watch free",
+        "Read free",
+        "Flagship program",
+        "Rajaswala Paricharya",
+        "Menstrual care and wellbeing, the Ayurvedic way. E-Learning with a live session, in English and Hindi.",
+        "Enrol for {price}",
+        "Rajaswala survey",
+        "E-Learning course",
+        "Live session",
+        "Included",
+        "Coming soon",
+        "Be the first to know when these open.",
+        "E-Learning",
+        "E-book",
+        "Video",
+        "Animation",
+        "Articles - essays",
+        "Merchandise",
+        "Audio Book",
+        "The Vedic science of conception, pregnancy and newborn care.",
+        "The gurukul system of education and its methods, fully documented.",
+        "Swasthavritta: Ayurvedic principles of daily and seasonal living.",
+        "How the Rishis used Vedic knowledge responsibly, in harmony with nature.",
+        "A live learning intensive on the Raghuveer Gadyam, in praise of Shri Ram.",
+        "A short film on Kashmir's great Sun temple and its story.",
+        "A travelogue of the Narmada parikrama.",
+        "Not sure which course is right for you?",
+        "Answer one question about where you are in life and we'll suggest where to begin.",
+        "Find your path",
+        "Talk to us",
+        "Courses | Brahm Varchas",
+        "Learning paths",
+        "Not sure where to start?",
+        "Follow a path.",
+        "<p>A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free, and always know what comes next.</p>",
+        "Courses in the right order",
+        "Step 1 free on most paths",
+        "English & हिन्दी",
+        "Find my path",
+        "Browse all courses",
+        "An example learning path: from the seed to the fruit",
+        "What do you want to achieve?",
+        "All paths",
+        "Raise my child",
+        "Care for my health",
+        "Read the shastras",
+        "Discover India of temples",
+        "Teach the gurukul way",
+        "Most popular path",
+        "Sanskrit Language teaching",
+        "More learning paths",
+        "New paths are added as courses launch",
+        "View path",
+        "Add whole path to cart",
+        "Enrol in this path",
+        "New learning paths will appear here.",
+        "For schools & institutions",
+        "Need a path for your teachers or students?",
+        "We design custom learning paths in Indian Knowledge Systems for schools, universities and organisations.",
+        "Partner with us",
+        "Walk your path, one step at a time, from your phone.",
+        "Open your next step wherever you are, and learn in English or Hindi.",
+        "The Brahm Varchas app on a phone",
+        "How a learning path works",
+        "Start with step one",
+        "Most paths open with a free course, film or workshop. Try it before you commit.",
+        "Learn in order, at your pace",
+        "Each step builds on the last. Your progress is saved, so you can pause and return anytime.",
+        "Finish and keep going",
+        "Complete the path, then pick a related path to go deeper.",
+        "Still not sure which path fits you?",
+        "Tell us where you are in life and we'll suggest where to begin.",
+        "Learning paths | Brahm Varchas",
+        "A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free.",
+        "Brahm Varchas",
+        "<p>A modern learning platform rooted in Bharatiya Knowledge Systems. Structured learning journeys inspired by Bharatiya knowledge traditions.</p>",
+        "Translate Knowledge • Transform Society",
+        "Stay connected",
+        "Join us for new courses, knowledge resources, live sessions and occasional updates.",
+        "Your email address",
+        "Subscribe",
+        "No clutter. Just thoughtful updates from Brahm Varchas.",
+        "Thank you. We'll keep you posted, with no clutter.",
+        "Explore",
+        "Learn",
+        "E-books",
+        "Live sessions",
+        "Articles-essays",
+        "Short film / Animation",
+        "About",
+        "Team",
+        "Testimonials",
+        "Contact Us",
+        "Support",
+        "FAQ",
+        "Privacy Policy",
+        "Terms of Use",
+        "Refund Policy",
+        "© 2026 Brahm Varchas. All rights reserved.",
+        "Translate Knowledge → Transform Society",
+        "English",
+        "EN",
+        "Hindi",
+        "हिं",
+        "Interactive, self-paced E-learning",
+        "Merchandise (in collaboration)"
+      ]
+    },
+    "classifier": [
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": false,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": true,
+        "dataLike": false,
+        "translatable": true
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": false,
+        "dataLike": false,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      },
+      {
+        "textKey": true,
+        "dataLike": true,
+        "translatable": false
+      }
+    ]
+  }
+}

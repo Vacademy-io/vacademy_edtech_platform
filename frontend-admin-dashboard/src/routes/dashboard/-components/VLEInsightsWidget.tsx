@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, ChartPieSlice, Armchair, TrendUp } from '@phosphor-icons/react';
@@ -23,7 +25,21 @@ import { getTerminologyPlural } from '@/components/common/layout-container/sideb
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 const nfmt = (n: number) => n.toLocaleString('en-IN');
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const buildMonths = (t: TFunction): string[] => [
+    t('months.jan'),
+    t('months.feb'),
+    t('months.mar'),
+    t('months.apr'),
+    t('months.may'),
+    t('months.jun'),
+    t('months.jul'),
+    t('months.aug'),
+    t('months.sep'),
+    t('months.oct'),
+    t('months.nov'),
+    t('months.dec'),
+];
 
 const toTime = (v: string | number | null | undefined): number | null => {
     if (v == null) return null;
@@ -32,25 +48,27 @@ const toTime = (v: string | number | null | undefined): number | null => {
     return Number.isNaN(t) ? null : t;
 };
 
-const planMeta = (k: string): { label: string; color: string } => {
-    switch (k) {
-        case 'ACTIVE':
-            return { label: 'Active', color: 'hsl(var(--success-500))' };
-        case 'PENDING':
-            return { label: 'Pending', color: 'hsl(var(--warning-500))' };
-        case 'EXPIRED':
-            return { label: 'Expired', color: 'hsl(var(--danger-500))' };
-        case 'INACTIVE':
-            return { label: 'Inactive', color: 'hsl(var(--muted-foreground))' };
-        case 'NONE':
-            return { label: 'No plan', color: 'hsl(var(--muted-foreground))' };
-        default:
-            return {
-                label: k.charAt(0) + k.slice(1).toLowerCase(),
-                color: 'hsl(var(--info-500))',
-            };
-    }
-};
+const buildPlanMeta =
+    (t: TFunction) =>
+    (k: string): { label: string; color: string } => {
+        switch (k) {
+            case 'ACTIVE':
+                return { label: t('planStatus.active'), color: 'hsl(var(--success-500))' };
+            case 'PENDING':
+                return { label: t('planStatus.pending'), color: 'hsl(var(--warning-500))' };
+            case 'EXPIRED':
+                return { label: t('planStatus.expired'), color: 'hsl(var(--danger-500))' };
+            case 'INACTIVE':
+                return { label: t('planStatus.inactive'), color: 'hsl(var(--muted-foreground))' };
+            case 'NONE':
+                return { label: t('planStatus.none'), color: 'hsl(var(--muted-foreground))' };
+            default:
+                return {
+                    label: k.charAt(0) + k.slice(1).toLowerCase(),
+                    color: 'hsl(var(--info-500))',
+                };
+        }
+    };
 
 /**
  * PARENT-admin VLE network analytics in one card: plan-status mix (donut),
@@ -61,6 +79,9 @@ const planMeta = (k: string): { label: string; color: string } => {
 export default function VLEInsightsWidget() {
     const navigate = useNavigate();
     const instituteId = getCurrentInstituteId();
+    const { t } = useTranslation('dashboardVLEInsightsWidget');
+    const planMeta = useMemo(() => buildPlanMeta(t), [t]);
+    const months = useMemo(() => buildMonths(t), [t]);
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['sub-orgs-with-details', instituteId],
@@ -80,7 +101,7 @@ export default function VLEInsightsWidget() {
         return [...m.entries()]
             .map(([k, value]) => ({ key: k, value, ...planMeta(k) }))
             .sort((a, b) => b.value - a.value);
-    }, [items]);
+    }, [items, planMeta]);
 
     const seats = useMemo(() => {
         let used = 0;
@@ -107,10 +128,10 @@ export default function VLEInsightsWidget() {
         for (let i = 5; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            out.push({ label: MONTHS[d.getMonth()] ?? '', count: buckets.get(key) ?? 0 });
+            out.push({ label: months[d.getMonth()] ?? '', count: buckets.get(key) ?? 0 });
         }
         return out;
-    }, [items]);
+    }, [items, months]);
 
     const plural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
     const totalPlan = plan.reduce((s, p) => s + p.value, 0);
@@ -126,11 +147,9 @@ export default function VLEInsightsWidget() {
                     </span>
                     <div className="min-w-0">
                         <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900">
-                            {plural} insights
+                            {t('heading', { plural })}
                         </h3>
-                        <p className="line-clamp-1 text-xs text-neutral-500">
-                            Plans, seats & growth across your network
-                        </p>
+                        <p className="line-clamp-1 text-xs text-neutral-500">{t('subtitle')}</p>
                     </div>
                 </div>
                 <button
@@ -138,7 +157,7 @@ export default function VLEInsightsWidget() {
                     onClick={() => navigate({ to: '/manage-custom-teams' })}
                     className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
-                    Manage
+                    {t('manage')}
                     <ArrowRight size={12} weight="bold" />
                 </button>
             </div>
@@ -151,7 +170,7 @@ export default function VLEInsightsWidget() {
                     <div className="rounded-lg border border-neutral-200 p-3">
                         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-600">
                             <ChartPieSlice size={13} weight="duotone" className="text-violet-500" />
-                            Plan status
+                            {t('planStatus.title')}
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="h-24 w-24 shrink-0">
@@ -213,14 +232,17 @@ export default function VLEInsightsWidget() {
                     <div className="flex flex-col rounded-lg border border-neutral-200 p-3">
                         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-600">
                             <Armchair size={13} weight="duotone" className="text-amber-500" />
-                            Seat utilization
+                            {t('seatUtilization.title')}
                         </div>
                         <div className="mt-1 flex items-baseline gap-1.5">
                             <span className="text-2xl font-semibold tabular-nums text-neutral-900">
                                 {seats.pct}%
                             </span>
                             <span className="text-xs text-neutral-500">
-                                {nfmt(seats.used)} / {nfmt(seats.total)} seats
+                                {t('seatUtilization.seatsFraction', {
+                                    used: nfmt(seats.used),
+                                    total: nfmt(seats.total),
+                                })}
                             </span>
                         </div>
                         <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-neutral-100">
@@ -230,8 +252,10 @@ export default function VLEInsightsWidget() {
                             />
                         </div>
                         <p className="mt-2 text-xs text-neutral-500">
-                            {nfmt(Math.max(seats.total - seats.used, 0))} seats available across the
-                            network
+                            {t('seatUtilization.seatsAvailable', {
+                                count: Math.max(seats.total - seats.used, 0),
+                                formatted: nfmt(Math.max(seats.total - seats.used, 0)),
+                            })}
                         </p>
                     </div>
 
@@ -239,7 +263,7 @@ export default function VLEInsightsWidget() {
                     <div className="flex flex-col rounded-lg border border-neutral-200 p-3">
                         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-600">
                             <TrendUp size={13} weight="duotone" className="text-emerald-500" />
-                            New registrations
+                            {t('growth.title')}
                         </div>
                         <div className="min-h-0 flex-1">
                             <ResponsiveContainer width="100%" height="100%">
@@ -265,7 +289,10 @@ export default function VLEInsightsWidget() {
                                             border: '1px solid hsl(var(--border))',
                                             fontSize: 12,
                                         }}
-                                        formatter={(v: number) => [nfmt(v), `New ${plural}`]}
+                                        formatter={(v: number) => [
+                                            nfmt(v),
+                                            t('growth.tooltipLabel', { plural }),
+                                        ]}
                                     />
                                     <Area
                                         type="monotone"

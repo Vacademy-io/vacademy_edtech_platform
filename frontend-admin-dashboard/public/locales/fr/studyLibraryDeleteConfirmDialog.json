@@ -1,0 +1,7 @@
+{
+    "title": "Supprimer la question",
+    "description": "Êtes-vous sûr de vouloir supprimer cette question ? Cette action est irréversible.",
+    "cancel": "Annuler",
+    "deleting": "Suppression...",
+    "delete": "Supprimer"
+}

@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
+    /* Reuse the previous run's diagnostics: an unchanged tree re-checks in
+       seconds instead of re-checking all ~1,500 files. */
+    "incremental": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "baseUrl": ".",
+    /* No baseUrl: TypeScript 7 (what `pnpm typecheck` runs) removed it, and
+       `paths` resolves relative to this file without it. */
     "paths": {
       "@/*": [
         "./src/*"

@@ -1,0 +1,226 @@
+{
+    "heading": "Create an AI video",
+    "steps": {
+        "teach": "What to teach",
+        "format": "Format",
+        "review": "Review & create",
+        "progress": "Step {{current}} of {{total}}"
+    },
+    "teach": {
+        "topic": {
+            "label": "Topic",
+            "placeholder": "e.g. Photosynthesis"
+        },
+        "objectives": {
+            "label": "What should students be able to do after watching?",
+            "placeholder": "e.g. Explain the light and dark reactions and write the overall equation"
+        },
+        "audience": {
+            "label": "Who is it for?",
+            "placeholder": "e.g. Class 8, NEET aspirants, beginners"
+        },
+        "language": {
+            "label": "Language",
+            "search": "Search languages",
+            "empty": "No language found"
+        },
+        "sources": {
+            "title": "Use material from this chapter",
+            "helper": "Optional. The video sticks to the slides and PDFs you pick.",
+            "empty": "No published PDFs, documents or videos in this chapter yet.",
+            "draftsHidden_one": "{{count}} draft slide isn't listed — publish it to use it here.",
+            "draftsHidden_other": "{{count}} draft slides aren't listed — publish them to use them here.",
+            "selected": "{{count}} selected",
+            "untitled": "Untitled slide",
+            "kind": {
+                "pdf": "PDF",
+                "document": "Document",
+                "video": "Video",
+                "ai_video": "AI video"
+            }
+        },
+        "upload": {
+            "button": "Upload a PDF",
+            "uploading": "Uploading…",
+            "helper": "Up to {{max}} PDFs, 20 pages each.",
+            "remove": "Remove {{name}}",
+            "failed": "Couldn't upload {{name}}. Please try again.",
+            "notPdf": "{{name}} isn't a PDF.",
+            "limit": "You can attach up to {{max}} PDFs."
+        },
+        "notes": {
+            "label": "Your notes",
+            "placeholder": "Key points, examples, or mistakes students often make — anything the video must cover.",
+            "helper": "Your notes and sources guide the script, so the video teaches it your way.",
+            "counter": "{{count}} / {{max}}"
+        },
+        "errors": {
+            "required": "Enter a topic",
+            "tooLong": "Keep this under {{max}} characters"
+        }
+    },
+    "format": {
+        "title": "Pick a format",
+        "options": {
+            "lesson_teacher": {
+                "label": "Lesson with a teacher",
+                "bestFor": "Best for school & college subjects"
+            },
+            "board_explainer": {
+                "label": "Board explainer",
+                "bestFor": "Best for maths & science derivations"
+            },
+            "problem_walkthrough": {
+                "label": "Solved problem",
+                "bestFor": "Best for JEE, NEET & board-exam problems"
+            },
+            "quick_concept": {
+                "label": "Quick concept",
+                "bestFor": "Best for micro-learning"
+            },
+            "revision_short": {
+                "label": "Revision short",
+                "bestFor": "Best for WhatsApp & Instagram revision (portrait)"
+            },
+            "storybook": {
+                "label": "Storybook",
+                "bestFor": "Best for primary classes"
+            },
+            "conversation": {
+                "label": "Conversation",
+                "bestFor": "Best for language & soft skills"
+            },
+            "code_lesson": {
+                "label": "Code lesson",
+                "bestFor": "Best for programming"
+            }
+        },
+        "teacher": {
+            "label": "Teacher",
+            "labelOptional": "Teacher (optional)",
+            "loading": "Loading teachers…",
+            "none": "No teacher",
+            "noneHelper": "Board only",
+            "stock": "Ready to use",
+            "yours": "Your avatar",
+            "empty": "No teacher avatars are ready yet. Add one in AI Tutor settings, or pick a format without a teacher.",
+            "loadFailed": "Couldn't load teachers. Close and reopen this dialog to try again.",
+            "notAllowed": "On-screen teachers aren't enabled for your institute. Pick another format.",
+            "required": "Pick a teacher for this format"
+        },
+        "layout": {
+            "label": "Where the teacher appears",
+            "options": {
+                "corner": "Corner",
+                "bubble": "Bubble",
+                "side": "Side panel",
+                "presenter": "Presenter",
+                "board": "Board only"
+            }
+        },
+        "voice": {
+            "label": "Voice",
+            "female": "Female",
+            "male": "Male"
+        },
+        "duration": {
+            "label": "Length",
+            "notAllowed": "Longer than your institute allows",
+            "options": {
+                "d1to2": "1–2 min",
+                "d2to3": "2–3 min",
+                "d3to5": "3–5 min",
+                "d5to8": "5–8 min"
+            }
+        },
+        "quality": {
+            "label": "Quality",
+            "notAllowed": "Not enabled for your institute",
+            "options": {
+                "standard": {
+                    "label": "Standard",
+                    "helper": "Clear visuals, fewest credits"
+                },
+                "premium": {
+                    "label": "Premium",
+                    "helper": "Reviewed script, sharper visuals"
+                },
+                "ultra": {
+                    "label": "Best",
+                    "helper": "Every enhancement, most credits"
+                }
+            }
+        },
+        "advanced": {
+            "toggle": "Advanced",
+            "workedExample": "Include a worked example",
+            "recap": "End with a recap",
+            "captions": "Show captions",
+            "music": "Background music",
+            "subject": {
+                "label": "Subject",
+                "placeholder": "e.g. Physics"
+            },
+            "orientation": {
+                "label": "Orientation",
+                "auto": "Auto ({{value}})",
+                "landscape": "Landscape 16:9",
+                "portrait": "Portrait 9:16"
+            }
+        },
+        "errors": {
+            "subjectTooLong": "Keep the subject under {{max}} characters"
+        }
+    },
+    "review": {
+        "submitFailed": "Couldn't create the video",
+        "summary": {
+            "title": "Your video",
+            "topic": "Topic",
+            "sources": "Sources",
+            "sourcesValue": "{{slides}} from this chapter · {{files}} PDFs",
+            "withNotes": "your notes",
+            "noSources": "Topic only",
+            "language": "Language",
+            "format": "Format",
+            "teacher": "Teacher",
+            "teacherPicked": "Selected",
+            "noTeacher": "None",
+            "length": "Length",
+            "edit": "Edit"
+        },
+        "cost": {
+            "title": "Estimated cost",
+            "loading": "Working out the cost…",
+            "failed": "Couldn't estimate the cost.",
+            "retry": "Try again",
+            "range": "{{low}}–{{high}} credits",
+            "single": "{{value}} credits",
+            "expected": "Most likely about {{value}} credits",
+            "balance": "Your balance: {{value}} credits",
+            "breakdown": "See breakdown",
+            "note": "You're charged for what the video actually uses. If it fails or you cancel it, unused credits are refunded."
+        },
+        "blocked": "This video can't be created",
+        "blockedFallback": "Your institute's AI video settings don't allow this video.",
+        "warnings": "Good to know",
+        "afterCreate": "A draft slide is added right away. The video keeps generating in the background — you'll get a notification when it's ready."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "back": "Back",
+        "next": "Next",
+        "create": "Create video",
+        "creating": "Starting…",
+        "retrySlide": "Add the slide again"
+    },
+    "errors": {
+        "generateFailed": "Couldn't start the video. Please try again.",
+        "slideFailed": "The video has started, but the slide couldn't be added: {{detail}}",
+        "slideFailedGeneric": "The video has started, but the slide couldn't be added. Please try again."
+    },
+    "toasts": {
+        "generating": "Generating — we'll notify you when it's ready",
+        "reorderFailed": "Slide added, but it couldn't be moved to the end"
+    }
+}

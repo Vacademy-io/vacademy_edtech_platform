@@ -1,0 +1,25 @@
+{
+    "loading": "Chargement...",
+    "header": {
+        "title": "Paramètre d'identifiant utilisateur",
+        "description": "Choisissez comment les utilisateurs sont identifiés de manière unique lors de l'inscription ou de la connexion à votre établissement. Cela affecte la façon dont les comptes en double sont détectés lors de l'inscription."
+    },
+    "options": {
+        "email": {
+            "label": "Adresse e-mail",
+            "description": "Les utilisateurs sont identifiés par leur e-mail. Deux utilisateurs ayant le même e-mail sont considérés comme la même personne sur toutes les inscriptions."
+        },
+        "phone": {
+            "label": "Numéro de téléphone",
+            "description": "Les utilisateurs sont identifiés par leur numéro de mobile. Utilisez cette option lorsque les apprenants s'inscrivent sans e-mail ou lorsque le téléphone est la méthode de connexion principale de votre établissement."
+        }
+    },
+    "saveButton": {
+        "saving": "Enregistrement...",
+        "save": "Enregistrer les modifications"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètre d'identifiant utilisateur enregistré avec succès",
+        "saveError": "Échec de l'enregistrement du paramètre"
+    }
+}

@@ -1,0 +1,146 @@
+{
+    "student": {
+        "fallbackName": "the student"
+    },
+    "masthead": {
+        "instituteFallback": "Institute",
+        "progressReportFallback": "Progress Report"
+    },
+    "verdict": {
+        "studentFallback": "Student",
+        "rollLabel": "Roll {{roll}}",
+        "enrolmentLabel": "Enrolment {{no}}",
+        "generatedLabel": "Generated {{date}}"
+    },
+    "common": {
+        "stats": {
+            "present": "Present",
+            "absent": "Absent",
+            "late": "Late",
+            "attended": "Attended",
+            "missed": "Missed",
+            "attendance": "Attendance",
+            "totalSessions": "Total sessions",
+            "totalClasses": "Total classes",
+            "assigned": "Assigned",
+            "submitted": "Submitted",
+            "onTime": "On time",
+            "pending": "Pending",
+            "avgScore": "Avg. score",
+            "resolved": "Resolved"
+        },
+        "headings": {
+            "attendance": "Attendance",
+            "strengths": "Strengths",
+            "areasToImprove": "Areas to Improve",
+            "liveClasses": "Live Classes",
+            "assignments": "Assignments",
+            "achievements": "Achievements",
+            "courseProgress": "Course Progress",
+            "studyHabits": "Study habits"
+        }
+    },
+    "attendance": {
+        "vsLastPeriod": "vs last period"
+    },
+    "thinking": {
+        "heading": "How {{name}} Thinks",
+        "fromAnalysis_one": "from AI analysis of {{count}} recent attempt",
+        "fromAnalysis_other": "from AI analysis of {{count}} recent attempts",
+        "profileTitle": "Thinking-skill profile",
+        "profileCaption": "Accuracy across cognitive levels (Bloom's taxonomy)",
+        "confidenceTitle": "Knows vs. guesses",
+        "confidenceCaption": "Confidence calibration across answered questions",
+        "confidentlyRight": "Confidently right",
+        "rightButUnsure": "Right but unsure",
+        "confidentlyWrong": "Confidently wrong",
+        "confidenceLabel": "confidence",
+        "radarAriaLabel": "Thinking-skill radar chart",
+        "donutAriaLabel": "Confidence calibration donut"
+    },
+    "bloomLevels": {
+        "remember": "Remember",
+        "understand": "Understand",
+        "apply": "Apply",
+        "analyze": "Analyze",
+        "evaluate": "Evaluate",
+        "create": "Create"
+    },
+    "topicMastery": {
+        "title": "Topic Mastery",
+        "caption": "accuracy per topic, all attempts this period"
+    },
+    "subjects": {
+        "title": "Marks by Subject",
+        "caption": "across assessments, assignments, quizzes & questions",
+        "vsClassCaption": "Subject performance vs. class average",
+        "vsClassSuffix": "cls {{value}}%"
+    },
+    "assessments": {
+        "title": "Assessments",
+        "caption": "{{count}} in this period",
+        "rank": "Rank {{rank}}"
+    },
+    "trend": {
+        "title": "Score over time",
+        "classAverage": "Class average",
+        "ariaLabel": "Score in each assessment compared with the class average"
+    },
+    "gradeMix": {
+        "title": "Grades earned",
+        "summary_one": "{{good}} of {{total}} test at grade B or above",
+        "summary_other": "{{good}} of {{total}} tests at grade B or above",
+        "testCount_one": "{{count}} test",
+        "testCount_other": "{{count}} tests",
+        "range": {
+            "ap": "90% and above",
+            "a": "80–89%",
+            "bp": "70–79%",
+            "b": "60–69%",
+            "c": "50–59%",
+            "d": "below 50%"
+        }
+    },
+    "misconceptions": {
+        "title": "What to Work On Next",
+        "caption": "specific misconceptions + how to fix them"
+    },
+    "habits": {
+        "caption": "Daily study minutes this period",
+        "longestStreak": "Longest streak",
+        "streakDay_one": "day",
+        "streakDay_other": "days",
+        "consistency": "Consistency",
+        "activeDaysOf": "Active days / {{total}}"
+    },
+    "achievements": {
+        "caption": "Badges & certificates earned"
+    },
+    "courseProgress": {
+        "percentComplete": "{{percentage}}% complete overall"
+    },
+    "doubts": {
+        "title": "Doubts & Engagement",
+        "questionsAsked": "Questions asked",
+        "avgResolutionTime": "Avg. resolution time",
+        "hoursSuffix": "hrs"
+    },
+    "aiInsights": {
+        "whatWeNoticed": "What we noticed",
+        "recommendedNextSteps": "Recommended next steps",
+        "priorityMedium": "Medium",
+        "summary": "AI summary"
+    },
+    "narrative": {
+        "detailedAnalysis": "Detailed analysis",
+        "learningFrequency": "Learning frequency",
+        "progress": "Progress",
+        "effortVsOutput": "Effort vs. output",
+        "topicsImproving": "Topics improving",
+        "topicsNeedingAttention": "Topics needing attention",
+        "actionChecklist": "Action checklist"
+    },
+    "sparkline": {
+        "minutesTooltip": "{{minutes}} min"
+    }
+}

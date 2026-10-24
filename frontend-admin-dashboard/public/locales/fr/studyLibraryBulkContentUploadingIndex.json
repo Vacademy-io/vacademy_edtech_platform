@@ -1,0 +1,21 @@
+{
+    "pageTitle": "Téléversement de contenu en masse",
+    "pageDescription": "Téléversez un zip de dossiers et de fichiers dans un cours en une seule fois.",
+    "tabs": {
+        "single": "Un seul {{term}}",
+        "multiple": "Plusieurs {{term}}",
+        "csv": "Par feuille de calcul (CSV)"
+    },
+    "multi": {
+        "heading": "Un zip, plusieurs {{term}}",
+        "description": "Nommez chaque dossier de premier niveau d'après un {{term}}. Le contenu à l'intérieur est automatiquement associé à la structure existante de ce {{term}} — vous pourrez tout vérifier avant qu'un envoi n'ait lieu."
+    },
+    "single": {
+        "heading": "Où ce contenu doit-il aller ?",
+        "description": "Choisissez le {{term}} (et le groupe) auquel ce zip appartient. La structure des dossiers à l'intérieur du zip devient la structure du {{term}}."
+    },
+    "selectPlaceholder": "Sélectionner {{term}}",
+    "searchPlaceholder": "Rechercher {{term}}…",
+    "noneFound": "Aucun {{term}} trouvé.",
+    "pickersEmptyState": "Sélectionnez un {{course}}, un {{session}} et un {{level}} pour commencer le téléversement."
+}

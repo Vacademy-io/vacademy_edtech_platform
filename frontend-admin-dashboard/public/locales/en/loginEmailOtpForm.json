@@ -1,0 +1,28 @@
+{
+    "invalidEmail": "Invalid email address",
+    "emailPlaceholder": "Enter your email address",
+    "emailLabel": "Email Address",
+    "sendingCode": "Sending code...",
+    "sendVerificationCode": "Send Verification Code",
+    "checkYourEmail": "Check your email",
+    "codeSentTo": "We've sent a 6-digit code to",
+    "validOtpRequired": "Please enter a valid 6-digit verification code",
+    "verifying": "Verifying...",
+    "verifyAndSignIn": "Verify & Sign In",
+    "backToEmail": "Back to email",
+    "resendIn_one": "Resend in {{count}}s",
+    "resendIn_other": "Resend in {{count}}s",
+    "resendCode": "Resend code",
+    "preferUsernameLogin": "Prefer username login?",
+    "usePhoneOtpInstead": "Use Phone OTP Instead?",
+    "noAccount": "Don't have an account?",
+    "createOne": "Create One",
+    "toast": {
+        "otpSent": "OTP sent successfully",
+        "emailNotRegistered": "This email is not registered",
+        "emailNotRegisteredDescription": "Please try again with a registered email",
+        "invalidOtp": "Invalid OTP",
+        "invalidOtpDescription": "Please check your OTP and try again",
+        "fillAllOtpFields": "Please fill all OTP fields"
+    }
+}

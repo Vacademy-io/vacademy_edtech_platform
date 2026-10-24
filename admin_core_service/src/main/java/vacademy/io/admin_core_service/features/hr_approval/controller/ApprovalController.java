@@ -3,7 +3,7 @@ package vacademy.io.admin_core_service.features.hr_approval.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_approval.dto.ApprovalActionInputDTO;
 import vacademy.io.admin_core_service.features.hr_approval.dto.ApprovalChainDTO;
 import vacademy.io.admin_core_service.features.hr_approval.dto.ApprovalRequestDTO;
@@ -20,7 +20,7 @@ public class ApprovalController {
     private ApprovalService approvalService;
 
     @Autowired
-    private InstituteAccessValidator instituteAccessValidator;
+    private HrAccessGuard hrAccessGuard;
 
     // ======================== Approval Chains ========================
 
@@ -29,8 +29,9 @@ public class ApprovalController {
             @RequestBody ApprovalChainDTO dto,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String id = approvalService.saveChain(dto);
+        hrAccessGuard.requireHrAdmin(user, instituteId);
+        // Persist under the VALIDATED institute, never the dto's
+        String id = approvalService.saveChain(dto, instituteId);
         return ResponseEntity.ok(id);
     }
 
@@ -38,7 +39,7 @@ public class ApprovalController {
     public ResponseEntity<List<ApprovalChainDTO>> getChains(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireHrStaff(user, instituteId);
         List<ApprovalChainDTO> chains = approvalService.getChains(instituteId);
         return ResponseEntity.ok(chains);
     }
@@ -49,7 +50,7 @@ public class ApprovalController {
     public ResponseEntity<String> createRequest(
             @RequestBody ApprovalRequestDTO dto,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, dto.getInstituteId());
+        hrAccessGuard.validateMember(user, dto.getInstituteId());
         String id = approvalService.createRequest(dto.getInstituteId(), dto.getEntityType(),
                 dto.getEntityId(), user.getUserId());
         return ResponseEntity.ok(id);
@@ -59,7 +60,7 @@ public class ApprovalController {
     public ResponseEntity<List<ApprovalRequestDTO>> getPendingRequests(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        hrAccessGuard.requireHrStaff(user, instituteId);
         List<ApprovalRequestDTO> requests = approvalService.getPendingRequests(instituteId);
         return ResponseEntity.ok(requests);
     }
@@ -70,8 +71,8 @@ public class ApprovalController {
             @RequestBody ApprovalActionInputDTO actionInputDTO,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        String resultId = approvalService.processAction(id, actionInputDTO, user.getUserId());
+        hrAccessGuard.validateMember(user, instituteId);
+        String resultId = approvalService.processAction(id, actionInputDTO, user.getUserId(), instituteId);
         return ResponseEntity.ok(resultId);
     }
 
@@ -81,8 +82,8 @@ public class ApprovalController {
             @RequestParam("entityId") String entityId,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        ApprovalRequestDTO request = approvalService.getRequestHistory(entityType, entityId);
+        hrAccessGuard.requireHrStaff(user, instituteId);
+        ApprovalRequestDTO request = approvalService.getRequestHistory(entityType, entityId, instituteId);
         return ResponseEntity.ok(request);
     }
 }

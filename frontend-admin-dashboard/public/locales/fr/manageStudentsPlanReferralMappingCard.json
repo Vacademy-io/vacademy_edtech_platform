@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "Paramètres de parrainage",
+        "description": "Configurez les programmes de parrainage pour chaque plan de paiement de votre lien d'invitation"
+    },
+    "card": {
+        "title": "Configuration du parrainage par plan",
+        "configuredBadge": "{{configured}}/{{total}} configurés",
+        "applyToAll": "Appliquer à tous",
+        "configureReferrals": "Configurer les parrainages"
+    },
+    "emptyStates": {
+        "noPlanSelected": "Veuillez d'abord sélectionner un plan de paiement",
+        "noPaymentOptions": "Aucune option de paiement disponible pour la configuration"
+    },
+    "planList": {
+        "heading": "Plans de paiement :",
+        "referralLabel": "Parrainage : {{name}}",
+        "noReferralConfigured": "Aucun parrainage configuré",
+        "unknownReferral": "Parrainage inconnu"
+    }
+}

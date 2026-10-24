@@ -65,6 +65,34 @@ export function withArabicFallback(stack: string): string {
   return [first!.trim(), ARABIC_FALLBACK, ...rest.map((part) => part.trim())].join(", ");
 }
 
+/**
+ * Devanagari face for multi-language catalogue sites that offer हिन्दी /
+ * मराठी. Loaded on demand from Google Fonts by the catalogue shells (it is in
+ * the catalogue font registry), and only for those sites.
+ */
+export const DEVANAGARI_FALLBACK_FAMILY = "Noto Sans Devanagari";
+
+const DEVANAGARI_FALLBACK = `'${DEVANAGARI_FALLBACK_FAMILY}'`;
+
+/**
+ * Adds the Devanagari face to a font stack, the same way withArabicFallback
+ * adds the Arabic one: after the brand font (and after the Arabic face when
+ * the stack has it), before any generic family — a generic such as
+ * `sans-serif` matches every codepoint, so a face placed after it would never
+ * be reached. Latin text keeps rendering in the brand font, which comes first.
+ * A stack that already names the face is returned unchanged.
+ */
+export function withDevanagariFallback(stack: string): string {
+  const trimmed = stack.trim();
+  if (!trimmed) return withDevanagariFallback(buildFontStack());
+  if (/noto\s+sans\s+devanagari/i.test(trimmed)) return trimmed;
+
+  const parts = trimmed.split(",").map((part) => part.trim());
+  const arabicAt = parts.findIndex((part) => /noto\s+naskh\s+arabic/i.test(part));
+  const insertAt = arabicAt >= 0 ? arabicAt + 1 : 1;
+  return [...parts.slice(0, insertAt), DEVANAGARI_FALLBACK, ...parts.slice(insertAt)].join(", ");
+}
+
 /** Default stack when an institute has no branded font (e.g. /resolve 404). */
 const DEFAULT_STACK = buildFontStack("Inter");
 

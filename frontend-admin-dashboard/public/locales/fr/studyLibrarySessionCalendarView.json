@@ -1,0 +1,37 @@
+{
+    "weekday": {
+        "sun": "Dim",
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam"
+    },
+    "today": "Aujourd'hui",
+    "moreSessions_one": "+{{count}} de plus",
+    "moreSessions_many": "+{{count}} de plus",
+    "moreSessions_other": "+{{count}} de plus",
+    "legend": {
+        "liveClass": "Cours en direct",
+        "upcomingClass": "Cours à venir",
+        "pastClass": "Cours passé"
+    },
+    "sessionsFor": "Sessions du {{date}}",
+    "defaultClassInformation": "Informations du cours par défaut",
+    "classNameLabel": "Nom du cours :",
+    "linkLabel": "Lien :",
+    "customButtonLabel": "Bouton personnalisé :",
+    "durationMinutes_one": "{{count}} minute",
+    "durationMinutes_many": "{{count}} minutes",
+    "durationMinutes_other": "{{count}} minutes",
+    "status": {
+        "live": "En direct",
+        "upcoming": "À venir",
+        "past": "Passé",
+        "scheduled": "Planifié"
+    },
+    "startAsHost": "Démarrer en tant qu'hôte",
+    "joinSession": "Rejoindre la session",
+    "noSessionsFound": "Aucune session trouvée."
+}

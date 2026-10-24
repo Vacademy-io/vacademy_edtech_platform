@@ -1,0 +1,60 @@
+{
+    "installmentStatus": {
+        "paid": "Paid",
+        "partial": "Partial",
+        "overdue": "Overdue",
+        "pending": "Pending",
+        "waived": "Waived"
+    },
+    "legend": {
+        "installmentStatus": "Installment Status:"
+    },
+    "expandedRow": {
+        "loadFailed": "Failed to load installment details.",
+        "noInstallments": "No installments found.",
+        "columns": {
+            "feeType": "Fee Type",
+            "expected": "Expected",
+            "paid": "Paid",
+            "due": "Due",
+            "overdue": "Overdue",
+            "installments": "Installments"
+        }
+    },
+    "installmentTooltip": "#{{number}}: {{label}}",
+    "columns": {
+        "package": "Course / Package",
+        "cpoName": "CPO / Plan",
+        "expected": "Expected",
+        "paid": "Paid",
+        "due": "Due",
+        "overdue": "Overdue",
+        "status": "Status",
+        "progress": "Progress"
+    },
+    "actions": {
+        "viewInstallments": "View installments"
+    },
+    "error": {
+        "title": "Unable to load payment data",
+        "genericMessage": "Please try again."
+    },
+    "empty": {
+        "title": "No payment records found.",
+        "subtitle": "Try adjusting your filters to see more results."
+    },
+    "pagination": {
+        "showingRange_one": "Showing <b>{{start}}</b> – <b>{{end}}</b> of <b>{{count}}</b> record",
+        "showingRange_other": "Showing <b>{{start}}</b> – <b>{{end}}</b> of <b>{{count}}</b> records"
+    },
+    "progressBar": {
+        "paidTooltip": "Paid: {{percent}}%",
+        "overdueTooltip": "Overdue: {{percent}}%",
+        "dueTooltip": "Due: {{percent}}%",
+        "paidLabel": "{{percent}}% paid"
+    },
+    "redesign": {
+        "rosterTitle": "Fee roster",
+        "rosterHint": "· click a row for the fee-type breakdown, the eye icon for every installment"
+    }
+}

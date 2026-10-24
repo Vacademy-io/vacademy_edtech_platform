@@ -1,0 +1,18 @@
+{
+    "deletedSuccess": "Course deleted successfully",
+    "deleteFailed": "Failed to delete course",
+    "exploreTerm": "Explore {{term}}",
+    "tabs": {
+        "authoredTerm": "Authored {{term}}",
+        "allTerm": "All {{term}}",
+        "termInReview": "{{term}} In Review",
+        "termApproval": "{{term}} Approval"
+    },
+    "noTermFound": "No {{term}} found",
+    "tryAddingNewTerm": "Try adding a new {{term}}.",
+    "courseSettings": "Course settings",
+    "createTermWithAI": "Create {{term}} with AI",
+    "exploreSubtitle": "Effortlessly organize, upload, and track educational resources in one place.",
+    "noTermFoundForTab": "No {{term}} found for this tab.",
+    "noTermFoundForFilters": "No {{term}} found for the applied filters."
+}

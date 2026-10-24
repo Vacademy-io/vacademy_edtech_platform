@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "Questions from a Photo",
+        "subtitle": "Snap or upload a photo of a printed question paper. We'll turn it into an editable digital set."
+    },
+    "dropzone": {
+        "instruction": "Drop a photo here, or click to choose",
+        "hint": "JPG or PNG — clear photos work best, even handwritten ones."
+    },
+    "fileCard": {
+        "removeAriaLabel": "Remove file",
+        "status": {
+            "uploading": "Uploading…",
+            "processing": "Reading…",
+            "ready": "Ready to extract",
+            "generating": "Extracting questions",
+            "done": "Done"
+        }
+    },
+    "workingLabel": {
+        "uploading": "Reading your photo…",
+        "processing": "Looking at the questions…",
+        "generating": "Pulling questions out — usually takes ~30 seconds."
+    },
+    "generatingState": {
+        "title": "Pulling questions out",
+        "subtitle": "Reading your photo and digitizing each question. Usually ~30 seconds."
+    },
+    "questionConfig": {
+        "ctaLabel": "Extract questions"
+    },
+    "recentFiles": {
+        "title": "Your recent extractions",
+        "emptyHint": "Your extracted question sets will appear here. Drop a photo above to start.",
+        "fallbackLabel": "Untitled extraction"
+    },
+    "productName": "Vsmart Image",
+    "errors": {
+        "unsupportedFormat": "We can't read .{{ext}} files. Try JPG or PNG.",
+        "uploadFailed": "Upload didn't complete. Want to try again?",
+        "processFailed": "We couldn't read this image. Try a clearer one?",
+        "readFailed": "Something went wrong reading your image. Try again?",
+        "extractionFailed": "We couldn't finish this extraction. Want to try again?",
+        "generateFailed": "We couldn't extract questions from this image. Try a clearer photo?"
+    }
+}

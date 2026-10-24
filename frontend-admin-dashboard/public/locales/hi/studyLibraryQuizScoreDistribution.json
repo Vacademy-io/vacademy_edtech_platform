@@ -1,0 +1,10 @@
+{
+    "noAttemptsYet": "अभी तक कोई प्रयास नहीं — शिक्षार्थियों के सबमिट करते ही स्कोर वितरण दिखाई देगा।",
+    "scoreSpread": "स्कोर वितरण",
+    "learnersCount_one": "{{count}} शिक्षार्थी",
+    "learnersCount_other": "{{count}} शिक्षार्थी",
+    "bucketTitle_one": "{{from}}–{{to}}%: {{count}} शिक्षार्थी",
+    "bucketTitle_other": "{{from}}–{{to}}%: {{count}} शिक्षार्थी",
+    "passMark": "उत्तीर्ण {{percentage}}%",
+    "axisCaption": "स्कोर (%) — प्रत्येक बार 10 अंकों को दर्शाता है"
+}

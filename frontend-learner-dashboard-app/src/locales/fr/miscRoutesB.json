@@ -1,0 +1,688 @@
+{
+  "accountDeletion": {
+    "pageTitle": "Supprimer votre compte",
+    "pageTitleWithApp": "Supprimer votre compte {{appName}}",
+    "pageDescription": "Cette page explique comment demander la suppression de votre compte et des données associées.",
+    "pageDescriptionWithApp": "Cette page explique comment demander la suppression de votre compte {{appName}} et des données associées.",
+    "sections": {
+      "howToRequest": {
+        "title": "Comment demander la suppression",
+        "fromApp": {
+          "subtitle": "Depuis l'application",
+          "text": "Connectez-vous, ouvrez le menu de profil dans la barre de navigation supérieure, puis choisissez Supprimer le compte. Confirmez lorsque vous y êtes invité. Votre compte est fermé immédiatement et vous êtes déconnecté sur tous les appareils."
+        },
+        "byEmail": {
+          "subtitle": "Par e-mail, si vous ne pouvez pas vous connecter",
+          "text": "Envoyez un e-mail à {{email}} depuis l'adresse e-mail enregistrée sur votre compte, avec l'objet « Demande de suppression de compte ». Indiquez-nous le nom de votre établissement afin que nous puissions localiser votre dossier. Nous accusons réception de chaque demande sous 7 jours."
+        }
+      },
+      "dataDeleted": {
+        "title": "Données supprimées",
+        "within30Days": {
+          "subtitle": "Supprimées dans les 30 jours suivant votre demande",
+          "text": "Vos informations de profil (nom, adresse e-mail, numéro de téléphone et photo de profil), les questions et messages que vous avez publiés, vos dossiers d'inscription, votre progression d'apprentissage, ainsi que vos tentatives d'évaluation et vos résultats."
+        }
+      },
+      "dataKept": {
+        "title": "Données conservées, et pendant combien de temps",
+        "paymentRecords": {
+          "subtitle": "Registres de paiement et de facturation",
+          "text": "Lorsque vous avez effectué un paiement, nous sommes tenus de conserver la facture et l'enregistrement de la transaction en vertu du droit fiscal et comptable indien. Ces éléments sont conservés pendant 8 ans à compter de la fin de l'exercice financier concerné et ne sont pas supprimés sur demande."
+        },
+        "anonymisedStats": {
+          "subtitle": "Statistiques d'utilisation anonymisées",
+          "text": "Les statistiques agrégées qui ne peuvent plus être associées à vous (par exemple, le nombre d'apprenants ayant terminé un cours) sont conservées. Elles ne contiennent aucune information personnelle."
+        }
+      },
+      "timeline": {
+        "title": "Chronologie",
+        "whatHappens": {
+          "subtitle": "Ce qui se passe et quand",
+          "text": "L'accès prend fin immédiatement dès que la demande est effectuée. Les données personnelles sont effacées sous 30 jours. Les registres que nous sommes légalement tenus de conserver le sont pendant les périodes décrites ci-dessus, et pas plus longtemps que nécessaire."
+        }
+      }
+    },
+    "contact": {
+      "title": "Contact",
+      "text": "Les demandes de suppression et les questions à leur sujet sont traitées par"
+    }
+  },
+  "admissionPayment": {
+    "notFound": {
+      "title": "Option de paiement introuvable",
+      "description": "Ce lien de paiement semble invalide ou l'option de paiement n'est plus disponible. Veuillez contacter l'établissement pour obtenir de l'aide."
+    },
+    "success": {
+      "title": "Paiement envoyé !",
+      "description": "Merci. Votre paiement est en cours de traitement et le statut de votre admission sera mis à jour sous peu."
+    },
+    "header": {
+      "title": "Paiement des frais d'admission"
+    },
+    "amountDue": "Montant dû",
+    "email": {
+      "label": "Adresse e-mail",
+      "placeholder": "Saisissez votre e-mail"
+    },
+    "pay": {
+      "processing": "Traitement en cours…",
+      "cta": "Payer maintenant"
+    },
+    "secured": "Sécurisé par Razorpay · Votre paiement est chiffré et sécurisé",
+    "toast": {
+      "noPlan": "Aucun plan de paiement configuré. Veuillez contacter l'établissement.",
+      "emailRequired": "L'e-mail est requis.",
+      "emailInvalid": "Veuillez saisir une adresse e-mail valide.",
+      "paymentDetailsError": "Impossible de récupérer les détails du paiement depuis le serveur. Veuillez réessayer.",
+      "initiateFailed": "Échec du lancement du paiement",
+      "paymentSubmitted": "Paiement envoyé ! Le statut de votre admission sera bientôt mis à jour."
+    },
+    "checkout": {
+      "defaultTitle": "Frais d'admission",
+      "description": "Paiement pour l'admission scolaire"
+    }
+  },
+  "aiSettings": {
+    "page": {
+      "title": "Paramètres IA",
+      "description": "Gérez vos clés API d'IA et suivez l'utilisation des jetons",
+      "tabs": {
+        "apiKeys": "Clés API",
+        "usage": "Utilisation des jetons"
+      }
+    },
+    "chatbot": {
+      "title": "Chatbot",
+      "description": "Contrôlez ce que le chatbot IA affiche dans son en-tête",
+      "shortcut": {
+        "label": "Afficher le raccourci des paramètres IA dans le chatbot",
+        "hint": "Ajoute l'icône d'engrenage à l'en-tête du chatbot sur cet appareil. Masqué par défaut ; votre établissement peut aussi l'activer pour tout le monde depuis les paramètres d'administration.",
+        "toast": {
+          "enabled": "Le raccourci des paramètres IA est maintenant visible dans le chatbot",
+          "disabled": "Le raccourci des paramètres IA est maintenant masqué dans le chatbot"
+        }
+      }
+    },
+    "apiKeys": {
+      "title": "Gestion des clés API",
+      "description": "Gérez vos clés API OpenRouter et Gemini pour des interactions IA personnalisées",
+      "activeKeys": "Clés actives : {{keys}}",
+      "openrouter": {
+        "label": "Clé API OpenRouter",
+        "placeholderExisting": "••••••••••••••••••••",
+        "placeholderNew": "Saisissez votre clé API OpenRouter",
+        "existingHint": "Vous avez une clé OpenRouter configurée. Saisissez une nouvelle clé pour la remplacer."
+      },
+      "gemini": {
+        "label": "Clé API Gemini",
+        "placeholderExisting": "••••••••••••••••••••",
+        "placeholderNew": "Saisissez votre clé API Gemini",
+        "existingHint": "Vous avez une clé Gemini configurée. Saisissez une nouvelle clé pour la remplacer."
+      },
+      "defaultModel": {
+        "label": "Modèle IA par défaut",
+        "loading": "Chargement des modèles...",
+        "placeholder": "Sélectionnez un modèle",
+        "hint": "Le modèle par défaut utilisé lorsque « Auto » est sélectionné pendant la génération"
+      },
+      "securityWarning": "Vos clés API sont chiffrées et stockées en toute sécurité. Elles ne sont plus jamais visibles après l'enregistrement et ne peuvent pas être récupérées, seulement remplacées ou supprimées.",
+      "actions": {
+        "save": "Enregistrer les clés",
+        "saving": "Enregistrement...",
+        "deleteAll": "Supprimer toutes les clés"
+      },
+      "deleteConfirm": "Voulez-vous vraiment supprimer définitivement vos clés API ? Cette action est irréversible.",
+      "toast": {
+        "atLeastOneKey": "Veuillez fournir au moins une clé API",
+        "saveSuccess": "Clés API enregistrées avec succès",
+        "saveError": "Échec de l'enregistrement des clés API",
+        "deleteSuccess": "Clés API supprimées avec succès",
+        "deleteError": "Échec de la suppression des clés API"
+      }
+    },
+    "tokenUsage": {
+      "title": "Utilisation des jetons et coûts",
+      "description": "Consultez votre utilisation des jetons IA et les coûts associés",
+      "dateRange": {
+        "start": "Date de début",
+        "end": "Date de fin"
+      },
+      "stats": {
+        "totalRequests": "Requêtes totales",
+        "totalTokens": "Jetons totaux",
+        "totalCost": "Coût total"
+      },
+      "recentActivity": "Activité récente",
+      "table": {
+        "date": "Date",
+        "provider": "Fournisseur",
+        "model": "Modèle",
+        "tokens": "Jetons",
+        "cost": "Coût"
+      },
+      "empty": "Aucun enregistrement d'utilisation trouvé pour la plage de dates sélectionnée."
+    }
+  },
+  "authTransfer": {
+    "signingIn": "Connexion en cours..."
+  },
+  "deleteUser": {
+    "checkingPermissions": "Vérification des autorisations...",
+    "dialog": {
+      "title": "Supprimer le compte",
+      "description": "Voulez-vous vraiment supprimer définitivement votre compte ? Cette action est irréversible.",
+      "cancel": "Annuler",
+      "confirm": "Supprimer définitivement"
+    },
+    "toast": {
+      "success": "Votre compte a été supprimé avec succès",
+      "error": "Échec de la mise à jour du statut du rôle utilisateur"
+    }
+  },
+  "enquiryResponse": {
+    "success": {
+      "title": "Demande envoyée avec succès !",
+      "description": "Merci pour votre réponse. Votre demande a bien été envoyée.",
+      "emailNotice": "Un e-mail de confirmation vous sera envoyé sous peu.",
+      "campaignLabel": "Campagne :"
+    },
+    "form": {
+      "heading": "Veuillez renseigner vos informations",
+      "description": "Ces informations seront utilisées pour vous contacter au sujet de la demande.",
+      "objectiveLabel": "Objectif :",
+      "notAvailable": "N/A",
+      "validation": {
+        "mobileLabel": "Numéro de mobile",
+        "relationRequired": "Le lien avec l'enfant est requis",
+        "classRequired": "La classe est requise"
+      },
+      "student": {
+        "sectionTitle": "Informations sur l'élève",
+        "fullName": "Nom complet",
+        "fullNamePlaceholder": "Saisissez le nom complet de l'élève",
+        "dob": "Date de naissance",
+        "dobPlaceholder": "Sélectionnez la date de naissance",
+        "gender": {
+          "label": "Genre",
+          "male": "Homme",
+          "female": "Femme",
+          "other": "Autre"
+        },
+        "class": "Classe"
+      },
+      "parent": {
+        "sectionTitle": "Informations sur le parent",
+        "fullName": "Nom complet",
+        "fullNamePlaceholder": "Saisissez le nom complet du parent",
+        "email": "E-mail",
+        "emailPlaceholder": "exemple@email.com",
+        "mobile": "Numéro de mobile",
+        "mobilePlaceholder": "123 456 7890",
+        "relation": {
+          "label": "Lien avec l'enfant",
+          "father": "Père",
+          "mother": "Mère",
+          "guardian": "Tuteur"
+        },
+        "address": "Adresse",
+        "addressPlaceholder": "Saisissez l'adresse",
+        "city": "Ville",
+        "cityPlaceholder": "Saisissez la ville",
+        "region": "État/Région",
+        "regionPlaceholder": "Saisissez l'état ou la région",
+        "pinCode": "Code postal",
+        "pinCodePlaceholder": "Saisissez le code postal"
+      },
+      "additionalInfo": "Informations complémentaires",
+      "selectParentFirst": "Choisissez d’abord {{name}}",
+      "submit": "Envoyer la réponse",
+      "submitting": "Envoi en cours..."
+    },
+    "toast": {
+      "studentNameRequired": "Le nom de l'élève est requis",
+      "parentEmailRequired": "L'e-mail du parent est requis",
+      "parentMobileRequired": "Le numéro de mobile du parent est requis",
+      "submitFailed": "Échec de l'envoi de la demande. Veuillez réessayer."
+    }
+  },
+  "kycComplete": {
+    "title": "Vérification envoyée",
+    "description": "Vous pouvez fermer cet onglet et revenir à votre inscription. Le statut s'y met à jour automatiquement."
+  },
+  "learnerInvitationResponse": {
+    "notFound": {
+      "title": "Invitation d'inscription introuvable",
+      "description": "Ce lien d'invitation d'inscription est invalide ou a peut-être déjà expiré. Veuillez contacter votre établissement pour obtenir un nouveau lien."
+    },
+    "gatewayNotConfigured": {
+      "title": "Paiements non configurés",
+      "description": "L'établissement n'a pas configuré de passerelle de paiement pour cette inscription. Veuillez contacter votre établissement pour terminer la configuration."
+    },
+    "noPlans": {
+      "title": "Formules d'inscription non configurées",
+      "description": "L'établissement n'a pas encore ajouté de formule d'inscription à cette invitation. Veuillez contacter votre établissement pour terminer la configuration."
+    },
+    "unexpectedError": {
+      "title": "Impossible de charger",
+      "description": "Une erreur s'est produite lors du chargement de cette page d'inscription. Veuillez réessayer ou contacter votre établissement si le problème persiste."
+    },
+    "goBack": "Retour"
+  },
+  "learningCentreAttendance": {
+    "navHeading": "Ma présence",
+    "pageTitle": "Ma présence",
+    "metaDescription": "Suivez votre présence aux {{liveClasses}} et {{sessions}}",
+    "stats": {
+      "overallPercent": "% global",
+      "dayStreak": "Série de jours",
+      "daysPresent": "Jours présents",
+      "daysAbsent": "Jours absents"
+    },
+    "filters": {
+      "allBatches": "Tous les {{batches}}",
+      "clear": "Effacer les filtres",
+      "dateRange": {
+        "from": "Depuis le {{date}}",
+        "range": "Du {{from}} au {{to}}",
+        "placeholder": "Sélectionner une plage de dates",
+        "quickSelect": "Sélection rapide",
+        "pastDay": "Dernier jour",
+        "pastWeek": "Dernière semaine",
+        "pastMonth": "Dernier mois",
+        "pastSixMonths": "6 derniers mois",
+        "pastYear": "Dernière année"
+      }
+    },
+    "table": {
+      "liveClassTitle": "Titre de la {{liveClass}}",
+      "dateTime": "Date et heure",
+      "classType": "Type de {{liveClass}}",
+      "attendance": "Présence"
+    },
+    "accessLevel": {
+      "private": "Privé",
+      "public": "Public"
+    },
+    "status": {
+      "unmarked": "Non marqué"
+    },
+    "empty": {
+      "title": "Aucune {{liveClasses}} trouvée",
+      "description": "Aucune {{liveClasses}} ne correspond aux filtres sélectionnés. Essayez une autre plage de dates.",
+      "clearFilters": "Effacer les filtres"
+    },
+    "error": "Impossible de charger les données de présence."
+  },
+  "logout": {
+    "loggingOut": "Déconnexion en cours…."
+  },
+  "payInvoice": {
+    "notFound": {
+      "title": "Facture introuvable",
+      "description": "Ce lien de facture est invalide ou la facture n'est plus disponible. Veuillez contacter votre établissement pour obtenir un nouveau lien de paiement."
+    },
+    "initiated": {
+      "title": "Paiement lancé !",
+      "description": "Redirection vers la confirmation de paiement…"
+    },
+    "header": {
+      "title": "Paiement de facture"
+    },
+    "defaultLogoAlt": "Logo de l'établissement",
+    "table": {
+      "description": "Description",
+      "qty": "Qté",
+      "unit": "Unité",
+      "amount": "Montant",
+      "subtotal": "Sous-total",
+      "discount": "Remise",
+      "tax": "Taxe",
+      "total": "Total"
+    },
+    "due": {
+      "label": "Échéance : {{date}}",
+      "overdue": "(En retard)"
+    },
+    "pay": {
+      "processing": "Traitement en cours…",
+      "alreadyPaid": "Déjà payé",
+      "cta": "Payer {{amount}}"
+    },
+    "secured": "Paiement sécurisé · Vos informations sont chiffrées et protégées",
+    "toast": {
+      "formLoading": "Le formulaire de paiement est en cours de chargement. Veuillez réessayer.",
+      "cardVerificationFailed": "Échec de la vérification de la carte",
+      "enterCardDetails": "Saisissez les détails de votre carte pour continuer.",
+      "paymentDeclined": "Le paiement a été refusé. Veuillez vérifier les détails de votre carte et réessayer.",
+      "initiateFailed": "Échec du lancement du paiement. Veuillez réessayer."
+    },
+    "checkout": {
+      "defaultTitle": "Paiement de facture",
+      "description": "Facture {{invoiceNumber}}"
+    }
+  },
+  "paymentResult": {
+    "invalidLink": {
+      "title": "Lien de paiement invalide",
+      "description": "Aucun identifiant de commande n'a été fourni. Veuillez effectuer votre paiement depuis la page d'inscription."
+    },
+    "success": {
+      "title": "Paiement réussi !",
+      "invoiceDescription": "Votre facture a été payée. Un e-mail de confirmation vous sera envoyé sous peu.",
+      "enrollmentDescription": "Votre inscription est confirmée. Redirection vers vos {{courses}}...",
+      "takingToLiveClass": "Direction votre {{liveClass}}…",
+      "continueNow": "Continuer maintenant",
+      "goToCourses": "Voir mes {{courses}}"
+    },
+    "failed": {
+      "title": "Paiement échoué ou annulé",
+      "description": "Votre paiement n'a pas pu être finalisé. Veuillez réessayer ou contacter le support si le problème persiste.",
+      "backToDashboard": "Retour au tableau de bord"
+    },
+    "pending": {
+      "title": "Traitement du paiement...",
+      "description": "Veuillez patienter pendant que nous confirmons le statut de votre paiement. Cela prend généralement quelques secondes."
+    }
+  },
+  "privacyPolicy": {
+    "backToLogin": "Retour à la connexion",
+    "header": {
+      "title": "Politique de confidentialité",
+      "description": "Votre vie privée est importante pour nous. Cette politique explique comment {{appName}} collecte, utilise et protège vos informations personnelles.",
+      "lastUpdated": "Dernière mise à jour : {{date}}"
+    },
+    "introduction": {
+      "title": "Introduction",
+      "text": "Bienvenue sur {{appName}}. Nous nous engageons à protéger votre vie privée et à garantir la sécurité de vos informations personnelles. Cette politique de confidentialité décrit comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme éducative. En utilisant nos services, vous acceptez la collecte et l'utilisation d'informations conformément à cette politique."
+    },
+    "sections": {
+      "informationWeCollect": {
+        "title": "Informations que nous collectons",
+        "personalInformation": {
+          "subtitle": "Informations personnelles",
+          "text": "Nous collectons les informations que vous nous fournissez directement, par exemple lorsque vous créez un compte, vous inscrivez à des cours ou nous contactez. Cela peut inclure votre nom, votre adresse e-mail, votre numéro de téléphone, votre parcours scolaire et vos informations de paiement."
+        },
+        "learningData": {
+          "subtitle": "Données d'apprentissage",
+          "text": "Nous collectons des informations sur vos activités d'apprentissage, notamment la progression des cours, les résultats aux évaluations, le temps passé sur les contenus et les schémas d'interaction, afin de personnaliser votre expérience d'apprentissage."
+        },
+        "technicalInformation": {
+          "subtitle": "Informations techniques",
+          "text": "Nous collectons automatiquement certaines informations techniques sur votre appareil et la façon dont vous interagissez avec notre plateforme, notamment l'adresse IP, le type de navigateur, le système d'exploitation et les statistiques d'utilisation."
+        }
+      },
+      "howWeUse": {
+        "title": "Comment nous utilisons vos informations",
+        "educationalServices": {
+          "subtitle": "Services éducatifs",
+          "text": "Nous utilisons vos informations pour fournir, maintenir et améliorer nos services éducatifs, notamment la diffusion du contenu des cours, le suivi de la progression et la délivrance de certifications."
+        },
+        "personalization": {
+          "subtitle": "Personnalisation",
+          "text": "Nous analysons vos habitudes d'apprentissage afin de vous recommander des cours pertinents, d'adapter la diffusion des contenus et d'optimiser votre expérience d'apprentissage."
+        },
+        "communication": {
+          "subtitle": "Communication",
+          "text": "Nous pouvons utiliser vos coordonnées pour vous envoyer des mises à jour importantes concernant vos cours, les évolutions de la plateforme et des opportunités éducatives susceptibles de vous intéresser."
+        }
+      },
+      "informationSharing": {
+        "title": "Partage et divulgation des informations",
+        "educationalPartners": {
+          "subtitle": "Partenaires éducatifs",
+          "text": "Nous pouvons partager votre progression et vos réussites d'apprentissage avec des établissements d'enseignement ou des employeurs, si vous nous y avez autorisés ou si cela est requis à des fins de certification."
+        },
+        "serviceProviders": {
+          "subtitle": "Prestataires de services",
+          "text": "Nous pouvons partager des informations avec des prestataires de services tiers de confiance qui nous aident à exploiter notre plateforme, à gérer notre activité ou à servir nos utilisateurs."
+        },
+        "legalRequirements": {
+          "subtitle": "Obligations légales",
+          "text": "Nous pouvons divulguer vos informations lorsque la loi, une réglementation, une procédure judiciaire ou une demande gouvernementale l'exige, ou pour protéger les droits, les biens ou la sécurité de {{appName}}, de ses utilisateurs ou d'autrui."
+        }
+      },
+      "dataSecurity": {
+        "title": "Sécurité des données",
+        "securityMeasures": {
+          "subtitle": "Mesures de sécurité",
+          "text": "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos informations personnelles contre tout accès non autorisé, altération, divulgation ou destruction."
+        },
+        "encryption": {
+          "subtitle": "Chiffrement",
+          "text": "Nous utilisons des protocoles de chiffrement conformes aux normes du secteur pour protéger les données sensibles pendant leur transmission et leur stockage, y compris le chiffrement SSL/TLS pour tous les transferts de données."
+        },
+        "accessControls": {
+          "subtitle": "Contrôles d'accès",
+          "text": "Nous maintenons des contrôles d'accès stricts et auditons régulièrement nos systèmes afin de garantir que seul le personnel autorisé peut accéder à vos informations personnelles."
+        }
+      },
+      "yourRights": {
+        "title": "Vos droits et choix",
+        "accessAndCorrection": {
+          "subtitle": "Accès et correction",
+          "text": "Vous avez le droit d'accéder à vos informations personnelles, de les mettre à jour ou de les corriger à tout moment via les paramètres de votre compte ou en nous contactant directement."
+        },
+        "dataPortability": {
+          "subtitle": "Portabilité des données",
+          "text": "Vous pouvez demander une copie de vos informations personnelles dans un format structuré, couramment utilisé et lisible par machine, en vue d'un transfert vers un autre service."
+        },
+        "deletion": {
+          "subtitle": "Suppression",
+          "text": "Vous pouvez demander la suppression de vos informations personnelles, sous réserve de certaines exceptions lorsque nous devons conserver des informations à des fins légales ou commerciales légitimes."
+        }
+      },
+      "internationalTransfers": {
+        "title": "Transferts internationaux de données",
+        "globalOperations": {
+          "subtitle": "Activités mondiales",
+          "text": "{{appName}} opère à l'échelle mondiale, et vos informations peuvent être transférées et traitées dans des pays autres que votre pays de résidence, y compris des pays dont les lois de protection des données peuvent différer."
+        },
+        "safeguards": {
+          "subtitle": "Garanties",
+          "text": "Lorsque nous transférons vos informations à l'international, nous mettons en œuvre des garanties appropriées pour assurer une protection adéquate de vos informations, y compris des clauses contractuelles types et des décisions d'adéquation."
+        }
+      }
+    },
+    "contact": {
+      "title": "Nous contacter",
+      "intro": "Si vous avez des questions sur cette politique de confidentialité ou sur nos pratiques en matière de données, veuillez nous contacter :",
+      "emailLabel": "E-mail",
+      "addressLabel": "Adresse"
+    },
+    "footer": "Cette politique de confidentialité est en vigueur depuis {{date}} et le restera, sous réserve de modifications ultérieures de ses dispositions."
+  },
+  "quickAccess": {
+    "loadingToast": "Ouverture de votre compte",
+    "footer": "Besoin d'aide ? Envoyez-nous un message et nous réglerons ça."
+  },
+  "sessionTerminated": {
+    "title": "Session terminée",
+    "description": "Votre session a été terminée car votre compte a été consulté depuis un autre appareil. Pour des raisons de sécurité, seul un nombre limité de sessions simultanées est autorisé.",
+    "device": {
+      "thisDevice": "Cet appareil",
+      "newDevice": "Nouvel appareil",
+      "disconnected": "déconnecté"
+    },
+    "securityNotice": "Si ce n'était pas vous, veuillez vous reconnecter et changer immédiatement votre mot de passe.",
+    "action": {
+      "loginAgain": "Se reconnecter",
+      "hint": "Vous devrez saisir vos identifiants pour démarrer une nouvelle session"
+    },
+    "footer": {
+      "trouble": "Un problème ?",
+      "contactAdmin": "Contactez le/la {{admin}} de votre établissement pour obtenir de l'aide."
+    }
+  },
+  "subscriptions": {
+    "unableToLoad": {
+      "title": "Impossible de charger les abonnements",
+      "description": "Impossible de déterminer l'établissement pour cette page. Veuillez ouvrir le lien exact que vous avez reçu, ou contacter le support."
+    },
+    "loadingToast": "Chargement de vos abonnements",
+    "footer": "Besoin d'aide ? Envoyez-nous un message et nous réglerons ça.",
+    "manage": {
+      "heading": "Votre abonnement",
+      "description": "Vous pouvez arrêter votre abonnement à tout moment. Vos {{liveClasses}} continuent jusqu'à la date déjà payée.",
+      "loading": "Chargement de vos abonnements...",
+      "error": "Les abonnements sont temporairement indisponibles. Veuillez réessayer plus tard.",
+      "empty": "Aucun abonnement trouvé pour ce compte.",
+      "planFallback": "Abonnement",
+      "trialBadge": "Essai",
+      "nextPayment": "Prochain paiement le {{date}}",
+      "renewsAutomatically": "Renouvellement automatique",
+      "stopMembership": "Arrêter l'abonnement",
+      "stopping": "Arrêt en cours...",
+      "membershipStoppedLabel": "Abonnement arrêté.",
+      "membershipStoppedWithDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'au {{date}}. Ensuite, votre abonnement prendra fin. Vous ne serez plus prélevé(e).",
+      "membershipStoppedNoDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'à la fin de la période déjà payée. Vous ne serez plus prélevé(e).",
+      "paymentFailedLabel": "Le paiement n'a pas abouti.",
+      "paymentFailedWithDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'au {{date}}. Payez ci-dessous pour conserver votre abonnement.",
+      "paymentFailedNoDate": "Payez ci-dessous pour conserver votre abonnement.",
+      "restartMembership": "Reprenez votre abonnement — même formule, mêmes {{liveClasses}}. Vous n'avez pas besoin de vous réinscrire.",
+      "renewPrompt": "Vous voulez continuer après le {{period}} ? Payez maintenant et vos {{liveClasses}} continuent.",
+      "currentPeriodFallback": "votre période actuelle",
+      "endOfPaidPeriodFallback": "la fin de la période déjà payée",
+      "autopayCheckbox": "Activer aussi le prélèvement automatique pour les prochains renouvellements — une seule validation paie maintenant et met en place le prélèvement automatique, sans paiement manuel supplémentaire.",
+      "startingPayment": "Lancement du paiement...",
+      "payToContinue": "Payer {{amount}} pour continuer",
+      "completeEnrollmentPrompt": "Votre inscription à cet abonnement n'a jamais été finalisée, il n'y a donc rien à renouveler. Terminez votre inscription et vos {{liveClasses}} commencent immédiatement.",
+      "completeEnrollmentCta": "Finaliser mon inscription",
+      "toast": {
+        "startFailedTitle": "Impossible de lancer le paiement",
+        "genericRetry": "Veuillez réessayer dans un instant.",
+        "orderCreationFailed": "Impossible de créer la commande de paiement",
+        "membershipStoppedTitle": "Abonnement arrêté",
+        "stoppedWithDate": "Vous pouvez encore accéder aux {{liveClasses}} jusqu'au {{date}}. Vous ne serez plus prélevé(e).",
+        "stoppedNoDate": "Vous ne serez plus prélevé(e).",
+        "stopFailedTitle": "Impossible d'arrêter votre abonnement",
+        "paymentReceivedTitle": "Paiement reçu !",
+        "paymentReceivedDescription": "Votre abonnement est en cours de réactivation — cela prend quelques secondes.",
+        "paymentNotCompletedTitle": "Paiement non finalisé"
+      },
+      "cancelDialog": {
+        "title": "Arrêter votre abonnement ?",
+        "description": "Vous pouvez encore accéder à vos {{liveClasses}} jusqu'au <bold>{{date}}</bold>. Passé ce délai, votre abonnement prend fin et vous ne serez plus prélevé(e). Vous pourrez le réactiver à tout moment.",
+        "keepMembership": "Conserver l'abonnement"
+      },
+      "changePlan": "Change plan",
+      "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+      "planChangeCancelScheduled": "Cancel this change",
+      "cardDialog": {
+        "title": "Ajoutez une carte pour continuer",
+        "description": "Aucune carte n'est enregistrée pour cet abonnement. Saisissez-en une pour payer maintenant — nous l'enregistrerons en toute sécurité afin que les renouvellements suivants se fassent en un seul geste.",
+        "loadingForm": "Chargement du formulaire de carte sécurisé..."
+      },
+      "autopayDefaultNotice": "Les renouvellements suivants seront prélevés automatiquement sur cette carte. Vous pouvez désactiver le paiement automatique à tout moment depuis cette page.",
+      "renew": {
+        "title": "Renew your membership",
+        "greeting": "Hi {{name}},",
+        "intro": "Thank you for learning with us. We'd love to have you back.",
+        "duration_month_one": "1 month",
+        "duration_month_other": "{{count}} months",
+        "duration_day_one": "1 day",
+        "duration_day_other": "{{count}} days",
+        "priceCaption": "{{currency}} for {{period}}",
+        "endsOn": "Your membership ends on {{date}}.",
+        "endedOn": "Your membership ended on {{date}}.",
+        "endsNoDate": "Your membership is ending.",
+        "endedNoDate": "Your membership has ended.",
+        "cta": "Pay {{amount}} and renew now",
+        "secureNote": "Secure card payment. We'll email your receipt straight away.",
+        "support": "Questions about your renewal? Email <mail>{{email}}</mail> and we'll sort it out."
+      }
+    },
+    "paymentReturn": {
+      "confirmingTitle": "Confirmation de votre paiement…",
+      "confirmingBody": "Veuillez ne pas fermer cette page — nous vérifions auprès du prestataire de paiement.",
+      "paidTitle": "Paiement reçu !",
+      "paidBody": "Votre abonnement a été renouvelé. Son affichage partout peut prendre quelques secondes.",
+      "failedTitle": "Paiement non abouti",
+      "failedBody": "Aucun montant n'a été débité. Vous pouvez réessayer depuis votre page d'abonnement.",
+      "cancelled": "Vous avez annulé le paiement. Aucun montant n'a été débité.",
+      "missingReference": "Nous n'avons pas pu identifier ce paiement. Réessayez depuis votre page d'abonnement.",
+      "backToMembership": "Retour à mon abonnement"
+    }
+  },
+  "termsAndConditions": {
+    "backToLogin": "Retour à la connexion",
+    "header": {
+      "title": "Conditions générales",
+      "description": "Veuillez lire attentivement ces conditions générales avant d'utiliser la plateforme éducative Vacademy.",
+      "effectiveDate": "Date d'entrée en vigueur : janvier 2024"
+    },
+    "welcome": {
+      "title": "Bienvenue sur Vacademy",
+      "intro1": "Les présentes conditions générales (« Conditions », « Conditions générales ») régissent votre relation avec la plateforme éducative Vacademy exploitée par Vacademy Educational Services (« nous », « notre » ou « nos »).",
+      "intro2": "Votre accès au service et son utilisation sont subordonnés à votre acceptation et au respect des présentes conditions. Ces conditions s'appliquent à tous les visiteurs, utilisateurs et autres personnes accédant au service ou l'utilisant."
+    },
+    "sections": {
+      "acceptance": {
+        "title": "Acceptation des conditions",
+        "agreement": {
+          "subtitle": "Acceptation des conditions",
+          "text": "En accédant à la plateforme éducative de Vacademy et en l'utilisant, vous acceptez d'être lié par les termes et dispositions du présent accord. Si vous n'acceptez pas de vous y conformer, veuillez ne pas utiliser ce service."
+        },
+        "modifications": {
+          "subtitle": "Modifications",
+          "text": "Vacademy se réserve le droit de modifier ces conditions générales à tout moment. Les utilisateurs seront informés des changements importants, et la poursuite de l'utilisation de la plateforme vaut acceptation des conditions modifiées."
+        }
+      },
+      "userAccounts": {
+        "title": "Comptes utilisateurs et inscription",
+        "creation": {
+          "subtitle": "Création de compte",
+          "text": "Pour accéder à certaines fonctionnalités de notre plateforme, vous devez créer un compte. Vous acceptez de fournir des informations exactes, actuelles et complètes lors de l'inscription, et de les mettre à jour pour qu'elles le restent."
+        },
+        "security": {
+          "subtitle": "Sécurité du compte",
+          "text": "Vous êtes responsable de la protection de votre mot de passe et de toutes les activités effectuées sous votre compte. Vous acceptez de notifier immédiatement Vacademy de toute utilisation non autorisée de votre compte ou de toute autre atteinte à la sécurité."
+        }
+      },
+      "educationalServices": {
+        "title": "Services éducatifs et contenus",
+        "courseAccess": {
+          "subtitle": "Accès aux cours",
+          "text": "Après inscription et paiement, vous recevrez un accès aux contenus du cours pour la durée précisée dans votre accord d'inscription. L'accès peut être limité dans le temps, par appareil ou par d'autres restrictions précisées dans la description du cours."
+        },
+        "learningMaterials": {
+          "subtitle": "Supports pédagogiques",
+          "text": "Tous les supports de cours, y compris vidéos, documents, évaluations et autres contenus, sont fournis à des fins éducatives uniquement. Vous ne pouvez pas redistribuer, reproduire ou partager ces supports sans autorisation explicite."
+        }
+      },
+      "paymentTerms": {
+        "title": "Conditions de paiement et remboursements",
+        "processing": {
+          "subtitle": "Traitement des paiements",
+          "text": "Tous les paiements sont traités de manière sécurisée par nos prestataires de paiement agréés. Vous acceptez de fournir des informations de paiement exactes et de nous autoriser à facturer les montants indiqués pour les cours ou services sélectionnés."
+        },
+        "refunds": {
+          "subtitle": "Politique de remboursement",
+          "text": "Les remboursements sont possibles dans les 30 jours suivant l'inscription au cours, à condition que moins de 25 % du contenu du cours ait été consulté. Les demandes de remboursement doivent être soumises via nos canaux officiels et peuvent prendre 5 à 10 jours ouvrés pour être traitées."
+        }
+      },
+      "userConduct": {
+        "title": "Conduite des utilisateurs et activités interdites",
+        "acceptableUse": {
+          "subtitle": "Utilisation acceptable",
+          "text": "Vous acceptez d'utiliser la plateforme uniquement à des fins éducatives légales et d'une manière qui ne porte pas atteinte aux droits d'autrui ni ne restreint ou n'entrave leur utilisation et leur jouissance de la plateforme."
+        },
+        "prohibited": {
+          "subtitle": "Activités interdites",
+          "text": "Il est interdit de : partager les identifiants du compte, tenter d'accéder à la plateforme sans autorisation, téléverser des logiciels malveillants, se livrer à la malhonnêteté académique, harceler d'autres utilisateurs, ou utiliser la plateforme à des fins commerciales sans autorisation."
+        }
+      }
+    },
+    "contact": {
+      "title": "Informations de contact",
+      "intro": "Si vous avez des questions concernant ces conditions générales, veuillez nous contacter :",
+      "legalLabel": "Service juridique",
+      "legalEmail": "legal@vacademy.com",
+      "supportLabel": "Support général",
+      "supportEmail": "support@vacademy.com"
+    },
+    "footer": {
+      "effective": "Ces conditions générales sont en vigueur depuis janvier 2024.",
+      "acknowledgement": "En utilisant Vacademy, vous reconnaissez avoir lu et compris les présentes conditions générales, et acceptez d'y être lié(e)."
+    }
+  }
+}

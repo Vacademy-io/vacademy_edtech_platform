@@ -40,7 +40,7 @@ const ZohoEmbedPlayer: React.FC<ZohoEmbedPlayerProps> = ({
 
     return (
         <div className="relative w-full h-full flex-1 min-h-96 flex flex-col items-center justify-center gap-4 bg-neutral-950 rounded-lg">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
+            <div className="flex flex-col items-center gap-stack text-center px-6">
                 <div className="w-16 h-16 rounded-full bg-primary-500/10 flex items-center justify-center">
                     <ArrowSquareOut size={32} className="text-primary-400" />
                 </div>

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ function voicesForHint(options: CastVoiceOption[], hint?: string): CastVoiceOpti
  * your own image (your mascot, a real person), or regenerate with a note.
  */
 export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionProps) {
+    const { t } = useTranslation('videoApiStudioCastDecision');
     const characters = useMemo<CastGateCharacter[]>(() => {
         const raw = (decision.payload?.characters as CastGateCharacter[]) ?? [];
         return Array.isArray(raw) ? raw.filter((c) => c && c.name) : [];
@@ -103,7 +105,7 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
             if (!url) throw new Error('Upload failed');
             patch(name, { url, redo: false, note: undefined });
         } catch {
-            toast.error('Upload failed. Try a smaller image.');
+            toast.error(t('toast.uploadFailed'));
         } finally {
             setUploadingFor(null);
         }
@@ -155,7 +157,7 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
                 <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                     <UsersThree className="size-4 text-violet-600" />
                 </span>
-                Meet your cast · {characters.length}
+                {t('header.title', { count: characters.length })}
             </div>
 
             <div className="grid gap-3 p-4 sm:grid-cols-2">
@@ -209,9 +211,11 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
                                             patch(c.name, { voiceId: e.target.value })
                                         }
                                         className={voiceSelectCls}
-                                        aria-label={`Voice for ${c.name}`}
+                                        aria-label={t('voice.ariaLabel', { name: c.name })}
                                     >
-                                        {!c.voice_id && <option value="">Auto voice</option>}
+                                        {!c.voice_id && (
+                                            <option value="">{t('voice.autoOption')}</option>
+                                        )}
                                         {missingCurrent && (
                                             <option value={c.voice_id ?? ''}>
                                                 {voiceOptions.find(
@@ -242,7 +246,7 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
                                         className="h-6 gap-1 px-1.5 text-xs"
                                     >
                                         <ArrowCounterClockwise className="size-3" />
-                                        Redo
+                                        {t('redo.button')}
                                     </Button>
                                     <Button
                                         variant="ghost"
@@ -253,10 +257,10 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
                                     >
                                         <UploadSimple className="size-3" />
                                         {uploadingFor === c.name
-                                            ? 'Uploading…'
+                                            ? t('upload.uploading')
                                             : st.url
-                                              ? 'Replace'
-                                              : 'Use my image'}
+                                              ? t('upload.replace')
+                                              : t('upload.useMyImage')}
                                     </Button>
                                 </div>
                                 {st.redo && !st.url && (
@@ -264,7 +268,7 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
                                         value={st.note ?? ''}
                                         disabled={isSubmitting}
                                         onChange={(e) => patch(c.name, { note: e.target.value })}
-                                        placeholder="What should change? e.g. older, warmer smile, formal saree…"
+                                        placeholder={t('redo.placeholder')}
                                         className="min-h-14 text-xs"
                                     />
                                 )}
@@ -277,8 +281,8 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
             <div className="flex items-center justify-between gap-2 border-t px-4 py-3">
                 <span className="text-xs text-muted-foreground">
                     {changes > 0
-                        ? `${changes} change${changes === 1 ? '' : 's'} will be applied before filming.`
-                        : 'These faces will appear in every scene.'}
+                        ? t('footer.changesSummary', { count: changes })
+                        : t('footer.noChanges')}
                 </span>
                 <Button
                     size="sm"
@@ -287,7 +291,9 @@ export function CastDecision({ decision, isSubmitting, onSubmit }: CastDecisionP
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    {changes > 0 ? `Update ${changes} & film` : 'Approve cast & film'}
+                    {changes > 0
+                        ? t('footer.submitWithChanges', { count: changes })
+                        : t('footer.submitDefault')}
                 </Button>
             </div>
         </div>

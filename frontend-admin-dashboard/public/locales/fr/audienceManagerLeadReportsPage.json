@@ -1,0 +1,43 @@
+{
+    "header": {
+        "navTitle": "Centre de rapports",
+        "title": "Centre de rapports",
+        "subtitle": "Santé du pipeline, sources, activité d'appels, vitesse de l'entonnoir et suivi des relances — le tout au même endroit.",
+        "refresh": "Actualiser"
+    },
+    "filters": {
+        "presetLabel": "{{days}} j",
+        "from": "Du",
+        "to": "Au",
+        "apply": "Appliquer",
+        "reset": "Réinitialiser",
+        "noInstitute": "Choisissez un institut pour afficher les rapports."
+    },
+    "tabs": {
+        "overview": "Aperçu",
+        "sources": "Sources",
+        "funnel": "Entonnoir",
+        "dispositions": "Dispositions",
+        "calling": "Appels",
+        "leadCalls": "Appels des prospects",
+        "callIntelligence": "Intelligence CRM",
+        "activity": "Activité",
+        "followups": "Relances",
+        "counsellors": "Conseillers",
+        "manager": "Responsable",
+        "revenue": "Revenus",
+        "cohort": "Cohorte",
+        "forecast": "Prévisions",
+        "custom": "Générateur",
+        "utm": "Campagnes (UTM)"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "Filtrer par conseiller",
+        "allCounsellors": "Tous les conseillers"
+    },
+    "campaignPicker": {
+        "ariaLabel": "Filtrer par campagne",
+        "allCampaigns": "Toutes les campagnes",
+        "untitledCampaign": "Campagne sans titre"
+    }
+}

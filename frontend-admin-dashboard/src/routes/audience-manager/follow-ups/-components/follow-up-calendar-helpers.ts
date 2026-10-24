@@ -1,6 +1,11 @@
 import { format } from 'date-fns';
 import type { LeadCardVM } from '@/components/shared/leads';
-import { classify, effectiveDueMs, type FollowUpBucket } from './follow-up-buckets';
+import {
+    classify,
+    effectiveDueMs,
+    type FollowUpBucket,
+    type PendingFollowUpBucket,
+} from './follow-up-buckets';
 
 /**
  * Calendar helpers for the Follow-ups month grid.
@@ -83,8 +88,8 @@ export const bucketLabel = (bucket: FollowUpBucket): string => {
 export const dayBucketCounts = (
     vms: LeadCardVM[],
     now: Date = new Date()
-): Record<FollowUpBucket, number> => {
-    const counts: Record<FollowUpBucket, number> = {
+): Record<PendingFollowUpBucket, number> => {
+    const counts: Record<PendingFollowUpBucket, number> = {
         overdue: 0,
         today: 0,
         upcoming: 0,

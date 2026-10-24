@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { toast } from 'sonner';
 import { getInstituteId } from '@/constants/helper';
@@ -44,6 +45,7 @@ interface InvitePickerRowProps {
 
 /** A collapsible card that lets the admin optionally pick an invite for one package session. */
 export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
+    const { t, i18n } = useTranslation('manageStudentsInvitePickerRow');
     const instituteId = getInstituteId() || '';
     const [expanded, setExpanded] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -156,7 +158,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
             });
             setExpanded(false);
         } catch {
-            toast.error('Failed to load invite details. Please try again.');
+            toast.error(t('errors.loadInviteDetailsFailed'));
         } finally {
             setIsLoadingDetail(false);
         }
@@ -195,16 +197,16 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                     </p>
                     <div className="mt-1 flex items-center gap-2">
                         {config.isAutoMode ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700">
-                                🔄 Auto (Default)
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-2xs font-medium text-blue-700">
+                                🔄 {t('badge.auto')}
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-medium text-purple-700">
-                                ✦ {config.selectedInvite?.name || 'Selected invite'}
+                            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-2xs font-medium text-purple-700">
+                                ✦ {config.selectedInvite?.name || t('badge.selectedFallback')}
                             </span>
                         )}
                         {config.resolvedPaymentOption && !config.isAutoMode && (
-                            <span className="text-[10px] text-neutral-400">
+                            <span className="text-2xs text-neutral-400">
                                 · {config.resolvedPaymentOption.name}
                                 {config.resolvedPaymentPlan
                                     ? ` → ₹${formatPlanPrice(config.resolvedPaymentPlan.actual_price)}`
@@ -218,7 +220,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                     onClick={() => setExpanded(!expanded)}
                     className="ml-2 shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-50"
                 >
-                    {expanded ? 'Close' : 'Change'}
+                    {expanded ? t('actions.close') : t('actions.change')}
                 </button>
             </div>
 
@@ -237,9 +239,9 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                     >
                         <span className="text-base">🔄</span>
                         <div>
-                            <p className="font-medium text-neutral-800">Auto (Default)</p>
-                            <p className="text-[10px] text-neutral-500">
-                                Backend will use/create the default invite automatically
+                            <p className="font-medium text-neutral-800">{t('autoOption.title')}</p>
+                            <p className="text-2xs text-neutral-500">
+                                {t('autoOption.description')}
                             </p>
                         </div>
                     </button>
@@ -247,8 +249,8 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                     {/* Divider */}
                     <div className="my-2 flex items-center gap-2">
                         <div className="h-px flex-1 bg-neutral-200" />
-                        <span className="text-[10px] font-medium uppercase text-neutral-400">
-                            or select specific invite
+                        <span className="text-2xs font-medium uppercase text-neutral-400">
+                            {t('divider')}
                         </span>
                         <div className="h-px flex-1 bg-neutral-200" />
                     </div>
@@ -256,7 +258,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                     {/* Search */}
                     <input
                         type="text"
-                        placeholder="Search invites..."
+                        placeholder={t('search.placeholder')}
                         value={searchQuery}
                         onChange={(e) => handleSearchChange(e.target.value)}
                         className="mb-2 w-full rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-200"
@@ -269,10 +271,10 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                         </div>
                     ) : invites.length === 0 ? (
                         <p className="py-3 text-center text-xs text-neutral-400">
-                            No invites found for this course
+                            {t('list.empty')}
                         </p>
                     ) : (
-                        <div className="flex max-h-[220px] flex-col gap-1.5 overflow-y-auto">
+                        <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
                             {invites.map((inv) => {
                                 const isSelected =
                                     !config.isAutoMode &&
@@ -306,7 +308,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                                 </p>
                                                 {inv.tag && (
                                                     <span
-                                                        className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ${
+                                                        className={`shrink-0 rounded px-1.5 py-0.5 text-2xs font-bold ${
                                                             inv.tag === 'DEFAULT'
                                                                 ? 'bg-amber-100 text-amber-700'
                                                                 : 'bg-slate-100 text-slate-600'
@@ -316,7 +318,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                                     </span>
                                                 )}
                                                 <span
-                                                    className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
+                                                    className={`shrink-0 rounded-full px-1.5 py-0.5 text-2xs font-medium ${
                                                         inv.status === 'ACTIVE'
                                                             ? 'bg-green-100 text-green-700'
                                                             : 'bg-neutral-100 text-neutral-500'
@@ -325,12 +327,15 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                                     {inv.status}
                                                 </span>
                                             </div>
-                                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-neutral-500">
-                                                <span>Code: {inv.invite_code}</span>
+                                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-2xs text-neutral-500">
+                                                <span>{t('codeLabel', { code: inv.invite_code })}</span>
                                                 {dateRange && <span>· {dateRange}</span>}
                                                 {inv.package_session_ids?.length > 1 && (
                                                     <span className="text-indigo-500">
-                                                        · Bundled ({inv.package_session_ids.length} courses)
+                                                        ·{' '}
+                                                        {t('list.bundled', {
+                                                            count: inv.package_session_ids.length,
+                                                        })}
                                                     </span>
                                                 )}
                                             </div>
@@ -350,11 +355,11 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
             {!config.isAutoMode && config.selectedInvite && !expanded && (
                 <div className="border-t border-neutral-100 bg-neutral-50/60 px-4 py-3">
                     {/* Invite details row */}
-                    <div className="mb-2 grid grid-cols-1 gap-x-4 gap-y-2 text-[11px] sm:grid-cols-2">
+                    <div className="mb-2 grid grid-cols-1 gap-x-4 gap-y-2 text-2xs sm:grid-cols-2">
                         {/* Invite info */}
                         <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
-                                Invite
+                            <span className="text-2xs font-semibold uppercase tracking-wide text-neutral-400">
+                                {t('summary.invite.label')}
                             </span>
                             <div className="mt-0.5 flex flex-wrap items-center gap-1">
                                 <span className="font-medium text-neutral-800">
@@ -362,7 +367,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                 </span>
                                 {config.selectedInvite.tag && (
                                     <span
-                                        className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
+                                        className={`rounded px-1.5 py-0.5 text-2xs font-bold ${
                                             config.selectedInvite.tag === 'DEFAULT'
                                                 ? 'bg-amber-100 text-amber-700'
                                                 : 'bg-slate-100 text-slate-600'
@@ -372,11 +377,11 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                     </span>
                                 )}
                             </div>
-                            <p className="mt-0.5 text-[10px] text-neutral-500">
-                                Code: {config.selectedInvite.invite_code}
+                            <p className="mt-0.5 text-2xs text-neutral-500">
+                                {t('codeLabel', { code: config.selectedInvite.invite_code })}
                                 {config.selectedInvite.status && (
                                     <span
-                                        className={`ml-1 inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
+                                        className={`ms-1 inline-block rounded-full px-1.5 py-0.5 text-2xs font-medium ${
                                             config.selectedInvite.status === 'ACTIVE'
                                                 ? 'bg-green-100 text-green-700'
                                                 : 'bg-neutral-100 text-neutral-500'
@@ -387,16 +392,16 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                 )}
                             </p>
                             {config.selectedInvite.is_bundled && (
-                                <p className="mt-0.5 text-[10px] text-indigo-500">
-                                    📦 Bundled invite (multi-course)
+                                <p className="mt-0.5 text-2xs text-indigo-500">
+                                    📦 {t('summary.invite.bundled')}
                                 </p>
                             )}
                         </div>
 
                         {/* Payment option info */}
                         <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
-                                Payment Option
+                            <span className="text-2xs font-semibold uppercase tracking-wide text-neutral-400">
+                                {t('summary.paymentOption.label')}
                             </span>
                             {config.resolvedPaymentOption ? (
                                 <>
@@ -405,7 +410,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                     </p>
                                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
                                         <span
-                                            className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                                            className={`rounded-full px-1.5 py-0.5 text-2xs font-bold ${
                                                 config.resolvedPaymentOption.type === 'FREE'
                                                     ? 'bg-emerald-100 text-emerald-700'
                                                     : config.resolvedPaymentOption.type === 'CPO'
@@ -416,34 +421,35 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                             {config.resolvedPaymentOption.type}
                                         </span>
                                         {config.resolvedPaymentOption.require_approval && (
-                                            <span className="rounded-full bg-yellow-100 px-1.5 py-0.5 text-[9px] font-medium text-yellow-700">
-                                                Approval req.
+                                            <span className="rounded-full bg-yellow-100 px-1.5 py-0.5 text-2xs font-medium text-yellow-700">
+                                                {t('summary.paymentOption.approvalRequired')}
                                             </span>
                                         )}
                                     </div>
                                 </>
                             ) : (
-                                <p className="mt-0.5 text-[10px] text-neutral-400">
-                                    No payment option resolved
+                                <p className="mt-0.5 text-2xs text-neutral-400">
+                                    {t('summary.paymentOption.none')}
                                 </p>
                             )}
                         </div>
                     </div>
 
                     {/* Plan details row */}
-                    <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-[11px] sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-2xs sm:grid-cols-2">
                         <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
-                                Plan
+                            <span className="text-2xs font-semibold uppercase tracking-wide text-neutral-400">
+                                {t('summary.plan.label')}
                             </span>
                             {config.resolvedPaymentPlan ? (
                                 <>
                                     <p className="mt-0.5 font-medium text-neutral-800">
                                         {config.resolvedPaymentPlan.name}
                                     </p>
-                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-neutral-500">
+                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-2xs text-neutral-500">
                                         <span>
-                                            Price: ₹{formatPlanPrice(config.resolvedPaymentPlan.actual_price)}
+                                            {t('summary.plan.priceLabel')} ₹
+                                            {formatPlanPrice(config.resolvedPaymentPlan.actual_price)}
                                             {config.resolvedPaymentPlan.elevated_price > config.resolvedPaymentPlan.actual_price && (
                                                 <span className="ml-1 text-neutral-400 line-through">
                                                     ₹{formatPlanPrice(config.resolvedPaymentPlan.elevated_price)}
@@ -452,32 +458,44 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                         </span>
                                         {config.resolvedPaymentPlan.validity_in_days && (
                                             <span>
-                                                · {config.resolvedPaymentPlan.validity_in_days} days validity
+                                                ·{' '}
+                                                {t('summary.plan.validity', {
+                                                    count: config.resolvedPaymentPlan.validity_in_days,
+                                                })}
                                             </span>
                                         )}
                                     </div>
                                 </>
                             ) : (
-                                <p className="mt-0.5 text-[10px] text-neutral-400">
-                                    No plan resolved
+                                /* No plan means this invite CANNOT enrol anyone — the backend
+                                   rejects it at preview. Say so here, where the choice is made,
+                                   instead of letting it fail two steps later. */
+                                <p className="mt-0.5 text-2xs font-medium text-warning-600">
+                                    {t('summary.plan.none')}
                                 </p>
                             )}
                         </div>
 
                         <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
-                                Access
+                            <span className="text-2xs font-semibold uppercase tracking-wide text-neutral-400">
+                                {t('summary.access.label')}
                             </span>
                             <p className="mt-0.5 text-neutral-700">
                                 {config.selectedInvite.learner_access_days
-                                    ? `${config.selectedInvite.learner_access_days} days`
-                                    : 'Unlimited'}
+                                    ? t('summary.access.days', {
+                                          count: config.selectedInvite.learner_access_days,
+                                      })
+                                    : t('summary.access.unlimited')}
                             </p>
                             {config.selectedInvite.start_date && (
-                                <p className="mt-0.5 text-[10px] text-neutral-500">
-                                    From {new Date(config.selectedInvite.start_date).toLocaleDateString()}
+                                <p className="mt-0.5 text-2xs text-neutral-500">
+                                    {t('summary.access.from', {
+                                        date: new Date(config.selectedInvite.start_date).toLocaleDateString(i18n.language),
+                                    })}
                                     {config.selectedInvite.end_date &&
-                                        ` to ${new Date(config.selectedInvite.end_date).toLocaleDateString()}`}
+                                        ` ${t('summary.access.to', {
+                                            date: new Date(config.selectedInvite.end_date).toLocaleDateString(i18n.language),
+                                        })}`}
                                 </p>
                             )}
                         </div>
@@ -485,8 +503,8 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
 
                     {/* Access days override */}
                     <div className="mt-3 flex items-center gap-2 border-t border-neutral-200 pt-2.5">
-                        <label className="text-[10px] font-medium text-neutral-500">
-                            Override access days:
+                        <label className="text-2xs font-medium text-neutral-500">
+                            {t('summary.access.overrideLabel')}
                         </label>
                         <input
                             type="number"
@@ -501,7 +519,7 @@ export const InvitePickerRow = ({ config, onChange }: InvitePickerRowProps) => {
                                         : null,
                                 })
                             }
-                            className="w-20 rounded border border-neutral-200 px-2 py-1 text-[11px] outline-none focus:border-primary-300"
+                            className="w-20 rounded border border-neutral-200 px-2 py-1 text-2xs outline-none focus:border-primary-300"
                         />
                     </div>
 

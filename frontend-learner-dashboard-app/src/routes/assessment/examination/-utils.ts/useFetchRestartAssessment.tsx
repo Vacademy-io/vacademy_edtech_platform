@@ -2,6 +2,7 @@ import { Storage } from '@capacitor/storage';
 import { useAssessmentStore } from "@/stores/assessment-store";
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { RESTART_ASSESSMENT } from '@/constants/urls';
+import { getDuration } from './useFetchAssessment';
 import { safeParse } from '@/lib/storage';
 import {
   type CodingResponsePayload,
@@ -127,10 +128,49 @@ const formatStoredAssessmentData = (storedData: StoredData): FormattedData | nul
 
 interface RestartAssessmentResponse {
   preview_response: any;
-  learner_assessment_attempt_data_dto: FormattedData;
-  update_status_response: any;
-  start_assessment_response: any;
+  // The backend (AssessmentRestartResponse) sends the saved attempt as the raw
+  // JSON string `attempt_data_json`; the parsed DTO field is legacy and absent.
+  learner_assessment_attempt_data_dto?: FormattedData;
+  attempt_data_json?: string | null;
+  update_status_response: UpdateStatusResponse | null;
+  start_assessment_response: StartAssessmentResponse | null;
 }
+
+interface UpdateStatusResponse {
+  duration?: { id?: string; type?: string; new_max_time_in_seconds?: number | null }[];
+}
+
+interface StartAssessmentResponse {
+  start_time?: string | number;
+  end_time?: string | number;
+}
+
+// Server-side time left for the whole attempt (attempt start + max_time - now),
+// from the ASSESSMENT entry of update_status_response.duration.
+const getServerTimeLeftSeconds = (
+  updateStatusResponse: UpdateStatusResponse | null
+): number | undefined => {
+  const entries = Array.isArray(updateStatusResponse?.duration)
+    ? updateStatusResponse.duration
+    : [];
+  const entry = entries.find((d) => d?.type === "ASSESSMENT") ?? entries[0];
+  const seconds = Number(entry?.new_max_time_in_seconds ?? NaN);
+  return Number.isFinite(seconds) ? Math.max(0, seconds) : undefined;
+};
+
+// The attempt's max_time in minutes: the restart's start_assessment_response is
+// stamped start = now, end = now + max_time.
+const getMaxTimeMinutes = (
+  startAssessmentResponse: StartAssessmentResponse | null
+): number | undefined => {
+  if (startAssessmentResponse?.start_time == null || startAssessmentResponse?.end_time == null) {
+    return undefined;
+  }
+  const start = new Date(startAssessmentResponse?.start_time).getTime();
+  const end = new Date(startAssessmentResponse?.end_time).getTime();
+  const minutes = Math.round((end - start) / 60000);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : undefined;
+};
 
 export async function restartAssessment(assessmentId: string, attemptId: string): Promise<boolean> { 
   console.log('Restarting assessment:', { assessmentId, attemptId });
@@ -160,23 +200,51 @@ export async function restartAssessment(assessmentId: string, attemptId: string)
     const { data } = restartApiResponse;
     if (!data) throw new Error("Empty API response");
 
-    const { preview_response, learner_assessment_attempt_data_dto, update_status_response, start_assessment_response } = data;
-    // if (!preview_response || !learner_assessment_attempt_data_dto || !update_status_response) {
-    //   console.error("Missing API data:", { preview_response, learner_assessment_attempt_data_dto, update_status_response });
-    //   return false;
-    // }
+    const { learner_assessment_attempt_data_dto, attempt_data_json, update_status_response, start_assessment_response } = data;
+    const attemptData =
+      learner_assessment_attempt_data_dto ??
+      safeParse<FormattedData | null>(attempt_data_json ?? null, null);
+
+    // The restart preview carries no duration or section-switch flag. Without
+    // them the store started the timer at 0 (instant auto-submit with no
+    // answers) and locked section switching. Use the attempt's real max_time as
+    // the duration. `distribution_duration` is deliberately NOT filled: the
+    // section/question timers restored below are keyed and scaled differently
+    // from what the SECTION/QUESTION tickers read, so turning those modes on
+    // here would skip sections/questions every second.
+    const durationData = await getDuration();
+    // No max_time (an untimed practice/survey) keeps the old shape: no duration.
+    const durationMinutes = getMaxTimeMinutes(start_assessment_response);
+    const preview_response = {
+      ...data.preview_response,
+      can_switch_section: durationData.can_switch_section,
+      ...(durationMinutes !== undefined ? { duration: durationMinutes } : {}),
+    };
+    const timeLeftSeconds = getServerTimeLeftSeconds(update_status_response);
 
     // Store data properly
     await Storage.set({ key: 'Assessment_questions', value: JSON.stringify(preview_response) });
     console.log('Stored Assessment Data:', await Storage.get({ key: 'Assessment_questions' }));
-    
-    await Storage.set({ key: 'server_start_end_time', value: JSON.stringify(start_assessment_response) });
+
+    // The restart stamps start_time = now. Shift it back to the effective start
+    // so the visibilitychange reconcile (duration - elapsed since start) agrees
+    // with the server's time left instead of handing out a fresh full timer.
+    const nowMs = Date.now();
+    const serverStartEndTime =
+      timeLeftSeconds !== undefined && durationMinutes !== undefined
+        ? {
+            ...start_assessment_response,
+            start_time: new Date(nowMs - (durationMinutes * 60 - timeLeftSeconds) * 1000).toISOString(),
+            end_time: new Date(nowMs + timeLeftSeconds * 1000).toISOString(),
+          }
+        : start_assessment_response;
+    await Storage.set({ key: 'server_start_end_time', value: JSON.stringify(serverStartEndTime) });
     console.log('Stored server_start_end_time:', await Storage.get({ key: 'server_start_end_time' }));
-    
+
     console.log('preview_response.attemptId', preview_response, preview_response?.attempt_id);
     // Await so any failure inside surfaces through this function's try/catch
     // (returning false) instead of becoming an unhandled promise rejection.
-    await storeFormattedData(learner_assessment_attempt_data_dto, preview_response);
+    await storeFormattedData(attemptData, preview_response, timeLeftSeconds);
 
     await Storage.set({ key: 'Announcements', value: JSON.stringify(update_status_response) });
     console.log('Stored Announcements:', await Storage.get({ key: 'Announcements' }));
@@ -192,7 +260,11 @@ export async function restartAssessment(assessmentId: string, attemptId: string)
 
 
 
-export const storeFormattedData = async (formattedData: any, preview_response : any) => {
+export const storeFormattedData = async (
+  formattedData: any,
+  preview_response: any,
+  serverTimeLeftSeconds?: number
+) => {
     const state = useAssessmentStore.getState();
     if (!preview_response) {
       console.error("Missing preview_response on restart");
@@ -212,6 +284,15 @@ export const storeFormattedData = async (formattedData: any, preview_response : 
     // back to it instead of clobbering the timer to 0/undefined when the
     // server/stored remaining-time is missing.
     const computedEntireTestTimer = useAssessmentStore.getState().entireTestTimer;
+    // The server's time left is authoritative; the attempt's last sync is up to
+    // a minute stale and the computed value is a full fresh timer.
+    const syncedTimeLeft = Number(formattedData?.assessment?.entireTestDurationLeftInSeconds);
+    const restoredEntireTestTimer =
+      serverTimeLeftSeconds !== undefined
+        ? serverTimeLeftSeconds
+        : syncedTimeLeft > 0
+          ? syncedTimeLeft
+          : computedEntireTestTimer;
     
     // Ensure we have valid data before setting state
     if (!preview_response.section_dtos || preview_response.section_dtos.length === 0) {
@@ -235,6 +316,7 @@ export const storeFormattedData = async (formattedData: any, preview_response : 
       console.warn(
         "Missing learner_assessment_attempt_data_dto on restart; using default state from preview."
       );
+      useAssessmentStore.setState({ entireTestTimer: restoredEntireTestTimer });
       await useAssessmentStore.getState().saveState();
       return;
     }
@@ -302,11 +384,11 @@ export const storeFormattedData = async (formattedData: any, preview_response : 
           ])
         )
       ),
-      entireTestTimer:
-        Number(formattedData?.assessment?.entireTestDurationLeftInSeconds) > 0
-          ? formattedData.assessment.entireTestDurationLeftInSeconds
-          : computedEntireTestTimer,
-      tabSwitchCount: formattedData?.assessment?.tabSwitchCount,
+      entireTestTimer: restoredEntireTestTimer,
+      // Default to 0: incrementTabSwitchCount does `count + 1`, so an
+      // undefined count would turn into NaN and silently disable the
+      // three-warning auto-submit.
+      tabSwitchCount: Number(formattedData?.assessment?.tabSwitchCount) || 0,
       questionStartTime: {}, // Needs separate handling
     });
   

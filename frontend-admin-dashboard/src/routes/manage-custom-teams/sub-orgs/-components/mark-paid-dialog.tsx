@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { OfflinePaymentFields } from '@/components/common/payments/OfflinePaymentFields';
+import { toOfflinePaymentDetailsPayload, type OfflinePaymentDetails } from '@/services/offline-payment-modes';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -38,29 +41,32 @@ export function MarkPaidDialog({
     invoiceNumber,
     onSuccess,
 }: MarkPaidDialogProps) {
-    const [transactionId, setTransactionId] = useState<string>('');
+    const { t } = useTranslation('manageCustomTeamsMarkPaidDialog');
+    const [details, setDetails] = useState<OfflinePaymentDetails>({});
+    const [detailsError, setDetailsError] = useState<string | null>(null);
     const [notes, setNotes] = useState<string>('');
 
     useEffect(() => {
         if (!open) return;
-        setTransactionId('');
+        setDetails({});
         setNotes('');
     }, [open]);
 
     const mutation = useMutation({
         mutationFn: () =>
             markInvoicePaidManually(invoiceId, {
-                transaction_id: transactionId.trim() || undefined,
+                transaction_id: details.reference?.trim() || undefined,
                 notes: notes.trim() || undefined,
+                payment_details: toOfflinePaymentDetailsPayload(details),
             }),
         onSuccess: () => {
-            toast.success(`Invoice ${invoiceNumber || invoiceId} marked as paid`);
+            toast.success(t('toasts.markedPaid', { invoice: invoiceNumber || invoiceId }));
             onSuccess?.();
             onOpenChange(false);
         },
         onError: (err: any) => {
             toast.error(
-                err?.response?.data?.message || err?.message || 'Failed to mark invoice as paid'
+                err?.response?.data?.message || err?.message || t('toasts.failed')
             );
         },
     });
@@ -69,30 +75,23 @@ export function MarkPaidDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[420px]">
                 <DialogHeader>
-                    <DialogTitle>Mark invoice paid</DialogTitle>
+                    <DialogTitle>{t('title')}</DialogTitle>
                     <DialogDescription>
-                        Records a manual / offline payment against{' '}
-                        {invoiceNumber ? <strong>{invoiceNumber}</strong> : 'this invoice'} and
-                        flips its status to PAID. Both fields below are optional.
+                        {t('descriptionPrefix')}{' '}
+                        {invoiceNumber ? <strong>{invoiceNumber}</strong> : t('thisInvoice')}{' '}
+                        {t('descriptionSuffix')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 py-1">
+                    {/* How it was paid: mode, option (e.g. PhonePe), reference, proof. */}
+                    <OfflinePaymentFields value={details} onChange={setDetails} onErrorChange={setDetailsError} />
                     <div className="space-y-1">
-                        <Label htmlFor="mp-transaction-id">Transaction reference</Label>
-                        <Input
-                            id="mp-transaction-id"
-                            value={transactionId}
-                            onChange={(e) => setTransactionId(e.target.value)}
-                            placeholder="cheque #, UPI ref, receipt no."
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="mp-notes">Notes</Label>
+                        <Label htmlFor="mp-notes">{t('fields.notes')}</Label>
                         <Input
                             id="mp-notes"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Optional note (shown on email + side-view)"
+                            placeholder={t('fields.notesPlaceholder')}
                         />
                     </div>
                 </div>
@@ -104,22 +103,22 @@ export function MarkPaidDialog({
                         onClick={() => onOpenChange(false)}
                         disable={mutation.isPending}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
                         buttonType="primary"
                         scale="small"
                         onClick={() => mutation.mutate()}
-                        disable={mutation.isPending}
+                        disable={mutation.isPending || !!detailsError}
                     >
                         {mutation.isPending ? (
                             <>
                                 <Loader2 className="size-4 animate-spin" />
-                                Saving…
+                                {t('saving')}
                             </>
                         ) : (
-                            'Mark as paid'
+                            t('markAsPaid')
                         )}
                     </MyButton>
                 </DialogFooter>

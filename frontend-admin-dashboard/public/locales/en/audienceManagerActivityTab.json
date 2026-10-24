@@ -1,0 +1,37 @@
+{
+    "dailyActivity": {
+        "title": "Daily activity",
+        "summary_one": "{{count}} activity · institute timezone",
+        "summary_other": "{{count}} activities · institute timezone",
+        "empty": "No activity in this range.",
+        "barTooltip_one": "{{date}} — {{count}} activity",
+        "barTooltip_other": "{{date}} — {{count}} activities"
+    },
+    "counsellorActivity": {
+        "title": "Counsellor activity",
+        "empty": "No counsellor activity in this range.",
+        "unknownCounsellor": "Unknown counsellor"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "Counsellor",
+            "notes": "Notes",
+            "calls": "Calls",
+            "statusChanges": "Status changes",
+            "followupsCreated": "Follow-ups created",
+            "followupsClosed": "Follow-ups closed",
+            "total": "Total"
+        }
+    },
+    "table": {
+        "headers": {
+            "counsellor": "Counsellor",
+            "notes": "Notes",
+            "calls": "Calls",
+            "statusChanges": "Status changes",
+            "followupsCreated": "Follow-ups created",
+            "followupsClosed": "Follow-ups closed",
+            "total": "Total"
+        }
+    }
+}

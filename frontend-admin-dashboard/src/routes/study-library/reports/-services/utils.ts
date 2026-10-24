@@ -20,8 +20,7 @@ import {
 } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { InstituteSettingResponse } from '../-types/types';
-import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getInstituteId } from '@/constants/helper';
 
 export const fetchBatchReport = async (data: {
     start_date: string;
@@ -175,9 +174,9 @@ export const fetchInstituteSetting = async (instituteId: string) => {
 
 export const updateInstituteReportSetting = async (data: InstituteSettingResponse) => {
     try {
-        const accessToken = getTokenFromCookie(TokenKey.accessToken);
-        const tokenData = getTokenDecodedData(accessToken);
-        const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
+        // Current (selected) institute — not the token's first. The backend rejects a
+        // setting save whose clientId isn't the target institute.
+        const INSTITUTE_ID = getInstituteId();
         const response = await authenticatedAxiosInstance.post(
             `${UPDATE_INSTITUTE_SETTING}/${INSTITUTE_ID}`,
             data,

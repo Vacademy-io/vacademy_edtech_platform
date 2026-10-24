@@ -1,0 +1,330 @@
+{
+    "hero": {
+        "eyebrow": "تحليلات الحصص المباشرة",
+        "title": "لوحة معلومات {{term}}",
+        "compared": "مقارنة بـ {{range}}"
+    },
+    "presets": {
+        "today": "اليوم",
+        "last5": "آخر 5 أيام",
+        "last7": "آخر 7 أيام",
+        "last30": "آخر 30 يومًا",
+        "next7": "الأيام السبعة القادمة",
+        "custom": "مخصص"
+    },
+    "filters": {
+        "rangeLabel": "النطاق الزمني",
+        "allOf": "كل {{term}}",
+        "noTeachers": "لم يدرّس أحد في هذه الفترة",
+        "clear": "مسح",
+        "refresh": "تحديث",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "apply": "تطبيق",
+        "invalidRange": "يجب أن يكون تاريخ الانتهاء في يوم البدء أو بعده",
+        "rangeTooLong": "اختر نطاقًا لا يزيد عن {{days}} يومًا",
+        "updatedAt": "آخر تحديث {{time}} · يتحدّث كل دقيقة"
+    },
+    "units": {
+        "hourShort": "س",
+        "minuteShort": "د"
+    },
+    "delta": {
+        "points": "{{v}} نقطة",
+        "percent": "{{v}}%",
+        "plain": "{{v}}",
+        "vs": "مقارنة بـ {{range}}"
+    },
+    "kpis": {
+        "classes": "{{term}}",
+        "classesDetail": "مكتملة: {{completed}} · مباشرة: {{live}} · قادمة: {{upcoming}}",
+        "attendance": "الحضور",
+        "attendanceDetail": "الحاضرون {{present}} من أصل {{expected}} متوقعين",
+        "noCompleted": "لا توجد حصص مكتملة في هذه الفترة بعد",
+        "avgJoined": "متوسط المنضمين لكل حصة",
+        "avgJoinedDetail": "إجمالي الانضمامات: {{joined}}",
+        "avgJoinedDetailGuests": "إجمالي الانضمامات: {{joined}} (الضيوف: {{guests}})",
+        "timeInClass": "متوسط الوقت في الحصة",
+        "timeInClassDetail": "من أصل {{scheduled}} مجدولة · بقوا {{rate}}",
+        "noDurationData": "وقت الحضور غير متاح لهذه الحصص",
+        "engagement": "التفاعل",
+        "engagementBreakdown": "تحدثوا {{spoke}} · دردشوا {{chatted}}",
+        "engagementNotTracked": "يُتتبَّع التفاعل لحصص فاكاديمي ميت فقط",
+        "rating": "متوسط التقييم",
+        "ratingDetail": "الردود: {{n}} · {{rate}} من الحاضرين",
+        "noFeedback": "لا توجد ملاحظات بعد"
+    },
+    "insights": {
+        "best": "أعلى حضور",
+        "lowest": "تحتاج إلى متابعة",
+        "topTeacher": "الأعلى تقييمًا",
+        "busiestDay": "أكثر الأيام ازدحامًا",
+        "zeroJoin": "حصص فارغة",
+        "classMeta": "الحضور {{rate}} · {{date}}",
+        "teacherMeta": "★ {{rating}} · عدد التقييمات: {{n}}",
+        "busiestMeta": "{{term}} المجدولة: {{n}}",
+        "zeroJoinTitle": "{{term}} بلا حضور: {{n}}",
+        "zeroJoinNone": "كل حصة كان فيها متعلمون",
+        "zeroJoinMeta": "حصص مكتملة لم ينضم إليها أحد"
+    },
+    "trend": {
+        "title": "اتجاه الحضور",
+        "present": "الحاضرون",
+        "expected": "المتوقعون",
+        "rateLine": "الحضور {{rate}}",
+        "subtitles": {
+            "attendance": "المتوقعون مقابل الحاضرين يوميًا (الحصص المكتملة)",
+            "rate": "نسبة الحضور يوميًا (الحصص المكتملة)",
+            "classes": "الحصص المجدولة يوميًا",
+            "rating": "متوسط تقييم الملاحظات يوميًا"
+        },
+        "metrics": {
+            "attendance": "الحاضرون مقابل المتوقعين",
+            "rate": "نسبة الحضور",
+            "classes": "{{term}}",
+            "rating": "التقييم"
+        }
+    },
+    "heatmap": {
+        "title": "متى تُعقد الحصص",
+        "subtitle": "{{term}} حسب اليوم ووقت البدء — مرّر المؤشر فوق خانة لرؤية الحضور",
+        "cellClasses": "{{term}}: {{n}}",
+        "cellAttendance": "الحضور {{rate}}",
+        "fewer": "أقل",
+        "more": "أكثر"
+    },
+    "empty": {
+        "noClassesInRange": "لا توجد {{term}} في هذه الفترة",
+        "noMatch": "لا توجد {{term}} تطابق عوامل التصفية هذه",
+        "noBatches": "لا توجد بيانات {{term}} لهذه الفترة"
+    },
+    "donut": {
+        "title": "تفصيل الحضور",
+        "subtitle": "المتعلمون المتوقعون في الحصص المكتملة",
+        "present": "حاضر",
+        "belowRule": "انضم، دون حد الحضور",
+        "notJoined": "لم ينضم",
+        "center": "الحضور",
+        "guestsNote": "انضم أيضًا (ضيوف أو متعلمون من خارج هذه الدفعات): {{n}}"
+    },
+    "ratings": {
+        "title": "تقييمات الملاحظات",
+        "subtitle": "الردود: {{n}} · {{rate}} من الحاضرين"
+    },
+    "engagement": {
+        "title": "التفاعل",
+        "subtitle": "تفاعل {{rate}} من الحاضرين · الحاضرون المتتبَّعون: {{n}}",
+        "talks": "تحدثوا عبر الميكروفون",
+        "chats": "كتبوا في الدردشة",
+        "raiseHands": "رفعوا أيديهم",
+        "pollVotes": "صوّتوا في استطلاع",
+        "emojis": "تفاعلوا",
+        "totals": "رسائل الدردشة: {{chats}} · الأيدي المرفوعة: {{hands}} · أصوات الاستطلاعات: {{votes}}"
+    },
+    "platforms": {
+        "title": "المنصات",
+        "subtitle": "{{term}} حسب المنصة",
+        "names": {
+            "bbb": "فاكاديمي ميت",
+            "youtube": "يوتيوب",
+            "google_meet": "جوجل ميت",
+            "zoom": "زووم",
+            "zoho": "زوهو",
+            "recorded": "فيديو مسجل",
+            "other": "أخرى"
+        }
+    },
+    "liveNow": {
+        "none": "لا توجد {{term}} مباشرة الآن",
+        "title": "مباشر الآن",
+        "autoRefresh": "تتحدّث أعداد المنضمين كل دقيقة",
+        "joinedOf": "انضم {{joined}} من {{expected}}",
+        "joinedCount": "المنضمون: {{n}}",
+        "open": "فتح الحصة"
+    },
+    "status": {
+        "LIVE": "مباشر",
+        "UPCOMING": "قادم",
+        "COMPLETED": "مكتمل",
+        "ALL": "الكل"
+    },
+    "table": {
+        "title": "كل {{term}}",
+        "subtitle": "المعروض: {{n}}",
+        "truncated": "يُعرض أحدث {{limit}} — ضيّق النطاق لرؤية الباقي",
+        "when": "التاريخ والوقت",
+        "class": "الحصة",
+        "status": "الحالة",
+        "attendance": "الحضور",
+        "avgTime": "متوسط الوقت",
+        "engagement": "التفاعل",
+        "feedback": "التقييم",
+        "untitled": "حصة بلا عنوان",
+        "search": "ابحث عن حصة أو مادة أو {{term}}"
+    },
+    "teachers": {
+        "title": "ترتيب {{term}}",
+        "subtitle": "مرتبون حسب عدد الحصص، مع حضور {{term}} الخاصة بهم",
+        "classesCount": "{{term}}: {{n}}",
+        "joinsCount": "الانضمامات: {{n}}",
+        "avgTime": "متوسط البقاء {{time}}"
+    },
+    "batches": {
+        "title": "حضور {{term}}",
+        "subtitle": "{{term}} المكتملة فقط",
+        "unknown": "دفعة أخرى",
+        "meta": "{{term}}: {{n}} · الحاضرون {{present}} من {{expected}}",
+        "sort": {
+            "lowest": "الأدنى أولًا",
+            "highest": "الأعلى أولًا",
+            "largest": "الأكبر"
+        }
+    },
+    "error": {
+        "title": "تعذّر تحميل لوحة المعلومات",
+        "body": "تحقق من اتصالك وحاول مرة أخرى.",
+        "retry": "إعادة المحاولة"
+    },
+    "share": {
+        "csv": "تصدير CSV",
+        "pdf": "تنزيل PDF"
+    },
+    "actions": {
+        "whatsapp": "واتساب",
+        "email": "البريد الإلكتروني",
+        "csv": "CSV",
+        "learnersCount": "المتعلمون: {{n}}",
+        "nobodyToMessage": "لا يوجد متعلمون لمراسلتهم في هذه القائمة"
+    },
+    "drilldown": {
+        "guest": "ضيف",
+        "guestNote": "ضيف / تسجيل عام",
+        "notExpected": "ليس ضمن هذه الدفعات",
+        "joined": "المنضمون",
+        "openFull": "فتح صفحة الحصة",
+        "search": "ابحث بالاسم أو البريد أو الهاتف",
+        "empty": "لا يوجد متعلمون في هذه القائمة",
+        "timeInClass": "الوقت في الحصة",
+        "filters": {
+            "ALL": "الكل",
+            "PRESENT": "حاضر",
+            "BELOW_RULE": "دون الحد",
+            "NOT_JOINED": "لم ينضم"
+        },
+        "status": {
+            "PRESENT": "حاضر",
+            "BELOW_RULE": "دون الحد",
+            "NOT_JOINED": "لم ينضم"
+        },
+        "activeness": "النشاط",
+        "activenessOnScreen": "أمام الشاشة {{value}}%",
+        "activenessAttention": "الانتباه {{value}}%",
+        "activenessTracked": "مدة التتبع {{duration}}",
+        "activenessAway": "ابتعد {{count}}×"
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "mobile": "الجوال",
+        "batch": "الدفعة",
+        "status": "الحالة",
+        "minutesInClass": "الدقائق في الحصة",
+        "talks": "مرات التحدث",
+        "chats": "رسائل الدردشة",
+        "hands": "الأيدي المرفوعة",
+        "pollVotes": "أصوات الاستطلاعات",
+        "rating": "التقييم",
+        "feedback": "الملاحظات",
+        "expected": "المتوقع",
+        "attended": "حضر",
+        "missed": "فاته",
+        "attendance": "الحضور %",
+        "missStreak": "فاته على التوالي",
+        "lastAttended": "آخر حضور",
+        "date": "التاريخ",
+        "start": "البدء",
+        "end": "الانتهاء",
+        "class": "الحصة",
+        "subject": "المادة",
+        "teachers": "المعلمون",
+        "batches": "الدفعات",
+        "platform": "المنصة",
+        "joined": "المنضمون",
+        "present": "الحاضرون",
+        "avgMinutes": "متوسط دقائق البقاء",
+        "scheduledMinutes": "الدقائق المجدولة",
+        "engagement": "التفاعل %",
+        "feedbackCount": "عدد الردود",
+        "activeness": "النشاط %",
+        "activenessOnScreen": "أمام الشاشة %",
+        "activenessAttention": "الانتباه %",
+        "activenessMinutesTracked": "دقائق تتبع الكاميرا",
+        "activenessAwayCount": "مرات الابتعاد",
+        "activenessStatus": "حالة النشاط"
+    },
+    "atRisk": {
+        "title": "متعلمون معرّضون للخطر",
+        "none": "لم يفت أي متعلم {{missed}}+ من {{term}} المكتملة في هذه الفترة",
+        "loading": "جارٍ البحث عن المتعلمين الذين يتغيبون كثيرًا…",
+        "threshold": "فاته على الأقل",
+        "missedPlus": "فاته {{n}}+",
+        "messageAll": "واتساب للجميع ({{n}})",
+        "showingTop": "عرض أول {{shown}} من {{total}}",
+        "missedOf": "فاته {{missed}}/{{expected}}",
+        "streak": "{{n}} على التوالي",
+        "lastAttended": "آخر حضور {{date}}",
+        "neverAttended": "لم يحضر في هذه الفترة",
+        "rate": "الحضور {{rate}}",
+        "viewLabel": "عرض",
+        "views": {
+            "DROPPED": "توقفوا عن الحضور",
+            "NEVER": "لم يحضروا أبدًا",
+            "ALL": "الكل"
+        },
+        "subtitles": {
+            "DROPPED": "متعلمون حضروا سابقًا ثم فاتتهم {{missed}}+ من {{term}} المكتملة: {{n}}",
+            "NEVER": "متعلمون لم ينضموا إلى أي من {{missed}}+ من {{term}} المكتملة: {{n}}",
+            "ALL": "متعلمون فاتتهم {{missed}}+ من {{term}} المكتملة في هذه الفترة: {{n}}"
+        }
+    },
+    "wall": {
+        "title": "ماذا يقول المتعلمون",
+        "subtitle": "أحدث الملاحظات المكتوبة على {{term}} في هذه الفترة",
+        "filters": {
+            "all": "الكل",
+            "low": "تقييم منخفض",
+            "doubts": "استفسارات"
+        },
+        "empty": "لا توجد ملاحظات مكتوبة في هذه الفترة",
+        "showMore": "عرض {{n}} إضافية",
+        "showLess": "عرض أقل",
+        "anonymous": "متعلم"
+    },
+    "page": {
+        "description": "الحضور والوقت في الحصة والتفاعل والملاحظات للحصص المباشرة، حسب المعلم والدفعة."
+    },
+    "activenessState": {
+        "1": "تم القياس",
+        "2": "أوقفه المتعلم",
+        "3": "هاتف/جهاز لوحي — لم يُقَس",
+        "4": "الكاميرا محظورة",
+        "5": "لا توجد كاميرا",
+        "6": "الكاميرا مستخدمة في تطبيق آخر",
+        "7": "الجهاز بطيء جدًا",
+        "8": "تعذّر التحميل",
+        "9": "توقفت الكاميرا",
+        "10": "لم يُسمح بالكاميرا"
+    },
+    "activenessStateShort": {
+        "1": "تم القياس",
+        "2": "متوقف",
+        "3": "هاتف",
+        "4": "كاميرا محظورة",
+        "5": "لا كاميرا",
+        "6": "كاميرا مشغولة",
+        "7": "بطيء جدًا",
+        "8": "لم يُحمَّل",
+        "9": "كاميرا متوقفة",
+        "10": "بلا إذن"
+    }
+}

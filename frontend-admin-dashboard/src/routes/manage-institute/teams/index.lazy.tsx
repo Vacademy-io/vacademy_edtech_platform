@@ -1,924 +1,1072 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { SearchInput } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/search-input';
+import { useTranslation } from 'react-i18next';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import {
+    ArrowCounterClockwise,
+    Buildings,
+    CheckCircle,
+    Clock,
+    Copy,
+    CursorClick,
+    MagnifyingGlass,
+    PaperPlaneTilt,
+    Prohibit,
+    UserPlus,
+    UploadSimple,
+    DownloadSimple,
+    CircleNotch,
+    Users,
+    WarningCircle,
+    X,
+    type Icon,
+} from '@phosphor-icons/react';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
-import { useEffect, useState, useMemo } from 'react';
-import { fetchInstituteDashboardUsers } from '@/routes/dashboard/-services/dashboard-services';
 import { useRefetchUsersStore } from '@/routes/dashboard/-global-states/refetch-store-users';
+import {
+    handleDeleteDisableDashboardUsers,
+    handleResendUserInvitation,
+} from '@/routes/dashboard/-services/dashboard-services';
 import { getInstituteId } from '@/constants/helper';
-import { UserRolesDataEntry } from '@/types/dashboard/user-roles';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import InviteUsersComponent from '@/routes/dashboard/-components/InviteUsersComponent';
-import InstituteUsersOptions from '@/routes/dashboard/-components/InstituteUsersOptions';
-import InviteUsersOptions from '@/routes/dashboard/-components/InviteUsersOptions';
-import { RoleType, RoleTypeUserStatus } from '@/constants/dummy-data';
-import { mapRoleToCustomName } from '@/utils/roleUtils';
-import { MyTable } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
-import { ColumnDef } from '@tanstack/react-table';
 import { FilterChips } from '@/components/design-system/chips';
 import { MyButton } from '@/components/design-system/button';
-import { Funnel, X, Users, ArrowElbowDownLeft } from '@phosphor-icons/react';
+import { MyInput } from '@/components/design-system/input';
+import { cn } from '@/lib/utils';
 import {
-  getAllRoles,
-  listUserSubOrgLinks,
-  listAccessibleSubOrgs,
-  type CustomRole,
-  type AccessibleSubOrg,
+    getAllRoles,
+    LEGACY_ROLE_NAMES,
+    listUserSubOrgLinks,
+    listAccessibleSubOrgs,
+    type AccessibleSubOrg,
 } from '@/routes/manage-custom-teams/-services/custom-team-services';
-import { getAllRoleDisplaySettings, getDisplaySettingsFromCache } from '@/services/display-settings';
+import {
+    getAllRoleDisplaySettings,
+    getDisplaySettingsFromCache,
+} from '@/services/display-settings';
 import { subOrgPermission } from '@/lib/display-settings/sub-org-module';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { ADMIN_DISPLAY_SETTINGS_KEY, TEACHER_DISPLAY_SETTINGS_KEY } from '@/types/display-settings';
-import { getTokenFromCookie, getUserRoles } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { ADMIN_DISPLAY_SETTINGS_KEY } from '@/types/display-settings';
+import {
+    getActiveRoleDisplaySettingsKey,
+    getRolesForCurrentInstitute,
+} from '@/lib/auth/instituteUtils';
+import { getPreferredPhoneCountries } from '@/services/domain-routing';
 import { OrgChartTab } from './-components/OrgChartTab';
-import { PasswordCell } from './-components/PasswordCell';
+import { InviteMemberDialog } from './-components/InviteMemberDialog';
+import { MemberDetailsSheet, type MemberSection } from './-components/MemberDetailsSheet';
+import { TeamConfirmDialog, type TeamConfirmKind } from './-components/TeamConfirmDialog';
+import { InviteRowActions, MemberRowActions } from './-components/TeamRowActions';
+import { TeamTable, type TeamColumn } from './-components/TeamTable';
+import {
+    MemberAvatar,
+    MemberStatusPill,
+    NotSignedInTag,
+    RoleChip,
+    TONE_TILE,
+} from './-components/team-ui';
+import {
+    buildRoleOptions,
+    formatPhoneForDisplay,
+    hasNeverSignedIn,
+    instituteRolesOf,
+    memberStatusOf,
+    type RoleTone,
+    type TeamMember,
+    type TeamRoleOption,
+} from './-utils/team-helpers';
+import {
+    fetchAllTeamMembers,
+    fetchTeamCounts,
+    fetchTeamPage,
+} from './-services/team-member-services';
+import { buildTeamExportCsv, teamExportFileName, triggerCsvDownload } from './-utils/team-csv';
+import { TeamImportDialog } from './-components/TeamImportDialog';
 
-export interface RoleTypeSelectedFilter {
-  roles: { id: string; name: string }[];
-  status: { id: string; name: string }[];
-  // Sub-org filter (Teams page only). Optional so the shared fetch/RoleType types stay compatible.
-  subOrgs?: { id: string; name: string }[];
-}
+type TabKey = 'members' | 'invites' | 'orgChart';
 
-export interface TeamMemberRole {
-  id: string;
-  institute_id: string;
-  role_name: string;
-  status: string;
-  role_id: string;
-}
-
-export interface TeamMember {
-  id: string;
-  username: string;
-  email: string;
-  full_name: string;
-  mobile_number: string | null;
-  profile_pic_file_id: string | null;
-  roles: TeamMemberRole[];
-  status: string | null;
-  root_user: boolean;
-  // Present only on the authenticated users-of-status response and only when the
-  // institute has opted in; used by the gated Password column.
-  password?: string | null;
-}
-
-export interface PaginatedTeamResponse {
-  content: TeamMember[];
-  page_number: number;
-  page_size: number;
-  total_elements: number;
-  total_pages: number;
-  last: boolean;
-  first: boolean;
-}
-
-// Type for tabs
-type TabKey = 'instituteUsers' | 'invites' | 'orgChart';
+const MEMBER_STATUSES = ['ACTIVE', 'DISABLED'] as const;
 
 export const Route = createLazyFileRoute('/manage-institute/teams/')({
-  component: RouteComponent,
+    component: RouteComponent,
 });
 
+function useDebounced<T>(value: T, delay: number): T {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+        const id = window.setTimeout(() => setDebounced(value), delay);
+        return () => window.clearTimeout(id);
+    }, [value, delay]);
+    return debounced;
+}
+
 function RouteComponent() {
-  const { setNavHeading } = useNavHeadingStore();
-  const setHandleRefetchUsersData = useRefetchUsersStore(
-    (state) => state.setHandleRefetchUsersData
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const instituteId = getInstituteId();
-  const [selectedTab, setSelectedTab] = useState<TabKey>('instituteUsers');
-  const [page, setPage] = useState(0);
-  const pageSize = 10;
-  const [searchInput, setSearchInput] = useState('');
-  const [searchFilter, setSearchFilter] = useState('');
-  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+    const { t } = useTranslation('manageInstituteTeamsIndexLazy');
+    const { setNavHeading } = useNavHeadingStore();
+    const setHandleRefetchUsersData = useRefetchUsersStore(
+        (state) => state.setHandleRefetchUsersData
+    );
+    const queryClient = useQueryClient();
+    const instituteId = getInstituteId();
+    const defaultCountry = useMemo(() => getPreferredPhoneCountries().defaultCountry, []);
 
-  const [selectedFilter, setSelectedFilter] = useState<RoleTypeSelectedFilter>({
-    roles: [],
-    status: [],
-    subOrgs: [],
-  });
+    const [tab, setTab] = useState<TabKey>('members');
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const [searchInput, setSearchInput] = useState('');
+    const search = useDebounced(searchInput.trim(), 300);
+    const [roleFilter, setRoleFilter] = useState<string[]>([]);
+    const [statusFilter, setStatusFilter] = useState<string[]>([]);
+    const [subOrgFilter, setSubOrgFilter] = useState<string[]>([]);
 
-  const [dashboardUsers, setDashboardUsers] = useState<{
-    instituteUsers: PaginatedTeamResponse | null;
-    invites: PaginatedTeamResponse | null;
-  }>({
-    instituteUsers: null,
-    invites: null,
-  });
+    const [drawer, setDrawer] = useState<{ member: TeamMember; section?: MemberSection } | null>(
+        null
+    );
+    const [inviteDialog, setInviteDialog] = useState<{
+        mode: 'new' | 'edit';
+        invite?: TeamMember;
+    } | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [confirm, setConfirm] = useState<{ kind: TeamConfirmKind; member: TeamMember } | null>(
+        null
+    );
 
-  // Sub-org linkages (via FSPSSM) for the "Sub-Orgs" column + filter. One institute-wide
-  // fetch, cached — powers both the per-row chips and the client-side userId derivation that
-  // drives the sub-org filter. Scoped server-side to the caller's accessible sub-orgs.
-  const { data: userSubOrgLinks } = useQuery({
-    queryKey: ['SUB_ORG_USER_LINKS', instituteId],
-    queryFn: () => listUserSubOrgLinks(instituteId!),
-    enabled: !!instituteId,
-    staleTime: 5 * 60 * 1000,
-  });
-  const { data: accessibleSubOrgs } = useQuery({
-    queryKey: ['ACCESSIBLE_SUB_ORGS', instituteId],
-    queryFn: () => listAccessibleSubOrgs(instituteId!),
-    enabled: !!instituteId,
-    staleTime: 5 * 60 * 1000,
-  });
+    useEffect(() => {
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
-  // userId -> the sub-orgs that user is linked to individually (FSPSSM rows).
-  const linksMap = useMemo(() => {
-    const m = new Map<string, AccessibleSubOrg[]>();
-    (userSubOrgLinks ?? []).forEach((link) => m.set(link.user_id, link.sub_orgs));
-    return m;
-  }, [userSubOrgLinks]);
+    // ---- Viewer settings (unchanged rules) -------------------------------------------
+    // The viewer's own role settings, matching the sidebar: admin, teacher, or the
+    // custom role (e.g. "Operations") they are signed in as.
+    const viewerDisplaySettings = useMemo(() => {
+        // Roles in THIS institute — ADMIN elsewhere doesn't make the viewer an admin here.
+        const viewerRoles = getRolesForCurrentInstitute();
+        const isAdmin = viewerRoles.includes('ADMIN');
+        const roleKey = isAdmin ? ADMIN_DISPLAY_SETTINGS_KEY : getActiveRoleDisplaySettingsKey();
+        return { isAdmin, settings: getDisplaySettingsFromCache(roleKey) };
+    }, []);
+    const viewerTeamManagement = viewerDisplaySettings.settings?.teamManagement;
+    // Admins can always maintain team profiles; other roles need the profile-edit permission.
+    const canEditTeamProfiles =
+        viewerDisplaySettings.isAdmin ||
+        viewerDisplaySettings.settings?.permissions?.canEditProfileDetails === true;
+    // Memoized: a fresh `{}` per render would cascade into every role-derived value.
+    const viewerVisibleRoles = useMemo(
+        () => viewerTeamManagement?.visibleRoles ?? {},
+        [viewerTeamManagement]
+    );
+    // Org Chart tab is opt-in per institute (Settings → Admin Display Settings).
+    const orgChartTabVisible = viewerTeamManagement?.orgChartTabVisible === true;
+    // Login details show by default; an admin can hide passwords per institute.
+    const allowViewPassword = viewerTeamManagement?.allowViewPassword !== false;
+    // Self-role is never hidden, so a viewer can't lock themselves out.
+    const isRoleVisibleToViewer = useMemo(() => {
+        const viewerRoles = getRolesForCurrentInstitute().map((r) => r.toUpperCase());
+        return (roleName: string) => {
+            const key = roleName.toUpperCase();
+            if (viewerRoles.includes(key)) return true;
+            return viewerVisibleRoles[key] !== false;
+        };
+    }, [viewerVisibleRoles]);
 
-  // Sub-orgs granted by a ROLE (Settings -> Display Settings -> <role> -> Channel
-  // Partners). Without this the column reports "-" for someone who genuinely has
-  // access through their role, which reads as "not assigned" and sends admins
-  // hunting through Team tabs for a link that was never meant to exist.
-  const { data: roleDisplaySettings } = useQuery({
-    queryKey: ['ROLE_DISPLAY_SETTINGS_ALL', instituteId],
-    queryFn: () => getAllRoleDisplaySettings(),
-    enabled: !!instituteId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // roleId -> sub-org ids that role grants.
-  const roleGrantMap = useMemo(() => {
-    const m = new Map<string, string[]>();
-    Object.entries(roleDisplaySettings ?? {}).forEach(([roleId, cfg]) => {
-      const ids = cfg?.subOrganizations?.assignedSubOrgIds;
-      if (Array.isArray(ids) && ids.length > 0) m.set(roleId, ids);
+    // ---- Roles ------------------------------------------------------------------------
+    const rolesQuery = useQuery({
+        queryKey: ['TEAM_ROLES', instituteId],
+        queryFn: getAllRoles,
+        enabled: !!instituteId,
+        staleTime: 5 * 60 * 1000,
     });
-    return m;
-  }, [roleDisplaySettings]);
+    // Platform roles + only THIS institute's custom roles (see buildRoleOptions).
+    const roleOptions = useMemo<TeamRoleOption[]>(
+        () =>
+            buildRoleOptions(
+                Array.isArray(rolesQuery.data) ? rolesQuery.data : [],
+                instituteId,
+                isRoleVisibleToViewer
+            ),
+        [rolesQuery.data, instituteId, isRoleVisibleToViewer]
+    );
+    const roleOptionByName = useMemo(
+        () => new Map(roleOptions.map((option) => [option.name, option])),
+        [roleOptions]
+    );
+    // Default role filter. getAllRoles() hides the legacy roles from every picker, but
+    // real users still hold them until migrated — keep matching them here or those
+    // users silently drop out. Empty until roles load, so no premature fetch.
+    const allRoleNames = useMemo(() => {
+        if (roleOptions.length === 0) return [];
+        return [
+            ...roleOptions.map((option) => option.name),
+            ...LEGACY_ROLE_NAMES.filter(isRoleVisibleToViewer),
+        ];
+    }, [roleOptions, isRoleVisibleToViewer]);
 
-  // sub-org id -> display name, for turning granted ids into chips.
-  // The Assign action is only meaningful where channel partners exist and the viewer
-  // may manage team membership. subOrgPermission passes admins and sub-org admins.
-  const subOrgTermPlural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
-  const canAssignSubOrgs =
-    (accessibleSubOrgs ?? []).length > 0 && subOrgPermission('canManageTeam');
+    // ---- Sub-orgs ---------------------------------------------------------------------
+    const { data: userSubOrgLinks } = useQuery({
+        queryKey: ['SUB_ORG_USER_LINKS', instituteId],
+        queryFn: () => listUserSubOrgLinks(instituteId!),
+        enabled: !!instituteId,
+        staleTime: 5 * 60 * 1000,
+    });
+    const { data: accessibleSubOrgs } = useQuery({
+        queryKey: ['ACCESSIBLE_SUB_ORGS', instituteId],
+        queryFn: () => listAccessibleSubOrgs(instituteId!),
+        enabled: !!instituteId,
+        staleTime: 5 * 60 * 1000,
+    });
+    // Sub-orgs granted by a ROLE (Settings → Display Settings → role → partners), so the
+    // column doesn't read "-" for someone who has access through their role.
+    const { data: roleDisplaySettings } = useQuery({
+        queryKey: ['ROLE_DISPLAY_SETTINGS_ALL', instituteId],
+        queryFn: () => getAllRoleDisplaySettings(),
+        enabled: !!instituteId,
+        staleTime: 5 * 60 * 1000,
+    });
+    const linksMap = useMemo(() => {
+        const m = new Map<string, AccessibleSubOrg[]>();
+        (userSubOrgLinks ?? []).forEach((link) => m.set(link.user_id, link.sub_orgs));
+        return m;
+    }, [userSubOrgLinks]);
+    const roleGrantMap = useMemo(() => {
+        const m = new Map<string, string[]>();
+        Object.entries(roleDisplaySettings ?? {}).forEach(([roleId, cfg]) => {
+            const ids = cfg?.subOrganizations?.assignedSubOrgIds;
+            if (Array.isArray(ids) && ids.length > 0) m.set(roleId, ids);
+        });
+        return m;
+    }, [roleDisplaySettings]);
+    const subOrgNameById = useMemo(() => {
+        const m = new Map<string, string>();
+        (accessibleSubOrgs ?? []).forEach((so) => m.set(so.id, so.name));
+        return m;
+    }, [accessibleSubOrgs]);
+    const subOrgTermPlural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
+    const hasSubOrgs = (accessibleSubOrgs ?? []).length > 0;
+    const canAssignSubOrgs = hasSubOrgs && subOrgPermission('canManageTeam');
 
-  const subOrgNameById = useMemo(() => {
-    const m = new Map<string, string>();
-    (accessibleSubOrgs ?? []).forEach((so) => m.set(so.id, so.name));
-    return m;
-  }, [accessibleSubOrgs]);
+    // ---- List + counts ----------------------------------------------------------------
+    const listQueryInput = useMemo(() => {
+        const roles = roleFilter.length > 0 ? roleFilter : allRoleNames;
+        const statuses =
+            tab === 'invites'
+                ? ['INVITED']
+                : statusFilter.length > 0
+                  ? statusFilter
+                  : [...MEMBER_STATUSES];
+        // Sub-org filter: resolve matching users from the institute-wide links (covers
+        // every page, so server pagination stays right). Individual links only — access
+        // through a role grant needs backend support to OR into this filter.
+        let userIds: string[] | undefined;
+        if (tab === 'members' && subOrgFilter.length > 0) {
+            const selected = new Set(subOrgFilter);
+            userIds = (userSubOrgLinks ?? [])
+                .filter((link) => link.sub_orgs.some((so) => selected.has(so.id)))
+                .map((link) => link.user_id);
+        }
+        return { roles, statuses, name: search, userIds };
+    }, [roleFilter, allRoleNames, tab, statusFilter, subOrgFilter, userSubOrgLinks, search]);
 
-  // Filter dropdown options.
-  const subOrgFilterList = useMemo(
-    () => (accessibleSubOrgs ?? []).map((so) => ({ id: so.id, label: so.name })),
-    [accessibleSubOrgs]
-  );
+    const listQuery = useQuery({
+        queryKey: ['TEAM_MEMBERS', instituteId, tab, listQueryInput, page, pageSize],
+        queryFn: () => fetchTeamPage(instituteId, listQueryInput, page, pageSize),
+        enabled: !!instituteId && tab !== 'orgChart' && allRoleNames.length > 0,
+        placeholderData: keepPreviousData,
+    });
+    const countsQuery = useQuery({
+        queryKey: ['TEAM_COUNTS', instituteId, allRoleNames],
+        queryFn: () => fetchTeamCounts(instituteId, allRoleNames),
+        enabled: !!instituteId && allRoleNames.length > 0,
+        staleTime: 60 * 1000,
+    });
+    const counts = countsQuery.data;
 
-  // Resolve the viewer's effective display settings (admin or teacher cache,
-  // matching the layout-container pattern). Custom-role users fall through to
-  // teacher settings, which is the same baseline used elsewhere.
-  const viewerTeamManagement = useMemo(() => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const viewerRoles = getUserRoles(accessToken);
-    const isAdmin = viewerRoles.includes('ADMIN');
-    const roleKey = isAdmin ? ADMIN_DISPLAY_SETTINGS_KEY : TEACHER_DISPLAY_SETTINGS_KEY;
-    const ds = getDisplaySettingsFromCache(roleKey);
-    return ds?.teamManagement;
-  }, []);
+    // Removing the last row of the last page (delete / cancel invite) leaves an empty
+    // page past the end — step back instead of showing a false "no one here".
+    useEffect(() => {
+        const current = listQuery.data;
+        if (!current || listQuery.isPlaceholderData) return;
+        if (page > 0 && current.content.length === 0 && current.total_elements > 0) {
+            setPage(Math.max(0, current.total_pages - 1));
+        }
+    }, [listQuery.data, listQuery.isPlaceholderData, page]);
 
-  // Memoized so an institute without `visibleRoles` doesn't get a fresh `{}` each
-  // render — an unstable identity here cascades into allRoles → allRolesFilter and
-  // re-fires the users-of-status fetch effect on every render (infinite loop).
-  const viewerVisibleRoles = useMemo(
-    () => viewerTeamManagement?.visibleRoles ?? {},
-    [viewerTeamManagement]
-  );
+    const refreshTeam = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['TEAM_MEMBERS'] });
+        queryClient.invalidateQueries({ queryKey: ['TEAM_COUNTS'] });
+    }, [queryClient]);
 
-  // Org Chart tab is opt-in per institute. Default false so it stays hidden
-  // until an admin explicitly flips it on under Settings → Admin Display Settings.
-  const orgChartTabVisible = viewerTeamManagement?.orgChartTabVisible === true;
+    // Other surfaces (profile edits elsewhere) trigger a Teams refetch through this store.
+    useEffect(() => {
+        setHandleRefetchUsersData(refreshTeam);
+    }, [setHandleRefetchUsersData, refreshTeam]);
 
-  // Password column shows by default; an admin can hide it per institute from
-  // Settings → Admin Display Settings by explicitly turning the flag off. The
-  // value comes straight from the users-of-status response (row.original.password).
-  const allowViewPassword = viewerTeamManagement?.allowViewPassword !== false;
-
-  // All roles from the API for filters and dropdowns. Exclude STUDENT and any
-  // roles the viewer's display settings have hidden — self-role is never
-  // hidden to prevent lockout from admin/teacher self-management.
-  const allRoles = useMemo(() => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const viewerRoles = (getUserRoles(accessToken) || []).map((r) => r.toUpperCase());
-    return customRoles
-      .filter((cr) => cr.name !== 'STUDENT')
-      .filter((cr) => {
-        const key = cr.name.toUpperCase();
-        if (viewerRoles.includes(key)) return true;
-        return viewerVisibleRoles[key] !== false;
-      })
-      .map((cr) => ({
-        id: cr.id,
-        name: cr.name,
-      }));
-  }, [customRoles, viewerVisibleRoles]);
-
-  // Default filter with all roles (used in API calls when no filter selected)
-  const allRolesFilter = useMemo(() => {
-    return allRoles.map((r) => ({ id: r.id, name: r.name }));
-  }, [allRoles]);
-
-  // The tab's default status set (Institute Users = ACTIVE/DISABLED, Invites = INVITED).
-  const statusDefaultForTab = (tab: TabKey) =>
-    tab === 'instituteUsers'
-      ? [
-        { id: '1', name: 'ACTIVE' },
-        { id: '2', name: 'DISABLED' },
-      ]
-      : [{ id: '1', name: 'INVITED' }];
-
-  // Resolve the filter we actually send: mirrors the existing role/status defaulting (no
-  // explicit roles/status → fall back to all-roles + tab-default status) and carries the
-  // sub-org selection through so the sub-org filter survives pagination / refetch. Empty
-  // status would otherwise leak INVITED users into the Institute Users tab, so we always
-  // default it when the user hasn't picked one.
-  const buildEffectiveFilter = (
-    filter: RoleTypeSelectedFilter,
-    tab: TabKey
-  ): RoleTypeSelectedFilter => {
-    const hasRoleOrStatus = filter.roles.length > 0 || filter.status.length > 0;
-    return {
-      roles: hasRoleOrStatus ? filter.roles : allRolesFilter,
-      status: hasRoleOrStatus ? filter.status : statusDefaultForTab(tab),
-      subOrgs: filter.subOrgs ?? [],
+    // ---- Actions ----------------------------------------------------------------------
+    const copyLogin = async (member: TeamMember) => {
+        try {
+            await navigator.clipboard.writeText(
+                t('login.copyTemplate', {
+                    username: member.username,
+                    password: member.password ?? '',
+                })
+            );
+            toast.success(t('login.copied'));
+        } catch {
+            toast.error(t('login.copyFailed'));
+        }
     };
-  };
 
-  // Transform RoleType data to show custom names while preserving backend values
-  const roleTypeWithCustomNames = allRoles.map((role) => ({
-    ...role,
-    name: mapRoleToCustomName(role.name),
-    label: mapRoleToCustomName(role.name),
-  }));
-
-  const roleStatusWithLabel = RoleTypeUserStatus.map((status) => ({
-    ...status,
-    label: status.name,
-  }));
-
-
-
-  const getDashboardUsersData = useMutation({
-    mutationFn: ({
-      instituteId,
-      selectedFilter,
-      pageNumber,
-      name,
-    }: {
-      instituteId: string | undefined;
-      selectedFilter: RoleTypeSelectedFilter;
-      pageNumber: number;
-      name?: string;
-    }) => {
-      // When a sub-org filter is active, resolve the matching user IDs from the cached
-      // institute-wide links map (covers all pages → server-side pagination stays correct)
-      // and pass them as user_ids. The backend ANDs user_ids with roles/status and returns an
-      // empty page for an empty list, so a zero-match selection needs no special handling here.
-      //
-      // Scope note: this matches on INDIVIDUAL linkage (FSPSSM) only — it does not pick up
-      // people who reach a sub-org through a role grant (Display Settings → <role> →
-      // Channel Partners), which the Sub-Orgs column does show. Covering both would need
-      // "linked to X OR holding a role that grants X", and the endpoint ANDs user_ids with
-      // roles rather than ORing them, so it needs backend support first. Unchanged from
-      // before role grants existed.
-      const selectedSubOrgIds = (selectedFilter.subOrgs ?? []).map((s) => s.id);
-      let userIds: string[] | undefined;
-      if (selectedSubOrgIds.length > 0) {
-        const selectedSet = new Set(selectedSubOrgIds);
-        userIds = (userSubOrgLinks ?? [])
-          .filter((link) => link.sub_orgs.some((so) => selectedSet.has(so.id)))
-          .map((link) => link.user_id);
-      }
-      return fetchInstituteDashboardUsers(
-        instituteId,
-        selectedFilter,
-        pageNumber,
-        pageSize,
-        name || '',
-        userIds
-      );
-    },
-    onSuccess: (data) => {
-      console.log('data', data);
-      if (selectedTab === 'instituteUsers') {
-        setDashboardUsers((prev) => ({ ...prev, instituteUsers: data }));
-      } else {
-        setDashboardUsers((prev) => ({ ...prev, invites: data }));
-      }
-    },
-    onError: (error: unknown) => {
-      throw error;
-    },
-  });
-
-  const handleSubmitFilters = () => {
-    setPage(0); // Reset to first page when filters change
-    getDashboardUsersData.mutate({
-      instituteId,
-      selectedFilter: buildEffectiveFilter(selectedFilter, selectedTab),
-      pageNumber: 0,
-      name: searchFilter,
-    });
-  };
-
-  const handleResetFilters = () => {
-    setPage(0);
-    setSelectedFilter({
-      roles: [],
-      status: [],
-      subOrgs: [],
-    });
-    getDashboardUsersData.mutate({
-      instituteId,
-      selectedFilter: buildEffectiveFilter({ roles: [], status: [], subOrgs: [] }, selectedTab),
-      pageNumber: 0,
-      name: searchFilter,
-    });
-  };
-
-  const handleSearch = () => {
-    if (searchInput.trim()) {
-      setSearchFilter(searchInput);
-      setPage(0);
-      getDashboardUsersData.mutate({
-        instituteId,
-        selectedFilter: buildEffectiveFilter(selectedFilter, selectedTab),
-        pageNumber: 0,
-        name: searchInput,
-      });
-    }
-  };
-
-  const handleTabChange = (value: string) => {
-    if (value === 'orgChart') {
-      // Defence in depth: if the flag is off, do not switch to the org tab
-      // even if some stale URL/router state asks for it.
-      if (!orgChartTabVisible) return;
-      setSelectedTab('orgChart');
-      // Org chart owns its own data fetching; skip the dashboard users mutation.
-      return;
-    }
-    if (value === 'instituteUsers' || value === 'invites') {
-      setSelectedTab(value as TabKey);
-      setPage(0);
-      // The sub-org filter is Institute-Users-only and the tab-change fetch below intentionally
-      // ignores it (default filter). Clear the selection too so the chips/buttons and the
-      // fetched list stay in sync — otherwise a hidden sub-org selection would linger and
-      // diverge from the displayed list.
-      setSelectedFilter((prev) => ({ ...prev, subOrgs: [] }));
-      getDashboardUsersData.mutate({
-        instituteId,
-        selectedFilter: {
-          roles: allRolesFilter,
-          status:
-            value === 'instituteUsers'
-              ? [
-                { id: '1', name: 'ACTIVE' },
-                { id: '2', name: 'DISABLED' },
-              ]
-              : [{ id: '1', name: 'INVITED' }],
+    const confirmMutation = useMutation({
+        mutationFn: async ({ kind, member }: { kind: TeamConfirmKind; member: TeamMember }) => {
+            if (kind === 'resend') return handleResendUserInvitation(member.id, instituteId);
+            const status =
+                kind === 'disable'
+                    ? 'DISABLED'
+                    : kind === 'enable'
+                      ? 'ACTIVE'
+                      : kind === 'delete'
+                        ? 'DELETE'
+                        : 'CANCEL';
+            return handleDeleteDisableDashboardUsers(instituteId, status, member.id);
         },
-        pageNumber: 0,
-        name: searchFilter,
-      });
-    }
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    getDashboardUsersData.mutate({
-      instituteId,
-      selectedFilter: buildEffectiveFilter(selectedFilter, selectedTab),
-      pageNumber: newPage,
-      name: searchFilter,
+        onSuccess: (data, { kind, member }) => {
+            const name = member.full_name;
+            // The server mails the password only to an unused account it created here;
+            // everyone else gets a sign-in reminder, and the toast says which went out.
+            const reminderOnly = kind === 'resend' && data === 'Sign-in reminder sent';
+            const messages: Partial<Record<TeamConfirmKind, string>> = {
+                disable: t('confirm.disable.toast', { name }),
+                enable: t('confirm.enable.toast', { name }),
+                delete: t('confirm.delete.toast', { name }),
+                resend: t(reminderOnly ? 'confirm.resend.reminderToast' : 'confirm.resend.toast', {
+                    email: member.email,
+                }),
+                cancel: t('confirm.cancel.toast', { name }),
+            };
+            toast.success(messages[kind]);
+            setConfirm(null);
+            if (kind === 'delete') setDrawer((d) => (d?.member.id === member.id ? null : d));
+            if (kind === 'disable' || kind === 'enable') {
+                const status = kind === 'disable' ? 'DISABLED' : 'ACTIVE';
+                setDrawer((d) =>
+                    d?.member.id === member.id ? { ...d, member: { ...d.member, status } } : d
+                );
+            }
+            refreshTeam();
+        },
+        onError: (error) => {
+            const message = (error as { response?: { data?: { ex?: string } } })?.response?.data
+                ?.ex;
+            toast.error(message || t('confirm.failed'));
+        },
     });
-  };
 
-  const handleRefetchData = () => {
-    getDashboardUsersData.mutate({
-      instituteId,
-      selectedFilter: buildEffectiveFilter(selectedFilter, selectedTab),
-      pageNumber: page,
-      name: searchFilter,
-    });
-  };
+    const changeTab = (next: string) => {
+        if (next === 'orgChart' && !orgChartTabVisible) return;
+        setTab(next as TabKey);
+        setPage(0);
+        // Status and sub-org filters are Members-only; clearing keeps chips and data in step.
+        setStatusFilter([]);
+        setSubOrgFilter([]);
+    };
 
-  useEffect(() => {
-    setHandleRefetchUsersData(handleRefetchData);
-  }, [setHandleRefetchUsersData, page, selectedFilter, selectedTab, allRolesFilter]);
-
-  // Fetch custom roles on mount
-  useEffect(() => {
-    getAllRoles()
-      .then((roles: CustomRole[]) => {
-        setCustomRoles(roles || []);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch custom roles:', error);
-      });
-  }, []);
-
-  // Fetch initial data once custom roles are loaded
-  useEffect(() => {
-    setIsLoading(true);
-    fetchInstituteDashboardUsers(instituteId, {
-      roles: allRolesFilter,
-      status: [
-        { id: '1', name: 'ACTIVE' },
-        { id: '2', name: 'DISABLED' },
-      ],
-    }, 0, pageSize)
-      .then((data) => {
-        setDashboardUsers((prev) => ({
-          ...prev,
-          instituteUsers: data,
-        }));
-      })
-      .catch((error) => {
-        console.error(error);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [allRolesFilter]);
-
-  useEffect(() => {
-    setNavHeading('Teams');
-  }, []);
-
-  // Convert TeamMember to UserRolesDataEntry for the options components
-  const toUserRolesDataEntry = (member: TeamMember): UserRolesDataEntry => ({
-    id: member.id,
-    username: member.username,
-    email: member.email,
-    full_name: member.full_name,
-    address_line: null,
-    city: null,
-    region: null,
-    pin_code: null,
-    mobile_number: member.mobile_number,
-    date_of_birth: null,
-    gender: null,
-    password: null,
-    profile_pic_file_id: member.profile_pic_file_id,
-    roles: member.roles.map((r) => ({
-      role_name: r.role_name,
-      status: r.status,
-      role_id: r.role_id,
-    })),
-    root_user: member.root_user,
-    status: member.status || '',
-  });
-
-  // Define table columns
-  const columns: ColumnDef<TeamMember>[] = [
-    {
-      accessorKey: 'full_name',
-      header: 'Name',
-      size: 200,
-      cell: ({ row }) => (
-        <div className="text-sm font-medium text-neutral-700">
-          {row.original.full_name || '-'}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'email',
-      header: 'Email',
-      size: 250,
-      cell: ({ row }) => (
-        <div className="text-sm text-neutral-600">
-          {row.original.email || '-'}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'username',
-      header: 'Username',
-      size: 150,
-      cell: ({ row }) => (
-        <div className="text-sm text-neutral-600">
-          {row.original.username || '-'}
-        </div>
-      ),
-    },
-    ...(allowViewPassword
-      ? [
-          {
-            id: 'password',
-            header: 'Password',
-            size: 200,
-            cell: ({ row }) => <PasswordCell password={row.original.password} />,
-          } as ColumnDef<TeamMember>,
-        ]
-      : []),
-    {
-      accessorKey: 'mobile_number',
-      header: 'Phone',
-      size: 150,
-      cell: ({ row }) => (
-        <div className="text-sm text-neutral-600">
-          {row.original.mobile_number || '-'}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'roles',
-      header: 'Roles',
-      size: 250,
-      cell: ({ row }) => {
-        const instituteRoles = row.original.roles.filter(
-          (role) => role.institute_id === instituteId
-        );
-        return (
-          <div className="flex flex-wrap gap-1">
-            {instituteRoles.map((role) => (
-              <span
-                key={role.id}
-                className="rounded-full bg-primary-100 px-2 py-0.5 text-xs text-primary-700"
-              >
-                {mapRoleToCustomName(role.role_name)}
-              </span>
-            ))}
-          </div>
-        );
-      },
-    },
-    {
-      id: 'subOrgs',
-      header: 'Sub-Orgs',
-      size: 220,
-      cell: ({ row }) => {
-        // Access comes from two places and the column has to reflect both, or an
-        // admin can't tell "no access" from "access via role":
-        //   - individual: a SUB_ORG-linked FSPSSM row (added from a partner's Team tab)
-        //   - role:       Display Settings -> <role> -> Channel Partners
-        // Same union the backend applies. Individual wins the label if both grant it.
-        const direct = linksMap.get(row.original.id) ?? [];
-        const seen = new Set(direct.map((s) => s.id));
-
-        const viaRole: { id: string; name: string }[] = [];
-        row.original.roles
-          .filter((role) => role.institute_id === instituteId)
-          .forEach((role) => {
-            (roleGrantMap.get(role.role_id ?? '') ?? []).forEach((id) => {
-              if (seen.has(id)) return;
-              seen.add(id);
-              viaRole.push({ id, name: subOrgNameById.get(id) ?? id });
-            });
-          });
-
-        if (direct.length === 0 && viaRole.length === 0) {
-          return <div className="text-sm text-neutral-400">-</div>;
+    const openStat = (key: 'all' | 'ACTIVE' | 'DISABLED' | 'invites') => {
+        setPage(0);
+        if (key === 'invites') {
+            changeTab('invites');
+            return;
         }
-        return (
-          <div className="flex flex-wrap gap-1">
-            {direct.map((subOrg) => (
-              <span
-                key={subOrg.id}
-                className="rounded-full bg-info-50 px-2 py-0.5 text-xs text-info-600"
-                title="Assigned to this person"
-              >
-                {subOrg.name}
-              </span>
-            ))}
-            {viaRole.map((subOrg) => (
-              <span
-                key={subOrg.id}
-                className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600"
-                title="Granted by this person's role"
-              >
-                {subOrg.name}
-                <span className="ml-1 text-neutral-400">via role</span>
-              </span>
-            ))}
-          </div>
-        );
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      size: 80,
-      cell: ({ row }) => {
-        const member = row.original;
-        const userEntry = toUserRolesDataEntry(member);
-        if (selectedTab === 'instituteUsers') {
-          return (
-            <InstituteUsersOptions
-              user={userEntry}
-              refetchData={handleRefetchData}
-              availableRoles={allRoles}
-              subOrgAssign={
-                canAssignSubOrgs
-                  ? {
-                      label: `Assign ${subOrgTermPlural.toLowerCase()}`,
-                      // Individual links only. Role-derived access isn't editable
-                      // per person — it's changed on the role in Display Settings.
-                      currentSubOrgIds: (linksMap.get(member.id) ?? []).map((s) => s.id),
-                    }
-                  : undefined
-              }
+        setTab('members');
+        setSubOrgFilter([]);
+        setStatusFilter(key === 'all' ? [] : [key]);
+    };
+
+    const toggleIn = (list: string[], value: string) =>
+        list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+    const filtersActive =
+        roleFilter.length > 0 || statusFilter.length > 0 || subOrgFilter.length > 0 || !!search;
+    const clearAll = () => {
+        setRoleFilter([]);
+        setStatusFilter([]);
+        setSubOrgFilter([]);
+        setSearchInput('');
+        setPage(0);
+    };
+
+    // ---- Columns ----------------------------------------------------------------------
+    const memberCell = (member: TeamMember, invite: boolean) => (
+        <div className="flex min-w-0 items-center gap-3">
+            <MemberAvatar
+                name={member.full_name}
+                dashed={invite}
+                muted={member.status === 'DISABLED'}
             />
-          );
-        }
-        return (
-          <InviteUsersOptions
-            user={userEntry}
-            refetchData={handleRefetchData}
-            availableRoles={allRoles}
-          />
-        );
-      },
-    },
-  ];
+            <div className="min-w-0 max-w-64">
+                <div
+                    className={`text-body ${cn(
+                        'truncate font-semibold',
+                        member.status === 'DISABLED' ? 'text-neutral-500' : 'text-neutral-900'
+                    )}`}
+                >
+                    {member.full_name || '—'}
+                </div>
+                <div className="truncate text-caption text-neutral-500" title={member.email}>
+                    {member.email || '—'}
+                </div>
+            </div>
+        </div>
+    );
 
-
-
-  const currentData = selectedTab === 'instituteUsers'
-    ? dashboardUsers.instituteUsers
-    : dashboardUsers.invites;
-
-  return (
-    <LayoutContainer>
-      <Tabs value={selectedTab} onValueChange={handleTabChange}>
-        <div className="mb-6 flex items-center justify-between">
-          <TabsList className="inline-flex h-auto justify-start gap-4 rounded-none border-b !bg-transparent p-0">
-            <TabsTrigger
-              value="instituteUsers"
-              className={`flex gap-1.5 rounded-none px-12 py-2 !shadow-none ${selectedTab === 'instituteUsers'
-                ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                : 'border-none bg-transparent'
-                }`}
-            >
-              <span className={`${selectedTab === 'instituteUsers' ? 'text-primary-500' : ''}`}>
-                Institute Users
-              </span>
-              <Badge
-                className="rounded-lg bg-primary-500 p-0 px-2 text-caption text-white"
-                variant="outline"
-              >
-                {dashboardUsers.instituteUsers?.total_elements || 0}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger
-              value="invites"
-              className={`flex gap-1.5 rounded-none px-12 py-2 !shadow-none ${selectedTab === 'invites'
-                ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                : 'border-none bg-transparent'
-                }`}
-            >
-              <span className={`${selectedTab === 'invites' ? 'text-primary-500' : ''}`}>
-                Invites
-              </span>
-              <Badge
-                className="rounded-lg bg-primary-500 p-0 px-2 text-caption text-white"
-                variant="outline"
-              >
-                {dashboardUsers.invites?.total_elements || 0}
-              </Badge>
-            </TabsTrigger>
-            {orgChartTabVisible && (
-              <TabsTrigger
-                value="orgChart"
-                className={`flex gap-1.5 rounded-none px-12 py-2 !shadow-none ${selectedTab === 'orgChart'
-                  ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                  : 'border-none bg-transparent'
-                  }`}
-              >
-                <span className={`${selectedTab === 'orgChart' ? 'text-primary-500' : ''}`}>
-                  Org Chart
+    const loginCell = (member: TeamMember) => (
+        <div className="flex min-w-0 flex-col">
+            <span className="truncate font-mono text-caption text-neutral-700">
+                {member.username || '—'}
+            </span>
+            {allowViewPassword && (
+                <span className="flex items-center gap-1.5">
+                    <span className="truncate font-mono text-caption text-neutral-500">
+                        {member.password || '—'}
+                    </span>
+                    {member.password && (
+                        <button
+                            type="button"
+                            className="shrink-0 text-neutral-400 hover:text-primary-500"
+                            aria-label={t('login.copyDetails')}
+                            title={t('login.copyDetails')}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                void copyLogin(member);
+                            }}
+                        >
+                            <Copy size={14} />
+                        </button>
+                    )}
                 </span>
-              </TabsTrigger>
             )}
-          </TabsList>
-          {selectedTab !== 'orgChart' && (
-            <InviteUsersComponent refetchData={handleRefetchData} availableRoles={allRoles} />
-          )}
         </div>
+    );
 
-        {selectedTab === 'orgChart' && orgChartTabVisible && instituteId ? (
-          <OrgChartTab instituteId={instituteId} />
+    const phoneCell = (member: TeamMember) => {
+        const phone = formatPhoneForDisplay(member.mobile_number, defaultCountry);
+        return phone ? (
+            <span className="whitespace-nowrap text-body tabular-nums text-neutral-700">
+                {phone}
+            </span>
         ) : (
-        <>
-        <div className="mb-4 flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-          <div className="flex w-80 items-center gap-2">
-            <div className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
-            >
-              <SearchInput
-                searchInput={searchInput}
-                onSearchChange={(e) => {
-                  setSearchInput(e.target.value);
-                  // Auto-clear search when input is empty
-                  if (e.target.value === '') {
-                    setSearchFilter('');
-                    setPage(0);
-                    getDashboardUsersData.mutate({
-                      instituteId,
-                      selectedFilter: buildEffectiveFilter(selectedFilter, selectedTab),
-                      pageNumber: 0,
-                      name: '',
-                    });
-                  }
-                }}
-                placeholder="Search by name, email..."
-              />
+            <span className="text-neutral-400">—</span>
+        );
+    };
+
+    const rolesCell = (member: TeamMember) => (
+        <div className="flex flex-wrap gap-1.5">
+            {instituteRolesOf(member, instituteId).map((role) => (
+                <RoleChip
+                    key={role.id}
+                    name={role.role_name}
+                    option={roleOptionByName.get(role.role_name)}
+                />
+            ))}
+        </div>
+    );
+
+    // Sub-org names a member reaches: individual links first, then role grants.
+    const subOrgNamesOf = (member: TeamMember): string[] => {
+        const direct = (linksMap.get(member.id) ?? []).map((so) => so.name);
+        const directIds = new Set((linksMap.get(member.id) ?? []).map((so) => so.id));
+        const viaRole = new Set<string>();
+        instituteRolesOf(member, instituteId).forEach((role) =>
+            (roleGrantMap.get(role.role_id ?? '') ?? []).forEach((id) => {
+                if (!directIds.has(id)) viaRole.add(subOrgNameById.get(id) ?? id);
+            })
+        );
+        return [...direct, ...[...viaRole].map((name) => `${name} (via role)`)];
+    };
+
+    /** Everything matching the current tab, search and filters — not just the visible page. */
+    const exportCurrentList = async () => {
+        const exportTab = tab === 'invites' ? 'invites' : 'members';
+        const query =
+            tab === 'orgChart'
+                ? { roles: allRoleNames, statuses: [...MEMBER_STATUSES], name: '' }
+                : listQueryInput;
+        setExporting(true);
+        try {
+            const { members, truncated } = await fetchAllTeamMembers(instituteId, query);
+            if (members.length === 0) {
+                toast.info(t('export.empty'));
+                return;
+            }
+            const csv = buildTeamExportCsv(members, {
+                instituteId,
+                tab: exportTab,
+                roleOptions,
+                includePasswords: allowViewPassword,
+                defaultCountry,
+                subOrgsOf: hasSubOrgs ? subOrgNamesOf : undefined,
+            });
+            triggerCsvDownload(csv, teamExportFileName(exportTab));
+            toast.success(
+                truncated
+                    ? t('export.truncated', { count: members.length })
+                    : t('export.done', { count: members.length })
+            );
+        } catch {
+            toast.error(t('export.failed'));
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const subOrgCell = (member: TeamMember) => {
+        // Individual links (FSPSSM) and role grants — the same union the backend applies.
+        const direct = linksMap.get(member.id) ?? [];
+        const seen = new Set(direct.map((s) => s.id));
+        const viaRole: { id: string; name: string }[] = [];
+        instituteRolesOf(member, instituteId).forEach((role) => {
+            (roleGrantMap.get(role.role_id ?? '') ?? []).forEach((id) => {
+                if (seen.has(id)) return;
+                seen.add(id);
+                viaRole.push({ id, name: subOrgNameById.get(id) ?? id });
+            });
+        });
+        const chips = [
+            ...direct.map((so) => ({ ...so, via: false })),
+            ...viaRole.map((so) => ({ ...so, via: true })),
+        ];
+        if (chips.length === 0) return <span className="text-neutral-400">—</span>;
+        return (
+            <div className="flex flex-wrap gap-1.5">
+                {chips.slice(0, 2).map((so) =>
+                    so.via ? (
+                        <span
+                            key={so.id}
+                            title={t('subOrgColumn.grantedByRoleTooltip')}
+                            className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md border border-dashed border-neutral-300 bg-white px-2 text-caption text-neutral-600"
+                        >
+                            {so.name}
+                            <span className="text-neutral-400">{t('subOrgColumn.viaRole')}</span>
+                        </span>
+                    ) : (
+                        <span
+                            key={so.id}
+                            title={t('subOrgColumn.assignedTooltip')}
+                            className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-info-50 px-2 text-caption font-semibold text-info-700"
+                        >
+                            <Buildings size={13} />
+                            {so.name}
+                        </span>
+                    )
+                )}
+                {chips.length > 2 && (
+                    <span
+                        className="inline-flex h-6 items-center rounded-md bg-neutral-100 px-2 text-caption font-semibold text-neutral-600"
+                        title={chips
+                            .slice(2)
+                            .map((so) => so.name)
+                            .join(', ')}
+                    >
+                        +{chips.length - 2}
+                    </span>
+                )}
             </div>
-            {searchInput.length > 0 && (
-              <button
-                onClick={handleSearch}
-                className="flex h-5 w-5 items-center justify-center rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-colors shadow-sm"
-              >
-                <ArrowElbowDownLeft size={14} weight="bold" />
-              </button>
+        );
+    };
+
+    const memberColumns: TeamColumn<TeamMember>[] = [
+        { id: 'member', header: t('columns.member'), cell: (row) => memberCell(row, false) },
+        { id: 'login', header: t('columns.login'), interactive: true, cell: loginCell },
+        { id: 'phone', header: t('columns.phone'), cell: phoneCell },
+        { id: 'roles', header: t('columns.roles'), cell: rolesCell },
+        ...(hasSubOrgs ? [{ id: 'subOrgs', header: t('columns.subOrgs'), cell: subOrgCell }] : []),
+        {
+            id: 'status',
+            header: t('columns.status'),
+            className: 'w-36',
+            cell: (row) => (
+                <div className="flex flex-col items-start gap-1">
+                    <MemberStatusPill status={row.status} />
+                    {row.status !== 'DISABLED' && hasNeverSignedIn(row) && <NotSignedInTag />}
+                </div>
+            ),
+        },
+        {
+            id: 'actions',
+            header: '',
+            className: 'w-24',
+            interactive: true,
+            cell: (row) => (
+                <MemberRowActions
+                    member={row}
+                    canAssignSubOrgs={canAssignSubOrgs}
+                    subOrgLabel={t('assignSubOrgs', { term: subOrgTermPlural.toLowerCase() })}
+                    canCopyLogin={allowViewPassword}
+                    onEdit={(member, section) => setDrawer({ member, section })}
+                    onCopyLogin={copyLogin}
+                    onStatus={(kind, member) => setConfirm({ kind, member })}
+                />
+            ),
+        },
+    ];
+
+    const inviteColumns: TeamColumn<TeamMember>[] = [
+        { id: 'member', header: t('columns.invitee'), cell: (row) => memberCell(row, true) },
+        { id: 'roles', header: t('columns.invitedAs'), cell: rolesCell },
+        { id: 'phone', header: t('columns.phone'), cell: phoneCell },
+        { id: 'login', header: t('columns.login'), interactive: true, cell: loginCell },
+        {
+            id: 'status',
+            header: t('columns.status'),
+            className: 'w-36',
+            cell: () => <MemberStatusPill status="INVITED" />,
+        },
+        {
+            id: 'actions',
+            header: '',
+            className: 'w-40',
+            interactive: true,
+            cell: (row) => (
+                <InviteRowActions
+                    invite={row}
+                    canCopyLogin={allowViewPassword}
+                    onEdit={(invite) => setInviteDialog({ mode: 'edit', invite })}
+                    onResend={(invite) => setConfirm({ kind: 'resend', member: invite })}
+                    onCancel={(invite) => setConfirm({ kind: 'cancel', member: invite })}
+                    onCopyLogin={copyLogin}
+                />
+            ),
+        },
+    ];
+
+    const openRow = (row: TeamMember) => {
+        if (tab === 'invites') setInviteDialog({ mode: 'edit', invite: row });
+        else setDrawer({ member: row });
+    };
+
+    // ---- Filters ----------------------------------------------------------------------
+    const roleFilterOptions = roleOptions.map((option) => ({
+        id: option.name,
+        label: option.custom ? t('filters.customRoleOption', { role: option.label }) : option.label,
+    }));
+    const statusFilterOptions = MEMBER_STATUSES.map((status) => ({
+        id: status,
+        label: status === 'ACTIVE' ? t('status.active') : t('status.disabled'),
+    }));
+    const subOrgFilterOptions = (accessibleSubOrgs ?? []).map((so) => ({
+        id: so.id,
+        label: so.name,
+    }));
+    const labelFor = (options: { id: string; label: string }[], ids: string[]) =>
+        ids.map((id) => ({ id, label: options.find((o) => o.id === id)?.label ?? id }));
+
+    // ---- Render -----------------------------------------------------------------------
+    const data = listQuery.data;
+    // Members carry no status from the API; derive it from their roles here (see memberStatusOf)
+    // so the pill, the row menu and the drawer all agree.
+    const rows = useMemo(
+        () =>
+            (data?.content ?? []).map((member) =>
+                tab === 'members'
+                    ? { ...member, status: memberStatusOf(member, instituteId) }
+                    : member
+            ),
+        [data, tab, instituteId]
+    );
+    const memberTotal = counts ? counts.active + counts.disabled : undefined;
+    const statCards: {
+        key: 'all' | 'ACTIVE' | 'DISABLED' | 'invites';
+        tone: RoleTone;
+        icon: Icon;
+        label: string;
+        value: number | undefined;
+        caption: string;
+        active: boolean;
+    }[] = [
+        {
+            key: 'all',
+            tone: 'primary',
+            icon: Users,
+            label: t('stats.members'),
+            value: memberTotal,
+            caption: t('stats.membersCaption'),
+            active: tab === 'members' && statusFilter.length === 0,
+        },
+        {
+            key: 'ACTIVE',
+            tone: 'success',
+            icon: CheckCircle,
+            label: t('stats.active'),
+            value: counts?.active,
+            caption: t('stats.activeCaption'),
+            active: tab === 'members' && statusFilter.length === 1 && statusFilter[0] === 'ACTIVE',
+        },
+        {
+            key: 'DISABLED',
+            tone: 'neutral',
+            icon: Prohibit,
+            label: t('stats.disabled'),
+            value: counts?.disabled,
+            caption: t('stats.disabledCaption'),
+            active:
+                tab === 'members' && statusFilter.length === 1 && statusFilter[0] === 'DISABLED',
+        },
+        {
+            key: 'invites',
+            tone: 'warning',
+            icon: Clock,
+            label: t('stats.invites'),
+            value: counts?.invited,
+            caption: t('stats.invitesCaption'),
+            active: tab === 'invites',
+        },
+    ];
+
+    const tabTrigger = (key: TabKey, label: string, count?: number) => (
+        <TabsTrigger
+            value={key}
+            className="-mb-px h-auto gap-2 rounded-none border-b-2 border-transparent px-3 pb-3 pt-3.5 text-body font-semibold text-neutral-500 hover:text-neutral-800 data-[state=active]:border-primary-500 data-[state=active]:bg-transparent data-[state=active]:text-primary-500 data-[state=active]:shadow-none"
+        >
+            {label}
+            {count !== undefined && (
+                <span
+                    className={`text-caption ${cn(
+                        'rounded-full px-2 font-semibold',
+                        tab === key
+                            ? 'bg-primary-100 text-primary-600'
+                            : 'bg-neutral-100 text-neutral-600'
+                    )}`}
+                >
+                    {count}
+                </span>
             )}
-          </div>
-          <div className="flex items-center gap-3">
-            <FilterChips
-              label="Role Type"
-              filterList={roleTypeWithCustomNames}
-              selectedFilters={selectedFilter.roles.map(r => ({ id: r.id, label: r.name }))}
-              handleSelect={(option) => {
-                const isSelected = selectedFilter.roles.some(r => r.id === option.id);
-                if (isSelected) {
-                  // Remove the option
-                  setSelectedFilter(prev => ({
-                    ...prev,
-                    roles: prev.roles.filter(r => r.id !== option.id)
-                  }));
-                } else {
-                  // Add the option
-                  const originalRole = allRoles.find((role) => role.id === option.id);
-                  setSelectedFilter(prev => ({
-                    ...prev,
-                    roles: [...prev.roles, {
-                      id: option.id,
-                      name: originalRole?.name || option.label || '',
-                    }]
-                  }));
+        </TabsTrigger>
+    );
+
+    const emptyState = (() => {
+        if (filtersActive) {
+            return {
+                icon: MagnifyingGlass,
+                title: t('emptyState.filteredTitle'),
+                body: t('emptyState.filteredBody'),
+                action: (
+                    <MyButton buttonType="secondary" onClick={clearAll}>
+                        <X size={16} />
+                        {t('filters.clearAllFilters')}
+                    </MyButton>
+                ),
+            };
+        }
+        return {
+            icon: tab === 'invites' ? PaperPlaneTilt : Users,
+            title:
+                tab === 'invites' ? t('emptyState.invitesTitle') : t('emptyState.noMembersTitle'),
+            body: tab === 'invites' ? t('emptyState.invitesBody') : t('emptyState.noMembersBody'),
+            action: (
+                <MyButton buttonType="primary" onClick={() => setInviteDialog({ mode: 'new' })}>
+                    <UserPlus size={16} />
+                    {t('header.invite')}
+                </MyButton>
+            ),
+        };
+    })();
+    const EmptyIcon = emptyState.icon;
+
+    const listLoading =
+        (listQuery.isLoading && !data) || (rolesQuery.isLoading && tab !== 'orgChart');
+    const listError = listQuery.isError || rolesQuery.isError;
+
+    return (
+        <LayoutContainer>
+            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0">
+                    <h2 className="text-h2 font-semibold text-neutral-900">{t('header.title')}</h2>
+                    <p className="mt-1 max-w-3xl text-body text-neutral-500">
+                        {t('header.subtitle')}
+                    </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        disable={allRoleNames.length === 0}
+                        onClick={() => setImportOpen(true)}
+                    >
+                        <UploadSimple size={16} />
+                        {t('header.import')}
+                    </MyButton>
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        disable={exporting || allRoleNames.length === 0}
+                        onClick={() => void exportCurrentList()}
+                    >
+                        {exporting ? (
+                            <CircleNotch size={16} className="animate-spin" />
+                        ) : (
+                            <DownloadSimple size={16} />
+                        )}
+                        {t('header.export')}
+                    </MyButton>
+                    <MyButton
+                        buttonType="primary"
+                        scale="medium"
+                        onClick={() => setInviteDialog({ mode: 'new' })}
+                    >
+                        <UserPlus size={16} />
+                        {t('header.invite')}
+                    </MyButton>
+                </div>
+            </div>
+
+            <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                {statCards.map((card) => {
+                    const CardIcon = card.icon;
+                    return (
+                        <button
+                            key={card.key}
+                            type="button"
+                            onClick={() => openStat(card.key)}
+                            className={cn(
+                                'flex items-center gap-3.5 rounded-lg border bg-white p-4 text-left shadow-sm transition-all hover:border-neutral-300 hover:shadow-md',
+                                card.active
+                                    ? 'border-primary-300 ring-2 ring-primary-50'
+                                    : 'border-neutral-200'
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    'flex size-11 shrink-0 items-center justify-center rounded-lg',
+                                    TONE_TILE[card.tone]
+                                )}
+                            >
+                                <CardIcon size={22} />
+                            </span>
+                            <span className="min-w-0">
+                                <span className="block text-caption font-semibold text-neutral-500">
+                                    {card.label}
+                                </span>
+                                <span className="block text-h2 font-bold text-neutral-900">
+                                    {card.value ?? '—'}
+                                </span>
+                                <span className="block truncate text-caption text-neutral-400">
+                                    {card.caption}
+                                </span>
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="rounded-lg border border-neutral-200 bg-white shadow-sm">
+                <Tabs value={tab} onValueChange={changeTab}>
+                    <TabsList className="flex h-auto w-full justify-start gap-1 rounded-none border-b border-neutral-200 bg-transparent px-4 py-0">
+                        {tabTrigger('members', t('tabs.members'), memberTotal)}
+                        {tabTrigger('invites', t('tabs.invites'), counts?.invited)}
+                        {orgChartTabVisible && tabTrigger('orgChart', t('tabs.orgChart'))}
+                    </TabsList>
+                </Tabs>
+
+                {tab === 'orgChart' && orgChartTabVisible && instituteId ? (
+                    <div className="p-4">
+                        <OrgChartTab instituteId={instituteId} />
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex flex-wrap items-center gap-2 p-4">
+                            <div className="relative w-full sm:w-80">
+                                <MagnifyingGlass
+                                    size={16}
+                                    className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400"
+                                />
+                                <MyInput
+                                    inputType="text"
+                                    input={searchInput}
+                                    onChangeFunction={(event) => {
+                                        setSearchInput(event.target.value);
+                                        setPage(0);
+                                    }}
+                                    inputPlaceholder={t('search.placeholder')}
+                                    className="px-9 sm:w-80"
+                                />
+                                {searchInput && (
+                                    <button
+                                        type="button"
+                                        aria-label={t('search.clear')}
+                                        onClick={() => setSearchInput('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <FilterChips
+                                label={t('filters.roleType')}
+                                filterList={roleFilterOptions}
+                                selectedFilters={labelFor(roleFilterOptions, roleFilter)}
+                                handleSelect={(option) => {
+                                    setRoleFilter((prev) => toggleIn(prev, option.id));
+                                    setPage(0);
+                                }}
+                                handleClearFilters={() => setRoleFilter([])}
+                            />
+                            {tab === 'members' && (
+                                <FilterChips
+                                    label={t('filters.status')}
+                                    filterList={statusFilterOptions}
+                                    selectedFilters={labelFor(statusFilterOptions, statusFilter)}
+                                    handleSelect={(option) => {
+                                        setStatusFilter((prev) => toggleIn(prev, option.id));
+                                        setPage(0);
+                                    }}
+                                    handleClearFilters={() => setStatusFilter([])}
+                                />
+                            )}
+                            {tab === 'members' && hasSubOrgs && userSubOrgLinks !== undefined && (
+                                <FilterChips
+                                    label={t('filters.subOrg')}
+                                    filterList={subOrgFilterOptions}
+                                    selectedFilters={labelFor(subOrgFilterOptions, subOrgFilter)}
+                                    handleSelect={(option) => {
+                                        setSubOrgFilter((prev) => toggleIn(prev, option.id));
+                                        setPage(0);
+                                    }}
+                                    handleClearFilters={() => setSubOrgFilter([])}
+                                />
+                            )}
+                            {filtersActive && (
+                                <MyButton buttonType="text" scale="small" onClick={clearAll}>
+                                    {t('filters.clearAll')}
+                                </MyButton>
+                            )}
+                            <span className="ms-auto hidden items-center gap-1.5 text-caption text-neutral-400 lg:flex">
+                                <CursorClick size={14} />
+                                {tab === 'invites' ? t('hint.invites') : t('hint.members')}
+                            </span>
+                        </div>
+
+                        {listError ? (
+                            <div className="flex flex-col items-center gap-3 border-t border-neutral-200 px-6 py-14 text-center">
+                                <WarningCircle size={32} className="text-danger-600" />
+                                <p className="text-body text-neutral-600">{t('error.body')}</p>
+                                <MyButton
+                                    buttonType="secondary"
+                                    onClick={() => {
+                                        void rolesQuery.refetch();
+                                        void listQuery.refetch();
+                                    }}
+                                >
+                                    <ArrowCounterClockwise size={16} />
+                                    {t('error.retry')}
+                                </MyButton>
+                            </div>
+                        ) : !listLoading && data && data.content.length === 0 ? (
+                            <div className="flex flex-col items-center border-t border-neutral-200 px-6 py-14 text-center">
+                                <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-primary-50 text-primary-500 ring-8 ring-primary-50">
+                                    <EmptyIcon size={28} />
+                                </div>
+                                <h3 className="mb-1.5 text-subtitle font-semibold text-neutral-900">
+                                    {emptyState.title}
+                                </h3>
+                                <p className="mb-5 max-w-md text-body text-neutral-500">
+                                    {emptyState.body}
+                                </p>
+                                {emptyState.action}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="border-t border-neutral-200">
+                                    <TeamTable<TeamMember>
+                                        rows={rows}
+                                        columns={tab === 'invites' ? inviteColumns : memberColumns}
+                                        loading={listLoading || !data}
+                                        onRowClick={openRow}
+                                        rowLabel={(row) =>
+                                            t('table.openRow', { name: row.full_name || row.email })
+                                        }
+                                    />
+                                </div>
+                                {data && data.total_elements > 0 && (
+                                    <div className="border-t border-neutral-200 px-4 py-3">
+                                        <MyPagination
+                                            currentPage={page}
+                                            totalPages={data.total_pages}
+                                            onPageChange={setPage}
+                                            totalElements={data.total_elements}
+                                            pageSize={pageSize}
+                                            onPageSizeChange={(size) => {
+                                                setPageSize(size);
+                                                setPage(0);
+                                            }}
+                                            pageSizeOptions={[10, 25, 50]}
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {instituteId && importOpen && (
+                <TeamImportDialog
+                    open
+                    onOpenChange={(open) => !open && setImportOpen(false)}
+                    instituteId={instituteId}
+                    roleOptions={roleOptions}
+                    allRoleNames={allRoleNames}
+                />
+            )}
+
+            {instituteId && inviteDialog && (
+                <InviteMemberDialog
+                    open
+                    onOpenChange={(open) => !open && setInviteDialog(null)}
+                    mode={inviteDialog.mode}
+                    invite={inviteDialog.invite}
+                    roleOptions={roleOptions}
+                    instituteId={instituteId}
+                    onViewTeam={() => changeTab('members')}
+                />
+            )}
+
+            {instituteId && drawer && (
+                <MemberDetailsSheet
+                    // Prefer the refetched row: after Enable/Disable it carries the fresh roles
+                    // and status that the snapshot taken on open does not.
+                    member={rows.find((row) => row.id === drawer.member.id) ?? drawer.member}
+                    initialSection={drawer.section}
+                    onClose={() => setDrawer(null)}
+                    instituteId={instituteId}
+                    roleOptions={roleOptions}
+                    canEditProfile={canEditTeamProfiles}
+                    allowViewPassword={allowViewPassword}
+                    subOrgs={accessibleSubOrgs ?? []}
+                    canAssignSubOrgs={canAssignSubOrgs}
+                    directSubOrgIds={(linksMap.get(drawer.member.id) ?? []).map((so) => so.id)}
+                    roleGrantMap={roleGrantMap}
+                    subOrgTerm={subOrgTermPlural}
+                    onRequestStatus={(kind, member) => setConfirm({ kind, member })}
+                    onCopyLogin={copyLogin}
+                />
+            )}
+
+            <TeamConfirmDialog
+                kind={confirm?.kind ?? null}
+                name={confirm?.member.full_name ?? ''}
+                email={confirm?.member.email}
+                busy={confirmMutation.isPending}
+                onClose={() => setConfirm(null)}
+                onConfirm={() => confirm && confirmMutation.mutate(confirm)}
+                onDisableInstead={
+                    confirm?.kind === 'delete' && confirm.member.status !== 'DISABLED'
+                        ? () => setConfirm({ kind: 'disable', member: confirm.member })
+                        : undefined
                 }
-              }}
-              handleClearFilters={() => setSelectedFilter(prev => ({ ...prev, roles: [] }))}
             />
-            {selectedTab === 'instituteUsers' && (
-              <FilterChips
-                label="Status"
-                filterList={roleStatusWithLabel}
-                selectedFilters={selectedFilter.status.map(s => ({ id: s.id, label: s.name }))}
-                handleSelect={(option) => {
-                  const isSelected = selectedFilter.status.some(s => s.id === option.id);
-                  if (isSelected) {
-                    // Remove the option
-                    setSelectedFilter(prev => ({
-                      ...prev,
-                      status: prev.status.filter(s => s.id !== option.id)
-                    }));
-                  } else {
-                    // Add the option - use label as name since they are same for status
-                    setSelectedFilter(prev => ({
-                      ...prev,
-                      status: [...prev.status, {
-                        id: option.id,
-                        name: option.label || '',
-                      }]
-                    }));
-                  }
-                }}
-                handleClearFilters={() => setSelectedFilter(prev => ({ ...prev, status: [] }))}
-              />
-            )}
-            {selectedTab === 'instituteUsers' && subOrgFilterList.length > 0 && userSubOrgLinks !== undefined && (
-              <FilterChips
-                label="Sub-Org"
-                filterList={subOrgFilterList}
-                selectedFilters={(selectedFilter.subOrgs ?? []).map(s => ({ id: s.id, label: s.name }))}
-                handleSelect={(option) => {
-                  const current = selectedFilter.subOrgs ?? [];
-                  const isSelected = current.some(s => s.id === option.id);
-                  if (isSelected) {
-                    setSelectedFilter(prev => ({
-                      ...prev,
-                      subOrgs: (prev.subOrgs ?? []).filter(s => s.id !== option.id),
-                    }));
-                  } else {
-                    setSelectedFilter(prev => ({
-                      ...prev,
-                      subOrgs: [...(prev.subOrgs ?? []), { id: option.id, name: option.label || '' }],
-                    }));
-                  }
-                }}
-                handleClearFilters={() => setSelectedFilter(prev => ({ ...prev, subOrgs: [] }))}
-              />
-            )}
-            <div className="flex items-center gap-2">
-              {(selectedFilter.roles.length > 0 || selectedFilter.status.length > 0 || (selectedFilter.subOrgs?.length ?? 0) > 0) && (
-                <MyButton
-                  buttonType="primary"
-                  scale="small"
-                  onClick={handleSubmitFilters}
-                >
-                  <div className="flex items-center gap-2">
-                    <Funnel size={16} />
-                    <span>Apply Filters</span>
-                  </div>
-                </MyButton>
-              )}
-              {(selectedFilter.roles.length > 0 || selectedFilter.status.length > 0 || (selectedFilter.subOrgs?.length ?? 0) > 0 || searchFilter) && (
-                <MyButton
-                  buttonType="secondary"
-                  scale="small"
-                  onClick={() => {
-                    handleResetFilters();
-                    setSearchInput('');
-                    setSearchFilter('');
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <X size={16} />
-                    <span>Clear All</span>
-                  </div>
-                </MyButton>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Table Content */}
-        <div className="mt-4">
-          {currentData && currentData.content.length > 0 ? (
-            <>
-              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
-                <MyTable<TeamMember>
-                  data={{
-                    content: currentData.content,
-                    total_pages: currentData.total_pages,
-                    page_no: currentData.page_number,
-                    page_size: currentData.page_size,
-                    total_elements: currentData.total_elements,
-                    last: currentData.last,
-                  }}
-                  columns={columns}
-                  isLoading={getDashboardUsersData.isPending}
-                  error={getDashboardUsersData.error}
-                  currentPage={page}
-                />
-              </div>
-
-              {/* Pagination */}
-              <div className="mt-4 flex justify-end">
-                <MyPagination
-                  currentPage={page}
-                  totalPages={currentData.total_pages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-neutral-200 bg-white py-16 text-center shadow-sm">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-50 border border-neutral-100">
-                <Users size={32} className="text-neutral-400" weight="duotone" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold text-neutral-900">
-                No team members found
-              </h3>
-              <p className="mb-6 max-w-sm text-sm text-neutral-500">
-                We couldn't find any team members matching your current search or filters. Try adjusting them or invite new users.
-              </p>
-              {(selectedFilter.roles.length > 0 || selectedFilter.status.length > 0 || (selectedFilter.subOrgs?.length ?? 0) > 0 || searchFilter) && (
-                <MyButton
-                  buttonType="secondary"
-                  scale="medium"
-                  onClick={() => {
-                    handleResetFilters();
-                    setSearchInput('');
-                    setSearchFilter('');
-                  }}
-                >
-                  Clear all filters
-                </MyButton>
-              )}
-            </div>
-          )}
-        </div>
-        </>
-        )}
-      </Tabs>
-    </LayoutContainer>
-  );
+        </LayoutContainer>
+    );
 }

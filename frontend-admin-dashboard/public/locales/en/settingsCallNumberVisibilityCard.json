@@ -1,0 +1,34 @@
+{
+    "card": {
+        "title": "Call Log phone numbers — {{role}}",
+        "description": {
+            "part1": "Controls whether a user with the",
+            "part2": "role sees full phone numbers on Leads → Call Log and in the call export. This is a display choice for that page — the lead panel, Recent Leads and the other lead views keep showing the lead's own details either way."
+        }
+    },
+    "modes": {
+        "full": {
+            "title": "Show full numbers",
+            "description": "The Call Log table, the CSV/Excel export and the per-call details show the complete phone number, so it can be read off the row and copied."
+        },
+        "masked": {
+            "title": "Mask all but the last 4 digits",
+            "description": "Numbers render as *******1234 on the Call Log and in its export. Rows stay identifiable but the digits cannot be read or copied from this page. The default."
+        }
+    },
+    "radioGroup": {
+        "ariaLabel": "Call Log phone number visibility"
+    },
+    "unconfigured": {
+        "message": "Not configured — every role, admins included, is on masked numbers until someone chooses otherwise here. Pick “Show full numbers” to turn masking off for this role."
+    },
+    "status": {
+        "loading": "Loading current setting…",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "unsavedChanges": "Unsaved changes…"
+    },
+    "toasts": {
+        "saveFailed": "Failed to save phone-number visibility"
+    }
+}

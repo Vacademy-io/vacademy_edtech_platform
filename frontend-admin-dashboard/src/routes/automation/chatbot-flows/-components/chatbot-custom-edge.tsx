@@ -1,5 +1,6 @@
 import { memo, useState, useCallback } from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer } from 'reactflow';
+import { useTranslation } from 'react-i18next';
 import { useChatbotFlowStore } from '../-stores/chatbot-flow-store';
 
 function ChatbotCustomEdge({
@@ -15,6 +16,7 @@ function ChatbotCustomEdge({
     style = {},
     markerEnd,
 }: EdgeProps) {
+    const { t } = useTranslation('automationChatbotCustomEdge');
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState((label as string) || '');
     // Use targeted store action instead of reading entire edges array (O(1) vs O(n))
@@ -79,7 +81,7 @@ function ChatbotCustomEdge({
                             onKeyDown={handleKeyDown}
                             autoFocus
                             className="px-2 py-0.5 text-xs border border-blue-400 rounded bg-white shadow-md outline-none w-28"
-                            placeholder="Label..."
+                            placeholder={t('labelInput.placeholder')}
                         />
                     ) : label ? (
                         <div className="px-2 py-0.5 text-xs bg-white border border-gray-200 rounded shadow-sm cursor-pointer hover:border-blue-300 text-gray-700 max-w-32 truncate">
@@ -88,7 +90,7 @@ function ChatbotCustomEdge({
                     ) : (
                         <div
                             className="w-4 h-4 rounded-full bg-gray-200 hover:bg-blue-200 cursor-pointer border border-gray-300 hover:border-blue-400 transition-colors"
-                            title="Double-click to add label"
+                            title={t('labelInput.addTitle')}
                         />
                     )}
                 </div>

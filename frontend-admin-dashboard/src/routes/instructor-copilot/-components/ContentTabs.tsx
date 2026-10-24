@@ -29,6 +29,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { QuizView } from './QuizView';
 import { QuizGenerationForm } from './QuizGenerationForm';
 import { QuizDownloadDialog } from './QuizDownloadDialog';
@@ -60,6 +61,7 @@ interface FlashcardData {
 }
 
 const SummaryView = ({ content }: { content: string }) => {
+    const { t } = useTranslation('instructorCopilotContentTabs');
     let data: SummaryData | null = null;
 
     try {
@@ -81,7 +83,7 @@ const SummaryView = ({ content }: { content: string }) => {
                 <div className="rounded-lg bg-slate-50 p-6 dark:bg-slate-900/50">
                     <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-200">
                         <BookOpen size={20} className="text-primary-500" />
-                        Overview
+                        {t('summaryView.overview')}
                     </h3>
                     <div className="prose prose-sm max-w-none dark:prose-invert text-slate-600 dark:text-slate-400">
                         <ReactMarkdown>{data.overview}</ReactMarkdown>
@@ -94,7 +96,7 @@ const SummaryView = ({ content }: { content: string }) => {
                 <div>
                     <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-200">
                         <CheckCircle size={20} className="text-green-500" />
-                        Key Takeaways
+                        {t('summaryView.keyTakeaways')}
                     </h3>
                     <div className="grid gap-4 sm:grid-cols-1">
                         {data.key_points.map((point, index) => (
@@ -161,6 +163,7 @@ const NotesView = ({ content }: { content: string }) => {
 };
 
 const FlashcardsView = ({ content }: { content: string }) => {
+    const { t } = useTranslation('instructorCopilotContentTabs');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -226,13 +229,13 @@ const FlashcardsView = ({ content }: { content: string }) => {
                         className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-lg dark:border-slate-700 dark:bg-slate-800"
                         style={{ backfaceVisibility: 'hidden' }}
                     >
-                        <span className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Question</span>
+                        <span className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">{t('flashcardsView.questionLabel')}</span>
                         <h3 className="max-h-[70%] w-full overflow-y-auto px-2 text-xl font-medium text-slate-900 dark:text-slate-100">
                             {currentCard.front}
                         </h3>
                         <div className="absolute bottom-6 text-slate-400">
                             <ArrowsLeftRight size={20} className="animate-pulse" />
-                            <span className="mt-1 block text-[10px]">Click to flip</span>
+                            <span className="mt-1 block text-[10px]">{t('flashcardsView.clickToFlip')}</span>
                         </div>
                     </div>
 
@@ -244,7 +247,7 @@ const FlashcardsView = ({ content }: { content: string }) => {
                             transform: 'rotateY(180deg)'
                         }}
                     >
-                        <span className="mb-4 text-xs font-bold uppercase tracking-wider text-primary-500">Answer</span>
+                        <span className="mb-4 text-xs font-bold uppercase tracking-wider text-primary-500">{t('flashcardsView.answerLabel')}</span>
                         <div className="prose prose-lg w-full overflow-y-auto px-2 dark:prose-invert">
                             <p className="text-lg text-slate-800 dark:text-slate-200">{currentCard.back}</p>
                         </div>
@@ -264,11 +267,11 @@ const FlashcardsView = ({ content }: { content: string }) => {
                     className="gap-2"
                 >
                     <CaretLeft size={16} />
-                    Previous
+                    {t('flashcardsView.previous')}
                 </Button>
 
                 <span className="text-sm font-medium text-slate-500">
-                    Card {currentIndex + 1} of {data.length}
+                    {t('flashcardsView.cardCounter', { current: currentIndex + 1, total: data.length })}
                 </span>
 
                 <Button
@@ -277,7 +280,7 @@ const FlashcardsView = ({ content }: { content: string }) => {
                     disabled={data.length <= 1}
                     className="gap-2"
                 >
-                    Next
+                    {t('flashcardsView.next')}
                     <CaretRight size={16} />
                 </Button>
             </div>
@@ -286,6 +289,7 @@ const FlashcardsView = ({ content }: { content: string }) => {
 };
 
 const ClassworkView = ({ content }: { content: string }) => {
+    const { t } = useTranslation('instructorCopilotContentTabs');
     let data: string[] | null = null;
 
     try {
@@ -318,7 +322,7 @@ const ClassworkView = ({ content }: { content: string }) => {
                 <div className="rounded-full bg-slate-100 p-4 dark:bg-slate-800">
                     <BookOpen size={32} className="text-slate-400" />
                 </div>
-                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No classwork was assigned</p>
+                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">{t('classworkView.emptyState')}</p>
             </div>
         );
     }
@@ -347,6 +351,7 @@ const ClassworkView = ({ content }: { content: string }) => {
 };
 
 const HomeworkView = ({ content }: { content: string }) => {
+    const { t } = useTranslation('instructorCopilotContentTabs');
     let data: string[] | null = null;
 
     try {
@@ -379,7 +384,7 @@ const HomeworkView = ({ content }: { content: string }) => {
                 <div className="rounded-full bg-slate-100 p-4 dark:bg-slate-800">
                     <PencilSimple size={32} className="text-slate-400" />
                 </div>
-                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No homework was assigned</p>
+                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">{t('homeworkView.emptyState')}</p>
             </div>
         );
     }
@@ -409,6 +414,7 @@ const HomeworkView = ({ content }: { content: string }) => {
 
 
 export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProps) {
+    const { t } = useTranslation('instructorCopilotContentTabs');
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
     const [quizTaskId, setQuizTaskId] = useState<string | null>(null);
     const [pollingInterval, setPollingInterval] = useState<number | null>(null);
@@ -425,7 +431,7 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
         taskName: string;
     }) => {
         if (!instituteDetails?.id) {
-            toast.error('Institute details not available');
+            toast.error(t('toasts.instituteDetailsUnavailable'));
             return;
         }
 
@@ -441,7 +447,7 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
 
             const taskId = response.taskId;
             setQuizTaskId(taskId);
-            toast.success('Quiz generation started! Polling for results...');
+            toast.success(t('toasts.quizGenerationStarted'));
 
             // Start polling
             let attempts = 0;
@@ -456,7 +462,7 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
                         clearInterval(pollInterval);
                         setPollingInterval(null);
                         setIsGeneratingQuiz(false);
-                        toast.success('Quiz generated successfully!');
+                        toast.success(t('toasts.quizGeneratedSuccess'));
 
                         // Update the log with quiz data
                         if (log?.id) {
@@ -474,21 +480,21 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
                                 }
                             } catch (error) {
                                 console.error('Failed to update log:', error);
-                                toast.error('Quiz generated but failed to save to log');
+                                toast.error(t('toasts.quizSavedFailed'));
                             }
                         }
                     } else if (attempts >= maxAttempts) {
                         clearInterval(pollInterval);
                         setPollingInterval(null);
                         setIsGeneratingQuiz(false);
-                        toast.error('Quiz generation timed out');
+                        toast.error(t('toasts.quizTimedOut'));
                     }
                 } catch (error) {
                     if (attempts >= maxAttempts) {
                         clearInterval(pollInterval);
                         setPollingInterval(null);
                         setIsGeneratingQuiz(false);
-                        toast.error('Failed to generate quiz');
+                        toast.error(t('toasts.quizGenerationFailedPoll'));
                     }
                     // Continue polling on error unless max attempts reached
                 }
@@ -497,7 +503,7 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
             setPollingInterval(pollInterval as unknown as number);
         } catch (error) {
             console.error('Quiz generation error:', error);
-            toast.error('Failed to start quiz generation');
+            toast.error(t('toasts.quizGenerationFailedStart'));
             setIsGeneratingQuiz(false);
         }
     };
@@ -505,35 +511,35 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
     // PDF Download Handlers
     const handleNotesDownload = () => {
         if (!log?.flashnotes_json) {
-            toast.error('No notes available to download');
+            toast.error(t('toasts.noNotesAvailable'));
             return;
         }
         try {
             generateNotesPDF(log.flashnotes_json);
-            toast.success('Notes PDF downloaded successfully!');
+            toast.success(t('toasts.notesDownloadSuccess'));
         } catch (error) {
             console.error('Error generating notes PDF:', error);
-            toast.error('Failed to generate notes PDF');
+            toast.error(t('toasts.notesDownloadFailed'));
         }
     };
 
     const handleSummaryDownload = () => {
         if (!log?.summary) {
-            toast.error('No summary available to download');
+            toast.error(t('toasts.noSummaryAvailable'));
             return;
         }
         try {
-            generateSummaryPDF(log.summary);
-            toast.success('Summary PDF downloaded successfully!');
+            generateSummaryPDF(log.summary, t);
+            toast.success(t('toasts.summaryDownloadSuccess'));
         } catch (error) {
             console.error('Error generating summary PDF:', error);
-            toast.error('Failed to generate summary PDF');
+            toast.error(t('toasts.summaryDownloadFailed'));
         }
     };
 
     const handleQuizDownload = () => {
         if (!log?.question_json) {
-            toast.error('No quiz available to download');
+            toast.error(t('toasts.noQuizAvailable'));
             return;
         }
         setIsQuizDownloadDialogOpen(true);
@@ -541,29 +547,29 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
 
     const handleClassworkDownload = () => {
         if (!log?.classwork_json) {
-            toast.error('No classwork available to download');
+            toast.error(t('toasts.noClassworkAvailable'));
             return;
         }
         try {
-            generateClassworkPDF(log.classwork_json);
-            toast.success('Classwork PDF downloaded successfully!');
+            generateClassworkPDF(log.classwork_json, t);
+            toast.success(t('toasts.classworkDownloadSuccess'));
         } catch (error) {
             console.error('Error generating classwork PDF:', error);
-            toast.error('Failed to generate classwork PDF');
+            toast.error(t('toasts.classworkDownloadFailed'));
         }
     };
 
     const handleHomeworkDownload = () => {
         if (!log?.homework_json) {
-            toast.error('No homework available to download');
+            toast.error(t('toasts.noHomeworkAvailable'));
             return;
         }
         try {
-            generateHomeworkPDF(log.homework_json);
-            toast.success('Homework PDF downloaded successfully!');
+            generateHomeworkPDF(log.homework_json, t);
+            toast.success(t('toasts.homeworkDownloadSuccess'));
         } catch (error) {
             console.error('Error generating homework PDF:', error);
-            toast.error('Failed to generate homework PDF');
+            toast.error(t('toasts.homeworkDownloadFailed'));
         }
     };
 
@@ -571,70 +577,70 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
     const tabs = [
         {
             id: 'transcription',
-            label: 'Transcription',
+            label: t('tabs.transcription.label'),
             icon: FileText,
-            description: 'Full text transcription of the audio',
+            description: t('tabs.transcription.description'),
             content: log?.transcript_json || transcription,
         },
         {
             id: 'notes',
-            label: 'Notes',
+            label: t('tabs.notes.label'),
             icon: BookOpen,
-            description: 'Structured notes from the content',
+            description: t('tabs.notes.description'),
             content: log?.flashnotes_json,
         },
         {
             id: 'summary',
-            label: 'Summary',
+            label: t('tabs.summary.label'),
             icon: Notepad,
-            description: 'AI-generated summary of key points',
+            description: t('tabs.summary.description'),
             content: log?.summary,
         },
         {
             id: 'flashcards',
-            label: 'Flashcards',
+            label: t('tabs.flashcards.label'),
             icon: Cards,
-            description: 'Study flashcards',
+            description: t('tabs.flashcards.description'),
             content: log?.flashcard_json,
         },
         {
             id: 'quiz',
-            label: 'Quiz',
+            label: t('tabs.quiz.label'),
             icon: Exam,
-            description: 'Auto-generated quiz questions',
+            description: t('tabs.quiz.description'),
             content: log?.question_json,
         },
         {
             id: 'slides',
-            label: 'Slides',
+            label: t('tabs.slides.label'),
             icon: Presentation,
-            description: 'Presentation slides outline',
+            description: t('tabs.slides.description'),
             content: log?.slides_json,
         },
         {
             id: 'videos',
-            label: 'Video Ideas',
+            label: t('tabs.videos.label'),
             icon: VideoCamera,
-            description: 'Video content suggestions',
+            description: t('tabs.videos.description'),
             content: log?.video_json,
         },
         {
             id: 'homework',
-            label: 'Homework',
+            label: t('tabs.homework.label'),
             icon: PencilSimple,
-            description: 'Homework assignment ideas',
+            description: t('tabs.homework.description'),
             content: log?.homework_json,
         },
         {
             id: 'classwork',
-            label: 'Classwork',
+            label: t('tabs.classwork.label'),
             icon: BookOpen,
-            description: 'In-class activity ideas',
+            description: t('tabs.classwork.description'),
             content: log?.classwork_json,
         },
     ];
 
-    const renderContent = (content: string | null | undefined, label: string) => {
+    const renderContent = (content: string | null | undefined, id: string, label: string) => {
         if (!content) {
             return (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -643,12 +649,12 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
                         <MagicWand size={32} className="text-slate-400" />
                     </div>
                     <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-                        No {label} Generated Yet
+                        {t('emptyState.title', { label })}
                     </h3>
                     <p className="mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                        Generate {label.toLowerCase()} from your transcription to see the content here.
+                        {t('emptyState.hint', { label })}
                     </p>
-                    {label === 'Quiz' ? (
+                    {id === 'quiz' ? (
                         <QuizGenerationForm
                             transcript={log?.transcript_json || transcription || ''}
                             onGenerate={handleGenerateQuiz}
@@ -657,41 +663,41 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
                     ) : (
                         <Button
                             onClick={() => {
-                                toast.info(`Generating ${label}... (TODO)`);
+                                toast.info(t('toasts.generatingPlaceholder', { label }));
                                 console.log('Generate ' + label);
                             }}
                             className="mt-6 gap-2"
                             variant="default"
                         >
                             <MagicWand size={16} />
-                            Generate {label}
+                            {t('emptyState.generateButton', { label })}
                         </Button>
                     )}
                 </div>
             );
         }
 
-        if (label === 'Summary') {
+        if (id === 'summary') {
             return <SummaryView content={content} />;
         }
 
-        if (label === 'Notes') {
+        if (id === 'notes') {
             return <NotesView content={content} />;
         }
 
-        if (label === 'Flashcards') {
+        if (id === 'flashcards') {
             return <FlashcardsView content={content} />;
         }
 
-        if (label === 'Classwork') {
+        if (id === 'classwork') {
             return <ClassworkView content={content} />;
         }
 
-        if (label === 'Homework') {
+        if (id === 'homework') {
             return <HomeworkView content={content} />;
         }
 
-        if (label === 'Quiz') {
+        if (id === 'quiz') {
             try {
                 const quizData: QuizGenerationResponse = JSON.parse(content);
                 return <QuizView data={quizData} />;
@@ -777,13 +783,13 @@ export function ContentTabs({ transcription, log, onLogUpdate }: ContentTabsProp
                                     {showDownloadButton && (
                                         <DownloadButton
                                             onClick={getDownloadHandler()!}
-                                            label="Download PDF"
+                                            label={t('downloadButton')}
                                         />
                                     )}
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                {renderContent(tab.content, tab.label)}
+                                {renderContent(tab.content, tab.id, tab.label)}
                             </CardContent>
                         </Card>
                     </TabsContent>

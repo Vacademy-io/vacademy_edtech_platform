@@ -23,7 +23,9 @@ public class LearnerEnrollRequestController {
 
     @PostMapping
     public ResponseEntity<LearnerEnrollResponseDTO> enrollLearner(@RequestBody LearnerEnrollRequestDTO learnerEnrollRequestDTO){
-        return ResponseEntity.ok(learnerEnrollRequestService.recordLearnerRequest(learnerEnrollRequestDTO));
+        // Public learner entry point: an expired / inactive link must not enroll.
+        return ResponseEntity.ok(learnerEnrollRequestService.recordLearnerRequest(learnerEnrollRequestDTO,
+                java.util.Map.of(LearnerEnrollRequestService.ENFORCE_INVITE_AVAILABILITY, true)));
     }
 
     @PostMapping("/detail")

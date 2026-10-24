@@ -1,0 +1,7 @@
+{
+    "whatIsThis": "What is this?",
+    "courseCompleted": "Average % of course content completed — based on video watch time and document pages viewed across all published slides in this course.",
+    "timeSpentAvg": "Average time spent learning per active day in the selected date range.",
+    "concentration": "A focus score (0–100%) recorded while studying videos. It starts at 100 and drops for tab switches, pauses, and missed in-video check questions — higher means more focused.",
+    "leaderboard": "Learners ranked by total learning time, with concentration score as the tie-breaker."
+}

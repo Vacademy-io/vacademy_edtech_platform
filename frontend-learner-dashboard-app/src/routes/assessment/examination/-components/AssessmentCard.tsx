@@ -32,12 +32,16 @@ import {
 } from "@/lib/format-date";
 import { toast } from "sonner";
 import {
+  CheckCircle,
   Timer,
   WarningCircle,
   HourglassMedium,
   XCircle,
 } from "@phosphor-icons/react";
+import { surveyCardState } from "../-utils/survey-card-state";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { openStudentReport } from "@/services/student-report-routing";
 
 // Backend date strings (assessment list API) have no timezone marker but are
 // stored in UTC. Appending "Z" makes Date() interpret them as UTC so the
@@ -68,15 +72,13 @@ function useNow(enabled: boolean, intervalMs = 30_000): number {
   return now;
 }
 
-const PLAY_MODE_LABELS: Record<string, string> = {
-  EXAM: "Exam",
-  MOCK: "Mock",
-  PRACTICE: "Practice",
-  SURVEY: "Survey",
-  MANUAL_UPLOAD_EXAM: "Offline exam",
+const PLAY_MODE_KEYS: Record<string, string> = {
+  EXAM: "card.playMode.exam",
+  MOCK: "card.playMode.mock",
+  PRACTICE: "card.playMode.practice",
+  SURVEY: "card.playMode.survey",
+  MANUAL_UPLOAD_EXAM: "card.playMode.offlineExam",
 };
-
-const playModeLabel = (mode: string) => PLAY_MODE_LABELS[mode] ?? mode;
 
 interface AssessmentProps {
   assessmentInfo: Assessment;
@@ -91,9 +93,13 @@ export const AssessmentCard = ({
   assessmentType,
   assessment_types,
 }: AssessmentProps) => {
+  const { t } = useTranslation("assessment");
+  const playModeLabel = (mode: string) =>
+    t(PLAY_MODE_KEYS[mode] ?? "", { defaultValue: mode });
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   const [showRestartDialog, setShowRestartDialog] = useState(false);
+  const [openingReport, setOpeningReport] = useState(false);
   const [showSurveyConfirmDialog, setShowSurveyConfirmDialog] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
 
@@ -119,7 +125,7 @@ export const AssessmentCard = ({
       }
     } catch (error) {
       console.error("Error fetching survey data:", error);
-      toast.error("Failed to start survey. Please try again.");
+      toast.error(t("card.toast.surveyStartFailed"));
     }
     setShowSurveyConfirmDialog(false);
   };
@@ -191,13 +197,11 @@ export const AssessmentCard = ({
           replace: true,
         });
       } else {
-        toast.error(
-          "Failed to resume the assessment. Assessment already Ended.",
-        );
+        toast.error(t("card.toast.resumeFailed"));
       }
     } catch (error) {
       console.error("Error in handleRestartAssessment:", error);
-      toast.error("An error occurred while resuming the assessment.");
+      toast.error(t("card.toast.resumeError"));
     } finally {
       setIsRestarting(false);
       setShowRestartDialog(false);
@@ -222,11 +226,11 @@ export const AssessmentCard = ({
 
   // Determine button label
   const getButtonLabel = () => {
-    if (isResume) return "Resume";
-    if (attemptsExhausted) return "Ended";
-    if (assessmentInfo.play_mode === "SURVEY") return "Start survey";
-    if (["PRACTICE", "MOCK"].includes(assessmentInfo.play_mode)) return "Start";
-    return "Join now";
+    if (isResume) return t("card.button.resume");
+    if (attemptsExhausted) return t("card.button.ended");
+    if (assessmentInfo.play_mode === "SURVEY") return t("card.button.startSurvey");
+    if (["PRACTICE", "MOCK"].includes(assessmentInfo.play_mode)) return t("card.button.start");
+    return t("card.button.joinNow");
   };
 
   const buttonLabel = getButtonLabel();
@@ -267,35 +271,32 @@ export const AssessmentCard = ({
   // One quiet metadata line per card instead of a grid of colored info tiles.
   const metaParts: string[] = [];
   if (isUpcoming && startDate) {
-    metaParts.push(`Starts ${formatDateTime(startDate)}`);
+    metaParts.push(t("card.meta.starts", { date: formatDateTime(startDate) }));
   }
   if (isLoudLive && !noExpiry && endDate) {
-    metaParts.push(`Closes ${formatDateTime(endDate)}`);
+    metaParts.push(t("card.meta.closes", { date: formatDateTime(endDate) }));
   }
   if (isMock) {
     metaParts.push(
       noExpiry || !endDate
-        ? "No expiry"
-        : `Valid till ${formatDateTime(endDate)}`,
+        ? t("card.meta.noExpiry")
+        : t("card.meta.validTill", { date: formatDateTime(endDate) }),
     );
   }
   if (assessmentInfo.duration && assessmentInfo.play_mode !== "SURVEY") {
     metaParts.push(formatDuration(assessmentInfo.duration * 60));
   }
   if (isLive && maxAttempts > 0) {
-    metaParts.push(`Attempt ${usedAttempts} of ${maxAttempts}`);
+    metaParts.push(
+      t("card.meta.attempt", { used: usedAttempts, max: maxAttempts }),
+    );
   }
 
-  const canShowReport =
-    isPast &&
-    usedAttempts > 0 &&
-    (assessmentInfo.result_type !== "MANUAL" ||
-      assessmentInfo.report_release_status === "RELEASED");
-  const resultsPending =
-    isPast &&
-    usedAttempts > 0 &&
-    assessmentInfo.result_type === "MANUAL" &&
-    assessmentInfo.report_release_status !== "RELEASED";
+  const { canShowReport, resultsPending, surveySubmitted } = surveyCardState(
+    assessmentInfo,
+    isPast,
+    usedAttempts
+  );
   // Past assessments the learner never actually sat (no LIVE/ENDED attempt) now
   // reach this list too. There is no report to link, so label the row instead of
   // leaving it bare.
@@ -321,7 +322,7 @@ export const AssessmentCard = ({
       >
         {/* ---------- PAST: collapsed row ---------- */}
         {isPast ? (
-          <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="flex flex-col gap-stack px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div className="min-w-0">
               <p className="line-clamp-1 text-body font-semibold text-foreground">
                 {assessmentInfo.name}
@@ -329,72 +330,60 @@ export const AssessmentCard = ({
               <p className="mt-0.5 text-caption text-muted-foreground">
                 {showPlayModeChip && `${playModeLabel(assessmentInfo.play_mode)} · `}
                 {endDate && !noExpiry
-                  ? `Ended ${formatDate(endDate)}`
-                  : "Ended"}
+                  ? t("card.meta.endedOn", { date: formatDate(endDate) })
+                  : t("card.button.ended")}
               </p>
             </div>
 
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
               {canShowReport && (
-                <>
-                  <MyButton
-                    buttonType="secondary"
-                    scale="medium"
-                    className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate({
-                        to: `/assessment/reports/comparison`,
-                        search: {
-                          assessmentId: assessmentInfo.assessment_id,
-                          attemptId: assessmentInfo.last_attempt_id ?? "",
-                        },
-                        state: {
-                          assessmentName: assessmentInfo.name,
-                        } as any,
+                <MyButton
+                  buttonType="secondary"
+                  scale="medium"
+                  className="min-h-11 w-full sm:min-h-9 sm:w-auto"
+                  disable={openingReport}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    // One report: the AI report once it exists, otherwise the normal one.
+                    setOpeningReport(true);
+                    try {
+                      await openStudentReport(navigate as never, {
+                        assessmentId: assessmentInfo.assessment_id,
+                        assessmentName: assessmentInfo.name ?? "",
+                        attemptId: assessmentInfo.last_attempt_id ?? "",
+                        evaluationType: isManualEvaluation ? "MANUAL" : undefined,
                       });
-                    }}
-                  >
-                    Show Report
-                  </MyButton>
-                  {!isManualEvaluation && (
-                  <MyButton
-                    buttonType="secondary"
-                    scale="medium"
-                    className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate({
-                        to: `/assessment/reports/ai-report`,
-                        search: {
-                          assessmentId: assessmentInfo.assessment_id,
-                          assessmentName: assessmentInfo.name ?? "",
-                        },
-                      });
-                    }}
-                  >
-                    Show AI Report
-                  </MyButton>
-                  )}
-                </>
+                    } finally {
+                      setOpeningReport(false);
+                    }
+                  }}
+                >
+                  {t("card.button.showReport")}
+                </MyButton>
               )}
               {resultsPending && (
                 <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-warning-200 bg-warning-50 px-2.5 py-1 text-caption font-medium text-warning-700">
                   <HourglassMedium size={14} aria-hidden="true" />
-                  Results pending
+                  {t("card.meta.resultsPending")}
+                </span>
+              )}
+              {surveySubmitted && (
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-success-200 bg-success-50 px-2.5 py-1 text-caption font-medium text-success-700">
+                  <CheckCircle size={14} aria-hidden="true" />
+                  {t("card.meta.surveySubmitted")}
                 </span>
               )}
               {notAttempted && (
                 <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-caption font-medium text-muted-foreground">
                   <XCircle size={14} aria-hidden="true" />
-                  Not attempted
+                  {t("card.meta.notAttempted")}
                 </span>
               )}
             </div>
           </div>
         ) : (
           /* ---------- LIVE / UPCOMING / PRACTICE / MOCK ---------- */
-          <div className="flex flex-col gap-3 p-4 sm:p-5">
+          <div className="flex flex-col gap-stack p-4 sm:p-5">
             {(isLoudLive || showStartCountdown || showPlayModeChip) && (
             <div className="flex flex-wrap items-center gap-2">
               {isLoudLive && (
@@ -403,19 +392,19 @@ export const AssessmentCard = ({
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger-400 opacity-75 [.ui-play_&]:bg-white/70" />
                     <span className="relative inline-flex size-2 rounded-full bg-danger-500 [.ui-play_&]:bg-white" />
                   </span>
-                  Live now
+                  {t("card.meta.liveNow")}
                 </span>
               )}
               {showCloseCountdown && msToClose !== null && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-danger-50 px-2.5 py-0.5 text-caption font-medium tabular-nums text-danger-600">
                   <Timer size={14} aria-hidden="true" />
-                  Closes in {formatCountdown(msToClose)}
+                  {t("card.meta.closesIn", { time: formatCountdown(msToClose) })}
                 </span>
               )}
               {showStartCountdown && msToStart !== null && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-caption font-medium tabular-nums text-primary-500 [.ui-play_&]:bg-play-gold-soft [.ui-play_&]:font-bold [.ui-play_&]:text-play-ink">
                   <Timer size={14} aria-hidden="true" />
-                  Starts in {formatCountdown(msToStart)}
+                  {t("card.meta.startsIn", { time: formatCountdown(msToStart) })}
                 </span>
               )}
               {showPlayModeChip && !isLoudLive && (
@@ -491,18 +480,17 @@ export const AssessmentCard = ({
       {/* Pop-up for Upcoming Tests */}
       <Dialog open={showPopup} onOpenChange={handleClosePopup}>
         <DialogContent className="max-w-sm rounded-lg p-6">
-          <DialogHeader>
-            <div className="mb-2 flex items-center gap-2">
+          <DialogHeader className="space-y-2">
+            <div className="flex items-center gap-2">
               <div className="rounded-full bg-warning-50 p-2">
                 <WarningCircle className="size-5 text-warning-600" />
               </div>
               <DialogTitle className="text-lg font-semibold">
-                Assessment Unavailable
+                {t("card.dialog.unavailable.title")}
               </DialogTitle>
             </div>
             <DialogDescription className="pt-1 text-muted-foreground">
-              The assessment is not live currently. You can appear for the
-              assessment when it goes live.
+              {t("card.dialog.unavailable.description")}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -516,19 +504,18 @@ export const AssessmentCard = ({
         <AlertDialogContent className="max-w-sm rounded-lg p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl">
-              Resume Assessment
+              {t("card.dialog.resume.title")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              Would you like to continue the assessment from your last saved
-              progress?
+              {t("card.dialog.resume.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4 gap-3 sm:gap-2">
             <Button variant="ghost" onClick={handleCloseRestartDialog}>
-              Cancel
+              {t("card.common.cancel")}
             </Button>
             <Button onClick={handleRestartAssessment} disabled={isRestarting}>
-              {isRestarting ? "Resuming..." : "Resume"}
+              {isRestarting ? t("card.dialog.resume.resuming") : t("card.button.resume")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -542,18 +529,17 @@ export const AssessmentCard = ({
         <AlertDialogContent className="max-w-sm rounded-lg p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl">
-              Start Survey
+              {t("card.dialog.survey.title")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              Are you ready to start filling out the survey? Once you begin, you
-              can complete it at your own pace.
+              {t("card.dialog.survey.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4 gap-3 sm:gap-2">
             <Button variant="ghost" onClick={handleCloseSurveyConfirmDialog}>
-              Cancel
+              {t("card.common.cancel")}
             </Button>
-            <Button onClick={handleSurveyConfirm}>Start Survey</Button>
+            <Button onClick={handleSurveyConfirm}>{t("card.dialog.survey.title")}</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

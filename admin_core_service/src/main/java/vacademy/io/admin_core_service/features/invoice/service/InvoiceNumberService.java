@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.invoice.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,10 @@ public class InvoiceNumberService {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
+    /** Reads {@code invoice_released_number} (V531). Null in unit tests that build this by hand. */
+    @PersistenceContext
+    private EntityManager entityManager;
+
     /**
      * Allocate the next invoice number for this institute.
      *
@@ -58,9 +64,59 @@ public class InvoiceNumberService {
      * invoice.
      */
     public InvoiceNumberAllocation generate(InvoiceNumberConfig config, InvoiceNumberContext context) {
-        InvoiceNumberConfig effective = resolveUsableConfig(config);
+        InvoiceNumberConfig effective = resolveUsableConfig(selectSeries(config, context));
         String scopeKey = scopeKeyFor(effective, context);
+        InvoiceNumberAllocation reused = reuseReleased(effective, context, scopeKey);
+        if (reused != null) {
+            return reused;
+        }
         return renderFrom(effective, context, scopeKey, nextSeq(effective, context.getInstituteId(), scopeKey), 0);
+    }
+
+    /**
+     * A position freed by a permanent invoice delete in THIS series, if one is waiting — the
+     * lowest first, so the series closes its gaps in order. Returns null (and generation counts on
+     * from MAX as always) when nothing was freed, when the freed position sits below the
+     * institute's start-number floor, or when its rendered number is somehow taken.
+     *
+     * <p>Only positions recorded by {@code PaymentDeletionService} are considered, never arbitrary
+     * gaps: an admin who set the start number to 100 after issuing 1-5 must not get 6-99 back.
+     * A concurrent issuer taking the same position is settled the usual way — the unique number
+     * constraint fails one INSERT and that caller retries via {@link #nextAfterCollision}.
+     */
+    private InvoiceNumberAllocation reuseReleased(InvoiceNumberConfig config, InvoiceNumberContext context,
+                                                  String scopeKey) {
+        if (entityManager == null || !StringUtils.hasText(context.getInstituteId())) {
+            return null;
+        }
+        try {
+            List<?> rows = entityManager.createNativeQuery(
+                            "SELECT r.seq_no FROM invoice_released_number r "
+                                    + "WHERE r.institute_id = ?1 AND r.seq_scope_key = ?2 AND r.seq_no >= ?3 "
+                                    + "AND NOT EXISTS (SELECT 1 FROM invoice i WHERE i.institute_id = r.institute_id "
+                                    + "AND i.seq_scope_key = r.seq_scope_key AND i.seq_no = r.seq_no) "
+                                    + "ORDER BY r.seq_no LIMIT 1")
+                    .setParameter(1, context.getInstituteId())
+                    .setParameter(2, scopeKey)
+                    .setParameter(3, config.getStartFrom())
+                    .getResultList();
+            if (rows.isEmpty() || !(rows.get(0) instanceof Number seq)) {
+                return null;
+            }
+            String number = InvoiceNumberFormatter.render(config.getFormat(), config, context, seq.longValue());
+            if (!StringUtils.hasText(number)
+                    || invoiceRepository.existsByInstituteIdAndInvoiceNumber(context.getInstituteId(), number)) {
+                return null;
+            }
+            return new InvoiceNumberAllocation(number, seq.longValue(), scopeKey);
+        } catch (Exception e) {
+            // An unexpected result falls back to counting on from MAX, which is always valid. (A SQL
+            // error would still abort the caller's transaction in Postgres; the only one plausible
+            // here is a missing V531 table, and Flyway creates it before the app serves requests.)
+            log.warn("Could not look up released invoice numbers for institute {}: {}",
+                    context.getInstituteId(), e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -74,7 +130,7 @@ public class InvoiceNumberService {
     public InvoiceNumberAllocation nextAfterCollision(InvoiceNumberConfig config,
                                                       InvoiceNumberContext context,
                                                       int attempt) {
-        InvoiceNumberConfig effective = resolveUsableConfig(config);
+        InvoiceNumberConfig effective = resolveUsableConfig(selectSeries(config, context));
         String scopeKey = scopeKeyFor(effective, context);
         long start = nextSeq(effective, context.getInstituteId(), scopeKey);
         return renderFrom(effective, context, scopeKey, start + attempt, attempt);
@@ -133,8 +189,13 @@ public class InvoiceNumberService {
      * keystroke, and the settings screen previews continuously.
      */
     public String preview(InvoiceNumberConfig config, InvoiceNumberContext context) {
-        InvoiceNumberConfig effective = resolveUsableConfig(config);
+        InvoiceNumberConfig effective = resolveUsableConfig(selectSeries(config, context));
         String scopeKey = scopeKeyFor(effective, context);
+        // Same rule as generate(), so the number the create-invoice screen shows is the one issued.
+        InvoiceNumberAllocation reused = reuseReleased(effective, context, scopeKey);
+        if (reused != null) {
+            return reused.number();
+        }
         long next = nextSeq(effective, context.getInstituteId(), scopeKey);
         return InvoiceNumberFormatter.render(effective.getFormat(), effective, context, next);
     }
@@ -216,6 +277,41 @@ public class InvoiceNumberService {
         String namespace = context.getSeqNamespace();
         return StringUtils.hasText(namespace) ? namespace + ":" + scopeKey : scopeKey;
     }
+
+    /**
+     * The series this document numbers from. When a configured series matches the learner,
+     * returns its config and points the context at that series' own counter
+     * ({@code SERIES_<key>} namespace, so it never touches the main counter); otherwise the
+     * config unchanged. A context that already has a namespace (proformas) is left alone.
+     * Never throws: a failed lookup keeps the main series rather than blocking the invoice.
+     */
+    static InvoiceNumberConfig selectSeries(InvoiceNumberConfig config, InvoiceNumberContext context) {
+        if (config == null || context == null || config.getSeries() == null || config.getSeries().isEmpty()
+                || StringUtils.hasText(context.getSeqNamespace()) || context.getLearnerFieldLookup() == null) {
+            return config;
+        }
+        java.util.Map<String, String> valueByField = new java.util.HashMap<>();
+        for (InvoiceNumberConfig.Series s : config.getSeries()) {
+            String value;
+            try {
+                value = valueByField.computeIfAbsent(s.getLearnerFieldId(),
+                        id -> java.util.Objects.toString(context.getLearnerFieldLookup().apply(id), ""));
+            } catch (Exception e) {
+                log.error("Could not read learner field {} for invoice series {} (institute {}); "
+                                + "using the main series.", s.getLearnerFieldId(), s.getKey(),
+                        context.getInstituteId(), e);
+                return config;
+            }
+            if (s.matches(value)) {
+                context.setSeqNamespace(SERIES_NAMESPACE_PREFIX + s.getKey());
+                return config.forSeries(s);
+            }
+        }
+        return config;
+    }
+
+    /** Counter namespace of a numbering series; distinct from the proforma one. */
+    static final String SERIES_NAMESPACE_PREFIX = "SERIES_";
 
     /**
      * Guard against a stored format that no longer validates. The settings endpoint rejects

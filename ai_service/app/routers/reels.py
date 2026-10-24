@@ -18,7 +18,6 @@ import asyncio
 import hashlib
 import json
 import logging
-import os
 import time
 from typing import Any, List, Optional
 
@@ -56,7 +55,7 @@ from ..schemas.reels import (
     WordImportance,
 )
 from ..config import get_settings
-from ..services.model_selection import resolve_models
+from ..services.use_case_chat import models_for
 from ..services.reels_engagement_service import (
     ScoringRequest,
     score_windows,
@@ -66,9 +65,11 @@ from ..services.reels_preview_service import (
     MAX_USER_CUT_SPAN_S,
     MIN_CUT_SPAN_S,
     ReelsPreviewService,
+    preview_models,
 )
 from ..services.reels_rerank_service import (
     MAX_SELECTION_WINDOWS,
+    SELECTION_USE_CASE,
     apply_selection,
     select_top_candidates,
 )
@@ -114,10 +115,10 @@ CONTEXT_FETCH_MAX_BYTES = 10 * 1024 * 1024
 # accept that — it's a fixed estimate by design, not a per-call meter.
 _PREVIEW_PROMPT_TOKENS = 1500
 _PREVIEW_COMPLETION_TOKENS = 500
-# Pricing tier driver. Tracks `reels_preview_service._LLM_DEFAULT_MODEL`;
-# bump in lockstep if we switch model. Wrong value here means credits get
-# costed at the wrong tier, not a functional break.
-_PREVIEW_LLM_MODEL_FOR_PRICING = "anthropic/claude-3-5-haiku"
+# Pricing tier driver: the first model of the /preview chain
+# (`reels_preview_service.preview_models()` — env override, else the
+# 'reels_preview' use case). A wrong value means credits get costed at the
+# wrong tier, not a functional break.
 
 # /scan LLM selection. The heuristic scorer is a PREFILTER that hands this
 # many diverse windows (full transcripts attached) to one LLM call, which
@@ -126,17 +127,14 @@ _PREVIEW_LLM_MODEL_FOR_PRICING = "anthropic/claude-3-5-haiku"
 # so its first scan_limit picks are identical whether keep_n is scan_limit
 # or this cap — the heuristic fallback is exactly the old /scan result.
 _SELECTION_PREFILTER_CAP = MAX_SELECTION_WINDOWS  # 60
-# Model comes from the DB registry (ai_model_defaults) so ops can retune
-# without a deploy; the use case needs a seeded row, otherwise the chain
-# falls through to the hard fallback below. The previous rerank rode
-# `settings.llm_default_model` (a pro reasoning model) against a Haiku-sized
-# token budget and plausibly never produced parseable output — selection
-# explicitly requests the cheap/fast tier instead.
-_SELECTION_USE_CASE = "reels_selection"
+# Model comes from the DB registry (ai_model_defaults 'reels_selection', set
+# in the super-admin portal) so ops can retune without a deploy; with no row
+# the chain is the platform default (GLM) + the non-GLM tail. The call goes
+# through llm_router.chat_with_chain, which gives GLM reasoning effort low and
+# a max_tokens allowance on both gateway legs. REELS_SELECTION_LLM_MODEL, when
+# set, is tried first (emergency override).
+_SELECTION_USE_CASE = SELECTION_USE_CASE
 _SELECTION_LLM_MODEL_ENV = "REELS_SELECTION_LLM_MODEL"
-# Mirrors the other reels LLM stages (preview, llm_director) — cheap + fast,
-# no reasoning-token tax on max_tokens.
-_SELECTION_LLM_HARD_FALLBACK = "anthropic/claude-3-5-haiku"
 
 
 # ---------------------------------------------------------------------------
@@ -546,13 +544,8 @@ async def scan_reel_candidates(
                 }
                 for i, cs in enumerate(scored)
             ]
-            preferred = os.getenv(_SELECTION_LLM_MODEL_ENV, "").strip() or None
-            model, _fallbacks = resolve_models(
-                db,
-                _SELECTION_USE_CASE,
-                preferred,
-                hard_fallback=_SELECTION_LLM_HARD_FALLBACK,
-            )
+            models = models_for(_SELECTION_USE_CASE, env=_SELECTION_LLM_MODEL_ENV, db=db)
+            model = models[0]
             llm_t0 = time.monotonic()
             ordered = await select_top_candidates(
                 candidates=selection_input,
@@ -560,8 +553,7 @@ async def scan_reel_candidates(
                 target_duration_sec=request.target_duration_sec,
                 topic_keywords=tuple(request.topic_keywords or ()),
                 api_key=settings.openrouter_api_key,
-                base_url=settings.llm_base_url,
-                model=model,
+                models=models,
             )
             llm_elapsed = time.monotonic() - llm_t0
             if ordered:
@@ -806,6 +798,8 @@ async def preview_reel_candidates(
     # deduct path uses the same numbers), over-estimating means they'd get
     # a misleading "insufficient credits" message.
     miss_count = sum(1 for r in rows if _needs_llm_enrich(r))
+    # Priced at the model the enrichment chain tries first.
+    preview_pricing_model = preview_models()[0] if miss_count > 0 else ""
     if miss_count > 0:
         from ..services.credit_service import CreditService
         from ..schemas.credits import CreditCheckRequest
@@ -813,7 +807,7 @@ async def preview_reel_candidates(
         credit_check = CreditService(db).check_credits(CreditCheckRequest(
             institute_id=institute_id,
             request_type="reels_preview",
-            model=_PREVIEW_LLM_MODEL_FOR_PRICING,
+            model=preview_pricing_model,
             estimated_tokens=estimate_tokens,
         ))
         if not credit_check.has_sufficient_credits:
@@ -919,7 +913,7 @@ async def preview_reel_candidates(
             CreditService(db).deduct_credits(CreditDeductRequest(
                 institute_id=institute_id,
                 request_type="reels_preview",
-                model=_PREVIEW_LLM_MODEL_FOR_PRICING,
+                model=preview_pricing_model,
                 prompt_tokens=successful_llm_picks * _PREVIEW_PROMPT_TOKENS,
                 completion_tokens=successful_llm_picks * _PREVIEW_COMPLETION_TOKENS,
                 batch_id=request.input_asset_id,  # group every preview for an asset

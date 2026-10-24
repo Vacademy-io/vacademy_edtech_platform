@@ -1,0 +1,14 @@
+{
+    "confirm": {
+        "title": "Publier cette diapositive ?",
+        "description": "Les apprenants pourront la voir.",
+        "cancel": "Annuler",
+        "publish": "Publier"
+    },
+    "notify": {
+        "title": "Informer les étudiants ?",
+        "description": "Envoyer une mise à jour à propos de cette diapositive.",
+        "skip": "Ignorer",
+        "notify": "Informer"
+    }
+}

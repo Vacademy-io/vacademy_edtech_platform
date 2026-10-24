@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { instituteSettingsCache } from "@/services/institute-settings-cache";
 import { getInstituteDetails } from "@/services/signup-api";
 import { getDecodedAccessTokenFromStorage } from "@/lib/auth/sessionUtility";
-import { normalizeRoleKey } from "@/constants/slide-download-permission";
+import { effectiveRoleKey, normalizeRoleKey } from "@/constants/slide-download-permission";
 
 const SLIDE_CONTENT_PROTECTION_SETTING_KEY = "SLIDE_CONTENT_PROTECTION_SETTING";
 
@@ -57,14 +57,20 @@ function fromCached(cached: any): ProtectionData | null {
 }
 
 /**
- * Protection applies if ANY of the user's held roles has it enabled (so turning
- * it on for a role reliably protects users with that role). Falls back to the
- * legacy institute-wide `enabled` flag when no per-role map is present.
+ * Protection is read from the single most privileged role the user holds
+ * (ADMIN > TEACHER > LEARNER), matching how download permission resolves — so a
+ * user who is both an admin and a student gets one consistent answer instead of
+ * being treated as an admin here and a learner there. Users holding only custom
+ * roles keep the any-role-enabled combine. Falls back to the legacy
+ * institute-wide `enabled` flag when no per-role map is present.
  */
 function isProtectedForRoles(data: ProtectionData | null, roleNames: string[]): boolean {
   if (!data) return false;
   if (data.roles && typeof data.roles === "object") {
-    return roleNames.map(normalizeRoleKey).some((r) => data.roles![r] === true);
+    const canonicalRoles = roleNames.map(normalizeRoleKey).filter(Boolean);
+    const effectiveRole = effectiveRoleKey(canonicalRoles);
+    if (effectiveRole) return data.roles[effectiveRole] === true;
+    return canonicalRoles.some((r) => data.roles![r] === true);
   }
   return !!data.enabled;
 }

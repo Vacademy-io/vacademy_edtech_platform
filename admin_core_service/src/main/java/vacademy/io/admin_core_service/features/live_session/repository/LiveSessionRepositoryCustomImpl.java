@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.live_session.dto.LiveSessionVisibilityScope;
 import vacademy.io.admin_core_service.features.live_session.dto.SessionSearchRequest;
 
 import java.time.LocalDate;
@@ -24,7 +25,7 @@ public class LiveSessionRepositoryCustomImpl implements LiveSessionRepositoryCus
 
     @Override
     public Page<LiveSessionRepository.LiveSessionListProjection> searchSessions(
-            SessionSearchRequest request, Pageable pageable) {
+            SessionSearchRequest request, Pageable pageable, LiveSessionVisibilityScope scope) {
 
         // Build dynamic query
         StringBuilder queryBuilder = new StringBuilder();
@@ -88,6 +89,32 @@ public class LiveSessionRepositoryCustomImpl implements LiveSessionRepositoryCus
         parameters.put("instituteId", request.getInstituteId());
 
         conditions.add("ss.status != 'DELETED'");
+
+        // Role-based visibility (V524). Applied here rather than by post-filtering
+        // the page, so the paging counts stay truthful -- a filtered page would
+        // report totals for sessions the caller can't see.
+        if (scope != null && scope.restricted()) {
+            conditions.add("""
+                    (
+                        s.created_by_user_id = :visibilityCallerId
+                        OR EXISTS (
+                            SELECT 1 FROM live_session_instructors lsi
+                            WHERE lsi.session_id = s.id
+                              AND lsi.status = 'ACTIVE'
+                              AND lsi.user_id IN :visibilityAllowedUserIds
+                        )
+                        OR (
+                            NOT EXISTS (
+                                SELECT 1 FROM live_session_instructors lsi2
+                                WHERE lsi2.session_id = s.id
+                                  AND lsi2.status = 'ACTIVE'
+                            )
+                            AND s.created_by_user_id IN :visibilityAllowedUserIds
+                        )
+                    )""");
+            parameters.put("visibilityCallerId", scope.callerUserId());
+            parameters.put("visibilityAllowedUserIds", scope.bindableUserIds());
+        }
 
         // Status filter (default: exclude DELETED from live_session)
         if (request.getStatuses() != null && !request.getStatuses().isEmpty()) {

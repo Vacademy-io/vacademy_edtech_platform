@@ -23,9 +23,16 @@ public interface StudentFeePaymentRepository extends JpaRepository<StudentFeePay
     // Fetch all bills for a list of plans
     List<StudentFeePayment> findByUserPlanIdIn(List<String> userPlanIds);
 
-    // Used for FIFO Ledger Allocation: Grab only unpaid/partial bills, ordered by
-    // oldest due date
-    List<StudentFeePayment> findByUserPlanIdAndStatusNotOrderByDueDateAsc(String userPlanId, String status);
+    /**
+     * Used for FIFO Ledger Allocation: unpaid/partial bills, oldest due date first. Bills due
+     * the same day go in installment order (then creation order): without that tie-break the
+     * database picked either, and a payment meant for installment 1 could land on 2.
+     */
+    @Query("SELECT s FROM StudentFeePayment s WHERE s.userPlanId = :userPlanId AND s.status <> :status "
+            + "AND s.status <> 'CANCELLED' "
+            + "ORDER BY s.dueDate ASC NULLS LAST, s.installmentNumber ASC NULLS LAST, s.createdAt ASC, s.id ASC")
+    List<StudentFeePayment> findByUserPlanIdAndStatusNotOrderByDueDateAsc(@Param("userPlanId") String userPlanId,
+                                                                         @Param("status") String status);
 
     // Manual/offline allocation: Grab unpaid/partial bills for a user, ordered by
     // oldest due date

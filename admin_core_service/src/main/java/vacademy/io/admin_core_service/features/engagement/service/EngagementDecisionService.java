@@ -155,6 +155,7 @@ public class EngagementDecisionService {
             return false;
         }
         member = fresh;
+        Instant heldLease = fresh.getNextActionAt(); // as stored, so recordDecision can tell it is still ours
 
         // 1. Consent — before anything else.
         PolicyGate.Verdict verdict = policyGate.preDecision(member, optedOut);
@@ -182,8 +183,10 @@ public class EngagementDecisionService {
         // 2. Deterministic wake gate — zero tokens for most members.
         String fingerprint = quantizedFingerprint(bundle.payloadsFor(member.getId()));
         if (!shouldWake(member, engine, fingerprint, bundle, now)) {
+            // A gate sleep is not a no-op decision, so it must not stretch the backoff. Counting
+            // it (every cadence/4 re-check) doubled the required wait faster than time passed:
+            // after one NO_OP at a 72h cadence the next LLM look came ~30 days later.
             member.setWakeFingerprint(fingerprint);
-            member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
             reschedule(member, engine, now, false);
             return false;
         }
@@ -244,7 +247,7 @@ public class EngagementDecisionService {
                     && channelAutoEnabled(engine, chosenChannel)
                     && !Boolean.TRUE.equals(engine.getAutoSendKilled())
                     && draftReady
-                    && graduated(engine);
+                    && graduated(engine, chosenChannel);
             action.setKind(autoSend ? "SEND" : "TASK");
             action.setStatus(dryRun ? "SIMULATED" : "OPEN");
             actionRepository.save(action);
@@ -270,25 +273,32 @@ public class EngagementDecisionService {
         int nextHours = d.nextCheckHours() != null && d.nextCheckHours() > 0
                 ? d.nextCheckHours()
                 : engine.getCadenceHours();
-        member.setNextActionAt(now.plus(Duration.ofHours(Math.max(nextHours, 1))));
-        memberRepository.save(member);
+        // Bounded like the no-op backoff: a model answer of 8760 would park the member for a year.
+        long nextCheck = Math.min(Math.max(nextHours, 1), Duration.ofDays(30).toHours());
+        member.setNextActionAt(now.plus(Duration.ofHours(nextCheck)));
+        // Targeted write, not save(member): a reply window, tier or opt-out that landed while the LLM
+        // was thinking must survive (see recordDecision).
+        memberRepository.recordDecision(member.getId(), now, fingerprint, member.getConsecutiveNoOps(),
+                heldLease, member.getNextActionAt());
         return true;
     }
 
     /** True iff channels.<ch>.auto is set — the admin's intent to auto-send proactively on that channel. */
     private boolean channelAutoEnabled(EngagementEngine engine, String channel) {
         try {
-            return objectMapper.readTree(engine.getChannels()).path(channel).path("auto").asBoolean(false);
+            JsonNode ch = objectMapper.readTree(engine.getChannels()).path(channel);
+            return ch.path("enabled").asBoolean(false) && ch.path("auto").asBoolean(false);
         } catch (Exception e) {
             return false;
         }
     }
 
-    /** Graduated to autonomy: the engine has >= first_n human-approved sends (per-engine override or default). */
-    private boolean graduated(EngagementEngine engine) {
+    /** Graduated to autonomy on a channel: >= first_n human-approved sends ON THAT CHANNEL (per-engine override or default). */
+    private boolean graduated(EngagementEngine engine, String channel) {
         int threshold = engine.getFirstN() != null ? engine.getFirstN() : defaultFirstN;
         if (threshold <= 0) return true; // 0 = trust immediately (explicit opt-in via override)
-        return actionRepository.countApprovedSends(engine.getId()) >= threshold;
+        // Per channel: approvals of in-app notes must not unlock autonomous WhatsApp or email.
+        return actionRepository.countApprovedSendsForChannel(engine.getId(), channel) >= threshold;
     }
 
     /** Which channels the engine's config marks enabled; empty config → all (human reviews anyway). */
@@ -300,9 +310,11 @@ public class EngagementDecisionService {
                 if (channels.path(ch).path("enabled").asBoolean(false)) enabled.add(ch);
             }
         } catch (Exception e) {
-            log.warn("Engine {} has unparseable channels — allowing all", engine.getId());
+            log.warn("Engine {} has unparseable channels — allowing none", engine.getId());
         }
-        return enabled.isEmpty() ? VALID_CHANNELS : enabled;
+        // None enabled means none: treating an empty set as "all" let {"EMAIL":{"enabled":false,
+        // "auto":true}} produce autonomous email on a channel the institute switched off.
+        return enabled;
     }
 
     /** The engine's Meta-approved WhatsApp templates the brain may choose from (name + body + vars). */
@@ -432,7 +444,9 @@ public class EngagementDecisionService {
             long hours = Math.min(1L << Math.min(fails, 6), Duration.ofDays(1).toHours()); // 2,4,...,64h cap 24h
             m.setConsecutiveFailures(fails);
             m.setNextActionAt(Instant.now().plus(Duration.ofHours(Math.max(hours, 1))));
-            memberRepository.save(m);
+            // m is the copy claimed before the LLM call; writing the whole row would undo a reply
+            // window or opt-out recorded since.
+            memberRepository.recordDecisionFailure(m.getId(), fails, m.getNextActionAt());
         } catch (Exception ignored) {
             // if even the backoff save fails, the lease still expires and the row retries later
         }

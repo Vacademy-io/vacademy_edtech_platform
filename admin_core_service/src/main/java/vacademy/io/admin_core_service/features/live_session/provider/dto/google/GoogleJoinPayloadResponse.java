@@ -32,4 +32,8 @@ public class GoogleJoinPayloadResponse {
     /** Connected organizer Google account — the host should open Meet signed into THIS account for
      *  auto-recording to fire (a privileged Workspace user must be present). */
     private String organizerEmail;
+
+    /** Set when the host was made a co-host of the space — they get host controls when they open
+     *  Meet signed into THIS account. */
+    private String cohostEmail;
 }

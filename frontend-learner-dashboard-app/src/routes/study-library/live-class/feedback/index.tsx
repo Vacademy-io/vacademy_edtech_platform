@@ -15,6 +15,9 @@ import type {
   FeedbackConfigResponse,
   FeedbackQuestion,
 } from "../-types/types";
+import { useTranslation } from "react-i18next";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 
 export const Route = createFileRoute("/study-library/live-class/feedback/")(
   {
@@ -37,8 +40,6 @@ function FeedbackShell({ children }: { children: React.ReactNode }) {
 
 /* ─────────────────────── Star Rating Component ─────────────────────── */
 
-const RATING_WORDS = ["Poor", "Fair", "Good", "Very good", "Excellent"];
-
 function StarRating({
   value,
   onChange,
@@ -50,6 +51,14 @@ function StarRating({
   maxStars?: number;
   allowHalf?: boolean;
 }) {
+  const { t } = useTranslation("study");
+  const RATING_WORDS = [
+    t("liveClass.feedback.rating.poor"),
+    t("liveClass.feedback.rating.fair"),
+    t("liveClass.feedback.rating.good"),
+    t("liveClass.feedback.rating.veryGood"),
+    t("liveClass.feedback.rating.excellent"),
+  ];
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const displayValue = hoverValue ?? value;
 
@@ -87,7 +96,7 @@ function StarRating({
             <button
               key={i}
               type="button"
-              aria-label={`${i + 1} star${i === 0 ? "" : "s"}`}
+              aria-label={t("liveClass.feedback.rating.starAriaLabel", { count: i + 1 })}
               className="relative rounded-md transition-transform duration-150 ease-out hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
               onClick={(e) => onChange(valueFromEvent(i, e))}
               onMouseMove={(e) => setHoverValue(valueFromEvent(i, e))}
@@ -120,6 +129,10 @@ function StarRating({
 /* ─────────────────────── Main Feedback Page ─────────────────────── */
 
 function FeedbackPage() {
+  const { t } = useTranslation("study");
+  const session = getTerminology(ContentTerms.Session, SystemTerms.Session);
+  const liveSessions = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
+  const instructor = getTerminology(RoleTerms.Teacher, SystemTerms.Teacher);
   const { scheduleId } = Route.useSearch();
   const navigate = useNavigate();
 
@@ -273,9 +286,9 @@ function FeedbackPage() {
   if (loading) {
     return (
       <FeedbackShell>
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <div className="flex flex-col items-center gap-stack text-muted-foreground">
           <CircleNotch className="h-8 w-8 animate-spin text-primary-500" />
-          <p className="text-body">Loading feedback form…</p>
+          <p className="text-body">{t("liveClass.feedback.loadingForm")}</p>
         </div>
       </FeedbackShell>
     );
@@ -290,10 +303,10 @@ function FeedbackPage() {
             <CheckCircle weight="fill" className="h-9 w-9 text-success-500" />
           </div>
           <h2 className="text-h3 font-semibold text-foreground">
-            Thank you for your feedback!
+            {t("liveClass.feedback.thankYouTitle")}
           </h2>
           <p className="mt-2 text-body text-muted-foreground">
-            Your responses have been recorded. Redirecting you back…
+            {t("liveClass.feedback.responsesRecorded")}
           </p>
         </Card>
       </FeedbackShell>
@@ -313,12 +326,12 @@ function FeedbackPage() {
             <CheckCircle weight="fill" className="h-9 w-9 text-success-500" />
           </div>
           <h2 className="text-h3 font-semibold text-foreground">
-            Thanks for attending!
+            {t("liveClass.feedback.thanksForAttending")}
           </h2>
           <p className="mt-2 text-body text-muted-foreground">
             {config?.session_title
-              ? `Hope you found "${config.session_title}" useful.`
-              : "Hope you found the session useful."}
+              ? t("liveClass.feedback.hopeFoundTitled", { title: config.session_title })
+              : t("liveClass.feedback.hopeFoundGeneric", { session: session.toLowerCase() })}
           </p>
           <MyButton
             buttonType="primary"
@@ -326,7 +339,7 @@ function FeedbackPage() {
             className="mt-6 w-full min-w-0"
             onClick={() => navigate({ to: "/study-library/live-class" })}
           >
-            Back to live classes
+            {t("liveClass.feedback.backToLiveClasses", { liveSessions })}
           </MyButton>
         </Card>
       </FeedbackShell>
@@ -343,7 +356,7 @@ function FeedbackPage() {
             {logoUrl ? (
               <img
                 src={logoUrl}
-                alt={config?.institute_name ?? "Institute logo"}
+                alt={config?.institute_name ?? t("liveClass.feedback.instituteLogoAlt")}
                 className="h-full w-full object-contain p-1.5"
                 onError={() => setLogoUrl(null)}
               />
@@ -354,7 +367,7 @@ function FeedbackPage() {
             )}
           </div>
           <h1 className="text-h2 font-semibold text-foreground sm:text-h1">
-            Session Feedback
+            {t("liveClass.feedback.sessionFeedbackTitle", { session })}
           </h1>
           {config?.session_title && (
             <p className="mt-1 text-body text-muted-foreground">
@@ -374,10 +387,12 @@ function FeedbackPage() {
             <Warning weight="fill" className="h-4 w-4" />
             <AlertDescription className="text-warning-700">
               <span className="font-semibold text-warning-700">
-                Feedback required.
+                {t("liveClass.feedback.requiredLabel")}
               </span>{" "}
-              Your instructor has marked feedback as compulsory for this session
-              — please complete all required questions to continue.
+              {t("liveClass.feedback.requiredBody", {
+                instructor: instructor.toLowerCase(),
+                session: session.toLowerCase(),
+              })}
             </AlertDescription>
           </Alert>
         )}
@@ -410,7 +425,7 @@ function FeedbackPage() {
                       errors[q.id] &&
                         "border-danger-400 focus-visible:ring-danger-400"
                     )}
-                    placeholder="Type your response here…"
+                    placeholder={t("liveClass.feedback.responsePlaceholder")}
                     value={(responses[q.id] as string) || ""}
                     onChange={(e) => {
                       setResponses((prev) => ({
@@ -429,7 +444,7 @@ function FeedbackPage() {
 
               {errors[q.id] && (
                 <p className="mt-1.5 text-caption text-danger-600">
-                  This field is required
+                  {t("liveClass.feedback.fieldRequired")}
                 </p>
               )}
             </Card>
@@ -446,10 +461,10 @@ function FeedbackPage() {
         >
           {submitting ? (
             <span className="flex items-center justify-center gap-2">
-              <CircleNotch className="h-4 w-4 animate-spin" /> Submitting…
+              <CircleNotch className="h-4 w-4 animate-spin" /> {t("liveClass.feedback.submitting")}
             </span>
           ) : (
-            "Submit Feedback"
+            t("liveClass.feedback.submitFeedback")
           )}
         </MyButton>
 
@@ -460,7 +475,7 @@ function FeedbackPage() {
             className="mt-2 w-full"
             onClick={() => navigate({ to: "/study-library/live-class" })}
           >
-            Skip
+            {t("liveClass.feedback.skip")}
           </MyButton>
         )}
       </Card>

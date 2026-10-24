@@ -30,6 +30,11 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 
+# What a generated image is for. Billing charges every image event once, on
+# its model (host_identity included: one per real Seedream call, not per shot).
+IMAGE_PURPOSES = ("support_visual", "thumbnail", "host_identity", "cast_sheet", "keyframe", "other")
+
+
 @dataclass
 class CostEvent:
     """Single billable event in a video-gen run."""
@@ -55,6 +60,8 @@ class CostEvent:
     # Lands in cost_breakdown.json so forensics can answer "did the user
     # override actually land at runtime?".
     source: str = ""
+    # Image events only: one of IMAGE_PURPOSES. "" for every other kind.
+    purpose: str = ""
 
 
 class CostEventTracker:
@@ -110,9 +117,14 @@ class CostEventTracker:
         stage: str,
         model: str,
         phase: str = "base",
-        cost_usd: float = 0.0,
+        cost_usd: Optional[float] = 0.0,
         outcome: str = "ok",
+        purpose: str = "other",
     ) -> None:
+        """Record ONE generated image. `model` is the real image model id
+        (e.g. "recraft/recraft-v4.1"); `cost_usd` is the vendor's reported cost
+        for the call, or None/0 when it reported none (billing then uses the
+        model's unit price). An unknown `purpose` is booked as "other"."""
         self._events.append(CostEvent(
             timestamp=_now_iso(),
             stage=stage,
@@ -121,6 +133,7 @@ class CostEventTracker:
             model=model,
             cost_usd=float(cost_usd or 0.0),
             outcome=outcome,
+            purpose=purpose if purpose in IMAGE_PURPOSES else "other",
         ))
 
     def record_stock(
@@ -340,4 +353,6 @@ def _event_to_stage_entry(ev: CostEvent) -> Dict[str, Any]:
         out["cost_usd"] = round(ev.cost_usd, 6)
     if ev.duration_ms is not None:
         out["duration_ms"] = int(ev.duration_ms)
+    if ev.purpose:
+        out["purpose"] = ev.purpose
     return out

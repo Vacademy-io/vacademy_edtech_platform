@@ -1,0 +1,21 @@
+{
+    "slideType": {
+        "aiContent": "محتوى بالذكاء الاصطناعي",
+        "scorm": "SCORM",
+        "slide": "شريحة"
+    },
+    "slideTitle": {
+        "assessmentFallback": "تقييم {{ordinal}}",
+        "untitled": "بلا عنوان"
+    },
+    "statusBadge": {
+        "draft": "مسودة",
+        "unsync": "غير متزامن",
+        "deleted": "محذوف"
+    },
+    "unsavedChangesTitle": "تغييرات غير محفوظة",
+    "empty": {
+        "heading": "لا توجد {{term}} بعد",
+        "description": "أضف أول {{term}} للبدء"
+    }
+}

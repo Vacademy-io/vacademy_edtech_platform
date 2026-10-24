@@ -1,0 +1,46 @@
+{
+    "hero": {
+        "eyebrow": "سجل المتعلم",
+        "eventCount_zero": "لا أحداث ({{count}})",
+        "eventCount_one": "حدث واحد ({{count}})",
+        "eventCount_two": "حدثان ({{count}})",
+        "eventCount_few": "{{count}} أحداث",
+        "eventCount_many": "{{count}} حدثًا",
+        "eventCount_other": "{{count}} حدث"
+    },
+    "filters": {
+        "all": "الكل",
+        "admission": "القبول",
+        "enrollment": "التسجيل",
+        "payment": "الدفع",
+        "learning": "التعلم",
+        "communication": "التواصل",
+        "ariaLabel": "تصفية أحداث السجل حسب الفئة"
+    },
+    "buckets": {
+        "today": "اليوم",
+        "yesterday": "أمس",
+        "thisWeek": "هذا الأسبوع",
+        "earlier": "سابقًا"
+    },
+    "error": {
+        "title": "تعذر تحميل سجل النشاط",
+        "hint": "حدث خطأ أثناء جلب السجل الزمني. يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "title": "لا يوجد سجل بعد",
+        "hint": "ستظهر هنا الأحداث من جميع المراحل"
+    },
+    "filteredEmpty": {
+        "title": "لا توجد أحداث مطابقة لهذا الفلتر",
+        "hint": "جرّب اختيار فئة مختلفة أعلاه"
+    },
+    "timeline": {
+        "actorPrefix": "بواسطة {{name}}"
+    },
+    "pagination": {
+        "pageOf": "صفحة {{current}} من {{total}}",
+        "previous": "السابق",
+        "next": "التالي"
+    }
+}

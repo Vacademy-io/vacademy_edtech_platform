@@ -8,10 +8,17 @@ This document explains the configuration needed to successfully build this appli
 The application was experiencing "JavaScript heap out of memory" errors during build on Cloudflare Pages. The following changes have been implemented to fix this:
 
 ### 1. Updated Build Script
-The `package.json` build script now includes Node.js memory limit increase:
+The `package.json` build script is `build:tsc && build:vite`, run serially.
+
+Since 2026-09-12 `build:tsc` runs **TypeScript 7's native compiler** (installed as the
+`typescript-native` alias so `typescript@5.6` stays in place for ESLint, Vite and the IDE):
 ```bash
-NODE_OPTIONS='--max-old-space-size=8192' tsc && NODE_OPTIONS='--max-old-space-size=8192' vite build
+node node_modules/typescript-native/lib/tsc.js -p tsconfig.json   # build:tsc
+cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build         # build:vite
 ```
+The native compiler needs no `--max-old-space-size` and uses roughly a quarter of the CPU time
+of `tsc` 5.x on this codebase (13k files). `build:tsc:legacy` keeps the old TS 5.6 command.
+Note that TS 7 removed `baseUrl`; `tsconfig.json` relies on `paths` alone.
 
 ### 2. Build Optimizations in vite.config.ts
 - Changed minifier from `terser` to `esbuild` (faster, less memory-intensive)

@@ -7,6 +7,7 @@ import {
   SpinnerGap,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 import { MyButton } from "@/components/design-system/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,6 +42,7 @@ const TncStep = ({
   onBack,
   initialAccepted = false,
 }: TncStepProps) => {
+  const { t } = useTranslation("registrationB");
   const consentItems = useMemo(
     () => (tncConsentItems ?? []).filter((item) => item.trim().length > 0),
     [tncConsentItems],
@@ -90,10 +92,10 @@ const TncStep = ({
         </div>
         <div>
           <h2 className="text-lg font-semibold leading-tight text-neutral-700">
-            Terms &amp; Conditions
+            {t("subOrgRegistration.tnc.title")}
           </h2>
           <p className="mt-0.5 text-sm text-neutral-500">
-            Please review and accept the terms to finish registration
+            {t("subOrgRegistration.tnc.subtitle")}
           </p>
         </div>
       </div>
@@ -106,22 +108,21 @@ const TncStep = ({
           <div className="flex h-40 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-50">
             <SpinnerGap className="size-6 animate-spin text-neutral-400" />
             <span className="ms-2 text-sm text-neutral-500">
-              Loading document...
+              {t("subOrgRegistration.tnc.loadingDocument")}
             </span>
           </div>
         ) : isTncUrlError || !tncUrl ? (
           <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-4 text-center">
             <WarningCircle className="size-6 text-warning-600" />
             <p className="text-sm text-neutral-500">
-              We couldn&apos;t load the Terms &amp; Conditions document. You can
-              still accept the terms below to continue.
+              {t("subOrgRegistration.tnc.loadError")}
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             <iframe
               src={tncUrl}
-              title="Terms & Conditions"
+              title={t("subOrgRegistration.tnc.title")}
               className="h-72 w-full rounded-lg border border-neutral-200 bg-white sm:h-96"
             />
             <a
@@ -130,15 +131,14 @@ const TncStep = ({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 self-end text-sm font-medium text-primary-500 hover:text-primary-400"
             >
-              Open in new tab
+              {t("subOrgRegistration.tnc.openInNewTab")}
               <ArrowSquareOut className="size-4" />
             </a>
           </div>
         )
       ) : hasConsentItems ? null : (
         <p className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
-          Please confirm that you accept the institute&apos;s Terms &amp;
-          Conditions to finish registration.
+          {t("subOrgRegistration.tnc.noDocNoConsent")}
         </p>
       )}
 
@@ -156,7 +156,7 @@ const TncStep = ({
             htmlFor="sub-org-tnc-accept"
             className="cursor-pointer text-sm text-neutral-600"
           >
-            I accept the Terms &amp; Conditions
+            {t("subOrgRegistration.tnc.acceptCheckboxLabel")}
             <span className="text-danger-600"> *</span>
           </label>
         </div>
@@ -186,7 +186,7 @@ const TncStep = ({
         </div>
       )}
 
-      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+      <div className="mt-6 flex flex-col-reverse gap-stack sm:flex-row sm:justify-between">
         {onBack ? (
           <MyButton
             type="button"
@@ -198,7 +198,7 @@ const TncStep = ({
             className="w-full sm:w-auto"
           >
             <ArrowLeft className="me-2 size-4" />
-            Back
+            {t("common.back")}
           </MyButton>
         ) : (
           <span className="hidden sm:block" />
@@ -215,10 +215,10 @@ const TncStep = ({
           {isSubmitting ? (
             <>
               <SpinnerGap className="me-2 size-4 animate-spin" />
-              Submitting...
+              {t("common.submitting")}
             </>
           ) : (
-            continueLabel ?? "Submit Registration"
+            continueLabel ?? t("common.submitRegistration")
           )}
         </MyButton>
       </div>

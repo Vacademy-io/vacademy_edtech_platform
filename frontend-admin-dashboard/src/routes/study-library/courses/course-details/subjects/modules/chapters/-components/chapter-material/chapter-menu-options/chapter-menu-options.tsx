@@ -3,6 +3,7 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { DotsThree } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { dropdownList } from '@/constants/study-library/chapter-menu-options-list';
 import { MoveToDialog } from './move-dialog';
 import { CopyToDialog } from './copy-dialog';
@@ -22,6 +23,7 @@ export const ChapterMenuOptions = ({
     onDelete,
     viewChapterDetails,
 }: ChapterMenuOptionsProps) => {
+    const { t } = useTranslation('studyLibraryChapterMenuOptions');
     const [openDialog, setOpenDialog] = useState<'copy' | 'move' | 'delete' | 'edit' | null>(null);
     const [openDeleteChapterDialog, setOpenDeleteChapterDialog] = useState(false);
 
@@ -64,7 +66,9 @@ export const ChapterMenuOptions = ({
 
             {/* Edit Dialog */}
             <MyDialog
-                heading={`Edit ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)}`}
+                heading={t('editDialogHeading', {
+                    term: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
+                })}
                 dialogWidth="min-w-[800px]"
                 open={openDialog === 'edit'}
                 onOpenChange={() => setOpenDialog(null)}
@@ -83,7 +87,9 @@ export const ChapterMenuOptions = ({
             <MoveToDialog openDialog={openDialog} setOpenDialog={setOpenDialog} chapter={chapter} />
 
             <MyDialog
-                heading={`Delete ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)}`}
+                heading={t('deleteDialogHeading', {
+                    term: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
+                })}
                 open={openDeleteChapterDialog}
                 onOpenChange={() => setOpenDeleteChapterDialog(!openDeleteChapterDialog)}
                 footer={
@@ -92,15 +98,15 @@ export const ChapterMenuOptions = ({
                             buttonType="secondary"
                             onClick={() => setOpenDeleteChapterDialog(false)}
                         >
-                            Cancel
+                            {t('cancel')}
                         </MyButton>
                         <MyButton buttonType="primary" onClick={() => onDelete()}>
-                            Yes, I am sure
+                            {t('confirmDelete')}
                         </MyButton>
                     </div>
                 }
             >
-                Are you sure you want to delete chapter {chapter.chapter.chapter_name}?
+                {t('deleteConfirmMessage', { chapterName: chapter.chapter.chapter_name })}
             </MyDialog>
         </>
     );

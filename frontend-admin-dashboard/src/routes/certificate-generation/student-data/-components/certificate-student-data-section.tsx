@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearch } from '@tanstack/react-router';
 import { Route } from '../index';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
@@ -20,6 +21,7 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 export const CertificateStudentDataSection = () => {
     console.log('🚀 CertificateStudentDataSection component initializing');
 
+    const { t } = useTranslation('certificateGenerationCertificateStudentDataSection');
     const { setNavHeading } = useNavHeadingStore();
     const search = useSearch({ from: Route.id });
     const router = useRouter();
@@ -34,8 +36,8 @@ export const CertificateStudentDataSection = () => {
     });
 
     useEffect(() => {
-        setNavHeading('Certificate Generation');
-    }, [setNavHeading]);
+        setNavHeading(t('certificateGeneration'));
+    }, [setNavHeading, t]);
 
     useEffect(() => {
         const loadSelectedStudents = async () => {
@@ -105,8 +107,8 @@ export const CertificateStudentDataSection = () => {
     }
 
     const steps = [
-        { key: 'student_data', label: 'Student Data & CSV Upload', icon: FileText },
-        { key: 'pdf_annotation', label: 'PDF Annotation', icon: Certificate },
+        { key: 'student_data', label: t('steps.studentData'), icon: FileText },
+        { key: 'pdf_annotation', label: t('steps.pdfAnnotation'), icon: Certificate },
     ];
 
     try {
@@ -124,12 +126,12 @@ export const CertificateStudentDataSection = () => {
                             className="flex items-center gap-2"
                         >
                             <ArrowLeft className="size-4" />
-                            Back to{' '}
-                            {getTerminology(
-                                RoleTerms.Learner,
-                                SystemTerms.Learner
-                            ).toLocaleLowerCase()}
-                            s
+                            {t('backTo', {
+                                term: getTerminology(
+                                    RoleTerms.Learner,
+                                    SystemTerms.Learner
+                                ).toLocaleLowerCase(),
+                            })}
                         </MyButton>
 
                         <div className="flex items-center gap-3">
@@ -138,22 +140,23 @@ export const CertificateStudentDataSection = () => {
                             </div>
                             <div>
                                 <h1 className="text-xl font-semibold text-neutral-700">
-                                    Certificate Generation
+                                    {t('certificateGeneration')}
                                 </h1>
                                 <p className="text-sm text-neutral-500">
-                                    {session.selectedStudents.length}{' '}
-                                    {getTerminology(
-                                        RoleTerms.Learner,
-                                        SystemTerms.Learner
-                                    ).toLocaleLowerCase()}
-                                    s selected
+                                    {t('studentsSelected', {
+                                        count: session.selectedStudents.length,
+                                        term: getTerminology(
+                                            RoleTerms.Learner,
+                                            SystemTerms.Learner
+                                        ).toLocaleLowerCase(),
+                                    })}
                                 </p>
                             </div>
                         </div>
                     </div>
                     <SettingsQuickAccessButton
                         settingsKey={SettingsTabs.Certificates}
-                        label="Certificate settings"
+                        label={t('certificateSettings')}
                     />
                 </div>
 

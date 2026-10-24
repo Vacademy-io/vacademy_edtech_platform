@@ -11,6 +11,7 @@ import {
 } from '@/lib/auth/facultyAccessUtils';
 import type { SubOrgAccess } from '@/types/faculty-access';
 import { BASE_URL } from '@/constants/urls';
+import { useTranslation } from 'react-i18next';
 
 interface SubOrgSelectionProps {
     onSubOrgSelect: (subOrgId: string) => void;
@@ -22,6 +23,7 @@ const getLogoUrl = (fileId?: string) => {
 };
 
 export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
+    const { t } = useTranslation('loginSubOrgSelection');
     const [subOrgs, setSubOrgs] = useState<SubOrgAccess[]>([]);
     const [selectedSubOrg, setSelectedSubOrg] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +35,7 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
         const initializeSubOrgs = () => {
             const facultyData = getFacultyAccessData();
             if (!facultyData || !facultyData.subOrgs || facultyData.subOrgs.length === 0) {
-                toast.error('No sub-organizations found');
+                toast.error(t('noSubOrgsFound'));
                 navigate({ to: '/login' });
                 return;
             }
@@ -73,7 +75,7 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
 
     const handleContinue = () => {
         if (!selectedSubOrg) {
-            toast.error('Please select a sub-organization');
+            toast.error(t('pleaseSelectASubOrg'));
             return;
         }
 
@@ -87,7 +89,7 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                 <div className="flex w-full flex-col items-center justify-center gap-20">
                     <div className="flex flex-col items-center justify-center gap-4">
                         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-                        <p className="text-sm text-gray-600">Loading sub-organizations...</p>
+                        <p className="text-sm text-gray-600">{t('loadingSubOrgs')}</p>
                     </div>
                 </div>
             </SplashScreen>
@@ -103,14 +105,14 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                 <div className="flex flex-col items-center gap-4 text-center">
                     {currentLogoUrl ? (
                         <div className="h-20 w-20 rounded-xl border border-gray-100 bg-white p-2 shadow-sm flex items-center justify-center overflow-hidden">
-                            <img src={currentLogoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
+                            <img src={currentLogoUrl} alt={t('logoAlt')} className="max-h-full max-w-full object-contain" />
                         </div>
                     ) : (
                         <Building2 className="h-12 w-12 text-primary-500" />
                     )}
                     <Heading
-                        heading="Select Sub-Organization"
-                        subHeading="Please choose the sub-organization you want to access"
+                        heading={t('selectSubOrg')}
+                        subHeading={t('pleaseChooseSubOrgToAccess')}
                     />
                 </div>
 
@@ -118,7 +120,7 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                     {/* Sub-Org Dropdown */}
                     <div className="w-full max-w-md" ref={dropdownRef}>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Available Sub-Organizations
+                            {t('availableSubOrgs')}
                         </label>
                         <div className="relative">
                             <button
@@ -135,10 +137,10 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                                     <div className="truncate">
                                         {selectedSubOrg ? (
                                             <span className="font-medium text-gray-900 truncate block">
-                                                {currentSubOrg?.subOrgName || `Sub-Org ${selectedSubOrg}`}
+                                                {currentSubOrg?.subOrgName || t('subOrgFallbackName', { subOrgId: selectedSubOrg })}
                                             </span>
                                         ) : (
-                                            <span className="text-gray-500">Choose a sub-organization</span>
+                                            <span className="text-gray-500">{t('chooseASubOrg')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -169,10 +171,10 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                                                     )}
                                                     <div className="truncate">
                                                         <div className={`font-medium truncate ${isSelected ? 'text-primary-700' : 'text-gray-900'}`}>
-                                                            {subOrg.subOrgName || `Sub-Org ${subOrg.subOrgId}`}
+                                                            {subOrg.subOrgName || t('subOrgFallbackName', { subOrgId: subOrg.subOrgId })}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
-                                                            ID: {subOrg.subOrgId.slice(0, 8)}...
+                                                            {t('idLabel', { idPrefix: subOrg.subOrgId.slice(0, 8) })}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -198,7 +200,7 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                             disabled={!selectedSubOrg}
                             className="w-full"
                         >
-                            {selectedSubOrg ? 'Continue to Portal' : 'Select a Sub-Organization'}
+                            {selectedSubOrg ? t('continueToPortal') : t('selectASubOrg')}
                         </MyButton>
 
                         <button
@@ -206,7 +208,7 @@ export function SubOrgSelection({ onSubOrgSelect }: SubOrgSelectionProps) {
                             onClick={() => navigate({ to: '/login' })}
                             className="text-sm font-medium text-gray-500 hover:text-primary-600 transition-colors py-2"
                         >
-                            Back to Login
+                            {t('backToLogin')}
                         </button>
                     </div>
                 </div>

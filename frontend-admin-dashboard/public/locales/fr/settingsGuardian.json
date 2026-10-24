@@ -1,0 +1,107 @@
+{
+    "toasts": {
+        "settingsSaved": "Paramètres des tuteurs enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres des tuteurs"
+    },
+    "enableCard": {
+        "title": "Paramètre des tuteurs",
+        "description": "Contrôle si la liaison tuteur-élève (attribution groupée, vue latérale de l'élève et rattrapage) est disponible pour tout l'établissement. La désactiver masque toute l'interface de liaison des tuteurs sans supprimer les liaisons existantes.",
+        "loading": "Chargement des paramètres des tuteurs…",
+        "enabledLabel": "Activer la liaison des tuteurs",
+        "disabledLabel": "Liaison des tuteurs désactivée"
+    },
+    "parentPortal": {
+        "title": "Portail parent",
+        "description": "Permettez aux tuteurs liés de suivre la progression, l'assiduité, les tests, les cours en direct, les frais et les récompenses de leur enfant depuis l'application élève. Ceci est indépendant de la liaison des tuteurs ci-dessus — activez-la et choisissez les sections visibles par les parents.",
+        "loading": "Chargement…",
+        "enabledLabel": "Portail parent activé",
+        "disabledLabel": "Portail parent désactivé",
+        "sectionsVisible": "Sections visibles par les parents",
+        "viewSwitching": "Changement de vue",
+        "viewAsChildLabel": "Le parent peut ouvrir la vue élève (lecture seule)",
+        "switchToParentLabel": "L'élève peut basculer vers son portail parent",
+        "modules": {
+            "overview": "Aperçu",
+            "attendance": "Assiduité",
+            "liveSessions": "Cours en direct",
+            "assessments": "Tests",
+            "progress": "Progression",
+            "payments": "Frais",
+            "badges": "Récompenses et badges",
+            "certificates": "Certificats",
+            "reports": "Bulletins"
+        }
+    },
+    "credentialEmail": {
+        "title": "E-mail d'identifiants du tuteur",
+        "description": "Envoyez éventuellement un e-mail avec les identifiants de connexion à chaque création d'un compte tuteur — que ce soit via une attribution groupée, l'action « Ajouter un tuteur » de la vue latérale de l'élève, ou un rattrapage.",
+        "sendToggleLabel": "Envoyer un e-mail d'identifiants à la création d'un compte tuteur",
+        "sendToLabel": "Destinataire",
+        "studentButton": "Élève",
+        "guardianButton": "Tuteur",
+        "studentHint": "Envoyé à l'adresse e-mail de l'élève. Recommandé pour le rattrapage, car l'e-mail d'un tuteur issu du rattrapage est une adresse fictive qui ne peut pas recevoir de courrier.",
+        "guardianHint": "Envoyé à l'adresse e-mail du tuteur — pertinent pour les flux de liaison/ajout de tuteur où une véritable adresse e-mail a été fournie ; non délivrable pour les tuteurs issus du rattrapage (adresse fictive)."
+    },
+    "save": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer"
+    },
+    "backfillEnrolled": {
+        "title": "Rattraper les élèves existants",
+        "description": "Créer un compte tuteur pour chaque élève inscrit dans cet établissement qui n'en a pas encore un de lié. Les élèves ayant déjà un tuteur sont ignorés et non modifiés.",
+        "dialogHeading": "Lancer le rattrapage des tuteurs ?",
+        "emptyState": "Chaque élève a déjà un tuteur lié. Rien à rattraper.",
+        "awaiting": "en attente d'un tuteur"
+    },
+    "backfillLeads": {
+        "title": "Rattraper les tuteurs des prospects",
+        "description": "Créer un compte tuteur pour chaque prospect de cet établissement dont le côté élève dispose déjà d'un vrai compte mais sans tuteur lié — cela couvre les prospects qui ne sont pas encore inscrits. Les prospects ayant déjà un tuteur sont ignorés et non modifiés.",
+        "dialogHeading": "Lancer le rattrapage des tuteurs de prospects ?",
+        "emptyState": "Chaque prospect a déjà un tuteur lié. Rien à rattraper.",
+        "awaiting": "en attente d'un tuteur (prospects)"
+    },
+    "backfill": {
+        "checkingFor": "Recherche des élèves {{awaitingLabel}}…",
+        "studentsAwaiting_one": "{{count}} élève {{awaitingLabel}}",
+        "studentsAwaiting_many": "{{count}} élèves {{awaitingLabel}}",
+        "studentsAwaiting_other": "{{count}} élèves {{awaitingLabel}}",
+        "moreNotShown": "+{{count}} de plus non affichés",
+        "progressLine": "{{done}} sur {{total}} traités ({{created}} créés, {{skipped}} ignorés) — traitement par lots, cela peut prendre du temps pour un grand établissement.",
+        "runButton": "Lancer le rattrapage",
+        "runningButton": "Rattrapage en cours…",
+        "completeToast": "{{title}} terminé : {{created}} créés, {{skipped}} ignorés sur {{total}} éligibles.",
+        "failedToast": "Échec de {{title}}"
+    },
+    "backfillDialog": {
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "bodyPrefix": "Cela créera un compte tuteur pour",
+        "studentCount_one": "{{count}} élève",
+        "studentCount_many": "{{count}} élèves",
+        "studentCount_other": "{{count}} élèves",
+        "bodySuffix_one": "dans cet établissement qui n'en a pas encore un de lié. Les élèves ayant déjà un tuteur sont ignorés et non modifiés.",
+        "bodySuffix_many": "dans cet établissement qui n'en ont pas encore un de lié. Les élèves ayant déjà un tuteur sont ignorés et non modifiés.",
+        "bodySuffix_other": "dans cet établissement qui n'en ont pas encore un de lié. Les élèves ayant déjà un tuteur sont ignorés et non modifiés."
+    },
+    "export": {
+        "title": "Exporter les identifiants des tuteurs",
+        "description": "Téléchargez un CSV des identifiants de connexion de chaque tuteur lié (une ligne par tuteur, avec ses élèves liés). Utile pour distribuer en masse les identifiants du portail parent — en particulier pour les tuteurs issus du rattrapage, dont l'adresse e-mail fictive ne peut pas recevoir l'e-mail d'identifiants.",
+        "warning": "Ce fichier contient des mots de passe en clair. Manipulez-le et partagez-le avec précaution.",
+        "button": "Exporter le CSV des identifiants",
+        "exporting": "Exportation…",
+        "successToast": "Identifiants des tuteurs exportés",
+        "errorToast": "Échec de l'exportation des identifiants des tuteurs"
+    },
+    "credentialTemplate": {
+        "label": "Modèle d'e-mail d'identifiants",
+        "generateTitle": "Générer un modèle d'e-mail d'identifiants de tuteur avec des exemples de valeurs pré-remplies",
+        "generateButton": "Générer un exemple",
+        "generating": "Génération…",
+        "loading": "Chargement de la sélection du modèle…",
+        "placeholder": "Aucun modèle sélectionné — les e-mails d'identifiants sont ignorés tant qu'un modèle n'est pas choisi",
+        "updateSuccessToast": "Modèle d'e-mail d'identifiants des tuteurs mis à jour",
+        "updateErrorToast": "Échec de la mise à jour du modèle d'e-mail d'identifiants des tuteurs",
+        "createSuccessToast": "Exemple de modèle d'identifiants de tuteur créé",
+        "createErrorToast": "Échec de la génération du modèle d'exemple. Veuillez réessayer."
+    }
+}

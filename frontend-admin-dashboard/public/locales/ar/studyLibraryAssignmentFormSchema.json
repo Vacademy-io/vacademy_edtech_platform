@@ -1,0 +1,13 @@
+{
+    "validation": {
+        "endMustBeAfterStart": "يجب أن تكون النهاية بعد البداية"
+    },
+    "fileType": {
+        "allFiles": "كل الملفات",
+        "pdf": "PDF",
+        "image": "صورة (PNG، JPG، GIF)",
+        "document": "مستند (DOC، DOCX)",
+        "video": "فيديو (MP4، MOV، WEBM)",
+        "audio": "صوت (MP3، WAV، M4A)"
+    }
+}

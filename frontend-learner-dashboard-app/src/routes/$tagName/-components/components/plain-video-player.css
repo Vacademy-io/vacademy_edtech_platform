@@ -1,0 +1,95 @@
+/* PlainVideoPlayer — play/pause-only player for uploaded video files.
+ *
+ * Class-based on purpose: the same markup is portalled INTO htmlPage shadow
+ * roots (data-vacademy="video" placeholders), where Tailwind utilities do not
+ * reach. HtmlPageSection injects this sheet next to the site CSS; the typed
+ * videoEmbed path gets it through the normal global import. Token custom
+ * properties inherit across the shadow boundary, so the button/progress ink
+ * still follows the institute theme and the catalogue radius. */
+.pvp {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: rgb(0 0 0);
+    border-radius: var(--catalogue-radius-md, 8px);
+    box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.35);
+}
+.pvp__video {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: pointer;
+}
+.pvp__scrim {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.45), rgb(0 0 0 / 0.05) 60%, rgb(0 0 0 / 0.1));
+    transition: opacity 0.3s;
+}
+.pvp__btn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    transform: translate(-50%, -50%);
+    border: 0;
+    border-radius: 9999px;
+    background: hsl(var(--catalogue-bg-elevated, 0 0% 100%) / 0.95);
+    color: hsl(var(--primary-500, 24 85% 54%));
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+    cursor: pointer;
+    transition: opacity 0.3s, transform 0.3s;
+}
+.pvp__btn:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+.pvp__btn:focus {
+    outline: none;
+}
+.pvp__btn:focus-visible {
+    box-shadow: 0 0 0 4px hsl(var(--catalogue-bg-elevated, 0 0% 100%) / 0.6), 0 12px 32px rgb(0 0 0 / 0.35);
+}
+.pvp__btn svg {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+.pvp__btn--play svg {
+    margin-inline-start: 0.25rem;
+}
+.pvp--playing .pvp__scrim,
+.pvp--playing .pvp__btn {
+    opacity: 0;
+}
+.pvp--playing:hover .pvp__scrim,
+.pvp--playing:hover .pvp__btn,
+.pvp--playing .pvp__btn:focus-visible {
+    opacity: 1;
+}
+/* passive progress line — there is deliberately no seek, volume or menu */
+.pvp__bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    height: 4px;
+    background: hsl(var(--catalogue-bg-elevated, 0 0% 100%) / 0.25);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.pvp--started .pvp__bar {
+    opacity: 1;
+}
+.pvp__fill {
+    height: 100%;
+    background: hsl(var(--primary-500, 24 85% 54%));
+}

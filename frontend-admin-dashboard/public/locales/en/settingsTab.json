@@ -1,0 +1,40 @@
+{
+    "header": {
+        "title": "Tab Settings",
+        "subtitle": "Configure which tabs are visible in your dashboard",
+        "reset": "Reset",
+        "save": "Save Settings"
+    },
+    "footer": {
+        "reset": "Reset",
+        "save": "Save"
+    },
+    "errors": {
+        "parentMustBeVisible": "Parent tab must be visible to toggle sub-items",
+        "atLeastOneSubItemVisible": "At least one sub-item must remain visible",
+        "saveFailed": "Failed to save tab settings"
+    },
+    "toasts": {
+        "saveSuccess": "Tab settings saved successfully!",
+        "resetSuccess": "Settings reset to defaults"
+    },
+    "status": {
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "disabled": "Disabled"
+    },
+    "subItems": {
+        "label": "Sub-items:",
+        "hintVisible": "At least one sub-item must remain visible",
+        "hintHidden": "Sub-items are disabled when parent tab is hidden"
+    },
+    "tabs": {
+        "institutePulse": "Institute Pulse",
+        "reports": "Reports",
+        "doubtManagement": "Doubt Management",
+        "evaluationCentre": "Evaluation Centre",
+        "evaluations": "Evaluations",
+        "evaluationTool": "Evaluation tool",
+        "communityCentre": "Community Centre"
+    }
+}

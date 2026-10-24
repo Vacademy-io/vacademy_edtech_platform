@@ -1,0 +1,11 @@
+{
+    "heading": "Delete {{session}}",
+    "attention": "Attention",
+    "confirmMessage": "All the data in the {{session}} will be deleted. Are you sure you want to delete the {{session}}",
+    "no": "No",
+    "yes": "Yes",
+    "toast": {
+        "deleted": " {{session}} deleted successfully!",
+        "deleteFailed": "Failed to delete {{session}}"
+    }
+}

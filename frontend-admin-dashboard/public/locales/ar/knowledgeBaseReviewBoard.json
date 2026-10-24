@@ -1,0 +1,37 @@
+{
+    "nudges": {
+        "harder": { "label": "اجعله أصعب" },
+        "easier": { "label": "اجعله أسهل" },
+        "moreApplication": { "label": "المزيد من التطبيق" }
+    },
+    "emptyState": {
+        "title": "تعذّرت كتابة أي أسئلة من المادة المحددة.",
+        "description": "جرّب توسيع اختيار الفصول، أو تحقق من أن تلك الفصول عولجت بشكل صحيح."
+    },
+    "marks_zero": "{{count}} درجة",
+    "marks_one": "درجة واحدة",
+    "marks_two": "درجتان",
+    "marks_few": "{{count}} درجات",
+    "marks_many": "{{count}} درجة",
+    "marks_other": "{{count}} درجة",
+    "status": {
+        "needsFixing": "بحاجة إلى تصحيح",
+        "check": "تحقّق"
+    },
+    "markingScheme": "مخطط التقييم",
+    "pageLabel": "الصفحة {{page}}",
+    "noPageRecorded": "لم تُسجَّل صفحة",
+    "diagramsFromBook_zero": "{{count}} رسم من الكتاب",
+    "diagramsFromBook_one": "رسم واحد من الكتاب",
+    "diagramsFromBook_two": "رسمان من الكتاب",
+    "diagramsFromBook_few": "{{count}} رسومات من الكتاب",
+    "diagramsFromBook_many": "{{count}} رسمًا من الكتاب",
+    "diagramsFromBook_other": "{{count}} رسم من الكتاب",
+    "actions": {
+        "rewrite": "إعادة الصياغة",
+        "rewriting": "جارٍ إعادة الصياغة…"
+    },
+    "errors": {
+        "sectionRemoved": "قسم هذا السؤال لم يعد موجودًا في الخطة."
+    }
+}

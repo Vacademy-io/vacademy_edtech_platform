@@ -1,0 +1,54 @@
+{
+    "emptyState": "لم يتم توصيل أي حساب Google Workspace بعد. انقر على \"توصيل Google Workspace\" لتفعيل Google Meet لهذه المؤسسة.",
+    "toasts": {
+        "updateFailed": "تعذر تحديث الحساب",
+        "connectedAs": "تم الاتصال باسم {{email}}",
+        "connectionFailed": "فشل الاتصال",
+        "connectionTestFailed": "فشل اختبار الاتصال",
+        "disconnected": "تم فصل {{email}}",
+        "disconnectFailed": "فشل قطع الاتصال",
+        "openJoinEnabled": "ستستخدم الاجتماعات الجديدة الانضمام المفتوح (أي شخص يملك الرابط)",
+        "setDefault": "أصبح {{email}} الآن هو الافتراضي",
+        "autoRecordingDisabled": "تم تعطيل التسجيل التلقائي",
+        "autoRecordingEnabled": "تم تفعيل التسجيل التلقائي (يتطلب إصدار Workspace يدعم التسجيل)",
+        "requireKnockEnabled": "ستتطلب الاجتماعات الجديدة من الضيوف طرق الباب للانضمام"
+    },
+    "badges": {
+        "default": "افتراضي",
+        "autoRecord": "تسجيل تلقائي",
+        "reconnectNeeded": "يلزم إعادة الاتصال"
+    },
+    "accessLabel": {
+        "open": "انضمام مفتوح",
+        "restricted": "مقيّد",
+        "knock": "الطرق للانضمام"
+    },
+    "row": {
+        "lastVerified": "· آخر تحقق {{date}}",
+        "actionsAriaLabel": "إجراءات الحساب"
+    },
+    "menu": {
+        "testConnection": "اختبار الاتصال",
+        "setAsDefault": "تعيين كافتراضي",
+        "disableAutoRecording": "تعطيل التسجيل التلقائي",
+        "enableAutoRecording": "تفعيل التسجيل التلقائي",
+        "requireKnock": "طلب الطرق (موثوق)",
+        "allowOpenJoin": "السماح بالانضمام المفتوح…",
+        "disconnect": "فصل الاتصال"
+    },
+    "dialogs": {
+        "disconnect": {
+            "title": "فصل Google Workspace؟",
+            "description": "سيتم فصل {{email}} وإلغاء وصوله. لن تتأثر الجلسات المباشرة الحالية، لكن لن تتمكن من إنشاء جلسات Google Meet جديدة حتى تعيد الاتصال.",
+            "confirm": "فصل"
+        },
+        "openAccess": {
+            "title": "السماح بالانضمام المفتوح؟",
+            "description": "مع الانضمام المفتوح، <1>يمكن لأي شخص يملك رابط الاجتماع الانضمام دون الطرق</1> — رابط Google Meet هو مجرد عنوان URL بدون رمز مرور. استخدم هذا الخيار فقط إذا كنت مرتاحًا لكون الرابط يُشارك حصريًا مع المتعلمين المسجلين عبر Vacademy. يمكنك العودة إلى \"طلب الطرق\" في أي وقت.",
+            "confirm": "السماح بالانضمام المفتوح"
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء"
+    }
+}

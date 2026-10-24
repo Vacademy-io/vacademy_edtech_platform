@@ -1,0 +1,49 @@
+{
+    "header": {
+        "title": "Colonnes de la liste des {{learnerLabel}}",
+        "description": "Désactivez les colonnes que ce rôle ne doit pas voir dans la liste des {{learnerLabelLower}}. Les colonnes pilotées par filtre (Groupe, Invitation, Forfait, Montant) ne sont pas répertoriées ici — elles n'apparaissent que lorsque leur filtre est actif. Masquer une colonne ici masque aussi sa puce de filtre."
+    },
+    "headerSection": {
+        "title": "En-tête",
+        "countBadges": "Badges de comptage (Total / Actifs / Inactifs)"
+    },
+    "systemColumns": {
+        "title": "Colonnes système",
+        "fullName": "Nom complet",
+        "username": "Nom d'utilisateur",
+        "enrollmentNumber": "Numéro d'inscription",
+        "collegeSchool": "Collège/École",
+        "gender": "Genre",
+        "mobileNumber": "Numéro de mobile",
+        "emailId": "Adresse e-mail",
+        "fathersName": "Nom du père/tuteur",
+        "mothersName": "Nom de la mère/tutrice",
+        "fathersMobileNumber": "Numéro de mobile du père/tuteur",
+        "fathersEmail": "E-mail du père/tuteur",
+        "mothersMobileNumber": "Numéro de mobile de la mère/tutrice",
+        "mothersEmail": "E-mail de la mère/tutrice",
+        "city": "Ville",
+        "state": "État/Région",
+        "attendance": "Présence",
+        "country": "Pays",
+        "sessionExpiry": "Expiration de la session",
+        "status": "Statut",
+        "referralsCount": "Nombre de parrainages",
+        "counsellor": "Conseiller",
+        "billingContactName": "Nom du contact de facturation",
+        "billingContactEmail": "E-mail du contact de facturation",
+        "billingContactRole": "Rôle du contact de facturation"
+    },
+    "membershipColumns": {
+        "title": "Colonnes d'adhésion",
+        "description": "Ces colonnes sont masquées par défaut et ne sont visibles que lorsque l'établissement dispose de groupes associés à une organisation. Activez celles que ce rôle doit voir.",
+        "membershipRole": "Rôle d'adhésion",
+        "membershipType": "Type d'adhésion"
+    },
+    "customFieldColumns": {
+        "title": "Colonnes de champs personnalisés",
+        "description": "Les colonnes de champs personnalisés sont masquées par défaut. Activez celles que ce rôle doit voir dans la liste des apprenants.",
+        "loading": "Chargement des champs personnalisés…",
+        "empty": "Aucun champ personnalisé n'a encore été configuré pour cet établissement. Ajoutez-les dans les paramètres des champs personnalisés, puis revenez ici pour les activer par rôle."
+    }
+}

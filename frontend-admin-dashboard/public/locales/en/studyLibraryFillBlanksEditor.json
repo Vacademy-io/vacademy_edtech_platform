@@ -1,0 +1,23 @@
+{
+    "block": {
+        "title": "Fill in the Blanks",
+        "preview": "Preview",
+        "edit": "Edit"
+    },
+    "editor": {
+        "usageHintPrefix": "Use",
+        "usageHintSuffix": "to create blanks.",
+        "exampleLabel": "Example:",
+        "exampleSentence": "The capital of France is {blank:Paris}",
+        "textareaPlaceholder": "The {blank:Sun} is the center of our {blank:solar system}.",
+        "blanksDetected_one": "{{count}} blank detected:",
+        "blanksDetected_other": "{{count}} blanks detected:"
+    },
+    "preview": {
+        "blankPlaceholder": "blank {{index}}",
+        "checkAnswers": "Check Answers",
+        "reset": "Reset",
+        "correct": "correct",
+        "emptyState": "Click Edit to add a fill-in-the-blanks sentence"
+    }
+}

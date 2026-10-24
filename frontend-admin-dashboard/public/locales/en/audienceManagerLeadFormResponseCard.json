@@ -1,0 +1,27 @@
+{
+    "card": {
+        "title": "Form Response"
+    },
+    "row": {
+        "notProvided": "Not provided",
+        "viewAttachment": "View attachment"
+    },
+    "callButton": {
+        "title": "Call this lead",
+        "ariaLabel": "Call lead",
+        "connecting": "Connecting…",
+        "callNow": "Call now"
+    },
+    "aiCallButton": {
+        "title": "Place an AI voice-agent call to this lead",
+        "ariaLabel": "AI call lead",
+        "calling": "Calling…",
+        "aiCall": "AI call",
+        "optionsHeading": "AI call options",
+        "placeAiCall": "Place AI call"
+    },
+    "errors": {
+        "noResponseForCall": "No campaign response linked — cannot place a call from here.",
+        "noResponseForAiCall": "No campaign response linked — cannot place an AI call from here."
+    }
+}

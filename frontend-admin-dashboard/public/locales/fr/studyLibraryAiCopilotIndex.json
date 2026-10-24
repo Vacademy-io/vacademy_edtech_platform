@@ -1,0 +1,230 @@
+{
+    "helmet": {
+        "title": "Créer avec {{aiName}}",
+        "description": "Créez des cours avec {{aiName}} en utilisant des invites en langage naturel."
+    },
+    "header": {
+        "title": "Créer avec {{aiName}}",
+        "subtitle": "Décrivez votre idée de cours et laissez {{aiName}} générer une expérience d'apprentissage complète"
+    },
+    "examplePrompts": {
+        "python": "Créer un cours de programmation Python pour débutants destiné aux développeurs en devenir",
+        "ml": "Concevoir un programme complet de Machine Learning avec Python et Scikit-Learn",
+        "cloud": "Créer un cours sur les fondamentaux du cloud computing couvrant les bases d'AWS, Azure et GCP",
+        "dataEngineering": "Développer un cours d'ingénierie des données axé sur les pipelines ETL et les concepts SQL"
+    },
+    "draftBanner": {
+        "untitled": "Cours sans titre",
+        "savedOn": "Brouillon enregistré {{date}}",
+        "discard": "Abandonner",
+        "resume": "Reprendre"
+    },
+    "form": {
+        "courseGoalPlaceholder": "Décrivez l'objectif de votre cours... ex. : « Créer un cours complet de programmation Python pour débutants, des bases aux sujets avancés »",
+        "courseSettings": "Paramètres du cours",
+        "skillLevelPlaceholder": "Niveau de compétence",
+        "skillLevels": {
+            "beginner": "Débutant",
+            "intermediate": "Intermédiaire",
+            "advanced": "Avancé"
+        },
+        "aiModelPlaceholder": "Modèle d'IA",
+        "autoSmart": "Auto (intelligent)",
+        "loading": "Chargement...",
+        "structureFollowsKb": "La structure suit la base de connaissances",
+        "custom": "Personnalisé...",
+        "durationPlaceholder": "Durée",
+        "durationCustomMinutes": "{{minutes}} min",
+        "durationOptions": {
+            "min30": "30 min",
+            "min45": "45 min",
+            "min60": "60 min",
+            "min90": "90 min",
+            "hours2": "2 heures"
+        },
+        "durationInputPlaceholder": "Durée (minutes)",
+        "numberOfChapters": "Nombre de {{chapters}}",
+        "slidesPerChapterInputPlaceholder": "{{slides}} par {{chapter}}",
+        "additionalOptions": "Options supplémentaires",
+        "contentOptionsLabel": "Options de contenu",
+        "selectedCount_one": "{{count}} sélectionnée",
+        "selectedCount_many": "{{count}} sélectionnées",
+        "selectedCount_other": "{{count}} sélectionnées",
+        "structureLabel": "Structure",
+        "configured": "Configuré",
+        "referencesLabel": "Références",
+        "apiKeysLabel": "Clés API",
+        "documentContent": {
+            "title": "Contenu du document",
+            "caption": "Intégré dans chaque diapositive de document générée.",
+            "customButton": "Personnalisé",
+            "standardFlowButton": "Flux d'apprentissage standard",
+            "standardFlowTooltip": "Pourquoi c'est important → Notes courtes → Point à forte valeur → Visuel/processus → Application → Cartes mémoire → Mini quiz → Résumé",
+            "types": {
+                "whyItMatters": "Pourquoi c'est important",
+                "notes": "Notes courtes",
+                "highYield": "Point à forte valeur",
+                "visualProcess": "Visuel / processus",
+                "application": "Application",
+                "flashcards": "Cartes mémoire",
+                "quiz": "Quiz",
+                "summary": "Résumé",
+                "practicalExamples": "Exemples pratiques",
+                "interactiveGames": "Jeux interactifs"
+            }
+        },
+        "courseStructure": {
+            "title": "Structure du cours",
+            "quizzesCaption": "Quiz",
+            "quizPlacement": {
+                "perTopic": "Mini quiz par sujet",
+                "chapter": "Un quiz par chapitre",
+                "both": "Les deux",
+                "none": "Aucun quiz"
+            },
+            "chapterDeliverablesCaption": "Livrables du chapitre",
+            "chapterAssignment": {
+                "auto": "Devoir : automatique",
+                "withSolution": "Devoir + solution",
+                "none": "Aucun devoir"
+            },
+            "chapterVideo": "Vidéo du chapitre",
+            "aiTeacher": "Enseignant IA",
+            "aiTeacherTooltip": "Préparer chaque diapositive pour l'enseignant IA individuel une fois le cours créé : environ 2 crédits par diapositive de document ou vidéo, plus environ 1 crédit par image IA lorsque les images sont activées dans Paramètres → Paramètres du cours → Mode tuteur.",
+            "reduceRepetition": "Réduire les répétitions (2e passe)",
+            "reduceRepetitionTooltip": "Une fois toutes les diapositives générées, les diapositives qui répètent une matière déjà couverte par une autre diapositive du chapitre sont réécrites une fois.",
+            "figuresCaption": "Diagrammes et figures",
+            "figuresPolicy": {
+                "prefer": "Préférer les figures sources",
+                "require": "Figures sources requises",
+                "generatedOnly": "Générées uniquement"
+            }
+        },
+        "generateButton": "Générer le plan du cours"
+    },
+    "contentDialog": {
+        "title": "Options de contenu",
+        "description": "Sélectionnez ce qui doit être inclus dans votre cours",
+        "options": {
+            "diagrams": "Diagrammes",
+            "codeSnippets": "Extraits de code",
+            "practiceProblems": "Exercices pratiques",
+            "quizzes": "Quiz",
+            "assignments": "Devoirs",
+            "solutions": "Solutions",
+            "youtubeVideos": "Vidéos YouTube",
+            "aiVideos": "Vidéos IA",
+            "aiSlides": "Diapositives IA",
+            "aiStorybook": "Livre d'histoires IA"
+        },
+        "programmingLanguage": "Langage de programmation",
+        "selectLanguagePlaceholder": "Sélectionner un langage",
+        "done": "Terminé"
+    },
+    "structureDialog": {
+        "title": "Structure du cours",
+        "description": "Configurer la hiérarchie avancée du cours",
+        "selectPlaceholder": "Sélectionner {{term}}",
+        "numberOf": "Nombre de {{term}}",
+        "done": "Terminé"
+    },
+    "referencesDialog": {
+        "title": "Références",
+        "description": "Ajoutez des URL ou des fichiers pour que l'IA puisse s'y référer",
+        "addUrlLabel": "Ajouter une URL",
+        "urlPlaceholder": "https://example.com",
+        "clickToView": "Cliquez pour voir le contenu",
+        "noContentFetched": "Aucun contenu récupéré",
+        "uploadFilesLabel": "Téléverser des fichiers",
+        "dropzoneHint": "Déposez des fichiers ou cliquez (PDF, DOC, CSV, XLSX)",
+        "done": "Terminé"
+    },
+    "referenceContentDialog": {
+        "titleFallback": "Contenu de référence",
+        "close": "Fermer"
+    },
+    "keysDialog": {
+        "title": "Clés API",
+        "description": "Ajoutez vos clés API pour la génération par IA",
+        "openRouterLabel": "Clé API OpenRouter",
+        "geminiLabel": "Clé API Gemini",
+        "added": "Ajoutée",
+        "openRouterPlaceholder": "sk-...",
+        "geminiPlaceholder": "AIza...",
+        "infoHow": "Comment obtenir des clés :",
+        "infoVisit": "Visitez",
+        "infoOr": "ou",
+        "googleAiStudio": "Google AI Studio",
+        "done": "Terminé"
+    },
+    "confirmDialog": {
+        "title": "Vérifier les détails du cours",
+        "description": "Veuillez vérifier ci-dessous la configuration de votre cours. Une fois que vous continuerez, vous ne pourrez plus revenir en arrière pour modifier ces informations.",
+        "courseGoal": "Objectif du cours",
+        "notProvided": "Non fourni",
+        "sourceMaterial": "Matériel source",
+        "sourceKb": "Créé à partir de votre base de connaissances sélectionnée — le plan reflète ses sections et chaque page est rédigée à partir de son contenu.",
+        "sourceFiles_one": "Basé sur {{count}} document de référence téléversé.",
+        "sourceFiles_many": "Basé sur {{count}} documents de référence téléversés.",
+        "sourceFiles_other": "Basé sur {{count}} documents de référence téléversés.",
+        "sourceNone": "Aucun matériel source sélectionné — l'IA rédigera ce cours à partir de ses connaissances générales. Pour le construire à partir de votre propre matériel, revenez en arrière et choisissez une base de connaissances ou téléversez un document de référence.",
+        "learningOutcome": "Résultat d'apprentissage",
+        "skillLevel": "Niveau de compétence",
+        "numberOf": "Nombre de {{term}}",
+        "structure": "Structure",
+        "structureFollowsKbDetail": "Suit la base de connaissances : un(e) {{chapter}} par sujet sélectionné, un ou plusieurs {{slides}} par section.",
+        "courseLength": "Durée du cours",
+        "minutes_one": "{{count}} minute",
+        "minutes_many": "{{count}} minutes",
+        "minutes_other": "{{count}} minutes",
+        "slidesPerChapter": "{{slides}} par {{chapter}}",
+        "whatToInclude": "Ce qu'il faut inclure",
+        "options": {
+            "diagrams": "Diagrammes",
+            "codeSnippets": "Extraits de code",
+            "codeSnippetsWithLang": "Extraits de code ({{language}})",
+            "practiceProblems": "Exercices pratiques",
+            "quizzes": "Quiz",
+            "assignments": "Devoirs",
+            "solutions": "Solutions",
+            "youtubeVideo": "Vidéo YouTube",
+            "aiGeneratedVideo": "Vidéo générée par IA",
+            "aiSlides": "Diapositives IA",
+            "aiStorybook": "Livre d'histoires IA"
+        },
+        "references": "Références",
+        "urlsAdded_one": "{{count}} URL ajoutée",
+        "urlsAdded_many": "{{count}} URL ajoutées",
+        "urlsAdded_other": "{{count}} URL ajoutées",
+        "filesUploaded_one": "{{count}} fichier téléversé",
+        "filesUploaded_many": "{{count}} fichiers téléversés",
+        "filesUploaded_other": "{{count}} fichiers téléversés",
+        "goBack": "Retour et modification",
+        "uploadingReferences": "Téléversement des références…",
+        "continue": "Continuer"
+    },
+    "toasts": {
+        "keySaved": "Clé {{keyType}} enregistrée !",
+        "keySaveFailed": "Échec de l'enregistrement de la clé",
+        "deleteKeyConfirm": "Voulez-vous vraiment supprimer la clé {{keyType}} ?",
+        "keyDeleted": "Clé {{keyType}} supprimée",
+        "noKeysFound": "Aucune clé trouvée à supprimer",
+        "keyDeleteFailed": "Échec de la suppression de la clé",
+        "enterCourseGoal": "Veuillez saisir un objectif de cours",
+        "selectProgrammingLanguage": "Veuillez sélectionner un langage de programmation lorsque les extraits de code sont activés",
+        "fileTooLarge": "Le fichier « {{fileName}} » dépasse la taille maximale de 512 Mo",
+        "fileInvalidType": "Le fichier « {{fileName}} » n'est pas d'un type valide. Seuls les fichiers PDF, DOC, DOCX, CSV et XLSX sont autorisés.",
+        "fileError": "Erreur avec le fichier « {{fileName}} » : {{message}}",
+        "fileLimitPartial": "Vous ne pouvez téléverser que 5 fichiers maximum. {{remaining}} emplacement(s) restant(s). Seuls les {{remaining}} premiers fichiers seront ajoutés.",
+        "fileLimitReached": "Vous avez déjà atteint la limite maximale de 5 fichiers. Veuillez supprimer des fichiers avant d'en ajouter de nouveaux.",
+        "onlyPdfUsed": "Seules les références PDF sont utilisées pour construire le cours ; les autres fichiers ont été ignorés.",
+        "somePdfUploadFailed": "Certains PDF de référence n'ont pas pu être téléversés et ont été ignorés.",
+        "pdfUploadMissingUser": "Impossible de téléverser les PDF de référence (identifiant utilisateur manquant) ; poursuite sans eux.",
+        "urlAddedSuccess": "URL ajoutée et contenu récupéré avec succès",
+        "urlFetchFailed": "Impossible de récupérer le contenu de l'URL, mais ajoutée comme référence"
+    },
+    "keyTypes": {
+        "openai": "OpenRouter",
+        "gemini": "Gemini"
+    }
+}

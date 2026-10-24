@@ -1,0 +1,66 @@
+{
+    "header": {
+        "title": "Modifier {{term}} : {{name}}",
+        "description": "Mettez à jour les rôles d'authentification, les rôles d'équipe autorisés, les autorisations administrateur, l'option de paiement de l'administrateur, le plafond de places et la validité. Les échanges de CPO et la suppression des cours liés ne sont pas pris en charge ici."
+    },
+    "toasts": {
+        "noChanges": "Aucune modification à enregistrer",
+        "saved": "Enregistré : {{bits}}",
+        "linkedCourses_one": "{{count}} cours lié",
+        "linkedCourses_many": "{{count}} cours liés",
+        "linkedCourses_other": "{{count}} cours liés",
+        "updatedFields": "{{fields}} mis à jour",
+        "updateFailed": "Échec de la mise à jour de {{term}}"
+    },
+    "validation": {
+        "seatCapPositive": "Le plafond de places doit être un nombre positif",
+        "validityPositive": "La validité doit être un nombre positif"
+    },
+    "linkedCourses": {
+        "heading_one": "Cours lié ({{count}})",
+        "heading_many": "Cours liés ({{count}})",
+        "heading_other": "Cours liés ({{count}})",
+        "noneLinkedYet": "Aucun cours lié pour le moment.",
+        "cannotRemoveLinked": "Les PS déjà liés ne peuvent pas être supprimés ici (cela isolerait les apprenants déjà inscrits).",
+        "addCourses": "Ajouter des cours",
+        "selectAll": "Tout sélectionner",
+        "clearSelection": "Effacer la sélection",
+        "searchPlaceholder": "Rechercher des cours par nom",
+        "noMatch": "Aucun cours ne correspond à « {{query}} ».",
+        "willBeLinkedOnSave_one": "{{count}} cours sera lié lors de l'enregistrement.",
+        "willBeLinkedOnSave_many": "{{count}} cours seront liés lors de l'enregistrement.",
+        "willBeLinkedOnSave_other": "{{count}} cours seront liés lors de l'enregistrement.",
+        "noneAvailable": "Aucun autre cours disponible à lier."
+    },
+    "roles": {
+        "authRolesHeading": "Rôles d'authentification (attribués à l'acceptation de l'invitation)",
+        "noRolesFound": "Aucun rôle trouvé",
+        "allowedTeamRolesHeading": "Rôles d'équipe autorisés (liste de choix de l'administrateur {{term}})",
+        "emptyMeansNoRestriction": "Vide = aucune restriction."
+    },
+    "permissions": {
+        "heading": "Autorisations administrateur",
+        "description": "Appliquées aux lignes FSPSSM de l'administrateur {{term}}. Vide revient à FULL. S'applique uniquement aux administrateurs inscrits après cet enregistrement."
+    },
+    "paymentOption": {
+        "heading": "Option de paiement de l'administrateur",
+        "cpoNotSupported": "Ce/cette {{term}} repose sur une structure de frais CPO. Le changement de l'option de paiement de l'administrateur n'est pas pris en charge ici.",
+        "description": "L'option de paiement de l'établissement via laquelle l'administrateur {{term}} paie. Ce changement n'affecte que les futures inscriptions d'administrateurs — un administrateur ayant déjà payé conserve son forfait.",
+        "loading": "Chargement des options de paiement...",
+        "noActiveOption": "Aucune option active trouvée",
+        "selectPlaceholder": "Sélectionner une option de paiement"
+    },
+    "seatCap": {
+        "label": "Plafond de places",
+        "placeholder": "ex. 25"
+    },
+    "validity": {
+        "label": "Validité (jours)",
+        "placeholder": "ex. 365"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…"
+    }
+}

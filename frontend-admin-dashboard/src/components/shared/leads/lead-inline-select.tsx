@@ -6,6 +6,8 @@ import {
     DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
+import { tierChipStyle, useLeadTiers, UNKNOWN_TIER_COLOR } from '@/hooks/use-lead-tiers';
 
 /**
  * LeadInlineSelect — a compact, inline-editable chip for the lead table. Shows
@@ -24,6 +26,12 @@ export interface LeadInlineOption {
     chipClass: string;
     /** Optional leading dot colour. */
     dotClass?: string;
+    /**
+     * Admin-picked hex colour (custom tiers). When set it drives the pill + dot
+     * via inline style and chipClass/dotClass are ignored — Tailwind cannot
+     * generate classes for arbitrary runtime colours.
+     */
+    color?: string;
 }
 
 interface LeadInlineSelectProps {
@@ -53,6 +61,7 @@ export const LEAD_STATUS_OPTIONS: LeadInlineOption[] = [
     { value: 'LOST', label: 'Lost', chipClass: 'bg-red-100 text-red-700', dotClass: 'bg-red-500' },
 ];
 
+/** Legacy static trio — prefer useLeadTierOptions(), which reads the institute catalog. */
 export const LEAD_TIER_OPTIONS: LeadInlineOption[] = [
     { value: 'HOT', label: 'Hot', chipClass: 'bg-red-100 text-red-700', dotClass: 'bg-red-500' },
     {
@@ -68,6 +77,21 @@ export const LEAD_TIER_OPTIONS: LeadInlineOption[] = [
         dotClass: 'bg-blue-500',
     },
 ];
+
+/** Institute tier catalog as inline-select options (label + hex colour per tier). */
+export function useLeadTierOptions(): LeadInlineOption[] {
+    const { tiers } = useLeadTiers();
+    return useMemo(
+        () =>
+            tiers.map((t) => ({
+                value: t.tier_key,
+                label: t.label,
+                chipClass: 'border',
+                color: t.color || UNKNOWN_TIER_COLOR,
+            })),
+        [tiers]
+    );
+}
 
 export function LeadInlineSelect({
     value,
@@ -85,6 +109,8 @@ export function LeadInlineSelect({
                 <button
                     type="button"
                     onClick={(e) => e.stopPropagation()}
+                    // Inline style only for hex-coloured (custom tier) options.
+                    style={current?.color ? tierChipStyle(current.color) : undefined}
                     className={cn(
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition',
                         current
@@ -98,8 +124,17 @@ export function LeadInlineSelect({
                         className
                     )}
                 >
-                    {current?.dotClass && (
-                        <span className={cn('size-1.5 shrink-0 rounded-full', current.dotClass)} />
+                    {current?.color ? (
+                        <span
+                            className="size-1.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: current.color }}
+                        />
+                    ) : (
+                        current?.dotClass && (
+                            <span
+                                className={cn('size-1.5 shrink-0 rounded-full', current.dotClass)}
+                            />
+                        )
                     )}
                     <span className="truncate">{current?.label ?? placeholder}</span>
                 </button>
@@ -117,8 +152,17 @@ export function LeadInlineSelect({
                             if (o.value !== current?.value) onChange(o.value);
                         }}
                     >
-                        {o.dotClass && (
-                            <span className={cn('mr-2 size-2 shrink-0 rounded-full', o.dotClass)} />
+                        {o.color ? (
+                            <span
+                                className="mr-2 size-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: o.color }}
+                            />
+                        ) : (
+                            o.dotClass && (
+                                <span
+                                    className={cn('mr-2 size-2 shrink-0 rounded-full', o.dotClass)}
+                                />
+                            )
                         )}
                         {o.label}
                         {current?.value === o.value && <Check className="ml-auto size-3.5" />}

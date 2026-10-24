@@ -1,0 +1,45 @@
+{
+    "validation": {
+        "titleRequired": "Title is required",
+        "scormFileRequired": "SCORM zip file is required"
+    },
+    "dropzone": {
+        "title": "Import your SCORM package",
+        "hint": "Drag or click to upload",
+        "formats": "Supports SCORM 1.2 and SCORM 2004 (.zip)",
+        "selected": "Selected: {{fileName}}"
+    },
+    "errors": {
+        "imsManifestHintPrefix": "Make sure",
+        "imsManifestHintSuffix": "sits at the root of the zip, not inside a subfolder — re-zip the package's contents directly, not the folder containing them, then try again."
+    },
+    "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Enter SCORM slide title",
+        "description": "Description (Optional)",
+        "descriptionPlaceholder": "Enter a description for this SCORM module..."
+    },
+    "details": {
+        "title": "Package Details",
+        "versionLabel": "Version:",
+        "versionValue": "SCORM {{version}}",
+        "launchFileLabel": "Launch file:"
+    },
+    "toasts": {
+        "uploadFailed": "Failed to upload SCORM package",
+        "selectZipFile": "Please select a .zip file",
+        "fileTooLarge": "SCORM package is too large ({{size}}). The maximum allowed is {{max}}.",
+        "uploading": "Uploading SCORM package...",
+        "uploadSuccessDetected": "Uploaded successfully! SCORM {{version}} package detected.",
+        "uploadParseSuccess": "SCORM package uploaded & parsed successfully!",
+        "dropZipFile": "Please drop a .zip file",
+        "reorderFailed": "Slide created but reordering failed",
+        "waitForUpload": "Please wait for the SCORM package upload to complete",
+        "createSuccess": "SCORM slide created successfully!",
+        "createFailed": "Failed to create SCORM slide"
+    },
+    "actions": {
+        "creatingSlide": "Creating slide...",
+        "createSlide": "Create SCORM Slide"
+    }
+}

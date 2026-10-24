@@ -1,0 +1,49 @@
+{
+    "navHeading": "Library",
+    "pageTitle": "{{title}} — Library",
+    "toast": {
+        "alreadyOwned": "You already have this library",
+        "unlocked": "{{title}} is yours. It will not be charged again.",
+        "unlockFailed": "Could not unlock this library"
+    },
+    "notFound": {
+        "message": "This library is not available",
+        "back": "Back to Knowledge Base"
+    },
+    "backButton": "Library",
+    "facts": {
+        "sources_one": "{{formatted}} source",
+        "sources_other": "{{formatted}} sources",
+        "pages_one": "{{formatted}} page",
+        "pages_other": "{{formatted}} pages"
+    },
+    "unlocked": {
+        "chip": "Unlocked",
+        "heading": "Yours to use",
+        "description": "This library is available wherever you build question papers or assessments.",
+        "createPaper": "Create a question paper"
+    },
+    "locked": {
+        "credits_one": "{{count}} credit",
+        "credits_other": "{{count}} credits",
+        "description": "One-time. Yours permanently, including material we add to this library later.",
+        "unlockButton": "Unlock this library",
+        "unlocking": "Unlocking…",
+        "creditNote": "Generating papers uses credits as usual on top of this."
+    },
+    "about": {
+        "heading": "About this library"
+    },
+    "topics": {
+        "heading": "What's inside",
+        "description": "Every topic this library covers. Questions are written from these, and each one cites the page it came from.",
+        "preparing": "Topics for this library are still being prepared."
+    },
+    "capabilities": {
+        "heading": "What you can make",
+        "questionPapers": "Question papers",
+        "assessmentSections": "Assessment sections",
+        "courses": "Courses",
+        "comingSoon": "Coming soon"
+    }
+}

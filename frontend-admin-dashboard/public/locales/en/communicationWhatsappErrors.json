@@ -1,0 +1,132 @@
+{
+    "byCode": {
+        "131047": {
+            "title": "24-hour reply window closed",
+            "detail": "This person last messaged you more than 24 hours ago, so WhatsApp no longer allows a free-form reply. Send an approved template to re-open the conversation."
+        },
+        "131026": {
+            "title": "Message undeliverable",
+            "detail": "WhatsApp could not deliver to this number — it may not be on WhatsApp, may have been typed wrongly, or the person has never accepted messages from this business."
+        },
+        "131049": {
+            "title": "Held back by WhatsApp",
+            "detail": "WhatsApp limits how many marketing messages one person receives. Nothing is broken — try again later, or use a utility template if the message is transactional."
+        },
+        "130472": {
+            "title": "Excluded by a WhatsApp experiment",
+            "detail": "This number is in a Meta experiment group that does not receive marketing messages. Utility and authentication templates are unaffected."
+        },
+        "131021": {
+            "title": "Cannot message this number",
+            "detail": "The recipient is the same as the sender, or the number cannot receive messages from this account."
+        },
+        "131051": {
+            "title": "Unsupported message type",
+            "detail": "WhatsApp does not accept this kind of message on this account."
+        },
+        "131052": {
+            "title": "Media could not be downloaded",
+            "detail": "WhatsApp could not fetch the attachment from its URL. Check the file is still public and re-send."
+        },
+        "131053": {
+            "title": "Media could not be uploaded",
+            "detail": "WhatsApp rejected the attachment — usually the format or the file size. Re-send it as a supported type under the size limit."
+        },
+        "131042": {
+            "title": "Billing problem on the WhatsApp account",
+            "detail": "Meta has no working payment method for this WhatsApp Business Account, so every message on this number is being refused. Fix the card in WhatsApp Manager → Billing."
+        },
+        "131031": {
+            "title": "WhatsApp account restricted",
+            "detail": "Meta has locked or restricted this WhatsApp Business Account, usually for a policy or quality reason. Check the account quality page in WhatsApp Manager."
+        },
+        "131045": {
+            "title": "Number not registered correctly",
+            "detail": "This WhatsApp number is not fully registered with Meta, or its certificate is wrong. Re-register it in Settings → WhatsApp."
+        },
+        "133010": {
+            "title": "Number not registered",
+            "detail": "This WhatsApp number has not completed registration with Meta and cannot send anything yet."
+        },
+        "190": {
+            "title": "WhatsApp access token expired",
+            "detail": "The Meta access token for this institute is no longer valid, so no message can be sent. Update it in Settings → WhatsApp."
+        },
+        "368": {
+            "title": "Account temporarily blocked",
+            "detail": "Meta has temporarily blocked this account for policy reasons. Sending resumes only once the block expires or is appealed."
+        },
+        "132000": {
+            "title": "Wrong number of template values",
+            "detail": "The template was filled with a different number of values than it has placeholders."
+        },
+        "132001": {
+            "title": "Template not found",
+            "detail": "No approved template with this name and language exists on the account. Sync templates, or pick another one."
+        },
+        "132005": {
+            "title": "Template text too long",
+            "detail": "The filled-in template exceeds the length WhatsApp allows. Shorten the values."
+        },
+        "132007": {
+            "title": "Template content rejected",
+            "detail": "The values broke WhatsApp’s formatting rules — usually a newline, a tab, or four spaces in a row inside a placeholder."
+        },
+        "132012": {
+            "title": "Template value format mismatch",
+            "detail": "One of the values does not match the format the template was approved with."
+        },
+        "132015": {
+            "title": "Template paused for low quality",
+            "detail": "WhatsApp paused this template because recipients marked it as unwanted. Use a different template until it recovers."
+        },
+        "132016": {
+            "title": "Template disabled",
+            "detail": "WhatsApp permanently disabled this template for quality reasons. It cannot be used again."
+        },
+        "rateLimit": {
+            "title": "Rate limit reached",
+            "detail": "This account has hit its WhatsApp request limit. Wait a few minutes and retry."
+        },
+        "131056": {
+            "title": "Too many messages to this person",
+            "detail": "WhatsApp throttled the number of messages between this account and this recipient. Try again later."
+        }
+    },
+    "byText": {
+        "outOfCredits": {
+            "title": "Out of WhatsApp credits",
+            "detail": "The messaging account has run out of credits. Top it up with the provider before sending again."
+        },
+        "sessionWindowClosed": {
+            "title": "24-hour reply window closed",
+            "detail": "This person last messaged you more than 24 hours ago, so only an approved template can reach them now."
+        }
+    },
+    "notDelivered": "Not delivered",
+    "offline": {
+        "title": "You are offline",
+        "detail": "Reconnect and try again."
+    },
+    "timedOut": {
+        "title": "The request timed out",
+        "detail": "The server took too long to answer. Try again."
+    },
+    "couldNotReachServer": "Could not reach the server. Check your connection and try again.",
+    "unexpectedError": "Unexpected error: {{message}}",
+    "noAccess": {
+        "title": "You do not have access to this inbox",
+        "detail": "Your session may have expired — reload the page and sign in again."
+    },
+    "conversationGone": "The server does not have this conversation any more.",
+    "fileTooLarge": {
+        "title": "That file is too large",
+        "detail": "WhatsApp rejects attachments over its size limit."
+    },
+    "tooManyRequests": {
+        "title": "Too many requests",
+        "detail": "Slow down for a moment, then try again."
+    },
+    "serverError": "The server returned an error ({{status}}). Try again in a moment.",
+    "requestFailed": "Request failed with status {{status}}."
+}

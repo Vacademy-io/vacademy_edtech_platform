@@ -16,9 +16,11 @@ import {
     createExternalLinkSlide,
     createImageSlide,
     createPdfSlide,
+    createScormSlide,
     createVideoFileSlide,
     createYoutubeSlide,
     updateChapterSlideOrder,
+    uploadScormPackage,
     type BulkSlideContext,
 } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-services/bulk-slide-creation';
 import type { SessionManifest } from './session-manifest';
@@ -181,6 +183,26 @@ export const prepareItem = async (item: BulkItem, ctx: PipelineCtx): Promise<Pre
         return { fileId, publicImageUrl };
     }
 
+    if (item.kind === 'SCORM') {
+        // fileId doubles as the ScormSlide id cache here, so a retry never
+        // re-uploads a package that already made it through the parser.
+        if (item.fileId) return { fileId: item.fileId };
+        const file = await ctx.extractFile(item.entryPath, item.fileName);
+        ctx.markItem(item.id, 'uploading');
+        // Multipart upload that the server then unzips and parses — heavy on
+        // both ends. Share the big-file lane so only one heavy upload of any
+        // kind is ever in flight, regardless of package size.
+        //
+        // Deliberately NOT wrapped in uploadWithRetry: the common failures here
+        // are deterministic (not a SCORM package, no launch file), so retrying
+        // would re-send the whole package twice more and re-run the server-side
+        // unzip for nothing. "Retry failed only" covers the transient case.
+        const scormSlideId = await ctx.shared.bigFileMutex(() => uploadScormPackage(file));
+        ctx.patchItem(item.id, { fileId: scormSlideId });
+        ctx.manifest.set(item.key, { fileId: scormSlideId });
+        return { fileId: scormSlideId };
+    }
+
     // VIDEO_FILE
     if (item.fileId) return { fileId: item.fileId };
     const file = await ctx.extractFile(item.entryPath, item.fileName);
@@ -226,6 +248,12 @@ export const createSlideForItem = async (
             return createVideoFileSlide(slideCtx, {
                 title: item.title,
                 fileId: prepared.fileId!,
+                slideOrder,
+            });
+        case 'SCORM':
+            return createScormSlide(slideCtx, {
+                title: item.title,
+                scormSlideId: prepared.fileId!,
                 slideOrder,
             });
         case 'YOUTUBE':

@@ -1,0 +1,53 @@
+{
+    "validation": {
+        "batchRequired": "कम से कम एक बैच चुनें",
+        "studentRequired": "शिक्षार्थी आवश्यक है"
+    },
+    "toast": {
+        "exportSuccess": "रिपोर्ट निर्यात की गई",
+        "exportFailed": "PDF निर्यात करने में विफल",
+        "csvExportSuccess": "CSV निर्यात हो गया",
+        "csvExportFailed": "CSV निर्यात विफल",
+        "learnerNotInBatches": "यह शिक्षार्थी चुने गए किसी भी बैच में नामांकित नहीं है।"
+    },
+    "form": {
+        "selectStudent": "छात्र चुनें",
+        "searchStudent": "छात्र खोजें...",
+        "noStudentsFound": "कोई छात्र नहीं मिला",
+        "generateReport": "रिपोर्ट बनाएं",
+        "fixErrorsPrefix": "कृपया निम्नलिखित त्रुटियाँ ठीक करें:",
+        "loadingStudents": "लोड हो रहा है…",
+        "learnerHint": "{{count}} उपलब्ध",
+        "pickBatchFirst": "पहले {{batch}} चुनें।"
+    },
+    "report": {
+        "exporting": "निर्यात हो रहा है...",
+        "exportPdf": "PDF निर्यात करें",
+        "subjectWiseHeading": "विषय-वार प्रगति रिपोर्ट",
+        "exportCsv": "CSV निर्यात करें",
+        "batchCount": "{{term}} · {{count}} चयनित",
+        "batchLoadFailed": "{{name}} की रिपोर्ट लोड नहीं हो सकी।"
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "{{batchTerm}} {{subjectTerm}}-वार प्रगति",
+        "learnerProgressReport": "शिक्षार्थी प्रगति रिपोर्ट",
+        "learnerLabel": "शिक्षार्थी",
+        "termCompleted": "{{term}} पूर्ण",
+        "termsTracked": "{{term}} ट्रैक किए गए",
+        "termWiseProgress": "{{term}}-वार प्रगति",
+        "termColonName": "{{term}}: {{name}}",
+        "completed": "पूर्ण",
+        "dailyTimeAvg": "दैनिक औसत समय",
+        "termDailyTimeAvg": "{{term}} दैनिक औसत समय",
+        "termWiseProgressReport": "{{term}}-वार प्रगति रिपोर्ट",
+        "learningProgressReport": "लर्निंग प्रगति रिपोर्ट"
+    },
+    "csv": {
+        "fileStem": "learner-progress",
+        "title": "{{term}}-वार प्रगति",
+        "moduleCompleted": "{{module}} पूर्ण (%)",
+        "moduleCompletedByBatch": "{{batch}} द्वारा {{module}} पूर्ण (%)",
+        "dailyTimeMin": "दैनिक औसत समय (मिनट)",
+        "dailyTimeByBatchMin": "{{batch}} का दैनिक औसत समय (मिनट)"
+    }
+}

@@ -10,6 +10,16 @@ import i18n from "i18next";
 import type { BackendModule, ReadCallback } from "i18next";
 import { initReactI18next } from "react-i18next";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from "./i18n/locales";
+import {
+  isChunkLoadError,
+  isLazyResolverError,
+  reloadForChunkError,
+} from "./lib/chunk-reload";
+import {
+  NAMING_TERMS_CHANGED_EVENT,
+  applyNamingTerms,
+  installNamingTermsSync,
+} from "./i18n/naming-terms";
 
 /** Must match the zustand persist key in stores/localization/useLanguageStore. */
 const LOCALE_STORAGE_KEY = "vacademy-locale";
@@ -61,9 +71,19 @@ const initialLocale = normalizeLocale(
     (typeof navigator !== "undefined" ? navigator.language : null)
 );
 
+/** Set once a stale-catalog reload is in flight, so i18next's read retries
+ * and sibling namespaces don't each burn the shared reload budget. */
+let catalogReloadRequested = false;
+
 /**
  * Inline lazy backend — loads src/locales/<lng>/<ns>.json on demand. Written
  * inline instead of adding i18next-resources-to-backend as a dependency.
+ *
+ * A catalog chunk has no deps, so Vite's preload helper calls import()
+ * directly and never fires vite:preloadError — and the rejection is handled
+ * here, so the global unhandledrejection listener never sees it either. On a
+ * tab older than the current deploy the hashed chunk URL is gone, and without
+ * this the screen renders raw keys (`quizReview.title`) until a hard refresh.
  */
 const lazyLocaleBackend: BackendModule = {
   type: "backend",
@@ -72,8 +92,21 @@ const lazyLocaleBackend: BackendModule = {
   },
   read(lng: string, ns: string, callback: ReadCallback) {
     import(`./locales/${lng}/${ns}.json`)
-      .then((module) => callback(null, module.default ?? module))
-      .catch((error) => callback(error as Error, null));
+      .then((module) =>
+        callback(null, applyNamingTerms(lng, ns, module.default ?? module))
+      )
+      .catch((error) => {
+        // Offline also surfaces as a chunk error — reloading would only swap
+        // the page for the browser's offline screen, so leave it be.
+        if (
+          !catalogReloadRequested &&
+          navigator.onLine !== false &&
+          (isChunkLoadError(error) || isLazyResolverError(error))
+        ) {
+          catalogReloadRequested = reloadForChunkError(error);
+        }
+        callback(error as Error, null);
+      });
   },
 };
 
@@ -95,7 +128,11 @@ i18n
     react: {
       // Catalogs load async; don't suspend the whole tree while they do.
       useSuspense: false,
+      // Re-render on institute renames too — see i18n/naming-terms.ts.
+      bindI18n: `languageChanged ${NAMING_TERMS_CHANGED_EVENT}`,
     },
   });
+
+installNamingTermsSync(i18n);
 
 export default i18n;

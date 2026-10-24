@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "title": "Render Settings",
+        "description": "Configure video output before rendering."
+    },
+    "resolution": {
+        "label": "Resolution",
+        "optionLabel": "{{resolution}} ({{dimensions}})"
+    },
+    "fps": {
+        "label": "Frame Rate",
+        "optionLabel": "{{fps}} fps"
+    },
+    "captions": {
+        "label": "Captions"
+    },
+    "captionPreview": {
+        "ariaLabel": "Caption preview",
+        "sampleText": "This is what your caption will look like at this size."
+    },
+    "stylePreset": {
+        "label": "Style preset",
+        "customBadge": "Custom",
+        "customTooltip": "Settings tweaked past every named preset"
+    },
+    "position": {
+        "label": "Position",
+        "top": "Top",
+        "bottom": "Bottom"
+    },
+    "size": {
+        "label": "Size",
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large"
+    },
+    "textColor": {
+        "label": "Text Color"
+    },
+    "background": {
+        "label": "Background",
+        "opacityLabel": "Background Opacity: {{value}}%"
+    },
+    "displayMode": {
+        "label": "Display mode",
+        "phrase": "Phrase",
+        "karaoke": "Karaoke"
+    },
+    "font": {
+        "label": "Font",
+        "system": "System"
+    },
+    "weight": {
+        "label": "Weight"
+    },
+    "textOutline": {
+        "label": "Text outline: {{width}}px",
+        "colorTitle": "Outline color"
+    },
+    "highlightColor": {
+        "label": "Highlight color (karaoke active word)"
+    },
+    "watermark": {
+        "label": "Watermark"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "startRender": "Start Render"
+    }
+}

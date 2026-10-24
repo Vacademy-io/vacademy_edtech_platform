@@ -1,0 +1,44 @@
+{
+    "sessionLabelDefault": "Par défaut",
+    "selectedRow": {
+        "loadingInvite": "Chargement de l'invitation…",
+        "selectingInvite": "Sélection de l'invitation…",
+        "invitesCount_one": "{{count}} invitation",
+        "invitesCount_many": "{{count}} d'invitations",
+        "invitesCount_other": "{{count}} invitations",
+        "free": "Gratuit",
+        "preselected": "Présélectionné",
+        "noMatchingPaymentOption": "Aucune option de paiement correspondante trouvée pour cette invitation et cette session.",
+        "noActiveInvite": "Aucune invitation active trouvée pour cette session. Créez d'abord une invitation."
+    },
+    "tabs": {
+        "courses": "Cours",
+        "suggestions": "Suggestions"
+    },
+    "selectedCourses": {
+        "heading": "Cours sélectionnés",
+        "addMore": "Ajouter plus",
+        "combinedTotal": "Total combiné :",
+        "newestFirst": "Plus récents d'abord",
+        "oldestFirst": "Plus anciens d'abord",
+        "newestFirstHint": "Mettre le cours ajouté le plus récemment en haut",
+        "oldestFirstHint": "Mettre le cours ajouté le plus anciennement en haut",
+        "sortFailed": "Impossible de trier les cours. Veuillez réessayer."
+    },
+    "browser": {
+        "searchPlaceholder": "Rechercher des cours ou des sessions…",
+        "selectAll": "+ Tout sélectionner ({{count}})",
+        "refresh": "Actualiser",
+        "loadingSessions": "Chargement des sessions…",
+        "noSessionsMatch": "Aucune session ne correspond à « {{query}} »",
+        "noActiveSessions": "Aucune session active trouvée.",
+        "otherGroup": "Autre",
+        "added": "Ajouté",
+        "add": "Ajouter",
+        "loadingMore": "Chargement…",
+        "loadMore_one": "Charger plus ({{count}} restante)",
+        "loadMore_many": "Charger plus ({{count}} de restantes)",
+        "loadMore_other": "Charger plus ({{count}} restantes)",
+        "footerHint": "{{loaded}} sur {{total}} sessions chargées · {{selected}} sélectionnée(s)"
+    }
+}

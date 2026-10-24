@@ -1,6 +1,7 @@
 
 package vacademy.io.admin_core_service.features.notification_service.service;
 
+import vacademy.io.admin_core_service.features.common.util.TemplateConditionals;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,6 +17,7 @@ import vacademy.io.admin_core_service.features.notification.enums.NotificationTe
 import vacademy.io.admin_core_service.features.notification.service.DynamicNotificationService;
 import vacademy.io.admin_core_service.features.notification_service.enums.CommunicationType;
 import vacademy.io.admin_core_service.features.notification_service.utils.StripeInvoiceEmailBody;
+import vacademy.io.admin_core_service.features.platform_billing.enums.BrandMode;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.notification.dto.AttachmentNotificationDTO;
@@ -66,6 +68,9 @@ public class PaymentNotificatonService {
 
     @Autowired
     private InvoiceAdminCopyRecipientResolver invoiceAdminCopyRecipientResolver;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.invoice.util.CourseTagResolver courseTagResolver;
 
     public boolean sendPaymentConfirmationNotification(
             String instituteId,
@@ -118,6 +123,47 @@ public class PaymentNotificatonService {
             String invoiceNumber,
             String courseName,
             PaymentLog paymentLog) {
+        return sendPaymentConfirmationNotification(instituteId, paymentResponseDTO,
+                paymentInitiationRequestDTO, userDTO, invoicePdfBytes, invoiceNumber, courseName,
+                paymentLog, null);
+    }
+
+    /**
+     * What ONE order cost, when that order paid for several courses at once.
+     *
+     * A multi-course checkout is recorded as one child PaymentLog per course, so
+     * the log this email is sent from knows only its own share. Quoting that made
+     * a parent who paid ₹949 for four subjects receive four emails each announcing
+     * ₹349 — none of which matched their bank. These are the order's figures, so
+     * the one email that goes out can state what was actually charged and what
+     * was taken off to get there.
+     *
+     * @param grossAmount   the courses at list price, before any reduction
+     * @param discountAmount what the basket price, offer and coupon took off
+     * @param paidAmount    what the gateway actually charged
+     * @param itemCount     how many courses the order bought
+     */
+    public record OrderAmountSummary(double grossAmount, double discountAmount, double paidAmount,
+            int itemCount) {
+        boolean coversMultipleCourses() {
+            return itemCount > 1;
+        }
+
+        boolean hasDiscount() {
+            return discountAmount > 0.005 && grossAmount > paidAmount;
+        }
+    }
+
+    public boolean sendPaymentConfirmationNotification(
+            String instituteId,
+            PaymentResponseDTO paymentResponseDTO,
+            PaymentInitiationRequestDTO paymentInitiationRequestDTO,
+            UserDTO userDTO,
+            byte[] invoicePdfBytes,
+            String invoiceNumber,
+            String courseName,
+            PaymentLog paymentLog,
+            OrderAmountSummary orderAmounts) {
         if (instituteId == null || paymentResponseDTO == null || paymentInitiationRequestDTO == null
                 || userDTO == null) {
             return false;
@@ -145,8 +191,9 @@ public class PaymentNotificatonService {
         // and overlays the template's own dynamic_parameters for anything left blank.
         NotificationTemplateVariables templateVars = buildPaymentConfirmationVariables(
                 institute, userDTO, paymentInitiationRequestDTO, paymentResponseDTO,
-                invoiceNumber, courseName, paymentLog, invoicePdfBytes);
-        Map<String, String> variables = sendUniqueLinkService.buildVariablesMap(template, templateVars);
+                invoiceNumber, courseName, paymentLog, invoicePdfBytes, orderAmounts);
+        Map<String, String> variables = withReceiptAliases(
+                sendUniqueLinkService.buildVariablesMap(template, templateVars), courseTagResolver.tagsFor(paymentLog));
 
         String emailBody = applyVariables(template.getContent(), variables);
         String subject = StringUtils.hasText(template.getSubject())
@@ -316,7 +363,8 @@ public class PaymentNotificatonService {
     private NotificationTemplateVariables buildPaymentConfirmationVariables(
             Institute institute, UserDTO userDTO, PaymentInitiationRequestDTO requestDTO,
             PaymentResponseDTO responseDTO, String invoiceNumber, String courseName,
-            PaymentLog paymentLog, byte[] invoicePdfBytes) {
+            PaymentLog paymentLog, byte[] invoicePdfBytes,
+            OrderAmountSummary orderAmounts) {
 
         Map<String, Object> responseData = responseDTO.getResponseData() != null
                 ? responseDTO.getResponseData()
@@ -328,7 +376,13 @@ public class PaymentNotificatonService {
 
         // PaymentLog carries the amount in major units; responseData carries minor units when it
         // carries anything, so it is never used as a numeric source.
-        Double amountValue = paymentLog != null ? paymentLog.getPaymentAmount() : null;
+        // The ORDER's total wins over this log's own share. A multi-course checkout
+        // fans out into one child log per course, so the log driving this email
+        // knows only a fraction of what was charged — see OrderAmountSummary.
+        Double amountValue = orderAmounts != null ? orderAmounts.paidAmount() : null;
+        if (amountValue == null) {
+            amountValue = paymentLog != null ? paymentLog.getPaymentAmount() : null;
+        }
         if (amountValue == null) {
             amountValue = requestDTO.getAmount();
         }
@@ -374,6 +428,16 @@ public class PaymentNotificatonService {
                 .packageName(safe(courseName))
                 .amount(amount)
                 .paymentAmount(amount)
+                .orderTotal(orderAmounts != null && orderAmounts.hasDiscount()
+                        ? String.format(Locale.ENGLISH, "%,.2f", orderAmounts.grossAmount())
+                        : "")
+                .discountAmount(orderAmounts != null && orderAmounts.hasDiscount()
+                        ? String.format(Locale.ENGLISH, "%,.2f", orderAmounts.discountAmount())
+                        : "")
+                .itemCount(orderAmounts != null && orderAmounts.coversMultipleCourses()
+                        ? String.valueOf(orderAmounts.itemCount())
+                        : "")
+                .amountBreakdownHtml(buildAmountBreakdownHtml(orderAmounts, currencySymbol(currency)))
                 .paymentStatus(PaymentStatusEnum.PAID.name())
                 .currency(currency)
                 .currencySymbol(currencySymbol(currency))
@@ -425,11 +489,62 @@ public class PaymentNotificatonService {
         if (!StringUtils.hasText(content)) {
             return content;
         }
-        String filled = content;
+        // {{#if key}}...{{/if}} blocks are resolved by this same substitution; see TemplateConditionals.
+        String filled = TemplateConditionals.prepare(content);
         for (Map.Entry<String, String> var : variables.entrySet()) {
             filled = filled.replace("{{" + var.getKey() + "}}", var.getValue() != null ? var.getValue() : "");
         }
-        return filled;
+        return TemplateConditionals.finish(filled);
+    }
+
+    /**
+     * The names an email-editor receipt template uses for values this email already carries, so
+     * such a template fills without being rewritten: customer_name, amount_paid (with the currency
+     * symbol), payment_received_date, invoice_item_description (the course) and invoice_item_tag
+     * (the course's tags, e.g. "Vet Course"; blank when it has none). Keys the variables map
+     * already holds are left alone.
+     */
+    static Map<String, String> withReceiptAliases(Map<String, String> variables, String courseTags) {
+        Map<String, String> out = new HashMap<>(variables != null ? variables : Map.of());
+        String amount = out.getOrDefault("amount", "");
+        out.putIfAbsent("customer_name", out.getOrDefault("user_full_name", ""));
+        out.putIfAbsent("amount_paid", StringUtils.hasText(amount)
+                ? out.getOrDefault("currency_symbol", "") + amount : "");
+        out.putIfAbsent("payment_received_date", out.getOrDefault("payment_date", ""));
+        out.putIfAbsent("invoice_item_description", out.getOrDefault("course_name", ""));
+        out.putIfAbsent("invoice_item_tag", courseTags != null ? courseTags : "");
+        return out;
+    }
+
+    /**
+     * The "Subtotal / Discount" rows that sit above "Amount Paid", pre-rendered.
+     *
+     * Built here rather than in the template because placeholder substitution is a
+     * literal {@code {{key}}} replace with no conditionals — a template carrying a
+     * discount row unconditionally would print an empty "Discount" line on every
+     * ordinary single-course receipt. Returning "" collapses the receipt back to
+     * the single row it has always had.
+     *
+     * Deliberately inline-styled and using the same table the surrounding rows do,
+     * so it inherits whatever the institute's template looks like instead of
+     * importing a second visual language into their receipt.
+     */
+    static String buildAmountBreakdownHtml(OrderAmountSummary orderAmounts, String symbol) {
+        if (orderAmounts == null || !orderAmounts.hasDiscount()) {
+            return "";
+        }
+        String sym = symbol == null ? "" : symbol;
+        String subtotalLabel = orderAmounts.coversMultipleCourses()
+                ? orderAmounts.itemCount() + " courses"
+                : "Subtotal";
+        return "<tr><td style=\"padding:2px 0;color:#6b7280;font-size:14px;\">" + subtotalLabel
+                + "</td><td style=\"padding:2px 0;text-align:right;color:#6b7280;font-size:14px;\">"
+                + sym + String.format(Locale.ENGLISH, "%,.2f", orderAmounts.grossAmount())
+                + "</td></tr>"
+                + "<tr><td style=\"padding:2px 0 10px;color:#059669;font-size:14px;\">Discount</td>"
+                + "<td style=\"padding:2px 0 10px;text-align:right;color:#059669;font-size:14px;\">-"
+                + sym + String.format(Locale.ENGLISH, "%,.2f", orderAmounts.discountAmount())
+                + "</td></tr>";
     }
 
     private String resolveInstituteLogoUrl(Institute institute) {
@@ -554,6 +669,24 @@ public class PaymentNotificatonService {
             String creditsGranted,
             String totalAmountMajor,
             String packName) {
+        return sendCreditPackConfirmation(instituteId, recipientEmail, recipientUserId, invoiceNumber,
+                creditsGranted, totalAmountMajor, packName, null, null);
+    }
+
+    /**
+     * @param invoicePdf      rendered GST tax invoice to attach; null = send without attachment
+     * @param invoiceFileName attachment file name, e.g. "INV-AICRED-202609-0007.pdf"
+     */
+    public boolean sendCreditPackConfirmation(
+            String instituteId,
+            String recipientEmail,
+            String recipientUserId,
+            String invoiceNumber,
+            String creditsGranted,
+            String totalAmountMajor,
+            String packName,
+            byte[] invoicePdf,
+            String invoiceFileName) {
         if (instituteId == null || recipientEmail == null || invoiceNumber == null) {
             return false;
         }
@@ -563,21 +696,48 @@ public class PaymentNotificatonService {
             return false;
         }
 
+        boolean attached = invoicePdf != null && invoicePdf.length > 0;
         String body = buildCreditPackEmailBody(
-                institute.getInstituteName(), invoiceNumber, creditsGranted, totalAmountMajor, packName);
-
-        NotificationDTO notification = new NotificationDTO();
-        notification.setBody(body);
-        notification.setNotificationType(CommunicationType.EMAIL.name());
-        notification.setSubject("Your AI credits are ready — invoice " + invoiceNumber);
-
-        NotificationToUserDTO recipient = new NotificationToUserDTO();
-        recipient.setUserId(recipientUserId);
-        recipient.setChannelId(recipientEmail);
-        recipient.setPlaceholders(new HashMap<>());
-        notification.setUsers(List.of(recipient));
+                institute.getInstituteName(), invoiceNumber, creditsGranted, totalAmountMajor, packName, attached);
+        String subject = "Your AI credits are ready — tax invoice " + invoiceNumber;
 
         try {
+            if (attached) {
+                AttachmentUsersDTO.AttachmentDTO att = new AttachmentUsersDTO.AttachmentDTO();
+                att.setAttachmentName(invoiceFileName != null ? invoiceFileName : invoiceNumber + ".pdf");
+                att.setAttachment(Base64.getEncoder().encodeToString(invoicePdf));
+
+                AttachmentUsersDTO recipient = new AttachmentUsersDTO();
+                recipient.setUserId(recipientUserId);
+                recipient.setChannelId(recipientEmail);
+                recipient.setPlaceholders(new HashMap<>());
+                recipient.setAttachments(List.of(att));
+
+                AttachmentNotificationDTO dto = AttachmentNotificationDTO.builder()
+                        .body(body)
+                        .subject(subject)
+                        .notificationType(CommunicationType.EMAIL.name())
+                        .source("AI_CREDIT_PACK_CONFIRMATION")
+                        .sourceId(invoiceNumber)
+                        .attachmentName(att.getAttachmentName())
+                        .emailType("UTILITY_EMAIL")
+                        .users(List.of(recipient))
+                        .build();
+                notificationService.sendAttachmentEmailViaUnified(List.of(dto), instituteId);
+                return true;
+            }
+
+            NotificationDTO notification = new NotificationDTO();
+            notification.setBody(body);
+            notification.setNotificationType(CommunicationType.EMAIL.name());
+            notification.setSubject(subject);
+
+            NotificationToUserDTO recipient = new NotificationToUserDTO();
+            recipient.setUserId(recipientUserId);
+            recipient.setChannelId(recipientEmail);
+            recipient.setPlaceholders(new HashMap<>());
+            notification.setUsers(List.of(recipient));
+
             notificationService.sendEmailViaUnified(notification, instituteId);
             return true;
         } catch (Exception e) {
@@ -596,7 +756,8 @@ public class PaymentNotificatonService {
     }
 
     private static String buildCreditPackEmailBody(
-            String instituteName, String invoiceNumber, String credits, String total, String packName) {
+            String instituteName, String invoiceNumber, String credits, String total, String packName,
+            boolean invoiceAttached) {
         String safeInstitute = StringUtils.hasText(instituteName) ? instituteName : "your institute";
         String safePack = StringUtils.hasText(packName) ? packName : "AI Credits";
         return "<!DOCTYPE html><html><body style=\"font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;color:#111;\">"
@@ -615,7 +776,254 @@ public class PaymentNotificatonService {
                 + "</table>"
                 + "<p style=\"color:#6b7280;font-size:13px;margin-top:24px;\">"
                 + "Your credits are already available in the AI Credits panel. "
-                + "A GST-compliant invoice will be available for download from your billing dashboard shortly.</p>"
+                + (invoiceAttached
+                        ? "Your GST tax invoice <strong>" + invoiceNumber + "</strong> is attached to this email as a PDF. "
+                        : "")
+                + "You can download your GST tax invoice anytime from the admin dashboard under "
+                + "<strong>AI Credits &rarr; Billing</strong>.</p>"
                 + "</div></body></html>";
+    }
+
+    // ========================================================================
+    // Platform tax documents (AI plan invoices, credit notes): brand-mode aware
+    // ========================================================================
+
+    /** Which platform tax document an email carries. */
+    public enum PlatformDocumentType { INVOICE, CREDIT_NOTE }
+
+    /**
+     * Everything a platform billing email needs. Built by {@code PlatformDocumentMailService};
+     * every brand decision (link host, sender, trade name) is already made by the caller, and this
+     * class only renders and sends.
+     *
+     * <ul>
+     *   <li>{@code brandMode} NEUTRAL: subject, body and links never say "Vacademy" (owner decision
+     *       D2). With {@code fromName} set, the mail goes out under that sender name (and
+     *       {@code fromEmail} when set) without an attachment — the attachment path cannot override
+     *       the sender — and points to the institute's own admin host for the PDF. Without it, the
+     *       PDF is attached and sent through the institute's own UTILITY_EMAIL sender, exactly as
+     *       credit-pack confirmations are today.</li>
+     *   <li>{@code brandMode} VACADEMY: the subject is prefixed with {@code tradeName}; PDF attached.</li>
+     * </ul>
+     */
+    @lombok.Builder
+    @lombok.Getter
+    public static class PlatformBillingEmail {
+        private final String instituteId;
+        private final String instituteName;
+        private final List<String> recipients;
+        private final BrandMode brandMode;
+        private final PlatformDocumentType documentType;
+        /** CREDIT_PACK | AI_SUBSCRIPTION */
+        private final String itemKind;
+        private final String documentNumber;
+        /** Credit notes: the invoice they are against. */
+        private final String againstInvoiceNumber;
+        private final String description;
+        private final String amountDisplay;
+        private final String servicePeriod;
+        private final String reason;
+        /** Full link to the billing page on the institute's own admin host; null = no link. */
+        private final String billingLink;
+        /** VACADEMY mode only. */
+        private final String tradeName;
+        private final String supportEmail;
+        /** NEUTRAL sender name / address (platform_payment_config.billing_from_*). */
+        private final String fromName;
+        private final String fromEmail;
+        private final byte[] pdf;
+        private final String pdfFileName;
+    }
+
+    /**
+     * Sends a platform invoice or credit-note email to every recipient.
+     *
+     * @return number of recipients the email was handed to (0 on any failure; Sentry-logged)
+     */
+    public int sendPlatformBillingEmail(PlatformBillingEmail e) {
+        if (e == null || e.getInstituteId() == null || e.getRecipients() == null || e.getRecipients().isEmpty()
+                || e.getDocumentNumber() == null) {
+            return 0;
+        }
+        List<String> to = dedupeEmails(e.getRecipients());
+        if (to.isEmpty()) {
+            return 0;
+        }
+        boolean neutral = e.getBrandMode() != BrandMode.VACADEMY;
+        boolean namedSender = neutral && StringUtils.hasText(e.getFromName());
+        boolean attach = !namedSender && e.getPdf() != null && e.getPdf().length > 0;
+        String subject = platformBillingSubject(e);
+        String body = platformBillingBody(e, attach);
+        String source = e.getDocumentType() == PlatformDocumentType.CREDIT_NOTE
+                ? "AI_PLATFORM_CREDIT_NOTE" : "AI_PLATFORM_INVOICE";
+        try {
+            if (namedSender) {
+                for (String email : to) {
+                    notificationService.sendHtmlEmailViaUnified(email, subject, body, e.getInstituteId(),
+                            StringUtils.hasText(e.getFromEmail()) ? e.getFromEmail() : null, e.getFromName(),
+                            "UTILITY_EMAIL");
+                }
+                return to.size();
+            }
+            if (attach) {
+                String fileName = StringUtils.hasText(e.getPdfFileName()) ? e.getPdfFileName()
+                        : e.getDocumentNumber().replace('/', '-') + ".pdf";
+                String b64 = Base64.getEncoder().encodeToString(e.getPdf());
+                List<AttachmentUsersDTO> users = new ArrayList<>();
+                for (String email : to) {
+                    AttachmentUsersDTO.AttachmentDTO att = new AttachmentUsersDTO.AttachmentDTO();
+                    att.setAttachmentName(fileName);
+                    att.setAttachment(b64);
+                    AttachmentUsersDTO u = new AttachmentUsersDTO();
+                    u.setChannelId(email);
+                    u.setPlaceholders(new HashMap<>());
+                    u.setAttachments(List.of(att));
+                    users.add(u);
+                }
+                AttachmentNotificationDTO dto = AttachmentNotificationDTO.builder()
+                        .body(body)
+                        .subject(subject)
+                        .notificationType(CommunicationType.EMAIL.name())
+                        .source(source)
+                        .sourceId(e.getDocumentNumber())
+                        .attachmentName(fileName)
+                        .emailType("UTILITY_EMAIL")
+                        .users(users)
+                        .build();
+                notificationService.sendAttachmentEmailViaUnified(List.of(dto), e.getInstituteId());
+                return to.size();
+            }
+            NotificationDTO notification = new NotificationDTO();
+            notification.setBody(body);
+            notification.setNotificationType(CommunicationType.EMAIL.name());
+            notification.setSubject(subject);
+            notification.setSource(source);
+            notification.setSourceId(e.getDocumentNumber());
+            List<NotificationToUserDTO> users = new ArrayList<>();
+            for (String email : to) {
+                NotificationToUserDTO u = new NotificationToUserDTO();
+                u.setChannelId(email);
+                u.setPlaceholders(new HashMap<>());
+                users.add(u);
+            }
+            notification.setUsers(users);
+            notificationService.sendEmailViaUnified(notification, e.getInstituteId());
+            return to.size();
+        } catch (Exception ex) {
+            SentryLogger.SentryEventBuilder.error(ex)
+                    .withMessage("Failed to send platform billing email")
+                    .withTag("notification.type", "EMAIL")
+                    .withTag("email.type", source)
+                    .withTag("institute.id", e.getInstituteId())
+                    .withTag("document.number", e.getDocumentNumber())
+                    .withTag("operation", "sendPlatformBillingEmail")
+                    .send();
+            return 0;
+        }
+    }
+
+    static List<String> dedupeEmails(List<String> raw) {
+        java.util.LinkedHashMap<String, String> seen = new java.util.LinkedHashMap<>();
+        for (String r : raw) {
+            if (!StringUtils.hasText(r)) {
+                continue;
+            }
+            String t = r.trim();
+            if (!t.contains("@")) {
+                continue;
+            }
+            seen.putIfAbsent(t.toLowerCase(Locale.ROOT), t);
+        }
+        return new ArrayList<>(seen.values());
+    }
+
+    static String platformBillingSubject(PlatformBillingEmail e) {
+        String base;
+        if (e.getDocumentType() == PlatformDocumentType.CREDIT_NOTE) {
+            base = "Credit note " + e.getDocumentNumber()
+                    + (StringUtils.hasText(e.getAgainstInvoiceNumber()) ? " for invoice " + e.getAgainstInvoiceNumber() : "");
+        } else if ("AI_SUBSCRIPTION".equals(e.getItemKind())) {
+            base = "Your AI plan payment is confirmed: tax invoice " + e.getDocumentNumber();
+        } else {
+            base = "Your AI credits are ready: tax invoice " + e.getDocumentNumber();
+        }
+        boolean vacademyBrand = e.getBrandMode() == BrandMode.VACADEMY;
+        if (vacademyBrand && StringUtils.hasText(e.getTradeName())) {
+            return e.getTradeName().trim() + ": " + base;
+        }
+        return base;
+    }
+
+    static String platformBillingBody(PlatformBillingEmail e, boolean attached) {
+        boolean vacademyBrand = e.getBrandMode() == BrandMode.VACADEMY
+                && StringUtils.hasText(e.getTradeName());
+        boolean creditNote = e.getDocumentType() == PlatformDocumentType.CREDIT_NOTE;
+        boolean subscription = "AI_SUBSCRIPTION".equals(e.getItemKind());
+        String inst = StringUtils.hasText(e.getInstituteName()) ? htmlEscape(e.getInstituteName()) : "your institute";
+        String doc = creditNote ? "credit note" : "tax invoice";
+
+        StringBuilder sb = new StringBuilder(2_000);
+        sb.append("<!DOCTYPE html><html><body style=\"font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;color:#111;\">")
+          .append("<div style=\"max-width:560px;margin:24px auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;\">");
+        if (vacademyBrand) {
+            sb.append("<div style=\"font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;\">")
+              .append(htmlEscape(e.getTradeName().trim())).append("</div>");
+        }
+        sb.append("<h2 style=\"margin:0 0 16px;color:#111827;\">")
+          .append(creditNote ? "Credit note issued" : "Payment received").append("</h2>");
+        if (creditNote) {
+            sb.append("<p>A credit note has been issued to <strong>").append(inst).append("</strong>")
+              .append(StringUtils.hasText(e.getAgainstInvoiceNumber())
+                      ? " against tax invoice <strong>" + htmlEscape(e.getAgainstInvoiceNumber()) + "</strong>" : "")
+              .append(".</p>");
+        } else {
+            sb.append("<p>Thank you. We have received the payment from <strong>").append(inst).append("</strong>")
+              .append(subscription ? " for your AI plan." : " for AI credits.").append("</p>");
+        }
+        sb.append("<table style=\"width:100%;border-collapse:collapse;margin:16px 0;\">");
+        row(sb, "Item", e.getDescription());
+        if (StringUtils.hasText(e.getServicePeriod())) {
+            row(sb, "Service period", e.getServicePeriod());
+        }
+        row(sb, creditNote ? "Amount credited" : "Amount paid", e.getAmountDisplay());
+        row(sb, creditNote ? "Credit note number" : "Invoice number", e.getDocumentNumber());
+        if (creditNote && StringUtils.hasText(e.getReason())) {
+            row(sb, "Reason", e.getReason());
+        }
+        sb.append("</table>");
+        sb.append("<p style=\"color:#6b7280;font-size:13px;margin-top:24px;\">");
+        if (attached) {
+            sb.append("Your GST ").append(doc).append(" <strong>").append(htmlEscape(e.getDocumentNumber()))
+              .append("</strong> is attached to this email as a PDF. ");
+        }
+        if (StringUtils.hasText(e.getBillingLink())) {
+            sb.append("You can download it at any time from <a href=\"").append(htmlEscape(e.getBillingLink()))
+              .append("\">Plan &amp; billing</a> in your admin dashboard.");
+        } else {
+            sb.append("You can download it at any time from <strong>Plan &amp; billing</strong> in your admin dashboard.");
+        }
+        sb.append("</p>");
+        if (StringUtils.hasText(e.getSupportEmail())) {
+            sb.append("<p style=\"color:#6b7280;font-size:12px;\">Questions about this bill? Write to ")
+              .append(htmlEscape(e.getSupportEmail())).append(".</p>");
+        }
+        sb.append("</div></body></html>");
+        return sb.toString();
+    }
+
+    private static void row(StringBuilder sb, String label, String value) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+        sb.append("<tr><td style=\"padding:6px 0;color:#6b7280;\">").append(htmlEscape(label)).append("</td>")
+          .append("<td style=\"padding:6px 0;text-align:right;font-weight:600;\">").append(htmlEscape(value))
+          .append("</td></tr>");
+    }
+
+    private static String htmlEscape(String s) {
+        if (s == null) {
+            return "";
+        }
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 }

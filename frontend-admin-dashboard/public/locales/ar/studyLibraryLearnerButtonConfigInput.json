@@ -1,0 +1,20 @@
+{
+    "defaultButtonText": "عرض مواد الحصة",
+    "addCustomButton": "إضافة زر مخصص",
+    "customButtonConfiguration": "إعدادات الزر المخصص",
+    "addCustomActionButtonNote": "أضف زر إجراء مخصص للمتعلمين",
+    "remove": "إزالة",
+    "buttonText": "نص الزر",
+    "buttonTextPlaceholder": "مثال: عرض مواد الحصة",
+    "charactersCount_zero": "{{count}}/{{max}} حرف",
+    "charactersCount_one": "{{count}}/{{max}} حرف",
+    "charactersCount_two": "{{count}}/{{max}} حرفان",
+    "charactersCount_few": "{{count}}/{{max}} أحرف",
+    "charactersCount_many": "{{count}}/{{max}} حرفًا",
+    "charactersCount_other": "{{count}}/{{max}} حرف",
+    "buttonUrl": "رابط الزر",
+    "buttonUrlPlaceholder": "https://example.com/class-link...",
+    "backgroundColor": "لون الخلفية",
+    "textColor": "لون النص",
+    "preview": "معاينة"
+}

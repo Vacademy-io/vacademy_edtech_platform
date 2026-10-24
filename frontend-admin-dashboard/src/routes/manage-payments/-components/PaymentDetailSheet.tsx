@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { StatusChip, type StatusType } from '@/components/design-system/status-chips';
+import { StatusChip } from '@/components/design-system/status-chips';
 import { MyButton } from '@/components/design-system/button';
-import { Check, Clock, Copy, XCircle, UserCircle } from '@phosphor-icons/react';
+import { Check, Clock, Copy, Prohibit, Trash, XCircle, UserCircle } from '@phosphor-icons/react';
+import { isDeletablePayment, isVoidablePayment } from '@/services/payment-logs';
+import { VoidPaymentDialog, type VoidPaymentTarget } from './VoidPaymentDialog';
+import { PermanentDeleteDialog, type PermanentDeleteTarget } from './PermanentDeleteDialog';
+import { useCanDeletePayments } from '../-hooks/useCanDeletePayments';
 import { toast } from 'sonner';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import type { StudentTable } from '@/types/student-table-types';
@@ -10,27 +15,30 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { formatMoney, resolveEntryCurrency } from '@/utils/payment-currency';
 import { derivePaymentTypeLabel } from '../-utils/exportPaymentLogsCsv';
+import { entryPaymentStatus, paymentStatusMeta } from '../-utils/paymentStatus';
 import { GatewayBadge } from './GatewayBadge';
+import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
+import { getPublicUrl } from '@/services/upload_file';
 import type { PaymentLogEntry } from '@/types/payment-logs';
 
 interface PaymentDetailSheetProps {
     entry: PaymentLogEntry | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Called once a payment has been voided from this sheet. */
+    onVoided?: () => void;
 }
 
-const STATUS_META: Record<string, { label: string; chip: StatusType }> = {
-    PAID: { label: 'Paid', chip: 'SUCCESS' },
-    FAILED: { label: 'Failed', chip: 'DANGER' },
-    PAYMENT_PENDING: { label: 'Pending', chip: 'WARNING' },
-    NOT_INITIATED: { label: 'Not initiated', chip: 'INFO' },
+/** When and why a payment was voided, from the audit keys the server writes on the log. */
+const readVoidAudit = (raw?: string | null): { at?: string; reason?: string } => {
+    if (!raw) return {};
+    try {
+        const data = JSON.parse(raw) as { voided_at?: string; void_reason?: string };
+        return { at: data.voided_at, reason: data.void_reason };
+    } catch {
+        return {};
+    }
 };
-
-const statusMeta = (status?: string) =>
-    STATUS_META[(status || '').toUpperCase()] ?? {
-        label: status || '—',
-        chip: 'INFO' as StatusType,
-    };
 
 const initials = (name?: string) =>
     (name || '?')
@@ -78,13 +86,29 @@ interface TimelineEvent {
 }
 
 /** Read-only detail panel for a single payment row: identity, key facts, and a status timeline. */
-export function PaymentDetailSheet({ entry, open, onOpenChange }: PaymentDetailSheetProps) {
+export function PaymentDetailSheet({
+    entry,
+    open,
+    onOpenChange,
+    onVoided,
+}: PaymentDetailSheetProps) {
     // Opens the same full-screen student profile overlay the students list uses.
     const { openOverlay } = useStudentSidebar();
+    const [voidTarget, setVoidTarget] = useState<VoidPaymentTarget | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<PermanentDeleteTarget | null>(null);
+    // Display Settings permission — off unless the institute turned it on for this role.
+    const canDeletePayments = useCanDeletePayments();
 
     if (!entry) return <Sheet open={open} onOpenChange={onOpenChange} />;
 
     const { payment_log: log, user, user_plan: plan } = entry;
+    // How an offline payment was made, as the admin recorded it (null for gateway payments).
+    const recorded = readRecordedPaymentDetails(log);
+    const openProof = async (fileId: string) => {
+        const url = await getPublicUrl(fileId);
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+        else toast.error('Could not open the proof file.');
+    };
 
     const openStudentProfile = () => {
         if (!user?.id) {
@@ -103,8 +127,22 @@ export function PaymentDetailSheet({ entry, open, onOpenChange }: PaymentDetailS
         onOpenChange(false);
         openOverlay(seed);
     };
-    const status = entry.current_payment_status || log?.payment_status || '';
-    const meta = statusMeta(status);
+    const isVoided = (log?.payment_status || '').toUpperCase() === 'VOIDED';
+    const meta = paymentStatusMeta(entryPaymentStatus(entry));
+    // Invoice rows carry the invoice id in payment_log.id, so only real payment rows qualify.
+    const canVoid =
+        !entry.invoice && !!log?.id && isVoidablePayment(log.vendor, log.payment_status);
+    const canDelete =
+        canDeletePayments &&
+        !entry.invoice &&
+        !!log?.id &&
+        isDeletablePayment(log.vendor, log.payment_status);
+    // An invoice row (raised, never paid against) can be deleted too, under the same switch. A paid
+    // invoice has a live payment behind it and is refused by the server, so it is not offered.
+    const canDeleteInvoice =
+        canDeletePayments &&
+        !!entry.invoice?.invoice_id &&
+        (entry.invoice.status || '').toUpperCase() !== 'PAID';
     const currency = resolveEntryCurrency(entry);
     const amount = log?.payment_amount || 0;
     const hasTime = Boolean(log?.created_at);
@@ -120,7 +158,17 @@ export function PaymentDetailSheet({ entry, open, onOpenChange }: PaymentDetailS
             }`,
         },
     ];
-    if (meta.chip === 'SUCCESS') {
+    if (isVoided) {
+        const audit = readVoidAudit(log?.payment_specific_data);
+        timeline.push({ done: true, title: 'Payment recorded', meta: log?.vendor || 'Offline' });
+        timeline.push({
+            done: false,
+            title: 'Voided — not counted as collected',
+            meta: [audit.at ? formatTimestamp(audit.at, true) : '', audit.reason || '']
+                .filter(Boolean)
+                .join(' · '),
+        });
+    } else if (meta.chip === 'SUCCESS') {
         timeline.push({ done: true, title: 'Payment captured', meta: log?.vendor || 'Gateway' });
         timeline.push({
             done: true,
@@ -204,6 +252,28 @@ export function PaymentDetailSheet({ entry, open, onOpenChange }: PaymentDetailS
                                 className="justify-end"
                             />
                         </Row>
+                        {recorded?.label && <Row label="Paid via">{recorded.label}</Row>}
+                        {recorded?.reference && <Row label="Payment reference">{recorded.reference}</Row>}
+                        {recorded?.extra.cheque_date && <Row label="Cheque date">{recorded.extra.cheque_date}</Row>}
+                        {recorded?.extra.bank_name && <Row label="Bank">{recorded.extra.bank_name}</Row>}
+                        {recorded?.extra.payer_name && <Row label="Paid by">{recorded.extra.payer_name}</Row>}
+                        {recorded?.custom.map((c) => (
+                            <Row key={c.key} label={c.label}>
+                                {c.value}
+                            </Row>
+                        ))}
+                        {recorded?.notes && <Row label="Notes">{recorded.notes}</Row>}
+                        {recorded?.proofFileId && (
+                            <Row label="Proof">
+                                <button
+                                    type="button"
+                                    onClick={() => void openProof(recorded.proofFileId!)}
+                                    className="font-medium text-primary-600 hover:underline"
+                                >
+                                    View proof
+                                </button>
+                            </Row>
+                        )}
                         <Row label="Payment type">{derivePaymentTypeLabel(entry)}</Row>
                         <Row label="Phone">{user?.mobile_number || '—'}</Row>
                         <Row label={`${courseTerm} / membership`}>
@@ -258,7 +328,7 @@ export function PaymentDetailSheet({ entry, open, onOpenChange }: PaymentDetailS
                     </div>
                 </div>
 
-                <div className="border-t border-neutral-200 p-4">
+                <div className="space-y-2 border-t border-neutral-200 p-4">
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
@@ -268,8 +338,78 @@ export function PaymentDetailSheet({ entry, open, onOpenChange }: PaymentDetailS
                         <Copy size={16} />
                         Copy transaction ID
                     </MyButton>
+                    {/* Offline / manual payments only — a gateway payment is refunded, not voided. */}
+                    {canVoid && (
+                        <MyButton
+                            buttonType="text"
+                            scale="medium"
+                            className="w-full gap-2 text-danger-600"
+                            onClick={() =>
+                                setVoidTarget({
+                                    paymentLogId: log?.id ?? '',
+                                    amount: log?.payment_amount,
+                                    currency,
+                                })
+                            }
+                        >
+                            <Prohibit size={16} />
+                            Void payment (recorded by mistake)
+                        </MyButton>
+                    )}
+                    {canDelete && (
+                        <MyButton
+                            buttonType="text"
+                            scale="medium"
+                            className="w-full gap-2 text-danger-600"
+                            onClick={() =>
+                                setDeleteTarget({
+                                    kind: 'payment',
+                                    id: log?.id ?? '',
+                                    label: formatMoney(amount, currency, {
+                                        maximumFractionDigits: 2,
+                                    }),
+                                })
+                            }
+                        >
+                            <Trash size={16} />
+                            Delete permanently
+                        </MyButton>
+                    )}
+                    {canDeleteInvoice && entry.invoice && (
+                        <MyButton
+                            buttonType="text"
+                            scale="medium"
+                            className="w-full gap-2 text-danger-600"
+                            onClick={() =>
+                                setDeleteTarget({
+                                    kind: 'invoice',
+                                    id: entry.invoice?.invoice_id ?? '',
+                                    label: entry.invoice?.invoice_number ?? '',
+                                })
+                            }
+                        >
+                            <Trash size={16} />
+                            Delete invoice permanently
+                        </MyButton>
+                    )}
                 </div>
             </SheetContent>
+            <PermanentDeleteDialog
+                target={deleteTarget}
+                onOpenChange={(o) => !o && setDeleteTarget(null)}
+                onDeleted={() => {
+                    onOpenChange(false);
+                    onVoided?.();
+                }}
+            />
+            <VoidPaymentDialog
+                target={voidTarget}
+                onOpenChange={(o) => !o && setVoidTarget(null)}
+                onVoided={() => {
+                    onOpenChange(false);
+                    onVoided?.();
+                }}
+            />
         </Sheet>
     );
 }

@@ -1,0 +1,93 @@
+{
+    "dialogTitle": "ईमेल भेजें",
+    "dialogDescription": "चयनित विद्यार्थियों को ईमेल लिखें और भेजें।",
+    "steps": {
+        "composeEmail": "ईमेल लिखें",
+        "mapVariables": "वेरिएबल मैप करें",
+        "reviewSend": "समीक्षा करें और भेजें"
+    },
+    "studentFields": {
+        "fullName": "पूरा नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "username": "यूज़रनेम",
+        "enrollmentNumber": "नामांकन क्रमांक",
+        "registrationDate": "पंजीकरण तिथि",
+        "referralCode": "रेफरल कोड",
+        "courseName": "कोर्स का नाम",
+        "batchName": "बैच का नाम",
+        "batchStartDate": "बैच आरंभ तिथि",
+        "batchEndDate": "बैच समाप्ति तिथि",
+        "instituteName": "संस्थान का नाम",
+        "instituteEmail": "संस्थान का ईमेल",
+        "institutePhone": "संस्थान का फ़ोन",
+        "attendancePercentage": "उपस्थिति प्रतिशत",
+        "classesAttended": "उपस्थित कक्षाएं",
+        "totalClasses": "कुल कक्षाएं",
+        "currentDate": "वर्तमान तिथि",
+        "supportEmail": "सहायता ईमेल"
+    },
+    "toasts": {
+        "loadTemplatesFailed": "ईमेल टेम्पलेट लोड करने में विफल",
+        "templateContentFailed": "टेम्पलेट सामग्री लोड करने में विफल",
+        "noValidRecipients": "ईमेल भेजने के लिए कोई मान्य प्राप्तकर्ता नहीं है।",
+        "sendSuccess": "ईमेल सफलतापूर्वक भेजा गया",
+        "sendFailed": "ईमेल भेजने में विफल। कृपया पुनः प्रयास करें।",
+        "unexpectedError": "एक अप्रत्याशित त्रुटि हुई। कृपया पुनः प्रयास करें।"
+    },
+    "composeStep": {
+        "templateLabel": "टेम्पलेट",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+        "selectPlaceholder": "एक टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से मेल खाने वाला कोई टेम्पलेट नहीं है।",
+        "noneOptionLabel": "कस्टम — शुरुआत से लिखें",
+        "loadingTemplateContent": "टेम्पलेट सामग्री लोड हो रही है...",
+        "subjectLabel": "विषय",
+        "subjectPlaceholder": "ईमेल का विषय दर्ज करें...",
+        "bodyLabel": "मुख्य भाग",
+        "previewTab": "पूर्वावलोकन",
+        "editTab": "HTML संपादित करें",
+        "previewEmptyState": "सामग्री लिखने के लिए कोई टेम्पलेट चुनें या 'HTML संपादित करें' पर जाएं।",
+        "bodyPlaceholder": "ईमेल का HTML मुख्य भाग दर्ज करें... प्लेसहोल्डर के लिए {{example}} का उपयोग करें",
+        "placeholderHintPrefix": "इस तरह के प्लेसहोल्डर का उपयोग करें",
+        "placeholderHintSuffix": "— अगले चरण में आप इन्हें विद्यार्थी के फ़ील्ड (कोर्स, बैच, उपस्थिति और अधिक) से मैप कर सकते हैं।",
+        "recipientsNotice_one": "यह ईमेल {{count}} प्राप्तकर्ता को मिलेगा।",
+        "recipientsNotice_other": "यह ईमेल {{count}} प्राप्तकर्ताओं को मिलेगा।",
+        "skippedNotice_one": "({{count}} को छोड़ा गया — कोई ईमेल पता नहीं)",
+        "skippedNotice_other": "({{count}} को छोड़ा गया — कोई ईमेल पता नहीं)"
+    },
+    "variableMappingStep": {
+        "noVariables": "मैप करने के लिए कोई वेरिएबल नहीं है। आप आगे बढ़ सकते हैं।",
+        "mapHintPrefix": "प्रत्येक प्लेसहोल्डर को किसी विद्यार्थी फ़ील्ड से मैप करें, या एक निश्चित मान सेट करें। जिन मानक नामों को आप अनमैप छोड़ते हैं (जैसे",
+        "mapHintSuffix": ") वे स्वतः हल हो जाते हैं।",
+        "columnVariable": "वेरिएबल",
+        "columnMappedField": "मैप किया गया फ़ील्ड",
+        "selectFieldPlaceholder": "फ़ील्ड चुनें...",
+        "staticValueOption": "स्थिर मान…",
+        "staticValuePlaceholder": "जैसे \"विद्यार्थी\""
+    },
+    "reviewStep": {
+        "emailSent": "ईमेल भेजा गया",
+        "sendCompleted": "भेजना पूर्ण हुआ",
+        "recipientsLabel": "प्राप्तकर्ता",
+        "sentLabel": "भेजा गया",
+        "failedLabel": "विफल",
+        "close": "बंद करें",
+        "channelLabel": "ईमेल",
+        "channelHeading": "चैनल",
+        "subjectLabel": "विषय",
+        "selectedStudentsCount_one": "{{count}} विद्यार्थी चयनित",
+        "selectedStudentsCount_other": "{{count}} विद्यार्थी चयनित",
+        "skippedNotice_one": "({{count}} को छोड़ा गया — कोई ईमेल नहीं)",
+        "skippedNotice_other": "({{count}} को छोड़ा गया — कोई ईमेल नहीं)",
+        "variableMappingsLabel": "वेरिएबल मैपिंग",
+        "staticValueLabel": "स्थिर: \"{{value}}\"",
+        "sending": "भेजा जा रहा है...",
+        "sendButton_one": "{{count}} विद्यार्थी को भेजें",
+        "sendButton_other": "{{count}} विद्यार्थियों को भेजें"
+    },
+    "footer": {
+        "back": "वापस",
+        "next": "आगे"
+    }
+}

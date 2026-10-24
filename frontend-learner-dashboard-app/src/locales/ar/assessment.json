@@ -1,0 +1,180 @@
+{
+  "scheduleTest": {
+    "header": {
+      "title": "حافظ على استعدادك للاختبارات",
+      "description": "اطّلع على جميع الاختبارات التي أنشأها {{admin}}، مع مواعيدها وحالاتها لتبقى على اطلاع دائم."
+    },
+    "search": {
+      "placeholder": "ابحث عن ورقة الأسئلة"
+    },
+    "tabs": {
+      "live": "مباشر",
+      "upcoming": "القادمة",
+      "past": "السابقة"
+    },
+    "navHeading": {
+      "assessment": "الاختبار",
+      "homework": "الواجب المنزلي"
+    },
+    "empty": {
+      "live": {
+        "title": "لا يوجد شيء مباشر الآن",
+        "description": "عند فتح اختبار لمجموعتك، سيظهر هنا مع زر الانضمام.",
+        "action": "عرض القادمة"
+      },
+      "upcoming": {
+        "title": "لا شيء مجدول بعد",
+        "description": "ستظهر هنا الاختبارات التي يحددها معهدك مع وقت بدئها."
+      },
+      "past": {
+        "title": "لا توجد محاولات سابقة بعد",
+        "description": "بمجرد إغلاق اختبار خضت له، سيظهر هنا مع تقريره."
+      }
+    },
+    "loading": {
+      "assessments": "جارٍ تحميل الاختبارات...",
+      "more": "جارٍ تحميل المزيد..."
+    },
+    "folders": {
+      "title": "مجلدات تقييماتك",
+      "subtitle": "افتح مجلدًا لرؤية اختباراته الجارية والقادمة والسابقة.",
+      "others": "أخرى",
+      "othersDescription": "اختبارات ليست في أي مجلد",
+      "count_zero": "لا اختبارات",
+      "count_one": "اختبار واحد",
+      "count_two": "اختباران",
+      "count_few": "{{count}} اختبارات",
+      "count_many": "{{count}} اختبارًا",
+      "count_other": "{{count}} اختبار",
+      "back": "العودة إلى المجلدات",
+      "fallbackName": "مجلد",
+      "otherTests": "اختبارات أخرى"
+    }
+  },
+  "card": {
+    "playMode": {
+      "exam": "اختبار",
+      "mock": "تجريبي",
+      "practice": "تدريب",
+      "survey": "استبيان",
+      "offlineExam": "اختبار غير متصل"
+    },
+    "toast": {
+      "surveyStartFailed": "فشل بدء الاستبيان. يرجى المحاولة مرة أخرى.",
+      "resumeFailed": "فشل استئناف الاختبار. الاختبار منتهٍ بالفعل.",
+      "resumeError": "حدث خطأ أثناء استئناف الاختبار."
+    },
+    "button": {
+      "resume": "استئناف",
+      "ended": "منتهٍ",
+      "startSurvey": "بدء الاستبيان",
+      "start": "ابدأ",
+      "joinNow": "انضم الآن",
+      "showReport": "عرض التقرير",
+      "showAiReport": "عرض تقرير الذكاء الاصطناعي"
+    },
+    "meta": {
+      "starts": "يبدأ {{date}}",
+      "closes": "يُغلق {{date}}",
+      "noExpiry": "بدون انتهاء",
+      "validTill": "صالح حتى {{date}}",
+      "attempt": "المحاولة {{used}} من {{max}}",
+      "endedOn": "انتهى {{date}}",
+      "resultsPending": "النتائج قيد الانتظار",
+      "notAttempted": "لم تتم المحاولة",
+      "liveNow": "مباشر الآن",
+      "closesIn": "يُغلق خلال {{time}}",
+      "startsIn": "يبدأ خلال {{time}}"
+    },
+    "common": {
+      "cancel": "إلغاء"
+    },
+    "dialog": {
+      "unavailable": {
+        "title": "الاختبار غير متاح",
+        "description": "الاختبار غير مباشر حاليًا. يمكنك حضور الاختبار عند بدئه مباشرة."
+      },
+      "resume": {
+        "title": "استئناف الاختبار",
+        "description": "هل ترغب في متابعة الاختبار من آخر تقدم محفوظ؟",
+        "resuming": "جارٍ الاستئناف..."
+      },
+      "survey": {
+        "title": "بدء الاستبيان",
+        "description": "هل أنت مستعد لبدء تعبئة الاستبيان؟ بمجرد أن تبدأ، يمكنك إكماله بالسرعة التي تناسبك."
+      }
+    }
+  },
+  "util": {
+    "toast": {
+      "missingDetails": "بيانات الطالب أو المعهد مفقودة.",
+      "studentDetailsNotFound": "لم يتم العثور على بيانات الطالب.",
+      "startFailed": "تعذّر بدء الاختبار. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "reportList": {
+    "navHeading": "التقارير",
+    "toast": {
+      "evaluatedNotAvailable": "النسخة المصححة غير متاحة بعد.",
+      "evaluatedOpenFailed": "تعذّر فتح النسخة المصححة."
+    },
+    "evaluatedFileName": "{{name}} - مصحح",
+    "fallback": {
+      "assessmentName": "اختبار",
+      "evaluatedCopy": "النسخة المصححة"
+    },
+    "error": {
+      "loadFailed": "فشل تحميل التقارير. يرجى المحاولة لاحقًا.",
+      "loadTitle": "تعذّر تحميل التقارير"
+    },
+    "status": {
+      "manual": "يدوي",
+      "auto": "تلقائي",
+      "released": "تم الإصدار",
+      "pendingEvaluation": "بانتظار التقييم"
+    },
+    "button": {
+      "viewAiReport": "عرض تقرير الذكاء الاصطناعي",
+      "report": "التقرير",
+      "opening": "جارٍ الفتح…",
+      "viewEvaluated": "عرض النسخة المصححة",
+      "viewReport": "عرض التقرير"
+    },
+    "meta": {
+      "marksLabel": "الدرجات",
+      "noMore": "لا مزيد من التقارير للتحميل"
+    },
+    "empty": {
+      "title": "لا توجد تقارير بعد",
+      "description": "تظهر التقارير هنا بعد إنهائك للاختبار وإصدار نتائجه.",
+      "actionHomework": "الانتقال إلى الواجبات",
+      "actionAssessment": "الانتقال إلى الاختبارات"
+    }
+  },
+  "aiReport": {
+    "generating": {
+      "title": "جارٍ إنشاء تقرير الذكاء الاصطناعي الخاص بك",
+      "description": "نقوم بتحليل اختبارك. قد يستغرق هذا حتى دقيقة واحدة — يرجى عدم إغلاق هذه الصفحة."
+    },
+    "unavailable": {
+      "title": "التقرير غير متاح",
+      "description": "تعذّر علينا إنشاء تقرير الذكاء الاصطناعي لهذا الاختبار حاليًا.",
+      "checkBack": "يرجى التحقق مرة أخرى بعد {{time}}."
+    },
+    "tabs": {
+      "analysis": "تحليل الذكاء الاصطناعي",
+      "questions": "الأسئلة والدرجات"
+    }
+  },
+  "comparison": {
+    "navHeading": "مقارنة الأداء",
+    "defaultAssessmentName": "الاختبار",
+    "error": "فشل تحميل بيانات المقارنة. يرجى المحاولة لاحقًا."
+  },
+  "assignment": {
+    "notFound": "لم يتم العثور على الواجب",
+    "notAssignmentSlide": "هذه ليست شريحة واجب",
+    "defaultTitle": "الواجب",
+    "uploadFailed": "فشل الرفع"
+  }
+}

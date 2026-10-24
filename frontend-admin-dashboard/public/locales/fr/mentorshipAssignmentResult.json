@@ -1,0 +1,17 @@
+{
+    "assigned_one": "{{count}} attribué",
+    "assigned_many": "{{count}} attribués",
+    "assigned_other": "{{count}} attribués",
+    "alreadyAssigned_one": "{{count}} déjà assigné",
+    "alreadyAssigned_many": "{{count}} déjà assignés",
+    "alreadyAssigned_other": "{{count}} déjà assignés",
+    "skipped_one": "{{count}} ignoré",
+    "skipped_many": "{{count}} ignorés",
+    "skipped_other": "{{count}} ignorés",
+    "leftOutManual_one": "{{count}} laissé de côté — le mentor a atteint sa limite",
+    "leftOutManual_many": "{{count}} laissés de côté — le mentor a atteint sa limite",
+    "leftOutManual_other": "{{count}} laissés de côté — le mentor a atteint sa limite",
+    "leftOutBulk_one": "{{count}} laissé de côté — tous les mentors ont atteint leur limite",
+    "leftOutBulk_many": "{{count}} laissés de côté — tous les mentors ont atteint leur limite",
+    "leftOutBulk_other": "{{count}} laissés de côté — tous les mentors ont atteint leur limite"
+}

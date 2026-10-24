@@ -13,10 +13,13 @@
 // getState() so progress renders live regardless of which step is mounted.
 
 import type { BulkSlideContext } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-services/bulk-slide-creation';
-import { DEFAULT_ENTITY_NAME, isSyntheticRootNode } from './conventions';
+import { fetchCourseStudyLibraryDetails } from '@/routes/study-library/courses/-services/getStudyLibraryDetails';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { DEFAULT_ENTITY_NAME, isSyntheticRootNode, normalizeName } from './conventions';
 import { createChapter, createModule, createSubject } from './hierarchy-api';
 import { findExistingChapter } from './matching';
-import { openManifest } from './session-manifest';
+import { openManifest, type SessionManifest } from './session-manifest';
 import { getCurrentZipHandle } from './zip-parser';
 import { extractDirectFile, hasDirectFiles } from './file-source';
 import {
@@ -35,6 +38,14 @@ import {
 } from './use-bulk-content-uploading-store';
 import type { BulkItem, BulkNode, BulkUploadContext, ExistingSnapshot } from './types';
 
+/** Just enough of the study-library init shape to confirm a subject↔batch link. */
+interface StudyLibraryCourseEntry {
+    sessions?: {
+        session_dto?: { id?: string };
+        level_with_details?: { id?: string; subjects?: { subject_name?: string }[] }[];
+    }[];
+}
+
 export interface CommitDeps {
     /** From useReplaceBase64ImagesWithNetworkUrls() — instantiated by the wizard component. */
     replaceBase64ImagesWithNetworkUrls: (html: string) => Promise<string>;
@@ -50,6 +61,25 @@ interface CommitScope {
     getDefaults: () => SectionDefaults;
     setDefaults: (defaults: SectionDefaults) => void;
 }
+
+/**
+ * End-of-scope manifest handling.
+ *
+ * The manifest exists so an INTERRUPTED run can resume without re-uploading.
+ * Once a scope finishes with nothing left failed or blocked it has done its
+ * job, and keeping it is actively harmful: it is keyed only by
+ * course|batch|zip-fingerprint, so re-uploading the same zip later would mark
+ * every slide "already done" from the previous run and create none of them —
+ * which silently produces empty chapters when the earlier content has since
+ * been deleted. Keep it only while there is work left to resume.
+ */
+const finishManifest = (manifest: SessionManifest, items: BulkItem[]): void => {
+    const hasUnfinished = items.some(
+        (item) => item.status === 'failed' || item.status === 'blocked'
+    );
+    if (hasUnfinished) manifest.flush();
+    else manifest.clear();
+};
 
 /** Pick the file source for this run: in-memory selection (CSV direct mode) or the zip. */
 const buildExtractFile = (): PipelineCtx['extractFile'] => {
@@ -143,7 +173,9 @@ const commitScope = async (
     } catch (error) {
         // Without the default chain nothing in this scope can be created.
         const message =
-            error instanceof Error ? error.message : 'Could not prepare the course structure';
+            error instanceof Error
+                ? error.message
+                : `Could not prepare the ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} structure`;
         for (const item of scopedItems()) {
             if (item.status === 'pending') {
                 state().markItem(item.id, 'blocked', { error: message });
@@ -177,10 +209,92 @@ const commitScope = async (
         }
     };
 
-    // Match-only: bulk upload never creates subjects/modules/chapters. Folders
-    // without an existing match (action 'create') are skipped — the UI gates
-    // Confirm on these, so this path is a defensive fallback only.
-    const resolveNode = (node: BulkNode, kindLabel: string): boolean => {
+    /**
+     * Names of the subjects already attached to this batch, fetched ONCE and
+     * only when a subject actually has to be created.
+     *
+     * Why the guard is needed: addSubject saves the Subject row and stamps its
+     * id on the response BEFORE checking for a duplicate, and both that check
+     * and the subject↔batch mapping save sit inside `catch (e) { log.error }`.
+     * A duplicate name therefore returns 200 with a real id and NO mapping —
+     * the subject never appears in the library and every module, chapter and
+     * slide built under it is silently orphaned.
+     *
+     * Why ONE fetch is enough: a collision can only be with a subject that
+     * existed before this run, because ensureNodeChain merges same-named
+     * folders into a single node, so a run never creates two subjects with the
+     * same name. The course-tree endpoint is expensive, so it is deliberately
+     * never called per subject.
+     */
+    let existingSubjectNames: Promise<Set<string> | null> | null = null;
+    const loadExistingSubjectNames = (): Promise<Set<string> | null> => {
+        existingSubjectNames ??= (async () => {
+            const { courseId, sessionId, levelId } = scope.context;
+            try {
+                const courses = (await fetchCourseStudyLibraryDetails(courseId)) as
+                    | StudyLibraryCourseEntry[]
+                    | null;
+                return new Set(
+                    (courses ?? [])
+                        .flatMap((entry) => entry.sessions ?? [])
+                        .filter((session) => session.session_dto?.id === sessionId)
+                        .flatMap((session) => session.level_with_details ?? [])
+                        .filter((level) => level.id === levelId)
+                        .flatMap((level) => level.subjects ?? [])
+                        .map((subject) => normalizeName(subject.subject_name ?? ''))
+                );
+            } catch {
+                // Couldn't check — don't block the upload on a transient error.
+                return null;
+            }
+        })();
+        return existingSubjectNames;
+    };
+
+    const createSubjectGuarded = async (name: string): Promise<string> => {
+        const taken = await loadExistingSubjectNames();
+        if (taken?.has(normalizeName(name))) {
+            const subjectTerm = getTerminology(
+                ContentTerms.Subject,
+                SystemTerms.Subject
+            ).toLowerCase();
+            throw new Error(
+                `A ${subjectTerm} named “${name}” already exists in this batch but wasn't in the preview. Refresh the page and upload again.`
+            );
+        }
+        return createSubject(name, packageSessionId);
+    };
+
+    const createEntityFor = async (
+        node: BulkNode,
+        subjectId: string,
+        moduleId: string
+    ): Promise<string> => {
+        if (node.kind === 'subject') {
+            return createSubjectGuarded(node.displayName);
+        }
+        // Phase 0 (DEFAULT chain) and the parent walk should always supply these;
+        // fail with something readable rather than POSTing an empty query param.
+        if (!subjectId || (node.kind === 'chapter' && !moduleId)) {
+            throw new Error(`Could not resolve where “${node.displayName}” belongs.`);
+        }
+        if (node.kind === 'module') {
+            return createModule(node.displayName, subjectId, packageSessionId);
+        }
+        // chapter_order null → the backend appends (maxOrder + 1 per package
+        // session). Chapters are created in sorted folder order, so folder
+        // order becomes chapter order without any client-side counter.
+        return createChapter(node.displayName, null, subjectId, moduleId, packageSessionId);
+    };
+
+    // Folders without an existing match (action 'create') are created when the
+    // user leaves "create missing" on, and skipped when they turn it off.
+    const resolveNode = async (
+        node: BulkNode,
+        kindLabel: string,
+        subjectId: string,
+        moduleId: string
+    ): Promise<boolean> => {
         if (node.resolvedId) return true;
         if (node.mapping.action === 'skip') {
             skippedOrFailedNode(node, 'Skipped by you', false);
@@ -190,32 +304,63 @@ const commitScope = async (
             state().markNode(node.id, 'done', { resolvedId: node.mapping.targetId });
             return true;
         }
-        skippedOrFailedNode(node, `No matching ${kindLabel} — folder skipped`, false);
-        return false;
-    };
-
-    const resolveChapterNodes = (parentNodeId: string | null) => {
-        for (const chapterNode of nodesByParent(parentNodeId, 'chapter')) {
-            resolveNode(chapterNode, 'chapter');
+        if (!options.createMissing) {
+            skippedOrFailedNode(node, `No matching ${kindLabel} — folder skipped`, false);
+            return false;
+        }
+        // A previous run (before a reload) may already have created this one.
+        const remembered = manifest.getNode(node.id);
+        if (remembered) {
+            state().markNode(node.id, 'done', { resolvedId: remembered });
+            return true;
+        }
+        state().markNode(node.id, 'creating');
+        try {
+            const createdId = await createEntityFor(node, subjectId, moduleId);
+            manifest.setNode(node.id, createdId);
+            state().markNode(node.id, 'done', { resolvedId: createdId });
+            return true;
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : `Could not create the ${kindLabel} “${node.displayName}”`;
+            skippedOrFailedNode(node, message, true);
+            return false;
         }
     };
 
-    const resolveModuleNodes = (parentNodeId: string | null) => {
+    /** markNode replaces the node object, so re-read the id from the store. */
+    const resolvedIdOf = (nodeId: string): string => state().nodes[nodeId]?.resolvedId ?? '';
+
+    const resolveChapterNodes = async (
+        parentNodeId: string | null,
+        subjectId: string,
+        moduleId: string
+    ) => {
+        for (const chapterNode of nodesByParent(parentNodeId, 'chapter')) {
+            await resolveNode(chapterNode, 'chapter', subjectId, moduleId);
+        }
+    };
+
+    const resolveModuleNodes = async (parentNodeId: string | null, subjectId: string) => {
         for (const moduleNode of nodesByParent(parentNodeId, 'module')) {
-            if (!resolveNode(moduleNode, 'module')) continue;
-            resolveChapterNodes(moduleNode.id);
+            if (!(await resolveNode(moduleNode, 'module', subjectId, ''))) continue;
+            await resolveChapterNodes(moduleNode.id, subjectId, resolvedIdOf(moduleNode.id));
         }
     };
 
     if (courseDepth === 5) {
         for (const subjectNode of nodesByParent(null, 'subject')) {
-            if (!resolveNode(subjectNode, 'subject')) continue;
-            resolveModuleNodes(subjectNode.id);
+            if (!(await resolveNode(subjectNode, 'subject', '', ''))) continue;
+            await resolveModuleNodes(subjectNode.id, resolvedIdOf(subjectNode.id));
         }
     } else if (courseDepth === 4) {
-        resolveModuleNodes(null);
+        // Subject level is hidden — everything hangs off the DEFAULT subject.
+        await resolveModuleNodes(null, defaults.subjectId ?? '');
     } else if (courseDepth === 3) {
-        resolveChapterNodes(null);
+        // Subject and module are both hidden — chapters go under the DEFAULT pair.
+        await resolveChapterNodes(null, defaults.subjectId ?? '', defaults.moduleId ?? '');
     } else {
         const root = scopedNodes().find(isSyntheticRootNode);
         if (root) state().markNode(root.id, 'done', { resolvedId: defaults.chapterId });
@@ -296,7 +441,7 @@ const commitScope = async (
         }
     }
 
-    manifest.flush();
+    finishManifest(manifest, scopedItems());
 };
 
 /**
@@ -411,7 +556,9 @@ const runCsvCommit = async (deps: CommitDeps, shared: SharedRunResources): Promi
                 }
             } catch (error) {
                 const message =
-                    error instanceof Error ? error.message : 'Failed to upload this chapter';
+                    error instanceof Error
+                        ? error.message
+                        : `Failed to upload this ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`;
                 for (const item of chapterItems) {
                     if (state().items[item.id]?.status === 'pending') {
                         state().markItem(item.id, 'blocked', { error: message });
@@ -419,7 +566,10 @@ const runCsvCommit = async (deps: CommitDeps, shared: SharedRunResources): Promi
                 }
             }
         }
-        manifest.flush();
+        finishManifest(
+            manifest,
+            Object.values(state().items).filter((item) => item.sectionId === section.id)
+        );
     }
 
     state().setPhase('results');
@@ -492,7 +642,9 @@ export const runCommit = async (deps: CommitDeps): Promise<void> => {
             );
         } catch (error) {
             const message =
-                error instanceof Error ? error.message : 'Upload failed for this course';
+                error instanceof Error
+                    ? error.message
+                    : `Upload failed for this ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`;
             for (const item of Object.values(state().items)) {
                 if (item.sectionId === section.id && item.status === 'pending') {
                     state().markItem(item.id, 'blocked', { error: message });

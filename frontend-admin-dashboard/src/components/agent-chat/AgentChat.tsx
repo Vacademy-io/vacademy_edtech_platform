@@ -28,6 +28,13 @@ import {
     ChatCircleDots,
 } from '@phosphor-icons/react';
 
+/**
+ * Select value for "no pick": the request then carries no model and admin-core uses the
+ * 'admin_agent' row in ai_model_defaults (GLM 5.3 Flash by default). Radix Select does not
+ * allow an empty-string item value, hence the sentinel.
+ */
+const PLATFORM_DEFAULT_MODEL = '__platform_default__';
+
 interface AgentChatProps {
     instituteId: string;
     authToken: string;
@@ -39,24 +46,13 @@ export function AgentChat({ instituteId, authToken }: AgentChatProps) {
 
     const { data: modelsList } = useAIModelsList({ category: 'general' });
     const [input, setInput] = useState('');
-    const [selectedModel, setSelectedModel] = useState<string>('');
+    const [selectedModel, setSelectedModel] = useState<string>(PLATFORM_DEFAULT_MODEL);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Set auth token on mount
     useEffect(() => {
         setAuthToken(authToken);
     }, [authToken, setAuthToken]);
-
-    // Set default model when list loads
-    useEffect(() => {
-        if (modelsList?.models && modelsList.models.length > 0 && !selectedModel) {
-            const defaultModel =
-                modelsList.models.find((m) => m.is_default) || modelsList.models[0];
-            if (defaultModel) {
-                setSelectedModel(defaultModel.model_id);
-            }
-        }
-    }, [modelsList, selectedModel]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -67,7 +63,11 @@ export function AgentChat({ instituteId, authToken }: AgentChatProps) {
         e.preventDefault();
         if (!input.trim() || status === 'processing' || status === 'connecting') return;
 
-        sendMessage(input.trim(), selectedModel);
+        // Only an explicit pick is sent; otherwise the platform default decides.
+        sendMessage(
+            input.trim(),
+            selectedModel === PLATFORM_DEFAULT_MODEL ? undefined : selectedModel
+        );
         setInput('');
     };
 
@@ -116,6 +116,14 @@ export function AgentChat({ instituteId, authToken }: AgentChatProps) {
                                 <SelectValue placeholder="Select model" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value={PLATFORM_DEFAULT_MODEL}>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">Platform default</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            GLM 5.3 Flash
+                                        </span>
+                                    </div>
+                                </SelectItem>
                                 {modelsList?.models.map((model) => (
                                     <SelectItem key={model.model_id} value={model.model_id}>
                                         <div className="flex flex-col">

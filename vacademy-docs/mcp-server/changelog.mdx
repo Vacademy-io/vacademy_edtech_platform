@@ -1,0 +1,73 @@
+---
+title: "Changelog"
+description: "What changed in Vacademy MCP, newest first."
+icon: "clock-rotate-left"
+---
+
+New tools and edits always start **off**. Nothing new is reachable until an admin switches it on in **Settings → MCP Server**. Most edits that go live, call or message people, or enrol learners are opt-in: they are never switched on by an area's Edit level or by **Turn everything on**. See [Risk levels](/mcp-server/settings/risk-levels).
+
+<Update label="October 2026" description="CRM reports: payment dates, state-wise revenue, list tags">
+  - **Payment dates:** money reports count a payment on the day it was made by default, so a batch of old payments entered on one day no longer lands in that month. Ask for the entry date instead when you need it.
+  - **Collections, your way:** group money collected by day, week, month, course, method, counsellor, source, list, **state** or **city** (up to two at once), and compare each row with the period before.
+  - **Revenue vs collections:** the revenue report now shows how its figure (payers marked Converted) reconciles with everything collected.
+  - **Custom reports:** group by **state** or **city**, or by a tag on your lead lists, and use new metrics: all money **collected**, and **converted within 7 / 30 days**, so recent weeks compare fairly with older ones.
+  - **Lead list tags:** admins can tag lead lists with state, course or channel in the admin portal, or ask the AI app to tag them (previewed first).
+  - **Funnel:** each stage shows the window's leads sitting in it now and, labelled separately, every lead in it now.
+  - Lead and counsellor reports now count days in your institute's timezone.
+</Update>
+
+<Update label="October 2026" description="CRM: email, payments, live activity and custom reports">
+  - **CRM: Messages:** the AI app can now send an **email** to one lead: one of your email templates, or a subject and message written with you. It previews the exact email, never sends to an address on your unsubscribe list, and logs the outreach on the lead.
+  - **CRM: Payments (new area):** see what a lead owes, who is overdue, what falls due soon, converted leads who have not paid and failed checkouts. Admins also see money collected, and can send fee reminders for unpaid installments or pending invoices (previewed first, at most 50 an hour).
+  - **CRM: Reports:** **custom reports**: ask for your own breakdowns (source, list, counsellor, status, month, or any of your form fields such as city or course) and metrics. And the **live activity feed**: "what happened in the last hour?" or today's counts.
+</Update>
+
+<Update label="October 2026" description="CRM tools">
+  The CRM comes to MCP. Five new areas appear in **Settings → MCP Server**; the AI app gets their tools when your plan includes the CRM:
+
+  - **CRM: Leads:** find a lead by name, phone or email, list leads with filters, see a lead's full history, and get a ranked *my day* list of follow-ups. Log calls and notes, set and complete follow-ups, change status, tag, assign leads to counsellors and add new leads.
+  - **CRM: Calls:** call history, transcripts, callbacks due and missed calls. Place a call, request an AI call, and (admins) start AI calling campaigns.
+  - **CRM: Meetings:** your and your team's meetings, free slots and booking pages. Book a meeting and log its outcome.
+  - **CRM: Messages:** message history, inbox and approved templates. Send an approved WhatsApp template to one lead.
+  - **CRM: Reports:** sources, campaigns, funnel, counsellor performance, calling, follow-up health and more.
+
+  How it behaves:
+
+  - **Same lead visibility as your admin portal.** Counsellors see their own leads, managers their team's, admins the whole institute.
+  - **Every CRM edit is turned on separately.** Notes, logged calls and follow-ups are saved straight away. Status changes, assignments, bulk changes, calls, messages and bookings show a preview and wait for your yes.
+  - **Calls and messages are confirmed once.** Anything that calls or messages a person uses a single-use confirmation, so the same call or message cannot be sent twice from one yes.
+  - A new label, **Calls or messages leads**, marks edits that contact people and may use calling or messaging credits.
+</Update>
+
+<Update label="2026-10-12" description="Courses: structure and depth">
+  - **Courses → Structure and depth** (opt-in): change how many levels a course has, or regroup its content, for example turn a chapters-only course into modules of chapters. The AI app shows the new structure first and applies it only after you confirm. Works on live courses; learners keep their progress. Nothing is copied or deleted.
+</Update>
+
+<Update label="2026-10-10" description="Websites from designs, publishing, learner enrolment">
+  - **Website → Import Figma designs:** turn a Figma design that your AI app reads with its own Figma tools into a draft site. The `figma_to_site` prompt and design playbooks guide the AI app.
+  - **Website → Set up folders, course tags and product pages** (opt-in): add the course data a design needs. Only adds; new folders start hidden and product pages start as drafts.
+  - **Website → Publish and roll back** (opt-in): publish a checked draft, or roll back to an earlier published version, after you say yes in the chat. A draft that changed after the check, or is older than the live site, is refused.
+  - **Learners → Enrol into courses** (opt-in): enrol one learner, a list or a CSV through an invite you pick, after a preview. Never removes anyone. Login details, if you ask for them, come as a private download link that expires after 30 minutes.
+  - **Learners → Edit learner details** (opt-in): change a learner's details after a before-and-after preview. Email and username can never be changed.
+</Update>
+
+<Update label="Late September to early October 2026" description="Blog, courses, learners, progress reports">
+  - **Blog:** read posts and where they appear. Write new posts as drafts that you publish in your admin portal.
+  - **Courses:** read course content, drip rules and invite links. Build draft courses with chapters, slides, quizzes and assignments, set drip rules on courses that are not live yet, and create invite links and payment plans. Courses go live only after an admin approves them.
+  - **Learners:** find learners by name, email or phone and see their courses.
+  - **Progress reports:** read the data behind a learner's progress report so the AI app can write the report.
+  - **Who is connected:** an always-on tool that tells the AI app your name and your institute's name, logo and terminology.
+  - **Your institute's own server URL** (`…/ai-service/mcp/i/<institute_id>`): sign-in lands on your institute's own admin portal, with your brand, and a connection works only for that institute.
+</Update>
+
+<Update label="September 2026" description="Launch">
+  First release of Vacademy MCP.
+
+  - **Sign-in:** OAuth 2.1 with PKCE and automatic app registration. Each person signs in with their own account on the admin portal and approves the connection.
+  - **Three gates on every request:** a valid sign-in, server on and role allowed (staff only), and the area on for your role.
+  - **Settings → MCP Server:** turn the server on, choose roles, set areas to View or Edit, see and revoke active connections, and manage client IDs.
+  - **Institute stats:** profile, outstanding fees, live classes and learner counts.
+  - **Website:** read sites and pages, traffic and pre-publish checks. Build and edit pages as drafts that you publish yourself.
+  - **Lead forms:** read lead campaigns and leads. Create campaigns, add form fields and send a test lead.
+  - **Automations:** read workflows and their runs. Draft new workflows, which never run until you publish them in the builder.
+</Update>

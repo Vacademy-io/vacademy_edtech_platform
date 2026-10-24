@@ -1,0 +1,17 @@
+{
+    "table": {
+        "headers": {
+            "number": "#",
+            "view": "देखें",
+            "options": "विकल्प",
+            "marks": "अंक"
+        },
+        "questionNumber": "प्र{{number}}.",
+        "viewButton": "देखें",
+        "optionFallback": "विकल्प {{label}}",
+        "marksPlaceholder": "-"
+    },
+    "actions": {
+        "submit": "सबमिट करें"
+    }
+}

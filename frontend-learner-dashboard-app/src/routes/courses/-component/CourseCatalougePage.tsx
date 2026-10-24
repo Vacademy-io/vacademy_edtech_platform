@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import Footer from "./Footer.tsx";
 import CoursesPage from "./CoursesPage.tsx";
 import { useCatalogStore } from "../-store/catalogStore.ts";
@@ -16,6 +17,8 @@ import { DashboardLoader } from "@/components/core/dashboard-loader";
 // Auth modal is controlled within CourseListHeader via URL params
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { toTitleCase } from "@/lib/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 
 /** Merge unique instructors from course list into existing list (by id). Ensures instructors attached to courses appear in the filter. */
 function mergeInstructorsFromCourses(
@@ -42,6 +45,7 @@ interface CourseCatalougePageProps {
 }
 
 const CourseCatalougePage: React.FC<CourseCatalougePageProps> = ({ instituteId }) => {
+    const { t } = useTranslation("coursesRouteA");
     const { setCourseData, instituteData, setInstituteData, setInstructors } =
         useCatalogStore();
     const { setPrimaryColor } = useTheme();
@@ -279,7 +283,9 @@ const CourseCatalougePage: React.FC<CourseCatalougePageProps> = ({ instituteId }
                         {bannerImage && (
                             <img
                                 src={bannerImage}
-                                alt="Course Banner"
+                                alt={t("catalogPage.bannerAlt", {
+                                    course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                                })}
                                 className="size-full object-cover"
                                 onError={(e) => {
                                     e.currentTarget.style.display = "none";

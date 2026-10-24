@@ -2,32 +2,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Brain, UsersThree, Presentation } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 interface BeforeLectureViewProps {
     onBack: () => void;
 }
 
 export function BeforeLectureView({ onBack }: BeforeLectureViewProps) {
+    const { t } = useTranslation('instructorCopilotBeforeLectureView');
+
     const cards = [
         {
-            title: 'AI Lecture Planner',
-            description: 'Generate comprehensive lesson plans with AI assistance.',
+            title: t('cards.planner.title'),
+            description: t('cards.planner.description'),
             icon: Brain,
             color: 'text-purple-500',
             bgColor: 'bg-purple-50 dark:bg-purple-900/20',
             to: '/ai-center/ai-tools/vsmart-lecture'
         },
         {
-            title: 'Take Attendance',
-            description: 'Manage live sessions and track student attendance.',
+            title: t('cards.attendance.title'),
+            description: t('cards.attendance.description'),
             icon: UsersThree,
             color: 'text-blue-500',
             bgColor: 'bg-blue-50 dark:bg-blue-900/20',
             to: '/study-library/live-session'
         },
         {
-            title: 'Create Lecture Presentation',
-            description: 'Design interactive slides and presentations with Volt.',
+            title: t('cards.presentation.title'),
+            description: t('cards.presentation.description'),
             icon: Presentation,
             color: 'text-amber-500',
             bgColor: 'bg-amber-50 dark:bg-amber-900/20',
@@ -40,11 +43,11 @@ export function BeforeLectureView({ onBack }: BeforeLectureViewProps) {
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
                     <ArrowLeft size={16} />
-                    Back to Lecture Modes
+                    {t('backButton')}
                 </Button>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Before Lecture</h2>
-                    <p className="text-sm text-slate-500">Preparation tools and planning</p>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('heading')}</h2>
+                    <p className="text-sm text-slate-500">{t('subtitle')}</p>
                 </div>
             </div>
 

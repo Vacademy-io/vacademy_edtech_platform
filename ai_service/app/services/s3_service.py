@@ -222,7 +222,9 @@ class S3Service:
         
         # Recursively find all files in directory
         for file_path in directory_path.rglob("*"):
-            if file_path.is_file():
+            # Skip hidden files — incl. the pipeline's atomic-write temps
+            # (.<name>.<uuid>.tmp) that a concurrent writer may leave behind.
+            if file_path.is_file() and not file_path.name.startswith("."):
                 # Preserve relative path structure
                 relative_path = file_path.relative_to(directory_path)
                 # Create S3 key with directory structure

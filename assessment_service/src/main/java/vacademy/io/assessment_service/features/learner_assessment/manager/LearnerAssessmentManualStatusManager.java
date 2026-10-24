@@ -88,8 +88,15 @@ public class LearnerAssessmentManualStatusManager {
                 throw new VacademyException("Attempt is in Preview");
             }
 
+            // A repeat submit is not a failure. The learner's paper is already stored,
+            // so tapping Submit twice — or the app retrying — must not greet them with
+            // an error at the end of their exam. 87 of 271 submissions on 2026-08-29
+            // hit this path and were shown "Failed to Submit: Attempt already Ended"
+            // despite having submitted successfully. Answer idempotently instead.
             if (attemptOptional.get().getStatus().equals("ENDED")) {
-                throw new VacademyException("Attempt already Ended");
+                log.info("[SUBMIT-MANUAL] Repeat submit on an already-ended attempt, treating as done: attemptId={}",
+                        attemptId);
+                return ResponseEntity.ok("Already submitted");
             }
 
             // Process and update the attempt for manual submission

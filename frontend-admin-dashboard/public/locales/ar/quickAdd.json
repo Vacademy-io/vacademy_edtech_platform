@@ -1,0 +1,47 @@
+{
+    "filesStaged": "{{count}} ملف(ات) جاهزة للإضافة",
+    "prompts": {
+        "youtubeUrl": "أدخل رابط يوتيوب",
+        "externalLinkUrl": "أدخل رابط الرابط الخارجي",
+        "embedUrl": "أدخل الرابط المراد تضمينه"
+    },
+    "defaultTitles": {
+        "youtubeVideo": "فيديو يوتيوب",
+        "link": "رابط",
+        "codeEditor": "محرر الأكواد",
+        "jupyterNotebook": "دفتر Jupyter",
+        "presentation": "عرض تقديمي",
+        "untitledDocument": "مستند بلا عنوان",
+        "embeddedUrl": "رابط مضمّن"
+    },
+    "bubbles": {
+        "uploadFiles": "تحميل ملفات",
+        "emptyDoc": "مستند فارغ",
+        "youtube": "يوتيوب",
+        "externalLink": "رابط خارجي",
+        "embedUrl": "تضمين رابط",
+        "pdf": "PDF",
+        "doc": "مستند",
+        "ppt": "PPT",
+        "presentation": "عرض تقديمي",
+        "code": "كود",
+        "jupyter": "Jupyter",
+        "image": "صورة",
+        "audio": "صوت",
+        "html": "HTML"
+    },
+    "noItemsToAdd": "لا توجد عناصر للإضافة",
+    "addedSlides": "تمت إضافة {{count}} شريحة",
+    "addFailed": "فشل إضافة الشرائح",
+    "heading": "إضافة سريعة للشرائح",
+    "close": "إغلاق",
+    "publishAll": "نشر جميع الـ {{term}}",
+    "stagedItems": "العناصر الجاهزة ({{count}})",
+    "emptyState": "لا توجد عناصر جاهزة بعد. استخدم الإجراءات السريعة أعلاه للإضافة.",
+    "adding": "جارٍ الإضافة...",
+    "done": "تم",
+    "failed": "فشل",
+    "failedWithReason": "فشل: {{reason}}",
+    "editTitle": "تعديل العنوان",
+    "remove": "إزالة"
+}

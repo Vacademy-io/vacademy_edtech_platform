@@ -1,0 +1,22 @@
+{
+    "totalEnrolled": {
+        "title": "कुल नामांकित",
+        "subtitle": "इस बैच में शिक्षार्थी"
+    },
+    "certificatesGenerated": {
+        "title": "जारी किए गए प्रमाणपत्र",
+        "subtitle": "अब तक जारी"
+    },
+    "certificatesPending": {
+        "title": "लंबित प्रमाणपत्र",
+        "subtitle": "अभी तक जारी नहीं"
+    },
+    "awaitingGeneration": {
+        "title": "जनरेशन की प्रतीक्षा में",
+        "subtitle": "{{threshold}}% से अधिक, कोई प्रमाणपत्र नहीं"
+    },
+    "closeToThreshold": {
+        "title": "सीमा के करीब",
+        "subtitle": "{{nearFloor}}–{{thresholdMinusOne}}% पूर्ण"
+    }
+}

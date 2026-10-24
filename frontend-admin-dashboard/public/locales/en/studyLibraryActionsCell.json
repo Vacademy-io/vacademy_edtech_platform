@@ -1,0 +1,32 @@
+{
+    "notResolvedYet": "Not resolved yet",
+    "durationUnits": {
+        "days_one": "{{count}}d",
+        "days_other": "{{count}}d",
+        "hours_one": "{{count}}h",
+        "hours_other": "{{count}}h",
+        "minutes_one": "{{count}}m",
+        "minutes_other": "{{count}}m",
+        "seconds_one": "{{count}}s",
+        "seconds_other": "{{count}}s"
+    },
+    "viewDoubtDetails": "View doubt details",
+    "doubtDetails": "Doubt Details",
+    "doubtDescription": "Doubt Description",
+    "contentInformation": "Content Information",
+    "type": "Type",
+    "title": "Title",
+    "location": "Location",
+    "assignTeacher": "Assign Teacher",
+    "conversation": "Conversation",
+    "conversationWithCount_one": "Conversation ({{count}})",
+    "conversationWithCount_other": "Conversation ({{count}})",
+    "anonymous": "Anonymous",
+    "learner": "Learner",
+    "guest": "Guest",
+    "summary": "Summary",
+    "resolveTime": "Resolve Time",
+    "statusLabel": "Status: {{status}}",
+    "resolved": "Resolved",
+    "unresolved": "Unresolved"
+}

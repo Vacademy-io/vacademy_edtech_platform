@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 
@@ -15,6 +16,7 @@ const EditLiveLinkDialog: React.FC<EditLiveLinkDialogProps> = ({
     currentLink,
     onUpdate,
 }) => {
+    const { t } = useTranslation('dashboardEditLiveLinkDialog');
     const [newLink, setNewLink] = useState('');
 
     useEffect(() => {
@@ -24,10 +26,10 @@ const EditLiveLinkDialog: React.FC<EditLiveLinkDialogProps> = ({
     }, [open]);
 
     return (
-        <MyDialog open={open} onOpenChange={onOpenChange} heading="Edit Live Class Link" dialogWidth="w-[400px]">
+        <MyDialog open={open} onOpenChange={onOpenChange} heading={t('heading')}>
             <div className="flex flex-col gap-4 p-4">
                 <div>
-                    <label className="text-sm font-medium mb-1">Current Link</label>
+                    <label className="text-sm font-medium mb-1">{t('currentLinkLabel')}</label>
                     <input
                         type="text"
                         className="rounded border bg-gray-50 px-2 py-1 text-sm w-full"
@@ -36,19 +38,19 @@ const EditLiveLinkDialog: React.FC<EditLiveLinkDialogProps> = ({
                     />
                 </div>
                 <div>
-                    <label className="text-sm font-medium mb-1">New Link</label>
+                    <label className="text-sm font-medium mb-1">{t('newLinkLabel')}</label>
                     <input
                         type="text"
                         className="rounded border bg-gray-50 px-2 py-1 text-sm w-full"
                         value={newLink}
                         onChange={(e) => setNewLink(e.target.value)}
-                        placeholder="Enter new link"
+                        placeholder={t('newLinkPlaceholder')}
                     />
                 </div>
                 <div className="flex justify-end gap-2 mt-4">
-                    <MyButton onClick={() => onOpenChange(false)}>Cancel</MyButton>
+                    <MyButton onClick={() => onOpenChange(false)}>{t('actions.cancel')}</MyButton>
                     <MyButton onClick={() => onUpdate(newLink)} disable={!newLink} buttonType="primary">
-                        Update
+                        {t('actions.update')}
                     </MyButton>
                 </div>
             </div>

@@ -1,0 +1,17 @@
+{
+    "previewButton": "معاينة الدعوة",
+    "instituteLogoAlt": "شعار المؤسسة",
+    "courseBannerAlt": "بانر الدورة",
+    "coursePreviewAlt": "صورة معاينة الدورة",
+    "levelLabel": "المستوى",
+    "learnersGainHeading": "ما سيكتسبه المتعلمون",
+    "aboutCourseHeading": "عن الدورة",
+    "youtubePlayerTitle": "مشغل فيديو يوتيوب",
+    "videoNotSupported": "متصفحك لا يدعم علامة الفيديو.",
+    "registrationHeading": "تفاصيل التسجيل",
+    "registrationSubheading": "املأ بياناتك للتسجيل في الدورة",
+    "phoneNumberLabel": "رقم الهاتف",
+    "phoneNumberPlaceholder": "123 456 7890",
+    "registerButton": "تسجيل",
+    "resetFormButton": "إعادة تعيين النموذج"
+}

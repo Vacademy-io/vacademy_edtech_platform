@@ -1,0 +1,13 @@
+{
+    "title": "Question Wise Revaluation",
+    "table": {
+        "qNo": "Q.No.",
+        "question": "Question"
+    },
+    "buttons": {
+        "revaluate": "Revaluate"
+    },
+    "toasts": {
+        "revaluateSuccess": "Your attempt for this assessment has been revaluated. Please check your email!"
+    }
+}

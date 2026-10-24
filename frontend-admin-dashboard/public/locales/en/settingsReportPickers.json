@@ -1,0 +1,35 @@
+{
+    "scopePicker": {
+        "noun": {
+            "batch": "batches",
+            "subject": "subjects",
+            "faculty": "faculty"
+        },
+        "whichNoun": "Which {{noun}}?",
+        "clearCount": "Clear {{count}}",
+        "emptyWarning": {
+            "prefix": "Nothing picked means",
+            "every": "every",
+            "suffix": "one of them, which may exceed the per-run limit. Pick the {{noun}} you want."
+        },
+        "searchPlaceholder": "Search {{noun}}…",
+        "loading": "Loading…",
+        "errorLoad": "Could not load {{noun}}. Check your connection and try again.",
+        "emptyNoMatch": "No {{noun}} match “{{query}}”.",
+        "emptyNoneAtInstitute": "This institute has no {{noun}}.",
+        "truncatedNotice": "Showing {{shown}} of {{total}} — search to narrow."
+    },
+    "recipientPicker": {
+        "pickPeopleLabel": "Or pick specific people",
+        "clearCount": "Clear {{count}}",
+        "searchPlaceholder": "Search by name or email…",
+        "noEmailWarning_one": "{{count}} selected person has no email on file and will not receive anything.",
+        "noEmailWarning_other": "{{count}} selected people have no email on file and will not receive anything.",
+        "loading": "Loading…",
+        "errorLoad": "Could not load people.",
+        "emptyNoMatch": "Nobody matches “{{query}}”.",
+        "emptyNoneFound": "No eligible recipients found.",
+        "unnamed": "(unnamed)",
+        "noEmail": "no email"
+    }
+}

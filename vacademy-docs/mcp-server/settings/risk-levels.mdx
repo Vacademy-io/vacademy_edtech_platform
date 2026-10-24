@@ -1,0 +1,85 @@
+---
+title: "Risk levels"
+description: "What each badge on a change means for your learners, leads and website visitors, and which changes are turned on separately."
+icon: "triangle-exclamation"
+---
+
+Every change an AI app can make carries a badge in **Settings → MCP Server**. The badge tells you who could notice the change, and how soon. Read it before you turn a change on.
+
+## At a glance
+
+| Badge | Key | Who notices, and when | Comes on with **Edit**? |
+|---|---|---|---|
+| **Drafts only** | `drafts` | Nobody outside your team. Nothing goes live until someone publishes it in the admin portal. | Yes |
+| **Adds only** | `additive` | Only adds new records. Nothing existing is changed or removed. | Yes |
+| **Not-live courses only** | `not_live` | Only courses that are not live yet. Learners see nothing until the course goes live. | Yes |
+| **Adds to live data** | `live_additive` | Adds to records that are already live. Some additions show at once. | No, turned on separately |
+| **Changes live** | `live` | Learners, website visitors or leads can see the change straight away. | Some do (see below) |
+| **Calls or messages leads** | `outbound` | A real person is phoned, messaged or sent an invite. May cost calling or messaging credits. | Never. Always turned on separately |
+
+A view never changes anything, so views carry no badge.
+
+## Drafts only
+
+The AI app saves its work as a draft. You or another admin review it and publish it from the admin portal.
+
+- **Website: Build and edit pages** and **Import Figma designs.** Changes are draft revisions. Publishing is a click in Manage Pages.
+- **Automations: Draft automations.** A draft automation never runs. New email and WhatsApp templates are created but are unused until an automation uses them.
+- **Blog: Draft posts.** A draft post is never shown on your website.
+- **Courses: Content.** Courses and slides are saved as drafts. A course goes live only after approval in the admin portal.
+
+<Note>
+  Two exceptions in **Courses: Content**, both at your request: the AI app publishes slides when you ask it to, and it can set a course's preview image, banner and intro video on live courses too.
+</Note>
+
+## Adds only
+
+**Lead forms: Create campaigns and add fields.** The AI app can create a lead campaign, add fields to a form and send a test lead. It never removes a campaign or a field. A test lead shows up in your leads like any other.
+
+## Not-live courses only
+
+**Courses: Drip release rules.** Only courses in draft or review. The institute-wide drip switches are never changed.
+
+## Adds to live data
+
+The AI app only adds, but it adds to live records, so some of it shows at once.
+
+- **Website: Set up folders, course tags and product pages.** New folders start hidden and new product pages start as drafts. But tags added to a live course change your site's filters straight away, and a course added to an active store page is on sale straight away. Every change is shown as a dry run first, and applies only if nothing changed in between.
+- **CRM: lead activity** (notes, logged calls, follow-ups). Your team sees the note or follow-up at once.
+
+These are [turned on separately](/mcp-server/settings/opt-in-features).
+
+## Changes live
+
+The change is visible straight away.
+
+| Change | What people notice | Turned on separately? |
+|---|---|---|
+| **Courses: Invite links, pricing and enrolment forms** | New invite links and payment plans. Edits to an invite's page and form apply at once, live courses included. | **No.** Comes on with Courses **Edit** |
+| **Website: Publish and roll back** | Your live website changes. | Yes |
+| **Courses: Structure and depth** | Learners see the new course structure at once and keep their progress. | Yes |
+| **Learners: Enrol into courses** | Learners get access to the course, and welcome emails if you choose to send them. | Yes |
+| **Learners: Edit learner details** | The learner's details change at once. | Yes |
+| **CRM: lead edits, assignments, adding leads** | Status, owner, tier and tags change for your team at once. Automations tied to a status change may run. | Yes |
+
+<Warning>
+  **Courses: Invite links, pricing and enrolment forms** is the one live change that the Courses **Edit** level, **Turn everything on**, and the first switch-on all turn on. If you do not want it, open the Courses row and switch it off.
+</Warning>
+
+Every live edit that is turned on separately shows a preview first and needs your "yes" in the chat. A confirmation is valid for a short time (minutes) and only for exactly what was previewed. If anything changes, the AI app must preview again. See [Confirmations](/mcp-server/usage/confirmations).
+
+## Calls or messages leads
+
+These changes reach real people outside your institute:
+
+- placing a phone call or an AI call to a lead;
+- starting an AI calling campaign (admins only);
+- booking a meeting, which sends the lead an invite;
+- sending an approved WhatsApp template or an email to a lead;
+- sending fee reminders for unpaid installments or invoices (admins only).
+
+Each one is always turned on separately. No level, shortcut or first switch-on turns it on. Before anything is sent, the AI app shows who will be contacted, how, and any credits it will use. Your confirmation works **once**. A second call or message needs a new preview and a new "yes".
+
+<Tip>
+  Before you turn on a change marked **Calls or messages leads**, try it yourself on a test lead with your own phone number.
+</Tip>

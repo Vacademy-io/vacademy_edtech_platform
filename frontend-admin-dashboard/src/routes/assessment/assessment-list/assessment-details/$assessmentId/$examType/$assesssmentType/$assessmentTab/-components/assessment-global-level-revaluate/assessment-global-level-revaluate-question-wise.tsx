@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getInstituteId } from '@/constants/helper';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { getAssessmentDetails } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
@@ -28,8 +29,10 @@ import {
 } from '@/types/assessments/assessment-revaluate-question-wise';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 export function AssessmentGlobalLevelRevaluateQuestionWise() {
+    const { t } = useTranslation('assessmentGlobalRevaluateQuestionWise');
     const [openDialog, setOpenDialog] = useState(false);
     const instituteId = getInstituteId();
     const [selectedFilter] = useState<SelectedFilterRevaluateInterface>({
@@ -107,13 +110,10 @@ export function AssessmentGlobalLevelRevaluateQuestionWise() {
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Attempt for this assessment has been revaluated for all students. Participants need to check their email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             setOpenDialog(false);
         },
         onError: (error: unknown) => {
@@ -148,10 +148,10 @@ export function AssessmentGlobalLevelRevaluateQuestionWise() {
                         buttonType="secondary"
                         className="font-medium"
                     >
-                        Question Wise
+                        {t('trigger.questionWise')}
                     </MyButton>
                 </DialogTrigger>
-                <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-0 overflow-y-auto !p-0">
+                <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall w-dialog-xl flex-col !gap-0 overflow-y-auto !p-0">
                     <Tabs
                         value={selectedSection}
                         onValueChange={setSelectedSection}
@@ -184,13 +184,13 @@ export function AssessmentGlobalLevelRevaluateQuestionWise() {
                         </div>
                         <TabsContent
                             value={selectedSection || ''}
-                            className="max-h-[calc(100vh-120px)] overflow-y-auto"
+                            className="max-h-[calc(100vh-120px)] overflow-y-auto" // design-lint-ignore: viewport-relative remainder (100vh minus sticky tabs header), no fixed token exists for this computed scroll region
                         >
                             <Table>
                                 <TableHeader className="bg-primary-200">
                                     <TableRow>
-                                        <TableHead>Q.No.</TableHead>
-                                        <TableHead>Question</TableHead>
+                                        <TableHead>{t('table.questionNumber')}</TableHead>
+                                        <TableHead>{t('table.question')}</TableHead>
                                         <TableHead>
                                             <Checkbox
                                                 checked={
@@ -220,9 +220,10 @@ export function AssessmentGlobalLevelRevaluateQuestionWise() {
                                                 <TableCell>{index + 1}</TableCell>
                                                 <TableCell
                                                     dangerouslySetInnerHTML={{
-                                                        __html:
+                                                        __html: sanitizeRichHtml(
                                                             question.assessment_question_preview_dto
-                                                                .questionName || '',
+                                                                .questionName
+                                                        ),
                                                     }}
                                                 />
                                                 <TableCell>
@@ -259,7 +260,7 @@ export function AssessmentGlobalLevelRevaluateQuestionWise() {
                             buttonType="primary"
                             onClick={handleRevaluateStudent}
                         >
-                            Revaluate
+                            {t('actions.revaluate')}
                         </MyButton>
                     </div>
                 </DialogContent>

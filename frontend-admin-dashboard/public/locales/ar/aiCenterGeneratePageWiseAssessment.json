@@ -1,0 +1,15 @@
+{
+    "actions": {
+        "close": "إغلاق"
+    },
+    "viewer": {
+        "allQuestions": "جميع الأسئلة",
+        "selectedQuestions": "الأسئلة المحددة"
+    },
+    "copyConfirm": {
+        "title": "تنبيه",
+        "message": "هل أنت متأكد أنك تريد نسخ النص المحدد؟",
+        "no": "لا",
+        "yes": "نعم"
+    }
+}

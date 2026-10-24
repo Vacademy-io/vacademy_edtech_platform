@@ -1,6 +1,8 @@
 package vacademy.io.notification_service.features.chatbot_flow.engine;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import vacademy.io.notification_service.features.chatbot_flow.service.EnrollmentCredentialsClient;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +16,8 @@ import java.util.regex.Pattern;
  * Resolution precedence:
  *   1. Node-config `variables` array — explicit typed mapping with fallback default.
  *      Each entry: { name, source, field, defaultValue }
- *      Sources: SYSTEM_FIELD, CUSTOM_FIELD, SESSION, CONTEXT, FIXED
+ *      Sources: SYSTEM_FIELD, CUSTOM_FIELD, SESSION, CONTEXT, FIXED,
+ *               ENROLLMENT_CREDENTIALS (login-details text from admin_core)
  *   2. Built-in placeholders (backwards compatible):
  *        {{fixed:literal}}         -> literal
  *        {{session.key}}           -> sessionVariables[key]
@@ -24,7 +27,10 @@ import java.util.regex.Pattern;
  *        (unqualified names)       -> sessionVariables[name]
  */
 @Component
+@RequiredArgsConstructor
 public class VariableResolver {
+
+    private final EnrollmentCredentialsClient enrollmentCredentialsClient;
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{(.+?)}}");
 
@@ -71,6 +77,20 @@ public class VariableResolver {
     @SuppressWarnings("unchecked")
     private String resolveFromSource(Map<String, Object> var, FlowExecutionContext ctx) {
         String source = var.get("source") != null ? var.get("source").toString() : "SYSTEM_FIELD";
+
+        // Checked before the `field` guard below: this source takes no field, it is keyed
+        // purely on the caller's phone number.
+        //
+        // Credentials cannot travel in a WhatsApp template body — Meta classifies any such
+        // body as AUTHENTICATION, which is fixed-format, so the template hard-rejects with
+        // INCORRECT_CATEGORY in every category. They are fetched here instead and emitted
+        // as a free-text session message. admin_core returns the fully composed text; null
+        // means "no in-scope enrollment for this number", and SEND_MESSAGE refuses a blank
+        // body, so an unknown number yields no message rather than a half-filled one.
+        if ("ENROLLMENT_CREDENTIALS".equals(source)) {
+            return enrollmentCredentialsClient.fetchCredentialsText(ctx.getPhoneNumber());
+        }
+
         Object fieldObj = var.get("field");
         String field = fieldObj != null ? fieldObj.toString() : null;
         if (field == null || field.isBlank()) return null;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     getWhatsAppTemplatesForPreviewQuery,
@@ -8,6 +9,7 @@ import {
     WorkflowRawNode,
 } from '@/services/workflow-service';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
+import type { TFunction } from 'i18next';
 import { WORKFLOW_NODE_TYPES } from '@/types/workflow/workflow-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,17 +42,21 @@ function formatJson(raw: string | null | undefined): string {
 }
 
 /** Validate a JSON string is a JSON object. Empty is allowed (treated as "no value"). */
-function jsonObjectError(text: string, { allowEmpty }: { allowEmpty: boolean }): string | null {
+function jsonObjectError(
+    text: string,
+    { allowEmpty }: { allowEmpty: boolean },
+    t: TFunction
+): string | null {
     const trimmed = text.trim();
-    if (!trimmed) return allowEmpty ? null : 'Cannot be empty';
+    if (!trimmed) return allowEmpty ? null : t('workflowConfigTab:errors.cannotBeEmpty');
     let parsed: unknown;
     try {
         parsed = JSON.parse(trimmed);
     } catch (e) {
-        return e instanceof Error ? e.message : 'Invalid JSON';
+        return e instanceof Error ? e.message : t('workflowConfigTab:errors.invalidJson');
     }
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        return 'Must be a JSON object ({ ... })';
+        return t('workflowConfigTab:errors.mustBeJsonObject');
     }
     return null;
 }
@@ -142,6 +148,7 @@ function QueryParamsEditor({
     onChange: (next: string) => void;
     devMode: boolean;
 }) {
+    const { t } = useTranslation('workflowConfigTab');
     let parsed: Record<string, unknown> | null = null;
     try {
         const p: unknown = JSON.parse(configText);
@@ -177,9 +184,9 @@ function QueryParamsEditor({
     return (
         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <Label className="mb-2 block text-xs text-neutral-600">
-                Step settings
+                {t('workflowConfigTab:queryParamsEditor.label')}
                 <span className="ml-1.5 text-caption text-neutral-400">
-                    how this step selects its data
+                    {t('workflowConfigTab:queryParamsEditor.hint')}
                 </span>
             </Label>
             <div className="space-y-2">
@@ -232,6 +239,7 @@ function ObjectListEditor({
     items: Array<Record<string, string | number | boolean>>;
     onChange: (next: Array<Record<string, string | number | boolean>>) => void;
 }) {
+    const { t } = useTranslation('workflowConfigTab');
     const fields = Object.keys(items[0] ?? {});
     const blankRow = () =>
         fields.reduce<Record<string, string | number | boolean>>((acc, f) => {
@@ -246,7 +254,7 @@ function ObjectListEditor({
                 <p className="text-xs font-medium text-neutral-600">
                     {label}
                     <span className="ml-1.5 text-caption font-normal text-neutral-400">
-                        add as many as you need — an empty link hides that entry
+                        {t('workflowConfigTab:objectListEditor.hint')}
                     </span>
                 </p>
                 <Button
@@ -255,7 +263,7 @@ function ObjectListEditor({
                     className="h-6 gap-1 text-caption text-neutral-500"
                     onClick={() => onChange([...items, blankRow()])}
                 >
-                    <Plus size={12} /> Add
+                    <Plus size={12} /> {t('workflowConfigTab:objectListEditor.add')}
                 </Button>
             </div>
             <div className="space-y-2">
@@ -298,7 +306,7 @@ function ObjectListEditor({
                             size="sm"
                             className="h-8 shrink-0 px-2 text-neutral-400 hover:text-red-600"
                             onClick={() => onChange(items.filter((_, i) => i !== index))}
-                            title="Remove"
+                            title={t('workflowConfigTab:objectListEditor.remove')}
                         >
                             <Trash size={14} />
                         </Button>
@@ -332,6 +340,22 @@ function isFlatStringMap(value: unknown): boolean {
 }
 
 /**
+ * Key order for the map editors. Weekday maps (weekdayLinks, weekdayTitles) must
+ * read Monday→Sunday: sorted alphabetically they come out FRI, MON, SAT, SUN, THU,
+ * TUE, WED, which is meaningless to an admin filling in a week. Any non-weekday key
+ * set keeps the previous natural/numeric ordering.
+ */
+const WEEKDAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const weekdayRank = (key: string) =>
+    WEEKDAY_ORDER.indexOf(key.trim().toUpperCase().slice(0, 3));
+function compareConfigKeys(a: string, b: string) {
+    const ra = weekdayRank(a);
+    const rb = weekdayRank(b);
+    if (ra !== -1 && rb !== -1) return ra - rb;
+    return a.localeCompare(b, undefined, { numeric: true });
+}
+
+/**
  * Editor for a one-level string map — a value per key, e.g. one class link per
  * trial day. Blank values are kept as keys so the row still reads as "this day
  * has no link of its own", which the workflow resolves to the fallback.
@@ -345,9 +369,8 @@ function FlatMapEditor({
     map: Record<string, string>;
     onChange: (next: Record<string, string>) => void;
 }) {
-    const entries = Object.entries(map).sort(([a], [b]) =>
-        a.localeCompare(b, undefined, { numeric: true })
-    );
+    const { t } = useTranslation('workflowConfigTab');
+    const entries = Object.entries(map).sort(([a], [b]) => compareConfigKeys(a, b));
     const writeValue = (key: string, value: string) => onChange({ ...map, [key]: value });
     const removeKey = (key: string) => {
         const next = { ...map };
@@ -372,7 +395,7 @@ function FlatMapEditor({
                 <p className="text-xs font-medium text-neutral-600">{label}</p>
                 <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={addKey}>
                     <Plus size={12} />
-                    Add
+                    {t('workflowConfigTab:flatMapEditor.add')}
                 </Button>
             </div>
             <div className="space-y-1.5">
@@ -392,7 +415,7 @@ function FlatMapEditor({
                             size="sm"
                             className="h-8 w-8 shrink-0 p-0 text-neutral-400 hover:text-danger-500"
                             onClick={() => removeKey(key)}
-                            title={`Remove ${key}`}
+                            title={t('workflowConfigTab:flatMapEditor.removeKey', { key })}
                         >
                             <Trash size={14} />
                         </Button>
@@ -417,15 +440,14 @@ function NestedMapGridEditor({
     grid: Record<string, Record<string, string>>;
     onChange: (next: Record<string, Record<string, string>>) => void;
 }) {
-    const outerKeys = Object.keys(grid).sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true })
-    );
+    const { t } = useTranslation('workflowConfigTab');
+    const outerKeys = Object.keys(grid).sort(compareConfigKeys);
     return (
         <div className="rounded-md border border-neutral-200 bg-white p-2">
             <p className="mb-1 text-xs font-medium text-neutral-600">
                 {label}
                 <span className="ml-1.5 text-caption font-normal text-neutral-400">
-                    empty = use the default link
+                    {t('workflowConfigTab:nestedMapGridEditor.hint')}
                 </span>
             </p>
             <div className="space-y-1">
@@ -439,7 +461,9 @@ function NestedMapGridEditor({
                             <summary className="cursor-pointer px-2 py-1 text-xs text-neutral-600">
                                 {outerKey}
                                 <span className="ml-2 text-caption text-neutral-400">
-                                    {filled > 0 ? `${filled} link(s) set` : 'using default'}
+                                    {filled > 0
+                                        ? t('workflowConfigTab:nestedMapGridEditor.linksSet', { count: filled })
+                                        : t('workflowConfigTab:nestedMapGridEditor.usingDefault')}
                                 </span>
                             </summary>
                             <div className="space-y-1 p-2">
@@ -459,7 +483,7 @@ function NestedMapGridEditor({
                                                     },
                                                 })
                                             }
-                                            placeholder="default link"
+                                            placeholder={t('workflowConfigTab:nestedMapGridEditor.defaultLinkPlaceholder')}
                                             spellCheck={false}
                                             className="h-8 flex-1 text-xs"
                                         />
@@ -490,6 +514,7 @@ function OutputDataPointsEditor({
     onChange: (next: string) => void;
     devMode: boolean;
 }) {
+    const { t } = useTranslation('workflowConfigTab');
     let parsed: Record<string, unknown> | null = null;
     try {
         const p: unknown = JSON.parse(configText);
@@ -534,8 +559,10 @@ function OutputDataPointsEditor({
                     key={index}
                     label={
                         devMode
-                            ? (point.fieldName ?? 'items')
-                            : humanizeFieldName(point.fieldName ?? 'items')
+                            ? (point.fieldName ?? t('workflowConfigTab:outputDataPointsEditor.defaultLabelItems'))
+                            : humanizeFieldName(
+                                  point.fieldName ?? t('workflowConfigTab:outputDataPointsEditor.defaultLabelItems')
+                              )
                     }
                     items={point.value as Array<Record<string, string | number | boolean>>}
                     onChange={(next) => updateRow(index, { value: next })}
@@ -548,8 +575,10 @@ function OutputDataPointsEditor({
                     key={index}
                     label={
                         devMode
-                            ? (point.fieldName ?? 'values')
-                            : humanizeFieldName(point.fieldName ?? 'values')
+                            ? (point.fieldName ?? t('workflowConfigTab:outputDataPointsEditor.defaultLabelValues'))
+                            : humanizeFieldName(
+                                  point.fieldName ?? t('workflowConfigTab:outputDataPointsEditor.defaultLabelValues')
+                              )
                     }
                     map={point.value as Record<string, string>}
                     onChange={(next) => updateRow(index, { value: next })}
@@ -562,8 +591,10 @@ function OutputDataPointsEditor({
                     key={index}
                     label={
                         devMode
-                            ? (point.fieldName ?? 'schedule')
-                            : humanizeFieldName(point.fieldName ?? 'schedule')
+                            ? (point.fieldName ?? t('workflowConfigTab:outputDataPointsEditor.defaultLabelSchedule'))
+                            : humanizeFieldName(
+                                  point.fieldName ?? t('workflowConfigTab:outputDataPointsEditor.defaultLabelSchedule')
+                              )
                     }
                     grid={point.value as Record<string, Record<string, string>>}
                     onChange={(next) => updateRow(index, { value: next })}
@@ -581,7 +612,7 @@ function OutputDataPointsEditor({
                         className="h-8 w-44 shrink-0 bg-neutral-100 font-mono text-xs"
                     />
                     <span className="text-caption text-neutral-400">
-                        structured value — edit in config_json below
+                        {t('workflowConfigTab:outputDataPointsEditor.structuredValueHint')}
                     </span>
                 </div>
             );
@@ -593,7 +624,7 @@ function OutputDataPointsEditor({
                     <Input
                         value={point.fieldName ?? ''}
                         onChange={(e) => updateRow(index, { fieldName: e.target.value })}
-                        placeholder="fieldName"
+                        placeholder={t('workflowConfigTab:outputDataPointsEditor.fieldNamePlaceholder')}
                         spellCheck={false}
                         className="h-8 w-44 shrink-0 font-mono text-xs"
                     />
@@ -622,11 +653,13 @@ function OutputDataPointsEditor({
                         onClick={() => toggleMode(index)}
                         title={
                             isCompute
-                                ? 'SpEL expression — click to treat as plain text'
-                                : 'Plain text — click to treat as SpEL expression'
+                                ? t('workflowConfigTab:outputDataPointsEditor.modeSpelTitle')
+                                : t('workflowConfigTab:outputDataPointsEditor.modeTextTitle')
                         }
                     >
-                        {isCompute ? 'SpEL' : 'Text'}
+                        {isCompute
+                            ? t('workflowConfigTab:outputDataPointsEditor.modeSpel')
+                            : t('workflowConfigTab:outputDataPointsEditor.modeText')}
                     </Button>
                 )}
                 {devMode && (
@@ -635,7 +668,7 @@ function OutputDataPointsEditor({
                         size="sm"
                         className="h-8 shrink-0 px-2 text-neutral-400 hover:text-red-600"
                         onClick={() => removeRow(index)}
-                        title="Remove setting"
+                        title={t('workflowConfigTab:outputDataPointsEditor.removeSetting')}
                     >
                         <Trash size={14} />
                     </Button>
@@ -667,9 +700,9 @@ function OutputDataPointsEditor({
         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <div className="mb-2 flex items-center justify-between">
                 <Label className="text-xs text-neutral-600">
-                    Workflow settings
+                    {t('workflowConfigTab:outputDataPointsEditor.title')}
                     <span className="ml-1.5 text-caption text-neutral-400">
-                        template text, links &amp; audience values
+                        {t('workflowConfigTab:outputDataPointsEditor.hint')}
                     </span>
                 </Label>
                 {devMode && (
@@ -679,14 +712,14 @@ function OutputDataPointsEditor({
                         className="h-6 gap-1 text-caption text-neutral-500"
                         onClick={() => write([...points, { fieldName: '', value: '' }])}
                     >
-                        <Plus size={12} /> Add setting
+                        <Plus size={12} /> {t('workflowConfigTab:outputDataPointsEditor.addSetting')}
                     </Button>
                 )}
             </div>
             <div className="space-y-2">
                 {devMode && textEntries.length === 0 && (
                     <p className="text-caption text-neutral-400">
-                        No editable text settings on this node.
+                        {t('workflowConfigTab:outputDataPointsEditor.noEditableSettings')}
                     </p>
                 )}
                 {textEntries.map(({ p, i }) => renderRow(p, i))}
@@ -694,7 +727,9 @@ function OutputDataPointsEditor({
             {devMode && formulaEntries.length > 0 && (
                 <details className="mt-2">
                     <summary className="cursor-pointer text-caption text-neutral-400">
-                        Advanced formulas ({formulaEntries.length}) — edit only if you know SpEL
+                        {t('workflowConfigTab:outputDataPointsEditor.advancedFormulas', {
+                            count: formulaEntries.length,
+                        })}
                     </summary>
                     <div className="mt-2 space-y-2">
                         {formulaEntries.map(({ p, i }) => renderRow(p, i))}
@@ -745,6 +780,7 @@ function TemplateBodyPreview({
     template: WhatsAppTemplateInfo | undefined;
     vars: Record<string, string>;
 }) {
+    const { t } = useTranslation('workflowConfigTab');
     if (!template?.content) return null;
     let labels: Record<string, string> = {};
     try {
@@ -770,7 +806,7 @@ function TemplateBodyPreview({
                 }
                 return (
                     <span key={i} className="rounded bg-neutral-100 px-1 text-caption italic text-neutral-500">
-                        {'⟨'}{labels[key] ?? `var ${key}`}{'⟩'}
+                        {'⟨'}{labels[key] ?? t('workflowConfigTab:templateVarsEditor.varFallbackLabel', { key })}{'⟩'}
                     </span>
                 );
             })}
@@ -793,6 +829,7 @@ function TemplateVarsEditor({
     onSyncTemplates?: () => void;
     syncing?: boolean;
 }) {
+    const { t } = useTranslation('workflowConfigTab');
     let parsed: Record<string, unknown> | null = null;
     try {
         const p: unknown = JSON.parse(configText);
@@ -812,7 +849,7 @@ function TemplateVarsEditor({
     if (!parsed || !vars) return null;
 
     const cfg = parsed;
-    const template = templates.find((t) => t.name === cfg.templateName);
+    const template = templates.find((tpl) => tpl.name === cfg.templateName);
     // Which variables does the approved template actually use? Read from its own
     // body — never a hardcoded list — so editing the template in WhatsApp (adding
     // a {{7}}, dropping a {{4}}) is reflected here as soon as it is synced.
@@ -827,8 +864,8 @@ function TemplateVarsEditor({
     // Only approved templates can actually be sent on, so those are the choices —
     // plus whatever this step already points at, so the value is never lost.
     const approvedNames = templates
-        .filter((t) => (t.status ?? '').toUpperCase() === 'APPROVED')
-        .map((t) => t.name)
+        .filter((tpl) => (tpl.status ?? '').toUpperCase() === 'APPROVED')
+        .map((tpl) => tpl.name)
         .sort((a, b) => a.localeCompare(b));
     const templateChoices =
         typeof cfg.templateName === 'string' &&
@@ -888,15 +925,15 @@ function TemplateVarsEditor({
     return (
         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <Label className="mb-2 block text-xs text-neutral-600">
-                Message content
+                {t('workflowConfigTab:templateVarsEditor.title')}
                 <span className="ml-1.5 text-caption text-neutral-400">
-                    what this node sends — edit the text freely
+                    {t('workflowConfigTab:templateVarsEditor.hint')}
                 </span>
             </Label>
             {typeof cfg.templateName === 'string' && (
                 <div className="mb-2 flex items-center gap-2">
                     <span className="w-12 shrink-0 text-right text-caption text-neutral-500">
-                        Template
+                        {t('workflowConfigTab:templateVarsEditor.template')}
                     </span>
                     {devMode ? (
                         <Input
@@ -914,7 +951,7 @@ function TemplateVarsEditor({
                             currentValue={cfg.templateName}
                             dropdownList={templateChoices}
                             handleChange={(value) => writeField('templateName', value)}
-                            placeholder="Choose a WhatsApp template"
+                            placeholder={t('workflowConfigTab:templateVarsEditor.templatePlaceholder')}
                             className="h-8 flex-1 text-xs"
                             contentClassName="max-h-72 overflow-y-auto"
                         />
@@ -933,13 +970,14 @@ function TemplateVarsEditor({
                     <div className="mb-2 flex items-start gap-2 rounded-md border border-warning-200 bg-warning-50 p-3">
                         <Warning size={14} weight="fill" className="mt-0.5 shrink-0 text-warning-500" />
                         <div className="flex-1 text-xs text-warning-700">
-                            <p className="font-medium">Message preview unavailable</p>
+                            <p className="font-medium">
+                                {t('workflowConfigTab:templateVarsEditor.previewUnavailableTitle')}
+                            </p>
                             <p className="mt-0.5 text-warning-600">
                                 {template
-                                    ? 'This WhatsApp template has no body text stored here yet.'
-                                    : 'This WhatsApp template was created in Meta and has not been imported yet.'}{' '}
-                                The message still sends normally — only the preview is missing. Import
-                                your templates to see the full text with your values filled in.
+                                    ? t('workflowConfigTab:templateVarsEditor.previewUnavailableNoBody')
+                                    : t('workflowConfigTab:templateVarsEditor.previewUnavailableNotImported')}{' '}
+                                {t('workflowConfigTab:templateVarsEditor.previewUnavailableSuffix')}
                             </p>
                             {onSyncTemplates && (
                                 <Button
@@ -950,7 +988,9 @@ function TemplateVarsEditor({
                                     onClick={onSyncTemplates}
                                 >
                                     <ArrowCounterClockwise size={12} />
-                                    {syncing ? 'Importing…' : 'Import templates from WhatsApp'}
+                                    {syncing
+                                        ? t('workflowConfigTab:templateVarsEditor.importing')
+                                        : t('workflowConfigTab:templateVarsEditor.importTemplates')}
                                 </Button>
                             )}
                         </div>
@@ -964,15 +1004,15 @@ function TemplateVarsEditor({
                     <Warning size={14} weight="fill" className="mt-0.5 shrink-0 text-danger-500" />
                     <div className="flex-1 text-xs text-danger-700">
                         <p className="font-medium">
-                            This template needs {missingKeys.length} more{' '}
-                            {missingKeys.length === 1 ? 'value' : 'values'}
+                            {t('workflowConfigTab:templateVarsEditor.missingValuesTitle', {
+                                count: missingKeys.length,
+                            })}
                         </p>
                         <p className="mt-0.5 text-danger-600">
-                            The WhatsApp template uses{' '}
-                            {missingKeys.map((k) => `{{${k}}}`).join(', ')}, but this step
-                            doesn&apos;t provide {missingKeys.length === 1 ? 'it' : 'them'}. Messages
-                            will fail to send until {missingKeys.length === 1 ? 'it is' : 'they are'}{' '}
-                            filled in.
+                            {t('workflowConfigTab:templateVarsEditor.missingValuesBody', {
+                                count: missingKeys.length,
+                                list: missingKeys.map((k) => `{{${k}}}`).join(', '),
+                            })}
                         </p>
                         <Button
                             variant="outline"
@@ -981,34 +1021,39 @@ function TemplateVarsEditor({
                             onClick={addMissingVars}
                         >
                             <Plus size={12} />
-                            Add {missingKeys.length === 1 ? 'it' : 'them'}
+                            {t('workflowConfigTab:templateVarsEditor.addMissing', {
+                                count: missingKeys.length,
+                            })}
                         </Button>
                     </div>
                 </div>
             )}
             {unusedKeys.length > 0 && (
                 <p className="mb-2 text-caption text-neutral-400">
-                    Not used by this template any more:{' '}
-                    {unusedKeys.map((k) => `{{${k}}}`).join(', ')} — safe to leave or clear.
+                    {t('workflowConfigTab:templateVarsEditor.unusedKeys', {
+                        list: unusedKeys.map((k) => `{{${k}}}`).join(', '),
+                    })}
                 </p>
             )}
             <div className="space-y-2">{textVars.map(renderVar)}</div>
             {!devMode && textVars.length === 0 && (
                 <p className="text-caption text-neutral-500">
-                    This message&apos;s wording is fixed by the approved WhatsApp template. The
-                    highlighted parts above are filled in per learner when it sends.
+                    {t('workflowConfigTab:templateVarsEditor.fixedWording')}
                 </p>
             )}
             {!devMode && formulaVars.length > 0 && (
                 <p className="mt-2 text-caption text-neutral-400">
-                    Filled in automatically:{' '}
-                    {formulaVars.map(([key]) => `{{${key}}}`).join(', ')}
+                    {t('workflowConfigTab:templateVarsEditor.filledAutomatically', {
+                        list: formulaVars.map(([key]) => `{{${key}}}`).join(', '),
+                    })}
                 </p>
             )}
             {devMode && formulaVars.length > 0 && (
                 <details className="mt-2">
                     <summary className="cursor-pointer text-caption text-neutral-400">
-                        Auto-filled variables ({formulaVars.length}) — name, links, dates
+                        {t('workflowConfigTab:templateVarsEditor.autoFilledVariables', {
+                            count: formulaVars.length,
+                        })}
                     </summary>
                     <div className="mt-2 space-y-2">{formulaVars.map(renderVar)}</div>
                 </details>
@@ -1036,6 +1081,7 @@ function NodeConfigEditorCard({
     onSyncTemplates: () => void;
     syncingTemplates: boolean;
 }) {
+    const { t } = useTranslation('workflowConfigTab');
     const queryClient = useQueryClient();
 
     // Snapshot string of the server-side node — when it changes (e.g. after a save refetch),
@@ -1075,8 +1121,8 @@ function NodeConfigEditorCard({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [snapshot]);
 
-    const configError = jsonObjectError(configText, { allowEmpty: false });
-    const retryError = jsonObjectError(retryText, { allowEmpty: true });
+    const configError = jsonObjectError(configText, { allowEmpty: false }, t);
+    const retryError = jsonObjectError(retryText, { allowEmpty: true }, t);
 
     const originalConfig = formatJson(node.config_json);
     const originalRetry = formatJson(node.retry_config);
@@ -1159,7 +1205,7 @@ function NodeConfigEditorCard({
                 <span className="font-medium text-neutral-800">{node.node_name}</span>
                 {collapsed && isDirty && (
                     <span className="rounded-full bg-warning-50 px-2 py-0.5 text-caption text-warning-600">
-                        unsaved
+                        {t('workflowConfigTab:nodeCard.unsaved')}
                     </span>
                 )}
                 {devMode && (
@@ -1168,10 +1214,14 @@ function NodeConfigEditorCard({
                     </Badge>
                 )}
                 {devMode && isStart && (
-                    <Badge className="bg-green-100 text-[10px] text-green-700 hover:bg-green-100">Start</Badge>
+                    <Badge className="bg-green-100 text-[10px] text-green-700 hover:bg-green-100">
+                        {t('workflowConfigTab:nodeCard.startBadge')}
+                    </Badge>
                 )}
                 {devMode && isEnd && (
-                    <Badge className="bg-neutral-100 text-[10px] text-neutral-600 hover:bg-neutral-100">End</Badge>
+                    <Badge className="bg-neutral-100 text-[10px] text-neutral-600 hover:bg-neutral-100">
+                        {t('workflowConfigTab:nodeCard.endBadge')}
+                    </Badge>
                 )}
                 {devMode && (
                     <code className="ml-auto hidden text-[10px] text-neutral-400 sm:block">
@@ -1185,34 +1235,34 @@ function NodeConfigEditorCard({
                 {/* Node metadata row */}
                 <div className={devMode ? 'grid grid-cols-1 gap-3 sm:grid-cols-3' : 'hidden'}>
                     <div>
-                        <Label className="text-xs text-neutral-600">Node name</Label>
+                        <Label className="text-xs text-neutral-600">{t('workflowConfigTab:nodeCard.nodeName')}</Label>
                         <Input
                             value={nodeName}
                             onChange={(e) => setNodeName(e.target.value)}
                             className="mt-1"
-                            placeholder="Node name"
+                            placeholder={t('workflowConfigTab:nodeCard.nodeNamePlaceholder')}
                         />
                     </div>
                     <div>
-                        <Label className="text-xs text-neutral-600">Node type</Label>
+                        <Label className="text-xs text-neutral-600">{t('workflowConfigTab:nodeCard.nodeType')}</Label>
                         <select
                             className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                             value={nodeType}
                             onChange={(e) => setNodeType(e.target.value)}
                         >
-                            {WORKFLOW_NODE_TYPES.map((t) => (
-                                <option key={t.type} value={t.type}>
-                                    {t.label} ({t.type})
+                            {WORKFLOW_NODE_TYPES.map((nt) => (
+                                <option key={nt.type} value={nt.type}>
+                                    {nt.label} ({nt.type})
                                 </option>
                             ))}
                             {/* Keep an unknown stored type selectable rather than silently dropping it */}
-                            {!WORKFLOW_NODE_TYPES.some((t) => t.type === nodeType) && nodeType && (
+                            {!WORKFLOW_NODE_TYPES.some((nt) => nt.type === nodeType) && nodeType && (
                                 <option value={nodeType}>{nodeType}</option>
                             )}
                         </select>
                     </div>
                     <div>
-                        <Label className="text-xs text-neutral-600">Status</Label>
+                        <Label className="text-xs text-neutral-600">{t('workflowConfigTab:nodeCard.status')}</Label>
                         <select
                             className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                             value={status}
@@ -1234,11 +1284,11 @@ function NodeConfigEditorCard({
                 <div className={devMode ? 'flex flex-wrap items-center gap-6' : 'hidden'}>
                     <label className="flex cursor-pointer items-center gap-2">
                         <Switch checked={isStart} onCheckedChange={setIsStart} />
-                        <span className="text-xs text-neutral-600">Start node</span>
+                        <span className="text-xs text-neutral-600">{t('workflowConfigTab:nodeCard.startNode')}</span>
                     </label>
                     <label className="flex cursor-pointer items-center gap-2">
                         <Switch checked={isEnd} onCheckedChange={setIsEnd} />
-                        <span className="text-xs text-neutral-600">End node</span>
+                        <span className="text-xs text-neutral-600">{t('workflowConfigTab:nodeCard.endNode')}</span>
                     </label>
                 </div>
 
@@ -1255,7 +1305,7 @@ function NodeConfigEditorCard({
                 <QueryParamsEditor configText={configText} onChange={setConfigText} devMode={devMode} />
                 {!devMode && !hasSimpleSettings && (
                     <p className="text-xs text-neutral-400">
-                        Automatic step — nothing to configure here.
+                        {t('workflowConfigTab:nodeCard.automaticStep')}
                     </p>
                 )}
 
@@ -1263,9 +1313,9 @@ function NodeConfigEditorCard({
                 <div className={devMode ? '' : 'hidden'}>
                     <div className="mb-1 flex items-center justify-between">
                         <Label className="text-xs text-neutral-600">
-                            config_json
+                            {t('workflowConfigTab:nodeCard.configJsonLabel')}
                             <span className="ml-1.5 text-[10px] text-neutral-400">
-                                routing &amp; node settings live here
+                                {t('workflowConfigTab:nodeCard.configJsonHint')}
                             </span>
                         </Label>
                         <Button
@@ -1274,9 +1324,9 @@ function NodeConfigEditorCard({
                             className="h-6 gap-1 text-[11px] text-neutral-500"
                             disabled={!!configError}
                             onClick={() => setConfigText(formatJson(configText))}
-                            title="Format JSON"
+                            title={t('workflowConfigTab:nodeCard.formatTitle')}
                         >
-                            <BracketsCurly size={12} /> Format
+                            <BracketsCurly size={12} /> {t('workflowConfigTab:nodeCard.format')}
                         </Button>
                     </div>
                     <Textarea
@@ -1297,16 +1347,18 @@ function NodeConfigEditorCard({
                 {/* retry_config editor (optional) */}
                 <div className={devMode ? '' : 'hidden'}>
                     <Label className="text-xs text-neutral-600">
-                        retry_config
+                        {t('workflowConfigTab:nodeCard.retryConfigLabel')}
                         <span className="ml-1.5 text-[10px] text-neutral-400">
-                            optional — e.g. {'{"maxRetries":3,"backoffMs":1000}'}
+                            {t('workflowConfigTab:nodeCard.retryConfigHint', {
+                                example: '{"maxRetries":3,"backoffMs":1000}',
+                            })}
                         </span>
                     </Label>
                     <Textarea
                         value={retryText}
                         onChange={(e) => setRetryText(e.target.value)}
                         spellCheck={false}
-                        placeholder="(none)"
+                        placeholder={t('workflowConfigTab:nodeCard.retryConfigNonePlaceholder')}
                         className={`mt-1 min-h-[64px] font-mono text-xs ${
                             retryError ? 'border-red-300 focus-visible:ring-red-200' : ''
                         }`}
@@ -1322,7 +1374,9 @@ function NodeConfigEditorCard({
                 {mutation.isError && (
                     <p className="flex items-center gap-1 text-xs text-red-600">
                         <Warning size={14} weight="fill" />
-                        {mutation.error instanceof Error ? mutation.error.message : 'Failed to save'}
+                        {mutation.error instanceof Error
+                            ? mutation.error.message
+                            : t('workflowConfigTab:errors.failedToSave')}
                     </p>
                 )}
 
@@ -1336,11 +1390,13 @@ function NodeConfigEditorCard({
                 >
                     {savedOk && (
                         <span className="mr-auto flex items-center gap-1 text-xs text-green-600">
-                            <CheckCircle size={14} weight="fill" /> Saved
+                            <CheckCircle size={14} weight="fill" /> {t('workflowConfigTab:nodeCard.saved')}
                         </span>
                     )}
                     {isDirty && !savedOk && (
-                        <span className="mr-auto text-xs text-neutral-400">Unsaved changes</span>
+                        <span className="mr-auto text-xs text-neutral-400">
+                            {t('workflowConfigTab:nodeCard.unsavedChanges')}
+                        </span>
                     )}
                     <Button
                         variant="outline"
@@ -1349,7 +1405,7 @@ function NodeConfigEditorCard({
                         disabled={!isDirty || mutation.isPending}
                         onClick={revert}
                     >
-                        <ArrowCounterClockwise size={14} /> Revert
+                        <ArrowCounterClockwise size={14} /> {t('workflowConfigTab:nodeCard.revert')}
                     </Button>
                     <Button
                         size="sm"
@@ -1358,7 +1414,9 @@ function NodeConfigEditorCard({
                         onClick={() => mutation.mutate()}
                     >
                         <FloppyDisk size={14} />
-                        {mutation.isPending ? 'Saving...' : 'Save node'}
+                        {mutation.isPending
+                            ? t('workflowConfigTab:nodeCard.saving')
+                            : t('workflowConfigTab:nodeCard.saveNode')}
                     </Button>
                 </div>
             </div>
@@ -1367,6 +1425,7 @@ function NodeConfigEditorCard({
 }
 
 export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
+    const { t } = useTranslation('workflowConfigTab');
     const { data, isLoading, error } = useQuery(getWorkflowRawQuery(workflowId));
     // Approved WhatsApp templates — used to render full message previews in the
     // Message content panels (body text with variables substituted).
@@ -1420,7 +1479,7 @@ export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12 text-sm text-neutral-400">
-                Loading configuration...
+                {t('workflowConfigTab:page.loading')}
             </div>
         );
     }
@@ -1428,9 +1487,9 @@ export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center gap-2 py-12">
-                <p className="text-sm text-red-500">Failed to load configuration</p>
+                <p className="text-sm text-red-500">{t('workflowConfigTab:page.failedToLoad')}</p>
                 <p className="text-xs text-neutral-400">
-                    {error instanceof Error ? error.message : 'Unknown error'}
+                    {error instanceof Error ? error.message : t('workflowConfigTab:errors.unknownError')}
                 </p>
             </div>
         );
@@ -1439,7 +1498,7 @@ export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
     if (!data || data.nodes.length === 0) {
         return (
             <div className="flex items-center justify-center py-12 text-sm text-neutral-400">
-                This workflow has no nodes to configure.
+                {t('workflowConfigTab:page.noNodes')}
             </div>
         );
     }
@@ -1452,20 +1511,21 @@ export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
                 <div className="flex-1 text-xs text-primary-600">
                     {devMode ? (
                         <>
-                            <p className="font-medium">Developer view — full node configuration</p>
+                            <p className="font-medium">{t('workflowConfigTab:page.devTitle')}</p>
                             <p className="mt-0.5 text-primary-500">
-                                Edit each node&apos;s raw <code>config_json</code> (including its{' '}
-                                <code>routing</code>) in place. Changes are validated and saved directly
-                                to the node template — the running workflow picks them up on its next
-                                execution.
+                                <Trans i18nKey="workflowConfigTab:page.devDescription">
+                                    Edit each node&apos;s raw <code>config_json</code> (including its{' '}
+                                    <code>routing</code>) in place. Changes are validated and saved
+                                    directly to the node template — the running workflow picks them up on
+                                    its next execution.
+                                </Trans>
                             </p>
                         </>
                     ) : (
                         <>
-                            <p className="font-medium">Workflow settings</p>
+                            <p className="font-medium">{t('workflowConfigTab:page.simpleTitle')}</p>
                             <p className="mt-0.5 text-primary-500">
-                                Edit your messages, links and settings below, then save each card.
-                                Changes apply automatically from the workflow&apos;s next run.
+                                {t('workflowConfigTab:page.simpleDescription')}
                             </p>
                         </>
                     )}
@@ -1475,10 +1535,14 @@ export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
                     size="sm"
                     className="shrink-0 gap-1.5"
                     onClick={() => setCollapsedIds(allCollapsed ? new Set<string>() : new Set(nodeIds))}
-                    title={allCollapsed ? 'Expand every step' : 'Collapse every step'}
+                    title={
+                        allCollapsed
+                            ? t('workflowConfigTab:page.expandAllTitle')
+                            : t('workflowConfigTab:page.collapseAllTitle')
+                    }
                 >
                     {allCollapsed ? <CaretDown size={14} /> : <CaretRight size={14} />}
-                    {allCollapsed ? 'Expand all' : 'Collapse all'}
+                    {allCollapsed ? t('workflowConfigTab:page.expandAll') : t('workflowConfigTab:page.collapseAll')}
                 </Button>
                 <Button
                     variant="outline"
@@ -1487,7 +1551,7 @@ export function WorkflowConfigTab({ workflowId }: { workflowId: string }) {
                     onClick={toggleDevMode}
                 >
                     <BracketsCurly size={14} />
-                    {devMode ? 'Simple view' : 'Developer view'}
+                    {devMode ? t('workflowConfigTab:page.simpleView') : t('workflowConfigTab:page.developerView')}
                 </Button>
             </div>
 

@@ -1,0 +1,54 @@
+{
+    "badge": {
+        "auto": "स्वतः (डिफ़ॉल्ट)",
+        "selectedFallback": "चयनित आमंत्रण"
+    },
+    "actions": {
+        "change": "बदलें",
+        "close": "बंद करें"
+    },
+    "autoOption": {
+        "title": "स्वतः (डिफ़ॉल्ट)",
+        "description": "बैकएंड डिफ़ॉल्ट आमंत्रण को स्वतः उपयोग/बनाएगा"
+    },
+    "divider": "या कोई विशिष्ट आमंत्रण चुनें",
+    "search": {
+        "placeholder": "आमंत्रण खोजें..."
+    },
+    "codeLabel": "कोड: {{code}}",
+    "list": {
+        "empty": "इस कोर्स के लिए कोई आमंत्रण नहीं मिला",
+        "bundled_one": "बंडल ({{count}} कोर्स)",
+        "bundled_other": "बंडल ({{count}} कोर्स)"
+    },
+    "errors": {
+        "loadInviteDetailsFailed": "आमंत्रण का विवरण लोड नहीं हो सका। कृपया पुनः प्रयास करें।"
+    },
+    "summary": {
+        "invite": {
+            "label": "आमंत्रण",
+            "bundled": "बंडल आमंत्रण (मल्टी-कोर्स)"
+        },
+        "paymentOption": {
+            "label": "भुगतान विकल्प",
+            "approvalRequired": "स्वीकृति आवश्यक",
+            "none": "कोई भुगतान विकल्प तय नहीं हुआ"
+        },
+        "plan": {
+            "label": "प्लान",
+            "priceLabel": "कीमत:",
+            "validity_one": "{{count}} दिन वैधता",
+            "validity_other": "{{count}} दिन वैधता",
+            "none": "कोई प्लान नहीं — कीमत सेट होने तक यह इनवाइट किसी को एनरोल नहीं कर सकता"
+        },
+        "access": {
+            "label": "एक्सेस",
+            "days_one": "{{count}} दिन",
+            "days_other": "{{count}} दिन",
+            "unlimited": "असीमित",
+            "from": "{{date}} से",
+            "to": "{{date}} तक",
+            "overrideLabel": "एक्सेस दिनों को ओवरराइड करें:"
+        }
+    }
+}

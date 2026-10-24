@@ -1,0 +1,17 @@
+{
+    "title": "Student Side View Options",
+    "description": "Configure which tabs are visible, their order, and which one opens by default in the student side view.",
+    "resendMessage": {
+        "label": "Allow resending a message",
+        "hint": "Adds a Resend button to each sent message in the Notifications tab. Resending delivers the message to the learner again."
+    },
+    "ariaLabel": {
+        "moveUp": "Move {{label}} up",
+        "moveDown": "Move {{label}} down"
+    },
+    "defaultTab": {
+        "label": "Default Tab",
+        "hint": "The tab that opens when the side view is first shown.",
+        "placeholder": "Select a tab"
+    }
+}

@@ -585,6 +585,26 @@ public class AiCallActionService {
                     positional.put(String.valueOf(i++), resolveParam(param, vars));
                 }
             }
+            // A media-header template renders an image/document above the body and is
+            // rejected outright without one: "(#132012) ... header: Format mismatch,
+            // expected IMAGE, received UNKNOWN" - sn_unlockx on every Shikshanation call.
+            // UnifiedSendService reads _headerUrl per recipient, and both provider paths
+            // filter "_"-prefixed keys out of the body parameters, so this cannot disturb
+            // the positional count above - the very thing (#132000) punishes.
+            if (notBlank(rule.getTemplateHeaderUrl())) {
+                positional.put("_headerUrl", resolveParam(rule.getTemplateHeaderUrl(), vars));
+                // The URL alone is not enough. WhatsAppService.buildHeaderConfig resolves
+                // the kind with "image".equalsIgnoreCase(headerType) ? "image" : "document",
+                // so an absent type makes every media header a DOCUMENT (with a made-up
+                // "file.pdf" filename) and Meta answers "(#132012) header: Format mismatch,
+                // expected IMAGE, received DOCUMENT". Default to image: that is what a
+                // header template overwhelmingly is, and it is the value that fails LOUDLY
+                // rather than silently mis-typing an image as a document.
+                String headerType = notBlank(rule.getTemplateHeaderType())
+                        ? rule.getTemplateHeaderType().trim().toLowerCase(Locale.ROOT)
+                        : "image";
+                positional.put("_headerType", headerType);
+            }
             return mapper.writeValueAsString(positional);
         } catch (Exception e) {
             return "{}";

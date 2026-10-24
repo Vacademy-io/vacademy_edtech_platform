@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AlertTriangle, Braces, Loader2, RotateCcw, Save, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     EMPTY_COURSE_SETTING,
     getPackageCourseSettingRaw,
@@ -31,28 +33,32 @@ interface PackageCourseSettingEditorProps {
 
 // Scaffolds for common keys workflows read. Admins tweak the values inline —
 // these just remove the boilerplate of the double-`data` envelope shape.
-const SNIPPETS: Record<string, { key: string; name: string; data: unknown }> = {
-    'Moodle (MOODLE_SETTING)': {
-        key: 'MOODLE_SETTING',
-        name: 'Moodle Integration Settings',
-        data: { data: { moodleToken: '', moodleBaseUrl: '', moodleCourseId: '' } },
-    },
-    'LearnDash (LMS_SETTING)': {
-        key: 'LMS_SETTING',
-        name: 'LMS Settings',
-        data: { data: { activeLms: 'LEARNDASH', learndash_base_url: '' } },
-    },
-    'Course settings (COURSE_SETTING)': {
-        key: 'COURSE_SETTING',
-        name: 'Course Settings',
-        data: { retentionPeriod: 0, lmsUrl: '' },
-    },
-};
+function buildSnippets(t: TFunction): Record<string, { key: string; name: string; data: unknown }> {
+    return {
+        [t('snippets.moodleLabel')]: {
+            key: 'MOODLE_SETTING',
+            name: t('snippets.moodleName'),
+            data: { data: { moodleToken: '', moodleBaseUrl: '', moodleCourseId: '' } },
+        },
+        [t('snippets.learnDashLabel')]: {
+            key: 'LMS_SETTING',
+            name: t('snippets.learnDashName'),
+            data: { data: { activeLms: 'LEARNDASH', learndash_base_url: '' } },
+        },
+        [t('snippets.courseSettingsLabel')]: {
+            key: 'COURSE_SETTING',
+            name: t('snippets.courseSettingsName'),
+            data: { retentionPeriod: 0, lmsUrl: '' },
+        },
+    };
+}
 
 export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProps> = ({
     packageId,
     onSaved,
 }) => {
+    const { t } = useTranslation('studyLibraryPackageCourseSettingEditor');
+    const SNIPPETS = useMemo(() => buildSnippets(t), [t]);
     const [original, setOriginal] = useState<string>(EMPTY_COURSE_SETTING);
     const [value, setValue] = useState<string>(EMPTY_COURSE_SETTING);
     const [loading, setLoading] = useState(true);
@@ -76,22 +82,22 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
             })
             .catch((e) => {
                 console.error('Failed to load course settings JSON', e);
-                toast.error('Failed to load course settings');
+                toast.error(t('errors.loadFailed'));
             })
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, [packageId]);
+    }, [packageId, t]);
 
     const validationError = useMemo<string | null>(() => {
         try {
             validateCourseSettingJson(value);
             return null;
         } catch (e) {
-            return e instanceof Error ? e.message : 'Invalid JSON';
+            return e instanceof Error ? e.message : t('errors.invalidJson');
         }
-    }, [value]);
+    }, [value, t]);
 
     const isValid = validationError === null;
     const hasChanges = value !== original;
@@ -100,7 +106,7 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
         try {
             setValue(validateCourseSettingJson(value));
         } catch {
-            toast.error('Cannot format — fix the JSON error first');
+            toast.error(t('errors.formatFailed'));
         }
     };
 
@@ -136,11 +142,11 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
             await savePackageCourseSettingRaw(packageId, pretty);
             setOriginal(pretty);
             setValue(pretty);
-            toast.success('Course settings JSON saved');
+            toast.success(t('saveSuccess'));
             onSaved?.();
         } catch (e) {
             console.error('Failed to save course settings JSON', e);
-            toast.error(e instanceof Error ? e.message : 'Failed to save course settings');
+            toast.error(e instanceof Error ? e.message : t('errors.saveFailed'));
         } finally {
             setSaving(false);
             setConfirmOpen(false);
@@ -153,40 +159,42 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
                 <div className="flex items-center justify-between gap-4">
                     <CardTitle className="flex items-center gap-2">
                         <Braces className="size-5 text-primary-500" />
-                        Advanced Settings (JSON)
+                        {t('advancedSettingsTitle')}
                     </CardTitle>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={handleFormat} disabled={loading || saving || !isValid}>
-                            Format
+                            {t('actions.format')}
                         </Button>
                         <Button
                             variant="outline"
                             onClick={() => setValue(original)}
                             disabled={loading || saving || !hasChanges}
                         >
-                            <RotateCcw className="mr-2 size-4" />
-                            Reset
+                            <RotateCcw className="me-2 size-4" />
+                            {t('actions.reset')}
                         </Button>
                         <MyButton
                             onClick={() => setConfirmOpen(true)}
                             disabled={loading || saving || !isValid || !hasChanges}
                             className="bg-primary-500"
                         >
-                            <Save className="mr-2 size-4" />
-                            {saving ? 'Saving...' : 'Save'}
+                            <Save className="me-2 size-4" />
+                            {saving ? t('actions.saving') : t('actions.save')}
                         </MyButton>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                    These settings are stored on this course and read by workflows (LMS config, retention,
-                    completion thresholds, etc.). Edit the raw JSON below — it must stay wrapped in a{' '}
-                    <code>{'{ "setting": { ... } }'}</code> envelope.
+                    <Trans i18nKey="studyLibraryPackageCourseSettingEditor:description">
+                        These settings are stored on this course and read by workflows (LMS config,
+                        retention, completion thresholds, etc.). Edit the raw JSON below — it must
+                        stay wrapped in a <code>{'{ "setting": { ... } }'}</code> envelope.
+                    </Trans>
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">Insert template:</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t('insertTemplate')}:</span>
                     {Object.keys(SNIPPETS).map((label) => (
                         <Button
                             key={label}
@@ -202,7 +210,7 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
 
                 {loading ? (
                     <div className="flex items-center justify-center py-12 text-muted-foreground">
-                        <Loader2 className="mr-2 size-5 animate-spin" /> Loading…
+                        <Loader2 className="me-2 size-5 animate-spin" /> {t('loading')}
                     </div>
                 ) : (
                     <>
@@ -215,11 +223,13 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
                         {validationError ? (
                             <Alert variant="destructive">
                                 <AlertTriangle className="size-4" />
-                                <AlertDescription>Invalid JSON: {validationError}</AlertDescription>
+                                <AlertDescription>
+                                    {t('invalidJson', { message: validationError })}
+                                </AlertDescription>
                             </Alert>
                         ) : (
                             <p className="flex items-center gap-1.5 text-xs text-green-700">
-                                <CheckCircle className="size-3.5" /> Valid JSON
+                                <CheckCircle className="size-3.5" /> {t('validJson')}
                             </p>
                         )}
                     </>
@@ -229,15 +239,13 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <AlertDialogContent className="z-[10001]">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Overwrite course settings JSON?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('confirmDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This replaces the settings JSON used by this course&apos;s workflows (LMS,
-                            retention, completion, etc.). Make sure the keys are correct — this takes effect
-                            immediately.
+                            {t('confirmDialog.description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={saving}>{t('confirmDialog.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -246,7 +254,7 @@ export const PackageCourseSettingEditor: React.FC<PackageCourseSettingEditorProp
                             disabled={saving}
                             className="bg-primary-500"
                         >
-                            {saving ? 'Saving…' : 'Yes, save'}
+                            {saving ? t('confirmDialog.saving') : t('confirmDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

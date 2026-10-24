@@ -1,0 +1,32 @@
+{
+    "edit": "Modifier",
+    "sections": {
+        "profile": "Profil",
+        "emergencyContact": "Contact d'urgence",
+        "statutoryIdentifiers": "Identifiants légaux"
+    },
+    "fields": {
+        "employeeCode": "Code employé",
+        "name": "Nom",
+        "employmentStatus": "Statut d'emploi",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "employmentType": "Type d'emploi",
+        "department": "Service",
+        "designation": "Poste",
+        "reportingManager": "Responsable hiérarchique",
+        "joinDate": "Date d'entrée",
+        "noticePeriod": "Préavis",
+        "nationality": "Nationalité",
+        "phone": "Téléphone",
+        "relation": "Lien de parenté",
+        "bloodGroup": "Groupe sanguin",
+        "maritalStatus": "Situation familiale",
+        "pan": "PAN",
+        "uan": "UAN"
+    },
+    "noticePeriodDays_one": "{{count}} jour",
+    "noticePeriodDays_many": "{{count}} de jours",
+    "noticePeriodDays_other": "{{count}} jours",
+    "maskedNumbersHint": "Les numéros enregistrés sont partiellement masqués. La modification ne remplace un numéro que si vous en saisissez un nouveau."
+}

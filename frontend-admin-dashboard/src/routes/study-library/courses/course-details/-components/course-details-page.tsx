@@ -37,6 +37,13 @@ import {
     AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -45,11 +52,13 @@ import {
 } from '@/components/ui/select';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { TranslateCourseDialog } from './translate-course-dialog';
 import { OfflineSettingsDialog } from './OfflineSettingsDialog';
+import { ComingSoonButton } from './ComingSoonDialog';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { CourseDetailsFormValues, courseDetailsSchema } from './course-details-schema';
+import { CourseDetailsFormValues, buildCourseDetailsSchema } from './course-details-schema';
 import { useStudyLibraryStore } from '@/stores/study-library/use-study-library-store';
 import { useGetPackageSessionId } from '@/utils/helpers/study-library-helpers.ts/get-list-from-stores/getPackageSessionId';
 import { useGetPackageSessionIdFromCourseInit } from '@/utils/helpers/study-library-helpers.ts/get-list-from-stores/getPackageSessionIdFromCourseInit';
@@ -71,7 +80,10 @@ import {
 } from '../-utils/helper';
 import { CourseStructureDetails } from './course-structure-details';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
 import { AddCourseForm } from '@/components/common/study-library/add-course/add-course-form';
 import { PackageDripConditionsCard } from './PackageDripConditionsCard';
 import { DripCondition } from '@/types/course-settings';
@@ -224,47 +236,69 @@ const extractYouTubeVideoId = (url: string): string | null => {
 // every slide-count row on every render.
 const getSlideTypeInfo = (sourceType: string | null | undefined) => {
     const safeType = sourceType && typeof sourceType === 'string' ? sourceType : '';
+    const tSlideType = (key: string) => i18next.t(`courseDetails:slideType.${key}`);
     switch (safeType) {
         case 'HTML_VIDEO':
             return {
                 icon: <VideoCamera size={14} className="shrink-0 text-purple-600" />,
-                name: 'AI Content',
+                name: tSlideType('aiContent'),
             };
         case 'VIDEO':
-            return { icon: <PlayCircle size={14} className="shrink-0 text-gray-500" />, name: 'Video' };
+            return {
+                icon: <PlayCircle size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('video'),
+            };
         case 'CODE':
-            return { icon: <Code size={14} className="shrink-0 text-gray-500" />, name: 'Code Editor' };
+            return {
+                icon: <Code size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('codeEditor'),
+            };
         case 'PDF':
-            return { icon: <FilePdf size={14} className="shrink-0 text-gray-500" />, name: 'PDF' };
+            return {
+                icon: <FilePdf size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('pdf'),
+            };
         case 'DOCUMENT':
-            return { icon: <FileDoc size={14} className="shrink-0 text-gray-500" />, name: 'Document' };
+            return {
+                icon: <FileDoc size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('document'),
+            };
         case 'PRESENTATION':
             return {
                 icon: <PresentationChart size={14} className="shrink-0 text-gray-500" />,
-                name: 'Presentation',
+                name: tSlideType('presentation'),
             };
         case 'JUPYTER':
             return {
                 icon: <BookOpen size={14} className="shrink-0 text-gray-500" />,
-                name: 'Jupyter Notebook',
+                name: tSlideType('jupyterNotebook'),
             };
         case 'SCRATCH':
             return {
                 icon: <GameController size={14} className="shrink-0 text-gray-500" />,
-                name: 'Scratch Project',
+                name: tSlideType('scratchProject'),
             };
         case 'QUESTION':
-            return { icon: <Question size={14} className="shrink-0 text-gray-500" />, name: 'Question' };
+            return {
+                icon: <Question size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('question'),
+            };
         case 'QUIZ':
-            return { icon: <ClipboardText size={14} className="shrink-0 text-gray-500" />, name: 'Quiz' };
+            return {
+                icon: <ClipboardText size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('quiz'),
+            };
         case 'ASSIGNMENT':
-            return { icon: <File size={14} className="shrink-0 text-gray-500" />, name: 'Assignment' };
+            return {
+                icon: <File size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('assignment'),
+            };
         default:
             return {
                 icon: <FileDoc size={14} className="shrink-0 text-gray-500" />,
                 name: safeType
                     ? safeType.charAt(0).toUpperCase() + safeType.slice(1).toLowerCase()
-                    : 'Slide',
+                    : tSlideType('defaultSlide'),
             };
     }
 };
@@ -277,19 +311,47 @@ const MetaChip = ({ icon, children }: { icon?: React.ReactNode; children: React.
     </span>
 );
 
+const CourseHighlightDialog = ({
+    title,
+    triggerLabel,
+    children,
+}: {
+    title: string;
+    triggerLabel: string;
+    children: React.ReactNode;
+}) => (
+    <Dialog>
+        <DialogTrigger asChild>
+            <button
+                type="button"
+                className="mt-3 rounded text-sm font-medium text-primary-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+            >
+                {triggerLabel}
+            </button>
+        </DialogTrigger>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle>{title}</DialogTitle>
+            </DialogHeader>
+            {children}
+        </DialogContent>
+    </Dialog>
+);
+
 type AdvancedIdItem = { label: string; value: string };
 
 const AdvancedIdsMenu = ({ items }: { items: AdvancedIdItem[] }) => {
+    const { t } = useTranslation('courseDetails');
     const handleCopy = async (item: AdvancedIdItem) => {
         if (!item.value) {
-            toast.error(`${item.label} is not available`);
+            toast.error(t('advancedIds.notAvailable', { label: item.label }));
             return;
         }
         try {
             await navigator.clipboard.writeText(item.value);
-            toast.success(`${item.label} copied`);
+            toast.success(t('advancedIds.copied', { label: item.label }));
         } catch {
-            toast.error('Failed to copy');
+            toast.error(t('advancedIds.copyFailed'));
         }
     };
 
@@ -301,14 +363,14 @@ const AdvancedIdsMenu = ({ items }: { items: AdvancedIdItem[] }) => {
                     buttonType="secondary"
                     layoutVariant="icon"
                     scale="small"
-                    aria-label="More options"
+                    aria-label={t('advancedIds.moreOptions')}
                 >
                     <DotsThree size={18} weight="bold" />
                 </MyButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="text-xs font-semibold text-gray-700">
-                    Advanced
+                    {t('advancedIds.title')}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {items.map((item) => (
@@ -338,7 +400,7 @@ const AdvancedIdsMenu = ({ items }: { items: AdvancedIdItem[] }) => {
 
 export const CourseDetailsPage = () => {
     const router = useRouter();
-    const { t } = useTranslation();
+    const { t } = useTranslation(['common', 'courseDetails', 'studyLibraryCourseDetailsSchema']);
     const searchParams = router.state.location.search;
     const queryClient = useQueryClient();
     const courseId = searchParams.courseId ?? '';
@@ -414,7 +476,7 @@ export const CourseDetailsPage = () => {
     }, [courseDetailsData, courseId, setStudyLibraryData]);
 
     const form = useForm<CourseDetailsFormValues>({
-        resolver: zodResolver(courseDetailsSchema),
+        resolver: zodResolver(buildCourseDetailsSchema(t)),
         defaultValues: {
             courseData: {
                 id: '',
@@ -846,7 +908,7 @@ export const CourseDetailsPage = () => {
             setDripConditions(updatedConditions);
         } catch (error) {
             console.error('Error adding drip condition:', error);
-            toast.error('Failed to save drip condition. Please try again.');
+            toast.error(t('courseDetails:dripCondition.saveFailed'));
         }
     };
 
@@ -866,7 +928,7 @@ export const CourseDetailsPage = () => {
             setDripConditions(updatedConditions);
         } catch (error) {
             console.error('Error updating drip condition:', error);
-            toast.error('Failed to update drip condition. Please try again.');
+            toast.error(t('courseDetails:dripCondition.updateFailed'));
         }
     };
 
@@ -884,7 +946,7 @@ export const CourseDetailsPage = () => {
             setDripConditions(updatedConditions);
         } catch (error) {
             console.error('Error deleting drip condition:', error);
-            toast.error('Failed to delete drip condition. Please try again.');
+            toast.error(t('courseDetails:dripCondition.deleteFailed'));
         }
     };
 
@@ -962,12 +1024,15 @@ export const CourseDetailsPage = () => {
                         try {
                             const batchesList = await fetchCourseBatches(currentCourseId);
                             const courseName = (courseDetailsData.course.package_name ?? '').trim();
-                            // Backend may not always populate `is_parent`. Prefer it when present,
-                            // but fall back to `parent_id === null` to identify parent rows.
+                            // A batch is a parent (or a plain, un-grouped batch) unless it
+                            // points at a parent. The backend stores is_parent=false on every
+                            // ordinary batch, so the earlier `is_parent !== false` guard left
+                            // this map EMPTY for almost every course; the edit payload then
+                            // carried package_session_id='' and the backend silently skipped
+                            // the batch, dropping author (and status) changes.
                             const parents = batchesList.filter(
                                 (b: { is_parent?: boolean; parent_id?: string | null }) =>
-                                    b.is_parent === true ||
-                                    (b.parent_id == null && b.is_parent !== false)
+                                    b.is_parent === true || b.parent_id == null
                             );
                             parents.forEach(
                                 (p: {
@@ -981,11 +1046,10 @@ export const CourseDetailsPage = () => {
                                 }
                             );
 
-                            // Child rows: either explicitly marked, or anything with a parent_id.
+                            // Child rows: anything that points at a parent.
                             const children = batchesList.filter(
                                 (b: { is_parent?: boolean; parent_id?: string | null }) =>
-                                    b.is_parent === false ||
-                                    (b.parent_id != null && b.is_parent !== true)
+                                    b.parent_id != null && b.is_parent !== true
                             );
                             children.forEach(
                                 (child: {
@@ -1357,13 +1421,16 @@ export const CourseDetailsPage = () => {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="font-medium text-orange-600">
-                                    Editing Restricted: This course is{' '}
-                                    {isPublishedCourse ? 'published' : 'under review'}.
+                                    {t('courseDetails:restriction.banner', {
+                                        status: isPublishedCourse
+                                            ? t('courseDetails:restriction.statusPublished')
+                                            : t('courseDetails:restriction.statusUnderReview'),
+                                    })}
                                 </div>
                                 <div className="text-sm text-orange-600">
                                     {isPublishedCourse
-                                        ? 'Go to My Courses to create an editable copy.'
-                                        : "You cannot edit the content while it's under review."}
+                                        ? t('courseDetails:restriction.publishedHint')
+                                        : t('courseDetails:restriction.reviewHint')}
                                 </div>
                             </div>
                         </div>
@@ -1429,7 +1496,7 @@ export const CourseDetailsPage = () => {
                                                 buttonType="primary"
                                                 className="rounded-md bg-success-100 font-medium !text-black hover:bg-success-100 focus:bg-success-100 active:bg-success-100"
                                             >
-                                                Added to catalog
+                                                {t('courseDetails:addedToCatalog')}
                                             </MyButton>
                                         )}
                                         {canEdit && (
@@ -1477,7 +1544,7 @@ export const CourseDetailsPage = () => {
                                                     onClick={() => setIsOfflineSettingsOpen(true)}
                                                 >
                                                     <CloudArrowDown size={16} />
-                                                    Offline settings
+                                                    {t('courseDetails:offlineSettings')}
                                                 </MyButton>
                                                 <OfflineSettingsDialog
                                                     open={isOfflineSettingsOpen}
@@ -1486,22 +1553,52 @@ export const CourseDetailsPage = () => {
                                                 />
                                             </>
                                         )}
+                                        {canEdit && effectiveCourseId && (
+                                            <ComingSoonButton
+                                                packageId={effectiveCourseId}
+                                                courseName={form.getValues('courseData')?.title ?? ''}
+                                                publishedToCatalogue={
+                                                    form.getValues('courseData')
+                                                        ?.isCoursePublishedToCatalaouge === true
+                                                }
+                                            />
+                                        )}
                                         {coursePage?.showAdvancedCourseIds === true && (
                                             <AdvancedIdsMenu
                                                 items={[
                                                     {
-                                                        label: 'Course ID',
+                                                        label: t('courseDetails:advancedIds.courseId', {
+                                                            course: getTerminology(
+                                                                ContentTerms.Course,
+                                                                SystemTerms.Course
+                                                            ),
+                                                        }),
                                                         value: effectiveCourseId,
                                                     },
                                                     {
-                                                        label: 'Package Session ID',
+                                                        label: t(
+                                                            'courseDetails:advancedIds.packageSessionId'
+                                                        ),
                                                         value: packageSessionIds || '',
                                                     },
                                                     {
-                                                        label: 'Session ID',
+                                                        label: t('courseDetails:advancedIds.sessionId', {
+                                                            session: getTerminology(
+                                                                ContentTerms.Session,
+                                                                SystemTerms.Session
+                                                            ),
+                                                        }),
                                                         value: selectedSession,
                                                     },
-                                                    { label: 'Level ID', value: selectedLevel },
+                                                    {
+                                                        label: t('courseDetails:advancedIds.levelId', {
+                                                            level: getTerminology(
+                                                                ContentTerms.Level,
+                                                                SystemTerms.Level
+                                                            ),
+                                                        }),
+                                                        value: selectedLevel,
+                                                    },
                                                 ]}
                                             />
                                         )}
@@ -1528,7 +1625,9 @@ export const CourseDetailsPage = () => {
                                                     }
                                                     className="mt-1 text-sm font-medium text-primary-500 hover:underline focus:outline-none"
                                                 >
-                                                    {isDescExpanded ? 'View less' : 'View more'}
+                                                    {isDescExpanded
+                                                        ? t('courseDetails:viewLess')
+                                                        : t('courseDetails:viewMore')}
                                                 </button>
                                             )}
                                         </div>
@@ -1544,7 +1643,7 @@ export const CourseDetailsPage = () => {
                                                     width="100%"
                                                     height="100%"
                                                     src={`https://www.youtube.com/embed/${extractYouTubeVideoId(mediaId || '')}`}
-                                                    title="YouTube video player"
+                                                    title={t('courseDetails:youtubePlayerTitle')}
                                                     frameBorder="0"
                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                     allowFullScreen
@@ -1571,21 +1670,31 @@ export const CourseDetailsPage = () => {
                                                         );
                                                     }}
                                                 >
-                                                    Your browser does not support the video tag.
+                                                    {t('courseDetails:videoNotSupported')}
                                                 </video>
                                             </div>
                                         </div>
                                     ) : (
                                         <img
                                             src={form.watch('courseData')?.courseMediaPreview}
-                                            alt="Course Banner"
+                                            alt={t('courseDetails:courseBannerAlt', {
+                                            course: getTerminology(
+                                                ContentTerms.Course,
+                                                SystemTerms.Course
+                                            ),
+                                        })}
                                             className="aspect-video w-full rounded-xl object-cover"
                                         />
                                     ))}
                                 {!mediaId && bannerMediaId && (
                                     <img
                                         src={form.watch('courseData')?.courseBannerMediaPreview}
-                                        alt="Course Banner"
+                                        alt={t('courseDetails:courseBannerAlt', {
+                                            course: getTerminology(
+                                                ContentTerms.Course,
+                                                SystemTerms.Course
+                                            ),
+                                        })}
                                         className="aspect-video w-full rounded-xl object-cover"
                                         onError={(e) => {
                                             e.currentTarget.style.display = 'none';
@@ -1716,7 +1825,7 @@ export const CourseDetailsPage = () => {
                                         {shouldShowBatchDropdown && (
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-xs font-medium text-gray-700">
-                                                    Batch / Subgroup
+                                                    {t('courseDetails:batchSubgroup')}
                                                 </label>
                                                 <Select
                                                     value={selectedBatchId}
@@ -1729,7 +1838,11 @@ export const CourseDetailsPage = () => {
                                                     }
                                                 >
                                                     <SelectTrigger className="h-8 w-full rounded-md text-sm sm:w-40 lg:w-48">
-                                                        <SelectValue placeholder="Select batch" />
+                                                        <SelectValue
+                                                            placeholder={t(
+                                                                'courseDetails:selectBatch'
+                                                            )}
+                                                        />
                                                     </SelectTrigger>
                                                     <SelectContent className="rounded-md">
                                                         {batchOptions.map((option) => (
@@ -1793,11 +1906,10 @@ export const CourseDetailsPage = () => {
                                     form.getValues('courseData').sessions.length > 1 && (
                                         <MetaChip>
                                             {form.getValues('courseData').sessions.length}{' '}
-                                            {getTerminology(
+                                            {getTerminologyPlural(
                                                 ContentTerms.Session,
                                                 SystemTerms.Session
                                             )}
-                                            s
                                         </MetaChip>
                                     )}
                                 {showOverviewMetrics &&
@@ -1805,7 +1917,10 @@ export const CourseDetailsPage = () => {
                                     levelOptions.length > 1 && (
                                         <MetaChip>
                                             {levelOptions.length}{' '}
-                                            {getTerminology(ContentTerms.Level, SystemTerms.Level)}s
+                                            {getTerminologyPlural(
+                                                ContentTerms.Level,
+                                                SystemTerms.Level
+                                            )}
                                         </MetaChip>
                                     )}
 
@@ -1816,11 +1931,13 @@ export const CourseDetailsPage = () => {
                                         }
                                     >
                                         {totalSlideCount}{' '}
-                                        {getTerminology(
-                                            ContentTerms.Slides,
-                                            SystemTerms.Slides
+                                        {(totalSlideCount === 1
+                                            ? getTerminology(ContentTerms.Slides, SystemTerms.Slides)
+                                            : getTerminologyPlural(
+                                                  ContentTerms.Slides,
+                                                  SystemTerms.Slides
+                                              )
                                         ).toLocaleLowerCase()}
-                                        {totalSlideCount !== 1 ? 's' : ''}
                                     </MetaChip>
                                 )}
 
@@ -1871,7 +1988,7 @@ export const CourseDetailsPage = () => {
 
                                 {slideCountQuery.error && (
                                     <span className="text-xs text-danger-500">
-                                        Error loading slide counts
+                                        {t('courseDetails:errorLoadingSlideCounts')}
                                     </span>
                                 )}
                             </div>
@@ -1899,7 +2016,12 @@ export const CourseDetailsPage = () => {
                                     className="rounded-md border border-b-0 border-neutral-200 bg-white shadow-sm"
                                 >
                                     <AccordionTrigger className="px-3 text-base font-semibold text-gray-900 lg:px-4">
-                                        Course highlights
+                                        {t('courseDetails:courseHighlights', {
+                                            course: getTerminology(
+                                                ContentTerms.Course,
+                                                SystemTerms.Course
+                                            ),
+                                        })}
                                     </AccordionTrigger>
                                     <AccordionContent className="px-3 pb-3 lg:px-4 lg:pb-4">
                                         {/* Two columns on wide screens — these blocks are
@@ -1911,11 +2033,11 @@ export const CourseDetailsPage = () => {
                                             ) && (
                                                 <div className="rounded-md border-l-4 border-emerald-400 bg-white p-3 shadow-sm">
                                                     <h2 className="mb-2 text-lg font-semibold text-gray-900 lg:mb-3">
-                                                        What you&apos;ll learn?
+                                                        {t('courseDetails:whatYoullLearn')}
                                                     </h2>
                                                     <div className="rounded-md">
-                                                        <p
-                                                            className="text-sm leading-relaxed text-gray-700"
+                                                        <div
+                                                            className="line-clamp-4 text-sm leading-relaxed text-gray-700"
                                                             dangerouslySetInnerHTML={{
                                                                 __html:
                                                                     form.getValues('courseData')
@@ -1923,6 +2045,19 @@ export const CourseDetailsPage = () => {
                                                             }}
                                                         />
                                                     </div>
+                                                    <CourseHighlightDialog
+                                                        title={t('courseDetails:whatYoullLearn')}
+                                                        triggerLabel={t('courseDetails:viewMore')}
+                                                    >
+                                                        <div
+                                                            className="richtext-content text-sm leading-relaxed text-gray-700"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html:
+                                                                    form.getValues('courseData')
+                                                                        .whatYoullLearn || '',
+                                                            }}
+                                                        />
+                                                    </CourseHighlightDialog>
                                                 </div>
                                             )}
 
@@ -1932,15 +2067,16 @@ export const CourseDetailsPage = () => {
                                             ) && (
                                                 <div className="rounded-md border-l-4 border-blue-400 bg-white p-3 shadow-sm">
                                                     <h2 className="mb-2 text-lg font-semibold text-gray-900 lg:mb-3">
-                                                        About this{' '}
-                                                        {getTerminology(
-                                                            ContentTerms.Course,
-                                                            SystemTerms.Course
-                                                        ).toLocaleLowerCase()}
+                                                        {t('courseDetails:aboutThis', {
+                                                            course: getTerminology(
+                                                                ContentTerms.Course,
+                                                                SystemTerms.Course
+                                                            ).toLocaleLowerCase(),
+                                                        })}
                                                     </h2>
                                                     <div className="rounded-md">
-                                                        <p
-                                                            className="text-sm leading-relaxed text-gray-700"
+                                                        <div
+                                                            className="line-clamp-4 text-sm leading-relaxed text-gray-700"
                                                             dangerouslySetInnerHTML={{
                                                                 __html:
                                                                     form.getValues('courseData')
@@ -1948,6 +2084,24 @@ export const CourseDetailsPage = () => {
                                                             }}
                                                         />
                                                     </div>
+                                                    <CourseHighlightDialog
+                                                        title={t('courseDetails:aboutThis', {
+                                                            course: getTerminology(
+                                                                ContentTerms.Course,
+                                                                SystemTerms.Course
+                                                            ).toLocaleLowerCase(),
+                                                        })}
+                                                        triggerLabel={t('courseDetails:viewMore')}
+                                                    >
+                                                        <div
+                                                            className="richtext-content text-sm leading-relaxed text-gray-700"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html:
+                                                                    form.getValues('courseData')
+                                                                        .aboutTheCourse || '',
+                                                            }}
+                                                        />
+                                                    </CourseHighlightDialog>
                                                 </div>
                                             )}
 
@@ -1957,11 +2111,11 @@ export const CourseDetailsPage = () => {
                                             ) && (
                                                 <div className="rounded-md border-l-4 border-purple-400 bg-white p-3 shadow-sm">
                                                     <h2 className="mb-2 text-lg font-semibold text-gray-900 lg:mb-3">
-                                                        Who should join?
+                                                        {t('courseDetails:whoShouldJoin')}
                                                     </h2>
                                                     <div className="rounded-md">
-                                                        <p
-                                                            className="text-sm leading-relaxed text-gray-700"
+                                                        <div
+                                                            className="line-clamp-4 text-sm leading-relaxed text-gray-700"
                                                             dangerouslySetInnerHTML={{
                                                                 __html:
                                                                     form.getValues('courseData')
@@ -1969,6 +2123,19 @@ export const CourseDetailsPage = () => {
                                                             }}
                                                         />
                                                     </div>
+                                                    <CourseHighlightDialog
+                                                        title={t('courseDetails:whoShouldJoin')}
+                                                        triggerLabel={t('courseDetails:viewMore')}
+                                                    >
+                                                        <div
+                                                            className="richtext-content text-sm leading-relaxed text-gray-700"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html:
+                                                                    form.getValues('courseData')
+                                                                        .whoShouldLearn || '',
+                                                            }}
+                                                        />
+                                                    </CourseHighlightDialog>
                                                 </div>
                                             )}
 
@@ -1978,19 +2145,30 @@ export const CourseDetailsPage = () => {
                                                 isAdminOrTeacher && (
                                                     <div className="flex flex-col gap-2 rounded-md border-l-4 border-orange-400 bg-white p-3 shadow-sm">
                                                         <h2 className="text-lg font-semibold text-gray-900">
-                                                            Authors
+                                                            {t('courseDetails:authors')}
                                                         </h2>
                                                         {loadingInstructors ? (
                                                             <div className="text-sm text-gray-600">
-                                                                Loading instructors...
+                                                                {t(
+                                                                    'courseDetails:loadingInstructors'
+                                                                )}
                                                             </div>
                                                         ) : (
-                                                            <div className="space-y-2">
-                                                                {resolvedInstructors.map(
-                                                                    (instructor, index) => (
+                                                            <>
+                                                                <p className="text-sm text-gray-600">
+                                                                    {resolvedInstructors.length}{' '}
+                                                                    {t('courseDetails:authors').toLocaleLowerCase()}
+                                                                </p>
+                                                                <CourseHighlightDialog
+                                                                    title={t('courseDetails:authors')}
+                                                                    triggerLabel={t('courseDetails:viewMore')}
+                                                                >
+                                                                    <div className="space-y-2">
+                                                                        {resolvedInstructors.map(
+                                                                            (instructor, index) => (
                                                                         <div
                                                                             key={index}
-                                                                            className="flex items-center gap-2 rounded-md p-1"
+                                                                            className="flex items-center gap-2 rounded-md bg-gray-50 p-2"
                                                                         >
                                                                             <Avatar className="size-6">
                                                                                 {instructor.profilePicUrl ? (
@@ -2014,9 +2192,11 @@ export const CourseDetailsPage = () => {
                                                                                 {instructor.name}
                                                                             </h3>
                                                                         </div>
-                                                                    )
-                                                                )}
-                                                            </div>
+                                                                            )
+                                                                        )}
+                                                                    </div>
+                                                                </CourseHighlightDialog>
+                                                            </>
                                                         )}
                                                     </div>
                                                 )}
@@ -2043,7 +2223,10 @@ export const CourseDetailsPage = () => {
                             <div className="rounded-md border border-gray-200 bg-white p-3 shadow-sm lg:p-4">
                                 <PackageDripConditionsCard
                                     packageId={searchParams.courseId || ''}
-                                    packageName={form.getValues('courseData').title || 'Course'}
+                                    packageName={
+                                        form.getValues('courseData').title ||
+                                        getTerminology(ContentTerms.Course, SystemTerms.Course)
+                                    }
                                     conditions={dripConditions.filter(
                                         (c) =>
                                             c.level === 'package' &&

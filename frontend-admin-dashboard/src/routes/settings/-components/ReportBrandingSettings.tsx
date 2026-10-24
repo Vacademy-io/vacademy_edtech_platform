@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ColorPicker } from '@/components/ui/color-picker';
-import { Upload, X, Eye, Loader2, Crop } from 'lucide-react';
+import { UploadSimple, X, Eye, CircleNotch, Crop } from '@phosphor-icons/react';
 import { ReportBrandingSettings, DEFAULT_REPORT_BRANDING } from '@/types/assessment-settings';
 import { Slider } from '@/components/ui/slider';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -21,6 +22,7 @@ interface Props {
 }
 
 const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
+    const { t } = useTranslation('settingsReportBranding');
     const [previewOpen, setPreviewOpen] = useState(false);
     const [logoUrl, setLogoUrl] = useState<string>('');
     const [letterheadUrl, setLetterheadUrl] = useState<string>('');
@@ -104,10 +106,14 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                 const url = await getPublicUrl(fileId);
                 if (cropperField === 'logo_file_id') setLogoUrl(url);
                 else setLetterheadUrl(url);
-                toast.success(`${cropperField === 'logo_file_id' ? 'Logo' : 'Letterhead'} uploaded`);
+                toast.success(
+                    cropperField === 'logo_file_id'
+                        ? t('toasts.logoUploaded')
+                        : t('toasts.letterheadUploaded')
+                );
             }
         } catch {
-            toast.error('Upload failed');
+            toast.error(t('toasts.uploadFailed'));
         } finally {
             setUploading(false);
         }
@@ -121,23 +127,20 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
 
     // Replace template placeholders for preview
     const resolveTemplate = (html: string) =>
-        html.replace(/\{\{assessment_name\}\}/g, 'Sample Maths Test');
+        html.replace(/\{\{assessment_name\}\}/g, t('preview.sample.assessmentName'));
 
     return (
         <div className="flex flex-col gap-4">
             {/* Colors */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Report Colors</CardTitle>
-                    <CardDescription>
-                        Set primary and secondary colors used in the assessment report PDF and
-                        UI.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('colors.title')}</CardTitle>
+                    <CardDescription>{t('colors.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-6">
                         <div className="flex flex-col gap-2">
-                            <Label className="text-sm">Primary Color</Label>
+                            <Label className="text-sm">{t('colors.primaryColor')}</Label>
                             <div className="flex items-center gap-3">
                                 <ColorPicker
                                     value={s.primary_color}
@@ -154,7 +157,7 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                             </div>
                         </div>
                         <div className="flex flex-col gap-2">
-                            <Label className="text-sm">Secondary Color</Label>
+                            <Label className="text-sm">{t('colors.secondaryColor')}</Label>
                             <div className="flex items-center gap-3">
                                 <ColorPicker
                                     value={s.secondary_color}
@@ -177,11 +180,8 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
             {/* Logo & Letterhead */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Logo & Letterhead</CardTitle>
-                    <CardDescription>
-                        Your institute logo and letterhead are shown below. You can change them
-                        or upload new ones.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('logoLetterhead.title')}</CardTitle>
+                    <CardDescription>{t('logoLetterhead.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                     {/* Logo */}
@@ -189,17 +189,17 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col gap-1">
                                 <Label className="text-sm font-medium">
-                                    Show Logo in Header
+                                    {t('logoLetterhead.logo.label')}
                                 </Label>
                                 <p className="text-xs text-gray-500">
-                                    Display institute logo at the top of the report
+                                    {t('logoLetterhead.logo.hint')}
                                 </p>
                             </div>
                             {logoUrl ? (
                                 <div className="relative">
                                     <img
                                         src={logoUrl}
-                                        alt="Logo"
+                                        alt={t('logoLetterhead.logo.imageAlt')}
                                         className="h-12 w-12 rounded border object-contain p-0.5"
                                     />
                                     <button
@@ -211,7 +211,7 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                 </div>
                             ) : (
                                 <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed text-xs text-gray-400">
-                                    No logo
+                                    {t('logoLetterhead.logo.none')}
                                 </div>
                             )}
                         </div>
@@ -232,11 +232,13 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                 }
                             >
                                 {uploadingLogo ? (
-                                    <Loader2 size={14} className="mr-1 animate-spin" />
+                                    <CircleNotch size={14} className="me-1 animate-spin" />
                                 ) : (
-                                    <Upload size={14} className="mr-1" />
+                                    <UploadSimple size={14} className="me-1" />
                                 )}
-                                {logoUrl ? 'Change' : 'Upload Logo'}
+                                {logoUrl
+                                    ? t('logoLetterhead.logo.change')
+                                    : t('logoLetterhead.logo.upload')}
                             </Button>
                             <Switch
                                 checked={s.show_logo_in_header}
@@ -250,17 +252,17 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col gap-1">
                                 <Label className="text-sm font-medium">
-                                    Show Letterhead Background
+                                    {t('logoLetterhead.letterhead.label')}
                                 </Label>
                                 <p className="text-xs text-gray-500">
-                                    Use a full-page letterhead image as the report background
+                                    {t('logoLetterhead.letterhead.hint')}
                                 </p>
                             </div>
                             {letterheadUrl ? (
                                 <div className="relative">
                                     <img
                                         src={letterheadUrl}
-                                        alt="Letterhead"
+                                        alt={t('logoLetterhead.letterhead.imageAlt')}
                                         className="h-12 w-20 rounded border object-contain p-0.5"
                                     />
                                     <button
@@ -274,7 +276,7 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                 </div>
                             ) : (
                                 <div className="flex h-12 w-20 items-center justify-center rounded border border-dashed text-xs text-gray-400">
-                                    No letterhead
+                                    {t('logoLetterhead.letterhead.none')}
                                 </div>
                             )}
                         </div>
@@ -299,11 +301,13 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                 }
                             >
                                 {uploadingLetterhead ? (
-                                    <Loader2 size={14} className="mr-1 animate-spin" />
+                                    <CircleNotch size={14} className="me-1 animate-spin" />
                                 ) : (
-                                    <Upload size={14} className="mr-1" />
+                                    <UploadSimple size={14} className="me-1" />
                                 )}
-                                {letterheadUrl ? 'Change' : 'Upload Letterhead'}
+                                {letterheadUrl
+                                    ? t('logoLetterhead.letterhead.change')
+                                    : t('logoLetterhead.letterhead.upload')}
                             </Button>
                             {letterheadUrl && (
                                 <Button
@@ -316,7 +320,7 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                     }}
                                 >
                                     <Crop size={14} className="mr-1" />
-                                    Crop
+                                    {t('logoLetterhead.letterhead.crop')}
                                 </Button>
                             )}
                             <Switch
@@ -331,15 +335,13 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
             {/* Watermark */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Watermark</CardTitle>
-                    <CardDescription>
-                        Add a diagonal watermark text across each page of the report.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('watermark.title')}</CardTitle>
+                    <CardDescription>{t('watermark.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div className="flex flex-col gap-1">
-                            <Label className="text-sm font-medium">Enable Watermark</Label>
+                            <Label className="text-sm font-medium">{t('watermark.enable')}</Label>
                         </div>
                         <Switch
                             checked={s.show_watermark}
@@ -349,18 +351,20 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                     {s.show_watermark && (
                         <div className="flex flex-col gap-3 pl-2">
                             <div className="flex flex-col gap-1">
-                                <Label className="text-sm">Watermark Text</Label>
+                                <Label className="text-sm">{t('watermark.textLabel')}</Label>
                                 <Input
                                     value={s.watermark_text}
                                     onChange={(e) =>
                                         update({ watermark_text: e.target.value })
                                     }
-                                    placeholder="e.g. CONFIDENTIAL or your institute name"
+                                    placeholder={t('watermark.textPlaceholder')}
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <Label className="text-sm">
-                                    Opacity ({Math.round(s.watermark_opacity * 100)}%)
+                                    {t('watermark.opacity', {
+                                        percent: Math.round(s.watermark_opacity * 100),
+                                    })}
                                 </Label>
                                 <Slider
                                     value={[s.watermark_opacity * 100]}
@@ -381,38 +385,38 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
             {/* Header & Footer */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Header & Footer</CardTitle>
+                    <CardTitle className="text-base">{t('headerFooter.title')}</CardTitle>
                     <CardDescription>
-                        Custom HTML for the report header and footer. These appear on every page.
-                        Use <code className="rounded bg-gray-100 px-1 text-xs">{'{{assessment_name}}'}</code> as
-                        a placeholder — it will be replaced with the actual assessment name in the report.
+                        {t('headerFooter.description.prefix')}{' '}
+                        <code className="rounded bg-gray-100 px-1 text-xs">{'{{assessment_name}}'}</code>{' '}
+                        {t('headerFooter.description.suffix')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
-                        <Label className="text-sm">Footer Text</Label>
+                        <Label className="text-sm">{t('headerFooter.footerText.label')}</Label>
                         <Input
                             value={s.footer_text}
                             onChange={(e) => update({ footer_text: e.target.value })}
-                            placeholder="Footer text shown at the bottom of the report"
+                            placeholder={t('headerFooter.footerText.placeholder')}
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Label className="text-sm">Custom Header HTML</Label>
+                        <Label className="text-sm">{t('headerFooter.headerHtml.label')}</Label>
                         <Textarea
                             value={s.header_html}
                             onChange={(e) => update({ header_html: e.target.value })}
-                            placeholder='<div style="text-align:center;">{{assessment_name}}</div>'
+                            placeholder={t('headerFooter.headerHtml.placeholder')}
                             rows={3}
                             className="font-mono text-xs"
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Label className="text-sm">Custom Footer HTML</Label>
+                        <Label className="text-sm">{t('headerFooter.footerHtml.label')}</Label>
                         <Textarea
                             value={s.footer_html}
                             onChange={(e) => update({ footer_html: e.target.value })}
-                            placeholder='<div style="text-align:center; font-size:10px; color:#999;">Powered by MyInstitute</div>'
+                            placeholder={t('headerFooter.footerHtml.placeholder')}
                             rows={3}
                             className="font-mono text-xs"
                         />
@@ -423,7 +427,7 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
             {/* Preview */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Preview</CardTitle>
+                    <CardTitle className="text-base">{t('preview.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Button
@@ -432,17 +436,16 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                         className="flex items-center gap-2"
                     >
                         <Eye size={16} />
-                        {previewOpen ? 'Hide Preview' : 'Show Preview'}
+                        {previewOpen ? t('preview.hideButton') : t('preview.showButton')}
                     </Button>
                     {previewOpen && (
                         <div className="mt-4 rounded-lg border shadow-sm">
                             <div
-                                className="relative mx-auto"
+                                className="relative mx-auto bg-white"
                                 style={{
                                     width: '100%',
                                     maxWidth: 600,
                                     minHeight: 400,
-                                    background: '#fff',
                                     position: 'relative',
                                     overflow: 'hidden',
                                 }}
@@ -508,7 +511,7 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                         {s.show_logo_in_header && logoUrl && (
                                             <img
                                                 src={logoUrl}
-                                                alt="Logo"
+                                                alt={t('logoLetterhead.logo.imageAlt')}
                                                 style={{
                                                     height: 40,
                                                     width: 40,
@@ -532,15 +535,15 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                                         color: s.primary_color,
                                                     }}
                                                 >
-                                                    Sample Maths Test
+                                                    {t('preview.sample.assessmentName')}
                                                 </div>
                                                 <div
+                                                    className="text-neutral-500"
                                                     style={{
                                                         fontSize: 12,
-                                                        color: '#666',
                                                     }}
                                                 >
-                                                    Student Performance Analysis
+                                                    {t('preview.sample.subtitle')}
                                                 </div>
                                             </div>
                                         )}
@@ -554,47 +557,52 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                             marginBottom: 16,
                                         }}
                                     >
-                                        {['Score: 72/100', 'Rank: #3', 'Percentile: 85%'].map(
-                                            (text) => (
+                                        {[
+                                            { label: t('preview.sample.score'), value: '72/100' },
+                                            { label: t('preview.sample.rank'), value: '#3' },
+                                            {
+                                                label: t('preview.sample.percentile'),
+                                                value: '85%',
+                                            },
+                                        ].map((stat) => (
+                                            <div
+                                                key={stat.label}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '12px 8px',
+                                                    background: `${s.primary_color}10`,
+                                                    borderRadius: 8,
+                                                    textAlign: 'center',
+                                                    border: `1px solid ${s.primary_color}30`,
+                                                }}
+                                            >
                                                 <div
-                                                    key={text}
                                                     style={{
-                                                        flex: 1,
-                                                        padding: '12px 8px',
-                                                        background: `${s.primary_color}10`,
-                                                        borderRadius: 8,
-                                                        textAlign: 'center',
-                                                        border: `1px solid ${s.primary_color}30`,
+                                                        fontSize: 16,
+                                                        fontWeight: 'bold',
+                                                        color: s.primary_color,
                                                     }}
                                                 >
-                                                    <div
-                                                        style={{
-                                                            fontSize: 16,
-                                                            fontWeight: 'bold',
-                                                            color: s.primary_color,
-                                                        }}
-                                                    >
-                                                        {text.split(': ')[1]}
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: 10,
-                                                            color: '#888',
-                                                            marginTop: 2,
-                                                        }}
-                                                    >
-                                                        {text.split(': ')[0]}
-                                                    </div>
+                                                    {stat.value}
                                                 </div>
-                                            )
-                                        )}
+                                                <div
+                                                    className="text-neutral-500"
+                                                    style={{
+                                                        fontSize: 10,
+                                                        marginTop: 2,
+                                                    }}
+                                                >
+                                                    {stat.label}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
 
                                     {/* Sample section header */}
                                     <div
+                                        className="text-white"
                                         style={{
                                             background: s.secondary_color,
-                                            color: '#fff',
                                             padding: '6px 12px',
                                             borderRadius: 4,
                                             fontSize: 13,
@@ -602,22 +610,21 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                             marginBottom: 8,
                                         }}
                                     >
-                                        Section Wise Performance
+                                        {t('preview.sample.sectionPerformance')}
                                     </div>
                                     <div
+                                        className="bg-neutral-50 text-neutral-300"
                                         style={{
                                             height: 60,
-                                            background: '#f8f8f8',
                                             borderRadius: 4,
                                             marginBottom: 16,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            color: '#ccc',
                                             fontSize: 12,
                                         }}
                                     >
-                                        Section data table preview
+                                        {t('preview.sample.sectionTablePlaceholder')}
                                     </div>
 
                                     {/* Footer */}
@@ -636,9 +643,9 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                                             />
                                         ) : (
                                             <div
+                                                className="text-neutral-400"
                                                 style={{
                                                     fontSize: 10,
-                                                    color: '#999',
                                                     textAlign: 'center',
                                                 }}
                                             >
@@ -658,9 +665,13 @@ const ReportBrandingSettingsSection = ({ settings, onChange }: Props) => {
                 onOpenChange={setCropperOpen}
                 src={cropperSrc}
                 aspectRatio={cropperField === 'letterhead_file_id' ? 210 / 297 : 1}
-                title={cropperField === 'letterhead_file_id' ? 'Crop Letterhead' : 'Crop Logo'}
+                title={
+                    cropperField === 'letterhead_file_id'
+                        ? t('cropper.titleLetterhead')
+                        : t('cropper.titleLogo')
+                }
                 onCropped={handleCroppedUpload}
-                confirmLabel="Crop & Upload"
+                confirmLabel={t('cropper.confirmLabel')}
             />
         </div>
     );

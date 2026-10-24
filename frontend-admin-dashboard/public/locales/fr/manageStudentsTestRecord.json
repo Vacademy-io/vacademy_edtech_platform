@@ -1,0 +1,49 @@
+{
+    "common": {
+        "accessRestricted": "Accès restreint"
+    },
+    "errors": {
+        "institute": {
+            "title": "Impossible de charger les détails de l'établissement",
+            "hint": "Une erreur s'est produite lors du chargement des détails de l'établissement. Veuillez réessayer.",
+            "hintRestricted": "Vous n'avez pas l'autorisation de consulter les détails de l'établissement. Contactez votre administrateur."
+        },
+        "report": {
+            "title": "Impossible de charger les résultats des tests",
+            "hint": "Une erreur s'est produite lors du chargement des résultats des tests. Veuillez réessayer.",
+            "hintRestricted": "Vous n'avez pas l'autorisation de consulter les résultats des tests. Contactez votre administrateur."
+        }
+    },
+    "hero": {
+        "eyebrow": "PERFORMANCE AUX TESTS",
+        "avgScore": "score moyen de {{score}}",
+        "noAttempts": "Aucune tentative pour l'instant",
+        "testsRecorded_one": "{{count}} test enregistré",
+        "testsRecorded_many": "{{count}} tests enregistrés",
+        "testsRecorded_other": "{{count}} tests enregistrés",
+        "testsAssignedHint": "Les tests attribués à cet apprenant apparaîtront ci-dessous."
+    },
+    "filters": {
+        "all": "Tous",
+        "completed": "Terminés",
+        "pending": "En attente",
+        "live": "En direct",
+        "ariaLabel": "Filtrer les tentatives de test par statut"
+    },
+    "empty": {
+        "title": "Aucun test pour l'instant",
+        "hint": "Cet apprenant n'a encore passé aucune évaluation."
+    },
+    "list": {
+        "subjectFallback": "N/A"
+    },
+    "status": {
+        "attempted": "Tenté",
+        "notAttempted": "Non tenté",
+        "pending": "En attente"
+    },
+    "actions": {
+        "viewReport": "Voir le rapport",
+        "sendReminder": "Envoyer un rappel"
+    }
+}

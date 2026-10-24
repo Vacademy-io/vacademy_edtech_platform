@@ -1,0 +1,8 @@
+{
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "pagesCount_one": "{{completed}}/{{count}} पेज",
+    "pagesCount_other": "{{completed}}/{{count}} पेज"
+}

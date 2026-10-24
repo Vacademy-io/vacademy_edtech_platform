@@ -99,6 +99,27 @@ public interface TelephonyCallLogRepository extends JpaRepository<TelephonyCallL
                                      @Param("excludeId") String excludeId);
 
     /**
+     * Outbound dials to ONE lead in a rolling window.
+     *
+     * <p>Backs the per-lead daily cap. The bulk campaign's own cooldown only looks back
+     * a few minutes, which was enough when a run finished in minutes; a queued run
+     * spans hours, so re-firing it mid-flight re-enqueued every lead that had already
+     * been called and dialled them a second time. Unlike
+     * {@link #countRecentOutboundAttempts} this excludes nothing — it is a ceiling, not
+     * an attempt counter.
+     */
+    @Query("""
+            SELECT COUNT(t) FROM TelephonyCallLog t
+            WHERE t.instituteId = :instituteId AND t.userId = :userId
+              AND t.providerType = :providerType AND t.direction = 'OUTBOUND'
+              AND t.createdAt >= :since
+            """)
+    long countOutboundToLeadSince(@Param("instituteId") String instituteId,
+                                  @Param("userId") String userId,
+                                  @Param("providerType") String providerType,
+                                  @Param("since") java.sql.Timestamp since);
+
+    /**
      * All outbound dials this institute placed on a provider since {@code since}
      * (rolling-window daily-cap guardrail — see {@code AiCallingSettingsPojo.maxCallsPerDay}).
      * Provider-scoped so an institute's Exotel/Airtel human calls never count
@@ -275,4 +296,51 @@ public interface TelephonyCallLogRepository extends JpaRepository<TelephonyCallL
             @Param("since") java.sql.Timestamp since,
             @Param("until") java.sql.Timestamp until,
             @Param("anchor") java.sql.Timestamp anchor);
+
+    /**
+     * Live state of a batch of calls, as {@code [id, status, durationSeconds, toNumber]}.
+     *
+     * <p>The queue's own row stops at DIALED — that means "handed to the provider" and
+     * never changes again, so a call ringing right now and one that ended three hours ago
+     * look identical on the queue row alone. This is what tells them apart, resolved in
+     * one query per page rather than per row.
+     *
+     * <p>{@code toNumber} rides along because a queued row often has no phone of its
+     * own: the manual click and the CALL_AI node pass only a lead id, and the number is
+     * resolved downstream at dial time. Without this the queue table would show a raw
+     * user UUID where the lead's number belongs.
+     */
+    @Query("""
+            SELECT t.id, t.status, t.durationSeconds, t.toNumber FROM TelephonyCallLog t
+            WHERE t.id IN :ids
+            """)
+    List<Object[]> findStatusByIds(@Param("ids") java.util.Collection<String> ids);
+
+    /**
+     * Occupied AI-call slots right now, as {@code [instituteId, providerType, count]}.
+     *
+     * <p>The AI call queue counts capacity from THIS — the call log — rather than from
+     * a counter it maintains itself. Two reasons. A counter leaks: a call whose final
+     * webhook never lands would hold its slot forever, and lost AI webhooks are a
+     * documented failure mode. And a counter is blind: calls placed outside the queue
+     * (the legacy path under the kill switch, a MOCK, an inbound IVR hand-off to the
+     * bot) really do occupy the box, and a derived count sees them for free.
+     *
+     * <p>{@code since} is the stuck-call grace — a non-terminal row older than that
+     * has lost its webhook and stops holding a slot. The terminal statuses are
+     * enumerated inline rather than negated so this matches the partial index added in
+     * V472 ({@code idx_tcl_ai_in_flight}).
+     */
+    @Query(value = """
+            SELECT t.institute_id, t.provider_type, COUNT(*)
+              FROM telephony_call_log t
+             WHERE t.provider_type IN (:providers)
+               AND t.direction = 'OUTBOUND'
+               AND t.status IN ('INITIATED', 'QUEUED', 'COUNSELLOR_RINGING',
+                                'COUNSELLOR_ANSWERED', 'IN_PROGRESS')
+               AND t.created_at >= :since
+             GROUP BY t.institute_id, t.provider_type
+            """, nativeQuery = true)
+    List<Object[]> countAiCallsInFlight(@Param("providers") List<String> providers,
+                                        @Param("since") java.sql.Timestamp since);
 }

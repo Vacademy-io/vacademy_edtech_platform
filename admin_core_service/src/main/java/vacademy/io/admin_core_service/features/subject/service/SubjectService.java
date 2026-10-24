@@ -453,4 +453,37 @@ public class SubjectService {
         return subjectDTO.getId();
     }
 
+
+    /** Upper bound on one {@link #getSubjectsByIds} lookup — a screen never shows more. */
+    private static final int MAX_SUBJECT_IDS_PER_LOOKUP = 200;
+
+    /**
+     * Resolves stored subject ids to their names.
+     *
+     * The institute-wide subject list is deduplicated by name and scoped to live package
+     * sessions, so it cannot resolve most subject ids that other features persisted (an
+     * assessment stores a raw subject id). Callers that only need a label use this, which
+     * looks the ids up directly and therefore also covers subjects whose course was
+     * deleted. Unknown ids are simply absent from the result.
+     */
+    public List<SubjectDTO> getSubjectsByIds(List<String> subjectIds) {
+        if (subjectIds == null || subjectIds.isEmpty()) {
+            return List.of();
+        }
+        List<String> distinctIds = subjectIds.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .distinct()
+                // Callers resolve the labels on one screen at a time, so a page's worth is
+                // always enough. Bounded so a caller cannot turn this into an arbitrarily
+                // large IN clause.
+                .limit(MAX_SUBJECT_IDS_PER_LOOKUP)
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return List.of();
+        }
+        return subjectRepository.findAllByIdIn(distinctIds).stream().map(SubjectDTO::new).toList();
+    }
+
 }

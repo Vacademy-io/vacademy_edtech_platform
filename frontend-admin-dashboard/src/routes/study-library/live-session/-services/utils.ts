@@ -14,6 +14,8 @@ import {
     SYNC_RECORDINGS_FROM_BBB,
     SYNC_RECORDINGS_TO_S3,
     SYNC_GOOGLE_RECORDINGS,
+    ATTACH_GOOGLE_RECORDING_FILE,
+    SAVE_GOOGLE_RECORDING_TO_LIBRARY,
     ZOOM_PROVISION_STATUS,
     ZOOM_PROVISION_NOW,
     RECORDING_TRANSCRIBE,
@@ -69,6 +71,7 @@ export interface SessionsByDate {
 }
 
 export interface DraftSession {
+    instructors?: LiveSessionInstructor[] | null;
     session_id: string;
     waiting_room_time: number | null;
     thumbnail_file_id: string | null;
@@ -85,6 +88,14 @@ export interface DraftSession {
     meeting_link: string;
     registration_form_link_for_public_sessions: string | null;
     timezone?: string;
+    /** Same rows the live/past cards get — the list spreads one search row into
+     *  every card shape, so drafts have had this on the wire all along. */
+    package_session_details?: Array<{
+        package_session_id: string;
+        package_name: string;
+        level_name: string;
+        session_name: string;
+    }> | null;
 }
 
 export type UpcomingSessionDay = SessionsByDate;
@@ -108,6 +119,7 @@ export interface Schedule {
     waiting_room_time: number | null;
     allow_rewind: boolean | null;
     allow_play_pause: boolean | null;
+    show_to_learners?: boolean | null;
     thumbnail_file_id: string | null;
     background_score_file_id: string | null;
     cover_file_id: string | null;
@@ -125,6 +137,7 @@ export interface Schedule {
         disable_shared_notes?: boolean;
         hide_user_list?: boolean;
         end_when_no_moderator?: boolean;
+        activeness_score?: boolean;
     } | null;
     feedback_config?: {
         enabled?: boolean;
@@ -185,7 +198,10 @@ export interface MeetingRecording {
     type?: string;
     /** Zoom cloud-recording passcode shown as a fallback when the embedded ?pwd= is rejected. */
     passcode?: string;
-    /** Where the recording lives: 'ZOOM_CLOUD' (provider, expires) or 'S3' (mirrored, permanent). */
+    /**
+     * Where the recording lives: 'ZOOM_CLOUD' (provider, expires), 'GOOGLE_DRIVE' (Meet, organiser's
+     * Drive — admin must upload a copy) or 'S3' (mirrored/uploaded, permanent).
+     */
     recordingStorage?: string;
     /** ISO-8601 provider auto-delete time (Zoom ~30 days). Drives the "expires in N days" badge. */
     expiresAt?: string;
@@ -268,7 +284,23 @@ export interface LiveSessionReport {
     statusType: string | null;
     engagementData: string | null;
     providerTotalDurationMinutes: number | null;
+    /** Exact seconds when the provider reports them (Vacademy Meet); null for Zoom. */
+    providerTotalDurationSeconds?: number | null;
     feedbackDetails: string | null;
+    /** BATCH / USER = already in the institute; EXTERNAL_USER = signed up via the public form. */
+    sourceType?: string | null;
+    /** Batch the learner was scheduled through; null for guests and individually added learners. */
+    batchName?: string | null;
+    /** Form submit time (guests) or when the batch/learner was linked to the session. */
+    registeredAt?: string | number | null;
+}
+
+/** One instructor of a live session, as the detail endpoint returns them. */
+export interface LiveSessionInstructor {
+    user_id: string;
+    full_name?: string | null;
+    email?: string | null;
+    profile_pic_file_id?: string | null;
 }
 
 export interface SessionBySessionIdResponse {
@@ -293,6 +325,12 @@ export interface SessionBySessionIdResponse {
         enabled?: boolean | null;
         audience_ids?: string[] | null;
     } | null;
+    /**
+     * Instructors / presenters of the session (camelCase wrapper key, snake
+     * inner keys). Never empty for an existing session: the backend falls back
+     * to the creator for sessions scheduled before instructors existed.
+     */
+    instructors?: LiveSessionInstructor[] | null;
 }
 
 export const getLiveSessions = async (instituteId: string) => {
@@ -542,6 +580,9 @@ export interface SessionSearchResponseItem {
     meeting_link: string;
     registration_form_link_for_public_sessions: string | null;
     timezone: string;
+    /** 'bbb' | 'zoom' | 'google meet' | 'zoho' | 'youtube' | 'other'. Drives
+     *  which host flow the card's primary button runs. */
+    link_type?: string | null;
     default_class_link?: string | null;
     default_class_name?: string | null;
     learner_button_config?: {
@@ -557,6 +598,13 @@ export interface SessionSearchResponseItem {
         level_name: string;
         session_name: string;
     }> | null;
+    /**
+     * Who is taking the class. Never empty for an existing session — the
+     * backend falls back to the creator for sessions scheduled before
+     * instructors existed — but an individual entry can carry only a user_id
+     * when the directory lookup fails.
+     */
+    instructors?: LiveSessionInstructor[] | null;
 }
 
 export interface PaginationMetadata {
@@ -658,15 +706,49 @@ export const syncGoogleRecordings = async (
     return response.data;
 };
 
+/**
+ * Google Meet recordings live in the organiser's Drive and can't be fetched server-side, so the
+ * admin downloads the MP4 and uploads it; this attaches that media fileId to the recording
+ * (storage flips to S3). Returns the updated stored recording list.
+ */
+export const attachGoogleRecordingFile = async (
+    scheduleId: string,
+    recordingId: string,
+    fileId: string
+): Promise<{ recordings: MeetingRecording[] }> => {
+    const response = await authenticatedAxiosInstance.post<{ recordings: MeetingRecording[] }>(
+        ATTACH_GOOGLE_RECORDING_FILE,
+        null,
+        { params: { scheduleId, recordingId, fileId } }
+    );
+    return response.data;
+};
+
+/**
+ * Server-side "Save to library" for Google Meet: the backend downloads the recording from the
+ * organiser's Drive into S3. 412 when the connected Google account hasn't granted Drive access.
+ */
+export const saveGoogleRecordingToLibrary = async (
+    scheduleId: string
+): Promise<{ mirrored: number; recordings: MeetingRecording[] }> => {
+    const response = await authenticatedAxiosInstance.post<{
+        mirrored: number;
+        recordings: MeetingRecording[];
+    }>(SAVE_GOOGLE_RECORDING_TO_LIBRARY, null, { params: { scheduleId } });
+    return response.data;
+};
+
 export interface ZoomProvisionStatus {
     sessionId: string;
     total: number;
     pending: number;
     provisioned: number;
     created?: number;
+    /** False when no provider account is stored (pasted link) — nothing to provision. */
+    managed?: boolean;
 }
 
-/** How many of a Zoom session's occurrences have a meeting provisioned yet. */
+/** How many of a Zoom / Google Meet session's occurrences have a meeting provisioned yet. */
 export const getZoomProvisionStatus = async (
     sessionId: string
 ): Promise<ZoomProvisionStatus> => {

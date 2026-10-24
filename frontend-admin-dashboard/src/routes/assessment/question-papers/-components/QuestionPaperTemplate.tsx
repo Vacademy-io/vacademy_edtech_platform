@@ -1,6 +1,7 @@
 import { DotsSixVertical, Plus, WarningCircle, X } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
@@ -23,6 +24,7 @@ import {
     getIdBySubjectName,
     transformResponseDataToMyQuestionsSchema,
     getPPTViewTitle,
+    findNumericQuestionWithoutAnswer,
 } from '../-utils/helper';
 import {
     MyQuestion,
@@ -57,8 +59,19 @@ export function QuestionPaperTemplate({
     setCurrentQuestionIndex,
     examType,
     triggerVariant = 'plain',
+    open,
+    onOpenChange,
+    hideTrigger = false,
+    onValidSave,
 }: QuestionPaperTemplateProps) {
-    const [isQuestionPaperTemplateDialog, setIsQuestionPaperTemplateDialog] = useState(false);
+    const { t } = useTranslation('assessmentQuestionPaperTemplate');
+    const [internalOpen, setInternalOpen] = useState(false);
+    // Controlled when the parent passes `open`; otherwise the built-in trigger owns it.
+    const isQuestionPaperTemplateDialog = open ?? internalOpen;
+    const setIsQuestionPaperTemplateDialog = (value: boolean) => {
+        if (open === undefined) setInternalOpen(value);
+        onOpenChange?.(value);
+    };
     const { instituteLogo } = useInstituteLogoStore();
     const { handleRefetchData } = useRefetchStore();
     const queryClient = useQueryClient();
@@ -88,24 +101,27 @@ export function QuestionPaperTemplate({
     const applyCurrentTagsToAll = () => {
         const currentTags: string[] = getValues(`questions.${currentQuestionIndex}.tags`) || [];
         if (currentTags.length === 0) {
-            toast.error('Add at least one tag to this question first');
+            toast.error(t('toasts.addTagFirst'));
             return;
         }
         const allQuestions = getValues('questions') || [];
         allQuestions.forEach((_, idx) => {
             const existing: string[] = getValues(`questions.${idx}.tags`) || [];
-            const seen = new Set(existing.map((t) => t.toLowerCase()));
+            const seen = new Set(existing.map((tg) => tg.toLowerCase()));
             const merged = [...existing];
-            currentTags.forEach((t) => {
-                if (!seen.has(t.toLowerCase())) {
-                    seen.add(t.toLowerCase());
-                    merged.push(t);
+            currentTags.forEach((tg) => {
+                if (!seen.has(tg.toLowerCase())) {
+                    seen.add(tg.toLowerCase());
+                    merged.push(tg);
                 }
             });
             setValue(`questions.${idx}.tags`, merged, { shouldDirty: true });
         });
         toast.success(
-            `Applied ${currentTags.length} tag(s) to all ${allQuestions.length} questions`
+            t('toasts.tagsApplied', {
+                tags: t('common.tagCount', { count: currentTags.length }),
+                questions: t('common.questionCount', { count: allQuestions.length }),
+            })
         );
     };
 
@@ -210,7 +226,7 @@ export function QuestionPaperTemplate({
                     isSelected: false,
                 },
             ],
-            validAnswers: [0],
+            validAnswers: [],
             subjectiveAnswerText: '',
             numericType: '',
             parentRichTextContent: null,
@@ -237,7 +253,7 @@ export function QuestionPaperTemplate({
         onSuccess: () => {
             setCurrentQuestionIndex(0);
             handleRefetchData();
-            toast.success('Question Paper updated successfully', {
+            toast.success(t('toasts.updateSuccess'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -249,7 +265,29 @@ export function QuestionPaperTemplate({
         },
     });
 
+    // A numeric question saved without an answer grades every learner wrong, so stop
+    // on the first one and take the teacher to it. Only where the paper is known to be
+    // graded: surveys have no answer key, and the library and assignment editors do
+    // not say what the paper is for.
+    const stopOnMissingNumericAnswer = (
+        questions?: MyQuestionPaperFormInterface['questions'],
+        previous?: MyQuestionPaperFormInterface['questions']
+    ) => {
+        if (!examType || examType === 'SURVEY') return false;
+        const index = findNumericQuestionWithoutAnswer(questions, previous);
+        if (index === -1) return false;
+        setCurrentQuestionIndex(index);
+        toast.error(t('toasts.numericAnswerMissing', { number: index + 1 }), {
+            className: 'error-toast',
+            duration: 3000,
+        });
+        return true;
+    };
+
     const handleSaveClick = (values: MyQuestionPaperFormInterface) => {
+        if (stopOnMissingNumericAnswer(values.questions, previousQuestionPaperData?.questions)) {
+            return;
+        }
         const changedValues = {
             ...values,
             ...(values.yearClass !== 'N/A' && {
@@ -314,13 +352,19 @@ export function QuestionPaperTemplate({
 
     const handleTriggerForm = () => {
         form.trigger();
+        if (stopOnMissingNumericAnswer(form.getValues('questions') as MyQuestion[])) return;
 
         const errors = form.formState.errors;
         if (Object.values(errors).length > 0) {
-            toast.error('some of your questions are incomplete or needs attentions!', {
+            toast.error(t('toasts.incompleteQuestions'), {
                 className: 'error-toast',
                 duration: 3000,
             });
+            return;
+        }
+
+        if (onValidSave) {
+            onValidSave();
             return;
         }
 
@@ -332,7 +376,11 @@ export function QuestionPaperTemplate({
             open={isQuestionPaperTemplateDialog}
             onOpenChange={setIsQuestionPaperTemplateDialog}
         >
-            <DialogTrigger asChild={isViewMode && triggerVariant === 'secondary'}>
+            <DialogTrigger
+                asChild={isViewMode && triggerVariant === 'secondary'}
+                // Controlled callers open the dialog themselves.
+                className={hideTrigger ? 'hidden' : undefined}
+            >
                 {isViewMode ? (
                     triggerVariant === 'secondary' ? (
                         <MyButton
@@ -379,18 +427,17 @@ export function QuestionPaperTemplate({
                             <div className="flex min-w-0 items-center gap-3">
                                 <img
                                     src={instituteLogo}
-                                    alt="logo"
+                                    alt={t('header.logoAlt')}
                                     className="size-9 shrink-0 rounded-full object-cover"
                                 />
                                 <div className="flex min-w-0 items-center gap-1">
                                     <h1 className="truncate text-title font-semibold text-neutral-700">
-                                        {title || 'Untitled'}
+                                        {title || t('header.untitled')}
                                     </h1>
                                     <QuestionPaperEditDialog form={form} />
                                 </div>
                                 <span className="hidden shrink-0 rounded-full bg-white px-2 py-0.5 text-caption text-neutral-600 sm:inline">
-                                    {questions.length}{' '}
-                                    {questions.length === 1 ? 'question' : 'questions'}
+                                    {t('common.questionCount', { count: questions.length })}
                                 </span>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
@@ -402,7 +449,7 @@ export function QuestionPaperTemplate({
                                         layoutVariant="default"
                                         className="min-w-24 sm:min-w-24"
                                     >
-                                        Exit
+                                        {t('header.exit')}
                                     </MyButton>
                                 </DialogClose>
                                 <MyButton
@@ -420,7 +467,7 @@ export function QuestionPaperTemplate({
                                             : handleTriggerForm
                                     }
                                 >
-                                    Save
+                                    {t('header.save')}
                                 </MyButton>
                             </div>
                         </div>
@@ -439,13 +486,13 @@ export function QuestionPaperTemplate({
                                             className="w-full gap-1 sm:min-w-0"
                                         >
                                             <Plus size={16} />
-                                            Add question
+                                            {t('actions.addQuestion')}
                                         </MyButton>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent className="h-4/5 overflow-y-auto p-0">
                                         <div className="sticky top-0 flex items-center justify-between rounded-md bg-primary-50">
                                             <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                                Add Question
+                                                {t('dialogs.addQuestion.title')}
                                             </h1>
                                             <AlertDialogCancel
                                                 onClick={() => setAddQuestionDialogBox(false)}
@@ -463,7 +510,7 @@ export function QuestionPaperTemplate({
                                     </AlertDialogContent>
                                 </AlertDialog>
                                 <span className="px-1 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                                    Questions
+                                    {t('sidebar.questionsLabel')}
                                 </span>
                                 <div className="-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-1">
                                     <Sortable
@@ -522,7 +569,9 @@ export function QuestionPaperTemplate({
                                                                             <TooltipTrigger asChild>
                                                                                 <span
                                                                                     className="flex shrink-0 items-center"
-                                                                                    aria-label="Question isn't complete"
+                                                                                    aria-label={t(
+                                                                                        'sidebar.questionIncompleteAriaLabel'
+                                                                                    )}
                                                                                 >
                                                                                     <WarningCircle
                                                                                         weight="fill"
@@ -532,9 +581,9 @@ export function QuestionPaperTemplate({
                                                                             </TooltipTrigger>
                                                                             <TooltipContent side="right">
                                                                                 <p>
-                                                                                    Question
-                                                                                    isn&apos;t
-                                                                                    complete
+                                                                                    {t(
+                                                                                        'sidebar.questionIncompleteTooltip'
+                                                                                    )}
                                                                                 </p>
                                                                             </TooltipContent>
                                                                         </Tooltip>
@@ -583,10 +632,10 @@ export function QuestionPaperTemplate({
                             {questions.length === 0 ? (
                                 <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
                                     <h2 className="text-h3-semibold text-neutral-700">
-                                        No questions yet
+                                        {t('emptyState.title')}
                                     </h2>
                                     <p className="max-w-sm text-body text-neutral-500">
-                                        Add your first question to start building this paper.
+                                        {t('emptyState.description')}
                                     </p>
                                     <MyButton
                                         type="button"
@@ -597,7 +646,7 @@ export function QuestionPaperTemplate({
                                         onClick={() => setAddQuestionDialogBox(true)}
                                     >
                                         <Plus size={16} />
-                                        Add question
+                                        {t('actions.addQuestion')}
                                     </MyButton>
                                 </div>
                             ) : (
@@ -606,11 +655,10 @@ export function QuestionPaperTemplate({
                                         <div className="flex items-end justify-between gap-4">
                                             <div className="flex flex-col">
                                                 <span className="text-subtitle font-semibold text-neutral-700">
-                                                    Subject / topic tags
+                                                    {t('tags.title')}
                                                 </span>
                                                 <span className="text-caption text-neutral-500">
-                                                    Used to group questions in reports and question
-                                                    search.
+                                                    {t('tags.description')}
                                                 </span>
                                             </div>
                                             <MyButton
@@ -621,7 +669,7 @@ export function QuestionPaperTemplate({
                                                 className="h-8 shrink-0"
                                                 onClick={applyCurrentTagsToAll}
                                             >
-                                                Apply to all questions
+                                                {t('tags.applyToAll')}
                                             </MyButton>
                                         </div>
                                         <SubjectTagInput

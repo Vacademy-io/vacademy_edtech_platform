@@ -42,6 +42,7 @@ import { ENABLE_OTP_FOR_LOGIN_SIGNUP } from "@/constants/feature-flags";
 import { SessionLimitDialog } from "@/components/common/auth/login/components/SessionLimitDialog";
 import { navigateAfterLogin } from "@/lib/auth/post-login-redirect";
 import { useTranslation } from "react-i18next";
+import { isSignupLinkVisible } from "./signup-link-visibility";
 import i18n from "@/i18n";
 
 /**
@@ -71,7 +72,9 @@ export function EmailLogin({
   onEmailVerificationSuccess,
   allowUsernamePasswordAuth,
   allowPhoneAuth,
+  allowSignup,
   onSwitchToPhone,
+  initialEmail,
 }: {
   onSwitchToUsername: () => void;
   onSwitchToPhone?: () => void;
@@ -81,6 +84,10 @@ export function EmailLogin({
   onEmailVerificationSuccess?: (email: string) => void;
   allowUsernamePasswordAuth?: boolean;
   allowPhoneAuth?: boolean;
+  /** Portal policy from domain routing; undefined = unknown, see isSignupLinkVisible. */
+  allowSignup?: boolean;
+  /** Pre-fills the email field; the learner still has to receive and enter the OTP. */
+  initialEmail?: string;
 }) {
   const { t, i18n: i18nInstance } = useTranslation("auth");
   const emailSchema = useMemo(
@@ -107,7 +114,7 @@ export function EmailLogin({
   const emailForm = useForm<EmailFormValues>({
     resolver: zodResolver(emailSchema),
     defaultValues: {
-      email: "",
+      email: initialEmail ?? "",
     },
   });
   const startTimer = () => {
@@ -814,64 +821,21 @@ export function EmailLogin({
           </motion.button>
         )}
 
-        <div className="text-sm text-gray-600">
-          {(() => {
-            try {
-              const instituteId = localStorage.getItem("InstituteId") || "";
-              if (!instituteId) return null;
-              const stored = localStorage.getItem(`LEARNER_${instituteId}`);
-              if (!stored)
-                return (
-                  <>
-                    {t("common.dontHaveAccount")}{" "}
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.02 }}
-                      onClick={
-                        onSwitchToSignup || (() => navigate({ to: "/signup" }))
-                      }
-                      className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
-                    >
-                      {t("common.signUpHere")}
-                    </motion.button>
-                  </>
-                );
-              const parsed = JSON.parse(stored);
-              if (parsed?.allowSignup === false) return null;
-            } catch {
-              return (
-                <>
-                  {t("common.dontHaveAccount")}{" "}
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    onClick={
-                      onSwitchToSignup || (() => navigate({ to: "/signup" }))
-                    }
-                    className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
-                  >
-                    {t("common.signUpHere")}
-                  </motion.button>
-                </>
-              );
-            }
-            return (
-              <>
-                {t("common.dontHaveAccount")}{" "}
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  onClick={
-                    onSwitchToSignup || (() => navigate({ to: "/signup" }))
-                  }
-                  className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
-                >
-                  {t("common.signUpHere")}
-                </motion.button>
-              </>
-            );
-          })()}
-        </div>
+        {isSignupLinkVisible(allowSignup) && (
+          <div className="text-sm text-gray-600">
+            {t("common.dontHaveAccount")}{" "}
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              onClick={
+                onSwitchToSignup || (() => navigate({ to: "/signup" }))
+              }
+              className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
+            >
+              {t("common.signUpHere")}
+            </motion.button>
+          </div>
+        )}
       </motion.div>
 
       <SessionLimitDialog

@@ -1,3 +1,4 @@
+import logging
 import os
 from functools import lru_cache
 from typing import Optional
@@ -27,6 +28,11 @@ def _load_env_file() -> None:
 
 
 _load_env_file()
+
+# The platform JWT signing key that used to be hardcoded here (and in
+# common_service JwtService). Kept ONLY as a fallback until JWT_SECRET_KEY is set
+# everywhere; then it goes, and the key is rotated.
+_LEGACY_JWT_SECRET_FALLBACK = "357638792F423F4428472B4B6250655368566D597133743677397A2443264629"
 
 
 class Settings(BaseSettings):
@@ -82,16 +88,35 @@ class Settings(BaseSettings):
     # LLM Configuration - Using OpenRouter (your working API key)
     llm_base_url: str = "https://openrouter.ai/api/v1/chat/completions"
     openrouter_api_key: Optional[str] = None  # Will be populated from OPENROUTER_API_KEY env var
-    # Strong default for production-grade tasks (script writing, director planning,
-    # per-shot HTML, frame regeneration). Free-tier models like
-    # `xiaomi/mimo-v2-flash:free` were producing too-variable HTML for the
-    # frame-regen path — bumping the default raises the floor without
-    # changing the env override. Override via `LLM_DEFAULT_MODEL` if needed.
-    llm_default_model: str = os.getenv("LLM_DEFAULT_MODEL", "google/gemini-3.1-pro-preview")
-    # NOTE: for ai-service in production this default is DEAD — the Deployment
-    # spec sets LLM_DEFAULT_MODEL=google/gemini-2.5-flash as a literal env value,
-    # so that is what actually serves the learner chatbot. Change the model in the
-    # deployment (devops repo), not here.
+    # Isoquant (OpenAI-compatible gateway). Only models listed in the route map
+    # (services/llm_router.py) go there; unset = everything stays on OpenRouter.
+    isoquant_api_key: Optional[str] = None  # ISOQUANT_API_KEY
+    # Last-resort default chat model. Release 2 (2026-10-13): the base tier is
+    # the 'platform_default' row in ai_model_defaults (super-admin portal);
+    # this env value only applies when that lookup fails. GLM by default
+    # (constants/model_defaults.GLM_DEFAULT); the deploy workflow sets the same.
+    llm_default_model: str = os.getenv("LLM_DEFAULT_MODEL", "z-ai/glm-5.3-flash")
+    # Failover model when the chosen model fails (ChatLLMClient, call
+    # intelligence). Deliberately a DIFFERENT vendor than the GLM default, so a
+    # GLM outage never fails over GLM -> GLM (NON_GLM_FALLBACK).
+    llm_fallback_model: str = os.getenv("LLM_FALLBACK_MODEL", "google/gemini-2.5-flash")
+    # CRM Call Intelligence (call_intelligence_service). Founder decision
+    # 2026-09-11: on by default for every AI-agent call at no extra charge, so
+    # the per-call cost has to be near zero. Measured on OpenRouter against a
+    # real 209 s Hindi call: GLM-5.3-flash ~$0.0004 per call for the analysis;
+    # for transcription, whisper-large-v3-turbo ($0.0002/min) locked onto the
+    # English screener in the first 30 s and rendered the whole Hindi call as
+    # garbled English (with or without language=hi), whisper-large-v3 dropped
+    # sentences, gpt-4o-mini-transcribe ($0.0017/min) was clean Devanagari with
+    # code-switching intact — so that is the default. Both overridable.
+    # (The render-box Whisper this replaces failed 45% of runs "at capacity".)
+    call_intel_llm_model: str = os.getenv("CALL_INTEL_LLM_MODEL", "z-ai/glm-5.3-flash")
+    call_intel_stt_model: str = os.getenv("CALL_INTEL_STT_MODEL", "openai/gpt-4o-mini-transcribe")
+    # "openrouter" (default) | "render" — the render worker stays as the fallback
+    # when OpenRouter transcription fails and RENDER_SERVER_URL is configured.
+    call_intel_stt_backend: str = os.getenv("CALL_INTEL_STT_BACKEND", "openrouter")
+    # NOTE: the deploy workflow (docker-publish-ai-service.yml) re-applies
+    # LLM_DEFAULT_MODEL / LLM_FALLBACK_MODEL on every deploy; change them there.
     #
     # Suppress provider-side "reasoning" tokens on chat completions. Reasoning
     # models otherwise spend hundreds of hidden output tokens before answering,
@@ -162,6 +187,16 @@ class Settings(BaseSettings):
     # YouTube API Configuration
     youtube_api_key: Optional[str] = None
 
+    # YouTube captions through a proxy (services/youtube_captions). Secrets: set
+    # only in the k8s secret (vacademy-secrets), never in code or platform settings.
+    # YT_CAPTIONS_PROXY = webshare | generic | off (default off).
+    yt_captions_proxy: Optional[str] = None
+    webshare_proxy_username: Optional[str] = None        # Webshare Rotating Residential
+    webshare_proxy_password: Optional[str] = None
+    yt_captions_proxy_http_url: Optional[str] = None     # generic mode; URLs carry credentials
+    yt_captions_proxy_https_url: Optional[str] = None
+    supadata_api_key: Optional[str] = None               # secondary caption provider
+
     # Sarvam AI Configuration (for Indian-language STT/TTS)
     sarvam_api_key: str = ""
 
@@ -214,9 +249,16 @@ class Settings(BaseSettings):
     )
 
     # JWT Configuration (Shared with Java services)
-    # Default value works for dev/stage if matching common_service
-    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "357638792F423F4428472B4B6250655368566D597133743677397A2443264629")
+    # Read from JWT_SECRET_KEY (same value as common_service JwtService). The
+    # built-in value is a temporary fallback only — it is public in this repo —
+    # and get_settings() logs a WARNING when JWT_SECRET_KEY is unset or still
+    # equals that public value.
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", _LEGACY_JWT_SECRET_FALLBACK)
     jwt_algorithm: str = "HS256"
+    # Voice sockets verify any token they are given. Flip this on once every
+    # client ships one, and unauthenticated calls are refused outright.
+    voice_require_auth: bool = os.getenv("VOICE_REQUIRE_AUTH", "false").lower() == "true"
+    chat_require_auth: bool = os.getenv("CHAT_REQUIRE_AUTH", "false").lower() == "true"
     jwt_token_expiry_minutes: int = 43200  # 30 days in minutes (matching Java 2592000000ms)
 
     # Internal service-to-service auth.
@@ -227,7 +269,70 @@ class Settings(BaseSettings):
     # requests (no implicit fallback).
     internal_service_token: Optional[str] = os.getenv("INTERNAL_SERVICE_TOKEN")
 
+    # Platform staff allowed on /super-admin/v1/* and the other global writes
+    # (credit rate, credit grants, model registry): comma-separated auth user ids,
+    # compared exactly with the caller's user id. Ids, not usernames: a username
+    # can be renamed by its owner (and case-varied), an id cannot. Same people as
+    # the health-check portal's PORTAL_ALLOWED_USERS. Unset = nobody (fail closed).
+    super_admin_user_ids: Optional[str] = os.getenv("SUPER_ADMIN_USER_IDS")
+
+    # ── MCP server (Model Context Protocol) ────────────────────────────────
+    # ON by default. The real access control is per-institute
+    # (MCP_SERVER_SETTING: enabled + role allow-list, learners never) and is
+    # re-checked on every request, so the endpoint merely existing grants nobody
+    # anything: an un-opted-in institute is refused, and an unauthenticated
+    # caller gets a 401. A global switch on top of that bought no safety and only
+    # made the server depend on a deploy-time variable, so it defaults on and
+    # exists purely as an emergency kill switch (set MCP_SERVER_ENABLED=false).
+    mcp_server_enabled: bool = os.getenv("MCP_SERVER_ENABLED", "true").lower() == "true"
+    # Public URL of the MCP endpoint. It is BOTH the OAuth issuer and the RFC 8707
+    # resource identifier, so it must be the externally reachable URL and must be
+    # HTTPS (the SDK exempts localhost for local development).
+    mcp_issuer_url: str = os.getenv(
+        "MCP_ISSUER_URL",
+        f"{os.getenv('AI_SERVICE_PUBLIC_URL', 'https://backend-stage.vacademy.io/').rstrip('/')}/ai-service/mcp",
+    )
+    # Where the browser is sent to log in and approve a connection.
+    admin_dashboard_url: str = os.getenv("ADMIN_DASHBOARD_URL", "https://dash.vacademy.io")
+    # Default learner-portal origin for institutes without their own domain
+    # (institutes.learner_portal_base_url). Catalogue sites are served there.
+    learner_dashboard_url: str = os.getenv("LEARNER_DASHBOARD_URL", "https://learner.vacademy.io")
+    # Encrypts the platform tokens stored against each grant. Prefer a dedicated
+    # key (generate: Fernet.generate_key()). Falls back to another server-side
+    # secret so the MCP server does not need a deploy-time variable to come up —
+    # see resolve_mcp_encryption_key(), which is what the code actually uses.
+    mcp_token_encryption_key: Optional[str] = os.getenv("MCP_TOKEN_ENCRYPTION_KEY")
+    mcp_access_token_ttl_seconds: int = int(os.getenv("MCP_ACCESS_TOKEN_TTL_SECONDS", "3600"))
+    mcp_refresh_token_ttl_seconds: int = int(os.getenv("MCP_REFRESH_TOKEN_TTL_SECONDS", str(30 * 24 * 3600)))
+    # A parked /authorize request: long enough to log in, short enough to matter.
+    mcp_auth_txn_ttl_seconds: int = int(os.getenv("MCP_AUTH_TXN_TTL_SECONDS", "900"))
+    # An issued authorization code. OAuth 2.1 recommends a maximum of 10 minutes.
+    mcp_auth_code_ttl_seconds: int = int(os.getenv("MCP_AUTH_CODE_TTL_SECONDS", "300"))
+
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
+
+    def resolve_mcp_encryption_key(self) -> str:
+        """
+        The secret used to encrypt stored platform tokens.
+
+        Prefers a dedicated MCP_TOKEN_ENCRYPTION_KEY. When none is set, falls
+        back to another secret this service already holds, so the MCP server
+        comes up without a deploy-time variable — the alternative was refusing
+        to mount, which made the feature depend on config that not every deploy
+        path can set.
+
+        The fallbacks are deliberately server-side secrets that are always
+        present and never leave the cluster. TokenCipher stretches whatever it
+        gets through SHA-256, so a passphrase-shaped value is fine. Key
+        separation is still better practice: set MCP_TOKEN_ENCRYPTION_KEY in
+        production so rotating the JWT secret does not also invalidate every
+        stored MCP grant.
+        """
+        for candidate in (self.mcp_token_encryption_key, self.internal_service_token, self.jwt_secret_key):
+            if candidate:
+                return candidate
+        # Unreachable in practice: jwt_secret_key carries a default.
+        raise ValueError("No secret available to encrypt MCP platform tokens.")
 
     def build_sqlalchemy_url(self) -> str:
         """
@@ -285,6 +390,17 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    if not os.getenv("JWT_SECRET_KEY"):
+        logging.getLogger(__name__).warning(
+            "JWT_SECRET_KEY is not set: verifying tokens with the built-in fallback key, "
+            "which is public. Set JWT_SECRET_KEY to the common_service signing key."
+        )
+    elif settings.jwt_secret_key == _LEGACY_JWT_SECRET_FALLBACK:
+        logging.getLogger(__name__).warning(
+            "JWT_SECRET_KEY equals the legacy key that is public in this repo; rotate it "
+            "(together with common_service)."
+        )
+    return settings
 
 

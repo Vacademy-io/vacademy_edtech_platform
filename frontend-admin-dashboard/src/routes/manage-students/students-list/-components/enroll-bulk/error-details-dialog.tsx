@@ -15,6 +15,7 @@ import {
 import { Warning } from '@phosphor-icons/react';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ErrorDetailsDialogProps {
     isOpen: boolean;
@@ -31,10 +32,12 @@ export const ErrorDetailsDialog = ({
     rowData,
     isApiError = false,
 }: ErrorDetailsDialogProps) => {
+    const { t } = useTranslation('manageStudentsErrorDetailsDialog');
+
     // For API errors, extract useful details from the error message
 
     const getFormattedApiError = (errorMessage: string) => {
-        if (!errorMessage) return { mainError: 'Unknown error', details: '' };
+        if (!errorMessage) return { mainError: t('apiError.unknownError'), details: '' };
 
         // Try to extract and format JDBC constraint error messages which contain "Detail:"
         const jdbcPattern = /JDBC exception executing SQL \[(.*?)\] \[(.*?)\]/;
@@ -74,12 +77,12 @@ export const ErrorDetailsDialog = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-[800px] max-w-[900px] p-0 font-normal">
+            <DialogContent className="w-dialog-lg p-0 font-normal">
                 <DialogTitle>
                     <DialogHeader>
                         <div className="flex items-center bg-danger-50 px-6 py-4 text-h3 font-semibold text-danger-600">
                             <Warning className="mr-2 size-5" />
-                            {isApiError ? 'Upload Error' : 'Validation Errors'}
+                            {isApiError ? t('title.apiError') : t('title.validationError')}
                         </div>
                     </DialogHeader>
                 </DialogTitle>
@@ -90,7 +93,7 @@ export const ErrorDetailsDialog = ({
                         <div className="space-y-4">
                             <div className="rounded-md bg-danger-50 p-4">
                                 <h3 className="mb-2 text-lg font-medium text-danger-700">
-                                    Upload failed for this entry
+                                    {t('apiError.heading')}
                                 </h3>
                                 {formattedError ? (
                                     <div className="text-danger-600">
@@ -101,7 +104,7 @@ export const ErrorDetailsDialog = ({
                                         {formattedError.sqlStatement && (
                                             <div className="mt-3">
                                                 <p className="text-sm text-neutral-700">
-                                                    SQL Statement:
+                                                    {t('apiError.sqlStatementLabel')}
                                                 </p>
                                                 <p className="mt-1 rounded bg-neutral-100 p-2 font-mono text-xs">
                                                     {formattedError.sqlStatement}
@@ -113,21 +116,23 @@ export const ErrorDetailsDialog = ({
                                     <div className="whitespace-pre-wrap text-danger-600">
                                         {rowData.ERROR ||
                                             rowData.STATUS_MESSAGE ||
-                                            'Unknown error occurred during upload.'}
+                                            t('apiError.unknownUploadError')}
                                     </div>
                                 )}
                             </div>
 
                             <div className="mt-4">
-                                <h3 className="mb-2 text-lg font-medium">Row Data</h3>
+                                <h3 className="mb-2 text-lg font-medium">
+                                    {t('apiError.rowDataHeading')}
+                                </h3>
                                 <Table className="border">
                                     <TableHeader className="bg-neutral-100">
                                         <TableRow>
                                             <TableHead className="w-1/3 border-r p-3 font-semibold text-neutral-700">
-                                                Field
+                                                {t('apiError.table.field')}
                                             </TableHead>
                                             <TableHead className="w-2/3 p-3 font-semibold text-neutral-700">
-                                                Value
+                                                {t('apiError.table.value')}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -145,7 +150,8 @@ export const ErrorDetailsDialog = ({
                                                         {key.replace(/_/g, ' ')}
                                                     </TableCell>
                                                     <TableCell className="p-3">
-                                                        {value?.toString() || 'N/A'}
+                                                        {value?.toString() ||
+                                                            t('common.notAvailable')}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -159,16 +165,16 @@ export const ErrorDetailsDialog = ({
                             <TableHeader className="bg-neutral-100">
                                 <TableRow>
                                     <TableHead className="w-1/5 border-r p-3 font-semibold text-neutral-700">
-                                        Position
+                                        {t('validationErrors.table.position')}
                                     </TableHead>
                                     <TableHead className="w-1/4 border-r p-3 font-semibold text-neutral-700">
-                                        Error
+                                        {t('validationErrors.table.error')}
                                     </TableHead>
                                     <TableHead className="w-1/3 border-r p-3 font-semibold text-neutral-700">
-                                        Resolution
+                                        {t('validationErrors.table.resolution')}
                                     </TableHead>
                                     <TableHead className="w-1/5 p-3 font-semibold text-neutral-700">
-                                        Current Value
+                                        {t('validationErrors.table.currentValue')}
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -176,7 +182,10 @@ export const ErrorDetailsDialog = ({
                                 {errors.map((error, index) => (
                                     <TableRow key={index}>
                                         <TableCell className="border-r p-3">
-                                            {`In row ${error.path[0] + 1} of ${error.path[1]}`}
+                                            {t('validationErrors.rowPosition', {
+                                                row: error.path[0] + 1,
+                                                field: error.path[1],
+                                            })}
                                         </TableCell>
                                         <TableCell className="border-r p-3 text-danger-600">
                                             {error.message}
@@ -187,7 +196,7 @@ export const ErrorDetailsDialog = ({
                                         <TableCell className="p-3">
                                             {error.currentVal ||
                                                 rowData[error.path[1]]?.toString() ||
-                                                'N/A'}
+                                                t('common.notAvailable')}
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -203,7 +212,7 @@ export const ErrorDetailsDialog = ({
                         layoutVariant="default"
                         onClick={onClose}
                     >
-                        Close
+                        {t('buttons.close')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

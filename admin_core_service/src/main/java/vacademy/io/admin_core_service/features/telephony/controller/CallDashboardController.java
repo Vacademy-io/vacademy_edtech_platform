@@ -20,6 +20,13 @@ import vacademy.io.admin_core_service.features.telephony.core.dto.CallDispositio
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallMetricsDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallRowDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallSearchFilterDTO;
+import vacademy.io.admin_core_service.features.telephony.core.dto.BulkCallActionRequestDTO;
+import vacademy.io.admin_core_service.features.telephony.core.dto.DispositionCountDTO;
+import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
+import vacademy.io.admin_core_service.features.telephony.persistence.repository.TelephonyCallLogRepository;
+import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
+import vacademy.io.admin_core_service.features.audience.service.UserLeadProfileService;
+import vacademy.io.admin_core_service.features.call_intelligence.core.CallIntelligenceEnqueueService;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
@@ -59,6 +66,13 @@ public class CallDashboardController {
     private final InstituteAccessValidator instituteAccessValidator;
     private final vacademy.io.admin_core_service.features.engagement.repository
             .EngagementActionRepository actionRepository;
+    private final TelephonyCallLogRepository callLogRepository;
+    private final LeadStatusService leadStatusService;
+    private final UserLeadProfileService userLeadProfileService;
+    private final CallIntelligenceEnqueueService callIntelligenceEnqueueService;
+
+    /** Bulk actions are loops over the single-row services; this caps one request. */
+    private static final int BULK_CAP = 500;
 
     @PostMapping("/search")
     public ResponseEntity<Page<CallRowDTO>> search(
@@ -219,6 +233,136 @@ public class CallDashboardController {
 
     private static Long epoch(Timestamp t) {
         return t == null ? null : t.getTime();
+    }
+
+    /**
+     * Disposition strip: every effective outcome in the filter window with a count.
+     * Same body as /search; the disposition filter and the chips are ignored so the
+     * strip lists the window's outcomes, not the current selection.
+     */
+    @PostMapping("/dispositions/counts")
+    public ResponseEntity<List<DispositionCountDTO>> dispositionCounts(
+            @RequestBody CallSearchFilterDTO filter,
+            @RequestAttribute("user") CustomUserDetails user) {
+        if (filter == null || filter.getInstituteId() == null || filter.getInstituteId().isBlank()) {
+            throw new VacademyException("instituteId is required");
+        }
+        instituteAccessValidator.validateUserAccess(user, filter.getInstituteId());
+        return ResponseEntity.ok(callSearchService.dispositionCounts(filter, user.getUserId()));
+    }
+
+    // ── Bulk actions (Call Log row checkboxes, 2026-09-11) ────────────────────
+    //
+    // Each is a loop over the existing single-row path, so every rule that path
+    // enforces (catalog validation, lead-status sync, journey events, audit) holds
+    // per row. Partial success is reported, never hidden: the response carries the
+    // ids that failed and why, and one bad row never rolls back the others.
+
+    @PostMapping("/bulk/disposition")
+    public ResponseEntity<Map<String, Object>> bulkDisposition(
+            @RequestBody BulkCallActionRequestDTO req,
+            @RequestAttribute("user") CustomUserDetails user) {
+        List<TelephonyCallLog> calls = bulkTargets(req, user);
+        if (req.getDispositionKey() == null || req.getDispositionKey().isBlank()) {
+            throw new VacademyException("dispositionKey is required");
+        }
+        return ResponseEntity.ok(runBulk(calls, c -> callDispositionService.applyDisposition(
+                c.getId(), req.getInstituteId(), req.getDispositionKey().trim(), req.getNotes(),
+                null, user.getUserId())));
+    }
+
+    @PostMapping("/bulk/lead-status")
+    public ResponseEntity<Map<String, Object>> bulkLeadStatus(
+            @RequestBody BulkCallActionRequestDTO req,
+            @RequestAttribute("user") CustomUserDetails user) {
+        List<TelephonyCallLog> calls = bulkTargets(req, user);
+        if (req.getStatusId() == null || req.getStatusId().isBlank()) {
+            throw new VacademyException("statusId is required");
+        }
+        // One lead may own several selected calls; change its status once.
+        java.util.Set<String> done = new java.util.HashSet<>();
+        return ResponseEntity.ok(runBulk(calls, c -> {
+            if (c.getResponseId() == null || c.getResponseId().isBlank()) {
+                throw new VacademyException("call has no lead");
+            }
+            if (done.add(c.getResponseId())) {
+                leadStatusService.changeLeadStatus(c.getResponseId(), req.getStatusId().trim(),
+                        user.getUserId(), "MANUAL");
+            }
+        }));
+    }
+
+    @PostMapping("/bulk/assign-counsellor")
+    public ResponseEntity<Map<String, Object>> bulkAssignCounsellor(
+            @RequestBody BulkCallActionRequestDTO req,
+            @RequestAttribute("user") CustomUserDetails user) {
+        List<TelephonyCallLog> calls = bulkTargets(req, user);
+        java.util.Set<String> done = new java.util.HashSet<>();
+        boolean unassign = req.getCounselorId() == null || req.getCounselorId().isBlank();
+        return ResponseEntity.ok(runBulk(calls, c -> {
+            if (c.getUserId() == null || c.getUserId().isBlank() || "UNKNOWN".equals(c.getUserId())) {
+                throw new VacademyException("call has no lead");
+            }
+            if (done.add(c.getUserId())) {
+                userLeadProfileService.assignCounselor(c.getUserId(), req.getInstituteId(),
+                        unassign ? null : req.getCounselorId().trim(),
+                        unassign ? null : req.getCounselorName());
+            }
+        }));
+    }
+
+    /** Queue (re-)analysis for every selected call that has a recording. */
+    @PostMapping("/bulk/analyze")
+    public ResponseEntity<Map<String, Object>> bulkAnalyze(
+            @RequestBody BulkCallActionRequestDTO req,
+            @RequestAttribute("user") CustomUserDetails user) {
+        List<TelephonyCallLog> calls = bulkTargets(req, user);
+        return ResponseEntity.ok(runBulk(calls, c -> {
+            String r = callIntelligenceEnqueueService.triggerManual(c.getId());
+            if (!"QUEUED".equals(r)) throw new VacademyException(r);
+        }));
+    }
+
+    /** Resolve + authorise the selected rows: institute access, same-institute rows only, capped. */
+    private List<TelephonyCallLog> bulkTargets(BulkCallActionRequestDTO req, CustomUserDetails user) {
+        if (req == null || req.getInstituteId() == null || req.getInstituteId().isBlank()) {
+            throw new VacademyException("instituteId is required");
+        }
+        if (req.getCallLogIds() == null || req.getCallLogIds().isEmpty()) {
+            throw new VacademyException("callLogIds is required");
+        }
+        if (req.getCallLogIds().size() > BULK_CAP) {
+            throw new VacademyException("at most " + BULK_CAP + " calls per request");
+        }
+        instituteAccessValidator.validateUserAccess(user, req.getInstituteId());
+        List<TelephonyCallLog> rows = callLogRepository.findAllById(req.getCallLogIds()).stream()
+                .filter(c -> req.getInstituteId().equals(c.getInstituteId()))
+                .toList();
+        if (rows.isEmpty()) throw new VacademyException("no matching calls");
+        return rows;
+    }
+
+    private interface RowAction {
+        void apply(TelephonyCallLog call) throws Exception;
+    }
+
+    private static Map<String, Object> runBulk(List<TelephonyCallLog> calls, RowAction action) {
+        List<String> updated = new java.util.ArrayList<>();
+        List<Map<String, String>> failed = new java.util.ArrayList<>();
+        for (TelephonyCallLog c : calls) {
+            try {
+                action.apply(c);
+                updated.add(c.getId());
+            } catch (Exception e) {
+                failed.add(Map.of("call_log_id", c.getId(),
+                        "error", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+            }
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("updated", updated.size());
+        body.put("updated_ids", updated);
+        body.put("failed", failed);
+        return body;
     }
 
     /** KPI strip: headline counts (same filters as the list, minus chips) + chip badges. */

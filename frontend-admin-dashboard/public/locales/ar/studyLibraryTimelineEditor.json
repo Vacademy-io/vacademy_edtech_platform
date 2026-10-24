@@ -1,0 +1,9 @@
+{
+    "blockLabel": "الجدول الزمني / الخطوات",
+    "preview": "معاينة",
+    "edit": "تعديل",
+    "defaultStepTitle": "الخطوة {{number}}",
+    "stepTitlePlaceholder": "عنوان الخطوة",
+    "stepDescriptionPlaceholder": "وصف الخطوة (اختياري)",
+    "addStep": "+ إضافة خطوة"
+}

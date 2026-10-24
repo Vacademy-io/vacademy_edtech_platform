@@ -41,6 +41,7 @@ public class InstituteDefaultUserSubscriptionService {
             .build();
         paymentOptionDTO.setPaymentPlans(List.of(paymentPlanDTO));
 
-        paymentOptionService.savePaymentOption(paymentOptionDTO);
+        // System-seeded on institute creation: there is no admin to credit as creator.
+        paymentOptionService.savePaymentOption(paymentOptionDTO, null);
     }
 }

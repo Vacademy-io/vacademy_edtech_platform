@@ -1,0 +1,162 @@
+{
+    "card": {
+        "title": "IA Étudiant",
+        "description": "Configurez le comportement et les paramètres du tuteur IA pour les interactions avec les étudiants"
+    },
+    "fields": {
+        "enable": "Activer",
+        "role": "Rôle",
+        "rolePlaceholder": "ex. : Tuteur, Mentor, Guide",
+        "assistantName": "Nom de l'assistant",
+        "assistantNamePlaceholder": "ex. : Savir, Alex",
+        "instituteName": "Nom de l'établissement",
+        "coreInstruction": "Instruction principale",
+        "coreInstructionPlaceholder": "Définissez le comportement principal de votre tuteur IA..."
+    },
+    "avatar": {
+        "label": "Icône de l'assistant",
+        "helpText": "Affichée sur le bouton de chat et à côté de chaque message de l'assistant. PNG, JPG ou WEBP, jusqu'à 2 Mo. Les images carrées rendent le mieux.",
+        "upload": "Importer une icône",
+        "uploading": "Import en cours...",
+        "reset": "Utiliser celle par défaut",
+        "previewAlt": "Aperçu de l'icône de l'assistant",
+        "uploaded": "Icône importée. Enregistrez les paramètres pour l'appliquer.",
+        "uploadFailed": "Échec de l'import de l'icône",
+        "invalidType": "Veuillez choisir une image PNG, JPG ou WEBP",
+        "tooLarge": "Image trop volumineuse. Choisissez un fichier de moins de 2 Mo"
+    },
+    "hardRules": {
+        "label": "Règles strictes",
+        "addPlaceholder": "Ajouter une nouvelle règle stricte...",
+        "add": "Ajouter"
+    },
+    "adherence": {
+        "label": "Niveau de conformité",
+        "strict": "Strict",
+        "moderate": "Modéré",
+        "flexible": "Flexible",
+        "helpText": "Détermine la rigueur avec laquelle l'IA suit les règles configurées",
+        "temperature": "Température ({{value}})",
+        "temperatureHelp": "Contrôle la créativité (0 = concentré, 1 = créatif)"
+    },
+    "modes": {
+        "label": "Modes de discussion activés",
+        "helpText": "Choisissez les modes d'interaction proposés aux étudiants",
+        "general": {
+            "label": "Discussion générale",
+            "description": "Conversation libre"
+        },
+        "doubt": {
+            "label": "Poser une question",
+            "description": "Questions et réponses"
+        },
+        "practice": {
+            "label": "Quiz d'entraînement",
+            "description": "Entraînement QCM"
+        },
+        "voiceInterview": {
+            "label": "🎤 Entretien simulé",
+            "description": "Entraînement à l'entretien vocal"
+        },
+        "voiceDoubt": {
+            "label": "🎤 Question vocale",
+            "description": "Discuter des questions par la voix"
+        },
+        "voiceOralTest": {
+            "label": "🎤 Test oral",
+            "description": "Évaluation basée sur la voix"
+        }
+    },
+    "voice": {
+        "label": "Paramètres vocaux",
+        "defaultLanguage": "Langue par défaut",
+        "defaultVoice": "Voix par défaut",
+        "male": "Homme",
+        "female": "Femme",
+        "languages": {
+            "enIN": "Anglais (indien)",
+            "hiIN": "Hindi",
+            "bnIN": "Bengali",
+            "taIN": "Tamoul",
+            "teIN": "Télougou",
+            "knIN": "Kannada",
+            "mlIN": "Malayalam",
+            "mrIN": "Marathi",
+            "guIN": "Goujarati",
+            "paIN": "Pendjabi",
+            "odIN": "Odia"
+        },
+        "voices": {
+            "shubh": "Shubh",
+            "aditya": "Aditya",
+            "rahul": "Rahul",
+            "rohan": "Rohan",
+            "amit": "Amit",
+            "dev": "Dev",
+            "ritu": "Ritu",
+            "priya": "Priya",
+            "neha": "Neha",
+            "pooja": "Pooja",
+            "simran": "Simran",
+            "kavya": "Kavya"
+        }
+    },
+    "pageVisibility": {
+        "label": "Visibilité du chatbot par page",
+        "helpText": "Choisissez les pages sur lesquelles le chatbot IA s'affiche pour les étudiants",
+        "dashboard": {
+            "label": "Tableau de bord",
+            "description": "Tableau de bord d'accueil de l'étudiant"
+        },
+        "allCourses": {
+            "label": "Tous les cours",
+            "description": "Pages de liste et de parcours des cours"
+        },
+        "courseDetails": {
+            "label": "Détails du cours",
+            "description": "Pages de présentation de chaque cours"
+        },
+        "studyMaterial": {
+            "label": "Support de cours",
+            "description": "Diapositives, vidéos, quiz et devoirs"
+        },
+        "catalogue": {
+            "label": "Pages du catalogue (déconnecté)",
+            "description": "Catalogue de cours public pour les visiteurs"
+        }
+    },
+    "launcher": {
+        "label": "Bouton flottant",
+        "helpText": "Comportement du bouton de discussion flottant dans l'application étudiante",
+        "draggable": {
+            "label": "Déplaçable",
+            "description": "Permettre aux étudiants de déplacer le bouton et de l'ancrer sur l'un ou l'autre bord"
+        },
+        "nudge": {
+            "label": "Message périodique",
+            "description": "Afficher brièvement un rappel (« Des questions ? ») selon une minuterie, puis le réduire"
+        },
+        "showEvery": "Afficher toutes les (secondes)",
+        "stayOpenFor": "Rester ouvert pendant (secondes)",
+        "bounce": {
+            "label": "Animation de rebond",
+            "description": "Faire rebondir le bouton pendant l'affichage du message pour attirer l'attention"
+        }
+    },
+    "header": {
+        "label": "En-tête du chatbot",
+        "helpText": "Ce que la fenêtre de discussion affiche dans sa barre de titre",
+        "aiSettingsShortcut": {
+            "label": "Raccourci des paramètres IA",
+            "description": "Afficher l'engrenage qui ouvre la page des paramètres IA de l'apprenant (ses propres clés API et sa consommation de jetons). Désactivé par défaut — les apprenants ne le voient pas."
+        }
+    },
+    "actions": {
+        "saving": "Enregistrement...",
+        "save": "Enregistrer les paramètres"
+    },
+    "toast": {
+        "saveSuccess": "Configuration de l'IA étudiant enregistrée avec succès !",
+        "saveFailed": "Échec de l'enregistrement de la configuration de l'IA étudiant"
+    }
+}

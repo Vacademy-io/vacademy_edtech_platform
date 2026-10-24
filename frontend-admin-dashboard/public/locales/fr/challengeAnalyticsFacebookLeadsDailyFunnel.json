@@ -1,0 +1,15 @@
+{
+    "title": "Entonnoir de messages quotidien — Leads Facebook",
+    "subtitle": "Envois et réponses par jour sur le parcours du lead",
+    "kpis": {
+        "days": "Jours",
+        "sent": "Envoyés",
+        "replied": "Répondu",
+        "response": "Réponse"
+    },
+    "loading": "Chargement…",
+    "emptyTitle": "Aucun message de goutte-à-goutte pour le moment",
+    "emptyDescription": "Aucun message WhatsApp du parcours de lead n'a été envoyé aux leads Facebook durant cette période.",
+    "messagesByDayHeading": "Messages par jour",
+    "responseRateTrendHeading": "Tendance du taux de réponse"
+}

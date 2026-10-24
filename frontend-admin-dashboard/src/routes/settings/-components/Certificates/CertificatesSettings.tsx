@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle, Loader2, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -149,10 +151,14 @@ const formatCertificateNumberPreview = (opts: {
         .trim();
 };
 
-const AVAILABLE_FIELDS: AvailableField[] = [
+// Display names are resolved via i18next (see callers) since they are shown
+// to the admin as chip/field labels. Sample values stay in English: they are
+// example fixture data fed downstream to the visual/HTML editors' previews,
+// not chrome text belonging to this screen.
+const buildAvailableFields = (t: TFunction): AvailableField[] => [
     {
         name: 'student_name',
-        displayName: 'Student Name',
+        displayName: t('fields.studentName'),
         type: 'text',
         isRequired: true,
         sampleValue: 'Alex Sample',
@@ -160,7 +166,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'institute_name',
-        displayName: 'Institute Name',
+        displayName: t('fields.instituteName'),
         type: 'text',
         isRequired: true,
         sampleValue: 'Vacademy Institute',
@@ -168,7 +174,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'institute_logo',
-        displayName: 'Institute Logo',
+        displayName: t('fields.instituteLogo'),
         type: 'text',
         isRequired: false,
         sampleValue: '(logo image)',
@@ -176,7 +182,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'course_name',
-        displayName: 'Course Name',
+        displayName: t('fields.courseName'),
         type: 'text',
         isRequired: true,
         sampleValue: 'Intro to Sample Course',
@@ -184,7 +190,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'package_name',
-        displayName: 'Package Name',
+        displayName: t('fields.packageName'),
         type: 'text',
         isRequired: false,
         sampleValue: 'Foundation Package',
@@ -192,7 +198,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'package_level',
-        displayName: 'Package Level',
+        displayName: t('fields.packageLevel'),
         type: 'text',
         isRequired: false,
         sampleValue: 'Beginner',
@@ -200,7 +206,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'session_name',
-        displayName: 'Session Name',
+        displayName: t('fields.sessionName'),
         type: 'text',
         isRequired: false,
         sampleValue: '2025-26',
@@ -208,7 +214,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'completion_date',
-        displayName: 'Completion Date',
+        displayName: t('fields.completionDate'),
         type: 'date',
         isRequired: false,
         sampleValue: '08-05-2026',
@@ -216,7 +222,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'completion_percentage',
-        displayName: 'Completion %',
+        displayName: t('fields.completionPercentage'),
         type: 'number',
         isRequired: false,
         sampleValue: '92',
@@ -224,7 +230,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'date_of_completion',
-        displayName: 'Date of Completion',
+        displayName: t('fields.dateOfCompletion'),
         type: 'date',
         isRequired: false,
         sampleValue: '08-05-2026',
@@ -232,7 +238,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'certificate_id',
-        displayName: 'Certificate ID',
+        displayName: t('fields.certificateId'),
         type: 'text',
         isRequired: false,
         sampleValue: 'VA-0123-2026',
@@ -240,7 +246,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'certificate_qr',
-        displayName: 'QR Code',
+        displayName: t('fields.certificateQr'),
         type: 'text',
         isRequired: false,
         sampleValue: '(QR image)',
@@ -248,7 +254,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'certificate_barcode',
-        displayName: 'Barcode',
+        displayName: t('fields.certificateBarcode'),
         type: 'text',
         isRequired: false,
         sampleValue: '(barcode image)',
@@ -259,7 +265,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     // to verify the certificate.
     {
         name: 'certificate_short_code',
-        displayName: 'Verification Code',
+        displayName: t('fields.certificateShortCode'),
         type: 'text',
         isRequired: false,
         sampleValue: 'A1B2C3D4E5',
@@ -267,7 +273,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'enrollment_number',
-        displayName: 'Enrollment Number',
+        displayName: t('fields.enrollmentNumber'),
         type: 'text',
         isRequired: false,
         sampleValue: 'ENR2024001',
@@ -275,7 +281,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'email',
-        displayName: 'Email',
+        displayName: t('fields.email'),
         type: 'text',
         isRequired: false,
         sampleValue: 'student@example.com',
@@ -283,7 +289,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'mobile_number',
-        displayName: 'Mobile Number',
+        displayName: t('fields.mobileNumber'),
         type: 'text',
         isRequired: false,
         sampleValue: '+1 555 0100',
@@ -291,7 +297,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
     },
     {
         name: 'theme_color',
-        displayName: 'Theme Color',
+        displayName: t('fields.themeColor'),
         type: 'text',
         isRequired: false,
         sampleValue: '#1e4fa1',
@@ -302,6 +308,7 @@ const AVAILABLE_FIELDS: AvailableField[] = [
 // Inline draggable chip mirrors the field-palette pattern from the wizard
 // without depending on its `session` prop.
 const DraggableFieldChip = ({ field }: { field: AvailableField }) => {
+    const { t } = useTranslation('settingsCertificates');
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `field-${field.name}`,
         data: { type: 'field', field },
@@ -317,7 +324,7 @@ const DraggableFieldChip = ({ field }: { field: AvailableField }) => {
             {...listeners}
             {...attributes}
             className={`cursor-grab rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 active:cursor-grabbing ${isDragging ? 'opacity-50' : ''}`}
-            title={`Drag onto template to place ${field.displayName}`}
+            title={t('dragChip.title', { field: field.displayName })}
         >
             {field.displayName}
         </button>
@@ -343,6 +350,7 @@ const CustomFieldsEditor = ({
     fields: CertificateCustomField[];
     onChange: (fields: CertificateCustomField[]) => void;
 }) => {
+    const { t } = useTranslation('settingsCertificates');
     const update = (index: number, patch: Partial<CertificateCustomField>) =>
         onChange(fields.map((f, i) => (i === index ? { ...f, ...patch } : f)));
 
@@ -364,21 +372,17 @@ const CustomFieldsEditor = ({
     return (
         <div>
             <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Your own fields</label>
+                <label className="text-sm font-medium">{t('customFields.sectionLabel')}</label>
                 <Button type="button" variant="outline" size="sm" onClick={addField}>
                     <Plus className="mr-1 size-3" />
-                    Add field
+                    {t('customFields.addField')}
                 </Button>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-                For anything the built-in fields don&apos;t cover — a grade, a signatory&apos;s
-                title, an accreditation line. Each one becomes a chip you can drag onto the design,
-                anywhere you like.
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t('customFields.description')}</p>
 
             {fields.length === 0 ? (
                 <div className="mt-2 rounded border border-dashed bg-muted/20 p-3 text-xs text-muted-foreground">
-                    No custom fields yet.
+                    {t('customFields.empty')}
                 </div>
             ) : (
                 <div className="mt-2 space-y-3">
@@ -391,12 +395,12 @@ const CustomFieldsEditor = ({
                                     <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
                                         <div>
                                             <label className="text-xs text-muted-foreground">
-                                                Field name
+                                                {t('customFields.fieldNameLabel')}
                                             </label>
                                             <input
                                                 type="text"
                                                 value={field.displayName}
-                                                placeholder="Grade"
+                                                placeholder={t('customFields.fieldNamePlaceholder')}
                                                 onChange={(e) => {
                                                     // Typing the label fills the key until the
                                                     // admin edits the key directly, so the common
@@ -421,7 +425,7 @@ const CustomFieldsEditor = ({
                                         </div>
                                         <div>
                                             <label className="text-xs text-muted-foreground">
-                                                Where the value comes from
+                                                {t('customFields.valueSourceLabel')}
                                             </label>
                                             <select
                                                 value={field.valueType}
@@ -436,18 +440,18 @@ const CustomFieldsEditor = ({
                                                 className="mt-1 w-full rounded border px-3 py-2 text-sm"
                                             >
                                                 <option value="STATIC">
-                                                    Same text on every certificate
+                                                    {t('customFields.valueSourceStatic')}
                                                 </option>
                                                 <option value="CUSTOM_FIELD">
-                                                    The learner&apos;s own answer
+                                                    {t('customFields.valueSourceCustom')}
                                                 </option>
                                             </select>
                                         </div>
                                         <div>
                                             <label className="text-xs text-muted-foreground">
                                                 {field.valueType === 'CUSTOM_FIELD'
-                                                    ? 'Learner custom field key'
-                                                    : 'Text to print'}
+                                                    ? t('customFields.learnerKeyLabel')
+                                                    : t('customFields.textToPrintLabel')}
                                             </label>
                                             <input
                                                 type="text"
@@ -455,7 +459,7 @@ const CustomFieldsEditor = ({
                                                 placeholder={
                                                     field.valueType === 'CUSTOM_FIELD'
                                                         ? 'final_grade'
-                                                        : 'Director of Studies'
+                                                        : t('customFields.textToPrintPlaceholder')
                                                 }
                                                 onChange={(e) =>
                                                     update(index, { value: e.target.value })
@@ -466,7 +470,7 @@ const CustomFieldsEditor = ({
                                         {field.valueType === 'CUSTOM_FIELD' && (
                                             <div>
                                                 <label className="text-xs text-muted-foreground">
-                                                    If the learner has no answer
+                                                    {t('customFields.fallbackLabel')}
                                                 </label>
                                                 <input
                                                     type="text"
@@ -490,7 +494,9 @@ const CustomFieldsEditor = ({
                                             onChange(fields.filter((_, i) => i !== index))
                                         }
                                         className="mt-5 text-destructive hover:text-destructive"
-                                        aria-label={`Remove ${field.displayName || 'field'}`}
+                                        aria-label={t('customFields.removeField', {
+                                            name: field.displayName || t('customFields.fieldFallback'),
+                                        })}
                                     >
                                         <Trash className="size-4" />
                                     </Button>
@@ -498,20 +504,19 @@ const CustomFieldsEditor = ({
 
                                 {key ? (
                                     <p className="text-xs text-muted-foreground">
-                                        Placed on the certificate as{' '}
+                                        {t('customFields.placedAsPrefix')}{' '}
                                         <code className="rounded bg-muted px-1 font-mono">
                                             {`{{CF_${key}}}`}
                                         </code>
                                         {isDuplicate && (
                                             <span className="ml-2 font-medium text-destructive">
-                                                Two fields share this name — only the first will be
-                                                used.
+                                                {t('customFields.duplicateWarning')}
                                             </span>
                                         )}
                                     </p>
                                 ) : (
                                     <p className="text-xs text-muted-foreground">
-                                        Give this field a name so it can be placed.
+                                        {t('customFields.needsName')}
                                     </p>
                                 )}
                             </div>
@@ -662,6 +667,7 @@ const extractBackgroundUrl = (html: string): string => {
 };
 
 const CertificatesSettings = () => {
+    const { t } = useTranslation('settingsCertificates');
     const { instituteDetails, setInstituteDetails } = useInstituteDetailsStore();
     const settingString = instituteDetails?.setting || '';
     const settings = useMemo(() => {
@@ -757,11 +763,14 @@ const CertificatesSettings = () => {
         }, []);
     }, [customFields]);
 
+    // Built-in fields, with display names resolved for the active locale.
+    const availableFields = useMemo(() => buildAvailableFields(t), [t]);
+
     // The palette: built-ins plus this institute's own fields. Chips are keyed
     // `custom_field:<KEY>`, which the serializer turns into {{CF_<KEY>}}.
     const paletteFields = useMemo<AvailableField[]>(
         () => [
-            ...AVAILABLE_FIELDS,
+            ...availableFields,
             ...sanitizedCustomFields.map((field) => ({
                 name: `${CUSTOM_FIELD_PREFIX}${field.key}`,
                 displayName: field.displayName,
@@ -769,12 +778,13 @@ const CertificatesSettings = () => {
                 isRequired: false,
                 sampleValue:
                     field.valueType === 'CUSTOM_FIELD'
-                        ? field.fallbackValue || `(${field.value || 'learner value'})`
+                        ? field.fallbackValue ||
+                          `(${field.value || t('customFields.learnerValuePlaceholder')})`
                         : field.value,
                 source: 'system' as const,
             })),
         ],
-        [sanitizedCustomFields]
+        [availableFields, sanitizedCustomFields, t]
     );
     // True while the visual editor is showing a template that was auto-loaded
     // as a starting point rather than saved by this institute or picked just
@@ -1269,7 +1279,7 @@ const CertificatesSettings = () => {
         // path to a *new* entry; this one keeps the entry's id and name so an
         // admin trying out designs doesn't leave a trail of near-duplicates.
         const entryId = activeLibraryId ?? newTemplateId();
-        const existing = templateLibrary.find((t) => t.id === entryId);
+        const existing = templateLibrary.find((tpl) => tpl.id === entryId);
         const entry: SavedCertificateTemplate = {
             id: entryId,
             name: existing?.name ?? uniqueTemplateName(templateLibrary, template.name),
@@ -1295,7 +1305,7 @@ const CertificatesSettings = () => {
     const commitActiveToLibrary = (library = templateLibrary): SavedCertificateTemplate[] => {
         if (!imageTemplate) return library;
         const entryId = activeLibraryId ?? newTemplateId();
-        const existing = library.find((t) => t.id === entryId);
+        const existing = library.find((tpl) => tpl.id === entryId);
         return upsertTemplate(library, {
             id: entryId,
             name:
@@ -1318,7 +1328,7 @@ const CertificatesSettings = () => {
     /** Open a saved design, keeping the edits made to the one being left. */
     const handleOpenLibraryTemplate = (id: string) => {
         const committed = commitActiveToLibrary();
-        const entry = committed.find((t) => t.id === id);
+        const entry = committed.find((tpl) => tpl.id === id);
         if (!entry) return;
         setTemplateLibrary(committed);
         setActiveLibraryId(entry.id);
@@ -1341,7 +1351,7 @@ const CertificatesSettings = () => {
      */
     const handleMakeDefaultTemplate = (id: string) => {
         const committed = commitActiveToLibrary();
-        const entry = committed.find((t) => t.id === id);
+        const entry = committed.find((tpl) => tpl.id === id);
         if (!entry) return;
         const branded = withInstituteLogo(entry);
         setTemplateLibrary(upsertTemplate(committed, branded));
@@ -1595,7 +1605,7 @@ const CertificatesSettings = () => {
             const libraryMaterialized = editorMode === 'visual' ? materialized : libraryForSave;
             if (defaultEntry) {
                 defaultEntry =
-                    libraryMaterialized.find((t) => t.id === defaultEntry!.id) ?? defaultEntry;
+                    libraryMaterialized.find((tpl) => tpl.id === defaultEntry!.id) ?? defaultEntry;
             }
 
             const librarySaved = (
@@ -1812,11 +1822,11 @@ const CertificatesSettings = () => {
                 });
             }
 
-            setSuccess('Certificate settings saved successfully!');
+            setSuccess(t('save.success'));
             setTimeout(() => setSuccess(null), 3000);
         } catch (e) {
             console.error('Error saving certificate settings:', e);
-            setError('Failed to save certificate settings. Please try again.');
+            setError(t('save.error'));
             setTimeout(() => setError(null), 5000);
         } finally {
             setLoading(false);
@@ -1840,7 +1850,7 @@ const CertificatesSettings = () => {
             );
         } catch (e) {
             console.error('Failed to download template preview', e);
-            setError('Failed to download template preview.');
+            setError(t('design.downloadError'));
             setTimeout(() => setError(null), 5000);
         } finally {
             setDownloading(false);
@@ -1870,12 +1880,9 @@ const CertificatesSettings = () => {
                 <div className="space-y-1">
                     <h1 className="flex items-center gap-2 text-lg font-bold">
                         <FileText className="size-6" />
-                        Certificate Settings
+                        {t('page.title')}
                     </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Design the certificate, decide how it is numbered and coded, and set up the
-                        page people reach by scanning it.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t('page.description')}</p>
                 </div>
                 <Button
                     onClick={handleSaveSettings}
@@ -1887,7 +1894,7 @@ const CertificatesSettings = () => {
                     ) : (
                         <CheckCircle className="size-4" />
                     )}
-                    Save Changes
+                    {t('page.saveChanges')}
                 </Button>
             </div>
 
@@ -1896,15 +1903,13 @@ const CertificatesSettings = () => {
                     <AlertTriangle className="size-4" />
                     <AlertDescription>
                         {logoNotSet && (
-                            <span className="block">
-                                Institute logo is not set — upload one in Dashboard → Edit institute
-                                profile so it appears on issued certificates and the navbar.
-                            </span>
+                            <span className="block">{t('warnings.logoNotSet')}</span>
                         )}
                         {themeNotSet && (
                             <span className="block">
-                                Institute theme color is not set — borders that bind to{' '}
-                                <code>{'{{INSTITUTE_THEME_COLOR}}'}</code> will fall back to{' '}
+                                {t('warnings.themeNotSetPart1')}{' '}
+                                <code>{'{{INSTITUTE_THEME_COLOR}}'}</code>{' '}
+                                {t('warnings.themeNotSetPart2')}{' '}
                                 <code>#1e4fa1</code>.
                             </span>
                         )}
@@ -1915,10 +1920,9 @@ const CertificatesSettings = () => {
             <div className="space-y-6 rounded-lg border bg-card p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-base font-semibold">Auto-issue certificates</h3>
+                        <h3 className="text-base font-semibold">{t('autoIssue.heading')}</h3>
                         <p className="text-sm text-muted-foreground">
-                            When enabled, learners receive a certificate as soon as their course
-                            completion crosses the threshold below.
+                            {t('autoIssue.description')}
                         </p>
                     </div>
                     <Switch
@@ -1930,7 +1934,7 @@ const CertificatesSettings = () => {
 
                 <div className="max-w-xs">
                     <label className="text-sm font-medium" htmlFor="threshold">
-                        Completion threshold (%)
+                        {t('autoIssue.thresholdLabel')}
                     </label>
                     <input
                         id="threshold"
@@ -1946,8 +1950,7 @@ const CertificatesSettings = () => {
                         className="mt-1 w-full rounded border px-3 py-2 text-sm"
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
-                        Learners receive a certificate once their course completion crosses this.
-                        Default 80; the server re-checks it at issuance.
+                        {t('autoIssue.thresholdHint')}
                     </p>
                 </div>
             </div>
@@ -1958,9 +1961,9 @@ const CertificatesSettings = () => {
             <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-card p-1">
                 {(
                     [
-                        ['design', 'Design'],
-                        ['numbering', 'Numbering & codes'],
-                        ['verification', 'Verification page'],
+                        ['design', t('settingsTabs.design')],
+                        ['numbering', t('settingsTabs.numbering')],
+                        ['verification', t('settingsTabs.verification')],
                     ] as const
                 ).map(([key, label]) => (
                     <button
@@ -2019,7 +2022,7 @@ const CertificatesSettings = () => {
 
                     <div>
                         <label className="text-sm font-medium" htmlFor="badge-code-type">
-                            Scannable code on the certificate
+                            {t('numbering.badgeTypeLabel')}
                         </label>
                         <select
                             id="badge-code-type"
@@ -2029,23 +2032,24 @@ const CertificatesSettings = () => {
                             }
                             className="mt-1 w-full rounded border px-3 py-2 text-sm"
                         >
-                            <option value="QR">QR code (default)</option>
-                            <option value="BARCODE">Barcode (Code 128)</option>
+                            <option value="QR">{t('numbering.qrOption')}</option>
+                            <option value="BARCODE">{t('numbering.barcodeOption')}</option>
                         </select>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Stamped next to the certificate number, bottom-right — the design below
-                            shows you exactly where. To position it yourself instead, drag that
-                            badge, or drag the <strong>QR Code</strong> / <strong>Barcode</strong>{' '}
-                            field onto the design. The same goes for the number: wherever you place{' '}
-                            <strong>Certificate ID</strong>, it stops being stamped automatically,
-                            so you never get two of either.
+                            {t('numbering.badgeHintPart1')}{' '}
+                            <strong>{t('fields.certificateQr')}</strong>{' '}
+                            {t('numbering.badgeHintSlash')}{' '}
+                            <strong>{t('fields.certificateBarcode')}</strong>{' '}
+                            {t('numbering.badgeHintPart2')}{' '}
+                            <strong>{t('fields.certificateId')}</strong>
+                            {t('numbering.badgeHintPart3')}
                         </p>
                     </div>
 
                     {usesBarcode && (
                         <div>
                             <label className="text-sm font-medium" htmlFor="barcode-content">
-                                What the barcode encodes
+                                {t('numbering.barcodeContentLabel')}
                             </label>
                             <select
                                 id="barcode-content"
@@ -2059,29 +2063,20 @@ const CertificatesSettings = () => {
                                 }
                                 className="mt-1 w-full rounded border px-3 py-2 text-sm"
                             >
-                                <option value="NUMBER">Certificate number only (default)</option>
+                                <option value="NUMBER">{t('numbering.barcodeNumberOption')}</option>
                                 <option value="VERIFICATION_CODE">
-                                    Verification code — anyone can scan it to check the certificate
+                                    {t('numbering.barcodeVerificationOption')}
                                 </option>
                             </select>
                             <p className="mt-1 text-xs text-muted-foreground">
                                 {barcodeContent === 'VERIFICATION_CODE' ? (
                                     <>
-                                        Scanning the barcode gives a code that verifies the
-                                        certificate on your verification page. It carries about
-                                        twice as much data as the number alone, so it needs to be at
-                                        least{' '}
+                                        {t('numbering.barcodeVerificationHintPart1')}{' '}
                                         <strong>{minBarcodeWidthMm('VERIFICATION_CODE')}mm</strong>{' '}
-                                        wide to still scan off a printed page — the design below
-                                        warns you if it is too narrow.
+                                        {t('numbering.barcodeVerificationHintPart2')}
                                     </>
                                 ) : (
-                                    <>
-                                        Scanning gives the certificate number as text. That
-                                        identifies the certificate but proves nothing, because the
-                                        number on its own is not a credential. Switch to the
-                                        verification code to make a barcode scan actually verify.
-                                    </>
+                                    t('numbering.barcodeNumberHint')
                                 )}
                             </p>
                         </div>
@@ -2093,21 +2088,26 @@ const CertificatesSettings = () => {
                     not enough to remove it from the certificate. */}
                     <div className="flex flex-col gap-3 rounded-md border p-4">
                         <div>
-                            <div className="text-sm font-medium">Automatic stamp</div>
+                            <div className="text-sm font-medium">
+                                {t('numbering.autoStampHeading')}
+                            </div>
                             <p className="text-xs text-muted-foreground">
-                                Printed bottom-right on certificates whose design does not place
-                                these itself. A field you place on the design always wins over the
-                                stamp.
+                                {t('numbering.autoStampDescription')}
                             </p>
                         </div>
                         <label className="flex items-start gap-3">
                             <Switch checked={autoStampCode} onCheckedChange={setAutoStampCode} />
                             <span className="text-sm">
-                                Stamp the {badgeCodeType === 'BARCODE' ? 'barcode' : 'QR code'}
+                                {t('numbering.stampCodeLabel', {
+                                    code:
+                                        badgeCodeType === 'BARCODE'
+                                            ? t('numbering.barcodeWord')
+                                            : t('numbering.qrCodeWord'),
+                                })}
                                 <span className="block text-xs text-muted-foreground">
                                     {autoStampCode
-                                        ? 'Every certificate carries a scannable code.'
-                                        : 'Turned off — certificates with no code of their own cannot be verified by scanning.'}
+                                        ? t('numbering.stampCodeOnHint')
+                                        : t('numbering.stampCodeOffHint')}
                                 </span>
                             </span>
                         </label>
@@ -2117,11 +2117,11 @@ const CertificatesSettings = () => {
                                 onCheckedChange={setAutoStampNumber}
                             />
                             <span className="text-sm">
-                                Stamp the certificate number
+                                {t('numbering.stampNumberLabel')}
                                 <span className="block text-xs text-muted-foreground">
                                     {autoStampNumber
-                                        ? 'Every certificate shows its number somewhere.'
-                                        : 'Turned off — the number is still allocated and still verifies, it is just not printed unless your design places it.'}
+                                        ? t('numbering.stampNumberOnHint')
+                                        : t('numbering.stampNumberOffHint')}
                                 </span>
                             </span>
                         </label>
@@ -2170,12 +2170,14 @@ const CertificatesSettings = () => {
                             }));
                             if ((canvas.page_count ?? 1) > 1) {
                                 toast.info(
-                                    `That PDF has ${canvas.page_count} pages — only the first becomes the document.`
+                                    t('verification.multiPageWarning', {
+                                        count: canvas.page_count,
+                                    })
                                 );
                             }
                         } catch (e) {
                             toast.error(
-                                e instanceof Error ? e.message : 'That PDF could not be read.'
+                                e instanceof Error ? e.message : t('verification.pdfReadError')
                             );
                         } finally {
                             setUploadingVerificationDoc(false);
@@ -2190,17 +2192,18 @@ const CertificatesSettings = () => {
                 <>
                     <div className="space-y-6 rounded-lg border bg-card p-6">
                         <div>
-                            <h3 className="text-base font-semibold">Page &amp; fields</h3>
+                            <h3 className="text-base font-semibold">
+                                {t('design.pageFieldsHeading')}
+                            </h3>
                             <p className="text-sm text-muted-foreground">
-                                The size the certificate prints at, and any values of your own you
-                                want to place on it.
+                                {t('design.pageFieldsDescription')}
                             </p>
                         </div>
 
                         <div className="grid gap-6 md:grid-cols-3">
                             <div>
                                 <label className="text-sm font-medium" htmlFor="aspect">
-                                    Page size
+                                    {t('design.pageSizeLabel')}
                                 </label>
                                 <select
                                     id="aspect"
@@ -2210,11 +2213,11 @@ const CertificatesSettings = () => {
                                     }
                                     className="mt-1 w-full rounded border px-3 py-2 text-sm"
                                 >
-                                    <option value="A4_LANDSCAPE">A4 Landscape</option>
-                                    <option value="A4_PORTRAIT">A4 Portrait</option>
-                                    <option value="A3_LANDSCAPE">A3 Landscape</option>
-                                    <option value="A3_PORTRAIT">A3 Portrait</option>
-                                    <option value="CUSTOM">Custom</option>
+                                    <option value="A4_LANDSCAPE">{t('design.a4Landscape')}</option>
+                                    <option value="A4_PORTRAIT">{t('design.a4Portrait')}</option>
+                                    <option value="A3_LANDSCAPE">{t('design.a3Landscape')}</option>
+                                    <option value="A3_PORTRAIT">{t('design.a3Portrait')}</option>
+                                    <option value="CUSTOM">{t('design.customSize')}</option>
                                 </select>
                             </div>
 
@@ -2222,7 +2225,7 @@ const CertificatesSettings = () => {
                                 <div className="grid grid-cols-2 gap-2 md:col-span-2">
                                     <div>
                                         <label className="text-sm font-medium" htmlFor="cw">
-                                            Width (mm)
+                                            {t('design.widthLabel')}
                                         </label>
                                         <input
                                             id="cw"
@@ -2237,7 +2240,7 @@ const CertificatesSettings = () => {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium" htmlFor="ch">
-                                            Height (mm)
+                                            {t('design.heightLabel')}
                                         </label>
                                         <input
                                             id="ch"
@@ -2272,11 +2275,10 @@ const CertificatesSettings = () => {
                                         </div>
                                         <div>
                                             <h2 className="text-lg font-semibold text-neutral-700">
-                                                Template Design & Certificate Generation
+                                                {t('design.generatorHeading')}
                                             </h2>
                                             <p className="text-sm text-neutral-500">
-                                                Upload template and annotate with student data
-                                                fields
+                                                {t('design.generatorDescription')}
                                             </p>
                                         </div>
                                     </div>
@@ -2287,8 +2289,8 @@ const CertificatesSettings = () => {
                                     in-progress edits in the other mode. */}
                                         <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1">
                                             {[
-                                                { key: 'visual', label: 'Visual' },
-                                                { key: 'html', label: 'HTML' },
+                                                { key: 'visual', label: t('design.editorModeVisual') },
+                                                { key: 'html', label: t('design.editorModeHtml') },
                                             ].map(({ key, label }) => (
                                                 <button
                                                     key={key}
@@ -2341,7 +2343,7 @@ const CertificatesSettings = () => {
                                                 ) : (
                                                     <Download className="size-4" />
                                                 )}
-                                                Download Template
+                                                {t('design.downloadTemplate')}
                                             </MyButton>
                                         )}
                                         {editorMode === 'visual' && (
@@ -2349,15 +2351,19 @@ const CertificatesSettings = () => {
                                                 {[
                                                     {
                                                         key: 'upload',
-                                                        label: 'Upload',
+                                                        label: t('design.viewUpload'),
                                                         icon: UploadIcon,
                                                     },
                                                     {
                                                         key: 'design',
-                                                        label: 'Design',
+                                                        label: t('design.viewDesign'),
                                                         icon: PaintBrush,
                                                     },
-                                                    { key: 'preview', label: 'Preview', icon: Eye },
+                                                    {
+                                                        key: 'preview',
+                                                        label: t('design.viewPreview'),
+                                                        icon: Eye,
+                                                    },
                                                 ].map(({ key, label, icon: Icon }) => (
                                                     <button
                                                         key={key}
@@ -2441,20 +2447,21 @@ const CertificatesSettings = () => {
                                     >
                                         <AlertTriangle className="size-4" />
                                         <AlertDescription>
-                                            You are editing{' '}
+                                            {t('design.notDefaultWarningPart1')}{' '}
                                             <strong>
                                                 {templateLibrary.find(
-                                                    (t) => t.id === activeLibraryId
-                                                )?.name || 'this template'}
+                                                    (tpl) => tpl.id === activeLibraryId
+                                                )?.name || t('design.thisTemplateFallback')}
                                             </strong>
-                                            . Learners still receive{' '}
+                                            {t('design.notDefaultWarningPart2')}{' '}
                                             <strong>
                                                 {templateLibrary.find(
-                                                    (t) => t.id === defaultTemplateId
-                                                )?.name || 'the default template'}
+                                                    (tpl) => tpl.id === defaultTemplateId
+                                                )?.name || t('design.defaultTemplateFallback')}
                                             </strong>
-                                            . Use <strong>Make default</strong> on a card above to
-                                            change that.
+                                            {t('design.notDefaultWarningPart3')}{' '}
+                                            <strong>{t('design.makeDefaultLabel')}</strong>{' '}
+                                            {t('design.notDefaultWarningPart4')}
                                         </AlertDescription>
                                     </Alert>
                                 )}
@@ -2497,7 +2504,7 @@ const CertificatesSettings = () => {
                                             <div className="lg:col-span-1">
                                                 <div className="space-y-3 rounded-lg border bg-card p-4">
                                                     <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                        Drag a field
+                                                        {t('design.dragAFieldLabel')}
                                                     </div>
                                                     <div className="flex flex-wrap gap-2">
                                                         {paletteFields.map((f) => (
@@ -2508,9 +2515,9 @@ const CertificatesSettings = () => {
                                                         ))}
                                                     </div>
                                                     <div className="rounded border bg-muted/30 p-2 text-xs text-muted-foreground">
-                                                        {fieldMappings.length} field
-                                                        {fieldMappings.length === 1 ? '' : 's'}{' '}
-                                                        placed
+                                                        {t('design.fieldsPlaced', {
+                                                            count: fieldMappings.length,
+                                                        })}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2653,6 +2660,7 @@ const HtmlCertificateEditor = ({
     /** Definitions, so the preview substitutes the value each field will print. */
     customFields: CertificateCustomField[];
 }) => {
+    const { t } = useTranslation('settingsCertificates');
     const insertAtCaret = (token: string) => {
         const ta = textareaRef.current;
         if (!ta) {
@@ -2712,14 +2720,14 @@ const HtmlCertificateEditor = ({
                 <div className="rounded-lg border bg-card p-4">
                     <div className="mb-2 flex items-center justify-between">
                         <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            Insert a token
+                            {t('htmlEditor.insertToken')}
                         </div>
                         <button
                             type="button"
                             onClick={onResetToDefault}
                             className="text-xs font-medium text-purple-600 hover:text-purple-700"
                         >
-                            Reset to default
+                            {t('htmlEditor.resetToDefault')}
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -2730,7 +2738,7 @@ const HtmlCertificateEditor = ({
                                     key={f.name}
                                     type="button"
                                     onClick={() => insertAtCaret(token)}
-                                    title={`Insert ${token} at cursor`}
+                                    title={t('htmlEditor.insertTokenTitle', { token })}
                                     className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
                                 >
                                     {f.displayName}
@@ -2745,12 +2753,14 @@ const HtmlCertificateEditor = ({
                     onChange={(e) => onHtmlChange(e.target.value)}
                     spellCheck={false}
                     className="h-[640px] w-full rounded-lg border border-neutral-300 bg-white p-3 font-mono text-xs leading-relaxed shadow-sm focus:border-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400"
-                    placeholder="<!-- Paste or write HTML for your certificate. Use the token chips above to insert dynamic fields like {{STUDENT_NAME}}. -->"
+                    placeholder={t('htmlEditor.textareaPlaceholder', {
+                        token: '{{STUDENT_NAME}}',
+                    })}
                 />
             </div>
             <div className="flex flex-col gap-2">
                 <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Live preview (sample data)
+                    {t('htmlEditor.livePreview')}
                 </div>
                 <HtmlPreviewWithZoom
                     srcDoc={previewSrcDoc}
@@ -2780,6 +2790,7 @@ const HtmlPreviewWithZoom = ({
     customWidthMm: number;
     customHeightMm: number;
 }) => {
+    const { t } = useTranslation('settingsCertificates');
     const { wMm, hMm } = aspectRatioToMm(aspectRatio, customWidthMm, customHeightMm);
     const pageWidthPx = Math.round(wMm * PX_PER_MM);
     const pageHeightPx = Math.round(hMm * PX_PER_MM);
@@ -2817,7 +2828,7 @@ const HtmlPreviewWithZoom = ({
                     type="button"
                     onClick={zoomOut}
                     className="rounded p-1.5 text-neutral-600 hover:bg-neutral-100"
-                    title="Zoom out"
+                    title={t('preview.zoomOut')}
                 >
                     <MagnifyingGlassMinus size={18} />
                 </button>
@@ -2828,7 +2839,7 @@ const HtmlPreviewWithZoom = ({
                     type="button"
                     onClick={zoomIn}
                     className="rounded p-1.5 text-neutral-600 hover:bg-neutral-100"
-                    title="Zoom in"
+                    title={t('preview.zoomIn')}
                 >
                     <MagnifyingGlassPlus size={18} />
                 </button>
@@ -2836,7 +2847,7 @@ const HtmlPreviewWithZoom = ({
                     type="button"
                     onClick={fitToScreen}
                     className="ml-1 rounded p-1.5 text-neutral-600 hover:bg-neutral-100"
-                    title="Fit to screen"
+                    title={t('preview.fitToScreen')}
                 >
                     <ArrowsOut size={18} />
                 </button>
@@ -2853,7 +2864,7 @@ const HtmlPreviewWithZoom = ({
                     }}
                 >
                     <iframe
-                        title="HTML certificate preview"
+                        title={t('preview.htmlIframeTitle')}
                         srcDoc={srcDoc}
                         sandbox=""
                         style={{
@@ -2902,6 +2913,7 @@ const CertificateSettingsPreview = ({
     autoStampCode: boolean;
     autoStampNumber: boolean;
 }) => {
+    const { t } = useTranslation('settingsCertificates');
     // Off by default: the everyday certificate carries short values, and an
     // admin should see that first. The switch is what makes the awkward case
     // discoverable at design time rather than at issuance.
@@ -2989,13 +3001,13 @@ const CertificateSettingsPreview = ({
             <div className="flex items-center justify-end gap-2 border-b bg-white px-3 py-2">
                 <label className="mr-auto flex items-center gap-2 text-sm text-neutral-600">
                     <Switch checked={longValues} onCheckedChange={setLongValues} />
-                    Preview with long names
+                    {t('preview.longNamesLabel')}
                 </label>
                 <button
                     type="button"
                     onClick={zoomOut}
                     className="rounded p-1.5 text-neutral-600 hover:bg-neutral-100"
-                    title="Zoom out"
+                    title={t('preview.zoomOut')}
                 >
                     <MagnifyingGlassMinus size={18} />
                 </button>
@@ -3006,7 +3018,7 @@ const CertificateSettingsPreview = ({
                     type="button"
                     onClick={zoomIn}
                     className="rounded p-1.5 text-neutral-600 hover:bg-neutral-100"
-                    title="Zoom in"
+                    title={t('preview.zoomIn')}
                 >
                     <MagnifyingGlassPlus size={18} />
                 </button>
@@ -3014,7 +3026,7 @@ const CertificateSettingsPreview = ({
                     type="button"
                     onClick={fitToScreen}
                     className="ml-1 rounded p-1.5 text-neutral-600 hover:bg-neutral-100"
-                    title="Fit to screen"
+                    title={t('preview.fitToScreen')}
                 >
                     <ArrowsOut size={18} />
                 </button>
@@ -3031,7 +3043,7 @@ const CertificateSettingsPreview = ({
                     }}
                 >
                     <iframe
-                        title="Certificate preview"
+                        title={t('preview.iframeTitle')}
                         srcDoc={srcDoc}
                         sandbox=""
                         style={{

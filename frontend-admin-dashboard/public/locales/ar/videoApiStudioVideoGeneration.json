@@ -1,0 +1,169 @@
+{
+    "contentTypes": {
+        "video": {
+            "label": "فيديو",
+            "description": "مقاطع فيديو مروية برسوم متحركة وعناصر مرئية"
+        },
+        "slides": {
+            "label": "شرائح",
+            "description": "عروض شرائح تتضمن صورًا ورسومًا بيانية ومخططات"
+        },
+        "quiz": {
+            "label": "اختبار قصير",
+            "description": "اختبارات تفاعلية لقياس المعرفة"
+        },
+        "storybook": {
+            "label": "كتاب قصصي",
+            "description": "قصص مصورة يمكن تصفحها"
+        },
+        "interactiveGame": {
+            "label": "لعبة تفاعلية",
+            "description": "ألعاب قابلة للّعب تعلّم من خلال التفاعل"
+        },
+        "puzzleBook": {
+            "label": "كتاب ألغاز",
+            "description": "الكلمات المتقاطعة والبحث عن الكلمات وألغاز التفكير"
+        },
+        "simulation": {
+            "label": "محاكاة",
+            "description": "محاكاة عملية للعلوم والفيزياء"
+        },
+        "flashcards": {
+            "label": "بطاقات تعليمية",
+            "description": "بطاقات تعليمية للحفظ السريع"
+        },
+        "mapExploration": {
+            "label": "استكشاف الخريطة",
+            "description": "خرائط تفاعلية للنقر عليها واستكشافها"
+        },
+        "worksheet": {
+            "label": "ورقة عمل",
+            "description": "أوراق عمل تدريبية مع تمارين وإجابات"
+        },
+        "codePlayground": {
+            "label": "ساحة برمجة",
+            "description": "تحديات برمجية مع محرر مباشر"
+        },
+        "timeline": {
+            "label": "خط زمني",
+            "description": "خطوط زمنية تفاعلية وقابلة للتمرير للأحداث"
+        },
+        "conversation": {
+            "label": "محادثة",
+            "description": "محاكاة محادثات من واقع الحياة"
+        }
+    },
+    "visualPreferenceFamilies": {
+        "stockVideo": "فيديو جاهز / لقطات حقيقية",
+        "aiImagery": "صور من إنشاء الذكاء الاصطناعي",
+        "svgIllustrated": "رسومات SVG / مخططات توضيحية",
+        "motionGraphics": "رسوم متحركة (موشن جرافيك)",
+        "appUiMockup": "نماذج واجهة تطبيق / جهاز",
+        "aiVideo": "فيديو من إنشاء الذكاء الاصطناعي (Veo)"
+    },
+    "aiVideoModels": {
+        "veo31": {
+            "label": "Veo 3.1 — أفضل جودة",
+            "hint": "أعلى دقة واقعية + التزام دقيق بالتوجيه النصي. ~0.20$/ثانية (≈1.60$ لكل مقطع مدته 8 ثوانٍ)."
+        },
+        "veo31Fast": {
+            "label": "Veo 3.1 Fast — متوازن",
+            "hint": "جودة قريبة من النموذج الكامل وبتكلفة أقل. ~0.10$/ثانية (≈0.80$ لكل مقطع مدته 8 ثوانٍ)."
+        },
+        "veo31Lite": {
+            "label": "Veo 3.1 Lite — اقتصادي",
+            "hint": "أقل دقة وأرخص تكلفة. ~0.03$/ثانية (≈0.24$ لكل مقطع مدته 8 ثوانٍ)."
+        }
+    },
+    "overridableStages": {
+        "shotPlanner": {
+            "label": "تخطيط اللقطات",
+            "hint": "يخطط للفيديو بالكامل لقطة بلقطة."
+        },
+        "narrationWriter": {
+            "label": "كتابة السرد",
+            "hint": "يكتب نص السرد لكل لقطة."
+        },
+        "perShotHtml": {
+            "label": "HTML لكل لقطة",
+            "hint": "يُنشئ HTML لكل لقطة — الأكثر استهلاكًا للرموز (tokens)."
+        },
+        "actPlanner": {
+            "label": "مخطط الفصول",
+            "hint": "يقسّم الهدف إلى فصول قبل تخطيط اللقطات."
+        },
+        "regenHtml": {
+            "label": "إعادة توليد HTML",
+            "hint": "إعادة توليد تصحيحية عند فشل التحقق."
+        }
+    },
+    "avatarModels": {
+        "flashtalk": "FlashTalk (سريع، اقتصادي)",
+        "klingStandard": "Kling AI Avatar v2 (قياسي)",
+        "veedFabric": "VEED Fabric 1.0",
+        "heygenAvatar4": "HeyGen Avatar 4",
+        "klingPro": "Kling AI Avatar v2 (احترافي)",
+        "ltx23": "LTX 2.3 (صوت إلى فيديو)",
+        "seedance20": "Seedance 2.0 (مرجع إلى فيديو)"
+    },
+    "qualityTiers": {
+        "free": {
+            "label": "مجاني",
+            "description": "إنشاء سريع، جودة أساسية"
+        },
+        "standard": {
+            "label": "قياسي",
+            "description": "مرئيات ذكية مع تنوع وتحقق من الجودة"
+        },
+        "premium": {
+            "label": "بريميوم",
+            "description": "مراجعة السيناريو + تحسين الصور"
+        },
+        "ultra": {
+            "label": "ألترا",
+            "description": "أفضل جودة — جميع التحسينات مفعّلة",
+            "badge": "الافتراضي"
+        },
+        "superUltra": {
+            "label": "سوبر ألترا",
+            "description": "انتقالات تلاشٍ متداخل + لقطات نص حركي بمزامنة دقيقة للكلمات",
+            "badge": "جديد"
+        }
+    },
+    "voiceGenders": {
+        "female": "أنثى",
+        "male": "ذكر"
+    },
+    "ttsProviders": {
+        "standard": {
+            "label": "قياسي",
+            "description": "Microsoft Edge TTS (مجاني)"
+        },
+        "premium": {
+            "label": "بريميوم",
+            "description": "Google Cloud / Sarvam AI (ضعف الرصيد)"
+        }
+    },
+    "targetAudiences": {
+        "class1to2": "الصف 1-2 (6-7 سنوات)",
+        "class3to4": "الصف 3-4 (8-9 سنوات)",
+        "class5": "الصف 5 (10-11 سنة)",
+        "class6to8": "الصف 6-8 (11-14 سنة)",
+        "class9to10": "الصف 9-10 (14-16 سنة)",
+        "class11to12": "الصف 11-12 (16-18 سنة)",
+        "undergraduate": "المرحلة الجامعية",
+        "graduateProfessional": "الدراسات العليا/المهنية",
+        "generalAdult": "عام/بالغون"
+    },
+    "targetDurations": {
+        "seconds30": "30 ثانية",
+        "minute1": "دقيقة واحدة",
+        "minutes2to3": "2-3 دقائق",
+        "minutes5": "5 دقائق",
+        "minutes10": "10 دقائق"
+    },
+    "errors": {
+        "insufficientCredits": "الرصيد غير كافٍ",
+        "rateLimited": "طلبات كثيرة جدًا. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى."
+    }
+}

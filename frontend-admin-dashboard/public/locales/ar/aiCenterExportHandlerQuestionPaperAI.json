@@ -1,0 +1,13 @@
+{
+    "button": {
+        "exporting": "جارٍ التصدير...",
+        "export": "تصدير {{format}}",
+        "setSuffix": " (المجموعة {{letter}})"
+    },
+    "dialog": {
+        "generatingPdf": "جارٍ إنشاء ملف PDF",
+        "pleaseWait": "قد يستغرق هذا بعض الوقت",
+        "cancelAriaLabel": "إلغاء إنشاء ملف PDF",
+        "progressComplete": "اكتمل {{progress}}%"
+    }
+}

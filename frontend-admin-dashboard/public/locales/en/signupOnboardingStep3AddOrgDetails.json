@@ -1,0 +1,23 @@
+{
+    "heading": "Create your profile in the organization",
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "Full name (First and Last)",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "Enter Username",
+    "emailLabel": "Email",
+    "emailPlaceholder": "Enter Email",
+    "passwordLabel": "Password",
+    "confirmPasswordLabel": "Confirm Password",
+    "finish": "Finish",
+    "schema": {
+        "nameRequired": "Name is required",
+        "usernameRequired": "Username is required",
+        "usernameNoUppercase": "Username should not contain uppercase letters",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email format",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "confirmPasswordRequired": "Confirm password is required",
+        "roleTypeRequired": "At least one role type is required",
+        "passwordsMismatch": "Passwords do not match"
+    }
+}

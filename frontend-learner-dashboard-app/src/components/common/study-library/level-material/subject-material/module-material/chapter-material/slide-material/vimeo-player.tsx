@@ -13,6 +13,7 @@ import {
   useMemo,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { useTranslation } from "react-i18next";
 import { useTrackingStore } from "@/stores/study-library/youtube-video-tracking-store";
 import { getEpochTimeInMillis } from "./utils";
 import { formatVideoTime } from "@/utils/study-library/tracking/formatVideoTime";
@@ -81,6 +82,7 @@ export const VimeoPlayerComp: React.FC<VimeoPlayerProps> = ({
   enableConcentrationScore = true,
   concentrationSettings,
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const { activeItem } = useContentStore();
   const addActivity = useTrackingStore((state) => state.addActivity);
   const activityId = useRef(uuidv4());
@@ -726,10 +728,15 @@ export const VimeoPlayerComp: React.FC<VimeoPlayerProps> = ({
     }
   }, [currentTime]);
 
-  // Sync tracking data
+  // Sync tracking data. useVideoSync returns a fresh closure on every render,
+  // so keep the latest one in a ref and give callers a stable identity — an
+  // effect that depends on this must not be torn down and rebuilt each render.
+  // (The YouTube player gets this for free by holding its interval in a ref.)
+  const syncFnRef = useRef(syncVideoTrackingData);
+  syncFnRef.current = syncVideoTrackingData;
   const syncTrackingData = useCallback(() => {
-    syncVideoTrackingData();
-  }, [syncVideoTrackingData]);
+    syncFnRef.current();
+  }, []);
 
   // Handle play state changes for tracking
   useEffect(() => {
@@ -753,6 +760,12 @@ export const VimeoPlayerComp: React.FC<VimeoPlayerProps> = ({
   // Periodic sync — cadence = min(video duration, 60s). Short videos sync at
   // their own length so the worst-case unsynced window is bounded by the
   // video length, not by a fixed 60s.
+  //
+  // Every dependency here must be stable while playing. This player re-renders
+  // ~4x a second (setCurrentTime from the 250ms progress poll, setElapsedTime
+  // every 1s); anything that changes identity per render tears the interval
+  // down before it can ever fire, which is how the whole periodic sync went
+  // silently dead and left one POST per viewing session.
   useEffect(() => {
     if (!isPlayed) return;
     const periodMs = Math.max(
@@ -998,13 +1011,13 @@ export const VimeoPlayerComp: React.FC<VimeoPlayerProps> = ({
       {/* Video Unavailable Overlay */}
       {loadError && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black px-4">
-          <div className="flex max-w-sm flex-col items-center gap-3 rounded-xl bg-white p-6 text-center shadow-2xl">
+          <div className="flex max-w-sm flex-col items-center gap-stack rounded-xl bg-white p-6 text-center shadow-2xl">
             <WarningCircle weight="fill" className="size-10 text-danger-500" />
             <p className="text-base font-semibold text-neutral-700">
-              This video is unavailable
+              {t("vimeoPlayer.unavailable.title")}
             </p>
             <p className="text-sm text-neutral-500">
-              It could not be loaded. Please contact your admin.
+              {t("vimeoPlayer.unavailable.body")}
             </p>
           </div>
         </div>
@@ -1024,10 +1037,10 @@ export const VimeoPlayerComp: React.FC<VimeoPlayerProps> = ({
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="rounded-xl bg-white p-6 text-center shadow-2xl">
             <p className="mb-2 text-sm text-gray-500">
-              Select the middle number to continue
+              {t("vimeoPlayer.verification.selectMiddleNumber")}
             </p>
             <p className="mb-4 text-xs text-gray-400">
-              Time remaining: {verificationCountdown}s
+              {t("vimeoPlayer.verification.timeRemaining", { seconds: verificationCountdown })}
             </p>
             <div className="flex gap-4">
               {verificationNumbers.map((num, index) => (

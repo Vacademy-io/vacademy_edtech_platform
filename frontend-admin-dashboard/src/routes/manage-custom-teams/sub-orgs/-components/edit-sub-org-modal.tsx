@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -90,6 +91,7 @@ const PERMISSION_CATALOG = ['FULL', 'CREATE_COURSE'] as const;
  * to toast.
  */
 export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: EditSubOrgModalProps) {
+    const { t } = useTranslation('manageCustomTeamsEditSubOrgModal');
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
     const subOrgTerm = getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg);
@@ -238,12 +240,16 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
             );
 
             if (addedCount === 0 && otherKeys.length === 0) {
-                toast.info('No changes to save');
+                toast.info(t('toasts.noChanges'));
             } else {
                 const bits: string[] = [];
-                if (addedCount > 0) bits.push(`linked ${addedCount} course(s)`);
-                if (otherKeys.length > 0) bits.push(`updated ${otherKeys.join(', ')}`);
-                toast.success(`Saved: ${bits.join(' · ')}`);
+                if (addedCount > 0) {
+                    bits.push(t('toasts.linkedCourses', { count: addedCount }));
+                }
+                if (otherKeys.length > 0) {
+                    bits.push(t('toasts.updatedFields', { fields: otherKeys.join(', ') }));
+                }
+                toast.success(t('toasts.saved', { bits: bits.join(' · ') }));
             }
 
             queryClient.invalidateQueries({ queryKey: ['sub-org-scoped-invites', subOrgId] });
@@ -251,7 +257,10 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
             onOpenChange(false);
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || `Failed to update ${subOrgTerm.toLowerCase()}`);
+            toast.error(
+                err?.response?.data?.message ||
+                    t('toasts.updateFailed', { term: subOrgTerm.toLowerCase() })
+            );
         },
     });
 
@@ -271,7 +280,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
         if (memberCount.trim() !== baseline.memberCount.trim()) {
             const n = Number(memberCount);
             if (memberCount.trim() !== '' && (Number.isNaN(n) || n <= 0)) {
-                toast.error('Seat cap must be a positive number');
+                toast.error(t('validation.seatCapPositive'));
                 return;
             }
             if (memberCount.trim() !== '') update.member_count = n;
@@ -279,7 +288,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
         if (validityInDays.trim() !== baseline.validityInDays.trim()) {
             const n = Number(validityInDays);
             if (validityInDays.trim() !== '' && (Number.isNaN(n) || n <= 0)) {
-                toast.error('Validity must be a positive number');
+                toast.error(t('validation.validityPositive'));
                 return;
             }
             if (validityInDays.trim() !== '') update.validity_in_days = n;
@@ -291,7 +300,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
             update.payment_option_id = paymentOptionId;
         }
         if (Object.keys(update).length === 0) {
-            toast.info('No changes to save');
+            toast.info(t('toasts.noChanges'));
             return;
         }
         mutation.mutate(update);
@@ -354,14 +363,12 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
             <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col overflow-hidden sm:max-w-[640px]">
                 <DialogHeader className="shrink-0">
                     <DialogTitle>
-                        Edit {getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg)}:{' '}
-                        {subOrgName}
+                        {t('header.title', {
+                            term: getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg),
+                            name: subOrgName,
+                        })}
                     </DialogTitle>
-                    <DialogDescription>
-                        Update auth roles, allowed team roles, admin permissions, the admin payment
-                        option, seat cap, and validity. CPO swaps and removing linked courses
-                        aren&apos;t supported here.
-                    </DialogDescription>
+                    <DialogDescription>{t('header.description')}</DialogDescription>
                 </DialogHeader>
 
                 {isLoading ? (
@@ -377,11 +384,13 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                 the SUBORG_LEARNER mirror logic for each new PS. */}
                             <section className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Linked courses ({linkedPsList.length + pendingAddPsIds.length})
+                                    {t('linkedCourses.heading', {
+                                        count: linkedPsList.length + pendingAddPsIds.length,
+                                    })}
                                 </Label>
                                 {linkedPsList.length === 0 ? (
                                     <p className="text-caption text-neutral-500">
-                                        No courses linked yet.
+                                        {t('linkedCourses.noneLinkedYet')}
                                     </p>
                                 ) : (
                                     <div className="rounded-md border border-neutral-200 bg-neutral-50 p-2">
@@ -394,7 +403,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                             ))}
                                         </ul>
                                         <p className="mt-1 text-caption text-neutral-500">
-                                            Already linked PSes can&apos;t be removed here (would orphan enrolled learners).
+                                            {t('linkedCourses.cannotRemoveLinked')}
                                         </p>
                                     </div>
                                 )}
@@ -403,7 +412,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                     <div className="space-y-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="text-caption font-medium text-neutral-700">
-                                                Add courses
+                                                {t('linkedCourses.addCourses')}
                                             </p>
                                             <button
                                                 type="button"
@@ -411,7 +420,9 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                                 disabled={visibleAddableRows.length === 0}
                                                 className="text-caption font-medium text-primary-600 hover:text-primary-700 disabled:cursor-not-allowed disabled:text-neutral-300"
                                             >
-                                                {allVisibleSelected ? 'Clear selection' : 'Select all'}
+                                                {allVisibleSelected
+                                                    ? t('linkedCourses.clearSelection')
+                                                    : t('linkedCourses.selectAll')}
                                                 {addCourseSearch.trim() &&
                                                     visibleAddableRows.length > 0 &&
                                                     ` (${visibleAddableRows.length})`}
@@ -422,15 +433,16 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                             <Input
                                                 value={addCourseSearch}
                                                 onChange={(e) => setAddCourseSearch(e.target.value)}
-                                                placeholder="Search courses by name"
+                                                placeholder={t('linkedCourses.searchPlaceholder')}
                                                 className="h-9 pl-8"
                                             />
                                         </div>
                                         <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border border-neutral-200 p-2">
                                             {visibleAddableRows.length === 0 ? (
                                                 <p className="px-2 py-3 text-center text-caption text-neutral-500">
-                                                    No courses match &ldquo;{addCourseSearch.trim()}
-                                                    &rdquo;.
+                                                    {t('linkedCourses.noMatch', {
+                                                        query: addCourseSearch.trim(),
+                                                    })}
                                                 </p>
                                             ) : (
                                                 visibleAddableRows.map((row) => {
@@ -460,20 +472,22 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                         </div>
                                         {pendingAddPsIds.length > 0 && (
                                             <p className="text-caption text-primary-600">
-                                                {pendingAddPsIds.length} course(s) will be linked on Save.
+                                                {t('linkedCourses.willBeLinkedOnSave', {
+                                                    count: pendingAddPsIds.length,
+                                                })}
                                             </p>
                                         )}
                                     </div>
                                 ) : (
                                     <p className="text-caption text-neutral-500">
-                                        No other courses available to link.
+                                        {t('linkedCourses.noneAvailable')}
                                     </p>
                                 )}
                             </section>
 
                             <section className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Auth roles (assigned on invite acceptance)
+                                    {t('roles.authRolesHeading')}
                                 </Label>
                                 <div className="flex flex-wrap gap-2 rounded-md border border-neutral-200 p-2">
                                     {rolesList.map((role) => (
@@ -496,7 +510,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                     ))}
                                     {rolesList.length === 0 && (
                                         <span className="text-caption text-neutral-500">
-                                            No roles found
+                                            {t('roles.noRolesFound')}
                                         </span>
                                     )}
                                 </div>
@@ -504,10 +518,12 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
 
                             <section className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Allowed team roles ({subOrgTerm.toLowerCase()} admin&apos;s pick-list)
+                                    {t('roles.allowedTeamRolesHeading', {
+                                        term: subOrgTerm.toLowerCase(),
+                                    })}
                                 </Label>
                                 <p className="text-caption text-neutral-500">
-                                    Empty = no restriction.
+                                    {t('roles.emptyMeansNoRestriction')}
                                 </p>
                                 <div className="flex flex-wrap gap-2 rounded-md border border-neutral-200 p-2">
                                     {rolesList.map((role) => (
@@ -530,7 +546,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                     ))}
                                     {rolesList.length === 0 && (
                                         <span className="text-caption text-neutral-500">
-                                            No roles found
+                                            {t('roles.noRolesFound')}
                                         </span>
                                     )}
                                 </div>
@@ -538,11 +554,10 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
 
                             <section className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Admin permissions
+                                    {t('permissions.heading')}
                                 </Label>
                                 <p className="text-caption text-neutral-500">
-                                    Stamped on the {subOrgTerm.toLowerCase()} admin&apos;s FSPSSM rows. Empty falls back to FULL.
-                                    Applies only to admins enrolled after this save.
+                                    {t('permissions.description', { term: subOrgTerm.toLowerCase() })}
                                 </p>
                                 <div className="flex flex-wrap gap-2 rounded-md border border-neutral-200 p-2">
                                     {PERMISSION_CATALOG.map((perm) => (
@@ -568,19 +583,20 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
 
                             <section className="space-y-2">
                                 <Label className="text-sm font-semibold">
-                                    Admin payment option
+                                    {t('paymentOption.heading')}
                                 </Label>
                                 {orgInvite?.payment_type === 'CPO' ? (
                                     <p className="text-caption text-neutral-500">
-                                        This {subOrgTerm.toLowerCase()} is backed by a CPO fee structure. Switching
-                                        the admin payment option isn&apos;t supported here.
+                                        {t('paymentOption.cpoNotSupported', {
+                                            term: subOrgTerm.toLowerCase(),
+                                        })}
                                     </p>
                                 ) : (
                                     <>
                                         <p className="text-caption text-neutral-500">
-                                            Which institute payment option the {subOrgTerm.toLowerCase()} admin pays
-                                            via. Changing it affects future admin enrollments only —
-                                            an admin who already paid keeps their plan.
+                                            {t('paymentOption.description', {
+                                                term: subOrgTerm.toLowerCase(),
+                                            })}
                                         </p>
                                         <Select
                                             value={paymentOptionId}
@@ -591,10 +607,10 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                                 <SelectValue
                                                     placeholder={
                                                         isLoadingPaymentOptions
-                                                            ? 'Loading payment options...'
+                                                            ? t('paymentOption.loading')
                                                             : institutePaymentOptions.length === 0
-                                                              ? 'No active option found'
-                                                              : 'Select a payment option'
+                                                              ? t('paymentOption.noActiveOption')
+                                                              : t('paymentOption.selectPlaceholder')
                                                     }
                                                 />
                                             </SelectTrigger>
@@ -620,7 +636,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="space-y-1">
                                     <Label htmlFor="seat-cap" className="text-sm font-semibold">
-                                        Seat cap
+                                        {t('seatCap.label')}
                                     </Label>
                                     <Input
                                         id="seat-cap"
@@ -628,12 +644,12 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                         min={1}
                                         value={memberCount}
                                         onChange={(e) => setMemberCount(e.target.value)}
-                                        placeholder="e.g. 25"
+                                        placeholder={t('seatCap.placeholder')}
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="validity-days" className="text-sm font-semibold">
-                                        Validity (days)
+                                        {t('validity.label')}
                                     </Label>
                                     <Input
                                         id="validity-days"
@@ -641,7 +657,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                                         min={1}
                                         value={validityInDays}
                                         onChange={(e) => setValidityInDays(e.target.value)}
-                                        placeholder="e.g. 365"
+                                        placeholder={t('validity.placeholder')}
                                     />
                                 </div>
                             </section>
@@ -657,7 +673,7 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                         onClick={() => onOpenChange(false)}
                         disable={mutation.isPending}
                     >
-                        Cancel
+                        {t('footer.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -669,10 +685,10 @@ export function EditSubOrgModal({ open, onOpenChange, subOrgId, subOrgName }: Ed
                         {mutation.isPending ? (
                             <>
                                 <CircleNotch className="h-4 w-4 animate-spin" />
-                                Saving…
+                                {t('footer.saving')}
                             </>
                         ) : (
-                            'Save'
+                            t('footer.save')
                         )}
                     </MyButton>
                 </DialogFooter>

@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "makeAnnouncement": "Make Announcement"
+    },
+    "dialog": {
+        "heading": "Make Announcement",
+        "titleLabel": "Announcement Title",
+        "titlePlaceholder": "Provide a concise title for the announcement (e.g., Time Remaining, Technical Issue Resolved)",
+        "instructionsHeading": "Assessment Instructions",
+        "publishButton": "Publish Announcement"
+    },
+    "validation": {
+        "titleRequired": "Title is required"
+    }
+}

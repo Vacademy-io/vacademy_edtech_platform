@@ -12,15 +12,22 @@ type FormApi<T, U> = {
     getState: () => { values: T };
 };
 import AssetPicker from './AssetPicker';
+import { registerTextBorderFrame } from './textBorderFrame';
+import { registerTextAttributePanel } from './TextAttributePanel';
 import { MessageTemplate, TEMPLATE_VARIABLES } from '@/types/message-template-types';
 import { UploadFileInS3, getPublicUrl } from '@/services/upload_file';
 import { getUserId } from '@/utils/userDetails';
 import { getInstituteId } from '@/constants/helper';
+import type { EmailBrandSettings } from '@/services/email-brand-settings';
 import { toast } from 'sonner';
 
 import 'easy-email-editor/lib/style.css';
 import 'easy-email-extensions/lib/style.css';
 import '@arco-themes/react-easy-email-theme/css/arco.css';
+
+// Text-block border / radius: render override + the panel section that edits it.
+registerTextBorderFrame();
+registerTextAttributePanel();
 
 // Define the email template interface
 interface IEmailTemplate {
@@ -58,6 +65,8 @@ interface EmailBuilderProps {
         EmailTemplateCategory,
         'INVOICE' | 'INVOICE_EMAIL' | 'PAYMENT_CONFIRMATION'
     >;
+    // Institute brand kit (Template Settings → Email Brand Kit).
+    brand?: EmailBrandSettings | null;
 }
 
 // Font list for the rich text toolbar font-family dropdown
@@ -77,6 +86,72 @@ const fontList = [
     { value: 'Montserrat', label: 'Montserrat' },
     { value: 'Poppins', label: 'Poppins' },
 ];
+
+// easy-email's colour pickers show the last 14 entries of this localStorage list as swatches
+// (no presets prop in 4.16). Put the brand colours at the end so they are always visible,
+// keeping the admin's other recent colours in front of them.
+const PRESET_COLORS_STORAGE_KEY = 'CURRENT_COLORS_KEY';
+const seedBrandPresetColors = (brandHexes: string[]) => {
+    if (brandHexes.length === 0) return;
+    try {
+        const stored = JSON.parse(localStorage.getItem(PRESET_COLORS_STORAGE_KEY) || '[]');
+        const recent = (Array.isArray(stored) ? stored : []).filter(
+            (c: unknown) => typeof c === 'string' && !brandHexes.includes(c.toLowerCase())
+        );
+        localStorage.setItem(
+            PRESET_COLORS_STORAGE_KEY,
+            JSON.stringify([...recent, ...brandHexes].slice(-20))
+        );
+    } catch {
+        // localStorage unavailable — pickers just show their defaults
+    }
+};
+
+// Load a non-system brand font into the admin page so the editor canvas renders it.
+const ensureFontStylesheet = (href: string) => {
+    if (!href || document.querySelector(`link[data-email-brand-font="${href}"]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.dataset.emailBrandFont = href;
+    document.head.appendChild(link);
+};
+
+// Register the brand font on the page block so the compiled email carries <mj-font>.
+const withBrandFont = (content: IBlockData, brand?: EmailBrandSettings | null): IBlockData => {
+    const font = brand?.font;
+    if (!font?.name || !font.href || content?.type !== BasicType.PAGE) return content;
+    const value = content.data?.value || {};
+    const fonts: { name: string; href: string }[] = Array.isArray(value.fonts) ? value.fonts : [];
+    if (fonts.some((f) => f?.name === font.name)) return content;
+    return {
+        ...content,
+        data: { ...content.data, value: { ...value, fonts: [...fonts, { name: font.name, href: font.href }] } },
+    };
+};
+
+// Blank page for a new template: brand font as the default font, logo header when set.
+const createBrandedPage = (brand?: EmailBrandSettings | null): IBlockData => {
+    const font = brand?.font;
+    const payload: Record<string, unknown> = {};
+    if (font?.name) {
+        payload.data = {
+            value: {
+                'font-family': `${font.name}, Arial, sans-serif`,
+                fonts: font.href ? [{ name: font.name, href: font.href }] : [],
+            },
+        };
+    }
+    if (brand?.logoUrl) {
+        const image = BlockManager.getBlockByType(BasicType.IMAGE)!.create({
+            attributes: { src: brand.logoUrl, width: '160px', align: 'center', alt: 'Logo' },
+        });
+        const column = BlockManager.getBlockByType(BasicType.COLUMN)!.create({ children: [image] });
+        const section = BlockManager.getBlockByType(BasicType.SECTION)!.create({ children: [column] });
+        payload.children = [BlockManager.getBlockByType(BasicType.WRAPPER)!.create({ children: [section] })];
+    }
+    return BlockManager.getBlockByType(BasicType.PAGE)!.create(payload);
+};
 
 // Human-readable label for a canonical {{snake_case}} variable, e.g. "{{student_name}}" -> "Student Name"
 const toMergeTagLabel = (variable: string): string =>
@@ -422,6 +497,7 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
     onSave,
     isSaving: externalIsSaving = false,
     initialTemplateType,
+    brand,
 }) => {
     const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
     const [imageResolve, setImageResolve] = useState<((url: string) => void) | null>(null);
@@ -538,6 +614,25 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
 
     // Initial template data
     const initialValues: IEmailTemplate = useMemo(() => {
+        const loaded = loadInitialValues();
+        return { ...loaded, content: withBrandFont(loaded.content, brand) };
+    }, [template, brand]);
+
+    // Brand colours as picker swatches + brand font in the canvas. Runs during render so the
+    // pickers' provider reads the seeded list on its first mount.
+    useMemo(() => {
+        seedBrandPresetColors((brand?.colors || []).map((c) => c.hex.toLowerCase()));
+        if (brand?.font?.href) ensureFontStylesheet(brand.font.href);
+    }, [brand]);
+
+    // Brand font first in the font-family dropdowns.
+    const editorFontList = useMemo(() => {
+        const name = brand?.font?.name;
+        if (!name) return fontList;
+        return [{ value: name, label: `${name} (Brand)` }, ...fontList.filter((f) => f.value !== name)];
+    }, [brand]);
+
+    function loadInitialValues(): IEmailTemplate {
         if (template && template.id) {
             // Load MJML JSON from the template.mjml field (stored in settingJson on backend)
             if (template.mjml) {
@@ -598,7 +693,7 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
                         return {
                             subject: template.subject || 'Welcome to Easy-email',
                             subTitle: 'Nice to meet you!',
-                            content: BlockManager.getBlockByType(BasicType.PAGE)!.create({}),
+                            content: createBrandedPage(brand),
                         };
                     }
 
@@ -613,7 +708,7 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
                     return {
                         subject: template.subject || 'Welcome to Easy-email',
                         subTitle: 'Nice to meet you!',
-                        content: BlockManager.getBlockByType(BasicType.PAGE)!.create({}),
+                        content: createBrandedPage(brand),
                     };
                 }
             }
@@ -621,9 +716,9 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
         return {
             subject: 'Welcome to Easy-email',
             subTitle: 'Nice to meet you!',
-            content: BlockManager.getBlockByType(BasicType.PAGE)!.create({}),
+            content: createBrandedPage(brand),
         };
-    }, [template]);
+    }
 
     // Handle form submission (save template)
     const onSubmit = useCallback(
@@ -767,6 +862,21 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
         return defaultMergeTags;
     }, [templateType]);
 
+    // easy-email's own merge-tag pickers (text toolbar, link/button fields) insert
+    // mergeTagGenerate(<path into mergeTags>), e.g. "Student.Student Name". Its default
+    // wraps that as {{Student.Student Name}}, which no resolver substitutes. Our catalogs
+    // map category → label → canonical tag, so return the tag itself. Split on the first
+    // dot only — labels such as "Receipt / Invoice No." contain dots.
+    const mergeTagGenerate = useCallback(
+        (path: string) => {
+            const dot = path.indexOf('.');
+            const tags: Record<string, Record<string, string> | undefined> = mergeTags;
+            const tag = dot > 0 ? tags[path.slice(0, dot)]?.[path.slice(dot + 1)] : undefined;
+            return tag ?? `{{${path}}}`;
+        },
+        [mergeTags]
+    );
+
     const handleOpenAssets = () => {
         openAssetPicker().then((url) => {
             if (url) {
@@ -784,7 +894,8 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
                 autoComplete
                 dashed={false}
                 mergeTags={mergeTags}
-                fontList={fontList}
+                mergeTagGenerate={mergeTagGenerate}
+                fontList={editorFontList}
                 onSubmit={onSubmit}
                 onUploadImage={onUploadImage}
             >

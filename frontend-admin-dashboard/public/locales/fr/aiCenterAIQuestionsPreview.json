@@ -1,0 +1,33 @@
+{
+    "instituteLogoAlt": "logo",
+    "noResponseDialog": {
+        "title": "Échec du chargement des questions",
+        "message": "Nous n'avons pas pu générer les questions pour vous. Veuillez réessayer.",
+        "retryNow": "Réessayer maintenant"
+    },
+    "toast": {
+        "noDataExists": "Aucune donnée n'existe !",
+        "incompleteQuestions": "Certaines de vos questions sont incomplètes ou nécessitent votre attention !"
+    },
+    "trigger": {
+        "retrying": "Nouvelle tentative...",
+        "retry": "Réessayer",
+        "loading": "Chargement…",
+        "viewQuestions": "Voir les questions"
+    },
+    "header": {
+        "saving": "Enregistrement...",
+        "saveChanges": "Enregistrer les modifications",
+        "close": "Fermer",
+        "moreTagsBadge_one": "+{{count}}",
+        "moreTagsBadge_many": "+{{count}}",
+        "moreTagsBadge_other": "+{{count}}"
+    },
+    "questionCard": {
+        "duplicate": "Dupliquer",
+        "delete": "Supprimer"
+    },
+    "content": {
+        "noQuestionsExist": "Aucune question n'existe."
+    }
+}

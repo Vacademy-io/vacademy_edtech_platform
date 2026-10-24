@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -57,6 +58,7 @@ interface QuizAddViaAIDialogProps {
 }
 
 const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddViaAIDialogProps) => {
+    const { t } = useTranslation('studyLibraryQuizAddViaAIDialog');
     const [isGenerateGroupOpen, setIsGenerateGroupOpen] = useState(false);
     const [isExtractGroupOpen, setIsExtractGroupOpen] = useState(false);
     const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -121,7 +123,7 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
             <AlertDialogContent className="p-0">
                 <div className="flex items-center justify-between rounded-md bg-primary-50">
                     <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                        Create Questions From AI
+                        {t('createQuestionsFromAi')}
                     </h1>
                     <AlertDialogCancel className="border-none bg-primary-50 shadow-none hover:bg-primary-50">
                         <X className="text-neutral-600" />
@@ -136,18 +138,17 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <StarFour weight="fill" className="text-primary-500" />
-                                        Generate Questions
+                                        {t('generateQuestions.title')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Ask AI to use PDF, Image or any topic to generate new
-                                        questions
+                                        {t('generateQuestions.description')}
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
                         </DialogTrigger>
                         <DialogContent className="no-scrollbar !m-0 flex size-1/2 flex-col !gap-0 !p-0">
                             <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                Generate Questions
+                                {t('generateQuestions.title')}
                             </h1>
                             <div className="flex flex-col gap-4 overflow-auto p-4">
                                 {/* VSmart Upload */}
@@ -161,16 +162,13 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    VSmart Upload
+                                                    {t('vsmartUpload.title')}
                                                     <p className="text-body">
-                                                        (Generate questions by uploading pdf, doc
-                                                        and ppt files)
+                                                        {t('vsmartUpload.subtitle')}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Generate question papers instantly by uploading
-                                                    study materials in PDF, Word, or PowerPoint
-                                                    formats.
+                                                    {t('vsmartUpload.description')}
                                                 </CardDescription>
                                             </CardHeader>
                                         </Card>
@@ -196,15 +194,13 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Audio
+                                                    {t('vsmartAudio.title')}
                                                     <p className="text-body">
-                                                        (Generate questions by uploading audio
-                                                        files)
+                                                        {t('vsmartAudio.subtitle')}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Convert any lecture, meeting, or audio recording
-                                                    into a full question paper.
+                                                    {t('vsmartAudio.description')}
                                                 </CardDescription>
                                             </CardHeader>
                                         </Card>
@@ -230,14 +226,13 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Topics
+                                                    {t('vsmartTopics.title')}
                                                     <p className="text-body">
-                                                        (Generate questions by providing topics)
+                                                        {t('vsmartTopics.subtitle')}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Generate custom question papers in seconds by
-                                                    just typing a topic, concept, or instruction.
+                                                    {t('vsmartTopics.description')}
                                                 </CardDescription>
                                             </CardHeader>
                                         </Card>
@@ -262,18 +257,17 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <StarFour weight="fill" className="text-primary-500" />
-                                        Extract Questions
+                                        {t('extractQuestions.title')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Ask AI to extract questions from any PDF, Image or Audio
-                                        Lecture
+                                        {t('extractQuestions.description')}
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
                         </DialogTrigger>
                         <DialogContent className="no-scrollbar !m-0 flex size-1/2 flex-col !gap-0 !p-0">
                             <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                Extract Questions
+                                {t('extractQuestions.title')}
                             </h1>
                             <div className="flex flex-col gap-4 overflow-auto p-4">
                                 {/* VSmart Extract */}
@@ -287,15 +281,13 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Extract
+                                                    {t('vsmartExtract.title')}
                                                     <p className="text-body">
-                                                        (Extract questions by uploading pdf, doc and
-                                                        ppt files)
+                                                        {t('vsmartExtract.subtitle')}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Easily extract all existing questions from any
-                                                    PDF document.
+                                                    {t('vsmartExtract.description')}
                                                 </CardDescription>
                                             </CardHeader>
                                         </Card>
@@ -321,14 +313,13 @@ const QuizAddViaAIDialog = ({ open, onOpenChange, onQuestionsReady }: QuizAddVia
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Image
+                                                    {t('vsmartImage.title')}
                                                     <p className="text-body">
-                                                        (Extract questions by uploading images)
+                                                        {t('vsmartImage.subtitle')}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Turn images into questions with ease using OCR
-                                                    and AI.
+                                                    {t('vsmartImage.description')}
                                                 </CardDescription>
                                             </CardHeader>
                                         </Card>

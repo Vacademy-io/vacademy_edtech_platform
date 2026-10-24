@@ -16,6 +16,7 @@ import {
   REQUEST_WHATSAPP_OTP,
   VERIFY_WHATSAPP_OTP,
 } from "@/constants/urls";
+import { useTranslation } from "react-i18next";
 
 export interface OtpChannel {
   type: "email" | "phone";
@@ -48,6 +49,7 @@ export default function OtpVerificationDialog({
   onVerified,
   onClose,
 }: OtpVerificationDialogProps) {
+  const { t } = useTranslation("registrationA");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [otp, setOtp] = useState("");
   const [sending, setSending] = useState(false);
@@ -66,13 +68,13 @@ export default function OtpVerificationDialog({
             LIVE_SESSION_REQUEST_OTP,
             {
               to: channel.value,
-              subject: "Email Verification",
+              subject: t("liveClass.otpDialog.emailSubject"),
               service: "live-session-registration",
               name: "Learner",
             },
             { params: { instituteId } }
           );
-          toast.success(`OTP sent to ${channel.value}`);
+          toast.success(t("liveClass.otpDialog.toast.otpSentTo", { value: channel.value }));
         } else {
           await axios.post(REQUEST_WHATSAPP_OTP, {
             phone_number: phoneDigits(channel.value),
@@ -83,14 +85,14 @@ export default function OtpVerificationDialog({
               ? { template_name: whatsappTemplateName }
               : {}),
           });
-          toast.success("OTP sent on WhatsApp");
+          toast.success(t("liveClass.otpDialog.toast.otpSentWhatsapp"));
         }
       } catch (error) {
         console.error("Failed to send OTP:", error);
         toast.error(
           channel.type === "email"
-            ? "Could not send the email OTP. Please try again."
-            : "Could not send the WhatsApp OTP. Please try again."
+            ? t("liveClass.otpDialog.toast.sendFailedEmail")
+            : t("liveClass.otpDialog.toast.sendFailedWhatsapp")
         );
       } finally {
         setSending(false);
@@ -119,7 +121,7 @@ export default function OtpVerificationDialog({
 
   const verifyOtp = async () => {
     if (!current || !otp.trim()) {
-      toast.error("Please enter the OTP");
+      toast.error(t("liveClass.otpDialog.toast.enterOtp"));
       return;
     }
     setVerifying(true);
@@ -142,7 +144,9 @@ export default function OtpVerificationDialog({
         }
       }
       toast.success(
-        current.type === "email" ? "Email verified" : "Mobile number verified"
+        current.type === "email"
+          ? t("liveClass.otpDialog.toast.verifiedEmail")
+          : t("liveClass.otpDialog.toast.verifiedPhone")
       );
       if (currentIndex + 1 < channels.length) {
         setCurrentIndex((i) => i + 1);
@@ -151,7 +155,7 @@ export default function OtpVerificationDialog({
       }
     } catch (error) {
       console.error("OTP verification failed:", error);
-      toast.error("Invalid or expired OTP. Please try again.");
+      toast.error(t("liveClass.otpDialog.toast.invalidOtp"));
     } finally {
       setVerifying(false);
     }
@@ -164,14 +168,19 @@ export default function OtpVerificationDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {current.type === "email" ? "Verify your email" : "Verify your mobile number"}
+            {current.type === "email"
+              ? t("liveClass.otpDialog.verifyEmailTitle")
+              : t("liveClass.otpDialog.verifyPhoneTitle")}
           </DialogTitle>
           <DialogDescription>
             {current.type === "email"
-              ? `We've sent a 6-digit code to ${current.value}.`
-              : `We've sent a 6-digit code on WhatsApp to ${current.value}.`}
+              ? t("liveClass.otpDialog.descriptionEmail", { value: current.value })
+              : t("liveClass.otpDialog.descriptionPhone", { value: current.value })}
             {channels.length > 1 &&
-              ` (Step ${currentIndex + 1} of ${channels.length})`}
+              t("liveClass.otpDialog.stepOf", {
+                current: currentIndex + 1,
+                total: channels.length,
+              })}
           </DialogDescription>
         </DialogHeader>
 
@@ -180,7 +189,7 @@ export default function OtpVerificationDialog({
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            placeholder="Enter 6-digit code"
+            placeholder={t("liveClass.otpDialog.placeholder")}
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             onKeyDown={(e) => {
@@ -194,7 +203,7 @@ export default function OtpVerificationDialog({
             disable={verifying || sending}
             onClick={verifyOtp}
           >
-            {verifying ? "Verifying..." : "Verify"}
+            {verifying ? t("common.verifying") : t("liveClass.otpDialog.verify")}
           </MyButton>
           <button
             type="button"
@@ -202,7 +211,7 @@ export default function OtpVerificationDialog({
             disabled={sending}
             onClick={() => current && sendOtp(current)}
           >
-            {sending ? "Sending..." : "Resend code"}
+            {sending ? t("liveClass.otpDialog.sending") : t("liveClass.otpDialog.resend")}
           </button>
         </div>
       </DialogContent>

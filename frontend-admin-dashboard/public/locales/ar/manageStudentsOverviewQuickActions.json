@@ -1,0 +1,16 @@
+{
+    "buttons": {
+        "email": "البريد الإلكتروني",
+        "whatsapp": "واتساب",
+        "copyCredentials": "نسخ بيانات الدخول"
+    },
+    "toasts": {
+        "noCredentials": "لا تتوفر بيانات دخول لهذا المتعلم",
+        "copySuccess": "تم نسخ اسم المستخدم وكلمة المرور",
+        "copyFailure": "تعذّر النسخ إلى الحافظة"
+    },
+    "credentialsText": {
+        "username": "اسم المستخدم",
+        "password": "كلمة المرور"
+    }
+}

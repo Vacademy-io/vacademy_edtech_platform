@@ -1,0 +1,11 @@
+{
+    "trigger": {
+        "ariaLabelSelected": "{{label}} : {{selection}}",
+        "ariaLabelEmpty": "Filtrer par {{label}}",
+        "clearAriaLabel": "Effacer le filtre {{label}}"
+    },
+    "search": {
+        "placeholder": "Rechercher {{label}}...",
+        "noResults": "Aucun résultat trouvé."
+    }
+}

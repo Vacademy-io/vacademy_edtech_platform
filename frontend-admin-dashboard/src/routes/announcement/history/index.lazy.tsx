@@ -1,26 +1,30 @@
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
-import { createLazyFileRoute } from '@tanstack/react-router';
+import { AnnouncementCounts } from './-components/AnnouncementCounts';
+import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect, useMemo, useState } from 'react';
-import {
-    AnnouncementService,
-    type ModeType,
-    type MediumType,
-    type AnnouncementRecipientRow,
-} from '@/services/announcement';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import type { ColumnDef } from '@tanstack/react-table';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+    CheckCircle,
+    ClockCounterClockwise,
+    DotsThreeVertical,
+    MagnifyingGlass,
+    Megaphone,
+    PaperPlaneRight,
+    Plus,
+    Trash,
+    XCircle,
+} from '@phosphor-icons/react';
+import { AnnouncementService } from '@/services/announcement';
+import { MyButton } from '@/components/design-system/button';
+import { MyTable } from '@/components/design-system/table';
+import { MyPagination } from '@/components/design-system/pagination';
+import { MyDialog } from '@/components/design-system/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Select,
     SelectContent,
@@ -28,83 +32,43 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { isUserAdmin } from '@/utils/userDetails';
-
-type Announcement = {
-    id: string;
-    title: string;
-    content?: { id?: string; type?: string; content?: string };
-    instituteId: string;
-    createdBy?: string;
-    createdByName?: string;
-    createdByRole?: string;
-    status?: string;
-    timezone?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    recipients?: Array<{
-        id?: string;
-        recipientType?: string;
-        recipientId?: string;
-        recipientName?: string;
-    }>;
-    modes?: Array<{
-        id?: string;
-        modeType: ModeType;
-        settings?: Record<string, unknown>;
-        isActive?: boolean;
-    }>;
-    mediums?: Array<{
-        id?: string;
-        mediumType: MediumType;
-        config?: Record<string, unknown>;
-        isActive?: boolean;
-    }>;
-    scheduling?: {
-        id?: string;
-        scheduleType?: 'IMMEDIATE' | 'ONE_TIME' | 'RECURRING';
-        cronExpression?: string;
-        timezone?: string;
-        startDate?: string;
-        endDate?: string;
-        nextRunTime?: string;
-        lastRunTime?: string;
-        isActive?: boolean;
-    };
-};
-
-type AnnouncementStats = {
-    // Recipient-level rollup (all mediums)
-    totalRecipients: number;
-    deliveredCount: number;
-    readCount: number;
-    failedCount: number;
-    deliveryRate: number;
-    readRate: number;
-    // APP_OVERLAY dismiss tracking (also covers other dismissible modes)
-    dismissedCount?: number;
-    dismissRate?: number;
-    // Email-specific (driven by SES events)
-    emailsSent: number;
-    emailsSend: number; // count of SES `send` events — backend keeps it for parity, UI hides it
-    emailsDelivered: number;
-    emailsOpened: number;
-    emailsClicked: number;
-    emailsBounced: number;
-    emailsRejected: number;
-    emailsComplained: number;
-    emailsPending: number;
-    emailDeliveryRate: number;
-    emailOpenRate: number;
-    emailClickRate: number;
-    emailBounceRate: number;
-    emailRejectRate: number;
-    emailComplaintRate: number;
-};
+import { useTranslation } from 'react-i18next';
+import {
+    fromCalendarItem,
+    toHistoryPage,
+    type Announcement,
+    type HistoryPage,
+    type HistoryView,
+} from './-types';
+import { humanize, joinParts, utcParts } from './-utils/format';
+import { useDescribeRecipient, useUserNames } from './-hooks/useRecipientNames';
+import {
+    AnnouncementStatusChip,
+    ModeIcons,
+    NameAvatar,
+    ScheduleSummary,
+} from './-components/primitives';
+import { AnnouncementDetailsDialog } from './-components/AnnouncementDetailsDialog';
+import { DeliveryStatsDialog } from './-components/DeliveryStatsDialog';
 
 export const Route = createLazyFileRoute('/announcement/history/')({
     component: () => (
@@ -125,842 +89,584 @@ const allStatuses = [
     'CANCELLED',
 ];
 
+// How many recipient names the title cell previews before "+N more".
+const PREVIEW_RECIPIENTS = 3;
+
 function useAnnouncements(
-    view: 'all' | 'planned' | 'past',
-    params: {
-        page: number;
-        size: number;
-        search: string;
-        status?: string;
-        from?: string;
-        to?: string;
-    }
+    view: HistoryView,
+    params: { page: number; size: number; status?: string; from?: string; to?: string }
 ) {
-    const { page, size, search, status, from, to } = params;
+    const { page, size, status, from, to } = params;
     return useQuery({
-        queryKey: ['announcements', view, page, size, search, status, from, to],
-        queryFn: async (): Promise<Announcement[]> => {
+        queryKey: ['announcements', view, page, size, status, from, to],
+        queryFn: async (): Promise<HistoryPage> => {
             if (view === 'planned') {
-                const data = await AnnouncementService.planned({ page, size, from, to });
-                return Array.isArray(data) ? data : data?.content ?? [];
+                return toHistoryPage(
+                    await AnnouncementService.planned({ page, size, from, to }),
+                    fromCalendarItem
+                );
             }
             if (view === 'past') {
-                const data = await AnnouncementService.past({ page, size, from, to });
-                return Array.isArray(data) ? data : data?.content ?? [];
+                return toHistoryPage(
+                    await AnnouncementService.past({ page, size, from, to }),
+                    fromCalendarItem
+                );
             }
-            const data = await AnnouncementService.listByInstitute({ page, size, status });
-            const list = Array.isArray(data) ? data : data?.content ?? [];
-            if (!search) return list;
-            return list.filter((a: Announcement) =>
-                a.title?.toLowerCase().includes(search.toLowerCase())
+            return toHistoryPage(
+                await AnnouncementService.listByInstitute({ page, size, status }),
+                (a: Announcement) => a
             );
         },
         refetchOnWindowFocus: false,
+        placeholderData: (prev) => prev,
     });
 }
 
 function AnnouncementHistoryPage() {
+    const { t } = useTranslation('announcementHistoryIndex');
     const { setNavHeading } = useNavHeadingStore();
     const { toast } = useToast();
+    const navigate = useNavigate();
     const admin = isUserAdmin();
 
     useEffect(() => {
-        setNavHeading('Announcement History');
-    }, [setNavHeading]);
+        setNavHeading(t('heading'));
+    }, [setNavHeading, t]);
 
-    const [view, setView] = useState<'all' | 'planned' | 'past'>('all');
+    const [view, setView] = useState<HistoryView>('all');
     const [page, setPage] = useState(0);
     const [size, setSize] = useState(10);
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState<string | undefined>(undefined);
-    const [from, setFrom] = useState<string>('');
-    const [to, setTo] = useState<string>('');
+    const [from, setFrom] = useState('');
+    const [to, setTo] = useState('');
 
-    const {
-        data: announcements = [],
-        isLoading,
-        refetch,
-    } = useAnnouncements(view, {
+    const { data, isLoading, isError, error, refetch } = useAnnouncements(view, {
         page,
         size,
-        search,
-        status,
-        from: from || undefined,
-        to: to || undefined,
+        status: view === 'all' ? status : undefined,
+        from: view !== 'all' ? from || undefined : undefined,
+        to: view !== 'all' ? to || undefined : undefined,
     });
 
     const [details, setDetails] = useState<Announcement | null>(null);
     const [statsFor, setStatsFor] = useState<Announcement | null>(null);
-    const [stats, setStats] = useState<AnnouncementStats | null>(null);
     const [rejectFor, setRejectFor] = useState<Announcement | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+    const [deleteFor, setDeleteFor] = useState<Announcement | null>(null);
 
-    useEffect(() => {
-        if (!statsFor) {
-            setStats(null);
-            return;
-        }
-        (async () => {
-            try {
-                const s = await AnnouncementService.stats(statsFor.id);
-                setStats(s);
-            } catch (e) {
-                toast({ title: 'Failed to load stats', variant: 'destructive' });
-            }
-        })();
-    }, [statsFor, toast]);
+    // The list API has no title search, so it filters the loaded page.
+    const rows = useMemo(() => {
+        const list = data?.content ?? [];
+        const q = search.trim().toLowerCase();
+        return q ? list.filter((a) => a.title?.toLowerCase().includes(q)) : list;
+    }, [data, search]);
+
+    const previewUserIds = useMemo(
+        () =>
+            rows.flatMap((a) =>
+                (a.recipients ?? [])
+                    .slice(0, PREVIEW_RECIPIENTS)
+                    .filter((r) => r.recipientType === 'USER')
+                    .map((r) => r.recipientId)
+            ),
+        [rows]
+    );
+    const { names } = useUserNames(previewUserIds);
+    const describe = useDescribeRecipient(names);
 
     const onApprove = async (a: Announcement) => {
         try {
             await AnnouncementService.approve(a.id, 'ADMIN');
-            toast({ title: 'Approved' });
+            toast({ title: t('toasts.approved') });
             refetch();
         } catch (e) {
-            toast({ title: 'Approve failed', variant: 'destructive' });
+            toast({ title: t('toasts.approveFailed'), variant: 'destructive' });
         }
     };
     const onReject = async () => {
         if (!rejectFor) return;
         try {
             await AnnouncementService.reject(rejectFor.id, 'ADMIN', rejectReason || '');
-            toast({ title: 'Rejected' });
+            toast({ title: t('toasts.rejected') });
             setRejectReason('');
             setRejectFor(null);
             refetch();
         } catch (e) {
-            toast({ title: 'Reject failed', variant: 'destructive' });
+            toast({ title: t('toasts.rejectFailed'), variant: 'destructive' });
         }
     };
     const onDeliverNow = async (a: Announcement) => {
         try {
             await AnnouncementService.deliver(a.id);
-            toast({ title: 'Delivery triggered' });
+            toast({ title: t('toasts.deliveryTriggered') });
             refetch();
         } catch (e) {
-            toast({ title: 'Trigger failed', variant: 'destructive' });
+            toast({ title: t('toasts.triggerFailed'), variant: 'destructive' });
         }
     };
-    const onDelete = async (a: Announcement) => {
+    const onDelete = async () => {
+        if (!deleteFor) return;
         try {
-            await AnnouncementService.remove(a.id);
-            toast({ title: 'Deleted' });
+            await AnnouncementService.remove(deleteFor.id);
+            toast({ title: t('toasts.deleted') });
+            setDeleteFor(null);
             refetch();
         } catch (e) {
-            toast({ title: 'Delete failed', variant: 'destructive' });
+            toast({ title: t('toasts.deleteFailed'), variant: 'destructive' });
         }
     };
 
-    const filtered = useMemo(() => announcements, [announcements]);
-
-    return (
-        <div className="p-4">
-            <h2 className="mb-4 text-xl font-semibold">Announcement History</h2>
-            <Tabs
-                value={view}
-                onValueChange={(v: string) => {
-                    setView(v as 'all' | 'planned' | 'past');
-                    setPage(0);
-                }}
-            >
-                <TabsList>
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="planned">Planned</TabsTrigger>
-                    <TabsTrigger value="past">Past</TabsTrigger>
-                </TabsList>
-                <TabsContent value="all">
-                    <Toolbar
-                        search={search}
-                        setSearch={setSearch}
-                        status={status}
-                        setStatus={setStatus}
-                        showDate={false}
-                        from={from}
-                        to={to}
-                        setFrom={setFrom}
-                        setTo={setTo}
-                    />
-                </TabsContent>
-                <TabsContent value="planned">
-                    <Toolbar
-                        search={search}
-                        setSearch={setSearch}
-                        status={undefined}
-                        setStatus={() => { }}
-                        showDate={true}
-                        from={from}
-                        to={to}
-                        setFrom={setFrom}
-                        setTo={setTo}
-                    />
-                </TabsContent>
-                <TabsContent value="past">
-                    <Toolbar
-                        search={search}
-                        setSearch={setSearch}
-                        status={undefined}
-                        setStatus={() => { }}
-                        showDate={true}
-                        from={from}
-                        to={to}
-                        setFrom={setFrom}
-                        setTo={setTo}
-                    />
-                </TabsContent>
-            </Tabs>
-            <Separator className="my-4" />
-
-            <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="text-sm text-neutral-500">{filtered.length} results</div>
-                <div className="flex items-center gap-2">
-                    <Select
-                        value={String(size)}
-                        onValueChange={(v) => {
-                            setSize(Number(v));
-                            setPage(0);
-                        }}
-                    >
-                        <SelectTrigger className="w-[100px]">
-                            <SelectValue placeholder="Size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="20">20</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="secondary"
-                            disabled={page === 0}
-                            onClick={() => setPage((p) => Math.max(0, p - 1))}
-                        >
-                            Prev
-                        </Button>
-                        <div className="text-sm">Page {page + 1}</div>
-                        <Button variant="secondary" onClick={() => setPage((p) => p + 1)}>
-                            Next
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Modes</TableHead>
-                            <TableHead>Mediums</TableHead>
-                            <TableHead>Schedule</TableHead>
-                            <TableHead>Created By</TableHead>
-                            <TableHead>Created At</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={8}>Loading…</TableCell>
-                            </TableRow>
-                        ) : filtered.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={8}>No announcements</TableCell>
-                            </TableRow>
-                        ) : (
-                            filtered.map((a) => (
-                                <TableRow key={a.id} className="align-top">
-                                    <TableCell>
-                                        <div className="font-medium">{a.title}</div>
-                                        {a.recipients && a.recipients.length > 0 && (
-                                            <div className="mt-1 text-xs text-neutral-500">
-                                                Recipients:{' '}
-                                                {a.recipients
-                                                    .slice(0, 3)
-                                                    .map((r) => r.recipientType)
-                                                    .join(', ')}
-                                                {a.recipients.length > 3
-                                                    ? ` +${a.recipients.length - 3}`
-                                                    : ''}
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{a.status || '-'}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex max-w-[220px] flex-wrap gap-1">
-                                            {a.modes?.map((m, i) => (
-                                                <Badge key={i} variant="secondary">
-                                                    {m.modeType}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex max-w-[220px] flex-wrap gap-1">
-                                            {a.mediums?.map((m, i) => (
-                                                <Badge key={i} variant="outline">
-                                                    {m.mediumType}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <ScheduleCell scheduling={a.scheduling} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {a.createdByName || a.createdBy || '-'}
-                                        </div>
-                                        {a.createdByRole && (
-                                            <div className="text-xs text-neutral-500">
-                                                {a.createdByRole}
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>{formatDateTime(a.createdAt)}</TableCell>
-                                    <TableCell className="space-x-2 text-right">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => setDetails(a)}
-                                        >
-                                            View
-                                        </Button>
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => setStatsFor(a)}
-                                        >
-                                            Stats
-                                        </Button>
-                                        {a.status === 'PENDING_APPROVAL' && admin && (
-                                            <Button size="sm" onClick={() => onApprove(a)}>
-                                                Approve
-                                            </Button>
-                                        )}
-                                        {a.status === 'PENDING_APPROVAL' && admin && (
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => setRejectFor(a)}
-                                            >
-                                                Reject
-                                            </Button>
-                                        )}
-                                        {(a.status === 'SCHEDULED' ||
-                                            a.scheduling?.scheduleType === 'ONE_TIME') && (
-                                                <Button size="sm" onClick={() => onDeliverNow(a)}>
-                                                    Deliver now
-                                                </Button>
-                                            )}
-                                        {admin && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => onDelete(a)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            <Dialog open={!!details} onOpenChange={(open) => !open && setDetails(null)}>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>Announcement Details</DialogTitle>
-                    </DialogHeader>
-                    {details && (
-                        <div className="grid gap-3">
-                            <div>
-                                <div className="text-lg font-medium">{details.title}</div>
-                                <div className="text-xs text-neutral-500">{details.status}</div>
-                            </div>
-                            <div className="rounded border p-3">
-                                <div className="mb-1 text-sm font-medium">Content</div>
-                                <div
-                                    className="prose max-h-64 overflow-auto text-sm"
-                                    dangerouslySetInnerHTML={{
-                                        __html:
-                                            details.content?.type === 'html'
-                                                ? details.content?.content || ''
-                                                : '',
-                                    }}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded border p-3">
-                                    <div className="mb-1 text-sm font-medium">Modes</div>
-                                    <div className="flex flex-wrap gap-1">
-                                        {details.modes?.map((m, i) => (
-                                            <Badge key={i}>{m.modeType}</Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="rounded border p-3">
-                                    <div className="mb-1 text-sm font-medium">Mediums</div>
-                                    <div className="flex flex-wrap gap-1">
-                                        {details.mediums?.map((m, i) => (
-                                            <Badge key={i} variant="secondary">
-                                                {m.mediumType}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                            {details.recipients && (
-                                <div className="rounded border p-3">
-                                    <div className="mb-1 text-sm font-medium">Recipients</div>
-                                    <div className="text-sm">
-                                        {details.recipients.map((r, i) => (
-                                            <div key={i}>
-                                                {r.recipientType} {r.recipientName || r.recipientId}
-                                            </div>
-                                        ))}
-                                    </div>
+    const columns = useMemo<ColumnDef<Announcement>[]>(
+        () => [
+            {
+                id: 'title',
+                header: t('table.announcement'),
+                size: 280,
+                cell: ({ row }) => {
+                    const a = row.original;
+                    const recipients = a.recipients ?? [];
+                    const preview = recipients
+                        .slice(0, PREVIEW_RECIPIENTS)
+                        .map((r) => describe(r).name);
+                    const more = recipients.length - preview.length;
+                    return (
+                        <div className="min-w-0">
+                            <button
+                                type="button"
+                                onClick={() => setDetails(a)}
+                                className="block max-w-full truncate text-left text-body font-semibold text-neutral-900 hover:text-primary-600"
+                            >
+                                {a.title}
+                            </button>
+                            {preview.length > 0 && (
+                                <div className="mt-1 truncate text-caption text-neutral-500">
+                                    {t('table.recipientsPrefix')} {preview.join(', ')}
+                                    {more > 0 && ` ${t('table.recipientsMore', { count: more })}`}
                                 </div>
                             )}
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={!!statsFor} onOpenChange={(open) => !open && setStatsFor(null)}>
-                <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-                    <DialogHeader className="flex-shrink-0">
-                        <DialogTitle>Delivery Stats</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-y-auto pr-2">
-                        {stats ? (
-                            <div className="space-y-4 pb-4">
-                                {/* Delivery overview — the recipient-level rollup that applies to
-                                    every medium (email + in-app + WhatsApp + push). */}
-                                <div className="rounded-xl border border-neutral-200 bg-gradient-to-br from-white to-neutral-50/30 p-4 sm:p-6 shadow-sm">
-                                    <div className="mb-3 sm:mb-4 flex items-center gap-2">
-                                        <div className="h-1 w-6 sm:w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-400"></div>
-                                        <h4 className="text-base sm:text-lg font-semibold text-neutral-800">
-                                            Delivery overview
-                                        </h4>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
-                                        <StatTile
-                                            label="Recipients"
-                                            value={stats.totalRecipients}
-                                        />
-                                        <StatTile
-                                            label="Delivered"
-                                            value={stats.deliveredCount}
-                                            sub={percent(stats.deliveryRate)}
-                                            tone="success"
-                                        />
-                                        <StatTile
-                                            label="Read"
-                                            value={stats.readCount}
-                                            sub={percent(stats.readRate)}
-                                            tone="info"
-                                        />
-                                        <StatTile
-                                            label="Failed"
-                                            value={stats.failedCount}
-                                            tone="danger"
-                                        />
-                                        <StatTile
-                                            label="Dismissed"
-                                            value={stats.dismissedCount}
-                                            tone="muted"
-                                        />
-                                        <StatTile
-                                            label="Dismiss rate"
-                                            value={percent(stats.dismissRate)}
-                                            tone="muted"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Email-specific SES event stats. Hidden when no email was
-                                    actually sent for this announcement (non-email campaigns). */}
-                                {stats.emailsSent > 0 ? (
-                                    <div className="rounded-xl border border-neutral-200 bg-gradient-to-br from-white to-neutral-50/30 p-4 sm:p-6 shadow-sm">
-                                        <div className="mb-3 sm:mb-4 flex items-center gap-2">
-                                            <div className="h-1 w-6 sm:w-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-400"></div>
-                                            <h4 className="text-base sm:text-lg font-semibold text-neutral-800">
-                                                Email events
-                                            </h4>
-                                            <span className="text-xs text-neutral-500">
-                                                via SES
-                                            </span>
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                            <StatTile
-                                                label="Emails sent"
-                                                value={stats.emailsSent}
-                                            />
-                                            <StatTile
-                                                label="Delivered"
-                                                value={stats.emailsDelivered}
-                                                sub={percent(stats.emailDeliveryRate)}
-                                                tone="success"
-                                            />
-                                            <StatTile
-                                                label="Opened"
-                                                value={stats.emailsOpened}
-                                                sub={percent(stats.emailOpenRate)}
-                                                tone="info"
-                                            />
-                                            <StatTile
-                                                label="Clicked"
-                                                value={stats.emailsClicked}
-                                                sub={percent(stats.emailClickRate)}
-                                                tone="info"
-                                            />
-                                            <StatTile
-                                                label="Bounced"
-                                                value={stats.emailsBounced}
-                                                sub={percent(stats.emailBounceRate)}
-                                                tone="warning"
-                                            />
-                                            <StatTile
-                                                label="Rejected"
-                                                value={stats.emailsRejected}
-                                                sub={percent(stats.emailRejectRate)}
-                                                tone="danger"
-                                            />
-                                            <StatTile
-                                                label="Complained"
-                                                value={stats.emailsComplained}
-                                                sub={percent(stats.emailComplaintRate)}
-                                                tone="danger"
-                                            />
-                                            <StatTile
-                                                label="Awaiting events"
-                                                value={stats.emailsPending}
-                                                tone="muted"
-                                            />
-                                        </div>
-                                        {stats.emailsDelivered === 0 &&
-                                            stats.emailsBounced === 0 &&
-                                            stats.emailsRejected === 0 &&
-                                            stats.emailsPending > 0 && (
-                                                <p className="mt-3 text-xs text-neutral-500">
-                                                    Emails were dispatched but no SES events have
-                                                    come back yet. If you're running locally,
-                                                    ensure the SES → SNS → notification_service
-                                                    webhook is configured.
-                                                </p>
-                                            )}
-                                    </div>
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
-                                        No emails were sent for this announcement.
-                                    </div>
-                                )}
-
-                                {/* Per-recipient delivery/read/dismiss breakdown */}
-                                {statsFor && (
-                                    <RecipientsSection
-                                        key={statsFor.id}
-                                        announcementId={statsFor.id}
-                                    />
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="flex items-center gap-2 text-sm text-neutral-500">
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600"></div>
-                                    Loading statistics...
-                                </div>
-                            </div>
-                        )}
+                    );
+                },
+            },
+            {
+                id: 'status',
+                header: t('table.status'),
+                size: 130,
+                cell: ({ row }) => <AnnouncementStatusChip status={row.original.status} />,
+            },
+            {
+                id: 'channels',
+                header: t('table.appearsIn'),
+                size: 190,
+                cell: ({ row }) => {
+                    const modes = (row.original.modes ?? []).map((m) => m.modeType);
+                    const mediums = (row.original.mediums ?? []).map((m) => m.mediumType);
+                    return (
+                        <div className="flex flex-col gap-1">
+                            <ModeIcons values={modes} />
+                            <span className="text-caption text-neutral-500">
+                                {mediums.length > 0
+                                    ? mediums
+                                          .map((m) =>
+                                              t(`mediums.${m}`, { defaultValue: humanize(m) })
+                                          )
+                                          .join(' · ')
+                                    : t('table.inProductOnly')}
+                            </span>
+                        </div>
+                    );
+                },
+            },
+            {
+                id: 'schedule',
+                header: t('table.schedule'),
+                size: 160,
+                cell: ({ row }) => (
+                    <div className="text-body text-neutral-700">
+                        <ScheduleSummary scheduling={row.original.scheduling} />
                     </div>
-                </DialogContent>
-            </Dialog>
+                ),
+            },
+            {
+                id: 'createdBy',
+                header: t('table.createdBy'),
+                size: 220,
+                cell: ({ row }) => {
+                    const a = row.original;
+                    const name = a.createdByName || t('detailsDialog.system');
+                    const created = utcParts(a.createdAt);
+                    const role = a.createdByRole
+                        ? t(`roles.${a.createdByRole}`, {
+                              defaultValue: humanize(a.createdByRole),
+                          })
+                        : '';
+                    return (
+                        <div className="flex min-w-0 items-center gap-2">
+                            <NameAvatar name={name} muted={!a.createdByName} />
+                            <div className="min-w-0">
+                                <div className="truncate text-body text-neutral-800">{name}</div>
+                                <div className="truncate text-caption text-neutral-500">
+                                    {[role, created ? joinParts(created) : '']
+                                        .filter(Boolean)
+                                        .join(' · ')}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                },
+            },
+            {
+                id: 'actions',
+                header: t('table.actions'),
+                size: 190,
+                cell: ({ row }) => {
+                    const a = row.original;
+                    const canReview = a.status === 'PENDING_APPROVAL' && admin;
+                    const canDeliver =
+                        a.status === 'SCHEDULED' || a.scheduling?.scheduleType === 'ONE_TIME';
+                    const hasMenu = canReview || canDeliver || admin;
+                    return (
+                        <div className="flex items-center gap-2">
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => setDetails(a)}
+                            >
+                                {t('actions.view')}
+                            </MyButton>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => setStatsFor(a)}
+                            >
+                                {t('actions.stats')}
+                            </MyButton>
+                            {hasMenu && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <MyButton
+                                            buttonType="text"
+                                            scale="small"
+                                            layoutVariant="icon"
+                                            aria-label={t('actions.more')}
+                                        >
+                                            <DotsThreeVertical
+                                                className="size-4 text-neutral-600"
+                                                weight="bold"
+                                            />
+                                        </MyButton>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {canReview && (
+                                            <DropdownMenuItem onClick={() => onApprove(a)}>
+                                                <CheckCircle className="mr-2 size-4 text-success-600" />
+                                                {t('actions.approve')}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {canReview && (
+                                            <DropdownMenuItem onClick={() => setRejectFor(a)}>
+                                                <XCircle className="mr-2 size-4 text-danger-600" />
+                                                {t('actions.reject')}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {canDeliver && (
+                                            <DropdownMenuItem onClick={() => onDeliverNow(a)}>
+                                                <PaperPlaneRight className="mr-2 size-4" />
+                                                {t('actions.deliverNow')}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {admin && (canReview || canDeliver) && (
+                                            <DropdownMenuSeparator />
+                                        )}
+                                        {admin && (
+                                            <DropdownMenuItem
+                                                onClick={() => setDeleteFor(a)}
+                                                className="text-danger-600 focus:text-danger-600"
+                                            >
+                                                <Trash className="mr-2 size-4" />
+                                                {t('actions.delete')}
+                                            </DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                        </div>
+                    );
+                },
+            },
+        ],
+        // onApprove/onDeliverNow only close over stable setters + refetch
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [t, admin, describe]
+    );
 
-            <Dialog open={!!rejectFor} onOpenChange={(open) => !open && setRejectFor(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Reject Announcement</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                        <Textarea
-                            placeholder="Reason"
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                        />
-                        <div className="flex justify-end gap-2">
-                            <Button variant="secondary" onClick={() => setRejectFor(null)}>
-                                Cancel
-                            </Button>
-                            <Button variant="destructive" onClick={onReject}>
-                                Reject
-                            </Button>
+    const totalPages = data?.totalPages ?? 0;
+    const totalElements = data?.totalElements ?? 0;
+    const tableData = {
+        content: rows,
+        total_pages: totalPages,
+        page_no: page,
+        page_size: size,
+        total_elements: totalElements,
+        last: page + 1 >= totalPages,
+    };
+
+    return (
+        <div className="flex flex-col gap-6 p-4 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-500">
+                        <ClockCounterClockwise className="size-6" weight="duotone" />
+                    </span>
+                    <div className="min-w-0">
+                        <h1 className="text-h2-semibold text-neutral-900">{t('heading')}</h1>
+                        <p className="mt-1 text-body text-neutral-500">{t('subheading')}</p>
+                    </div>
+                </div>
+                <MyButton
+                    buttonType="primary"
+                    scale="medium"
+                    onClick={() => navigate({ to: '/announcement/create' })}
+                >
+                    <Plus className="size-4" weight="bold" />
+                    {t('createAnnouncement')}
+                </MyButton>
+            </div>
+
+            {/* Status counts. */}
+            <AnnouncementCounts
+                status={view === 'all' ? status : undefined}
+                onStatus={(next) => {
+                    setView('all');
+                    setStatus(next);
+                    setPage(0);
+                }}
+            />
+
+            <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-4 pt-4">
+                    <Tabs
+                        value={view}
+                        onValueChange={(v: string) => {
+                            setView(v as HistoryView);
+                            setPage(0);
+                        }}
+                    >
+                        <TabsList className="h-auto gap-1 rounded-none bg-transparent p-0">
+                            {(['all', 'planned', 'past'] as const).map((v) => (
+                                <TabsTrigger
+                                    key={v}
+                                    value={v}
+                                    className="rounded-none border-b-2 border-transparent px-3 pb-3 pt-1 text-body text-neutral-500 data-[state=active]:border-primary-500 data-[state=active]:bg-transparent data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+                                >
+                                    {t(`tabs.${v}`)}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                    {!isLoading && !isError && (
+                        <span className="pb-3 text-caption text-neutral-500">
+                            {t('results', { count: totalElements })}
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex flex-wrap items-end gap-3 border-b border-neutral-100 bg-neutral-50 px-4 py-3">
+                    <div className="w-full sm:w-72">
+                        <Label htmlFor="announcement-history-search" className="sr-only">
+                            {t('toolbar.searchLabel')}
+                        </Label>
+                        <div className="relative">
+                            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+                            <Input
+                                id="announcement-history-search"
+                                className="bg-white pl-9"
+                                placeholder={t('toolbar.searchPlaceholder')}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
-        </div>
-    );
-}
+                    {view === 'all' ? (
+                        <div className="w-full sm:w-56">
+                            <Label className="sr-only">{t('toolbar.statusLabel')}</Label>
+                            <Select
+                                value={status ?? 'ALL'}
+                                onValueChange={(v) => {
+                                    setStatus(v === 'ALL' ? undefined : v);
+                                    setPage(0);
+                                }}
+                            >
+                                <SelectTrigger
+                                    className="bg-white"
+                                    aria-label={t('toolbar.statusLabel')}
+                                >
+                                    <SelectValue placeholder={t('toolbar.statusAll')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">
+                                        {t('toolbar.statusLabel')}: {t('toolbar.statusAll')}
+                                    </SelectItem>
+                                    {allStatuses.map((s) => (
+                                        <SelectItem key={s} value={s}>
+                                            {t(`status.${s}`, { defaultValue: humanize(s) })}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex w-full items-center gap-2 sm:w-auto">
+                                <Label
+                                    htmlFor="announcement-history-from"
+                                    className="shrink-0 text-caption text-neutral-600"
+                                >
+                                    {t('toolbar.fromLabel')}
+                                </Label>
+                                <Input
+                                    id="announcement-history-from"
+                                    type="datetime-local"
+                                    className="bg-white sm:w-56"
+                                    value={from}
+                                    onChange={(e) => {
+                                        setFrom(e.target.value);
+                                        setPage(0);
+                                    }}
+                                />
+                            </div>
+                            <div className="flex w-full items-center gap-2 sm:w-auto">
+                                <Label
+                                    htmlFor="announcement-history-to"
+                                    className="shrink-0 text-caption text-neutral-600"
+                                >
+                                    {t('toolbar.toLabel')}
+                                </Label>
+                                <Input
+                                    id="announcement-history-to"
+                                    type="datetime-local"
+                                    className="bg-white sm:w-56"
+                                    value={to}
+                                    onChange={(e) => {
+                                        setTo(e.target.value);
+                                        setPage(0);
+                                    }}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
 
-function Toolbar(props: {
-    search: string;
-    setSearch: (v: string) => void;
-    status: string | undefined;
-    setStatus: (v: string | undefined) => void;
-    showDate: boolean;
-    from: string;
-    to: string;
-    setFrom: (v: string) => void;
-    setTo: (v: string) => void;
-}) {
-    const { search, setSearch, status, setStatus, showDate, from, to, setFrom, setTo } = props;
-    return (
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-            <div className="w-64">
-                <label className="mb-1 block text-xs text-neutral-600">Search title</label>
-                <Input
-                    placeholder="Search…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                <div className="flex flex-col gap-4 p-4">
+                    {isError ? (
+                        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-danger-200 p-10 text-center">
+                            <p className="text-body text-danger-600">{t('table.loadFailed')}</p>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => refetch()}
+                            >
+                                {t('retry')}
+                            </MyButton>
+                        </div>
+                    ) : !isLoading && rows.length === 0 ? (
+                        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-neutral-200 p-10 text-center">
+                            <span className="flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-400">
+                                <Megaphone className="size-6" weight="duotone" />
+                            </span>
+                            <p className="text-body text-neutral-500">
+                                {search.trim() ? t('table.noMatch') : t('table.empty')}
+                            </p>
+                            {!search.trim() && (
+                                <MyButton
+                                    buttonType="secondary"
+                                    scale="small"
+                                    onClick={() => navigate({ to: '/announcement/create' })}
+                                >
+                                    <Plus className="size-4" weight="bold" />
+                                    {t('createAnnouncement')}
+                                </MyButton>
+                            )}
+                        </div>
+                    ) : (
+                        <MyTable<Announcement>
+                            data={tableData}
+                            columns={columns}
+                            isLoading={isLoading}
+                            error={error}
+                            currentPage={page}
+                            enableColumnResizing={false}
+                            scrollable
+                        />
+                    )}
+
+                    {totalPages > 0 && (
+                        <MyPagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            totalElements={totalElements}
+                            pageSize={size}
+                            onPageSizeChange={(s) => {
+                                setSize(s);
+                                setPage(0);
+                            }}
+                            pageSizeOptions={[10, 20, 50]}
+                        />
+                    )}
+                </div>
+            </div>
+
+            <AnnouncementDetailsDialog
+                announcement={details}
+                onClose={() => setDetails(null)}
+                onOpenStats={setStatsFor}
+            />
+            <DeliveryStatsDialog announcement={statsFor} onClose={() => setStatsFor(null)} />
+
+            <MyDialog
+                heading={t('rejectDialog.title')}
+                open={!!rejectFor}
+                onOpenChange={(open) => !open && setRejectFor(null)}
+                dialogWidth="max-w-md"
+                footer={
+                    <>
+                        <MyButton buttonType="secondary" onClick={() => setRejectFor(null)}>
+                            {t('rejectDialog.cancel')}
+                        </MyButton>
+                        <MyButton buttonType="primary" onAsyncClick={onReject}>
+                            {t('rejectDialog.reject')}
+                        </MyButton>
+                    </>
+                }
+            >
+                <Textarea
+                    placeholder={t('rejectDialog.reasonPlaceholder')}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
                 />
-            </div>
-            {setStatus !== (undefined as never) && (
-                <div className="w-56">
-                    <label className="mb-1 block text-xs text-neutral-600">Status</label>
-                    <Select
-                        value={status ?? 'ALL'}
-                        onValueChange={(v) => setStatus(v === 'ALL' ? undefined : v)}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="All" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ALL">All</SelectItem>
-                            {allStatuses.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                    {s}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            )}
-            {showDate && (
-                <>
-                    <div>
-                        <label className="mb-1 block text-xs text-neutral-600">From</label>
-                        <Input
-                            type="datetime-local"
-                            value={from}
-                            onChange={(e) => setFrom(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <label className="mb-1 block text-xs text-neutral-600">To</label>
-                        <Input
-                            type="datetime-local"
-                            value={to}
-                            onChange={(e) => setTo(e.target.value)}
-                        />
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
+            </MyDialog>
 
-function ScheduleCell({ scheduling }: { scheduling: Announcement['scheduling'] }) {
-    if (!scheduling || !scheduling.scheduleType) return <div>-</div>;
-    if (scheduling.scheduleType === 'IMMEDIATE') return <div>Immediate</div>;
-    if (scheduling.scheduleType === 'ONE_TIME')
-        return (
-            <div className="text-xs">
-                <div>One-time</div>
-                <div>
-                    {formatDateTime(scheduling.startDate)} → {formatDateTime(scheduling.endDate)}
-                </div>
-            </div>
-        );
-    return (
-        <div className="text-xs">
-            <div>Recurring</div>
-            <div>CRON: {scheduling.cronExpression || '-'}</div>
-        </div>
-    );
-}
-
-// Paginated per-recipient list inside the stats dialog. Reads the
-// GET /announcements/{id}/recipients Spring Page endpoint 10 rows at a time.
-function RecipientsSection({ announcementId }: { announcementId: string }) {
-    const [rows, setRows] = useState<AnnouncementRecipientRow[]>([]);
-    const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const pageSize = 10;
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const data = await AnnouncementService.recipients(announcementId, {
-                    page,
-                    size: pageSize,
-                });
-                if (cancelled) return;
-                setRows(data?.content ?? []);
-                setTotalPages(data?.totalPages ?? 0);
-            } catch (e) {
-                if (cancelled) return;
-                setError('Failed to load recipients');
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [announcementId, page]);
-
-    return (
-        <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-3 flex items-center gap-2 sm:mb-4">
-                <div className="h-1 w-6 rounded-full bg-gradient-to-r from-green-500 to-green-400 sm:w-8"></div>
-                <h4 className="text-base font-semibold text-neutral-800 sm:text-lg">
-                    Recipients
-                </h4>
-            </div>
-            {error ? (
-                <div className="rounded border border-dashed border-neutral-200 p-6 text-center text-sm text-danger-600">
-                    {error}
-                </div>
-            ) : loading ? (
-                <div className="flex items-center justify-center py-6">
-                    <div className="flex items-center gap-2 text-sm text-neutral-500">
-                        <div className="size-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600"></div>
-                        Loading recipients...
-                    </div>
-                </div>
-            ) : rows.length === 0 ? (
-                <div className="rounded border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
-                    No recipients found for this announcement.
-                </div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Mode</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Seen at</TableHead>
-                                <TableHead>Dismissed at</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {rows.map((r) => (
-                                <TableRow key={r.recipientMessageId}>
-                                    <TableCell>{r.userName || r.userId || '-'}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">{r.modeType}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{r.status || '-'}</Badge>
-                                    </TableCell>
-                                    <TableCell>{formatDateTime(r.readAt ?? undefined)}</TableCell>
-                                    <TableCell>
-                                        {formatDateTime(r.dismissedAt ?? undefined)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
-            {!error && totalPages > 1 && (
-                <div className="mt-3 flex items-center justify-end gap-2">
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={loading || page === 0}
-                        onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    >
-                        Prev
-                    </Button>
-                    <div className="text-sm text-neutral-600">
-                        Page {page + 1} of {totalPages}
-                    </div>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={loading || page + 1 >= totalPages}
-                        onClick={() => setPage((p) => p + 1)}
-                    >
-                        Next
-                    </Button>
-                </div>
-            )}
-        </div>
-    );
-}
-
-function formatDateTime(v?: string) {
-    if (!v) return '-';
-    try {
-        return new Date(v).toLocaleString();
-    } catch {
-        return v;
-    }
-}
-
-function percent(n?: number) {
-    if (typeof n !== 'number') return '-';
-    return `${n.toFixed(2)}%`;
-}
-
-type StatTone = 'success' | 'info' | 'warning' | 'danger' | 'muted' | 'neutral';
-
-function StatTile({
-    label,
-    value,
-    sub,
-    tone = 'neutral',
-}: {
-    label: string;
-    value: number | string | undefined;
-    sub?: string;
-    tone?: StatTone;
-}) {
-    const valueTone: Record<StatTone, string> = {
-        success: 'text-green-600',
-        info: 'text-blue-600',
-        warning: 'text-orange-600',
-        danger: 'text-red-600',
-        muted: 'text-neutral-500',
-        neutral: 'text-neutral-900',
-    };
-    const subTone: Record<StatTone, string> = {
-        success: 'text-green-500',
-        info: 'text-blue-500',
-        warning: 'text-orange-500',
-        danger: 'text-red-500',
-        muted: 'text-neutral-400',
-        neutral: 'text-neutral-500',
-    };
-    const display = value === undefined || value === null ? '-' : value;
-    return (
-        <div className="group rounded-lg border border-neutral-100 bg-white p-3 sm:p-4 transition-all duration-200 hover:shadow-md">
-            <p className="text-xs sm:text-sm font-medium text-neutral-600">{label}</p>
-            <p className={`text-xl sm:text-2xl font-bold ${valueTone[tone]}`}>{display}</p>
-            {sub && <p className={`text-xs font-medium ${subTone[tone]}`}>{sub}</p>}
+            <AlertDialog open={!!deleteFor} onOpenChange={(open) => !open && setDeleteFor(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('deleteDialog.description', { title: deleteFor?.title ?? '' })}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('rejectDialog.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={onDelete}
+                            className="bg-danger-600 hover:bg-danger-500"
+                        >
+                            {t('actions.delete')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

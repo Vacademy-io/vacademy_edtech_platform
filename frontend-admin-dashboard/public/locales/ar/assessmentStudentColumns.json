@@ -1,0 +1,29 @@
+{
+    "columns": {
+        "details": "التفاصيل",
+        "name": "الاسم",
+        "attemptDate": "تاريخ المحاولة",
+        "startTime": "وقت البدء",
+        "endTime": "وقت الانتهاء",
+        "duration": "المدة",
+        "score": "الدرجة",
+        "evaluationStatus": "حالة التقييم",
+        "resultStatus": "حالة النتيجة",
+        "enrollmentNumber": "رقم التسجيل",
+        "gender": "الجنس",
+        "responseTime": "وقت الاستجابة",
+        "phoneNumber": "رقم الهاتف",
+        "emailId": "معرف البريد الإلكتروني",
+        "city": "المدينة",
+        "state": "المنطقة",
+        "submission": "الإرسال"
+    },
+    "status": {
+        "released": "تم الإصدار",
+        "pending": "قيد الانتظار",
+        "notAvailable": "غير متاح"
+    },
+    "tooltip": {
+        "instantSubmit": "إرسال فوري — لم يُقَس أي وقت للمحاولة. قد يكون عدم محاولة فعلية أو إرسالاً تلقائياً."
+    }
+}

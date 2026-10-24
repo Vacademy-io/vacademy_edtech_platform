@@ -3,6 +3,7 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { AICenterProvider } from '../../-contexts/useAICenterContext';
 import EvaluateLectureAI from './-components/EvaluateLectureAI';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { CaretLeft } from '@phosphor-icons/react';
 
@@ -11,18 +12,19 @@ export const Route = createLazyFileRoute('/ai-center/ai-tools/vsmart-feedback/')
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('aiCenterVsmartFeedbackIndex');
     const { setNavHeading } = useNavHeadingStore();
 
     useEffect(() => {
         const heading = (
             <div className="flex items-center gap-4">
                 <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-                <div>Lecture Coach</div>
+                <div>{t('navHeading')}</div>
             </div>
         );
 
         setNavHeading(heading);
-    }, []);
+    }, [t]);
     return (
         <LayoutContainer>
             <AICenterProvider>

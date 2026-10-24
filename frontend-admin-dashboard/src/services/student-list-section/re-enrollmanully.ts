@@ -4,6 +4,7 @@ import { EnrollStudentRequest } from '@/types/students/type-enroll-student-manua
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { getSelectedSubOrgId } from '@/lib/auth/facultyAccessUtils';
+import { toAdminDiscountPayload } from '@/services/admin-discounts';
 
 export const reEnrollStudent = async ({ formData }: EnrollStudentRequest): Promise<string> => {
     try {
@@ -55,6 +56,13 @@ export const reEnrollStudent = async ({ formData }: EnrollStudentRequest): Promi
                 payment_option_id: formData.stepThreeData?.invite?.payment_option_id || '',
                 plan_id: formData.stepFourData?.plan_id || undefined,
                 payment_initiation_request: paymentInitiationRequest,
+                // Admin-granted discount (ONE_TIME / SUBSCRIPTION only). Omitted when "No
+                // discount" — the backend then charges the plan price as before.
+                admin_discount: toAdminDiscountPayload(formData.stepFourData?.admin_discount, {
+                    includeCycles:
+                        (formData.stepThreeData?.invite?.payment_option_type || '').toUpperCase() ===
+                        'SUBSCRIPTION',
+                }),
                 learner_extra_details: learnerExtraDetails,
                 // Same override as first-time enrollment — the wizard shares step three,
                 // so the admin sees the Access Days field on re-enrollment too and it has

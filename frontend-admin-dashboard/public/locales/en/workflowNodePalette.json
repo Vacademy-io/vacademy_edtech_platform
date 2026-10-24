@@ -1,0 +1,12 @@
+{
+    "addNodes": "Add Nodes",
+    "searchPlaceholder": "Search nodes...",
+    "categories": {
+        "Triggers": "Triggers",
+        "Data": "Data",
+        "Actions": "Actions",
+        "Notifications": "Notifications",
+        "Integrations": "Integrations",
+        "Logic": "Logic"
+    }
+}

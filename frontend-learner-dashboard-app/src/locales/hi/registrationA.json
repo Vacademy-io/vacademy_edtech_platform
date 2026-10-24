@@ -1,0 +1,211 @@
+{
+    "common": {
+        "email": "ईमेल",
+        "resendOtp": "OTP फिर से भेजें",
+        "registrationCompletedBadge": "पंजीकरण पूरा हुआ",
+        "liveNow": "अभी लाइव",
+        "registrationFormHeading": "पंजीकरण फ़ॉर्म",
+        "verifying": "सत्यापित किया जा रहा है..."
+    },
+    "closedExpired": {
+        "assessmentLabel": "असेसमेंट",
+        "defaultAssessmentName": "यह असेसमेंट",
+        "accessDenied": {
+            "badge": "पहुँच अस्वीकृत",
+            "title": "असेसमेंट तक पहुँच अस्वीकृत",
+            "description": "आप इस असेसमेंट के लिए पंजीकृत नहीं हैं।"
+        },
+        "expired": {
+            "badge": "समाप्त",
+            "title": "असेसमेंट समाप्त हो गया है",
+            "description": "यह असेसमेंट अब उपलब्ध नहीं है। इसे देने की समय-सीमा समाप्त हो चुकी है।"
+        },
+        "closed": {
+            "badge": "बंद",
+            "title": "पंजीकरण बंद है",
+            "description": "इस असेसमेंट के लिए पंजीकरण बंद हो चुका है। अधिक जानकारी के लिए कृपया अपने संस्थान से संपर्क करें।"
+        }
+    },
+    "completed": {
+        "badge": "पंजीकरण पूरा हुआ",
+        "title": "सब कुछ तैयार है!",
+        "liveBadge": "अभी लाइव",
+        "liveMessage": "आपका असेसमेंट शुरू होने के लिए तैयार है",
+        "goesLiveIn": "असेसमेंट इतनी देर में लाइव होगा",
+        "cta": "असेसमेंट पर जाएँ",
+        "unlockHint": "असेसमेंट शुरू होते ही यह बटन अपने आप सक्रिय हो जाएगा।",
+        "toast": {
+            "fetchDetailsError": "जानकारी प्राप्त नहीं हो पाई"
+        }
+    },
+    "form": {
+        "notYetOpenBadge": "पंजीकरण अभी शुरू नहीं हुआ",
+        "opensIn": "पंजीकरण इतनी देर में खुलेगा",
+        "openBadge": "पंजीकरण खुला है",
+        "closesIn": "पंजीकरण इतनी देर में बंद होगा",
+        "closingSoon": "जल्द बंद होने वाला है",
+        "registerNowMobile": "अभी पंजीकरण करें",
+        "countdown": {
+            "hr": "घं",
+            "min": "मि",
+            "sec": "से",
+            "dayUnit_one": "दिन",
+            "dayUnit_other": "दिन"
+        },
+        "meta": {
+            "duration": "अवधि",
+            "durationValue": "{{minutes}} मिनट",
+            "mode": "मोड",
+            "evaluation": "मूल्यांकन",
+            "attempts": "प्रयास"
+        },
+        "dates": {
+            "heading": "महत्वपूर्ण तिथियाँ",
+            "registrationWindow": "पंजीकरण अवधि",
+            "assessmentLive": "असेसमेंट लाइव"
+        },
+        "dateBlock": {
+            "start": "शुरुआत",
+            "end": "समाप्ति"
+        },
+        "instructions": "निर्देश",
+        "aboutAssessment": "असेसमेंट के बारे में",
+        "registrationFormSubheading": "इस असेसमेंट के लिए पंजीकरण करने हेतु अपनी जानकारी भरें।",
+        "phoneNumberLabel": "फ़ोन नंबर",
+        "phoneNumberPlaceholder": "123 456 7890",
+        "register": "पंजीकरण करें",
+        "resetForm": "फ़ॉर्म रीसेट करें",
+        "toast": {
+            "registeredSuccess": "आपका पंजीकरण सफलतापूर्वक हो गया है!",
+            "accountUnresolved": "हम आपके खाते की पहचान नहीं कर पाए। कृपया फिर से प्रयास करें।"
+        }
+    },
+    "checkEmailDialog": {
+        "title": "पंजीकरण स्थिति जाँचें",
+        "subtitle": "असेसमेंट पंजीकरण जारी रखने के लिए अपना ईमेल सत्यापित करें।",
+        "emailPlaceholder": "अपना ईमेल दर्ज करें",
+        "resendIn": "OTP {{seconds}} सेकंड में फिर से भेजा जाएगा",
+        "sending": "OTP भेजा जा रहा है...",
+        "send": "OTP भेजें",
+        "verify": "सत्यापित करें और आगे बढ़ें",
+        "toast": {
+            "otpSent": "OTP सफलतापूर्वक भेज दिया गया",
+            "notRegisteredTitle": "यह ईमेल पंजीकृत नहीं है",
+            "notRegisteredDescription": "इस असेसमेंट को देने के लिए कृपया पंजीकरण करें",
+            "attemptsOverTitle": "इस असेसमेंट के लिए आपके शेष प्रयास समाप्त हो चुके हैं!",
+            "attemptsOverDescription": "आपके प्रयास समाप्त हो चुके हैं!",
+            "invalidOtpTitle": "अमान्य OTP",
+            "invalidOtpDescription": "कृपया फिर से प्रयास करें",
+            "fillAllOtp": "कृपया OTP के सभी अंक भरें"
+        }
+    },
+    "otpVerify": {
+        "title": "बस एक आख़िरी कदम!",
+        "subtitle": "{{assessmentName}} तक पहुँचने के लिए अपना ईमेल सत्यापित करें",
+        "otpSentToLabel": "OTP भेजा गया",
+        "verify": "सत्यापित करें और असेसमेंट पर जाएँ",
+        "verifying": "सत्यापित किया जा रहा है…",
+        "resendPrompt": "OTP नहीं मिला?",
+        "resendIn": "{{seconds}} सेकंड में फिर से भेजें",
+        "toast": {
+            "otpSentTo": "OTP {{email}} पर भेज दिया गया है",
+            "sendFailed": "OTP भेजने में विफल रहा। कृपया फिर से प्रयास करें।",
+            "enterFullOtp": "कृपया पूरा 6 अंकों का OTP दर्ज करें",
+            "invalidOtp": "अमान्य OTP। कृपया फिर से प्रयास करें।"
+        }
+    },
+    "liveClass": {
+        "countdown": {
+            "startsIn": "इतनी देर में शुरू होगा",
+            "days": "दिन",
+            "hours": "घंटे",
+            "mins": "मिनट",
+            "secs": "सेकंड"
+        },
+        "sessionInfo": {
+            "instituteFallback": "संस्थान",
+            "registrationAlt": "पंजीकरण",
+            "start": "शुरुआत",
+            "end": "समाप्ति"
+        },
+        "registrationForm": {
+            "joinPrompt": "{{session}} में शामिल होने के लिए अपनी जानकारी भरें",
+            "alreadyRegistered": "पहले से पंजीकृत हैं?",
+            "continueHere": "यहाँ से आगे बढ़ें",
+            "enterFieldPlaceholder": "{{fieldName}} दर्ज करें",
+            "joinNow": "अभी शामिल हों",
+            "toast": {
+                "invalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+                "invalidMobile": "कृपया एक मान्य मोबाइल नंबर दर्ज करें"
+            },
+            "lookup": {
+                "title": "अपना पंजीकरण खोजें",
+                "descriptionPhone": "वह मोबाइल नंबर दर्ज करें जिससे आपने पंजीकरण किया था",
+                "descriptionEmail": "वह ईमेल दर्ज करें जिससे आपने पंजीकरण किया था",
+                "placeholderPhone": "मोबाइल नंबर (देश कोड सहित)",
+                "placeholderEmail": "you@example.com",
+                "notFound": "इस {{channel}} से कोई पंजीकरण नहीं मिला। कृपया इसे जाँचें, या इसके बजाय पंजीकरण फ़ॉर्म भरें।",
+                "channelMobile": "मोबाइल नंबर",
+                "channelEmail": "ईमेल",
+                "continue": "जारी रखें",
+                "checking": "जाँच की जा रही है...",
+                "backToForm": "नए हैं? पंजीकरण फ़ॉर्म भरें"
+            }
+        },
+        "otpDialog": {
+            "emailSubject": "ईमेल सत्यापन",
+            "verifyEmailTitle": "अपना ईमेल सत्यापित करें",
+            "verifyPhoneTitle": "अपना मोबाइल नंबर सत्यापित करें",
+            "descriptionEmail": "हमने {{value}} पर 6 अंकों का कोड भेजा है।",
+            "descriptionPhone": "हमने {{value}} पर व्हाट्सएप के ज़रिए 6 अंकों का कोड भेजा है।",
+            "stepOf": " (चरण {{current}} / {{total}})",
+            "placeholder": "6 अंकों का कोड दर्ज करें",
+            "verify": "सत्यापित करें",
+            "resend": "कोड फिर से भेजें",
+            "sending": "भेजा जा रहा है...",
+            "toast": {
+                "otpSentTo": "OTP {{value}} पर भेज दिया गया है",
+                "otpSentWhatsapp": "OTP व्हाट्सएप पर भेज दिया गया है",
+                "sendFailedEmail": "ईमेल OTP नहीं भेजा जा सका। कृपया फिर से प्रयास करें।",
+                "sendFailedWhatsapp": "व्हाट्सएप OTP नहीं भेजा जा सका। कृपया फिर से प्रयास करें।",
+                "enterOtp": "कृपया OTP दर्ज करें",
+                "verifiedEmail": "ईमेल सत्यापित हो गया",
+                "verifiedPhone": "मोबाइल नंबर सत्यापित हो गया",
+                "invalidOtp": "OTP अमान्य है या समय समाप्त हो चुका है। कृपया फिर से प्रयास करें।"
+            }
+        },
+        "statusCard": {
+            "joinLive": "लाइव {{session}} में शामिल हों",
+            "waitingRoomOpenBadge": "प्रतीक्षा कक्ष खुला है",
+            "enterWaitingRoom": "प्रतीक्षा कक्ष में जाएँ",
+            "notStarted": "{{session}} की शुरुआत अभी नहीं हुई है",
+            "willStartSoon": "{{session}} की शुरुआत जल्द होगी",
+            "alreadyRegisteredTitle": "पहले से पंजीकृत!",
+            "registeredWith": "आप इस {{session}} के लिए इससे पंजीकृत हैं:",
+            "startTime": "शुरुआत का समय",
+            "waitingRoomOpens": "प्रतीक्षा कक्ष खुलने का समय"
+        },
+        "page": {
+            "priceLabel": "कीमत",
+            "completeRegistration": "अपना पंजीकरण पूरा करें",
+            "completeRegistrationDescription": "आपकी सीट सुरक्षित रखी गई है। इसकी पुष्टि के लिए भुगतान पूरा करें — आपको ईमेल पर रसीद मिलेगी और समय आने पर आप शामिल हो सकेंगे।",
+            "total": "कुल राशि",
+            "payAndConfirm": "भुगतान करें और पुष्टि करें",
+            "toast": {
+                "buildRequestError": "अनुरोध तैयार करने में समस्या हुई",
+                "identityRequired": "कृपया अपना ईमेल या मोबाइल नंबर दर्ज करें",
+                "emailRequiredPaid": "इस सशुल्क {{liveSession}} के लिए ईमेल पता आवश्यक है",
+                "emailRequired": "इस {{liveSession}} के लिए ईमेल पता आवश्यक है",
+                "phoneRequired": "इस {{liveSession}} के लिए मोबाइल नंबर आवश्यक है",
+                "registrationSuccess": "पंजीकरण सफल रहा",
+                "spotReserved": "सीट सुरक्षित कर दी गई है — अपने पंजीकरण की पुष्टि के लिए भुगतान पूरा करें",
+                "alreadyRegistered": "आप पहले से इस {{session}} के लिए पंजीकृत हैं"
+            }
+        },
+        "hooks": {
+            "registrationFailed": "पंजीकरण विफल रहा",
+            "registrationFailedRetry": "पंजीकरण विफल रहा। कृपया फिर से प्रयास करें।",
+            "markAttendanceFailed": "उपस्थिति दर्ज नहीं हो पाई"
+        }
+    }
+}

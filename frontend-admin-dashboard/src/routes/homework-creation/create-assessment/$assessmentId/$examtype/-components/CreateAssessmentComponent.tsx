@@ -10,6 +10,7 @@ import { useFilterDataForAssesment } from '@/routes/assessment/assessment-list/-
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { NoCourseDialog } from '@/components/common/students/no-course-dialog';
+import { useTranslation } from 'react-i18next';
 // Define interfaces for props
 interface CreateAssessmentSidebarProps {
     steps: {
@@ -69,6 +70,7 @@ const CreateAssessmentSidebar: React.FC<CreateAssessmentSidebarProps> = ({
 };
 
 const CreateAssessmentComponent = () => {
+    const { t } = useTranslation('homeworkCreationCreateAssessmentComponent');
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const { assessmentId, examtype } = Route.useParams();
@@ -78,19 +80,19 @@ const CreateAssessmentComponent = () => {
 
     const steps = [
         {
-            label: 'Basic Info',
+            label: t('steps.basicInfo'),
             id: 'basic-info',
         },
         {
-            label: 'Add Question',
+            label: t('steps.addQuestion'),
             id: 'add-question',
         },
         {
-            label: 'Add Participants',
+            label: t('steps.addParticipants'),
             id: 'add-participants',
         },
         {
-            label: 'Access Control',
+            label: t('steps.accessControl'),
             id: 'access-control',
         },
     ];
@@ -141,18 +143,19 @@ const CreateAssessmentComponent = () => {
             }
         >
             <Helmet>
-                <title>Create Assessment</title>
-                <meta
-                    name="description"
-                    content="This page is for creating an assessment for students via admin."
-                />
+                <title>{t('page.title')}</title>
+                <meta name="description" content={t('page.metaDescription')} />
             </Helmet>
             <MainStepComponent
                 currentStep={currentStep}
                 handleCompleteCurrentStep={completeCurrentStep}
                 completedSteps={completedSteps}
             />
-            <NoCourseDialog isOpen={isOpen} setIsOpen={setIsOpen} type="Create Assessment" />
+            <NoCourseDialog
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                type={t('noCourseDialog.type')}
+            />
         </LayoutContainer>
     );
 };

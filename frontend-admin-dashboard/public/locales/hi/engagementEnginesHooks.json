@@ -1,0 +1,43 @@
+{
+    "toast": {
+        "engineCreated": "इंजन बनाया गया",
+        "createEngineFailed": "इंजन बनाने में विफल",
+        "engineUpdated": "इंजन अपडेट किया गया",
+        "changeStatusFailed": "स्थिति बदली नहीं जा सकी",
+        "autonomyOff": "ऑटो-सेंड बंद — केवल कोपायलट",
+        "autonomyOn": "ऑटो-सेंड चालू",
+        "autonomyFailed": "स्वायत्तता नहीं बदली जा सकी",
+        "enrollResult": "ऑडियंस अपडेट हुई: {{added}} जोड़े गए, {{exited}} हटे ({{total}} कुल)",
+        "enrollFailed": "नामांकन विफल रहा",
+        "promptUpdated": "ब्रीफ में संशोधन जोड़ा गया",
+        "promptUpdateFailed": "ब्रीफ अपडेट नहीं हो सकी",
+        "engineArchived": "इंजन संग्रहीत किया गया",
+        "archiveFailed": "संग्रहीत नहीं किया जा सका",
+        "taskActionFailed": "कार्रवाई विफल रही",
+        "templatesProposed": "AI ने टेम्पलेट प्रस्तावित किए",
+        "proposeTemplatesFailed": "टेम्पलेट प्रस्तावित नहीं किए जा सके",
+        "alternativesProposed": "नए विकल्प प्रस्तावित किए गए",
+        "alternativesFailed": "विकल्प नहीं मिल सके",
+        "templateUpdated": "टेम्पलेट अपडेट किया गया",
+        "templateSaveFailed": "टेम्पलेट सहेजा नहीं जा सका",
+        "templateApproved": "टेम्पलेट स्वीकृत किया गया",
+        "approveFailed": "स्वीकृत नहीं किया जा सका",
+        "submittedToMeta": "Meta को सबमिट किया गया",
+        "submitFailed": "सबमिशन विफल रहा",
+        "templateWithdrawn": "टेम्पलेट वापस लिया गया",
+        "withdrawFailed": "वापस नहीं लिया जा सका",
+        "syncFailed": "Meta से जाँच नहीं हो सकी",
+        "noChangesFromMeta": "Meta से अभी कोई बदलाव नहीं",
+        "templatesUpdated_one": "{{count}} टेम्पलेट अपडेट किया गया",
+        "templatesUpdated_other": "{{count}} टेम्पलेट अपडेट किए गए"
+    },
+    "taskAction": {
+        "ack": "कार्य स्वीकृत किया गया",
+        "done": "पूर्ण के रूप में चिह्नित",
+        "dismiss": "खारिज किया गया",
+        "reopen": "फिर से खोला गया",
+        "send": "भेजा गया",
+        "default": "पूर्ण",
+        "sendNotConfirmed": "भेजे जाने की पुष्टि नहीं हुई। टास्क अब Failed में है। दोबारा भेजने से पहले मैसेज लॉग जाँच लें।"
+    }
+}

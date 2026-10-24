@@ -1,0 +1,47 @@
+{
+    "noStudentSelected": {
+        "title": "छात्र का विवरण उपलब्ध नहीं है",
+        "hint": "कोई शिक्षार्थी चयनित नहीं है या संस्थान का पता नहीं लगाया जा सका।"
+    },
+    "emptyState": {
+        "title": "कोई {{term}} असाइन नहीं किया गया",
+        "hint": "शुरू करने के लिए एक प्रोग्राम असाइन करें।"
+    },
+    "actions": {
+        "assignToCourse": "+ {{term}} में असाइन करें",
+        "removeFromCourse": "{{term}} से हटाएं",
+        "manageAccess": "एक्सेस प्रबंधित करें",
+        "filter": "फ़िल्टर",
+        "filterCount": "फ़िल्टर ({{count}})",
+        "allLevels": "सभी"
+    },
+    "heroStats": {
+        "inProgress": "प्रगति में",
+        "completed": "पूर्ण",
+        "past": "पिछले"
+    },
+    "sections": {
+        "inProgressTitle": "प्रगति में {{term}}",
+        "completedTitle": "पूर्ण {{term}}",
+        "pastTitle": "पिछले {{term}}",
+        "noneInProgress": "कोई {{term}} प्रगति में नहीं है",
+        "noneCompleted": "कोई पूर्ण {{term}} नहीं",
+        "nonePast": "कोई पिछला {{term}} नहीं",
+        "completedBadge": "पूर्ण"
+    },
+    "course": {
+        "unnamed": "अनाम कोर्स",
+        "sessionLabel": "{{term}}: {{name}}"
+    },
+    "accessWindow": {
+        "unlimited": "एक्सेस: असीमित",
+        "expired": "एक्सेस {{date}} को समाप्त हुई",
+        "daysLeft_one": "एक्सेस {{date}} तक · {{count}} दिन शेष",
+        "daysLeft_other": "एक्सेस {{date}} तक · {{count}} दिन शेष"
+    },
+    "pagination": {
+        "prev": "पिछला",
+        "next": "अगला"
+    },
+    "fallbackStudentName": "छात्र"
+}

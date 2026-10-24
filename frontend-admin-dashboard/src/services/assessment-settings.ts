@@ -8,6 +8,7 @@ import {
     DEFAULT_ASSESSMENT_SETTINGS,
     DEFAULT_REPORT_BRANDING,
     mergeExamExperience,
+    normalizeCommentPlacement,
 } from '@/types/assessment-settings';
 
 const SETTINGS_KEY = 'ASSESSMENT_SETTING';
@@ -25,7 +26,9 @@ interface CachedSettings {
     instituteId: string;
 }
 
-const mergeWithDefaults = (settings: Partial<AssessmentSettingsData>): AssessmentSettingsData => {
+export const mergeWithDefaults = (
+    settings: Partial<AssessmentSettingsData>
+): AssessmentSettingsData => {
     return {
         offlineEntry: {
             ...DEFAULT_ASSESSMENT_SETTINGS.offlineEntry,
@@ -40,6 +43,18 @@ const mergeWithDefaults = (settings: Partial<AssessmentSettingsData>): Assessmen
             roles: settings?.resultNotifications?.roles ?? {},
         },
         examExperience: mergeExamExperience(settings?.examExperience),
+        aiCopyCheck: {
+            commentPlacement: normalizeCommentPlacement(settings?.aiCopyCheck?.commentPlacement),
+            ...(typeof settings?.aiCopyCheck?.instructions === 'string' && {
+                instructions: settings.aiCopyCheck.instructions,
+            }),
+            ...(settings?.aiCopyCheck?.languageFeedback === 'HIGHLIGHT' && {
+                languageFeedback: 'HIGHLIGHT' as const,
+            }),
+        },
+        assessmentFolders: {
+            enabled: settings?.assessmentFolders?.enabled === true,
+        },
     };
 };
 

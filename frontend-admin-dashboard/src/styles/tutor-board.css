@@ -1,0 +1,120 @@
+/* Live AI Tutor — whiteboard rendering of server-materialized board HTML.
+   Colours via Tailwind tokens (@apply / theme()) so the design gate sees no raw hex. */
+.tutor-board-preview .tutor-board {
+    @apply relative min-h-48 rounded-xl border border-neutral-200 bg-neutral-50 px-5 py-4 text-neutral-800;
+    background-image:
+        linear-gradient(theme('colors.neutral.100') 1px, transparent 1px),
+        linear-gradient(90deg, theme('colors.neutral.100') 1px, transparent 1px);
+    background-size: 24px 24px;
+    font-family: 'Kalam', 'Segoe Print', 'Bradley Hand', 'Comic Neue', 'Trebuchet MS', ui-rounded, system-ui, sans-serif;
+    line-height: 1.45;
+}
+.tutor-board-preview .tb-heading {
+    @apply mb-3 border-b-4 border-primary-500 pb-1 text-xl font-bold text-primary-600;
+    letter-spacing: 0.01em;
+}
+.tutor-board-preview .tb-text {
+    @apply my-1.5 text-base;
+}
+.tutor-board-preview .tb-bullets {
+    @apply my-1.5 ml-4 list-none p-0;
+}
+.tutor-board-preview .tb-bullets li {
+    @apply relative my-1 pl-5;
+}
+.tutor-board-preview .tb-bullets li::before {
+    content: '';
+    @apply absolute left-0 top-2 size-2 rounded-full bg-primary-400;
+}
+.tutor-board-preview .tb-formula {
+    @apply my-2 rounded-lg border border-dashed border-primary-300 bg-primary-50 px-3 py-2 font-mono text-base;
+}
+.tutor-board-preview .tb-formula figcaption {
+    @apply mt-1 font-sans text-sm text-neutral-600;
+}
+.tutor-board-preview .tb-svg,
+.tutor-board-preview .tb-image,
+.tutor-board-preview .tb-video {
+    @apply my-3 rounded-xl border border-neutral-200 bg-white p-2 shadow-sm;
+}
+.tutor-board-preview .tb-svg { @apply px-4 py-5; }
+/* Diagrams are drawn for a plain sans face (the handwriting font is wider and
+   made labels run into shapes); overflow keeps top-line titles unclipped. */
+.tutor-board-preview .tb-svg svg {
+    @apply block h-auto w-full;
+    max-height: 24rem;
+    overflow: visible;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+.tutor-board-preview .tb-svg svg text { font-family: inherit; }
+.tutor-board-preview .tb-image img {
+    @apply block w-full rounded-lg object-contain;
+    max-height: 22rem;
+}
+.tutor-board-preview .tb-image figcaption,
+.tutor-board-preview .tb-video figcaption {
+    @apply mt-1.5 text-sm text-neutral-600;
+}
+.tutor-board-preview .tb-visually-hidden {
+    @apply sr-only;
+}
+.tutor-board-preview .tb-table {
+    @apply my-2 w-full border-collapse bg-white text-sm;
+}
+.tutor-board-preview .tb-table th,
+.tutor-board-preview .tb-table td {
+    @apply border border-neutral-200 px-2.5 py-1.5 text-left;
+}
+.tutor-board-preview .tb-table th {
+    @apply bg-primary-50 text-primary-600;
+}
+.tutor-board-preview .tb-callout {
+    @apply my-2 rounded-lg border-l-4 border-primary-500 bg-primary-50 px-3 py-2;
+}
+.tutor-board-preview .tb-callout-definition {
+    @apply border-success-500 bg-success-50;
+}
+.tutor-board-preview .tb-callout-warning {
+    @apply border-warning-500 bg-warning-50;
+}
+.tutor-board-preview .tb-callout-example {
+    @apply border-neutral-500 bg-neutral-100;
+}
+.tutor-board-preview .tb-annotation {
+    @apply my-1.5 mr-1 inline-block rounded-md bg-warning-100 px-2.5 py-1 text-sm text-neutral-800 shadow-sm;
+    transform: rotate(-1deg);
+}
+.tutor-board-preview .tb-arrow {
+    @apply my-1 mr-1 inline-block rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700;
+}
+.tutor-board-preview .tb-arrow::before {
+    content: '\2192\00a0';
+}
+.tutor-board-preview .tb-media-task {
+    @apply my-2 rounded-lg border-2 border-dashed border-primary-300 bg-primary-50 p-3 font-semibold text-primary-600;
+}
+
+/* Preview playback: the same entrance, stroke-draw and stepped-part rules the
+   learner's lesson uses, so "Play" shows what learners see. */
+.tutor-board-preview .tb-op { opacity: 0; transform: translateY(6px); }
+.tutor-board-preview .tb-op.tb-enter { opacity: 1; transform: none; transition: opacity 0.5s ease, transform 0.5s ease; }
+.tutor-board-preview .tb-svg .tb-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: tb-draw 0.9s ease-out forwards; }
+@keyframes tb-draw { 0% { stroke-dashoffset: 1; fill-opacity: 0; } 60% { fill-opacity: 0; } 100% { stroke-dashoffset: 0; fill-opacity: 1; } }
+.tutor-board-preview .tb-svg .tb-step { opacity: 0; transform: translateY(6px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.tutor-board-preview .tb-svg .tb-step.tb-step-on { opacity: 1; transform: none; }
+
+/* Side-by-side columns (compare and contrast) and notes the teacher wrote live. */
+.tutor-board-preview .tb-columns { @apply my-2 grid gap-3; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tutor-board-preview .tb-columns-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tutor-board-preview .tb-col { @apply min-w-0 rounded-lg border border-neutral-200 bg-white/60 px-3 py-2; }
+.tutor-board-preview .tb-col > .tb-heading { @apply mb-2 border-b-2 text-base; }
+
+/* A formula never escapes its card: KaTeX output scrolls sideways rather than
+   overlapping the next column, and un-typeset raw LaTeX (KaTeX failed, or the
+   HTML is shown before typesetting) wraps instead of bleeding. */
+.tutor-board-preview .tb-formula { max-width: 100%; overflow-x: auto; }
+.tutor-board-preview .tb-latex { display: block; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+.tutor-board-preview .tb-latex .katex, .tutor-board-preview .tb-latex .katex-display { overflow-wrap: normal; word-break: normal; }
+.tutor-board-preview .tb-table { display: block; max-width: 100%; overflow-x: auto; }
+
+.tutor-board-preview .tb-formula .katex-display { @apply my-1; }

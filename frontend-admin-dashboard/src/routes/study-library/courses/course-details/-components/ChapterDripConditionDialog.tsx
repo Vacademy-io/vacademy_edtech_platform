@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +58,7 @@ export function ChapterDripConditionDialog({
     onSave,
     allChapters = [],
 }: ChapterDripConditionDialogProps) {
+    const { t } = useTranslation('studyLibraryCourseDetailsChapterDripConditionDialog');
     const [editingConditionId, setEditingConditionId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
 
@@ -120,13 +123,11 @@ export function ChapterDripConditionDialog({
         // Check if condition is enabled
         const isEnabled = conditionToDelete.drip_condition?.[0]?.is_enabled;
         if (isEnabled) {
-            alert(
-                'Cannot delete an enabled condition. Please disable the chapter drip condition first.'
-            );
+            alert(t('alerts.cannotDeleteEnabled'));
             return;
         }
 
-        if (!confirm('Are you sure you want to delete this drip condition?')) return;
+        if (!confirm(t('alerts.confirmDelete'))) return;
 
         try {
             setSaving(true);
@@ -147,14 +148,14 @@ export function ChapterDripConditionDialog({
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading={`Drip Conditions - ${chapterName || 'Chapter'}`}
+            heading={t('dialog.heading', { chapterName: chapterName || t('dialog.defaultChapterName') })}
         >
             <div className="space-y-4">
                 {hasPackageConflict && (
                     <Alert className="border-blue-200 bg-blue-50">
                         <Info className="size-4 text-blue-600" />
                         <AlertDescription className="text-sm text-blue-900">
-                            <div className="mb-2 font-semibold">Course-Level Conditions Active</div>
+                            <div className="mb-2 font-semibold">{t('packageConflict.title')}</div>
                             <div className="space-y-2">
                                 {packageChapterConditions.map((condition) => {
                                     // Find chapter-targeting configs in the array
@@ -174,7 +175,7 @@ export function ChapterDripConditionDialog({
                                                     variant="outline"
                                                     className="bg-purple-100 text-purple-700"
                                                 >
-                                                    Course Level
+                                                    {t('packageConflict.courseLevel')}
                                                 </Badge>
                                                 <Badge
                                                     variant="outline"
@@ -193,9 +194,7 @@ export function ChapterDripConditionDialog({
                                 })}
                             </div>
                             <div className="mt-3 text-xs text-blue-700">
-                                These course-level conditions apply to all chapters.
-                                Chapter-specific conditions are disabled when course conditions
-                                target chapters.
+                                {t('packageConflict.explanation')}
                             </div>
                         </AlertDescription>
                     </Alert>
@@ -205,7 +204,7 @@ export function ChapterDripConditionDialog({
                     <>
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-gray-900">
-                                Chapter Drip Conditions
+                                {t('dialog.chapterDripConditions')}
                             </h3>
                             {!editingConditionId && (
                                 <MyButton
@@ -215,7 +214,7 @@ export function ChapterDripConditionDialog({
                                     disabled={saving}
                                 >
                                     <Plus size={16} weight="bold" />
-                                    <span>Add Condition</span>
+                                    <span>{t('actions.addCondition')}</span>
                                 </MyButton>
                             )}
                         </div>
@@ -223,7 +222,7 @@ export function ChapterDripConditionDialog({
                         {chapterConditions.length === 0 && !editingConditionId && (
                             <div className="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
                                 <p className="text-sm text-gray-500">
-                                    No drip conditions for this chapter yet.
+                                    {t('dialog.emptyState')}
                                 </p>
                             </div>
                         )}
@@ -247,7 +246,7 @@ export function ChapterDripConditionDialog({
                                                     className="bg-blue-100 text-blue-700"
                                                 >
                                                     {condition.drip_condition[0]?.behavior ||
-                                                        'lock'}
+                                                        t('behavior.lock')}
                                                 </Badge>
                                             </div>
                                             <div className="flex gap-1">
@@ -260,7 +259,7 @@ export function ChapterDripConditionDialog({
                                                     disabled={saving}
                                                     className="h-8 px-2"
                                                 >
-                                                    Edit
+                                                    {t('actions.edit')}
                                                 </Button>
                                                 {!condition.drip_condition?.[0]?.is_enabled && (
                                                     <Button
@@ -271,7 +270,7 @@ export function ChapterDripConditionDialog({
                                                         }
                                                         disabled={saving}
                                                         className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        title="Delete condition"
+                                                        title={t('actions.deleteConditionTitle')}
                                                     >
                                                         <Trash size={16} />
                                                     </Button>
@@ -303,7 +302,7 @@ export function ChapterDripConditionDialog({
 
                 <div className="flex justify-end border-t pt-4">
                     <MyButton buttonType="secondary" onClick={onClose}>
-                        Close
+                        {t('actions.close')}
                     </MyButton>
                 </div>
             </div>
@@ -326,6 +325,7 @@ function ConditionForm({
     saving,
     allChapters = [],
 }: ConditionFormProps) {
+    const { t } = useTranslation('studyLibraryCourseDetailsChapterDripConditionDialog');
     const target = 'chapter';
 
     // Extract first config from array or create default
@@ -389,7 +389,7 @@ function ConditionForm({
                 const params = rule.params as { unlock_date: string };
                 return (
                     <div className="space-y-2">
-                        <Label>Release Date</Label>
+                        <Label>{t('form.releaseDate')}</Label>
                         <Input
                             type="datetime-local"
                             value={
@@ -416,7 +416,7 @@ function ConditionForm({
                 return (
                     <div className="space-y-2">
                         <div>
-                            <Label>Metric</Label>
+                            <Label>{t('form.metric')}</Label>
                             <Select
                                 value={params.metric}
                                 onValueChange={(value) => handleRuleChange(index, 'metric', value)}
@@ -425,16 +425,16 @@ function ConditionForm({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="average_of_all">Average of All</SelectItem>
+                                    <SelectItem value="average_of_all">{t('form.averageOfAll')}</SelectItem>
                                     <SelectItem value="average_of_last_n">
-                                        Average of Last N
+                                        {t('form.averageOfLastN')}
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         {params.metric === 'average_of_last_n' && (
                             <div>
-                                <Label>Count</Label>
+                                <Label>{t('form.count')}</Label>
                                 <Input
                                     type="number"
                                     min="0"
@@ -446,7 +446,7 @@ function ConditionForm({
                             </div>
                         )}
                         <div>
-                            <Label>Threshold %</Label>
+                            <Label>{t('form.thresholdPercent')}</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -470,7 +470,7 @@ function ConditionForm({
                 return (
                     <div className="space-y-2">
                         <div>
-                            <Label>Required Chapters</Label>
+                            <Label>{t('form.requiredChapters')}</Label>
                             <MultiSelect
                                 options={allChapters.map((ch) => ({
                                     label: ch.name,
@@ -480,14 +480,14 @@ function ConditionForm({
                                 onChange={(ids) =>
                                     handleRuleChange(index, 'required_chapters', ids)
                                 }
-                                placeholder="Select chapters"
+                                placeholder={t('form.selectChapters')}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Select the chapters that must be completed before unlocking
+                                {t('form.requiredChaptersHint')}
                             </p>
                         </div>
                         <div>
-                            <Label>Completion Threshold %</Label>
+                            <Label>{t('form.completionThresholdPercent')}</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -498,7 +498,7 @@ function ConditionForm({
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Percentage completion required for prerequisite chapters
+                                {t('form.prerequisiteThresholdHint')}
                             </p>
                         </div>
                     </div>
@@ -523,11 +523,11 @@ function ConditionForm({
                                 htmlFor={`sequential-chapter-${index}`}
                                 className="cursor-pointer"
                             >
-                                Requires previous chapter completion
+                                {t('form.requiresPreviousCompletion')}
                             </Label>
                         </div>
                         <div>
-                            <Label>Completion Threshold %</Label>
+                            <Label>{t('form.completionThresholdPercent')}</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -538,7 +538,7 @@ function ConditionForm({
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Percentage completion required for previous chapter
+                                {t('form.sequentialThresholdHint')}
                             </p>
                         </div>
                     </div>
@@ -569,7 +569,7 @@ function ConditionForm({
         });
 
         if (hasEmptyFields) {
-            alert('Please fill in all required fields');
+            alert(t('alerts.fillRequiredFields'));
             return;
         }
 
@@ -593,26 +593,26 @@ function ConditionForm({
     return (
         <div className="space-y-4 rounded-lg border-2 p-4">
             <div className="space-y-2">
-                <Label>Behavior</Label>
+                <Label>{t('form.behavior')}</Label>
                 <Select value={behavior} onValueChange={(v) => setBehavior(v as any)}>
                     <SelectTrigger>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="lock">Lock (show but prevent access)</SelectItem>
-                        <SelectItem value="hide">Hide (completely hidden)</SelectItem>
+                        <SelectItem value="lock">{t('behaviorOptions.lock')}</SelectItem>
+                        <SelectItem value="hide">{t('behaviorOptions.hide')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <Label>Unlock Rule</Label>
+                    <Label>{t('form.unlockRule')}</Label>
                 </div>
 
                 {rules.length === 0 ? (
                     <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                        No rule configured. Please configure an unlock rule below.
+                        {t('form.noRuleConfigured')}
                     </div>
                 ) : (
                     rules.map((rule, index) => (
@@ -626,12 +626,12 @@ function ConditionForm({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="date_based">Date-based</SelectItem>
+                                        <SelectItem value="date_based">{t('ruleTypes.dateBased')}</SelectItem>
                                         <SelectItem value="completion_based">
-                                            Completion-based
+                                            {t('ruleTypes.completionBased')}
                                         </SelectItem>
-                                        <SelectItem value="prerequisite">Prerequisite</SelectItem>
-                                        <SelectItem value="sequential">Sequential</SelectItem>
+                                        <SelectItem value="prerequisite">{t('ruleTypes.prerequisite')}</SelectItem>
+                                        <SelectItem value="sequential">{t('ruleTypes.sequential')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -646,10 +646,10 @@ function ConditionForm({
             <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="chapter-condition-enabled" className="font-medium">
-                        Enable this chapter condition
+                        {t('form.enableConditionLabel')}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                        Controls whether this drip condition is active
+                        {t('form.enableConditionHint')}
                     </p>
                 </div>
                 <Switch
@@ -661,7 +661,7 @@ function ConditionForm({
 
             <div className="flex justify-end gap-2 pt-2">
                 <MyButton onClick={handleSubmit} disabled={saving || rules.length === 0}>
-                    {saving ? 'Saving...' : 'Save Condition'}
+                    {saving ? t('actions.saving') : t('actions.saveCondition')}
                 </MyButton>
             </div>
         </div>

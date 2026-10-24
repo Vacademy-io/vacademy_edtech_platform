@@ -1,4 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/types/naming-settings';
 import { ModernButton } from '@/components/design-system/modern-button';
 import { 
   ModernCard, 
@@ -29,17 +35,22 @@ import {
  * and serves as a reference for implementation patterns.
  */
 export const ModernDesignShowcase: React.FC = () => {
+  const { t } = useTranslation('miscComponents');
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState('');
 
   const handleAction = async (action: string) => {
     setIsLoading(true);
-    setNotification(`${action} initiated...`);
-    
+    setNotification(t('modernDesignShowcase.notification.initiated', { action }));
+
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      setNotification(`${action} completed successfully!`);
+      setNotification(
+        t('modernDesignShowcase.notification.completed', { action })
+      );
       setTimeout(() => setNotification(''), 3000);
     }, 2000);
   };
@@ -49,11 +60,10 @@ export const ModernDesignShowcase: React.FC = () => {
       {/* Header Section */}
       <div className="text-center space-y-4 animate-fade-down">
         <h1 className="text-h1-semibold text-gradient-primary">
-          Modern Design System
+          {t('modernDesignShowcase.header.title')}
         </h1>
         <p className="text-subtitle text-neutral-600 max-w-2xl mx-auto">
-          Experience our comprehensive design system with modern components, 
-          beautiful animations, and intuitive interactions.
+          {t('modernDesignShowcase.header.subtitle')}
         </p>
       </div>
 
@@ -67,71 +77,81 @@ export const ModernDesignShowcase: React.FC = () => {
       {/* Button Showcase */}
       <ModernCard variant="elevated" className="animate-fade-up">
         <ModernCardHeader>
-          <ModernCardTitle size="lg">Button Components</ModernCardTitle>
+          <ModernCardTitle size="lg">
+            {t('modernDesignShowcase.buttons.buttonComponents')}
+          </ModernCardTitle>
         </ModernCardHeader>
         <ModernCardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-section">
             {/* Primary Buttons */}
             <div className="space-y-4">
-              <h3 className="text-h3-semibold">Primary Actions</h3>
+              <h3 className="text-h3-semibold">
+                {t('modernDesignShowcase.buttons.primaryActions')}
+              </h3>
               <div className="stack-vertical">
-                <ModernButton 
-                  variant="primary" 
+                <ModernButton
+                  variant="primary"
                   size="lg"
                   leftIcon={<Play weight="duotone" />}
-                  onClick={() => handleAction('Play')}
+                  onClick={() =>
+                    handleAction(t('modernDesignShowcase.actions.play'))
+                  }
                   isLoading={isLoading}
                 >
-                  Start Learning
+                  {t('modernDesignShowcase.buttons.startLearning')}
                 </ModernButton>
-                
-                <ModernButton 
-                  variant="primary" 
+
+                <ModernButton
+                  variant="primary"
                   size="md"
                   rightIcon={<Download weight="duotone" />}
-                  onClick={() => handleAction('Download')}
+                  onClick={() =>
+                    handleAction(t('modernDesignShowcase.actions.download'))
+                  }
                 >
-                  Download Resources
+                  {t('modernDesignShowcase.buttons.downloadResources')}
                 </ModernButton>
-                
-                <ModernButton 
-                  variant="primary" 
+
+                <ModernButton
+                  variant="primary"
                   size="sm"
                   rounded="full"
                   className="shadow-colored"
                 >
-                  Quick Action
+                  {t('modernDesignShowcase.buttons.quickAction')}
                 </ModernButton>
               </div>
             </div>
 
             {/* Secondary Buttons */}
             <div className="space-y-4">
-              <h3 className="text-h3-semibold">Secondary Actions</h3>
+              <h3 className="text-h3-semibold">
+                {t('modernDesignShowcase.buttons.secondaryActions')}
+              </h3>
               <div className="stack-vertical">
-                <ModernButton 
-                  variant="secondary" 
+                <ModernButton
+                  variant="secondary"
                   size="lg"
                   leftIcon={<Gear weight="duotone" />}
                 >
-                  Settings
+                  {t('modernDesignShowcase.buttons.settings')}
                 </ModernButton>
-                
-                <ModernButton 
-                  variant="outline" 
+
+                <ModernButton
+                  variant="outline"
                   size="md"
                   leftIcon={<Share weight="duotone" />}
                 >
-                  Share
+                  {t('modernDesignShowcase.buttons.share')}
                 </ModernButton>
-                
-                <ModernButton 
-                  variant="ghost" 
+
+                <ModernButton
+                  variant="ghost"
                   size="sm"
                   leftIcon={<Heart weight="duotone" />}
                   className="hover-scale-gentle"
                 >
-                  Like
+                  {t('modernDesignShowcase.buttons.like')}
                 </ModernButton>
               </div>
             </div>
@@ -140,7 +160,7 @@ export const ModernDesignShowcase: React.FC = () => {
       </ModernCard>
 
       {/* Card Showcase */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
         {/* Elevated Card */}
         <ModernCard 
           variant="elevated" 
@@ -151,10 +171,12 @@ export const ModernDesignShowcase: React.FC = () => {
         >
           <ModernCardHeader>
             <div className="flex items-center justify-between">
-              <ModernCardTitle size="md">Progress Tracker</ModernCardTitle>
-              <TrendUp 
-                weight="duotone" 
-                className="text-success-500 group-hover:scale-110 transition-transform" 
+              <ModernCardTitle size="md">
+                {t('modernDesignShowcase.cards.progressTracker')}
+              </ModernCardTitle>
+              <TrendUp
+                weight="duotone"
+                className="text-success-500 group-hover:scale-110 transition-transform"
               />
             </div>
           </ModernCardHeader>
@@ -163,7 +185,7 @@ export const ModernDesignShowcase: React.FC = () => {
               85%
             </div>
             <p className="text-caption text-neutral-600">
-              Course completion rate
+              {t('modernDesignShowcase.cards.courseCompletionRate', { course })}
             </p>
             <div className="w-full bg-neutral-200 rounded-full h-2 mt-3">
               <div className="bg-primary-500 h-2 rounded-full w-[85%] animate-fade-up"></div> {/* design-lint-ignore: decorative positioning */}
@@ -184,13 +206,13 @@ export const ModernDesignShowcase: React.FC = () => {
               <Bell weight="duotone" className="text-white text-2xl" />
             </div>
             <ModernCardTitle size="lg" className="mb-2">
-              Notifications
+              {t('modernDesignShowcase.cards.notificationsTitle')}
             </ModernCardTitle>
             <p className="text-body text-neutral-600 mb-4">
-              Stay updated with your learning progress
+              {t('modernDesignShowcase.cards.notificationsDescription')}
             </p>
             <ModernButton variant="outline" size="sm" className="w-full">
-              Enable Notifications
+              {t('modernDesignShowcase.cards.enableNotifications')}
             </ModernButton>
           </ModernCardContent>
         </ModernCard>
@@ -203,17 +225,23 @@ export const ModernDesignShowcase: React.FC = () => {
           style={{ animationDelay: '0.3s' } as React.CSSProperties}
         >
           <ModernCardHeader variant="bordered">
-            <ModernCardTitle size="md">Quick Stats</ModernCardTitle>
+            <ModernCardTitle size="md">
+              {t('modernDesignShowcase.cards.quickStats')}
+            </ModernCardTitle>
           </ModernCardHeader>
           <ModernCardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="text-title font-semibold text-primary-600">12</div>
-                <div className="text-caption text-neutral-600">Courses</div>
+                <div className="text-caption text-neutral-600">
+                  {t('modernDesignShowcase.cards.coursesLabel', { courses })}
+                </div>
               </div>
               <div className="text-center">
                 <div className="text-title font-semibold text-success-600">8</div>
-                <div className="text-caption text-neutral-600">Completed</div>
+                <div className="text-caption text-neutral-600">
+                  {t('modernDesignShowcase.cards.completedLabel')}
+                </div>
               </div>
             </div>
           </ModernCardContent>
@@ -223,63 +251,73 @@ export const ModernDesignShowcase: React.FC = () => {
       {/* Input Showcase */}
       <ModernCard variant="default" className="animate-fade-up">
         <ModernCardHeader>
-          <ModernCardTitle size="lg">Form Components</ModernCardTitle>
+          <ModernCardTitle size="lg">
+            {t('modernDesignShowcase.forms.formComponents')}
+          </ModernCardTitle>
         </ModernCardHeader>
         <ModernCardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-section">
             {/* Standard Inputs */}
             <div className="space-y-4">
-              <h3 className="text-h3-semibold">Standard Inputs</h3>
-              
+              <h3 className="text-h3-semibold">
+                {t('modernDesignShowcase.forms.standardInputs')}
+              </h3>
+
               <ModernInput
-                label="Full Name"
-                placeholder="Enter your full name"
+                label={t('modernDesignShowcase.forms.fullNameLabel')}
+                placeholder={t('modernDesignShowcase.forms.fullNamePlaceholder')}
                 leftIcon={<User />}
                 variant="default"
               />
-              
+
               <ModernInput
-                label="Email Address"
+                label={t('modernDesignShowcase.forms.emailLabel')}
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('modernDesignShowcase.forms.emailPlaceholder')}
                 leftIcon={<Envelope />}
                 variant="filled"
-                helperText="We'll never share your email"
+                helperText={t('modernDesignShowcase.forms.emailHelper')}
               />
-              
+
               <ModernInput
-                label="Password"
+                label={t('modernDesignShowcase.forms.passwordLabel')}
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('modernDesignShowcase.forms.passwordPlaceholder')}
                 leftIcon={<Lock />}
                 variant="outlined"
                 state="error"
-                errorText="Password must be at least 8 characters"
+                errorText={t('modernDesignShowcase.forms.passwordError')}
               />
             </div>
 
             {/* Enhanced Inputs */}
             <div className="space-y-4">
-              <h3 className="text-h3-semibold">Enhanced Inputs</h3>
-              
+              <h3 className="text-h3-semibold">
+                {t('modernDesignShowcase.forms.enhancedInputs')}
+              </h3>
+
               <ModernInput
-                label="Search"
-                placeholder="Search courses..."
+                label={t('modernDesignShowcase.forms.searchLabel')}
+                placeholder={t('modernDesignShowcase.forms.searchPlaceholder', {
+                  courses,
+                })}
                 leftIcon={<MagnifyingGlass />}
                 variant="ghost"
               />
-              
+
               <ModernInput
-                label="Username"
-                placeholder="Choose a username"
+                label={t('modernDesignShowcase.forms.usernameLabel')}
+                placeholder={t('modernDesignShowcase.forms.usernamePlaceholder')}
                 variant="default"
                 state="success"
-                helperText="This username is available!"
+                helperText={t('modernDesignShowcase.forms.usernameHelper')}
               />
-              
+
               <ModernInput
-                label="Loading Example"
-                placeholder="Checking availability..."
+                label={t('modernDesignShowcase.forms.loadingExampleLabel')}
+                placeholder={t(
+                  'modernDesignShowcase.forms.loadingExamplePlaceholder'
+                )}
                 isLoading={true}
                 variant="filled"
               />
@@ -287,17 +325,19 @@ export const ModernDesignShowcase: React.FC = () => {
           </div>
         </ModernCardContent>
         <ModernCardFooter>
-          <ModernButton 
-            variant="primary" 
+          <ModernButton
+            variant="primary"
             size="md"
             className="me-3"
-            onClick={() => handleAction('Form Submit')}
+            onClick={() =>
+              handleAction(t('modernDesignShowcase.actions.formSubmit'))
+            }
             isLoading={isLoading}
           >
-            Submit Form
+            {t('modernDesignShowcase.forms.submitForm')}
           </ModernButton>
           <ModernButton variant="ghost" size="md">
-            Reset
+            {t('modernDesignShowcase.forms.reset')}
           </ModernButton>
         </ModernCardFooter>
       </ModernCard>
@@ -305,17 +345,23 @@ export const ModernDesignShowcase: React.FC = () => {
       {/* Animation Showcase */}
       <ModernCard variant="subtle" className="animate-fade-up">
         <ModernCardHeader>
-          <ModernCardTitle size="lg">Animation Examples</ModernCardTitle>
+          <ModernCardTitle size="lg">
+            {t('modernDesignShowcase.animations.title')}
+          </ModernCardTitle>
         </ModernCardHeader>
         <ModernCardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-section">
             <div className="text-center space-y-4">
               <div className="w-20 h-20 bg-primary-100 rounded-xl flex items-center justify-center mx-auto hover-lift-gentle">
                 <div className="w-8 h-8 bg-primary-500 rounded-full animate-pulse-soft"></div>
               </div>
               <div>
-                <div className="text-subtitle font-medium">Hover Lift</div>
-                <div className="text-caption text-neutral-600">Gentle lift on hover</div>
+                <div className="text-subtitle font-medium">
+                  {t('modernDesignShowcase.animations.hoverLift.title')}
+                </div>
+                <div className="text-caption text-neutral-600">
+                  {t('modernDesignShowcase.animations.hoverLift.description')}
+                </div>
               </div>
             </div>
 
@@ -324,8 +370,12 @@ export const ModernDesignShowcase: React.FC = () => {
                 <div className="w-8 h-8 bg-success-500 rounded-full animate-bounce-gentle"></div>
               </div>
               <div>
-                <div className="text-subtitle font-medium">Scale Effect</div>
-                <div className="text-caption text-neutral-600">Gentle scale on hover</div>
+                <div className="text-subtitle font-medium">
+                  {t('modernDesignShowcase.animations.scaleEffect.title')}
+                </div>
+                <div className="text-caption text-neutral-600">
+                  {t('modernDesignShowcase.animations.scaleEffect.description')}
+                </div>
               </div>
             </div>
 
@@ -334,8 +384,12 @@ export const ModernDesignShowcase: React.FC = () => {
                 <div className="w-8 h-8 bg-warning-500 rounded-full animate-scale-in"></div>
               </div>
               <div>
-                <div className="text-subtitle font-medium">Click Effect</div>
-                <div className="text-caption text-neutral-600">Active state feedback</div>
+                <div className="text-subtitle font-medium">
+                  {t('modernDesignShowcase.animations.clickEffect.title')}
+                </div>
+                <div className="text-caption text-neutral-600">
+                  {t('modernDesignShowcase.animations.clickEffect.description')}
+                </div>
               </div>
             </div>
           </div>
@@ -345,23 +399,22 @@ export const ModernDesignShowcase: React.FC = () => {
       {/* Footer */}
       <div className="text-center space-y-4 animate-fade-up">
         <p className="text-body text-neutral-600">
-          This design system provides a solid foundation for building modern, 
-          accessible, and performant user interfaces.
+          {t('modernDesignShowcase.footer.description')}
         </p>
         <div className="flex justify-center space-x-4">
-          <ModernButton 
-            variant="outline" 
+          <ModernButton
+            variant="outline"
             size="sm"
             onClick={() => window.open('/docs/DESIGN_SYSTEM.md', '_blank')}
           >
-            View Documentation
+            {t('modernDesignShowcase.footer.viewDocumentation')}
           </ModernButton>
-          <ModernButton 
-            variant="ghost" 
+          <ModernButton
+            variant="ghost"
             size="sm"
             onClick={() => window.open('https://github.com', '_blank')}
           >
-            GitHub Repository
+            {t('modernDesignShowcase.footer.githubRepository')}
           </ModernButton>
         </div>
       </div>

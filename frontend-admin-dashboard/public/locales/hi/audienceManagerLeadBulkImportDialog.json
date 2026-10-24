@@ -1,0 +1,111 @@
+{
+    "dialog": {
+        "title": "थोक CSV आयात — {{campaignName}}",
+        "description": "एक साथ कई लीड आयात करने के लिए एक CSV फ़ाइल अपलोड करें।"
+    },
+    "steps": {
+        "upload": "अपलोड",
+        "preview": "पूर्वावलोकन",
+        "results": "परिणाम"
+    },
+    "loading": {
+        "campaignFields": "अभियान फ़ील्ड लोड हो रही हैं..."
+    },
+    "noCustomFields": {
+        "title": "कोई कस्टम फ़ील्ड कॉन्फ़िगर नहीं की गई",
+        "description": "लीड आयात करने से पहले इस अभियान में कस्टम फ़ील्ड जोड़ें।"
+    },
+    "upload": {
+        "downloadTemplateButton": "टेम्पलेट डाउनलोड करें",
+        "fieldsCount_one": "CSV में {{count}} फ़ील्ड + नमूना पंक्ति है",
+        "fieldsCount_other": "CSV में {{count}} फ़ील्ड + नमूना पंक्ति हैं",
+        "dropzone": {
+            "cta": "अपनी CSV अपलोड करने के लिए क्लिक करें",
+            "maxRows": "अधिकतम {{count}} पंक्तियाँ"
+        },
+        "expectedColumns": {
+            "title": "अपेक्षित कॉलम",
+            "leadOwnerChip": "लीड ओनर (काउंसलर ईमेल)",
+            "leadStatusChip": "लीड स्थिति",
+            "leadOwnerLabel": "लीड ओनर",
+            "leadStatusLabel": "लीड स्थिति",
+            "andConnector": "और",
+            "hintSuffix": "वैकल्पिक हैं। ओनर में काउंसलर का ईमेल (या अद्वितीय नाम) स्वीकार होता है; स्थिति में {{statusExamples}} जैसा लेबल स्वीकार होता है। खाली स्थिति डिफ़ॉल्ट रूप से {{defaultStatus}} हो जाती है।",
+            "defaultStatusExamples": "नया, संपर्क किया गया, इच्छुक",
+            "defaultStatusFallback": "आपकी डिफ़ॉल्ट स्थिति"
+        }
+    },
+    "preview": {
+        "statTiles": {
+            "totalRows": "कुल पंक्तियाँ",
+            "valid": "मान्य",
+            "errors": "त्रुटियाँ",
+            "duplicates": "डुप्लिकेट"
+        },
+        "blocked": {
+            "reason_one": "अनिवार्य कॉलम गायब है: {{columns}}",
+            "reason_other": "अनिवार्य कॉलम गायब हैं: {{columns}}",
+            "title": "आयात अवरुद्ध — {{reason}}",
+            "descriptionPrefix": "आपकी फ़ाइल में इससे मेल खाने वाला कोई कॉलम नहीं है:",
+            "descriptionSuffix_one": "। इससे हर पंक्ति प्रभावित होती है, इसलिए कुछ भी आयात नहीं किया जा सकता — हर लीड उस फ़ील्ड को खाली छोड़कर सहेजी जाएगी। अपनी CSV में कॉलम जोड़ें (हेडर फ़ील्ड नाम से मेल खाना चाहिए) और फिर से अपलोड करें।",
+            "descriptionSuffix_other": "। इससे हर पंक्ति प्रभावित होती है, इसलिए कुछ भी आयात नहीं किया जा सकता — हर लीड उन फ़ील्ड को खाली छोड़कर सहेजी जाएगी। अपनी CSV में कॉलम जोड़ें (हेडर फ़ील्ड नाम से मेल खाना चाहिए) और फिर से अपलोड करें।"
+        },
+        "invalidRows": {
+            "count_one": "{{formatted}} पंक्ति आयात नहीं होगी",
+            "count_other": "{{formatted}} पंक्तियाँ आयात नहीं होंगी",
+            "downloadReportButton": "त्रुटि रिपोर्ट डाउनलोड करें",
+            "note": "इन पंक्तियों को छोड़ दिया जाता है — बाकी मान्य पंक्तियाँ सामान्य रूप से आयात होती हैं। रिपोर्ट में छोड़ी गई हर पंक्ति उसका कारण बताते हुए सूचीबद्ध है, ताकि आप केवल उन्हें ठीक करके अलग से अपलोड कर सकें।",
+            "duplicateReasonLabel": "डुप्लिकेट (फ़ाइल में पहले वही ईमेल मौजूद है)",
+            "reportColumnHeader": "आयात त्रुटि"
+        },
+        "columnMapping": {
+            "title": "कॉलम मैपिंग",
+            "mappedCount": "({{mapped}}/{{total}} मैप की गई)"
+        },
+        "table": {
+            "rowNumberHeader": "#",
+            "statusHeader": "स्थिति",
+            "ownerColumnHeader": "ओनर →",
+            "statusColumnHeader": "स्थिति →",
+            "duplicateEmailTooltip": "डुप्लिकेट ईमेल",
+            "showingFirst100_one": "{{formatted}} पंक्ति में से पहली {{shown}} दिखाई जा रही है",
+            "showingFirst100_other": "{{formatted}} पंक्तियों में से पहली {{shown}} दिखाई जा रही हैं"
+        },
+        "footer": {
+            "backButton": "वापस",
+            "submittingBatch": "सबमिट हो रहा है… बैच {{done}}/{{total}}",
+            "submittingRows_one": "{{count}} पंक्ति सबमिट हो रही है...",
+            "submittingRows_other": "{{count}} पंक्तियाँ सबमिट हो रही हैं...",
+            "submitButton_one": "{{count}} मान्य पंक्ति सबमिट करें",
+            "submitButton_other": "{{count}} मान्य पंक्तियाँ सबमिट करें"
+        }
+    },
+    "results": {
+        "summary": {
+            "total": "कुल",
+            "success": "सफल",
+            "failed": "विफल",
+            "skipped": "छोड़ा गया"
+        },
+        "showDetailsButton": "विवरण दिखाएँ",
+        "hideDetailsButton": "विवरण छिपाएँ",
+        "rowLabel": "पंक्ति {{number}}",
+        "statusLabel": {
+            "FAILED": "विफल",
+            "SKIPPED": "छोड़ा गया"
+        },
+        "doneButton": "हो गया"
+    },
+    "toasts": {
+        "csvEmpty": "CSV फ़ाइल खाली है",
+        "tooManyRows": "CSV में {{count}} पंक्तियाँ हैं। अधिकतम अनुमत {{max}} है।",
+        "missingMandatoryColumns": "अनिवार्य कॉलम गायब हैं: {{columns}}। उन्हें फ़ाइल में जोड़ें और फिर से अपलोड करें।",
+        "parseFailed": "CSV पार्स करने में विफल: {{message}}",
+        "cannotImport": "आयात नहीं हो सका — {{reason}}। फ़ाइल ठीक करें और फिर से अपलोड करें।",
+        "noValidRows": "सबमिट करने के लिए कोई मान्य पंक्ति नहीं",
+        "allImportedSuccess_one": "सभी {{count}} लीड सफलतापूर्वक आयात की गई!",
+        "allImportedSuccess_other": "सभी {{count}} लीड सफलतापूर्वक आयात की गईं!",
+        "importComplete": "आयात पूर्ण: {{success}} सफल, {{failed}} विफल, {{skipped}} छोड़े गए",
+        "submitFailed": "लीड सबमिट करने में विफल"
+    }
+}

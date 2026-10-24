@@ -1,0 +1,30 @@
+{
+    "toast": {
+        "batchDeletedSuccess": "Lot supprimé avec succès",
+        "batchDeleteFailed": "Échec de la suppression du lot",
+        "inviteLinkCopied": "Lien d'invitation copié dans le presse-papiers"
+    },
+    "batchCard": {
+        "studentCount_one": "{{count}} {{term}}",
+        "studentCount_many": "{{count}} {{term}}s",
+        "studentCount_other": "{{count}} {{term}}s",
+        "inviteCodeLabel": "Code d'invitation :",
+        "enrollButton": "Inscrire {{term}}",
+        "viewBatchButton": "Voir le lot",
+        "startsOn": "Starts {{date}}",
+        "startedOn": "Started {{date}}"
+    },
+    "deleteDialog": {
+        "heading": "Supprimer le lot",
+        "cancel": "Annuler",
+        "confirm": "Oui, supprimer",
+        "confirmMessage": "Êtes-vous sûr de vouloir supprimer le lot « {{batchName}} » ? Cette action est irréversible."
+    },
+    "section": {
+        "noBatches": "Aucun lot trouvé pour ce forfait.",
+        "noBatchesInSession": "Aucun lot trouvé pour ce forfait dans la session sélectionnée."
+    },
+    "course": {
+        "addBatch": "Add {{term}}"
+    }
+}

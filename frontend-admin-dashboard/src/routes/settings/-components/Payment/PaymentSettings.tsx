@@ -9,14 +9,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { CreditCard, Globe, Plus } from '@phosphor-icons/react';
+import { CreditCard, Globe, Plus, Eye, CircleNotch } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { PaymentPlanList } from './PaymentPlanList';
 import { MyButton } from '@/components/design-system/button';
 import { SubscriptionPlanPreview } from './SubscriptionPlanPreview';
 import { DonationPlanPreview } from './DonationPlanPreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, Loader2 } from 'lucide-react';
 import {
     savePaymentOption,
     getPaymentOptions,
@@ -25,6 +24,7 @@ import {
     transformLocalPlanToApiFormatArray,
 } from '@/services/payment-options';
 import { DeletePaymentOptionDialog } from './DeletePaymentOptionDialog';
+import { RegionalPricingDialog } from './RegionalPricingDialog';
 import { toast } from 'sonner';
 import { currencyOptions } from '../../-constants/payments';
 import { getInstituteId } from '@/constants/helper';
@@ -35,14 +35,20 @@ import { useCreateCPO } from '@/routes/financial-management/fee-plans/-services/
 import { buildCreateCPOPayload } from '@/routes/financial-management/fee-plans/-components/CreateCPODialog';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import PackageSessionRenewalSettings from './PackageSessionRenewalSettings';
+import OfflinePaymentModesSettings from './OfflinePaymentModesSettings';
+import { useTranslation } from 'react-i18next';
 
 interface Interval {
+    /** payment_plan.id — round-tripped so a save updates the plan instead of replacing it. */
+    id?: string;
     price: string;
     originalPrice: string;
     title?: string;
     value: number;
     unit: string;
     features?: string[];
+    /** Members on another plan may switch to this interval (option flag must also be on). */
+    planChangeAllowed?: boolean;
 }
 
 interface DiscountCoupon {
@@ -60,6 +66,7 @@ interface DiscountCoupon {
 }
 
 const PaymentSettings = () => {
+    const { t } = useTranslation('settingsPayment');
     const [editingPlan, setEditingPlan] = useState<PaymentPlan | null>(null);
     const [currency, setCurrency] = useState<string>('GBP');
     const [showPaymentPlanCreator, setShowPaymentPlanCreator] = useState(false);
@@ -70,8 +77,16 @@ const PaymentSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [planToDelete, setPlanToDelete] = useState<PaymentPlan | null>(null);
+    const [regionalPricingPlan, setRegionalPricingPlan] = useState<PaymentPlan | null>(null);
     const previewDialogRef = useRef<HTMLDivElement>(null);
     const [requireApproval, setRequireApproval] = useState(false);
+    // Option-level master switch for plan change; the per-plan checkboxes are inert
+    // while this is off. Held here, like requireApproval, because it belongs to the
+    // payment option rather than to any one plan inside it.
+    const [planChangeAllowed, setPlanChangeAllowed] = useState(false);
+    // Regional pricing is an option-level setting too, edited in the creator and saved with it.
+    const [regionalPricingEnabled, setRegionalPricingEnabled] = useState(false);
+    const [regionalPricingCurrencies, setRegionalPricingCurrencies] = useState<string[]>([]);
 
     const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
     const instituteId = getInstituteId();
@@ -90,7 +105,9 @@ const PaymentSettings = () => {
                     enabled: true,
                     price: interval.originalPrice || '0',
                     interval: 'custom',
-                    title: interval.title || `${interval.value} ${interval.unit} Plan`,
+                    title:
+                        interval.title ||
+                        t('intervalPlanFallback', { value: interval.value, unit: interval.unit }),
                     features: interval.features || [],
                     customInterval: {
                         value: interval.value,
@@ -124,10 +141,21 @@ const PaymentSettings = () => {
                 const discount = planDiscounts[`interval_${idx}`];
                 if (!discount || discount.type === 'none' || !discount.amount) return null;
 
+                const discountLabel =
+                    discount.type === 'percentage'
+                        ? t('discounts.percentageOff', { amount: discount.amount })
+                        : t('discounts.fixedOff', {
+                              symbol: currencySymbol,
+                              amount: discount.amount,
+                          });
+                const intervalTitle =
+                    interval.title ||
+                    t('intervalPlanFallback', { value: interval.value, unit: interval.unit });
+
                 return {
                     id: `plan-discount-${idx}`,
                     code: `${discount.type === 'percentage' ? 'PERCENT' : 'FLAT'}_${discount.amount}_${idx}`,
-                    name: `${discount.type === 'percentage' ? `${discount.amount}% Off` : `${currencySymbol}${discount.amount} Off`} - ${interval.title || `${interval.value} ${interval.unit} Plan`}`,
+                    name: t('discounts.nameWithInterval', { discountLabel, intervalTitle }),
                     type: discount.type,
                     value: parseFloat(discount.amount),
                     currency: plan.currency,
@@ -166,12 +194,17 @@ const PaymentSettings = () => {
                         if (paymentOption.type === PaymentPlans.SUBSCRIPTION) {
                             // Aggregate all intervals
                             const intervals = paymentOption.payment_plans.map((plan) => ({
+                                // The id is round-tripped so a later save UPDATES this
+                                // plan. Without it the backend retires every stored plan
+                                // and mints new ids, orphaning user_plan.plan_id.
+                                id: plan.id,
                                 price: plan.actual_price, // discounted price
                                 originalPrice: plan.elevated_price, // original price
                                 title: plan.name || '',
                                 value: plan.validity_in_days,
                                 unit: 'days', // or 'months', depending on your logic
                                 features: JSON.parse(plan.feature_json || '[]'),
+                                planChangeAllowed: plan.plan_change_allowed ?? false,
                             }));
                             // Use the first plan for other fields
                             const basePlan = paymentOption.payment_plans[0];
@@ -217,6 +250,7 @@ const PaymentSettings = () => {
                                     },
                                 },
                                 requireApproval: paymentOption.require_approval,
+                                planChangeAllowed: paymentOption.plan_change_allowed ?? false,
                             } as PaymentPlan;
                         } else if (paymentOption.type === PaymentPlans.FREE) {
                             // For FREE plans, we can create a plan even without payment_plans
@@ -250,6 +284,7 @@ const PaymentSettings = () => {
                                 },
                                 isDefault: false,
                                 requireApproval: paymentOption.require_approval,
+                                planChangeAllowed: paymentOption.plan_change_allowed ?? false,
                             } as PaymentPlan;
                         } else if (paymentOption.type === PaymentPlans.CPO) {
                             // CPO mirror: id = mirror PaymentOption ID (used for makeDefault)
@@ -265,6 +300,7 @@ const PaymentSettings = () => {
                                     cpoId: paymentOption.complex_payment_option_id || '',
                                 },
                                 requireApproval: paymentOption.require_approval,
+                                planChangeAllowed: paymentOption.plan_change_allowed ?? false,
                             } as PaymentPlan;
                         } else if (paymentOption.payment_plans?.length > 0) {
                             // For other non-subscription plans, just use the first plan
@@ -287,15 +323,27 @@ const PaymentSettings = () => {
                                 name: paymentOption.name || '',
                                 currency: localPlan.currency || '',
                                 requireApproval: paymentOption.require_approval,
+                                planChangeAllowed: paymentOption.plan_change_allowed ?? false,
                             } as PaymentPlan;
                         }
                         return null;
                     })
                     .filter((plan): plan is PaymentPlan => plan !== null) || [];
 
+            // Regional pricing lives on the option; stitch it onto every plan type in one place.
+            const regionalByOptionId = new Map(
+                (response ?? []).map((o) => [
+                    o.id,
+                    {
+                        regionalPricingEnabled: o.regional_pricing_enabled ?? false,
+                        regionalPricingCurrencies: o.regional_pricing_currencies ?? [],
+                    },
+                ])
+            );
             setPaymentPlans(
                 transformedPlans.map((plan) => ({
                     ...plan,
+                    ...(regionalByOptionId.get(plan.id) ?? {}),
                     id: plan.id || '',
                     isDefault: !!plan.isDefault,
                     config: plan.config || {},
@@ -307,11 +355,11 @@ const PaymentSettings = () => {
             );
 
             if (transformedPlans.length === 0) {
-                toast.info('No payment options found. Create your first payment plan!');
+                toast.info(t('toasts.noPaymentOptions'));
             }
         } catch (error) {
             console.error('Error loading payment options:', error);
-            toast.error('Failed to load payment options');
+            toast.error(t('toasts.loadFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -323,9 +371,16 @@ const PaymentSettings = () => {
     }, []);
 
 
+    const operationLabels: Record<string, string> = {
+        'set default plan': t('operations.setDefaultPlan'),
+        'edit plan': t('operations.editPlan'),
+        'save payment plan': t('operations.savePaymentPlan'),
+        'preview plan': t('operations.previewPlan'),
+    };
+
     const handleError = (error: unknown, operation: string) => {
         console.error(`Error in ${operation}:`, error);
-        toast.error(`Error in ${operation}`);
+        toast.error(t('errors.generic', { operation: operationLabels[operation] || operation }));
     };
 
     const handleSetDefaultPlan = async (planId: string) => {
@@ -338,7 +393,7 @@ const PaymentSettings = () => {
                 paymentOptionId,
             });
             await loadPaymentOptions(); // Refresh the list from the API
-            toast.success('Default payment plan updated successfully');
+            toast.success(t('toasts.defaultUpdated'));
         } catch (error) {
             handleError(error, 'set default plan');
         }
@@ -364,16 +419,30 @@ const PaymentSettings = () => {
         try {
             // Clear any previous editing state and set the new plan to edit
             setEditingPlan(plan);
+            // Option-level toggles live outside the plan object, so seed them from the
+            // plan being opened — otherwise reopening an option shows them off and the
+            // next save turns the feature off for everyone on it.
+            setRequireApproval(plan.requireApproval || false);
+            setPlanChangeAllowed(plan.planChangeAllowed || false);
+            setRegionalPricingEnabled(plan.regionalPricingEnabled || false);
+            setRegionalPricingCurrencies(plan.regionalPricingCurrencies || []);
             setShowPaymentPlanCreator(true);
         } catch (error) {
             handleError(error, 'edit plan');
         }
     };
 
+    const resetRegionalPricing = () => {
+        setRegionalPricingEnabled(false);
+        setRegionalPricingCurrencies([]);
+    };
+
     const handleClosePaymentPlanCreator = () => {
         setShowPaymentPlanCreator(false);
         setEditingPlan(null);
         setRequireApproval(false);
+        setPlanChangeAllowed(false);
+        resetRegionalPricing();
     };
 
     // Helper function to calculate discounted prices for intervals
@@ -417,14 +486,24 @@ const PaymentSettings = () => {
                 if (!cpoForm) throw new Error('Missing CPO form data');
                 const payload = buildCreateCPOPayload(cpoForm, batches);
                 await createCPOMutation.mutateAsync(payload);
-                toast.success('Fee plan created successfully');
+                toast.success(t('toasts.feePlanCreated'));
                 setEditingPlan(null);
                 setShowPaymentPlanCreator(false);
                 setRequireApproval(false);
+                setPlanChangeAllowed(false);
+                resetRegionalPricing();
                 return;
             }
 
-            const apiPlans = transformLocalPlanToApiFormatArray(plan);
+            // A ONE_TIME option has exactly one plan, so there is no per-interval
+            // checkbox for it — the option toggle IS the plan's flag. Stamped here rather
+            // than in the creator and the editor separately, so both paths agree.
+            const planForApi: PaymentPlan = {
+                ...plan,
+                planChangeAllowed,
+                config: { ...plan.config, planChangeAllowed },
+            };
+            const apiPlans = transformLocalPlanToApiFormatArray(planForApi);
             const discountedIntervals = calculateDiscountedIntervals(plan);
 
             const paymentOptionRequest = {
@@ -435,6 +514,19 @@ const PaymentSettings = () => {
                 source_id: instituteId ?? '',
                 type: plan.type.toUpperCase(),
                 require_approval: requireApproval,
+                // Master switch. The per-plan checkboxes only take effect while this is on,
+                // so it rides alongside require_approval on the option itself.
+                plan_change_allowed: planChangeAllowed,
+                // Only paid one-time / subscription options can price by region; for any other
+                // type the fields are omitted, which the backend reads as "leave as is".
+                ...(plan.type === PaymentPlans.SUBSCRIPTION || plan.type === PaymentPlans.UPFRONT
+                    ? {
+                          regional_pricing_enabled: regionalPricingEnabled,
+                          regional_pricing_currencies: regionalPricingEnabled
+                              ? regionalPricingCurrencies
+                              : editingPlan?.regionalPricingCurrencies ?? [],
+                      }
+                    : {}),
                 payment_plans: apiPlans,
                 payment_option_metadata_json: JSON.stringify({
                     currency: plan.currency,
@@ -489,19 +581,39 @@ const PaymentSettings = () => {
 
             const savedPaymentOption = await savePaymentOption(paymentOptionRequest);
 
+            const regionalEligible =
+                plan.type === PaymentPlans.SUBSCRIPTION || plan.type === PaymentPlans.UPFRONT;
+            const regionalFields = regionalEligible
+                ? { regionalPricingEnabled, regionalPricingCurrencies }
+                : {};
+
             if (editingPlan) {
                 // Update existing plan in the list
-                setPaymentPlans((plans) => plans.map((p) => (p.id === editingPlan.id ? plan : p)));
-                toast.success('Payment plan updated successfully');
+                setPaymentPlans((plans) =>
+                    plans.map((p) => (p.id === editingPlan.id ? { ...plan, ...regionalFields } : p))
+                );
+                toast.success(t('toasts.planUpdated'));
             } else {
                 // Add new plan to the list
                 const savedPlan = savedPaymentOption?.payment_plans?.[0];
                 if (savedPlan) {
-                    const transformedPlan = transformApiPlanToLocalFormat(savedPlan);
+                    // The plan row carries no type or metadata of its own — both live on
+                    // the option (loadPaymentOptions stitches them the same way). Without
+                    // them the transform throws on `type.toUpperCase()` and a successful
+                    // save surfaces as an error toast.
+                    const transformedPlan = transformApiPlanToLocalFormat({
+                        ...savedPlan,
+                        type: savedPaymentOption.type,
+                        payment_option_metadata_json:
+                            savedPaymentOption.payment_option_metadata_json,
+                    });
                     setPaymentPlans((plans) => [
                         ...plans,
                         {
                             ...transformedPlan,
+                            // Option id, not plan id — every list action keys on it.
+                            id: savedPaymentOption.id,
+                            name: savedPaymentOption.name,
                             tag:
                                 transformedPlan.type === PaymentPlans.FREE
                                     ? 'free'
@@ -513,16 +625,31 @@ const PaymentSettings = () => {
                 } else {
                     setPaymentPlans((plans) => [...plans, plan]);
                 }
-                toast.success('Payment plan created successfully');
+                toast.success(t('toasts.planCreated'));
                 // Refresh the list from the API after creating a new plan
                 await loadPaymentOptions();
             }
 
+            // Regional pricing on: open its panel straight away, so the admin sees the
+            // automatic prices just created and can add fixed prices for specific countries.
+            const openRegionalPanel =
+                regionalEligible && regionalPricingEnabled && !!savedPaymentOption?.id;
+
             setEditingPlan(null);
             setShowPaymentPlanCreator(false);
             setRequireApproval(false);
+            setPlanChangeAllowed(false);
+            resetRegionalPricing();
             // Clear features after successfully creating/updating a plan
             setFeaturesGlobal([]);
+
+            if (openRegionalPanel) {
+                setRegionalPricingPlan({
+                    ...plan,
+                    id: savedPaymentOption.id,
+                    name: savedPaymentOption.name || plan.name,
+                } as PaymentPlan);
+            }
         } catch (error) {
             handleError(error, 'save payment plan');
         } finally {
@@ -598,7 +725,7 @@ const PaymentSettings = () => {
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2 text-lg">
                             <CreditCard className="size-5" />
-                            Payment Configuration
+                            {t('cardTitle')}
                         </CardTitle>
                         <div className="flex items-center gap-2">
                             <MyButton
@@ -607,7 +734,7 @@ const PaymentSettings = () => {
                                 disabled={isLoading || isSaving}
                             >
                                 <Plus className="size-4" />
-                                Add Payment Plan
+                                {t('addPaymentPlan')}
                             </MyButton>
                         </div>
                     </div>
@@ -615,10 +742,10 @@ const PaymentSettings = () => {
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Default Currency</Label>
+                            <Label>{t('defaultCurrency')}</Label>
                             <Select value={currency} onValueChange={(value) => setCurrency(value)}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select currency" />
+                                    <SelectValue placeholder={t('selectCurrencyPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {currencyOptions.map((currency) => (
@@ -637,15 +764,15 @@ const PaymentSettings = () => {
                         <div className="flex items-center justify-between">
                             <h3 className="flex items-center gap-2 text-lg font-medium text-gray-900">
                                 <Globe className="size-5 text-green-600" />
-                                Free Options
+                                {t('sections.freeOptions')}
                             </h3>
                             <Badge variant="outline" className="border-green-200 text-green-600">
-                                {getFreePlans().length} plans
+                                {t('planCount', { count: getFreePlans().length })}
                             </Badge>
                         </div>
                         {isLoading ? (
                             <div className="flex items-center justify-center py-8">
-                                <Loader2 className="size-8 animate-spin text-primary-400" />
+                                <CircleNotch className="size-8 animate-spin text-primary-400" />
                             </div>
                         ) : (
                             <PaymentPlanList
@@ -664,15 +791,15 @@ const PaymentSettings = () => {
                         <div className="flex items-center justify-between">
                             <h3 className="flex items-center gap-2 text-lg font-medium text-gray-900">
                                 <CreditCard className="size-5 text-blue-600" />
-                                Paid Options
+                                {t('sections.paidOptions')}
                             </h3>
                             <Badge variant="outline" className="border-blue-200 text-blue-600">
-                                {getPaidPlans().length} plan{getPaidPlans().length !== 1 ? 's' : ''}
+                                {t('planCount', { count: getPaidPlans().length })}
                             </Badge>
                         </div>
                         {isLoading ? (
                             <div className="flex items-center justify-center py-8">
-                                <Loader2 className="size-8 animate-spin text-primary-400" />
+                                <CircleNotch className="size-8 animate-spin text-primary-400" />
                             </div>
                         ) : (
                             <PaymentPlanList
@@ -681,6 +808,7 @@ const PaymentSettings = () => {
                                 onDelete={handleDeletePlan}
                                 onSetDefault={handleSetDefaultPlan}
                                 onPreview={handlePreviewPlan}
+                                onRegionalPricing={setRegionalPricingPlan}
                             />
                         )}
                     </div>
@@ -689,6 +817,10 @@ const PaymentSettings = () => {
 
             <div className="mt-6">
                 <PackageSessionRenewalSettings />
+            </div>
+
+            <div className="mt-6">
+                <OfflinePaymentModesSettings />
             </div>
 
             <PaymentPlanCreator
@@ -707,17 +839,23 @@ const PaymentSettings = () => {
                 }))}
                 requireApproval={requireApproval}
                 setRequireApproval={setRequireApproval}
+                planChangeAllowed={planChangeAllowed}
+                setPlanChangeAllowed={setPlanChangeAllowed}
+                regionalPricingEnabled={regionalPricingEnabled}
+                setRegionalPricingEnabled={setRegionalPricingEnabled}
+                regionalPricingCurrencies={regionalPricingCurrencies}
+                setRegionalPricingCurrencies={setRegionalPricingCurrencies}
             />
 
             <Dialog open={showPlanPreview} onOpenChange={setShowPlanPreview}>
                 <DialogContent
                     ref={previewDialogRef}
-                    className="max-h-[90vh] min-w-fit overflow-y-auto"
+                    className="max-h-dialog-tall min-w-fit overflow-y-auto"
                 >
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Eye className="size-5" />
-                            Plan Preview - {previewingPlan?.name}
+                            {t('planPreviewTitle', { name: previewingPlan?.name })}
                         </DialogTitle>
                     </DialogHeader>
                     <div className="mt-4">{renderPlanPreview()}</div>
@@ -734,6 +872,22 @@ const PaymentSettings = () => {
                 allPaymentOptions={paymentPlans}
                 onDeleted={handleDeleteConfirmed}
             />
+
+            {regionalPricingPlan && (
+                <RegionalPricingDialog
+                    open={!!regionalPricingPlan}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setRegionalPricingPlan(null);
+                            // The dialog may have switched regional pricing on or off; reload so
+                            // the next edit of this option starts from what is really saved.
+                            void loadPaymentOptions();
+                        }
+                    }}
+                    paymentOptionId={regionalPricingPlan.id}
+                    paymentOptionName={regionalPricingPlan.name}
+                />
+            )}
         </>
     );
 };

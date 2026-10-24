@@ -99,6 +99,71 @@ export const ASSISTANT_TOOL_CATALOG: AssistantToolCatalogEntry[] = [
         defaultRoles: ['ADMIN'],
     },
     {
+        key: 'website_builder',
+        label: 'Website: view',
+        description:
+            'See the institute’s websites — pages, what each section shows (which courses, which ' +
+            'lead campaign), traffic, lead capture health and pre-publish checks — and run the ' +
+            'interview needed before a site is generated. Read-only. On by default for Admins.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: ['ADMIN'],
+    },
+    {
+        key: 'website_builder_edits',
+        label: 'Website: edit drafts',
+        description:
+            'Let the assistant build and change websites by conversation — compose pages, edit ' +
+            'sections, set colours and fonts, wire forms to lead campaigns. Every change is saved ' +
+            'as a draft; nothing goes live until you publish it in Manage Pages. Uses no AI ' +
+            'credits. Off by default.',
+        phase: 3,
+        defaultEnabled: false,
+    },
+    {
+        key: 'audience_forms',
+        label: 'Lead forms: view',
+        description:
+            'See lead campaigns (Audience Manager): their form fields, where they are used on the ' +
+            'websites, leads received and recent leads. Read-only. On by default for Admins.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: ['ADMIN'],
+    },
+    {
+        key: 'audience_forms_edits',
+        label: 'Lead forms: edit',
+        description:
+            'Let the assistant create lead campaigns, add fields to their forms and send test leads. ' +
+            'It never removes anything. Off by default.',
+        phase: 3,
+        defaultEnabled: false,
+    },
+    {
+        key: 'workflows',
+        label: 'Automations: view',
+        description:
+            'See the institute’s automations (workflows): each one’s trigger or schedule, its nodes, ' +
+            'recent runs and per-node results, plus the authoring catalog and the batches, lead ' +
+            'campaigns and templates an automation can reference. Read-only. On by default for Admins.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: ['ADMIN'],
+    },
+    {
+        key: 'workflows_edits',
+        label: 'Automations: draft',
+        description:
+            'Let the assistant build automations by conversation — compose the workflow, check it ' +
+            'against the builder’s rules, save it as a DRAFT, and create the new email and WhatsApp ' +
+            'templates it needs (WhatsApp templates are sent to Meta for approval). A draft never ' +
+            'runs until you open it in the builder and publish it; published automations and ' +
+            'existing templates cannot be changed or removed from here. Uses no AI credits. Off by ' +
+            'default.',
+        phase: 3,
+        defaultEnabled: false,
+    },
+    {
         key: 'announcements',
         label: 'Announcements',
         description:

@@ -1,0 +1,67 @@
+---
+title: "Tool catalogue"
+description: "Every area an admin can switch on, and where to find the full reference for its tools."
+icon: "table-list"
+---
+
+Tools are grouped into **areas**, the same rows you see in **Settings → MCP Server → What AI apps can do**. Each area has a **View** level, and most have one or more **edits** you can switch on. Your AI app only sees the tools that are switched on for you.
+
+## LMS areas
+
+| Area | View | Edit |
+| :--- | :--- | :--- |
+| Who is connected | Your name and your institute's branding. Always on. | – |
+| Institute stats | Profile, outstanding fees, live classes, learner counts. | – |
+| Website | Pages, sections, theme, SEO, traffic and pre-publish checks. | Draft pages, import Figma designs, set up course data (opt-in), publish and roll back (opt-in). |
+| Lead forms | Lead campaigns, their form fields and leads received. | Create campaigns and add fields. |
+| Automations | Workflows, their runs, and message templates. | Draft workflows and create new templates. |
+| Blog | Posts and the pages that show them. | Draft posts. |
+| Courses | Course content, drip rules, invite links and pricing. | Draft courses, drip rules, invite links and enrolment forms, structure and depth (opt-in). |
+| Learners | Find learners and their courses. | Enrol into courses (opt-in), edit learner details (opt-in). |
+| Progress reports | The data behind a learner's progress report. | – |
+
+## CRM areas
+
+The CRM areas show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Each person sees only the leads their admin portal shows them: counsellors their own leads, managers their team's, admins the whole institute.
+
+| Area | View | Edit |
+| :--- | :--- | :--- |
+| CRM: Leads | Find and list leads, a lead's full history, *my day* follow-ups. | Log calls and notes, set follow-ups, change status, assign leads, add leads. All opt-in. |
+| CRM: Calls | Call history, transcripts, callbacks due, AI calling status. | Place a call or an AI call, start AI calling campaigns (admins). All opt-in. |
+| CRM: Meetings | Your and your team's meetings, free slots, booking pages. | Book a meeting, log its outcome. Opt-in. |
+| CRM: Messages | Message history, inbox, approved templates. | Send an approved WhatsApp template or an email to one lead. Opt-in. |
+| CRM: Reports | Sources, campaigns, funnel, counsellor performance, calling and follow-up health, custom reports, live activity. | – |
+| CRM: Payments | Dues, overdue fees, due soon, converted-not-paid, failed checkouts, collections (admins). | Send fee reminders (admins). Opt-in. |
+
+Every CRM edit is turned on separately (opt-in). Notes, logged calls and follow-ups are saved straight away. Status changes, assignments, bulk changes, calls, messages and bookings show a preview and wait for your yes. See [Confirmations](/mcp-server/usage/confirmations).
+
+## What the labels mean
+
+Edits carry a label such as *Drafts only*, *Adds only* or *Changes live*. *Opt-in* (shown as **Turned on separately**) means an edit is never switched on by an area's Edit level or by **Turn everything on**. See [Risk levels](/mcp-server/settings/risk-levels) and [Opt-in edits](/mcp-server/settings/opt-in-features).
+
+## Full reference
+
+Every tool, its actions and its parameters, generated from the server itself:
+
+{/* generated:tools:start — do not edit by hand; run ai_service/scripts/gen_mcp_docs.py */}
+
+| Area | Tools |
+| :--- | :--- |
+| [Who is connected](/mcp-server/tools/identity) | `whoami` |
+| [Institute stats](/mcp-server/tools/institute) | `get_institute_overview` |
+| [Website](/mcp-server/tools/website) | `website`, `catalog_data_edit`, `design_import`, `website_edit`, `website_publish` |
+| [Lead forms](/mcp-server/tools/lead-forms) | `audience_forms`, `audience_forms_edit` |
+| [Automations](/mcp-server/tools/automations) | `workflows`, `workflows_edit` |
+| [Blog](/mcp-server/tools/blog) | `blog`, `blog_edit` |
+| [Courses](/mcp-server/tools/courses) | `courses`, `course_drip_edit`, `course_edit`, `course_invites_edit`, `course_structure_edit` |
+| [Learners](/mcp-server/tools/learners) | `learners`, `learner_edit`, `learner_enroll` |
+| [Progress reports](/mcp-server/tools/learner-reports) | `learner_report` |
+| [Sub-organisations](/mcp-server/tools/sub-orgs) | `sub_orgs`, `sub_org_edit`, `sub_org_enroll` |
+| [CRM: Leads](/mcp-server/tools/crm-leads) | `crm_leads`, `crm_lead_activity`, `crm_lead_edit`, `crm_lead_intake`, `crm_team_edit` |
+| [CRM: Calls](/mcp-server/tools/crm-calls) | `crm_calls`, `crm_ai_campaign`, `crm_dial` |
+| [CRM: Meetings](/mcp-server/tools/crm-meetings) | `crm_meetings`, `crm_meetings_edit` |
+| [CRM: Messages](/mcp-server/tools/crm-messages) | `crm_messages`, `crm_send` |
+| [CRM: Reports](/mcp-server/tools/crm-reports) | `crm_reports` |
+| [CRM: Payments](/mcp-server/tools/crm-payments) | `crm_collections`, `crm_payment_reminders` |
+
+{/* generated:tools:end */}

@@ -1,17 +1,18 @@
 import SelectChips from '@/components/design-system/SelectChips';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FilterType } from '../../-types/filter-type';
 import { useDoubtFilters } from '../../-stores/filter-store';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
-const AllBatchOption = {
-    label: 'All',
-    value: '',
-};
-
 export const BatchFilter = () => {
+    const { t } = useTranslation('studyLibraryBatchFilter');
+    const AllBatchOption = {
+        label: t('all'),
+        value: '',
+    };
     const { instituteDetails } = useInstituteDetailsStore();
     const { updateFilters } = useDoubtFilters();
 
@@ -32,6 +33,11 @@ export const BatchFilter = () => {
     batchList?.push(...batches);
 
     const [selectedBatch, setSelectedBatch] = useState<FilterType[]>([AllBatchOption]);
+    // Re-read labels from the live list so "All" isn't frozen as a raw key from before the
+    // namespace loaded.
+    const selectedDisplay = selectedBatch.map(
+        (sel) => batchList.find((o) => o.value === sel.value) ?? sel
+    );
 
     const handleBatchChange = (next: FilterType[]) => {
         if (next.length === 0) {
@@ -68,7 +74,7 @@ export const BatchFilter = () => {
             </span>
             <SelectChips
                 options={batchList}
-                selected={selectedBatch}
+                selected={selectedDisplay}
                 onChange={handleBatchChange}
                 multiSelect={true}
                 hasClearFilter={false}

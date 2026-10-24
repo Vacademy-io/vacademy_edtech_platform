@@ -1,10 +1,16 @@
 package vacademy.io.admin_core_service.features.user_subscription.service;
 
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -13,10 +19,18 @@ import org.springframework.util.CollectionUtils;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
 import vacademy.io.admin_core_service.features.notification_service.service.PaymentNotificatonService;
+import vacademy.io.admin_core_service.features.user_subscription.dto.BalanceLearnerProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.BillingSummaryProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.CombinedPaymentRowProjection;
+import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentLogSummaryResponseDTO;
+import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentStatusTotalProjection;
+import vacademy.io.admin_core_service.features.user_subscription.dto.InstalmentForecastResponseDTO;
+import vacademy.io.admin_core_service.features.user_subscription.dto.InstalmentProgressProjection;
+import vacademy.io.admin_core_service.features.user_subscription.dto.LearnerPlanBreakdownDTO;
+import vacademy.io.admin_core_service.features.user_subscription.dto.MonthDueLearnerProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.OutstandingLearnerDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.OutstandingLearnerProjection;
+import vacademy.io.admin_core_service.features.user_subscription.dto.UpcomingMonthProjection;
 import vacademy.io.admin_core_service.features.user_subscription.dto.BillingSummaryRequestDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.BillingSummaryResponseDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.CollectionSummaryProjection;
@@ -61,21 +75,43 @@ import vacademy.io.common.institute.entity.session.PackageSession;
 
 import java.time.ZoneId;
 import java.util.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
 import java.util.stream.Collectors;
 
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.context.annotation.Lazy;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityDedupeKeys;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityRecorder;
+import vacademy.io.admin_core_service.features.live_activity.dto.LiveActivityEvent;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityAction;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityActorType;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityCategory;
 
 @Service
 @Transactional
 public class PaymentLogService {
 
+    /**
+     * Derived listing status for a PAYMENT_PENDING log older than
+     * {@code payments.pending.abandoned-after-hours}. Never persisted — the row keeps its gateway
+     * status, only the listing reports it this way.
+     */
+    public static final String ABANDONED_PAYMENT_STATUS = "ABANDONED";
+
     private static final Logger log = LoggerFactory.getLogger(PaymentLogService.class);
 
     @Autowired
     private PaymentLogRepository paymentLogRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private LiveActivityRecorder liveActivityRecorder;
 
     @Autowired
     public UserPlanService userPlanService;
@@ -87,6 +123,24 @@ public class PaymentLogService {
 
     @Autowired
     private UserPlanRepository userPlanRepository;
+
+    @Autowired
+    private PaymentPlanDatesLoader paymentPlanDatesLoader;
+
+    /**
+     * How far ahead the Upcoming card looks. Obligations falling due inside this window are
+     * reported as expected money, not as due.
+     */
+    @Value("${payments.due.upcoming-days:30}")
+    private int upcomingDays;
+
+    /**
+     * A PAYMENT_PENDING log older than this is an abandoned checkout, not a payment in progress.
+     * Gateway orders expire long before it (Razorpay's in ~24 h), so nothing older can still
+     * complete. Reported as ABANDONED so the cards stop counting it as money in flight.
+     */
+    @Value("${payments.pending.abandoned-after-hours:24}")
+    private long abandonedAfterHours;
 
     @Autowired
     private vacademy.io.admin_core_service.features.institute.repository.InstituteRepository instituteRepository;
@@ -318,6 +372,59 @@ public class PaymentLogService {
         }
     }
 
+    /**
+     * The order's figures for the confirmation email, read off the invoice that
+     * was just generated for it.
+     *
+     * The invoice is the only record that spans the whole order: on a multi-course
+     * checkout it groups every child payment log, so its totals are what the
+     * learner was actually charged. gross is reconstructed as paid + discount
+     * rather than stored separately, which keeps the email's arithmetic identical
+     * to the attached PDF's by construction.
+     *
+     * Null when there is nothing worth breaking down, which leaves the email
+     * quoting the payment log exactly as it always did.
+     */
+    // Visible for testing.
+    PaymentNotificatonService.OrderAmountSummary orderAmountsFrom(
+            InvoiceService.InvoiceGenerationResult invoiceResult, PaymentLog paymentLog) {
+        if (invoiceResult == null || invoiceResult.getInvoice() == null) {
+            return null;
+        }
+        try {
+            var invoice = invoiceResult.getInvoice();
+            double paid = invoice.getTotalAmount() != null ? invoice.getTotalAmount().doubleValue() : 0d;
+            double discount = invoice.getDiscountAmount() != null
+                    ? invoice.getDiscountAmount().doubleValue()
+                    : 0d;
+            if (paid <= 0) {
+                return null;
+            }
+            // Only speak for the order when this log really is one SHARE of it.
+            //
+            // Two other shapes reach here and must keep quoting their own log, as
+            // they always have:
+            //   * a single-course invoice — one log, its amount IS the order;
+            //   * a legacy multi-package order, where every child log already
+            //     carries the whole order total (MultiPackageLearnerEnrollService
+            //     copies it onto each) and the invoice is priced from plan list
+            //     prices instead. Quoting the invoice there would report the
+            //     un-discounted sum as the amount paid.
+            // A parent/child order is the one case where the log holds strictly
+            // less than the order — which is exactly the test below.
+            double thisLog = paymentLog.getPaymentAmount() != null ? paymentLog.getPaymentAmount() : 0d;
+            if (invoiceResult.getPaymentLogCount() <= 1 || thisLog >= paid - 0.005) {
+                return null;
+            }
+            return new PaymentNotificatonService.OrderAmountSummary(
+                    paid + discount, discount, paid, invoiceResult.getPaymentLogCount());
+        } catch (Exception e) {
+            log.warn("Could not read order amounts from invoice for payment log {}: {}",
+                    paymentLog.getId(), e.getMessage());
+            return null;
+        }
+    }
+
     private void handlePostPaymentLogicForSyncPayment(PaymentLog paymentLog, String instituteId) {
         handlePaymentSuccessEntryCleanup(paymentLog, instituteId);
 
@@ -335,37 +442,75 @@ public class PaymentLogService {
 
         recordLedgerCreditForPlanPayment(paymentLog, instituteId);
 
-        // Single-transaction semantics: invoice generation failure propagates so
-        // the original cause is preserved end-to-end (see handlePostPaymentLogic
-        // for the full rationale). Swallowing here did not actually protect the
-        // payment — generateInvoice's @Transactional had already marked the
-        // outer transaction rollback-only.
         if (paymentLog.getPaymentAmount() != null && paymentLog.getPaymentAmount() > 0) {
-            // Honor the invoice-PDF-placement setting on the synchronous path too. Synchronous
-            // gateways (eWay, Stripe charge_automatically, etc.) confirm the payment in-request via
-            // the 4-arg updatePaymentLog and there is NO later webhook to send the confirmation —
-            // so in consolidated mode we suppress the separate invoice email and send the single
-            // payment-confirmation email (with the PDF attached) right here.
-            InvoicePdfPlacement pdfPlacement = invoiceService.getInvoicePdfPlacement(instituteId);
-            boolean attachInvoiceToConfirmation = pdfPlacement == InvoicePdfPlacement.PAYMENT_CONFIRMATION_EMAIL;
-            log.info("Generating invoice for payment log ID: {} (sync path, pdfPlacement={})",
-                    paymentLog.getId(), pdfPlacement);
-            InvoiceService.InvoiceGenerationResult invoiceResult = invoiceService.generateInvoiceWithResult(
-                    paymentLog.getUserPlan(),
-                    paymentLog,
-                    instituteId,
-                    /* sendEmail */ !attachInvoiceToConfirmation);
-            log.info("Invoice generated successfully for payment log ID: {}", paymentLog.getId());
+            scheduleSyncInvoiceAfterCommit(paymentLog, instituteId);
+        }
+    }
 
-            // Send the consolidated confirmation only on a freshly-generated invoice. A re-run for an
-            // already-invoiced payment log (or a later polling/webhook delivery) means the single
-            // email already went out — the webhook path's dedup guard relies on the same signal.
-            if (attachInvoiceToConfirmation && invoiceResult != null && !invoiceResult.isAlreadyExisted()) {
-                String invoiceNumber = invoiceResult.getInvoice() != null
-                        ? invoiceResult.getInvoice().getInvoiceNumber()
-                        : null;
-                sendSyncPaymentConfirmation(paymentLog, instituteId, invoiceResult.getPdfBytes(), invoiceNumber);
+    /**
+     * Invoice (and, in consolidated mode, the single payment-confirmation email carrying its PDF)
+     * for a synchronous gateway — eWay, Stripe charge_automatically — once the caller's
+     * transaction has COMMITTED.
+     *
+     * <p>This used to run inline, inside the enrolment transaction that created the payment log.
+     * InvoiceService saves the invoice in a REQUIRES_NEW transaction, which cannot see that still
+     * uncommitted log, so the {@code invoice_payment_log_mapping.payment_log_id} foreign key
+     * rejected the insert. The failure marked the shared transaction rollback-only; catching it in
+     * {@link #updatePaymentLog} did not clear that, and the commit then failed with "Transaction
+     * silently rolled back" — after the card had already been charged, with no payment, plan or
+     * invoice left behind. Running after commit makes the payment stand first; the worst case is
+     * now a recorded payment without an invoice, which can be regenerated. Same reasoning as
+     * {@link InvoiceService#generateInvoiceAfterCommit}.
+     *
+     * <p>Runs inline when no transaction is active, so a non-transactional caller still gets it.
+     */
+    void scheduleSyncInvoiceAfterCommit(PaymentLog paymentLog, String instituteId) {
+        // Honor the invoice-PDF-placement setting on the synchronous path too. Synchronous gateways
+        // confirm the payment in-request and there is NO later webhook to send the confirmation —
+        // so in consolidated mode the separate invoice email is suppressed and the single
+        // payment-confirmation email (with the PDF attached) is sent from here.
+        InvoicePdfPlacement pdfPlacement = invoiceService.getInvoicePdfPlacement(instituteId);
+        boolean attachInvoiceToConfirmation = pdfPlacement == InvoicePdfPlacement.PAYMENT_CONFIRMATION_EMAIL;
+        String paymentLogId = paymentLog.getId();
+        Runnable task = () -> {
+            try {
+                log.info("Generating invoice for payment log ID: {} (sync path, after commit, pdfPlacement={})",
+                        paymentLogId, pdfPlacement);
+                InvoiceService.InvoiceGenerationResult invoiceResult =
+                        invoiceService.generateInvoiceWithResultForCommittedPayment(
+                                paymentLogId, instituteId, /* sendEmail */ !attachInvoiceToConfirmation);
+                // Send the consolidated confirmation only on a freshly-generated invoice. A re-run
+                // for an already-invoiced payment log means the single email already went out —
+                // the webhook path's dedup guard relies on the same signal.
+                if (attachInvoiceToConfirmation && invoiceResult != null && !invoiceResult.isAlreadyExisted()) {
+                    String invoiceNumber = invoiceResult.getInvoice() != null
+                            ? invoiceResult.getInvoice().getInvoiceNumber()
+                            : null;
+                    // Its own transaction: after commit the caller's has ended, and the email reads
+                    // the plan / course through lazy relations of the reloaded log.
+                    TransactionTemplate tx = new TransactionTemplate(transactionManager);
+                    tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    tx.executeWithoutResult(status -> sendSyncPaymentConfirmation(
+                            paymentLogRepository.findById(paymentLogId).orElse(paymentLog),
+                            instituteId, invoiceResult.getPdfBytes(), invoiceNumber));
+                }
+            } catch (Exception e) {
+                // The payment is committed and must stand; the invoice can be regenerated.
+                log.error("Post-commit invoice/confirmation failed for payment log {}: {}",
+                        paymentLogId, e.getMessage(), e);
+                SentryLogger.logError(e, "Sync-path invoice generation failed after commit",
+                        Map.of("payment.log.id", paymentLogId, "operation", "scheduleSyncInvoiceAfterCommit"));
             }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    task.run();
+                }
+            });
+        } else {
+            task.run();
         }
     }
 
@@ -638,6 +783,17 @@ public class PaymentLogService {
      * Handles both PAID and FAILED statuses for ABANDONED_CART entry management.
      */
     private void handlePostPaymentLogic(PaymentLog paymentLog, String paymentStatus, String instituteId) {
+        // Live activity feed, recorded here rather than at the webhook layer.
+        //
+        // This method runs ONCE per genuine status transition: updatePaymentLogsByOrderId
+        // makes an atomic conditional claim in pass 1 and only calls this for logs that were
+        // not already in the target status. That matters because one payment produces
+        // several inbound signals -- Razorpay emits payment.captured AND order.paid, every
+        // provider retries on a non-2xx, /webhook/reprocess replays deliberately, and eWay
+        // polling runs on every replica because it has no @SchedulerLock. Hooking any of
+        // those would post the same payment two or more times. Do not move this upward.
+        recordPaymentLiveActivity(paymentLog, paymentStatus, instituteId);
+
         // Handle payment failure - create PAYMENT_FAILED entry
         if (PaymentStatusEnum.FAILED.name().equals(paymentStatus)) {
             log.info("Payment FAILED for log {}, handling failure flow", paymentLog.getId());
@@ -693,6 +849,10 @@ public class PaymentLogService {
             // invoice generation itself is (the mapping unique key is composite invoice_id+
             // payment_log_id, so concurrency safety would need an atomic guard — out of scope here).
             boolean invoiceAlreadyExisted = false;
+            // The ORDER's money, for the one confirmation email that goes out. A
+            // multi-course checkout fans out into a child log per course, so this log
+            // knows only its own share; the invoice covers the whole order.
+            PaymentNotificatonService.OrderAmountSummary orderAmounts = null;
             if (paymentLog.getPaymentAmount() != null && paymentLog.getPaymentAmount() > 0) {
                 log.info("Generating invoice for payment log ID: {} (pdfPlacement={})",
                         paymentLog.getId(), pdfPlacement);
@@ -710,8 +870,13 @@ public class PaymentLogService {
                             : null;
                     if (attachInvoiceToConfirmation) {
                         invoicePdfBytes = invoiceResult.getPdfBytes();
-                        invoiceAlreadyExisted = invoiceResult.isAlreadyExisted();
                     }
+                    // Captured whatever the placement is: it is the signal that THIS log's
+                    // order has already been confirmed to the learner, which is exactly as
+                    // true when the PDF travels in its own email. Without it, a four-course
+                    // order sent four confirmations under the default placement.
+                    invoiceAlreadyExisted = invoiceResult.isAlreadyExisted();
+                    orderAmounts = orderAmountsFrom(invoiceResult, paymentLog);
                 }
                 log.info("Invoice generated successfully for payment log ID: {}", paymentLog.getId());
             }
@@ -881,19 +1046,27 @@ public class PaymentLogService {
                 }
             }
 
-            // Consolidated-mode dedup: when the PDF rides on the confirmation email and the invoice
-            // was already present (duplicate/retried webhook), the single email was already sent on
-            // the first delivery — skip to avoid a second confirmation. Default-placement institutes
-            // (attachInvoiceToConfirmation == false) always send the confirmation, exactly as before.
-            if (attachInvoiceToConfirmation && invoiceAlreadyExisted) {
-                log.info("Skipping duplicate payment-confirmation email for payment log {} — invoice "
-                        + "already existed (retried/duplicate webhook); single email was already sent.",
+            // One confirmation per ORDER, whatever the PDF placement.
+            //
+            // The invoice's own idempotency is the signal: if this log's order was
+            // already invoiced, the email covering it has already gone out — either
+            // by a sibling course of the same multi-course order, or by an earlier
+            // delivery of a retried webhook. This used to be gated on the PDF riding
+            // along (attachInvoiceToConfirmation), so default-placement institutes
+            // still sent one confirmation per course — four for a four-subject order.
+            // A genuinely separate payment (a later installment) creates its own log
+            // and its own invoice, so it is unaffected.
+            if (invoiceAlreadyExisted) {
+                log.info("Skipping duplicate payment-confirmation email for payment log {} — its "
+                        + "order is already invoiced (sibling course, or retried webhook); the "
+                        + "single email covering the whole order was already sent.",
                         paymentLog.getId());
             } else {
                 UserDTO userDTO = authService.getUsersFromAuthServiceByUserIds(List.of(paymentLog.getUserId())).get(0);
                 paymentNotificatonService.sendPaymentConfirmationNotification(instituteId, paymentResponseDTO,
                         paymentInitiationRequestDTO, userDTO, invoicePdfBytes, invoiceNumber,
-                        invoiceService.resolveCourseDescription(paymentLog.getId()), paymentLog);
+                        invoiceService.resolveCourseDescription(paymentLog.getId()), paymentLog,
+                        orderAmounts);
             }
         }
     }
@@ -1075,12 +1248,13 @@ public class PaymentLogService {
     }
 
     /**
-     * Total billed / collected / due for an institute — the numbers an admin means by those words.
+     * Collected / due / upcoming for an institute — the numbers an admin means by those words.
      *
-     * Deliberately NOT derived from payment_log: that table only holds payments someone actually
-     * raised, so a part-paid instalment plan looks fully collected and an enrolment that never paid
-     * a rupee does not appear at all. Billing lives on the plan; see
-     * {@link UserPlanRepository#getBillingSummary}.
+     * Due is deliberately NOT derived from payment_log: that table only holds payments someone
+     * actually raised, so an overdue instalment nobody has paid does not appear in it at all. Nor
+     * is it plan price minus payments: that counted every abandoned checkout and every coupon
+     * discount as debt. Obligations live on the plan — see
+     * {@link UserPlanRepository#DUE_OBLIGATION_CTES} for exactly what counts.
      */
     public BillingSummaryResponseDTO getBillingSummary(BillingSummaryRequestDTO request) {
         if (!StringUtils.hasText(request.getInstituteId())) {
@@ -1100,21 +1274,89 @@ public class PaymentLogService {
                 endDate,
                 noPackageSessions,
                 // A native IN (...) needs a non-empty list even when the guard above skips it.
-                noPackageSessions ? List.of("__none__") : request.getPackageSessionIds());
+                noPackageSessions ? List.of("__none__") : request.getPackageSessionIds(),
+                upcomingDays);
 
         double collected = row != null && row.getCollected() != null ? row.getCollected() : 0d;
         double due = row != null && row.getDue() != null ? row.getDue() : 0d;
+        double upcoming = row != null && row.getUpcoming() != null ? row.getUpcoming() : 0d;
 
         return BillingSummaryResponseDTO.builder()
-                // Total is derived, never read back: the three cards must always reconcile.
+                // Total is derived, never read back: the cards must always reconcile.
                 .totalBilled(collected + due)
                 .collected(collected)
                 .due(due)
+                .upcoming(upcoming)
+                .upcomingDays(upcomingDays)
+                .learnersOwing(row != null && row.getLearnersOwing() != null ? row.getLearnersOwing() : 0L)
+                .learnersUpcoming(
+                        row != null && row.getLearnersUpcoming() != null ? row.getLearnersUpcoming() : 0L)
                 .planCount(row != null && row.getPlanCount() != null ? row.getPlanCount() : 0L)
-                .settledPlanCount(
-                        row != null && row.getSettledPlanCount() != null ? row.getSettledPlanCount() : 0L)
+                .instalmentPlanCount(
+                        row != null && row.getInstalmentPlanCount() != null ? row.getInstalmentPlanCount() : 0L)
+                .livePlanCount(row != null && row.getLivePlanCount() != null ? row.getLivePlanCount() : 0L)
+                .activatedWithoutPaymentCount(
+                        row != null && row.getActivatedWithoutPaymentCount() != null
+                                ? row.getActivatedWithoutPaymentCount()
+                                : 0L)
+                .outstanding(row != null && row.getOutstanding() != null ? row.getOutstanding() : 0d)
+                .learnersOutstanding(
+                        row != null && row.getLearnersOutstanding() != null ? row.getLearnersOutstanding() : 0L)
+                .upcomingAll(row != null && row.getUpcomingAll() != null ? row.getUpcomingAll() : 0d)
+                .learnersUpcomingAll(
+                        row != null && row.getLearnersUpcomingAll() != null ? row.getLearnersUpcomingAll() : 0L)
+                .nextDueDate(row != null ? row.getNextDueDate() : null)
+                .usesInstallments(row != null && Boolean.TRUE.equals(row.getUsesInstallments()))
                 .currency(row != null ? row.getCurrency() : null)
                 .build();
+    }
+
+    /**
+     * Every enrolment behind one learner's Due row, cancelled ones included and flagged.
+     *
+     * The Due list shows a learner as owing a single netted figure; without this an admin who
+     * cancelled somebody's plan had no way to confirm the cancellation was actually honoured. Rows
+     * with {@code countsTowardsDue = false} contribute 0 and say so.
+     */
+    public List<LearnerPlanBreakdownDTO> getLearnerPlanBreakdown(
+            BillingSummaryRequestDTO request, String userId) {
+        if (!StringUtils.hasText(request.getInstituteId())) {
+            throw new VacademyException("institute_id is required");
+        }
+        if (!StringUtils.hasText(userId)) {
+            throw new VacademyException("user_id is required");
+        }
+        // Same defaults as getOutstandingLearners, so an unfiltered sheet sees an unfiltered row.
+        LocalDateTime startDate = request.getStartDateInUtc() != null
+                ? request.getStartDateInUtc()
+                : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime endDate = request.getEndDateInUtc() != null
+                ? request.getEndDateInUtc()
+                : LocalDateTime.now();
+        List<String> packageSessionIds = request.getPackageSessionIds();
+        boolean noPackageSessions = packageSessionIds == null || packageSessionIds.isEmpty();
+        return userPlanRepository.findLearnerPlanBreakdown(
+                request.getInstituteId(), userId, startDate, endDate, noPackageSessions,
+                // Postgres rejects an empty IN list, so hand it a value that can never match.
+                noPackageSessions ? List.of("__none__") : packageSessionIds,
+                upcomingDays).stream()
+                .map(row -> {
+                    boolean counts = Boolean.TRUE.equals(row.getCountsTowardsDue());
+                    return LearnerPlanBreakdownDTO.builder()
+                            .userPlanId(row.getUserPlanId())
+                            .courseName(row.getCourseName())
+                            .planStatus(row.getPlanStatus())
+                            .paymentType(row.getPaymentType())
+                            .billed(row.getBilled() != null ? row.getBilled() : 0d)
+                            .paid(row.getPaid() != null ? row.getPaid() : 0d)
+                            // Already 0 for anything that cannot owe — the query applies the rule.
+                            .due(row.getDue() != null ? row.getDue() : 0d)
+                            .upcoming(row.getUpcoming() != null ? row.getUpcoming() : 0d)
+                            .countsTowardsDue(counts)
+                            .currency(row.getCurrency())
+                            .build();
+                })
+                .toList();
     }
 
     /**
@@ -1124,9 +1366,32 @@ public class PaymentLogService {
      */
     public Page<OutstandingLearnerDTO> getOutstandingLearners(
             BillingSummaryRequestDTO request, int pageNo, int pageSize) {
+        return getOutstandingLearners(request, pageNo, pageSize, false);
+    }
+
+    /**
+     * @param includeNotYetDue false: the Due list (something already overdue). true: the
+     *                         Outstanding list — anyone with a balance still to collect, soonest
+     *                         next installment first, with that installment's amount.
+     */
+    public Page<OutstandingLearnerDTO> getOutstandingLearners(
+            BillingSummaryRequestDTO request, int pageNo, int pageSize, boolean includeNotYetDue) {
+        return getOutstandingLearners(request, pageNo, pageSize, includeNotYetDue, null);
+    }
+
+    /**
+     * @param dueMonth optional yyyy-MM. When given, returns only the learners with something
+     *                 falling due in that month (one month of the instalment forecast), each with
+     *                 {@code monthAmount}; {@code includeNotYetDue} is then irrelevant. Blank keeps
+     *                 the Due / Outstanding lists exactly as they were.
+     */
+    public Page<OutstandingLearnerDTO> getOutstandingLearners(
+            BillingSummaryRequestDTO request, int pageNo, int pageSize, boolean includeNotYetDue,
+            String dueMonth) {
         if (!StringUtils.hasText(request.getInstituteId())) {
             throw new VacademyException("institute_id is required");
         }
+        YearMonth month = parseDueMonth(dueMonth);
         LocalDateTime startDate = request.getStartDateInUtc() != null
                 ? request.getStartDateInUtc()
                 : LocalDateTime.of(1970, 1, 1, 0, 0);
@@ -1135,13 +1400,27 @@ public class PaymentLogService {
                 : LocalDateTime.now();
         boolean noPackageSessions = CollectionUtils.isEmpty(request.getPackageSessionIds());
 
-        Page<OutstandingLearnerProjection> page = userPlanRepository.findOutstandingLearners(
-                request.getInstituteId(),
-                startDate,
-                endDate,
-                noPackageSessions,
-                noPackageSessions ? List.of("__none__") : request.getPackageSessionIds(),
-                PageRequest.of(pageNo, pageSize));
+        List<String> packageSessionIds = noPackageSessions ? List.of("__none__") : request.getPackageSessionIds();
+        String search = StringUtils.hasText(request.getSearchString()) ? request.getSearchString().trim() : "";
+        boolean noSearch = search.isEmpty();
+        String phoneDigits = phoneSearchDigits(search);
+        Page<? extends OutstandingLearnerProjection> page;
+        if (month != null) {
+            page = userPlanRepository.findLearnersDueInMonth(
+                    request.getInstituteId(), startDate, endDate, noPackageSessions,
+                    packageSessionIds, upcomingDays, month.atDay(1), month.plusMonths(1).atDay(1),
+                    noSearch, search, phoneDigits, PageRequest.of(pageNo, pageSize));
+        } else if (includeNotYetDue) {
+            page = userPlanRepository.findLearnersWithBalance(
+                    request.getInstituteId(), startDate, endDate, noPackageSessions,
+                    packageSessionIds, upcomingDays, noSearch, search, phoneDigits,
+                    PageRequest.of(pageNo, pageSize));
+        } else {
+            page = userPlanRepository.findOutstandingLearners(
+                    request.getInstituteId(), startDate, endDate, noPackageSessions,
+                    packageSessionIds, upcomingDays, noSearch, search, phoneDigits,
+                    PageRequest.of(pageNo, pageSize));
+        }
 
         // Names/emails/phones live in the auth service, so resolve the page's learners in one call
         // rather than per row.
@@ -1158,7 +1437,11 @@ public class PaymentLogService {
 
         List<OutstandingLearnerDTO> content = page.getContent().stream().map(row -> {
             UserDTO user = users.get(row.getUserId());
+            BalanceLearnerProjection balance = row instanceof BalanceLearnerProjection b ? b : null;
             return OutstandingLearnerDTO.builder()
+                    .outstanding(balance != null ? balance.getOutstanding() : null)
+                    .nextDueAmount(balance != null ? balance.getNextDueAmount() : null)
+                    .monthAmount(row instanceof MonthDueLearnerProjection m ? m.getMonthAmount() : null)
                     .userId(row.getUserId())
                     .fullName(user != null ? user.getFullName() : null)
                     .email(user != null ? user.getEmail() : null)
@@ -1169,6 +1452,7 @@ public class PaymentLogService {
                     .billed(row.getBilled() != null ? row.getBilled() : 0d)
                     .paid(row.getPaid() != null ? row.getPaid() : 0d)
                     .due(row.getDue() != null ? row.getDue() : 0d)
+                    .upcoming(row.getUpcoming() != null ? row.getUpcoming() : 0d)
                     .planCount(row.getPlanCount() != null ? row.getPlanCount() : 0L)
                     .pendingInstallments(
                             row.getPendingInstallments() != null ? row.getPendingInstallments() : 0L)
@@ -1180,11 +1464,115 @@ public class PaymentLogService {
         return new PageImpl<>(content, PageRequest.of(pageNo, pageSize), page.getTotalElements());
     }
 
-    public Page<PaymentLogWithUserPlanDTO> getPaymentLogsForInstitute(
-            PaymentLogFilterRequestDTO filterDTO,
-            int pageNo,
-            int pageSize) {
+    /** yyyy-MM, or null when blank. Anything else is a bad request, not "no filter". */
+    private static YearMonth parseDueMonth(String dueMonth) {
+        if (!StringUtils.hasText(dueMonth)) {
+            return null;
+        }
+        try {
+            return YearMonth.parse(dueMonth.trim());
+        } catch (DateTimeParseException e) {
+            throw new VacademyException("due_month must be yyyy-MM");
+        }
+    }
 
+    /**
+     * How far an institute's instalment plans have got, and when the rest comes in, month by month.
+     * Same window and course scope as {@link #getBillingSummary}, and built on the same obligation
+     * rules, so the months add up to its {@code upcomingAll}.
+     *
+     * Read-only and only asked for by instalment institutes; the Collected / Due / Upcoming figures
+     * and their lists are untouched by it.
+     */
+    public InstalmentForecastResponseDTO getInstalmentForecast(BillingSummaryRequestDTO request) {
+        if (!StringUtils.hasText(request.getInstituteId())) {
+            throw new VacademyException("institute_id is required");
+        }
+        LocalDateTime startDate = request.getStartDateInUtc() != null
+                ? request.getStartDateInUtc()
+                : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime endDate = request.getEndDateInUtc() != null
+                ? request.getEndDateInUtc()
+                : LocalDateTime.now();
+        boolean noPackageSessions = CollectionUtils.isEmpty(request.getPackageSessionIds());
+        List<String> packageSessionIds = noPackageSessions ? List.of("__none__") : request.getPackageSessionIds();
+
+        InstalmentProgressProjection progress = userPlanRepository.getInstalmentProgress(
+                request.getInstituteId(), startDate, endDate, noPackageSessions, packageSessionIds,
+                upcomingDays);
+        List<UpcomingMonthProjection> monthRows = userPlanRepository.getUpcomingByMonth(
+                request.getInstituteId(), startDate, endDate, noPackageSessions, packageSessionIds,
+                upcomingDays);
+
+        double overdue = progress != null && progress.getOverdue() != null ? progress.getOverdue() : 0d;
+        double outstanding = progress != null && progress.getOutstanding() != null ? progress.getOutstanding() : 0d;
+
+        List<InstalmentForecastResponseDTO.Month> months = monthRows.stream()
+                .map(row -> InstalmentForecastResponseDTO.Month.builder()
+                        .month(row.getMonthStart() != null ? YearMonth.from(row.getMonthStart()).toString() : null)
+                        .amount(row.getAmount() != null ? row.getAmount() : 0d)
+                        .learners(row.getLearners() != null ? row.getLearners() : 0L)
+                        .dues(row.getDues() != null ? row.getDues() : 0L)
+                        .firstDueOn(row.getFirstDueOn())
+                        .build())
+                .toList();
+
+        return InstalmentForecastResponseDTO.builder()
+                .instalmentBilled(progress != null && progress.getBilled() != null ? progress.getBilled() : 0d)
+                .instalmentPaid(progress != null && progress.getPaid() != null ? progress.getPaid() : 0d)
+                .instalmentOverdue(overdue)
+                .instalmentToCome(Math.max(outstanding - overdue, 0d))
+                .instalmentPlans(progress != null && progress.getPlans() != null ? progress.getPlans() : 0L)
+                .instalmentLearners(
+                        progress != null && progress.getLearners() != null ? progress.getLearners() : 0L)
+                .months(months)
+                .build();
+    }
+
+    /**
+     * Everything the combined payment query needs, resolved once from a filter set.
+     *
+     * <p>The list and the summary must see the same rows, so they read their bind values from
+     * here rather than each deriving them — a filter fixed in one place is fixed for both.</p>
+     */
+    private record ResolvedPaymentFilters(
+            String instituteId, LocalDateTime startDate, LocalDateTime endDate,
+            List<String> paymentStatusesBound, boolean noPaymentStatusFilter,
+            List<String> userPlanStatusesBound, boolean noUserPlanStatusFilter,
+            List<String> sourcesBound, boolean noSourceFilter,
+            List<String> enrollInviteIdsBound, boolean noEnrollInviteFilter,
+            List<String> packageSessionIdsBound, boolean noPackageSessionFilter,
+            String userId, boolean includeInvoiceLogs,
+            boolean noPaymentTypeFilter, boolean typeSubOrgAdmin, boolean typeSubOrgLearner,
+            boolean typeLiveClass, boolean typeCourse, boolean typeCpo,
+            boolean typeEnrollInvite, boolean typeUserInvoice,
+            boolean noSearchFilter, boolean noSearchUserIds,
+            List<String> searchUserIdsBound, boolean searchNumeric, String searchString,
+            String searchPhoneDigits,
+            List<String> paymentPlanNamesBound, boolean noPaymentPlanFilter,
+            boolean noBucketFilter, boolean bucketPaid, boolean bucketPending,
+            boolean bucketAbandoned, boolean bucketFailed) {
+    }
+
+    /**
+     * The digits of a search that reads as a phone number, for matching {@code student.mobile_number}
+     * whatever way either side is formatted — "+91 95886-97989" and "919588697989" are the same
+     * learner. Longer than ten digits keeps the last ten, so a country code on one side only still
+     * matches. Anything else (a name, an email, a short amount such as "500") returns "" and the
+     * phone match is skipped: a 3-digit fragment would pull in every learner whose number contains it.
+     */
+    static String phoneSearchDigits(String search) {
+        if (search == null || !search.matches("[+0-9()\\s-]+")) {
+            return "";
+        }
+        String digits = search.replaceAll("[^0-9]", "");
+        if (digits.length() < 5) {
+            return "";
+        }
+        return digits.length() > 10 ? digits.substring(digits.length() - 10) : digits;
+    }
+
+    private ResolvedPaymentFilters resolvePaymentFilters(PaymentLogFilterRequestDTO filterDTO) {
         validateFilter(filterDTO);
 
         List<String> paymentStatuses = safeList(filterDTO.getPaymentStatuses());
@@ -1231,8 +1619,17 @@ public class PaymentLogService {
         List<String> enrollInviteIdsBound = noEnrollInviteFilter ? SENTINEL : enrollInviteIds;
         List<String> packageSessionIdsBound = noPackageSessionFilter ? SENTINEL : packageSessionIds;
 
-        // Free-text search: resolve name/email/phone to a set of user IDs via the auth service, and
-        // match the amount directly on payment_log. A payment matches if its user OR amount matches.
+        // Free-text search: name/email/phone match the learner's student row inside the query, and
+        // also resolve through the auth service; the amount matches directly on payment_log. A
+        // payment matches if any of them does.
+        String statusBucket = StringUtils.hasText(filterDTO.getStatusBucket())
+                ? filterDTO.getStatusBucket().trim().toLowerCase()
+                : "total";
+        boolean noBucketFilter = "total".equals(statusBucket);
+
+        List<String> paymentPlanNames = safeList(filterDTO.getPaymentPlanNames());
+        boolean noPaymentPlanFilter = paymentPlanNames.isEmpty();
+
         String searchString = StringUtils.hasText(filterDTO.getSearchString())
                 ? filterDTO.getSearchString().trim()
                 : null;
@@ -1240,45 +1637,105 @@ public class PaymentLogService {
         List<String> searchUserIds = Collections.emptyList();
         boolean searchNumeric = false;
         if (!noSearchFilter) {
+            // The auth lookup only finds users holding a role in this institute. Learners loaded
+            // by a migration often hold none (I2CAN: 0 of 4,450 paying learners), so on its own
+            // it matched nobody -- the student-row match in the query is what finds them.
             searchUserIds = authService.searchUserIdsByQuery(searchString, filterDTO.getInstituteId());
             searchNumeric = searchString.matches("[0-9]+(\\.[0-9]+)?");
         }
         boolean noSearchUserIds = searchUserIds.isEmpty();
         List<String> searchUserIdsBound = noSearchUserIds ? SENTINEL : searchUserIds;
 
+        return new ResolvedPaymentFilters(
+                filterDTO.getInstituteId(), startDate, endDate,
+                paymentStatusesBound, noPaymentStatusFilter,
+                userPlanStatusesBound, noUserPlanStatusFilter,
+                sourcesBound, noSourceFilter,
+                enrollInviteIdsBound, noEnrollInviteFilter,
+                packageSessionIdsBound, noPackageSessionFilter,
+                userId, includeInvoiceLogs,
+                noPaymentTypeFilter, typeSubOrgAdmin, typeSubOrgLearner,
+                typeLiveClass, typeCourse, typeCpo,
+                typeEnrollInvite, typeUserInvoice,
+                noSearchFilter, noSearchUserIds,
+                searchUserIdsBound, searchNumeric, searchString,
+                phoneSearchDigits(searchString),
+                noPaymentPlanFilter ? List.of("") : paymentPlanNames, noPaymentPlanFilter,
+                noBucketFilter, "paid".equals(statusBucket), "pending".equals(statusBucket),
+                "abandoned".equals(statusBucket), "failed".equals(statusBucket));
+    }
+
+    /**
+     * Per-status counts and totals for every row the list would return under the same filters.
+     * Lets Manage Payments show tiles and tab counts for the whole set while the table itself
+     * fetches one page at a time.
+     */
+    public PaymentLogSummaryResponseDTO getPaymentLogSummary(PaymentLogFilterRequestDTO filterDTO) {
+        ResolvedPaymentFilters f = resolvePaymentFilters(filterDTO);
+        List<PaymentStatusTotalProjection> rows = paymentLogRepository.aggregateCombinedPaymentLogs(
+                f.instituteId(), f.startDate(), f.endDate(),
+                f.paymentStatusesBound(), f.noPaymentStatusFilter(),
+                f.userPlanStatusesBound(), f.noUserPlanStatusFilter(),
+                f.sourcesBound(), f.noSourceFilter(),
+                f.enrollInviteIdsBound(), f.noEnrollInviteFilter(),
+                f.packageSessionIdsBound(), f.noPackageSessionFilter(),
+                f.userId(), f.includeInvoiceLogs(), f.includeInvoiceLogs(),
+                f.noPaymentTypeFilter(), f.typeSubOrgAdmin(), f.typeSubOrgLearner(),
+                f.typeLiveClass(), f.typeCourse(), f.typeCpo(),
+                f.typeEnrollInvite(), f.typeUserInvoice(),
+                f.noSearchFilter(), f.noSearchUserIds(),
+                f.searchUserIdsBound(), f.searchNumeric(), f.searchString(), f.searchPhoneDigits(),
+                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(), abandonedAfterHours);
+
+        List<PaymentLogSummaryResponseDTO.StatusTotal> totals = rows.stream()
+                .map(r -> PaymentLogSummaryResponseDTO.StatusTotal.builder()
+                        .status(r.getStatus())
+                        .currency(r.getCurrency())
+                        .dueEligible(r.getDueEligible())
+                        .count(r.getRowCount())
+                        .amount(r.getTotalAmount() == null ? 0d : r.getTotalAmount())
+                        .build())
+                .collect(Collectors.toList());
+        return PaymentLogSummaryResponseDTO.builder()
+                // Cancelled/voided money was never collected and is no longer owed, so it sits in
+                // no tile — the headline totals leave it out too, exactly as the cards do.
+                .totalCount(totals.stream().filter(t -> !"CANCELLED".equals(t.getStatus()))
+                        .mapToLong(PaymentLogSummaryResponseDTO.StatusTotal::getCount).sum())
+                .totalAmount(totals.stream().filter(t -> !"CANCELLED".equals(t.getStatus()))
+                        .mapToDouble(PaymentLogSummaryResponseDTO.StatusTotal::getAmount).sum())
+                .statusTotals(totals)
+                // The plan picker lists every plan the institute has, not just the plans surviving
+                // the current filters — otherwise selecting one plan would empty the dropdown.
+                .paymentPlanNames(paymentLogRepository.findDistinctPaymentPlanNames(f.instituteId()))
+                .build();
+    }
+
+    public Page<PaymentLogWithUserPlanDTO> getPaymentLogsForInstitute(
+            PaymentLogFilterRequestDTO filterDTO,
+            int pageNo,
+            int pageSize) {
+
+        ResolvedPaymentFilters f = resolvePaymentFilters(filterDTO);
+
         // Use unsorted pageable — ORDER BY is hardcoded in the native query (created_at DESC)
         Pageable pageable = PageRequest.of(pageNo, pageSize);
 
         Page<CombinedPaymentRowProjection> idsPage = paymentLogRepository.findCombinedPaymentLogIdsPaginated(
-                filterDTO.getInstituteId(),
-                startDate,
-                endDate,
-                paymentStatusesBound,
-                noPaymentStatusFilter,
-                userPlanStatusesBound,
-                noUserPlanStatusFilter,
-                sourcesBound,
-                noSourceFilter,
-                enrollInviteIdsBound,
-                noEnrollInviteFilter,
-                packageSessionIdsBound,
-                noPackageSessionFilter,
-                userId,
-                includeInvoiceLogs,
-                includeInvoiceLogs,
-                noPaymentTypeFilter,
-                typeSubOrgAdmin,
-                typeSubOrgLearner,
-                typeLiveClass,
-                typeCourse,
-                typeCpo,
-                typeEnrollInvite,
-                typeUserInvoice,
-                noSearchFilter,
-                noSearchUserIds,
-                searchUserIdsBound,
-                searchNumeric,
-                searchString,
+                f.instituteId(), f.startDate(), f.endDate(),
+                f.paymentStatusesBound(), f.noPaymentStatusFilter(),
+                f.userPlanStatusesBound(), f.noUserPlanStatusFilter(),
+                f.sourcesBound(), f.noSourceFilter(),
+                f.enrollInviteIdsBound(), f.noEnrollInviteFilter(),
+                f.packageSessionIdsBound(), f.noPackageSessionFilter(),
+                f.userId(), f.includeInvoiceLogs(), f.includeInvoiceLogs(),
+                f.noPaymentTypeFilter(), f.typeSubOrgAdmin(), f.typeSubOrgLearner(),
+                f.typeLiveClass(), f.typeCourse(), f.typeCpo(),
+                f.typeEnrollInvite(), f.typeUserInvoice(),
+                f.noSearchFilter(), f.noSearchUserIds(),
+                f.searchUserIdsBound(), f.searchNumeric(), f.searchString(), f.searchPhoneDigits(),
+                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(), abandonedAfterHours,
+                f.noBucketFilter(), f.bucketPaid(), f.bucketPending(),
+                f.bucketAbandoned(), f.bucketFailed(),
                 pageable);
 
         List<CombinedPaymentRowProjection> rows = idsPage.getContent();
@@ -1313,6 +1770,9 @@ public class PaymentLogService {
         Map<String, PaymentLogWithUserPlanDTO> byRowId = new HashMap<>();
         paymentLogs.forEach(pl -> byRowId.put(pl.getId(), mapEntityToDTO(pl, userMap, instituteMap)));
         unpaidInvoices.forEach(inv -> byRowId.put(inv.getId(), mapUnpaidInvoiceToDTO(inv, userMap)));
+        if (Boolean.TRUE.equals(filterDTO.getIncludePlanDates())) {
+            attachPlanDates(byRowId.values());
+        }
 
         // Emit in the order the query established (created_at DESC across both arms).
         List<PaymentLogWithUserPlanDTO> content = rows.stream()
@@ -1321,6 +1781,49 @@ public class PaymentLogService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(content, pageable, idsPage.getTotalElements());
+    }
+
+    /**
+     * Fills the optional Enrollment Date / Next Due Date columns for one page of rows, with a single
+     * query over the page's plans ({@link UserPlanRepository#findPlanDates}). Only called when the
+     * request asks for them. The query runs in its own transaction ({@link PaymentPlanDatesLoader}),
+     * so a failure is logged and the page is returned without the two columns instead of failing
+     * the whole list. Unpaid invoice rows get their due date in {@link #mapUnpaidInvoiceToDTO}.
+     */
+    private void attachPlanDates(Collection<PaymentLogWithUserPlanDTO> rows) {
+        List<String> planIds = rows.stream()
+                .map(PaymentLogWithUserPlanDTO::getUserPlan)
+                .filter(Objects::nonNull)
+                .map(UserPlanDTO::getId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .collect(Collectors.toList());
+        if (planIds.isEmpty()) {
+            return;
+        }
+        Map<String, PaymentPlanDatesLoader.PlanDates> byPlan;
+        try {
+            byPlan = paymentPlanDatesLoader.load(planIds);
+        } catch (Exception e) {
+            log.warn("Could not load enrolment / next-due dates for the payment list: {}", e.getMessage());
+            return;
+        }
+        for (PaymentLogWithUserPlanDTO row : rows) {
+            if (row.getUserPlan() == null) continue;
+            PaymentPlanDatesLoader.PlanDates d = byPlan.get(row.getUserPlan().getId());
+            if (d == null) continue;
+            row.setEnrolledDate(d.enrolledDate());
+            if (d.nextInstalmentDue() != null) {
+                row.setNextDueOn(d.nextInstalmentDue().toString());
+            } else if (d.renewalDue() != null) {
+                row.setNextDueOn(utcInstant(d.renewalDue()));
+            }
+        }
+    }
+
+    /** A stored UTC timestamp as an ISO instant, so the client can show it in the admin's zone. */
+    private static String utcInstant(LocalDateTime utc) {
+        return utc.atOffset(java.time.ZoneOffset.UTC).toInstant().toString();
     }
 
     // -------------------- Helper Methods --------------------
@@ -1410,6 +1913,11 @@ public class PaymentLogService {
                 .userPlan(null)
                 .currentPaymentStatus(voided ? "CANCELLED" : "NOT_INITIATED")
                 .user(userMap.get(invoice.getUserId()))
+                // Still owed unless voided (or somehow already paid). The UTC calendar day, exactly
+                // as the Due tab reads an invoice's due date.
+                .nextDueOn(voided || "PAID".equalsIgnoreCase(invoice.getStatus()) || invoice.getDueDate() == null
+                        ? null
+                        : invoice.getDueDate().toLocalDate().toString())
                 .invoice(PaymentLogInvoiceDTO.builder()
                         .paymentLogId(invoice.getId())
                         .invoiceId(invoice.getId())
@@ -1503,7 +2011,8 @@ public class PaymentLogService {
                     .enrollInvite(null)
                     .paymentOption(paymentOptionDTO)
                     .paymentPlanDTO(paymentPlanDTO)
-                    .enrollInvite(userPlan.getEnrollInvite().toEnrollInviteDTO())
+                    .enrollInvite(
+                            userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().toEnrollInviteDTO() : null)
                     .build();
         }
 
@@ -1531,6 +2040,13 @@ public class PaymentLogService {
             return PaymentStatusEnum.PAID.name();
         }
 
+        // An admin voided this payment (PaymentVoidService). The listing already has a status for
+        // "shown struck through, counted in no total" — the one a voided invoice row uses — so
+        // report it the same way rather than inventing a second one every screen must learn.
+        if (PaymentVoidService.VOIDED.equals(paymentLog.getPaymentStatus())) {
+            return "CANCELLED";
+        }
+
         if (PaymentStatusEnum.FAILED.name().equals(paymentLog.getPaymentStatus()) && paymentLog.getUserPlan() != null) {
             UserPlan userPlan = paymentLog.getUserPlan();
             if (userPlan.getEnrollInviteId() != null && userPlan.getUserId() != null) {
@@ -1546,6 +2062,15 @@ public class PaymentLogService {
                 }
             }
             return PaymentStatusEnum.FAILED.name();
+        }
+
+        // A checkout that was opened and never finished. Gateway orders expire within a day, so
+        // a PAYMENT_PENDING row older than the threshold cannot still complete — it is an
+        // abandoned cart, and must not be shown as a payment in progress or as money owed.
+        if (PaymentStatusEnum.PAYMENT_PENDING.name().equals(paymentLog.getPaymentStatus())
+                && paymentLog.getCreatedAt() != null
+                && paymentLog.getCreatedAt().plusHours(abandonedAfterHours).isBefore(LocalDateTime.now())) {
+            return ABANDONED_PAYMENT_STATUS;
         }
 
         return paymentLog.getPaymentStatus();
@@ -1862,5 +2387,49 @@ public class PaymentLogService {
         }
         return TrialStartResolver.label(
                 TrialStartResolver.nextStart(day, TrialStartResolver.zoneFromInvite(settingJson)));
+    }
+
+    /**
+     * Mirror a payment outcome onto the live activity feed. Best-effort and never throws --
+     * money must not fail because a feed row could not be written.
+     */
+    private void recordPaymentLiveActivity(PaymentLog paymentLog, String paymentStatus, String instituteId) {
+        try {
+            LiveActivityAction action;
+            if (PaymentStatusEnum.PAID.name().equals(paymentStatus)) {
+                action = LiveActivityAction.PAYMENT_SUCCEEDED;
+            } else if (PaymentStatusEnum.FAILED.name().equals(paymentStatus)) {
+                action = LiveActivityAction.PAYMENT_FAILED;
+            } else {
+                // PAYMENT_PENDING is not an outcome anyone can act on from a feed.
+                return;
+            }
+
+            Map<String, Object> payload = new HashMap<>();
+            if (paymentLog.getPaymentAmount() != null) {
+                payload.put("amount", paymentLog.getPaymentAmount());
+            }
+            if (paymentLog.getCurrency() != null) {
+                payload.put("currency", paymentLog.getCurrency());
+            }
+            if (paymentLog.getVendor() != null) {
+                payload.put("vendor", paymentLog.getVendor());
+            }
+
+            liveActivityRecorder.recordAfterCommit(LiveActivityEvent.builder()
+                    .instituteId(instituteId)
+                    .occurredAtEpochMillis(System.currentTimeMillis())
+                    .category(LiveActivityCategory.PAYMENT)
+                    .action(action)
+                    .actorType(LiveActivityActorType.LEARNER)
+                    .dedupeKey(LiveActivityDedupeKeys.forPayment(paymentLog.getId(), paymentStatus))
+                    .subjectId(paymentLog.getUserId())
+                    .entityId(paymentLog.getId())
+                    .payload(payload)
+                    .build());
+        } catch (Exception e) {
+            log.warn("Failed to record live activity for payment log {}: {}",
+                    paymentLog.getId(), e.getMessage());
+        }
     }
 }

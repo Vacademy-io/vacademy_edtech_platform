@@ -17,6 +17,7 @@ import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.requ
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.*;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.Section;
+import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.enums.AssessmentModeEnum;
 import vacademy.io.assessment_service.features.assessment.enums.AssessmentStatus;
 import vacademy.io.assessment_service.features.assessment.enums.AssessmentVisibility;
@@ -37,7 +38,9 @@ import vacademy.io.common.exceptions.VacademyException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static vacademy.io.common.core.standard_classes.ListService.createSortObject;
+import vacademy.io.assessment_service.features.assessment.sort.StableSort;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockGuard;
 
 @Slf4j
 @Component
@@ -48,6 +51,10 @@ public class AdminAssessmentGetManager {
 
     @Autowired
     StudentAttemptRepository studentAttemptRepository;
+
+    /** Finalized-result lock for partner-API exams (gate G8). */
+    @Autowired(required = false)
+    ResultLockGuard resultLockGuard;
 
     @Autowired
     AssessmentLinkQuestionsManager assessmentLinkQuestionsManager;
@@ -74,9 +81,43 @@ public class AdminAssessmentGetManager {
         return ResponseEntity.ok(assessmentAdminListInitDto);
     }
 
+    // Unique per row, so two exams sharing a start date (a whole day's papers usually do)
+    // keep a stable relative order across pages. Bare column name on purpose: Spring Data
+    // prefixes an unrecognised sort property with the query's detected alias, which here
+    // is the assessment table itself -- "id" becomes "a.id". An already-qualified "a.id"
+    // would become "a.a.id".
+    private static final String ASSESSMENT_LIST_TIE_BREAKER = "id";
+
+    /**
+     * Default order per tab, keyed off the same flags that decide which tab this is.
+     * Direction follows what the tab is for: the next exam matters most when looking
+     * forward, the latest one when looking back.
+     *
+     * <p>{@code bound_start_time} is safe to sort every tab by, drafts included — it is
+     * NOT NULL in practice (0 of 2,375 live rows are null), so there is no null bucket to
+     * reason about.
+     */
+    private static Sort defaultAssessmentListSort(AdminAssessmentFilter filter) {
+        boolean upcoming = Boolean.TRUE.equals(filter.getGetUpcomingAssessments());
+        return upcoming
+                // Soonest first — the exam about to happen is the one an admin needs.
+                ? Sort.by(Sort.Order.asc("bound_start_time"))
+                // Live and past (and drafts, which set none of the flags): most recent
+                // first, so the paper just run — or about to be run — is at the top.
+                : Sort.by(Sort.Order.desc("bound_start_time"));
+    }
+
     public ResponseEntity<AllAdminAssessmentResponse> assessmentAdminListFilter(CustomUserDetails user, AdminAssessmentFilter adminAssessmentFilter, String instituteId, int pageNo, int pageSize) {
-        // Create a sorting object based on the provided sort columns
-        Sort thisSort = createSortObject(adminAssessmentFilter.getSortColumns());
+        // Order by when the exam actually RUNS, not when it was created. The admin list
+        // sends no sort_columns at all, which used to leave the Pageable unsorted; the
+        // query has no ORDER BY of its own, so Postgres returned heap order. On a
+        // mostly-append-only table that looks like creation order, which diverges from the
+        // schedule as soon as an admin sets a paper up in advance (prod has exams created
+        // in June that run in August, and they sorted into their June slot).
+        Sort thisSort = StableSort.withStableOrder(
+                adminAssessmentFilter.getSortColumns(),
+                defaultAssessmentListSort(adminAssessmentFilter),
+                ASSESSMENT_LIST_TIE_BREAKER);
         Page<Object[]> assessmentsPage;
         //TODO: Check user permission
 
@@ -85,7 +126,7 @@ public class AdminAssessmentGetManager {
 
         makeFilterFieldEmptyArrayIfNull(adminAssessmentFilter);
 
-        assessmentsPage = assessmentRepository.filterAssessments(adminAssessmentFilter.getName(), adminAssessmentFilter.getBatchIds().isEmpty() ? null : true, adminAssessmentFilter.getBatchIds(), adminAssessmentFilter.getSubjectsIds().isEmpty() ? null : true, adminAssessmentFilter.getSubjectsIds(), adminAssessmentFilter.getAssessmentStatuses(), adminAssessmentFilter.getGetLiveAssessments(), adminAssessmentFilter.getGetPassedAssessments(), adminAssessmentFilter.getGetUpcomingAssessments(), adminAssessmentFilter.getAssessmentModes(), adminAssessmentFilter.getAccessStatuses(), adminAssessmentFilter.getInstituteIds(), adminAssessmentFilter.getEvaluationTypes(), adminAssessmentFilter.getAssessmentTypes(), pageable);
+        assessmentsPage = assessmentRepository.filterAssessments(adminAssessmentFilter.getName(), adminAssessmentFilter.getBatchIds().isEmpty() ? null : true, adminAssessmentFilter.getBatchIds(), adminAssessmentFilter.getSubjectsIds().isEmpty() ? null : true, adminAssessmentFilter.getSubjectsIds(), adminAssessmentFilter.getAssessmentStatuses(), adminAssessmentFilter.getGetLiveAssessments(), adminAssessmentFilter.getGetPassedAssessments(), adminAssessmentFilter.getGetUpcomingAssessments(), adminAssessmentFilter.getAssessmentModes(), adminAssessmentFilter.getAccessStatuses(), adminAssessmentFilter.getInstituteIds(), adminAssessmentFilter.getEvaluationTypes(), adminAssessmentFilter.getAssessmentTypes(), adminAssessmentFilter.getSources().isEmpty() ? null : true, adminAssessmentFilter.getSources(), blankToNull(adminAssessmentFilter.getFolderId()), Boolean.TRUE.equals(adminAssessmentFilter.getUnfiledOnly()) ? true : null, pageable);
         List<AdminBasicAssessmentListItemDto> content = assessmentsPage.stream().map(AssessmentMapper::toDto).collect(Collectors.toList());
         int queryPageNo = assessmentsPage.getNumber();
         int queryPageSize = assessmentsPage.getSize();
@@ -95,6 +136,10 @@ public class AdminAssessmentGetManager {
         AllAdminAssessmentResponse response = AllAdminAssessmentResponse.builder().content(content).pageNo(queryPageNo).pageSize(queryPageSize).totalElements(totalElements).totalPages(totalPages).last(last).build();
 
         return ResponseEntity.ok(response);
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private void makeFilterFieldEmptyArrayIfNull(AdminAssessmentFilter adminAssessmentFilter) {
@@ -111,11 +156,20 @@ public class AdminAssessmentGetManager {
         if (adminAssessmentFilter.getEvaluationTypes() == null) {
             adminAssessmentFilter.setEvaluationTypes(new ArrayList<>());
         }
+        if (adminAssessmentFilter.getSources() == null) {
+            adminAssessmentFilter.setSources(new ArrayList<>());
+        } else {
+            // Values are matched exactly in SQL (API / DASHBOARD); accept any case.
+            adminAssessmentFilter.setSources(adminAssessmentFilter.getSources().stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(v -> v.trim().toUpperCase(java.util.Locale.ROOT))
+                    .toList());
+        }
     }
 
     public ResponseEntity<LeaderBoardResponse> getLeaderBoard(CustomUserDetails user, String assessmentId, LeaderboardFilter filter, String instituteId, int pageNo, int pageSize) {
         if (Objects.isNull(filter)) throw new VacademyException("Invalid Request");
-        Sort sortColumn = createSortObject(filter.getSortColumns());
+        Sort sortColumn = ListService.createSortObject(filter.getSortColumns());
 
         Pageable pageable = PageRequest.of(pageNo, pageSize, sortColumn);
         Page<LeaderBoardDto> paginatedLeaderboard = null;
@@ -250,11 +304,11 @@ public class AdminAssessmentGetManager {
 
         Page<StudentReportDto> studentReportDtoPage = null;
         if (StringUtils.hasText(filter.getName())) {
-            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(filter.getName(), studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), pageable);
+            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(false, filter.getName(), studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), pageable);
 
         }
         if (Objects.isNull(studentReportDtoPage)) {
-            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilter(studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), pageable);
+            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilter(false, studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), pageable);
         }
 
         return ResponseEntity.ok(createReportResponse(studentReportDtoPage));
@@ -288,6 +342,8 @@ public class AdminAssessmentGetManager {
         Assessment assessment = assessmentRepository.findById(assessmentId)
                 .orElseThrow(() -> new VacademyException("Assessment Not Found"));
 
+        requireNoFinalizedAttemptsForApiExam(assessment, methodType, request);
+
         return switch (RevaluateRequestEnum.valueOf(methodType)) {
             case ENTIRE_ASSESSMENT -> revaluateForAllParticipants(assessment, instituteId);
             case ENTIRE_ASSESSMENT_PARTICIPANTS ->
@@ -298,6 +354,29 @@ public class AdminAssessmentGetManager {
         };
     }
 
+
+    /**
+     * Revaluation rewrites marks. On a partner-API exam a released result is finalized and
+     * must be unfinalized first (gate G8): refuse when any targeted attempt is released.
+     * Dashboard exams are unaffected.
+     */
+    private void requireNoFinalizedAttemptsForApiExam(Assessment assessment, String methodType,
+            RevaluateRequest request) {
+        if (resultLockGuard == null || !ApiCandidatePolicy.isApiExam(assessment)) {
+            return;
+        }
+        List<StudentAttempt> targeted;
+        if (RevaluateRequestEnum.ENTIRE_ASSESSMENT.name().equals(methodType)) {
+            targeted = studentAttemptRepository.findAllParticipantsFromAssessmentAndStatusNotIn(
+                    assessment.getId(), List.of("DELETED"));
+        } else if (request != null && request.getAttemptIds() != null) {
+            targeted = new ArrayList<>();
+            studentAttemptRepository.findAllById(request.getAttemptIds()).forEach(targeted::add);
+        } else {
+            return;
+        }
+        resultLockGuard.requireNoneFinalizedForApiExam(assessment, targeted);
+    }
 
     private ResponseEntity<String> revaluateAssessmentForParticipantsAndQuestions(Assessment assessment, RevaluateRequest request, String instituteId) {
         if (Objects.isNull(request) || Objects.isNull(request.getAttemptIds()) || Objects.isNull(request.getQuestions()))

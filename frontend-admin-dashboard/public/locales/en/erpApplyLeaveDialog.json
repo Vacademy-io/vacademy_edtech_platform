@@ -1,0 +1,33 @@
+{
+    "heading": "Apply for leave",
+    "cancel": "Cancel",
+    "sendApplication": "Send application",
+    "sending": "Sending…",
+    "submitSuccessToast": "Leave applied for — your approver has it now",
+    "submitErrorFallback": "Could not send your leave application.",
+    "kindOfLeaveLabel": "Kind of leave",
+    "loadingTypes": "Loading the leave types your institute offers…",
+    "noTypesConfigured": "Your institute has not set up any leave types yet, so there is nothing to apply for. Ask your HR team.",
+    "defaultLeaveTypeLabel": "Leave",
+    "defaultLeaveTypeName": "this leave",
+    "balanceHint_one": "You have {{value}} day of {{typeName}} left. Your balance is checked again when someone approves this.",
+    "balanceHint_other": "You have {{value}} days of {{typeName}} left. Your balance is checked again when someone approves this.",
+    "firstDayLabel": "First day",
+    "lastDayLabel": "Last day",
+    "halfDayCheckboxLabel": "This is only half a day",
+    "whichHalfLabel": "Which half are you taking off?",
+    "firstHalfLabel": "First half (morning)",
+    "secondHalfLabel": "Second half (afternoon)",
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "Anything your approver should know",
+    "reasonDescription": "Optional, but it tends to get answered faster.",
+    "infoNote": "Your application goes to your approver as Pending. The days only leave your balance once it is approved, and you can cancel it before then.",
+    "validation": {
+        "leaveTypeRequired": "Pick the kind of leave you want",
+        "fromDateRequired": "Pick the first day",
+        "toDateRequired": "Pick the last day",
+        "reasonTooLong": "Keep the reason under 500 characters",
+        "toBeforeFrom": "The last day cannot be before the first day",
+        "halfDaySameDate": "A half day covers one date — set both days the same"
+    }
+}

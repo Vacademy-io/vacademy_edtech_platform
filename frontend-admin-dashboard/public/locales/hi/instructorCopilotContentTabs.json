@@ -1,0 +1,87 @@
+{
+    "summaryView": {
+        "overview": "अवलोकन",
+        "keyTakeaways": "मुख्य बिंदु"
+    },
+    "flashcardsView": {
+        "questionLabel": "प्रश्न",
+        "answerLabel": "उत्तर",
+        "clickToFlip": "पलटने के लिए क्लिक करें",
+        "previous": "पिछला",
+        "next": "अगला",
+        "cardCounter": "कार्ड {{current}} / {{total}}"
+    },
+    "classworkView": {
+        "emptyState": "कोई कक्षा-कार्य नहीं दिया गया"
+    },
+    "homeworkView": {
+        "emptyState": "कोई गृहकार्य नहीं दिया गया"
+    },
+    "toasts": {
+        "instituteDetailsUnavailable": "संस्थान का विवरण उपलब्ध नहीं है",
+        "quizGenerationStarted": "क्विज़ बनना शुरू हो गया! परिणाम की प्रतीक्षा की जा रही है...",
+        "quizGeneratedSuccess": "क्विज़ सफलतापूर्वक बन गई!",
+        "quizSavedFailed": "क्विज़ बन गई लेकिन लॉग में सहेजी नहीं जा सकी",
+        "quizTimedOut": "क्विज़ बनने में समय सीमा समाप्त हो गई",
+        "quizGenerationFailedPoll": "क्विज़ बनाने में विफल",
+        "quizGenerationFailedStart": "क्विज़ बनाना शुरू करने में विफल",
+        "noNotesAvailable": "डाउनलोड करने के लिए कोई नोट्स उपलब्ध नहीं हैं",
+        "notesDownloadSuccess": "नोट्स PDF सफलतापूर्वक डाउनलोड हो गई!",
+        "notesDownloadFailed": "नोट्स PDF बनाने में विफल",
+        "noSummaryAvailable": "डाउनलोड करने के लिए कोई सारांश उपलब्ध नहीं है",
+        "summaryDownloadSuccess": "सारांश PDF सफलतापूर्वक डाउनलोड हो गई!",
+        "summaryDownloadFailed": "सारांश PDF बनाने में विफल",
+        "noQuizAvailable": "डाउनलोड करने के लिए कोई क्विज़ उपलब्ध नहीं है",
+        "noClassworkAvailable": "डाउनलोड करने के लिए कोई कक्षा-कार्य उपलब्ध नहीं है",
+        "classworkDownloadSuccess": "कक्षा-कार्य PDF सफलतापूर्वक डाउनलोड हो गई!",
+        "classworkDownloadFailed": "कक्षा-कार्य PDF बनाने में विफल",
+        "noHomeworkAvailable": "डाउनलोड करने के लिए कोई गृहकार्य उपलब्ध नहीं है",
+        "homeworkDownloadSuccess": "गृहकार्य PDF सफलतापूर्वक डाउनलोड हो गई!",
+        "homeworkDownloadFailed": "गृहकार्य PDF बनाने में विफल",
+        "generatingPlaceholder": "{{label}} बनाया जा रहा है... (TODO)"
+    },
+    "tabs": {
+        "transcription": {
+            "label": "ट्रांसक्रिप्शन",
+            "description": "ऑडियो का पूरा लिखित रूपांतरण"
+        },
+        "notes": {
+            "label": "नोट्स",
+            "description": "सामग्री से बने संरचित नोट्स"
+        },
+        "summary": {
+            "label": "सारांश",
+            "description": "मुख्य बिंदुओं का AI-जनित सारांश"
+        },
+        "flashcards": {
+            "label": "फ्लैशकार्ड्स",
+            "description": "अध्ययन फ्लैशकार्ड्स"
+        },
+        "quiz": {
+            "label": "क्विज़",
+            "description": "स्वचालित रूप से बने क्विज़ प्रश्न"
+        },
+        "slides": {
+            "label": "स्लाइड्स",
+            "description": "प्रस्तुति स्लाइड्स की रूपरेखा"
+        },
+        "videos": {
+            "label": "वीडियो आइडिया",
+            "description": "वीडियो सामग्री के सुझाव"
+        },
+        "homework": {
+            "label": "गृहकार्य",
+            "description": "गृहकार्य असाइनमेंट के विचार"
+        },
+        "classwork": {
+            "label": "कक्षा-कार्य",
+            "description": "कक्षा में की जाने वाली गतिविधियों के विचार"
+        }
+    },
+    "emptyState": {
+        "title": "अभी तक कोई {{label}} नहीं बना",
+        "hint": "यहाँ सामग्री देखने के लिए अपने ट्रांसक्रिप्शन से {{label}} बनाएँ।",
+        "generateButton": "{{label}} बनाएँ"
+    },
+    "downloadButton": "PDF डाउनलोड करें"
+}

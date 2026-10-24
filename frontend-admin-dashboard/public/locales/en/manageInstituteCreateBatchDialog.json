@@ -1,0 +1,45 @@
+{
+    "trigger": {
+        "createBatch": "Create {{term}}"
+    },
+    "toast": {
+        "studyMaterialCopiedSuccess": "Study material copied successfully",
+        "studyMaterialCopyFailed": "Failed to copy study material",
+        "batchCreatedSuccess": "Batch created successfully",
+        "batchCreateFailed": "Failed to create batch"
+    },
+    "button": {
+        "back": "Back",
+        "nextStep": "Next Step",
+        "cancel": "Cancel",
+        "close": "Close",
+        "creating": "Creating…"
+    },
+    "step": {
+        "selectTerm": "Select {{term}}",
+        "review": "Review & Create"
+    },
+    "dialog": {
+        "heading": "Create {{batchTerm}} - Step {{step}}: {{title}}",
+        "title": "Create {{batchTerm}}",
+        "subtitle": "Set up a new {{batchTerm}} for your learners in a few simple steps."
+    },
+    "review": {
+        "title": "Review & Create",
+        "subtitle": "Check the details below, then create the batch.",
+        "new": "New",
+        "startsOn": "Starts {{date}}",
+        "duration_one": "{{count}} day",
+        "duration_other": "{{count}} days",
+        "copyFrom": "Copy study material from",
+        "inviteNote": "An invite link is created with the batch, so you can start enrolling right away.",
+        "batchName": "{{batchTerm}} name",
+        "batchNameHint": "Optional. Leave it blank to show the level and course name.",
+        "defaultValue": "Default"
+    },
+    "validation": {
+        "createCourseFirst": "Create the course first — it is picked here once saved.",
+        "sessionDetails": "Enter a name and a start date for the new session.",
+        "levelName": "Enter a name for the new level."
+    }
+}

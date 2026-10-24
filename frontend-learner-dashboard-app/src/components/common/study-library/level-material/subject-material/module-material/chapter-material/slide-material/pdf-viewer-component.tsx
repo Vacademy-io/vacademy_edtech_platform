@@ -21,6 +21,7 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/page-navigation/lib/styles/index.css";
 import "@react-pdf-viewer/full-screen/lib/styles/index.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
 import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
 
@@ -39,6 +40,7 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
   handlePageChange,
   initialPage = 0
 }, ref) => {
+  const { t } = useTranslation("libraryCommonB");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerHeight, setContainerHeight] = useState<string | undefined>(undefined);
 
@@ -150,7 +152,7 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
   }, []);
 
   return (
-    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+    <Worker workerUrl="/pdfjs/3.11.174/pdf.worker.min.js">
       <div
         ref={containerRef}
         className="w-full max-w-full mx-0 px-0 overflow-y-scroll overflow-x-hidden custom-scrollbar"
@@ -184,7 +186,7 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
-            Loading…
+            {t("pdfViewer.loading")}
           </div>
         )}
       </div>

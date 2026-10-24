@@ -78,6 +78,15 @@ public class IssuedCertificate {
     @Column(name = "short_code", length = 16)
     private String shortCode;
 
+    /**
+     * Which kind of certificate this is — {@code COURSE_COMPLETION} (the default, and what every
+     * row before the column existed is) or {@code SUB_ORG_AFFILIATION}. Lets one learner hold a
+     * course certificate and, as a partner admin, an affiliation certificate on the same batch
+     * without the two sharing a number.
+     */
+    @Column(name = "certificate_type")
+    private String certificateType;
+
     // Captures the exact HTML used so the same PDF can be reproduced even after
     // the institute edits its template later.
     @Column(name = "template_html_snapshot", columnDefinition = "TEXT")

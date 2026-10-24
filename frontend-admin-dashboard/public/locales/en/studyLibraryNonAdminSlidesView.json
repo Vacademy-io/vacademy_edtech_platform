@@ -1,0 +1,6 @@
+{
+    "switchToInstructorView": "Switch to Instructor View",
+    "switchToLearnerView": "Switch to Learner View",
+    "readOnlyCourseBanner": "This course is {{status}}. You can only view content and answer doubts.",
+    "unsavedChangesBanner": "You have unsaved changes in \"{{slideTitle}}\". Don't forget to save before switching slides."
+}

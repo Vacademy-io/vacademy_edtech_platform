@@ -51,6 +51,8 @@ type DocViewerComponentProps = {
   // Interactive-result reporting from a creative HTML slide (quiz/game).
   onSlideProgress?: (percent: number) => void;
   onSlideComplete?: (result: import("./html-slide-iframe").SlideResult) => void;
+  // Slide id: lets a creative HTML lesson save its own state via SCORM.
+  scormSlideId?: string;
 };
 
 const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerComponentProps>(({
@@ -61,7 +63,8 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
   isHtml = false,
   creativeHtml = false,
   onSlideProgress,
-  onSlideComplete
+  onSlideComplete,
+  scormSlideId
 }, ref) => {
   const { t } = useTranslation("studyContent");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -296,7 +299,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
 
   if (error) {
     return (
-      <div className="flex h-reg-600 items-center justify-center bg-gradient-to-br from-red-50 to-red-100 rounded-2xl border border-red-200 shadow-lg">
+      <div className="flex h-reg-600 items-center justify-center bg-gradient-to-br from-danger-50 to-danger-100 rounded-2xl border border-red-200 shadow-lg">
         <div className="text-center p-8 max-w-md">
           <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,7 +318,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
 
   if (isLoading) {
     return (
-      <div className="flex h-reg-600 items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl border border-blue-200 shadow-lg">
+      <div className="flex h-reg-600 items-center justify-center bg-gradient-to-br from-info-50 to-indigo-100 rounded-2xl border border-blue-200 shadow-lg">
         <div className="text-center p-8">
           <div className="relative w-16 h-16 mx-auto mb-6">
             <div className="absolute inset-0 border-4 border-blue-200 rounded-full animate-pulse"></div>
@@ -329,7 +332,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
           <h3 className="text-xl font-semibold text-blue-900 mb-2">{t("docViewer.processingTitle")}</h3>
           <p className="text-blue-700">{t("docViewer.processingBody")}</p>
           <div className="mt-4 w-32 h-1 bg-blue-200 rounded-full mx-auto overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
+            <div className="h-full bg-gradient-to-r from-info-500 to-indigo-600 rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -344,6 +347,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
           onLoad={() => handleDocumentLoadRef.current?.()}
           onProgress={onSlideProgress}
           onComplete={onSlideComplete}
+          scormSlideId={scormSlideId}
         />
       ) : isHtml ? (
         <div className="p-4 sm:p-6 lg:p-8 xl:p-12 markdown-content">
@@ -363,7 +367,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
                 components={{
                   // Enhanced heading styles with better typography
                   h1: ({children}) => (
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 lg:mb-8 text-gray-900 border-b-2 border-gradient-to-r from-blue-500 to-indigo-600 pb-2 sm:pb-3 lg:pb-4 leading-tight">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 lg:mb-8 text-gray-900 border-b-2 border-gradient-to-r from-info-500 to-indigo-600 pb-2 sm:pb-3 lg:pb-4 leading-tight">
                       {children}
                     </h1>
                   ),
@@ -448,7 +452,7 @@ const DocViewerComponentInner = forwardRef<DocViewerComponentRef, DocViewerCompo
                   
                   // Enhanced blockquote styling
                   blockquote: ({children}) => (
-                    <blockquote className="relative border-s-4 border-blue-400 ps-6 py-4 my-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-e-lg shadow-sm">
+                    <blockquote className="relative border-s-4 border-blue-400 ps-6 py-4 my-8 bg-gradient-to-r from-info-50 to-indigo-50 rounded-e-lg shadow-sm">
                       <div className="absolute top-2 start-2 text-blue-300 opacity-50">
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>

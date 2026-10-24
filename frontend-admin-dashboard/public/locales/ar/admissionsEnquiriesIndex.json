@@ -1,0 +1,70 @@
+{
+    "pageTitle": "الاستفسارات",
+    "selectEnquiryPlaceholder": "اختر استفسارًا",
+    "enquiryTypeLabel": "نوع الاستفسار: {{type}}",
+    "addNewEnquiryResponse": "إضافة رد استفسار جديد",
+    "copyFormLink": "نسخ رابط النموذج",
+    "copyLinkTitle": "نسخ رابط الاستفسار إلى الحافظة",
+    "walkInRegister": "تسجيل حضوري",
+    "walkInRegisterTitle": "فتح نموذج التسجيل الحضوري",
+    "toast": {
+        "linkCopied": "تم نسخ رابط الاستفسار إلى الحافظة!",
+        "copyFailed": "فشل نسخ الرابط"
+    },
+    "filters": {
+        "status": "الحالة",
+        "source": "المصدر",
+        "dateRange": "النطاق الزمني",
+        "class": "الصف"
+    },
+    "searchPlaceholder": "البحث بالاسم أو رقم الجوال...",
+    "sortBy": {
+        "placeholder": "الترتيب حسب...",
+        "defaultOrder": "الترتيب الافتراضي",
+        "dateSubmitted": "تاريخ الإرسال",
+        "leadScore": "نقاط العميل المحتمل",
+        "parentName": "اسم ولي الأمر"
+    },
+    "showDuplicates": "إظهار التكرارات",
+    "clearAll": "مسح الكل",
+    "selectEnquiryPrompt": "يرجى اختيار استفسار لعرض الردود",
+    "createNewEnquiryForm": "إنشاء نموذج استفسار جديد",
+    "walkInRegistration": "التسجيل الحضوري",
+    "walkInRegistrationFormTitle": "نموذج التسجيل الحضوري",
+    "dateRanges": {
+        "today": "اليوم",
+        "last7Days": "آخر 7 أيام",
+        "last30Days": "آخر 30 يومًا",
+        "last3Months": "آخر 3 أشهر",
+        "last6Months": "آخر 6 أشهر",
+        "lastYear": "العام الماضي"
+    },
+    "enquiryStatuses": {
+        "new": "جديد",
+        "contacted": "تم التواصل",
+        "notEligible": "غير مؤهل",
+        "qualified": "مؤهل",
+        "followUp": "متابعة",
+        "closed": "مغلق",
+        "converted": "تم التحويل",
+        "admitted": "تم القبول"
+    },
+    "sourceTypes": {
+        "website": "الموقع الإلكتروني",
+        "googleAds": "إعلانات جوجل",
+        "facebook": "فيسبوك",
+        "instagram": "إنستغرام",
+        "referral": "إحالة",
+        "other": "أخرى"
+    },
+    "leadTiers": {
+        "hot": "ساخن",
+        "warm": "دافئ",
+        "cold": "بارد"
+    },
+    "pageSubtitle": "Responses to your enquiry forms — follow up, then convert to an application or admission.",
+    "formStatus": "Form {{status}}",
+    "quickViews": {
+        "all": "All enquiries"
+    }
+}

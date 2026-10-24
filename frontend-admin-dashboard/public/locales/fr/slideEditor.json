@@ -1,0 +1,108 @@
+{
+    "presentation": {
+        "autoPublished": "Présentation publiée automatiquement pour relecture",
+        "publishedSuccess": "Présentation publiée avec succès !",
+        "publishFailed": "Échec de la publication de la présentation",
+        "uploadFailed": "Échec du téléversement des données de la présentation",
+        "noContentToPublish": "Aucun contenu à publier. Veuillez d'abord ajouter du contenu.",
+        "editorNotReady": "L'éditeur n'est pas prêt. Veuillez réessayer.",
+        "saveError": "Erreur lors de l'enregistrement de la présentation",
+        "savedSuccess": "Présentation enregistrée avec succès !",
+        "savedUnsync": "Présentation enregistrée comme brouillon (désynchronisée de la version publiée) !"
+    },
+    "doc": {
+        "degradedSkip": "Certains contenus de la diapositive précédente n'ont pas pu être enregistrés automatiquement. Ouvrez-la et cliquez sur Enregistrer pour réessayer.",
+        "shrunkSkip": "La diapositive précédente est devenue beaucoup plus courte que la version enregistrée, elle n'a donc PAS été écrasée. Veuillez la rouvrir pour vérifier que votre contenu est intact.",
+        "autoSaveFailed": "Échec de l'enregistrement automatique des modifications",
+        "readError": "Impossible de lire le contenu de l'éditeur. Veuillez réessayer.",
+        "saveErrorGeneric": "erreur lors de l'enregistrement du document",
+        "convertedToLexical": "Converti vers le nouvel éditeur.",
+        "convertFailed": "Impossible de convertir ce document. Veuillez réessayer.",
+        "corruptNotSaved": "Cette diapositive n'a pas pu être lue correctement, elle n'a donc PAS été enregistrée. Votre contenu enregistré est en sécurité — rechargez la page pour le récupérer, puis refaites les modifications récentes.",
+        "corruptNotPublished": "Certains blocs de cette diapositive n'ont pas pu être lus, la publication a donc été interrompue pour protéger votre contenu. Veuillez recharger la page et réessayer."
+    },
+    "images": {
+        "someFailedToUpload": "Avertissement : {{count}} image(s) n'ont pas pu être téléversée(s)",
+        "savedWithImages": "Diapositive enregistrée avec {{count}} image(s) téléversée(s) !"
+    },
+    "slide": {
+        "savedDraft": "diapositive enregistrée en brouillon avec succès !",
+        "saveErrorGeneric": "Erreur lors de l'enregistrement de la diapositive",
+        "publishErrorGeneric": "Erreur lors de la publication de la diapositive",
+        "genericSaveErrorLower": "erreur lors de l'enregistrement de la diapositive",
+        "typeSavedSuccess": "{{type}} enregistré(e) avec succès !",
+        "typeUpToDate": "{{type}} est déjà à jour !",
+        "typeUpToDateAutoSaved": "{{type}} est à jour ! Les modifications sont enregistrées automatiquement.",
+        "typeSaveError": "Erreur lors de l'enregistrement de la diapositive {{type}}",
+        "forcedOverride": "Diapositive enregistrée (remplacement forcé).",
+        "discardedRestored": "Modifications abandonnées — la dernière version enregistrée a été restaurée.",
+        "autoPublished": "Diapositive publiée automatiquement pour relecture",
+        "renameUnsupported": "Ce type de diapositive ne peut pas être renommé ici."
+    },
+    "ui": {
+        "openDoubtSidebar": "Ouvrir le panneau de résolution des questions",
+        "unsavedChanges": "Modifications non enregistrées",
+        "viewChanges": "Voir les modifications",
+        "discardChanges": "Abandonner les modifications",
+        "slideDeletedTitle": "Cette diapositive a été supprimée",
+        "slideDeletedBody": "Le contenu de la diapositive n'est plus disponible",
+        "assignmentError": "Erreur de devoir",
+        "assignmentLoadFailed": "Échec du chargement du devoir : {{message}}",
+        "loadingEditor": "Chargement de l'éditeur...",
+        "splitScreenLoadingError": "Erreur de chargement de l'écran partagé",
+        "splitScreenLoadingErrorBody": "Échec du chargement du composant d'écran partagé. Il s'agit généralement d'un problème temporaire.",
+        "retry": "Réessayer",
+        "splitScreenUnavailable": "Composant d'écran partagé indisponible",
+        "showFallback": "Afficher la solution de repli",
+        "keepEditing": "Continuer à modifier",
+        "saving": "Enregistrement...",
+        "saveDraft": "Enregistrer le brouillon",
+        "unpublish": "Dépublier",
+        "unpublishShort": "Dépublier",
+        "publish": "Publier",
+        "publishShort": "Publier",
+        "discardDialogHeading": "Abandonner les modifications",
+        "discardDialogBody": "Cela annulera les modifications non enregistrées de ce(tte) {{term}} et restaurera la dernière version enregistrée. Cette action est irréversible."
+    },
+    "integrity": {
+        "actionSaved": "enregistrée",
+        "actionPublished": "publiée",
+        "imagesInTable": "Cette diapositive contient {{count}} image(s) dans un tableau, que l'éditeur ne peut ni ouvrir ni conserver. Elle n'a PAS été {{action}}, rien n'est donc perdu — votre diapositive est intacte telle quelle. Pour la modifier, les image(s) doivent d'abord être déplacée(s) hors du tableau ; veuillez contacter l'assistance.",
+        "incomplete": "Cette diapositive ne s'est pas chargée complètement ({{missing}} manquant(s)). Pour protéger votre contenu, elle n'a PAS été {{action}}. Veuillez recharger la page et réessayer."
+    },
+    "splitScreen": {
+        "savedSuccess": "Projet d'écran partagé enregistré avec succès !",
+        "autoSaveFailed": "Échec de l'enregistrement automatique des données de l'écran partagé",
+        "slideSavedSuccess": "Diapositive en écran partagé enregistrée avec succès !",
+        "slideSaveError": "Erreur lors de l'enregistrement de la diapositive en écran partagé : {{error}}",
+        "saveFailed": "Échec de l'enregistrement des données de l'écran partagé"
+    },
+    "notebook": {
+        "saveFailed": "Échec de l'enregistrement des modifications du notebook"
+    },
+    "scratch": {
+        "saveFailed": "Échec de l'enregistrement des modifications du projet Scratch"
+    },
+    "code": {
+        "saveFailed": "Échec de l'enregistrement des modifications de code"
+    },
+    "quiz": {
+        "savedDraft": "Quiz enregistré en brouillon avec succès !",
+        "saveError": "Erreur lors de l'enregistrement du quiz"
+    },
+    "audio": {
+        "missingData": "Les données de la diapositive audio sont manquantes",
+        "savedSuccess": "Diapositive audio enregistrée avec succès !",
+        "saveError": "Erreur lors de l'enregistrement de la diapositive audio"
+    },
+    "scorm": {
+        "missingData": "Les données de la diapositive SCORM sont manquantes",
+        "savedSuccess": "Diapositive SCORM enregistrée avec succès !",
+        "saveError": "Erreur lors de l'enregistrement de la diapositive SCORM"
+    },
+    "assessment": {
+        "missingData": "Les données de la diapositive d'évaluation sont manquantes",
+        "savedSuccess": "Diapositive d'évaluation enregistrée avec succès !",
+        "saveError": "Erreur lors de l'enregistrement de la diapositive d'évaluation"
+    }
+}

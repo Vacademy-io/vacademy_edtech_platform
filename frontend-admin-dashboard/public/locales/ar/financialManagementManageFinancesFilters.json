@@ -1,0 +1,12 @@
+{
+    "searchPlaceholder": "ابحث بالاسم أو رقم الهاتف...",
+    "feeType": "نوع الرسوم",
+    "clearAll": "مسح الكل",
+    "status": {
+        "label": "الحالة",
+        "paid": "مدفوع",
+        "partial": "جزئي",
+        "pending": "معلق",
+        "overdue": "متأخر"
+    }
+}

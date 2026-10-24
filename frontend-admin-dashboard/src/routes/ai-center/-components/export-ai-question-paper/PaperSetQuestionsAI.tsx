@@ -1,4 +1,5 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { Input } from '@/components/ui/input';
 import { ExportSettings } from '@/components/common/export-offline/contexts/export-settings-context';
@@ -11,6 +12,7 @@ interface PaperSetProps {
 }
 
 export function PaperSetQuestionsAI({ questionsData, settings }: PaperSetProps) {
+    const { t } = useTranslation('aiCenterPaperSetQuestionsAI');
     const [heights, setHeights] = useState({
         initialHeader: 0,
         instructionsHeight: 0,
@@ -59,7 +61,7 @@ export function PaperSetQuestionsAI({ questionsData, settings }: PaperSetProps) 
                     {settings.customLetterheadImage ? (
                         <img
                             src={settings.customLetterheadImage}
-                            alt="Letterhead"
+                            alt={t('letterheadAlt')}
                             className="mx-auto mb-2 max-h-24"
                         />
                     ) : (
@@ -77,7 +79,9 @@ export function PaperSetQuestionsAI({ questionsData, settings }: PaperSetProps) 
                                 key={index}
                                 className="mb-4 flex items-center justify-between gap-4"
                             >
-                                <label className="w-1/4 text-sm font-medium">{field.label}:</label>
+                                <label className="w-1/4 text-sm font-medium">
+                                    {t('customFieldLabel', { label: field.label })}
+                                </label>
                                 <div className="w-3/4">
                                     {field.type === 'blank' && (
                                         <div className="h-8 border-b border-gray-300" />
@@ -108,7 +112,7 @@ export function PaperSetQuestionsAI({ questionsData, settings }: PaperSetProps) 
 
     const renderRoughWork = () => (
         <div className="mt-auto">
-            <h3 className="mb-2 text-lg font-semibold">Space for Rough Work</h3>
+            <h3 className="mb-2 text-lg font-semibold">{t('roughWorkHeading')}</h3>
             <div
                 className="rounded-lg border-t-2 border-dashed"
                 style={{ height: `${ROUGH_WORK_HEIGHT}mm` }}

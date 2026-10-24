@@ -1,0 +1,19 @@
+{
+    "tabs": {
+        "outline": "Plan",
+        "contentStructure": "Structure du contenu",
+        "assessment": "Évaluation",
+        "quizResults": "Résultats du quiz",
+        "planning": "Planification",
+        "activity": "Activité",
+        "pulse": "Pouls",
+        "reports": "Rapports",
+        "certificates": "Certificats",
+        "downloads": "Téléchargements",
+        "settings": "Paramètres",
+        "discussion": "Discussion",
+        "tutorMode": "Mode tuteur",
+        "aiKnowledge": "Connaissances IA",
+        "engagement": "Engagement"
+    }
+}

@@ -52,10 +52,14 @@ public class CallIntelligenceEnqueueService {
             if (row == null || row.getId() == null) return;
 
             CrmIntelligenceSettingsPojo settings = settingsService.get(row.getInstituteId());
-            if (!settings.callsEnabled()) return;
-
             String source = sourceBucket(row.getProviderType());
-            if (!settings.sourceEnabled(source)) return;
+            // AI-agent calls are analysed by DEFAULT and free of charge (founder,
+            // 2026-09-11: "auto add in all AI calls by default"); the institute's
+            // CRM Intelligence switch and source toggles govern human calls only.
+            if (!"AI".equals(source)) {
+                if (!settings.callsEnabled()) return;
+                if (!settings.sourceEnabled(source)) return;
+            }
 
             // Need an actual recording in our storage to transcribe.
             if (isBlank(row.getRecordingStorageKey())) return;
@@ -115,7 +119,9 @@ public class CallIntelligenceEnqueueService {
         if (row == null) return "NOT_FOUND";
 
         CrmIntelligenceSettingsPojo settings = settingsService.get(row.getInstituteId());
-        if (!settings.callsEnabled()) return "DISABLED";
+        // AI-agent calls are always analysable (default-on, free); the switch
+        // gates human calls only — same rule as enqueueIfEligible.
+        if (!"AI".equals(sourceBucket(row.getProviderType())) && !settings.callsEnabled()) return "DISABLED";
         if (isBlank(row.getRecordingStorageKey())) return "NO_RECORDING";
 
         CallIntelligence ci = repo.findByCallLogId(callLogId).orElse(null);
@@ -148,11 +154,51 @@ public class CallIntelligenceEnqueueService {
         return "QUEUED";
     }
 
+    /**
+     * Analysis a client asked for explicitly on one call — the public API's
+     * {@code analyze: true} on POST /v1/human-calls. Unlike {@link #triggerManual} this
+     * also bypasses the institute's CRM Intelligence switch (off by default): the API
+     * client opted in for this call and is billed for it (credit_pricing
+     * 'call_intelligence', charged per minute by ai_service), so an institute toggle must
+     * not silently drop it. Still needs a recording, and never resets an existing row —
+     * one the recording flow already enqueued (institute auto-analysis) may be running,
+     * and resetting it would start a second transcription.
+     *
+     * @return QUEUED | EXISTS | NOT_FOUND | NO_RECORDING.
+     */
+    @Transactional
+    public String enqueueRequested(String callLogId) {
+        if (isBlank(callLogId)) return "NOT_FOUND";
+        TelephonyCallLog row = callLogRepo.findById(callLogId).orElse(null);
+        if (row == null) return "NOT_FOUND";
+        if (isBlank(row.getRecordingStorageKey())) return "NO_RECORDING";
+        if (repo.existsByCallLogId(callLogId)) return "EXISTS";
+        repo.save(CallIntelligence.builder()
+                .callLogId(row.getId())
+                .instituteId(row.getInstituteId())
+                .counsellorUserId(row.getCounsellorUserId())
+                .responseId(row.getResponseId())
+                .userId(row.getUserId())
+                .source(sourceBucket(row.getProviderType()))
+                .direction(row.getDirection())
+                .callStartedAt(callStartedAt(row))
+                .durationSeconds(row.getDurationSeconds())
+                .status("PENDING")
+                .attempts(0)
+                .build());
+        log.info("call-intelligence: API-requested analysis queued for call {} (institute {})",
+                row.getId(), row.getInstituteId());
+        return "QUEUED";
+    }
+
     /** Bucket a provider type into the source toggle keys: MANUAL | AI | TELEPHONY. */
     private static String sourceBucket(String providerType) {
         if (ProviderType.MANUAL.equals(providerType)) return "MANUAL";
-        // AAVTAAR (real AI agent) and MOCK (synthetic AI for testing) are both "AI".
-        if (ProviderType.AAVTAAR.equals(providerType) || ProviderType.MOCK.equals(providerType)) return "AI";
+        // Every AI-agent provider is "AI": AAVTAAR, our own VACADEMY_AI voice bot
+        // (missing here until 2026-09-11 — its calls were bucketed as TELEPHONY and
+        // gated/charged like a human call) and MOCK (synthetic AI for testing).
+        if (ProviderType.AAVTAAR.equals(providerType) || ProviderType.VACADEMY_AI.equals(providerType)
+                || ProviderType.MOCK.equals(providerType)) return "AI";
         return "TELEPHONY"; // EXOTEL, AIRTEL, and any future bridge provider
     }
 

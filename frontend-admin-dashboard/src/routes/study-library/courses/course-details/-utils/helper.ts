@@ -22,6 +22,10 @@ export interface Instructor {
     gender: string | null;
     password: string | null;
     profile_pic_file_id: string | null;
+    author_subtitle?: string;
+    author_description?: string;
+    /** This person's display role in this course; absent when none is set. */
+    role_label?: string;
     roles: string[];
     root_user: boolean;
 }
@@ -60,6 +64,8 @@ interface CourseWithSessionsType {
         tags: string;
         course_depth: number;
         course_html_description: string;
+        /** Course page extras JSON string; null when nothing is stored (course-init only). */
+        course_page_json?: string | null;
     };
     sessions: Session[];
 }
@@ -119,10 +125,7 @@ function resolveCourseMediaId(
 
     // Bare value. Strip any surrounding quotes (JSON-encoded string) so the id
     // round-trips cleanly — getPublicUrl / extractYouTubeVideoId do the same.
-    if (
-        (raw.startsWith('"') && raw.endsWith('"')) ||
-        (raw.startsWith("'") && raw.endsWith("'"))
-    ) {
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
         raw = raw.slice(1, -1);
     }
     if (!raw || raw === 'null' || raw === 'undefined') return { type: '', id: '' };
@@ -194,14 +197,14 @@ export const transformApiDataToCourseData = async (apiData: CourseWithSessionsTy
             isCoursePublishedToCatalaouge: apiData.course.is_course_published_to_catalaouge,
             coursePreviewImageMediaId: apiData.course.course_preview_image_media_id,
             courseBannerMediaId: apiData.course.course_banner_media_id,
-            courseMediaId: resolveCourseMediaId(
-                apiData.course.course_media_id,
-                courseMediaPreview
-            ),
+            courseMediaId: resolveCourseMediaId(apiData.course.course_media_id, courseMediaPreview),
             coursePreviewImageMediaPreview: coursePreviewImageMediaId,
             courseBannerMediaPreview: courseBannerMediaId,
             courseMediaPreview: courseMediaPreview ?? '',
             courseHtmlDescription: apiData.course.course_html_description,
+            // Raw string (or null/undefined when nothing is stored or the payload does not
+            // load it) — parsed by the edit form; only a string lets an edit clear it.
+            coursePageJson: apiData.course.course_page_json,
             instructors: [], // This should be populated from your API if available
             sessions: (Array.isArray(apiData.sessions) ? apiData.sessions : []).map((session) => ({
                 levelDetails: (Array.isArray(session.level_with_details)
@@ -230,6 +233,9 @@ export const transformApiDataToCourseData = async (apiData: CourseWithSessionsTy
                             email: inst.email,
                             profilePicId: inst.profile_pic_file_id,
                             roles: inst.roles,
+                            authorSubtitle: inst.author_subtitle,
+                            authorDescription: inst.author_description,
+                            roleLabel: inst.role_label || undefined,
                         })),
                         subjects: (Array.isArray(subjects) ? subjects : []).map((subject) => ({
                             id: subject.id,
@@ -312,10 +318,7 @@ export const transformApiDataToCourseDataForInvite = async (apiData: CourseWithS
             packageName: apiData.course.package_name,
             coursePreviewImageMediaId: apiData.course.course_preview_image_media_id,
             courseBannerMediaId: apiData.course.course_banner_media_id,
-            courseMediaId: resolveCourseMediaId(
-                apiData.course.course_media_id,
-                courseMediaPreview
-            ),
+            courseMediaId: resolveCourseMediaId(apiData.course.course_media_id, courseMediaPreview),
             coursePreviewImageMediaPreview: coursePreviewImageMediaId,
             courseBannerMediaPreview: courseBannerMediaId,
             courseMediaPreview: courseMediaPreview ?? '',
@@ -342,6 +345,9 @@ export function getInstructorsBySessionAndLevel(
                         name: inst.full_name,
                         email: inst.email,
                         profilePicId: inst.profile_pic_file_id || '',
+                        authorSubtitle: inst.author_subtitle,
+                        authorDescription: inst.author_description,
+                        roleLabel: inst.role_label || undefined,
                     }));
                 }
             }

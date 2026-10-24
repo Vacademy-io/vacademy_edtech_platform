@@ -18,4 +18,6 @@ public class CreatePayrollRunDTO {
     private Integer month;
     private Integer year;
     private String notes;
+    /** REGULAR (default) | OFF_CYCLE | FNF | BONUS */
+    private String runType;
 }

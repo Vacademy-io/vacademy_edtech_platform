@@ -4,13 +4,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.notification_service.features.announcements.dto.AnnouncementEvent;
+import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.entity.RecipientMessage;
 import vacademy.io.notification_service.features.announcements.enums.EventType;
+import vacademy.io.notification_service.features.announcements.repository.AnnouncementRepository;
 import vacademy.io.notification_service.features.announcements.repository.RecipientMessageRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing and sending real-time announcement events via SSE
@@ -22,16 +23,26 @@ public class AnnouncementEventService {
     
     private final SSEConnectionManager connectionManager;
     private final RecipientMessageRepository recipientMessageRepository;
+    private final AnnouncementRepository announcementRepository;
     private final EventFilterService eventFilterService;
     
     /**
      * Send event to a specific user
      */
     public void sendToUser(String userId, AnnouncementEvent event) {
+        sendToUser(userId, event, false);
+    }
+
+    /**
+     * @param recipientVerified {@code true} when {@code userId} came from the announcement's own
+     *   recipient rows, which skips the per-user membership query. See
+     *   {@link EventFilterService#shouldReceiveEvent(String, AnnouncementEvent, boolean)}.
+     */
+    private void sendToUser(String userId, AnnouncementEvent event, boolean recipientVerified) {
         log.debug("Sending event {} to user: {}", event.getType(), userId);
         
         // Apply event filtering
-        if (!eventFilterService.shouldReceiveEvent(userId, event)) {
+        if (!eventFilterService.shouldReceiveEvent(userId, event, recipientVerified)) {
             log.debug("Event {} filtered out for user: {}", event.getType(), userId);
             return;
         }
@@ -47,11 +58,15 @@ public class AnnouncementEventService {
      * Send event to multiple users
      */
     public void sendToUsers(List<String> userIds, AnnouncementEvent event) {
+        sendToUsers(userIds, event, false);
+    }
+
+    private void sendToUsers(List<String> userIds, AnnouncementEvent event, boolean recipientVerified) {
         log.debug("Sending event {} to {} users", event.getType(), userIds.size());
         
         // Filter users and send
         for (String userId : userIds) {
-            sendToUser(userId, event);
+            sendToUser(userId, event, recipientVerified);
         }
     }
     
@@ -61,15 +76,17 @@ public class AnnouncementEventService {
     public void sendToAnnouncementRecipients(String announcementId, AnnouncementEvent event) {
         log.debug("Sending event {} to recipients of announcement: {}", event.getType(), announcementId);
         
-        // Use recipient_messages to target actual delivered users
-        List<RecipientMessage> delivered = recipientMessageRepository.findByAnnouncementId(announcementId);
-        if (delivered == null || delivered.isEmpty()) {
+        // Use recipient_messages to target actual delivered users. Distinct ids only: an announcement
+        // holds one row per delivery, so a user with several rows would otherwise be sent the same
+        // event once per row.
+        List<String> userIds = recipientMessageRepository.findDistinctUserIdsByAnnouncementId(announcementId);
+        if (userIds == null || userIds.isEmpty()) {
             log.debug("No recipient_messages found for announcement: {}", announcementId);
             return;
         }
-        List<String> userIds = delivered.stream().map(RecipientMessage::getUserId).collect(Collectors.toList());
         
-        sendToUsers(userIds, event);
+        // Membership is established by the query above, so don't re-check it per user.
+        sendToUsers(userIds, event, true);
     }
     
     /**
@@ -87,14 +104,13 @@ public class AnnouncementEventService {
         RecipientMessage recipientMessage = messageOpt.get();
         String announcementId = recipientMessage.getAnnouncementId();
 
-        // Send to all users who received the same announcement
-        List<RecipientMessage> allForAnnouncement = recipientMessageRepository.findByAnnouncementId(announcementId);
-        if (allForAnnouncement == null || allForAnnouncement.isEmpty()) {
+        // Send to all users who received the same announcement, each exactly once.
+        List<String> userIds = recipientMessageRepository.findDistinctUserIdsByAnnouncementId(announcementId);
+        if (userIds == null || userIds.isEmpty()) {
             log.debug("No recipients found for announcement: {} (from message: {})", announcementId, messageId);
             return;
         }
-        List<String> userIds = allForAnnouncement.stream().map(RecipientMessage::getUserId).collect(Collectors.toList());
-        sendToUsers(userIds, event);
+        sendToUsers(userIds, event, true);
     }
     
     /**
@@ -102,10 +118,19 @@ public class AnnouncementEventService {
      */
     public void sendToAnnouncementCreator(String announcementId, AnnouncementEvent event) {
         log.debug("Sending event {} to creator of announcement: {}", event.getType(), announcementId);
-        
-        // This would require getting the announcement and its creator
-        // For now, we'll implement this when we have the announcement details
-        // TODO: Implement when needed
+
+        String creatorId = announcementRepository.findById(announcementId)
+                .map(Announcement::getCreatedBy)
+                .orElse(null);
+        if (creatorId == null) {
+            log.debug("No creator found for announcement: {}", announcementId);
+            return;
+        }
+
+        // Verified: the id came off the announcement row itself. It must be, because a creator is
+        // usually NOT among their own announcement's recipients, so the membership filter would
+        // otherwise drop every event sent here.
+        sendToUser(creatorId, event, true);
     }
     
     /**

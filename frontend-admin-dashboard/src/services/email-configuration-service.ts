@@ -10,16 +10,46 @@ export interface EmailConfiguration {
     type: string;
     description?: string;
     displayText?: string;
+    // Sending controls (see EMAIL_SETTING.data.<type> on the backend)
+    maxPerDay?: number | null;
+    timezone?: string | null;
+    sendAfterHour?: number | null;
+    postalAddress?: string | null;
+    listUnsubscribe?: boolean | null;
+    rampEnabled?: boolean | null;
+    rampStartPerDay?: number | null;
+    rampStep?: number | null;
+    rampEveryDays?: number | null;
+    rampCeiling?: number | null;
+    rampStartedOn?: string | null;
+    skipWeekends?: boolean | null;
 }
 
-export interface CreateEmailConfigurationRequest {
+/** PATCH-like: a field left undefined keeps its stored value. */
+export interface SendingControls {
+    maxPerDay?: number;
+    timezone?: string;
+    sendAfterHour?: number;
+    postalAddress?: string;
+    listUnsubscribe?: boolean;
+    // Warm-up ramp. While rampEnabled is true the backend computes the daily cap from this
+    // schedule and ignores maxPerDay.
+    rampEnabled?: boolean;
+    rampStartPerDay?: number;
+    rampStep?: number;
+    rampEveryDays?: number;
+    rampCeiling?: number;
+    skipWeekends?: boolean;
+}
+
+export interface CreateEmailConfigurationRequest extends SendingControls {
     email: string;
     name: string;
     type: string;
     description?: string;
 }
 
-export interface UpdateEmailConfigurationRequest {
+export interface UpdateEmailConfigurationRequest extends SendingControls {
     email?: string;
     name?: string;
     type?: string;

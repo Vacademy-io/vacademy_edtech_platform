@@ -1,0 +1,43 @@
+{
+    "tiles": {
+        "courseProgress": {
+            "label": "Progression du cours",
+            "hint": {
+                "onTrack": "Sur la bonne voie",
+                "paceCheckNeeded": "Vérifier le rythme",
+                "behindSchedule": "En retard"
+            }
+        },
+        "attendance": {
+            "label": "Assiduité",
+            "hint": {
+                "aboveTarget": "Au-dessus de l'objectif",
+                "watchList": "À surveiller",
+                "belowTarget": "En dessous de l'objectif"
+            }
+        },
+        "tests": {
+            "label": "Tests",
+            "hint": {
+                "pending_one": "{{count}} en attente",
+                "pending_many": "{{count}} en attente",
+                "pending_other": "{{count}} en attente"
+            }
+        },
+        "outstanding": {
+            "label": "Solde dû",
+            "hint": {
+                "actionRequired": "Action requise",
+                "paidInFull": "Payé intégralement"
+            }
+        },
+        "leadScore": {
+            "label": "Score du prospect",
+            "hint": {
+                "hotLead": "Prospect chaud",
+                "nurture": "À entretenir",
+                "cold": "Prospect froid"
+            }
+        }
+    }
+}

@@ -18,8 +18,10 @@ import { Filters } from '@/routes/manage-students/students-list/-components/stud
 import { StudentSearchBox } from '@/components/common/student-search-box';
 import { MyButton } from '@/components/design-system/button';
 import { Funnel, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 export const Invite = () => {
+    const { t } = useTranslation('manageStudentsInvite');
     const { page, pageSize, handlePageChange } = usePaginationState({
         initialPage: 0,
         initialPageSize: 5,
@@ -155,7 +157,11 @@ export const Invite = () => {
     return (
         <div className="flex w-full flex-col gap-10">
             <div className="flex items-center justify-between">
-                <p className="text-h3 font-semibold">{`${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} Link List`}</p>
+                <p className="text-h3 font-semibold">
+                    {t('heading.linkList', {
+                        term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                    })}
+                </p>
                 <CreateInvite />
             </div>
 
@@ -169,7 +175,7 @@ export const Invite = () => {
                             onSearchChange={handleSearchChange}
                             onSearchEnter={handleSearchEnter}
                             onClearSearch={handleClearSearch}
-                            placeholder="Search by name"
+                            placeholder={t('search.placeholder')}
                         />
                     </div>
 
@@ -206,7 +212,7 @@ export const Invite = () => {
                                 onClick={handleFilterClick}
                             >
                                 <Funnel className="size-3.5 transition-transform duration-200 group-hover:scale-110" />
-                                Apply Filters
+                                {t('filters.apply')}
                             </MyButton>
                             <MyButton
                                 buttonType="secondary"
@@ -216,7 +222,7 @@ export const Invite = () => {
                                 onClick={handleClearFilters}
                             >
                                 <X className="size-3.5 transition-transform duration-200 group-hover:scale-110" />
-                                Reset All
+                                {t('filters.resetAll')}
                             </MyButton>
                         </div>
                     )}
@@ -225,13 +231,13 @@ export const Invite = () => {
 
             <div className="flex w-full flex-col gap-10">
                 {isError ? (
-                    <p>Error fetching invitation links</p>
+                    <p>{t('state.error')}</p>
                 ) : isLoading ? (
                     <DashboardLoader />
                 ) : !inviteList || !inviteList.content || inviteList?.content.length == 0 ? (
-                    <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-2">
+                    <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-2"> {/* design-lint-ignore: viewport-relative full-page state height, no vh design token exists */}
                         <EmptyInvitePage />
-                        <p>No invite link has been created yet!</p>
+                        <p>{t('state.empty')}</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-10">
@@ -246,12 +252,23 @@ export const Invite = () => {
                                         <InviteCardMenuOptions invite={obj} />
                                     </div>
                                     <div className="flex items-center gap-12 text-body font-regular">
-                                        <p>Created on: {getDateFromUTCString(obj.created_at)}</p>
-                                        <p>Invites accepted by: {obj.accepted_by}</p>
+                                        <p>
+                                            {t('card.createdOn', {
+                                                date: getDateFromUTCString(obj.created_at),
+                                            })}
+                                        </p>
+                                        <p>
+                                            {t('card.acceptedBy', {
+                                                count: obj.accepted_by,
+                                            })}
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-body font-semibold">Invite Link: </p>
-                                        <InviteLink inviteCode={obj.invite_code || ''} />
+                                        <p className="text-body font-semibold">{t('card.inviteLink')}</p>
+                                        <InviteLink
+                                            inviteCode={obj.invite_code || ''}
+                                            inviteName={obj.name}
+                                        />
                                     </div>
                                 </div>
                             )

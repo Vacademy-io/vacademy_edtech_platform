@@ -1,0 +1,10 @@
+{
+    "title": "Generate Invoice",
+    "invoiceFor": "Invoice for",
+    "generating": "Generating...",
+    "downloadInvoice": "Download Invoice",
+    "sendInvoiceViaEmail": "Send Invoice via Email",
+    "recipientEmail": "Recipient Email",
+    "sending": "Sending...",
+    "sendEmail": "Send Email"
+}

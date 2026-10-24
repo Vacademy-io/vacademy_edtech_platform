@@ -45,13 +45,106 @@ public class SuperAdminCallService {
             LEFT JOIN telephony_call_log l ON l.id = r.call_log_id
             LEFT JOIN ai_agent a ON a.id = r.campaign_id
             LEFT JOIN institutes i ON i.id = r.institute_id
-            WHERE (CAST(:instituteId AS text) IS NULL OR r.institute_id = CAST(:instituteId AS text))
+            WHERE r.provider IS DISTINCT FROM 'MOCK'
+              AND (CAST(:instituteId AS text) IS NULL OR r.institute_id = CAST(:instituteId AS text))
               AND (CAST(:fromTs AS text) IS NULL OR r.created_at >= CAST(:fromTs AS timestamp))
               AND (CAST(:toTs   AS text) IS NULL OR r.created_at <  CAST(:toTs   AS timestamp))
               AND (CAST(:health AS text) IS NULL OR r.diag_health = CAST(:health AS text))
               AND (CAST(:disposition AS text) IS NULL OR r.disposition = CAST(:disposition AS text))
               AND (CAST(:agentId AS text) IS NULL OR r.campaign_id = CAST(:agentId AS text))
             """;
+
+    /**
+     * The TTS engine the call ACTUALLY used, from what the bot recorded on it
+     * (diagnostics.tts.vendor = the service's model name), not the agent's current
+     * setting: switching an agent's voice used to reprice every past call it made
+     * (1,195 lightning_v3.1_pro calls belong to agents now on navana). The agent's
+     * engine is only the fallback for a call that recorded nothing.
+     *
+     * <p>'bulbul_v4%' (LIKE's one-character wildcard), not 'bulbul:v4%': Hibernate
+     * reads a ':' in native SQL as a parameter marker.
+     */
+    static final String ENGINE_SQL = """
+            CASE
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'bulbul_v4%' THEN 'sarvam_v4'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'bulbul%' THEN 'sarvam'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'lightning%pro%' THEN 'smallest_pro'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'lightning%' THEN 'smallest'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE '%bodhi%' THEN 'navana'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'google%' OR r.diagnostics->'tts'->>'vendor' ILIKE 'chirp%' THEN 'google'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'edge%' THEN 'edge'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE '%mulberry%' OR r.diagnostics->'tts'->>'vendor' ILIKE 'rumik%' THEN 'rumik'
+              WHEN r.diagnostics->'tts'->>'vendor' ILIKE 'aura%' OR r.diagnostics->'tts'->>'vendor' ILIKE '%deepgram%' THEN 'deepgram'
+              ELSE COALESCE(a.tts_model, 'sarvam')
+            END""";
+
+    /**
+     * What the wallet ACTUALLY charged for the call, PER LEG: the ledger rows
+     * CallBillingService wrote under its idempotency keys (AI leg by the report's call
+     * uuid or the call log, telephony leg by the call log). chr(58) is ':' — see
+     * ENGINE_SQL. Each column is NULL while that leg has no ledger row.
+     *
+     * <p>Per leg, not one sum: the two legs are charged independently (voice from the
+     * Plivo status webhook, AI from the bot's report, each through its own ai_service
+     * deduct), so for seconds — or ~15 min when ai_service is mid-deploy and the
+     * reconciliation sweep has to heal it — only one of them is in. A single sum then
+     * passed for the final charge: the voice leg alone (1 credit/min of 1 + 5) was shown
+     * without "est." and the summary dropped the missing AI leg altogether.
+     */
+    private static final String LEDGER_JOIN = """
+            LEFT JOIN LATERAL (
+                SELECT SUM(ABS(t.amount)) FILTER (WHERE t.external_reference_id LIKE 'voice%') AS voice_credits,
+                       SUM(ABS(t.amount)) FILTER (WHERE t.external_reference_id LIKE 'ai%') AS ai_credits
+                  FROM credit_transactions t
+                 WHERE t.institute_id = r.institute_id AND t.transaction_type = 'USAGE_DEDUCTION'
+                   AND t.external_reference_id IN (
+                       'ai_call' || chr(58) || 'uuid' || chr(58) || r.provider || chr(58) || r.call_uuid,
+                       'ai_call' || chr(58) || r.call_log_id,
+                       'voice_call' || chr(58) || r.call_log_id)) led ON TRUE
+            """;
+
+    /**
+     * The telephony leg is still to be charged: no ledger row, the call log not
+     * stamped, a Vacademy-paid trunk (CallBillingService.VOICE_BILLABLE_PROVIDERS) and a
+     * connected call. Only such a leg is estimated. A log STAMPED with no ledger row was
+     * charged 0 on purpose — bill() stamps a 0-rate (negotiated override) call without
+     * writing a row — so it earns 0, not an estimate at the global rate forever.
+     *
+     * <p>Shared verbatim by list() and summary() so a row and the total it rolls into
+     * can never disagree about which legs are estimated.
+     */
+    static final String VOICE_PENDING_SQL = "(led.voice_credits IS NULL AND l.credits_billed_at IS NULL"
+            + " AND COALESCE(l.provider_type, '') IN ('PLIVO', 'VACADEMY_AI')"
+            + " AND r.status ILIKE 'complete%' AND r.duration_seconds > 0)";
+
+    /**
+     * The AI leg is still to be charged — the same gates the live hook
+     * (AiCallOutcomeProcessor) and CallBillingReconciliationJob apply: a metered
+     * provider, a report that was not rejected, and a stable identity to bill under
+     * (no call uuid and no pre-call correlation = never billed, so never pending).
+     * ai_call_result.credits_billed_at with no ledger row = charged 0, as for the voice leg.
+     */
+    static final String AI_PENDING_SQL = "(led.ai_credits IS NULL AND r.credits_billed_at IS NULL"
+            + " AND r.provider IN ('VACADEMY_AI', 'AAVTAAR')"
+            + " AND COALESCE(r.processing_status, '') NOT IN ('REJECTED_UNVERIFIED', 'PARSE_FAILED')"
+            + " AND (r.call_uuid IS NOT NULL OR (r.correlation_id IS NOT NULL AND r.call_log_id IS NOT NULL))"
+            + " AND r.status ILIKE 'complete%' AND r.duration_seconds > 0)";
+
+    /** Billing pulses of the calls matching {@code cond}, summed (summary columns). */
+    private static String pulsesWhere(String cond) {
+        return "COALESCE(sum(CASE WHEN " + cond
+                + " THEN (r.duration_seconds + :pulse - 1) / :pulse ELSE 0 END), 0)";
+    }
+
+    /** BASE_FROM with the ledger join (list and summary only — the count needs neither). */
+    private static String fromWithLedger() {
+        int at = BASE_FROM.indexOf("WHERE r.provider");
+        return BASE_FROM.substring(0, at) + LEDGER_JOIN + BASE_FROM.substring(at);
+    }
+
+    /** The billing pulse (telephony.billing.pulse-seconds; 30 s since 2026-09-30). */
+    @org.springframework.beans.factory.annotation.Value("${telephony.billing.pulse-seconds:30}")
+    private int pulseSeconds = 30;
 
     /** engine -> credits/min surcharge, read live so it cannot drift from billing. */
     @Transactional(readOnly = true)
@@ -79,7 +172,32 @@ public class SuperAdminCallService {
     }
 
     /**
-     * What this call ACTUALLY billed, in rupees — mirroring CallBillingService.
+     * What one call billed, and whether any of it is still an estimate.
+     *
+     * @param estimated true while some leg is still to be charged — the portal marks
+     *                  the figure "est." exactly then
+     */
+    record Billed(double inr, boolean estimated) {}
+
+    /**
+     * Per leg: the ledger amount where that leg was charged, the pulse estimate only
+     * for a leg still pending ({@link #VOICE_PENDING_SQL} / {@link #AI_PENDING_SQL}),
+     * and 0 for anything else — a leg stamped billed with no ledger row (0-rate), a
+     * leg that does not apply (own carrier, MOCK), a call that never connected.
+     */
+    Billed billed(Map<String, Double> card, Map<String, Double> surcharge,
+                  Map<String, double[]> pricing, String engine, String direction, int seconds,
+                  Number voiceLedger, Number aiLedger, boolean voicePending, boolean aiPending) {
+        double creditInr = card.getOrDefault("credit_inr", 0d);
+        double inr = 0d;
+        if (voiceLedger != null) inr += voiceLedger.doubleValue() * creditInr;
+        if (aiLedger != null) inr += aiLedger.doubleValue() * creditInr;
+        inr += estimatedInr(card, surcharge, pricing, engine, direction, seconds, voicePending, aiPending);
+        return new Billed(inr, voicePending || aiPending);
+    }
+
+    /**
+     * What the PENDING legs of this call will bill, in rupees — mirroring CallBillingService.
      *
      * <p>Modelling this as a flat rupees-per-minute was wrong twice over, and the
      * founder caught both on a 30-second call the page priced at Rs 1.86 when the
@@ -99,24 +217,34 @@ public class SuperAdminCallService {
      * so this cannot drift from what the wallet actually charged. It is still a
      * RECONSTRUCTION, not the ledger: a negotiated per-institute override
      * suppresses the surcharge in the real path and is not modelled here.
+     *
+     * <p>Which legs apply (Vacademy-paid trunk, metered AI provider, connected, not
+     * yet charged) is decided in SQL by the pending predicates, so list and summary
+     * share one definition; this only prices them.
      */
-    private double billedInr(Map<String, Double> card, Map<String, Double> surcharge,
-                             Map<String, double[]> pricing, String engine,
-                             String direction, String providerType, int seconds) {
-        if (seconds <= 0) return 0d;
-        long minutes = (seconds + 59) / 60;                 // ceil, min 1 — as billed
+    double estimatedInr(Map<String, Double> card, Map<String, Double> surcharge,
+                        Map<String, double[]> pricing, String engine, String direction,
+                        int seconds, boolean voicePending, boolean aiPending) {
+        if (seconds <= 0 || (!voicePending && !aiPending)) return 0d;
+        // Billed in pulses (30 s by default), as CallBillingService does:
+        // ceil(secs / pulse) pulses at perMinute x pulse/60. It was ceil-MINUTES,
+        // which overstated every call that was not a whole number of minutes
+        // (a 77 s call: 2 minutes = 12 credits; the wallet took 9).
+        int pulse = Math.max(1, pulseSeconds);
+        double minutes = Math.ceil(seconds / (double) pulse) * pulse / 60.0;
         boolean inbound = "INBOUND".equalsIgnoreCase(direction);
         String e = (engine == null || engine.isBlank()) ? "sarvam" : engine.trim().toLowerCase();
         // An escape hatch for an engine priced outside the credit stack entirely.
         // Edge USED one while its discount was report-only; it now rides the same
-        // negative surcharge the wallet charges, so no engine sets this today.
+        // negative surcharge the wallet charges, so no engine sets this today. It
+        // replaces the whole credit stack, so it rides the leg the engine prices (AI)
+        // and the telephony leg adds nothing — summary() applies it the same way.
         Double flat = card.get("billed_inr_per_min_" + e);
-        if (flat != null && flat > 0) return flat * minutes;
+        if (flat != null && flat > 0) return aiPending ? flat * minutes : 0d;
 
         double credits = 0d;
-        // Telephony leg — only on trunks Vacademy pays for.
-        String pt = providerType == null ? "" : providerType.toUpperCase();
-        if (pt.contains("PLIVO") || pt.contains("VACADEMY")) {
+        // Telephony leg — VOICE_PENDING_SQL already requires a Vacademy-paid trunk.
+        if (voicePending) {
             double[] v = pricing.get(inbound ? "voice_call_in" : "voice_call_out");
             if (v != null) credits += Math.max(v[1], v[0] * minutes);
         }
@@ -124,7 +252,7 @@ public class SuperAdminCallService {
         // free to run, so it sells at 2 credits against the standard 5). Floor the
         // per-minute at zero exactly as CallBillingService does, so a surcharge
         // deeper than the base rate can never make this report a refund.
-        double[] a = pricing.get(inbound ? "ai_call_in" : "ai_call_out");
+        double[] a = aiPending ? pricing.get(inbound ? "ai_call_in" : "ai_call_out") : null;
         if (a != null) {
             double perMin = Math.max(0d, a[0] + surcharge.getOrDefault(e, 0d));
             credits += Math.max(a[1], perMin * minutes);
@@ -147,20 +275,66 @@ public class SuperAdminCallService {
     /**
      * Per-component rupee cost.
      *
-     * <p>Plivo is billed in WHOLE MINUTES — a six-second call still costs a full
-     * minute — so it is ceiled. STT, TTS and the LLM are genuine usage meters
-     * (per second, per character, per token) and stay fractional. Charging the
-     * telephony leg fractionally understated every short call.
+     * <p>Plivo bills in 30-SECOND PULSES — a six-second call costs half a
+     * minute, a 1:45 call two minutes — so the telephony leg is ceiled to the
+     * pulse. (It was ceiled to whole minutes, which overstated every call by up
+     * to half a minute: verified against the Plivo rate, 2026-09-23.) STT, TTS
+     * and the LLM are usage meters (per second, per character, per token) and
+     * stay fractional.
      */
     private Map<String, Double> breakdown(Map<String, Double> card, String ttsModel,
-                                          double minutes, int seconds) {
+                                          double minutes, int seconds, Integer ttsChars) {
+        return breakdown(card, ttsModel, minutes, seconds, ttsChars, null);
+    }
+
+    /** LLM rupees from the call's own tokens, or null when it reported none or the card lacks the rates. */
+    static Double llmFromTokens(Map<String, Double> card, long[] usage) {
+        if (usage == null) return null;
+        Double in = card.get("llm_in_per_mtok"), cached = card.get("llm_cached_per_mtok"),
+                out = card.get("llm_out_per_mtok");
+        if (in == null || cached == null || out == null) return null;
+        long prompt = usage[0], hit = Math.min(usage[1], usage[0]), completion = usage[2];
+        return ((prompt - hit) * in + hit * cached + completion * out) / 1_000_000d;
+    }
+
+    /** diagnostics.infra.llmUsage → {promptTokens, cachedTokens, completionTokens}, or null. */
+    private long[] llmUsage(String diagnosticsJson) {
+        if (diagnosticsJson == null || diagnosticsJson.isBlank()) return null;
+        try {
+            com.fasterxml.jackson.databind.JsonNode u =
+                    DIAG_MAPPER.readTree(diagnosticsJson).path("infra").path("llmUsage");
+            if (!u.path("promptTokens").isNumber()) return null;
+            return new long[]{u.path("promptTokens").asLong(), u.path("cachedTokens").asLong(0),
+                    u.path("completionTokens").asLong(0)};
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Map<String, Double> breakdown(Map<String, Double> card, String ttsModel,
+                                          double minutes, int seconds, Integer ttsChars,
+                                          long[] llmUsage) {
         String engine = (ttsModel == null || ttsModel.isBlank()) ? "sarvam" : ttsModel.trim().toLowerCase();
-        long billedMinutes = seconds <= 0 ? 0 : (seconds + 59) / 60;
+        double billedMinutes = seconds <= 0 ? 0 : ((seconds + 29) / 30) / 2.0;
         Map<String, Double> b = new LinkedHashMap<>();
         b.put("plivo", round(card.getOrDefault("plivo", 0d) * billedMinutes));
         b.put("stt", round(card.getOrDefault("stt_sarvam", 0d) * minutes));
-        b.put("tts", round(card.getOrDefault("tts_" + engine, 0d) * minutes));
-        b.put("llm", round(card.getOrDefault("llm", 0d) * minutes));
+        // TTS is the one component the bot meters EXACTLY: the vendor bills per
+        // character and diagnostics.tts.chars is the count it actually synthesised.
+        // Prefer it over duration x the fleet average, because 779 chars/call-min is
+        // a mean and every real call sits somewhere off it — an agent that monologues
+        // exceeds it and was being under-costed, one whose caller does the talking was
+        // being over-costed. Same divisor as the savings line, so the two still cannot
+        // disagree, and the average stays as the fallback for any call whose blob is
+        // absent (cache off, older row, a bot that crashed before reporting).
+        double ttsPerMin = card.getOrDefault("tts_" + engine, 0d);
+        b.put("tts", round(ttsChars != null && ttsChars > 0
+                ? ttsChars / CHARS_PER_CALL_MINUTE * ttsPerMin
+                : ttsPerMin * minutes));
+        // The call's own tokens when it reported them (V542); the per-minute
+        // average only for calls that did not.
+        Double llm = llmFromTokens(card, llmUsage);
+        b.put("llm", round(llm != null ? llm : card.getOrDefault("llm", 0d) * minutes));
         return b;
     }
 
@@ -221,7 +395,8 @@ public class SuperAdminCallService {
         Map<String, Double> card = rateCard();
         Query q = em.createNativeQuery("""
                 SELECT to_char(date_trunc('day', r.created_at), 'YYYY-MM-DD') AS d,
-                       COALESCE(a.tts_model, 'sarvam') AS engine,
+                       """ + ENGINE_SQL + """
+                       AS engine,
                        count(*) FILTER (WHERE r.diagnostics->'tts'->>'cacheHits' ~ '^[0-9]+$'),
                        count(*) FILTER (WHERE r.diagnostics->'tts'->>'cacheHits' IS NULL),
                        COALESCE(sum(CASE WHEN r.diagnostics->'tts'->>'cacheHits' ~ '^[0-9]+$'
@@ -234,7 +409,8 @@ public class SuperAdminCallService {
                                     THEN CAST(r.diagnostics->'tts'->>'cacheSecsSaved' AS numeric) END), 0)
                 FROM ai_call_result r
                 LEFT JOIN ai_agent a ON a.id = r.campaign_id
-                WHERE (CAST(:inst AS text) IS NULL OR r.institute_id = CAST(:inst AS text))
+                WHERE r.provider IS DISTINCT FROM 'MOCK'
+                  AND (CAST(:inst AS text) IS NULL OR r.institute_id = CAST(:inst AS text))
                   AND (CAST(:frm  AS text) IS NULL OR r.created_at >= CAST(:frm AS timestamp))
                   AND (CAST(:to   AS text) IS NULL OR r.created_at <  CAST(:to  AS timestamp))
                   AND (CAST(:agt  AS text) IS NULL OR r.campaign_id = CAST(:agt AS text))
@@ -353,13 +529,17 @@ public class SuperAdminCallService {
 
         Query q = em.createNativeQuery("""
                 SELECT r.id, r.correlation_id, r.institute_id, i.name,
-                       r.campaign_id, a.name, a.tts_model, a.voice,
+                       r.campaign_id, a.name, """ + ENGINE_SQL + """
+                       , a.voice,
                        r.phone_number, r.customer_name, r.direction, r.status, r.disposition,
                        r.call_start, r.duration_seconds,
                        COALESCE(l.recording_url, r.recording_url),
                        r.diag_health, r.diag_faults, CAST(r.diagnostics AS text),
-                       l.provider_type, COALESCE(l.provider_call_id, r.call_uuid)
-                """ + BASE_FROM + " ORDER BY r.created_at DESC LIMIT :lim OFFSET :off");
+                       l.provider_type, COALESCE(l.provider_call_id, r.call_uuid),
+                       led.voice_credits, led.ai_credits,
+                """ + " CASE WHEN " + VOICE_PENDING_SQL + " THEN 1 ELSE 0 END,"
+                + " CASE WHEN " + AI_PENDING_SQL + " THEN 1 ELSE 0 END\n"
+                + fromWithLedger() + " ORDER BY r.created_at DESC LIMIT :lim OFFSET :off");
         bind(q, instituteId, from, to, health, disposition, agentId);
         q.setParameter("lim", size);
         q.setParameter("off", (long) page * size);
@@ -370,10 +550,20 @@ public class SuperAdminCallService {
             int secs = r[14] == null ? 0 : ((Number) r[14]).intValue();
             double minutes = secs / 60.0;
             String tts = (String) r[6];
-            Map<String, Double> b = breakdown(card, tts, minutes, secs);
+            Integer ttsChars = diagInt((String) r[18], "chars");
+            Map<String, Double> b = breakdown(card, tts, minutes, secs, ttsChars,
+                    llmUsage((String) r[18]));
             double cost = round(b.values().stream().mapToDouble(Double::doubleValue).sum());
-            double billed = round(billedInr(card, surcharge, pricing, tts,
-                    (String) r[10], (String) r[19], secs));
+            // Per leg: the ledger where that leg has been charged; the pulse
+            // reconstruction only for a leg still pending (billing runs after the
+            // call and is swept every 10 minutes), so the page never shows a guess
+            // where the truth exists — nor passes one charged leg off as the whole
+            // call. A call that did not connect is never charged (billing requires
+            // "completed"), so it earns 0, not an estimate: 386 unanswered calls in
+            // one week carried ~11 s of ring each and were being booked as revenue.
+            Billed bill = billed(card, surcharge, pricing, tts, (String) r[10], secs,
+                    (Number) r[21], (Number) r[22], flag(r[23]), flag(r[24]));
+            double billed = round(bill.inr());
             double margin = round(billed - cost);
             String recording = (String) r[15];
             String diagJson = (String) r[18];
@@ -393,8 +583,15 @@ public class SuperAdminCallService {
                     .faults(splitFaults((String) r[17]))
                     .diagnostics((String) r[18])
                     .costInr(cost).billedInr(billed).marginInr(margin)
+                    // true = final (every leg charged, stamped at 0 or not
+                    // applicable); false = some leg is still an estimate.
+                    .billedFromLedger(!bill.estimated())
                     .marginPct(billed > 0 ? round(margin / billed * 100) : null)
+                    // Still true overall: plivo, stt and llm remain duration-modelled.
+                    // ttsCharsMeasured is what tells the UI that the TTS line, at least,
+                    // is the vendor's own metered quantity on this particular call.
                     .costBreakdown(b).costIsModelled(true)
+                    .ttsCharsMeasured(ttsChars)
                     .ttsCacheHits(cacheHits)
                     .ttsCacheMisses(diagInt(diagJson, "cacheMisses"))
                     .ttsCacheCharsSaved(cacheHits == null ? null : cacheChars)
@@ -432,6 +629,12 @@ public class SuperAdminCallService {
         return null;
     }
 
+    /** A 0/1 (or boolean) column; NULL reads as false. */
+    private static boolean flag(Object o) {
+        if (o instanceof Boolean b) return b;
+        return o instanceof Number n && n.intValue() != 0;
+    }
+
     private static List<String> splitFaults(String csv) {
         if (csv == null || csv.isBlank()) return List.of();
         return Arrays.stream(csv.split("[,\\s]+")).filter(s -> !s.isBlank()).toList();
@@ -449,30 +652,54 @@ public class SuperAdminCallService {
         Map<String, Double> surcharge = ttsSurcharges();
         Map<String, double[]> pricing = creditPricing();
         Query q = em.createNativeQuery("""
-                SELECT COALESCE(a.tts_model,'sarvam') AS engine,
+                SELECT
+                       """ + ENGINE_SQL + """
+                       AS engine,
                        count(*),
                        COALESCE(sum(r.duration_seconds),0),
                        count(*) FILTER (WHERE r.diag_health = 'RED'),
                        count(*) FILTER (WHERE r.diag_health = 'AMBER'),
                        count(*) FILTER (WHERE r.diag_health = 'GREEN'),
                        count(*) FILTER (WHERE COALESCE(l.recording_url, r.recording_url) IS NOT NULL),
-                       COALESCE(sum(CASE WHEN r.duration_seconds > 0
-                                         THEN (r.duration_seconds + 59) / 60 ELSE 0 END), 0),
-                       COALESCE(sum(CASE WHEN COALESCE(l.provider_type,'') ~* '(plivo|vacademy)'
-                                          AND r.duration_seconds > 0
-                                         THEN (r.duration_seconds + 59) / 60 ELSE 0 END), 0),
-                       COALESCE(sum(CASE WHEN COALESCE(r.direction,'') ILIKE 'INBOUND'
-                                          AND r.duration_seconds > 0
-                                         THEN (r.duration_seconds + 59) / 60 ELSE 0 END), 0),
+                       -- [7] AI-leg, [8] voice-leg, [9] inbound AI-leg billing PULSES of
+                       -- the legs still to be charged (the same predicates list() uses),
+                       -- only those are reconstructed, charged legs come from [21].
+                """ + pulsesWhere(AI_PENDING_SQL) + ",\n"
+                + pulsesWhere(VOICE_PENDING_SQL) + ",\n"
+                + pulsesWhere(AI_PENDING_SQL + " AND COALESCE(r.direction, '') ILIKE 'INBOUND'") + ",\n"
+                + """
                        COALESCE(sum(CASE WHEN r.diagnostics->'tts'->>'cacheHits' ~ '^[0-9]+$'
                                          THEN CAST(r.diagnostics->'tts'->>'cacheHits' AS bigint) END), 0),
                        COALESCE(sum(CASE WHEN r.diagnostics->'tts'->>'cacheMisses' ~ '^[0-9]+$'
                                          THEN CAST(r.diagnostics->'tts'->>'cacheMisses' AS bigint) END), 0),
                        COALESCE(sum(CASE WHEN r.diagnostics->'tts'->>'cacheCharsSaved' ~ '^[0-9]+$'
                                          THEN CAST(r.diagnostics->'tts'->>'cacheCharsSaved' AS bigint) END), 0),
-                       count(*) FILTER (WHERE r.diagnostics->'tts'->>'cacheHits' ~ '^[0-9]+$')
-                """ + BASE_FROM + " GROUP BY 1");
+                       count(*) FILTER (WHERE r.diagnostics->'tts'->>'cacheHits' ~ '^[0-9]+$'),
+                       COALESCE(sum(CASE WHEN r.diagnostics->'tts'->>'chars' ~ '^[0-9]+$'
+                                         THEN CAST(r.diagnostics->'tts'->>'chars' AS bigint) END), 0),
+                       COALESCE(sum(r.duration_seconds) FILTER (
+                           WHERE r.diagnostics->'tts'->>'chars' IS NULL
+                              OR NOT (r.diagnostics->'tts'->>'chars' ~ '^[0-9]+$')), 0),
+                       -- [16] Plivo's 30-second pulses, as each row prices them
+                       COALESCE(sum(CASE WHEN r.duration_seconds > 0
+                                         THEN (r.duration_seconds + 29) / 30 ELSE 0 END), 0),
+                       -- [17..19] LLM tokens of calls that reported usage, [20] seconds of those that did not
+                       COALESCE(sum(CASE WHEN r.diagnostics->'infra'->'llmUsage'->>'promptTokens' ~ '^[0-9]+$'
+                                         THEN CAST(r.diagnostics->'infra'->'llmUsage'->>'promptTokens' AS bigint) END), 0),
+                       COALESCE(sum(CASE WHEN r.diagnostics->'infra'->'llmUsage'->>'cachedTokens' ~ '^[0-9]+$'
+                                         THEN CAST(r.diagnostics->'infra'->'llmUsage'->>'cachedTokens' AS bigint) END), 0),
+                       COALESCE(sum(CASE WHEN r.diagnostics->'infra'->'llmUsage'->>'completionTokens' ~ '^[0-9]+$'
+                                         THEN CAST(r.diagnostics->'infra'->'llmUsage'->>'completionTokens' AS bigint) END), 0),
+                       COALESCE(sum(r.duration_seconds) FILTER (
+                           WHERE NOT COALESCE(r.diagnostics->'infra'->'llmUsage'->>'promptTokens' ~ '^[0-9]+$', false)), 0),
+                       -- [21] what the ledger charged (both legs), [22] calls with any charge,
+                       -- [23] inbound voice-leg pulses still to be charged
+                       COALESCE(sum(led.voice_credits), 0) + COALESCE(sum(led.ai_credits), 0),
+                       count(*) FILTER (WHERE led.voice_credits IS NOT NULL OR led.ai_credits IS NOT NULL),
+                """ + pulsesWhere(VOICE_PENDING_SQL + " AND COALESCE(r.direction, '') ILIKE 'INBOUND'") + "\n"
+                + fromWithLedger() + " GROUP BY 1");
         bind(q, instituteId, from, to, health, disposition, agentId);
+        q.setParameter("pulse", Math.max(1, pulseSeconds));
 
         long calls = 0, red = 0, amber = 0, green = 0, rec = 0;
         double minutes = 0, cost = 0, billedTotal = 0;
@@ -496,15 +723,41 @@ public class SuperAdminCallService {
             green += ((Number) r[5]).longValue();
             rec += ((Number) r[6]).longValue();
             byEngine.merge(engine, n, Long::sum);
-            long billedMins = ((Number) r[7]).longValue();     // ceil-minutes, as billed
-            long trunkMins = ((Number) r[8]).longValue();
-            long inboundMins = ((Number) r[9]).longValue();
+            // Pulses → billed minutes, per leg, for the legs not yet charged (see [7..9], [23]).
+            double pulseMinutes = Math.max(1, pulseSeconds) / 60.0;
+            double aiMins = ((Number) r[7]).longValue() * pulseMinutes;
+            double voiceMins = ((Number) r[8]).longValue() * pulseMinutes;
+            double aiInMins = ((Number) r[9]).longValue() * pulseMinutes;
+            double voiceInMins = ((Number) r[23]).longValue() * pulseMinutes;
+            double ledgerCredits = ((Number) r[21]).doubleValue();
+            billedTotal += ledgerCredits * card.getOrDefault("credit_inr", 0d);
 
             Map<String, Double> b = new LinkedHashMap<>();
-            b.put("plivo", round(card.getOrDefault("plivo", 0d) * billedMins));
+            // 30-second pulses, exactly as breakdown() prices each row. This used
+            // ceil-MINUTES, so the totals overstated Plivo by up to half a minute
+            // a call and disagreed with the rows they summed.
+            double pulseMins = ((Number) r[16]).longValue() / 2.0;
+            b.put("plivo", round(card.getOrDefault("plivo", 0d) * pulseMins));
             b.put("stt", round(card.getOrDefault("stt_sarvam", 0d) * mins));
-            b.put("tts", round(card.getOrDefault("tts_" + engine, 0d) * mins));
-            b.put("llm", round(card.getOrDefault("llm", 0d) * mins));
+            // Mirror of breakdown(): metered characters where the bot reported them,
+            // the 779 chars/call-min average only for the calls it did not. Computed
+            // the same way in both places so the summary can never drift from the
+            // rows it is summing.
+            // [13] is the count of calls that MEASURED; the characters are [14]
+            // and the unmeasured seconds [15]. Reading 13/14 here billed a call
+            // count as characters and characters as seconds — a group with 390k
+            // characters invoiced ~6,500 phantom minutes of TTS.
+            long measuredChars = ((Number) r[14]).longValue();
+            double unmeasuredMins = ((Number) r[15]).longValue() / 60.0;
+            double ttsPerMin = card.getOrDefault("tts_" + engine, 0d);
+            b.put("tts", round(measuredChars / CHARS_PER_CALL_MINUTE * ttsPerMin
+                               + unmeasuredMins * ttsPerMin));
+            Double tokenLlm = llmFromTokens(card, new long[]{((Number) r[17]).longValue(),
+                    ((Number) r[18]).longValue(), ((Number) r[19]).longValue()});
+            double untokenedMins = ((Number) r[20]).longValue() / 60.0;
+            b.put("llm", round(tokenLlm != null
+                    ? tokenLlm + card.getOrDefault("llm", 0d) * untokenedMins
+                    : card.getOrDefault("llm", 0d) * mins));
             b.forEach((k, v) -> agg.merge(k, v, Double::sum));
             cost += b.values().stream().mapToDouble(Double::doubleValue).sum();
 
@@ -520,20 +773,27 @@ public class SuperAdminCallService {
             Double gSaved = ttsCacheSavingInr(card, engine, (int) Math.min(gChars, Integer.MAX_VALUE));
             if (gSaved != null) cacheSaved += gSaved;
 
-            // Revenue, per engine and per meter, on CEIL-minutes as billing does.
+            // Revenue of the legs the ledger has not charged yet, per engine and per
+            // meter, in billing pulses (the charged ones were added above; a leg
+            // stamped at 0 is in neither). Each leg carries its own inbound split: the
+            // old single inbound count, taken over ALL calls, priced inbound minutes
+            // of own-carrier calls at the voice_call_in rate. The per-call minimum is
+            // not modelled in this aggregate (every row is 0).
             double credits = 0d;
             double[] vOut = pricing.get("voice_call_out"), vIn = pricing.get("voice_call_in");
             double[] aOut = pricing.get("ai_call_out"), aIn = pricing.get("ai_call_in");
-            if (vOut != null) credits += vOut[0] * Math.max(0, trunkMins - inboundMins);
-            if (vIn != null) credits += vIn[0] * Math.min(trunkMins, inboundMins);
             Double flatEngine = card.get("billed_inr_per_min_" + engine);
             if (flatEngine != null && flatEngine > 0) {
-                billedTotal += flatEngine * billedMins;
-                continue;                      // flat rate replaces the credit stack
+                // Flat rate replaces the credit stack; it rides the AI leg, as in estimatedInr().
+                billedTotal += flatEngine * aiMins;
+                continue;
             }
+            if (vOut != null) credits += vOut[0] * Math.max(0, voiceMins - voiceInMins);
+            if (vIn != null) credits += vIn[0] * voiceInMins;
+            // Floored at zero per minute, as CallBillingService and estimatedInr() do.
             double sur = surcharge.getOrDefault(engine, 0d);
-            if (aOut != null) credits += (aOut[0] + sur) * Math.max(0, billedMins - inboundMins);
-            if (aIn != null) credits += (aIn[0] + sur) * inboundMins;
+            if (aOut != null) credits += Math.max(0d, aOut[0] + sur) * Math.max(0, aiMins - aiInMins);
+            if (aIn != null) credits += Math.max(0d, aIn[0] + sur) * aiInMins;
             billedTotal += credits * card.getOrDefault("credit_inr", 0d);
         }
         agg.replaceAll((k, v) -> round(v));

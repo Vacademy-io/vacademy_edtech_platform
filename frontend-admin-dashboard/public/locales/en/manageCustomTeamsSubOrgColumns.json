@@ -1,0 +1,46 @@
+{
+    "columns": {
+        "name": "Institute Name",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "city": "City",
+        "state": "State",
+        "pincode": "Pincode",
+        "status": "Status",
+        "learners": "Learners",
+        "seats": "Seats",
+        "createdOn": "Created On",
+        "actions": "Actions"
+    },
+    "csv": {
+        "name": "Name",
+        "admin": "Admin",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "city": "City",
+        "state": "State",
+        "pincode": "Pincode",
+        "status": "Status",
+        "learners": "Learners",
+        "seatsUsed": "Seats Used",
+        "seatsTotal": "Seats Total",
+        "inviteCode": "Invite Code",
+        "createdOn": "Created On"
+    },
+    "fallback": {
+        "unknown": "Unknown"
+    },
+    "seats": {
+        "percentUsedAriaLabel_one": "{{percent}}% of seats used",
+        "percentUsedAriaLabel_other": "{{percent}}% of seats used"
+    },
+    "actions": {
+        "ariaLabel": "Actions for {{name}}",
+        "thisRow": "this row",
+        "openDetails": "Open details",
+        "copyInviteLink": "Copy invite link",
+        "shareCredentials": "Share credentials"
+    }
+}

@@ -1,0 +1,234 @@
+{
+    "roles": {
+        "learnerPortal": "Portail apprenant",
+        "adminPortal": "Portail administrateur",
+        "teacherPortal": "Portail enseignant"
+    },
+    "status": {
+        "configured": "Configuré",
+        "notConfigured": "Non configuré"
+    },
+    "configValue": {
+        "yes": "✓ Oui",
+        "no": "✗ Non"
+    },
+    "imageUpload": {
+        "uploadFailed": "Échec du téléchargement de l'image",
+        "changeImage": "Changer l'image",
+        "removeImage": "Supprimer l'image",
+        "iconPreviewAlt": "Aperçu de l'icône",
+        "fileUuidPlaceholder": "ou saisissez l'UUID du fichier"
+    },
+    "pagesDomain": {
+        "cnameHint": "S'il s'agit d'un domaine personnalisé (autre que vacademy.io), ajoutez un enregistrement CNAME chez votre fournisseur DNS :",
+        "sslHint": "Le SSL s'active automatiquement dès que Cloudflare valide l'enregistrement."
+    },
+    "configForm": {
+        "branding": {
+            "heading": "Identité visuelle",
+            "tabTitleLabel": "Titre de l'onglet",
+            "tabTitlePlaceholder": "Mon École",
+            "tabIconLabel": "ID de fichier de l'icône d'onglet",
+            "themeLabel": "Thème / Couleur",
+            "themePlaceholder": "#4F46E5 ou nom-du-thème",
+            "fontFamilyLabel": "Police de caractères",
+            "fontFamilyPlaceholder": "Inter, Roboto, etc.",
+            "hideNameLabel": "Masquer le nom de l'établissement",
+            "hideNameHint": "Activez cette option si votre logo contient déjà le nom de l'établissement. Masque le nom dans la barre latérale et la page de connexion.",
+            "stackNameLabel": "Empiler le nom sous le logo",
+            "stackNameHint": "Affiche le nom de l'établissement centré sous le logo au lieu d'à côté, dans l'en-tête de la barre latérale.",
+            "logoWidthLabel": "Largeur du logo (px)",
+            "logoWidthHint": "Laissez vide pour utiliser la valeur par défaut. Définissez 250 ou plus ET effacez la hauteur pour que le logo de la barre latérale occupe toute la largeur, bord à bord.",
+            "logoHeightLabel": "Hauteur du logo (px)",
+            "logoHeightHint": "Laissez vide pour une mise à l'échelle proportionnelle à la largeur (requis pour un logo pleine largeur). Définissez une valeur pour ajuster le logo dans un cadre fixe."
+        },
+        "auth": {
+            "heading": "Authentification",
+            "allowSignup": "Autoriser l'inscription",
+            "googleAuth": "Authentification Google",
+            "githubAuth": "Authentification GitHub",
+            "emailOtpAuth": "Authentification par OTP e-mail",
+            "phoneAuth": "Authentification par téléphone",
+            "usernamePasswordAuth": "Authentification identifiant/mot de passe",
+            "convertUsernameLowercase": "Convertir l'identifiant en minuscules"
+        },
+        "phone": {
+            "heading": "Préférences de saisie du téléphone",
+            "preferredCountriesLabel": "Pays préférés",
+            "preferredCountriesHint": "Le premier pays sélectionné est présélectionné dans les champs téléphone des portails apprenant et administrateur. La liste complète détermine l'ordre du sélecteur de pays. Utilisez les flèches ↑ / ↓ sur chaque puce pour réorganiser.",
+            "geoModeLabel": "Quand un formulaire est ouvert à l'étranger",
+            "geoModePreview": "Vous êtes en {{detected}}. Avec ces réglages, un champ téléphone sur ce portail démarrerait sur {{resolved}}. Ajoutez ?phoneCountry=ru à l'URL d'un formulaire pour prévisualiser un autre pays.",
+            "geoModePreviewUnknown": "Votre région n'a pas pu être détectée depuis ce navigateur ; la valeur de repli s'applique : un champ téléphone démarrerait sur {{resolved}}.",
+            "geoModes": {
+                "INSTITUTE_FIRST": {
+                    "label": "Les pays préférés priment",
+                    "hint": "La liste ci-dessus décide. Le pays depuis lequel le formulaire est ouvert n'est utilisé que si vous n'avez sélectionné aucun pays préféré — un formulaire ouvert en Russie démarre alors sur +7 au lieu de l'Inde."
+                },
+                "GEO_FIRST": {
+                    "label": "Suivre le pays du visiteur",
+                    "hint": "Le pays depuis lequel le formulaire est ouvert est pré-sélectionné ; vos pays préférés ordonnent le reste du sélecteur. Idéal si vous recrutez dans plusieurs pays."
+                },
+                "INSTITUTE_ONLY": {
+                    "label": "Pays préférés uniquement",
+                    "hint": "Ne jamais tenir compte du lieu d'ouverture du formulaire. À choisir si tous les numéros collectés appartiennent à un seul pays."
+                }
+            }
+        },
+        "routes": {
+            "heading": "Routes",
+            "redirectLabel": "URL de redirection",
+            "redirectPlaceholder": "/dashboard",
+            "afterLoginLabel": "Route après connexion",
+            "afterLoginPlaceholder": "/dashboard",
+            "afterLogoutLabel": "Route après déconnexion",
+            "afterLogoutPlaceholder": "/login",
+            "homeClickLabel": "Route au clic sur l'icône d'accueil",
+            "homeClickPlaceholder": "/"
+        },
+        "links": {
+            "heading": "Liens",
+            "privacyPolicyLabel": "URL de la politique de confidentialité",
+            "privacyPolicyPlaceholder": "https://myschool.com/privacy",
+            "termsLabel": "URL des conditions générales",
+            "termsPlaceholder": "https://myschool.com/terms",
+            "playStoreLabel": "Lien Play Store",
+            "playStorePlaceholder": "https://play.google.com/...",
+            "appStoreLabel": "Lien App Store",
+            "appStorePlaceholder": "https://apps.apple.com/...",
+            "windowsLabel": "Lien de l'application Windows",
+            "macLabel": "Lien de l'application Mac",
+            "genericUrlPlaceholder": "https://..."
+        }
+    },
+    "notAvailable": {
+        "strong": "Non disponible sur ce déploiement.",
+        "description": "Les identifiants API Cloudflare ne sont pas configurés. Contactez votre administrateur de plateforme."
+    },
+    "header": {
+        "title": "Configuration de domaine en marque blanche",
+        "description": "Configurez des domaines personnalisés, l'identité visuelle, les paramètres d'authentification et plus encore pour chaque portail.",
+        "refreshStatus": "Actualiser le statut"
+    },
+    "currentConfig": {
+        "title": "Configuration actuelle",
+        "primaryUrlsLabel": "URL principales des portails (par défaut de l'établissement)",
+        "noPortalUrls": "Aucune URL de portail définie.",
+        "domainRoutingEntries": "Entrées de routage de domaine",
+        "totalBadge": "{{count}} au total"
+    },
+    "setupCard": {
+        "titleUpdate": "Ajouter / mettre à jour des domaines",
+        "titleNew": "Nouvelle configuration",
+        "descriptionPart1": "Ajoutez des entrées de domaine ci-dessous. Cliquez sur",
+        "settingsLabel": "⚙ Paramètres",
+        "descriptionPart2": "sur chaque entrée pour configurer l'identité visuelle, l'authentification, les routes et les liens.",
+        "tip": {
+            "label": "Astuce :",
+            "enterPrefix": "Saisissez",
+            "vacademySuffix": "pour les sous-domaines Vacademy, ou",
+            "customSuffix": "pour les domaines personnalisés. Marquez-en un par rôle comme ⭐ Principal."
+        },
+        "roleLabel": "Rôle",
+        "domainLabel": "Domaine",
+        "domainPlaceholder": "learn.myschool.com",
+        "primary": "Principal",
+        "setPrimary": "Définir comme principal",
+        "primaryTooltip": "URL du portail pour ce rôle — utilisée dans les e-mails une fois le domaine actif",
+        "setPrimaryTooltip": "Utiliser ce domaine comme URL du portail pour ce rôle",
+        "settingsToggle": "Paramètres",
+        "toggleSettingsTooltip": "Afficher/masquer les paramètres",
+        "removeTooltip": "Supprimer",
+        "addAnotherDomain": "Ajouter un autre domaine",
+        "configuring": "Configuration en cours…",
+        "updateButton": "Mettre à jour la configuration en marque blanche",
+        "applyButton": "Appliquer la configuration en marque blanche",
+        "preservedHint": "Les entrées existantes sont conservées. Seuls les domaines listés sont créés/mis à jour.",
+        "draftRestored": "Les domaines que vous ajoutiez avant de quitter cet onglet ont été restaurés. Rien n'est actif tant que la configuration n'est pas appliquée.",
+        "discardDraft": "Abandonner et recharger les domaines enregistrés",
+        "unsavedChanges": "Modifications non enregistrées — cliquez sur Appliquer pour les enregistrer."
+    },
+    "toast": {
+        "noInstituteSelected": "Aucun établissement sélectionné",
+        "addAtLeastOneDomain": "Ajoutez au moins une entrée de domaine",
+        "setupCompleted": "Configuration en marque blanche terminée ! 🎉",
+        "setupFailed": "Échec de la configuration.",
+        "portalUrlAdopted": "L'URL du portail {{roles}} est maintenant active et enregistrée."
+    },
+    "setupResult": {
+        "title": "Configuration terminée",
+        "pagesCustomDomains": "Domaines personnalisés Pages",
+        "pagesHint": "Ces domaines relient l'hôte à l'application afin qu'elle soit réellement servie. Un enregistrement DNS seul ne suffit pas.",
+        "dnsRecordsConfigured": "Enregistrements DNS configurés"
+    },
+    "routingEntryCard": {
+        "cloudflareStatusTooltip": "Statut du domaine personnalisé Cloudflare",
+        "tabPrefix": "Onglet : {{value}}",
+        "themePrefix": "Thème : {{value}}",
+        "showDetailsTooltip": "Afficher les détails",
+        "cnameInstructionPrefix": "Ajoutez cet enregistrement DNS chez votre fournisseur pour",
+        "cnameInstructionSuffix": "afin d'activer ce domaine :",
+        "dnsType": "Type",
+        "dnsName": "Nom",
+        "dnsValue": "Valeur",
+        "sslAutoActivate": "Le SSL s'active automatiquement dès que Cloudflare valide l'enregistrement.",
+        "defaultCountryTooltip": "Pays sélectionné par défaut",
+        "preferredCountries": "Pays préférés",
+        "fields": {
+            "domain": "Domaine",
+            "subdomain": "Sous-domaine",
+            "tabTitle": "Titre de l'onglet",
+            "tabIcon": "Icône d'onglet",
+            "theme": "Thème",
+            "font": "Police",
+            "redirect": "Redirection",
+            "afterLogin": "Après connexion",
+            "afterLogout": "Après déconnexion",
+            "homeClick": "Clic accueil",
+            "signUp": "Inscription",
+            "googleAuth": "Authentification Google",
+            "githubAuth": "Authentification GitHub",
+            "emailOtp": "OTP e-mail",
+            "phoneAuth": "Authentification téléphone",
+            "userPassAuth": "Auth. identifiant/mot de passe",
+            "privacyPolicy": "Politique de confidentialité",
+            "terms": "Conditions",
+            "playStore": "Play Store",
+            "appStore": "App Store",
+            "windows": "Windows",
+            "mac": "Mac",
+            "hideInstituteName": "Masquer le nom de l'établissement",
+            "logoWidth": "Largeur du logo (px)",
+            "logoHeight": "Hauteur du logo (px)",
+            "stackNameBelowLogo": "Nom empilé sous le logo"
+        },
+        "portalUrl": "URL du portail",
+        "portalUrlTooltip": "Les e-mails et les liens partagés utilisent actuellement ce domaine",
+        "primaryPending": "Principal · en attente",
+        "primaryPendingTooltip": "Choisi comme URL du portail — enregistré dès que ce domaine est actif",
+        "willBeAdoptedOnceActive": "Choisi comme URL du portail. Il sera enregistré automatiquement dès que ce domaine sera actif — d'ici là, les e-mails et les liens continueront d'utiliser l'URL du portail actuelle."
+    },
+    "subOrg": {
+        "label": "Sous-organisation",
+        "none": "Établissement parent",
+        "untitled": "Sous-organisation sans nom",
+        "badgeTooltip": "Ce portail est aux couleurs de cette sous-organisation et lui est réservé",
+        "searchPlaceholder": "Rechercher une sous-organisation…",
+        "searchEmpty": "Aucune sous-organisation ne correspond à ce nom."
+    },
+    "shortLinkDns": {
+        "title": "Domaine des liens courts",
+        "description": "Envoyez cet enregistrement au client en même temps que les CNAME des portails, afin que ses liens courts utilisent son propre domaine plutôt que u.vacademy.io.",
+        "hostLabel": "Les liens courts seront servis depuis",
+        "dnsType": "Type",
+        "dnsName": "Nom",
+        "dnsValue": "Valeur",
+        "dnsTtl": "TTL",
+        "dnsProxy": "Proxy",
+        "ttlAuto": "Auto",
+        "proxyOff": "DNS uniquement — ne pas proxifier",
+        "copy": "Copier l'enregistrement",
+        "copied": "Enregistrement DNS copié",
+        "copyFailed": "Copie impossible — sélectionnez les valeurs manuellement",
+        "platformNote": "L'enregistrement seul ne suffit pas : l'équipe plateforme doit aussi ajouter cet hôte à l'ingress et enregistrer le domaine pour cet établissement. Si le domaine est enregistré avant que l'enregistrement DNS ne soit actif, les liens courts cesseront de fonctionner au lieu de revenir à u.vacademy.io."
+    }
+}

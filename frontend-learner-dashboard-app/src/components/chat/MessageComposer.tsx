@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { PaperPlaneRight, ImageSquare, X, Spinner } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileUpload } from "@/hooks/use-file-upload";
@@ -33,6 +34,7 @@ export function MessageComposer({
   allowAttachments = true,
   onSend,
 }: MessageComposerProps) {
+  const { t } = useTranslation("chatFeatureA");
   const [text, setText] = useState("");
   const [attachment, setAttachment] = useState<ComposerAttachment | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,7 +65,7 @@ export function MessageComposer({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Only image attachments are supported.");
+      toast.error(t("composer.imageOnlyError"));
       e.target.value = "";
       return;
     }
@@ -85,7 +87,7 @@ export function MessageComposer({
       });
     } catch (err) {
       console.error("Chat attachment upload failed:", err);
-      toast.error("Failed to upload image. Please try again.");
+      toast.error(t("composer.uploadFailedError"));
     } finally {
       e.target.value = "";
     }
@@ -94,7 +96,7 @@ export function MessageComposer({
   if (disabled) {
     return (
       <div className="shrink-0 border-t border-border bg-muted/30 px-4 py-3 text-center text-caption text-muted-foreground">
-        {disabledReason || "You can't post in this conversation."}
+        {disabledReason || t("composer.disabledDefault")}
       </div>
     );
   }
@@ -113,7 +115,7 @@ export function MessageComposer({
           </span>
           <button
             type="button"
-            aria-label="Remove attachment"
+            aria-label={t("composer.removeAttachmentAria")}
             onClick={() => setAttachment(null)}
             className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
           >
@@ -137,7 +139,7 @@ export function MessageComposer({
               variant="ghost"
               size="icon"
               className="shrink-0"
-              aria-label="Attach image"
+              aria-label={t("composer.attachAria")}
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -155,7 +157,7 @@ export function MessageComposer({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
-          placeholder="Type a message…"
+          placeholder={t("composer.placeholder")}
           className={cn(
             "max-h-40 min-h-10 flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2",
             "text-body placeholder:text-muted-foreground",
@@ -167,7 +169,7 @@ export function MessageComposer({
           type="button"
           size="icon"
           className="shrink-0"
-          aria-label="Send message"
+          aria-label={t("composer.sendAria")}
           disabled={!canSend}
           onClick={submit}
         >

@@ -1,0 +1,30 @@
+{
+    "toasts": {
+        "selectLevelFirst": "Please select a course level first",
+        "loadFailed": "Failed to load students from course",
+        "alreadyInList": "All selected students are already in your list",
+        "added_one": "Added {{count}} student",
+        "added_other": "Added {{count}} students"
+    },
+    "labels": {
+        "sourceCourse": "Source {{courseTerm}}",
+        "statusFilter": "Status filter"
+    },
+    "placeholders": {
+        "select": "Select {{term}}"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "invited": "Invited"
+    },
+    "actions": {
+        "loading": "Loading…",
+        "load": "Load {{learnersTerm}}",
+        "add": "Add {{count}} {{term}}"
+    },
+    "list": {
+        "selectedCount": "{{checked}}/{{total}} selected",
+        "empty": "No {{learnersTerm}} found. Click \"{{loadLabel}}\" to search."
+    }
+}

@@ -7,6 +7,7 @@ import type { DashboardWidgetId } from '@/types/display-settings';
 // Keep this in sync with DashboardWidgetId. Adding a new widget? Add it to
 // the union, both default lists (admin / teacher), AND this map.
 export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
+    assistantLaunchBar: 'Assistant composer (dashboard)',
     quickActions: 'Quick Actions strip',
     kpiBand: 'KPI band',
     pendingActions: 'Pending Actions inbox',
@@ -36,6 +37,7 @@ export const DASHBOARD_WIDGET_LABELS: Record<DashboardWidgetId, string> = {
     subOrgSeatCourses: 'My learners & courses (sub-org admin)',
     subOrgActivityDues: 'My plan & dues (sub-org admin)',
     mentorshipStats: 'Mentorship stats',
+    lmsConnectionHealth: 'LMS connection health',
 };
 
 export const widgetLabel = (id: DashboardWidgetId): string =>

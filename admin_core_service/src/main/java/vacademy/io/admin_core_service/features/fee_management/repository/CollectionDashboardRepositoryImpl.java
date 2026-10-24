@@ -120,8 +120,12 @@ public class CollectionDashboardRepositoryImpl implements CollectionDashboardRep
             "GROUP BY ps.id, pkg.package_name, l.level_name, ps.name, s.session_name " +
             "ORDER BY pkg.package_name NULLS LAST, l.level_name NULLS LAST, ps.name NULLS LAST";
 
+    // An offline payment recorded with a mode (V577) is grouped by that mode (UPI, CHEQUE ...);
+    // gateway payments and offline payments without one keep grouping by vendor.
+    private static final String PAYMENT_MODE_KEY = "COALESCE(pl.payment_mode, pl.vendor)";
+
     private static final String PAYMENT_MODE_SELECT =
-            "SELECT pl.vendor, COALESCE(SUM(sal.amount_allocated),0) ";
+            "SELECT " + PAYMENT_MODE_KEY + ", COALESCE(SUM(sal.amount_allocated),0) ";
 
     private static final String PAYMENT_MODE_FROM =
             "FROM student_fee_allocation_ledger sal " +
@@ -175,7 +179,7 @@ public class CollectionDashboardRepositoryImpl implements CollectionDashboardRep
     public List<Object[]> getPaymentModeBreakdown(String instituteId, String sessionId,
                                                     boolean hasFeeTypes, List<String> feeTypeIds) {
         String sql = PAYMENT_MODE_SELECT + PAYMENT_MODE_FROM
-                + buildOptionalClauses(sessionId, hasFeeTypes, feeTypeIds) + "GROUP BY pl.vendor";
+                + buildOptionalClauses(sessionId, hasFeeTypes, feeTypeIds) + "GROUP BY " + PAYMENT_MODE_KEY;
         Query q = entityManager.createNativeQuery(sql);
         bindParams(q, instituteId, sessionId, hasFeeTypes, feeTypeIds);
         return q.getResultList();

@@ -7,6 +7,12 @@ export interface GroupedNotification {
   alert: UserMessage;
   count: number;
   isRead: boolean;
+  /**
+   * Every occurrence folded into this row, newest first. Dismissing a grouped
+   * row has to clear all of them — clearing only `alert` leaves the remaining
+   * duplicates behind and the row simply reappears with a smaller count.
+   */
+  messageIds: string[];
 }
 
 /** Single date format for notifications: "Jun 10, 4:14 PM" (year only when it differs). */
@@ -28,10 +34,16 @@ export const groupNotifications = (alerts: UserMessage[]): GroupedNotification[]
     const key = `${alert.title ?? ''}::${alert.content?.content ?? ''}`;
     const existing = groups.get(key);
     if (!existing) {
-      groups.set(key, { alert, count: 1, isRead: alert.isRead });
+      groups.set(key, {
+        alert,
+        count: 1,
+        isRead: alert.isRead,
+        messageIds: [alert.messageId],
+      });
     } else {
       existing.count += 1;
       existing.isRead = existing.isRead && alert.isRead;
+      existing.messageIds.push(alert.messageId);
       if (getCreatedAtMs(alert) > getCreatedAtMs(existing.alert)) {
         existing.alert = alert; // keep the latest occurrence (latest timestamp wins)
       }

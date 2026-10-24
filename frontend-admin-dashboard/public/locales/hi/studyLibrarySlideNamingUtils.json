@@ -1,0 +1,16 @@
+{
+    "types": {
+        "document": "डॉक्यूमेंट",
+        "presentation": "प्रेज़ेंटेशन",
+        "jupyterNotebook": "Jupyter नोटबुक",
+        "scratchProject": "Scratch प्रोजेक्ट",
+        "codeEditor": "कोड एडिटर",
+        "video": "वीडियो",
+        "audio": "ऑडियो",
+        "question": "प्रश्न",
+        "assignment": "असाइनमेंट",
+        "pdfDocument": "PDF डॉक्यूमेंट",
+        "slide": "स्लाइड",
+        "quiz": "क्विज़"
+    }
+}

@@ -1,0 +1,151 @@
+{
+    "dialogTitle": "{{channelLabel}} भेजें",
+    "dialogDescription": {
+        "withStudent": "{{name}} को {{contentType}} भेजें।",
+        "noStudent": "कोई विद्यार्थी चयनित नहीं है।"
+    },
+    "channelLabel": {
+        "EMAIL": "ईमेल",
+        "WHATSAPP": "व्हाट्सएप"
+    },
+    "contentType": {
+        "EMAIL": "टेम्पलेट वाला ईमेल",
+        "WHATSAPP": "टेम्पलेट वाला व्हाट्सएप संदेश"
+    },
+    "steps": {
+        "selectTemplate": "टेम्पलेट चुनें",
+        "composeContent": "सामग्री लिखें",
+        "mapVariables": "वेरिएबल मैप करें",
+        "reviewSend": "समीक्षा और भेजें"
+    },
+    "systemFields": {
+        "fullName": "पूरा नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "city": "शहर",
+        "region": "क्षेत्र",
+        "gender": "लिंग",
+        "enrollmentId": "नामांकन आईडी",
+        "fathersName": "पिता का नाम",
+        "mothersName": "माता का नाम",
+        "username": "यूज़रनेम",
+        "password": "पासवर्ड"
+    },
+    "toasts": {
+        "loadEmailTemplatesFailed": "ईमेल टेम्पलेट लोड नहीं हो सके",
+        "loadWaTemplatesFailed": "व्हाट्सएप टेम्पलेट लोड नहीं हो सके",
+        "loadTemplateContentFailed": "टेम्पलेट सामग्री लोड नहीं हो सकी",
+        "noEmailAddress": "इस विद्यार्थी का कोई ईमेल पता नहीं है।",
+        "noMobileNumber": "इस विद्यार्थी का कोई मोबाइल नंबर नहीं है।",
+        "emailSent": "ईमेल भेज दिया गया",
+        "selectWaTemplateFirst": "पहले एक व्हाट्सएप टेम्पलेट चुनें",
+        "whatsappSent": "व्हाट्सएप संदेश भेज दिया गया",
+        "sendFailed": "भेजने में विफल",
+        "whatsappQueued": "व्हाट्सएप ने संदेश स्वीकार कर लिया — डिलीवरी की पुष्टि अलग से होगी",
+        "whatsappRejected": "व्हाट्सएप ने यह संदेश अस्वीकार कर दिया — यह भेजा नहीं गया",
+        "whatsappRejectedWithReason": "व्हाट्सएप ने यह संदेश अस्वीकार कर दिया: {{reason}}",
+        "emailRejected": "ईमेल डिलीवरी के लिए स्वीकार नहीं किया गया",
+        "emailRejectedWithReason": "ईमेल स्वीकार नहीं किया गया: {{reason}}"
+    },
+    "emailTemplateStep": {
+        "templateLabel": "टेम्पलेट",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+        "selectPlaceholder": "एक टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से मेल खाने वाला कोई टेम्पलेट नहीं है।",
+        "customOption": "कस्टम — शुरू से लिखें",
+        "loadingContent": "टेम्पलेट सामग्री लोड हो रही है..."
+    },
+    "emailComposeStep": {
+        "emailTypeLabel": "ईमेल प्रकार",
+        "emailTypeUtility": "यूटिलिटी ईमेल",
+        "emailTypePromotional": "प्रचारात्मक ईमेल",
+        "emailTypeTransactional": "लेन-देन संबंधी ईमेल",
+        "subjectLabel": "विषय",
+        "subjectPlaceholder": "ईमेल का विषय दर्ज करें...",
+        "bodyLabel": "मुख्य भाग",
+        "previewTab": "पूर्वावलोकन",
+        "editTab": "HTML संपादित करें",
+        "emptyBodyPreview": "सामग्री लिखने के लिए एक टेम्पलेट चुनें या 'HTML संपादित करें' पर जाएं।",
+        "bodyPlaceholder": "ईमेल का HTML मुख्य भाग दर्ज करें... प्लेसहोल्डर के लिए {{varSyntax}} का उपयोग करें",
+        "bodyHelpPrefix": "जैसे प्लेसहोल्डर",
+        "bodyHelpSuffix": "भेजते समय विद्यार्थी के डेटा से बदल दिए जाते हैं। इन्हें अगले चरण में मैप करें।"
+    },
+    "waTemplateStep": {
+        "templateLabel": "टेम्पलेट",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+        "selectPlaceholder": "एक स्वीकृत टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से मेल खाने वाला कोई स्वीकृत टेम्पलेट नहीं है।",
+        "languageCodeLabel": "भाषा कोड",
+        "templatePreviewLabel": "टेम्पलेट पूर्वावलोकन",
+        "previewHint": "हाइलाइट किए गए हिस्से प्लेसहोल्डर हैं — अगले चरण में इन्हें इस शिक्षार्थी की जानकारी से भरा जाएगा।",
+        "headerBadge": "{{kind}} हेडर"
+    },
+    "mediaKind": {
+        "image": "छवि",
+        "video": "वीडियो",
+        "document": "दस्तावेज़"
+    },
+    "headerMediaField": {
+        "label": "हेडर {{kind}} URL",
+        "helpText": "इस टेम्पलेट में {{kind}} हेडर है, जिसे व्हाट्सएप हर भेजने पर अनिवार्य करता है — इसके बिना संदेश भेजना विफल हो जाता है। टेम्पलेट के साथ स्वीकृत मीडिया से पहले से भरा हुआ है।",
+        "previewAlt": "हेडर पूर्वावलोकन"
+    },
+    "variableMappingStep": {
+        "noVariables": "मैप करने के लिए कोई वेरिएबल नहीं है। आप आगे बढ़ सकते हैं।",
+        "mapHint": "प्रत्येक प्लेसहोल्डर को विद्यार्थी के किसी फ़ील्ड से मैप करें, या एक निश्चित मान दर्ज करें।",
+        "columnVariable": "वेरिएबल",
+        "columnSource": "स्रोत",
+        "columnResolvedValue": "हल किया गया मान",
+        "sourcePlaceholder": "स्रोत चुनें...",
+        "literalOption": "निश्चित मान...",
+        "literalPlaceholder": "एक मान लिखें",
+        "unresolved": "(अनसुलझा)",
+        "livePreviewLabel": "संदेश पूर्वावलोकन",
+        "sourceSearchPlaceholder": "फ़ील्ड खोजें...",
+        "sourceNoMatch": "आपकी खोज से कोई फ़ील्ड मेल नहीं खाता।"
+    },
+    "reviewStep": {
+        "messageSent": "संदेश भेजा गया",
+        "sendCompleted": "भेजना पूर्ण हुआ",
+        "statusLabel": "स्थिति",
+        "acceptedLabel": "स्वीकृत",
+        "failedLabel": "विफल",
+        "close": "बंद करें",
+        "noSubject": "(कोई विषय नहीं)",
+        "channelHeading": "चैनल",
+        "subjectLabel": "विषय",
+        "templateLabel": "टेम्पलेट",
+        "recipientLabel": "प्राप्तकर्ता",
+        "variablesLabel": "वेरिएबल",
+        "empty": "(खाली)",
+        "sending": "भेजा जा रहा है...",
+        "sendTo": "{{name}} को भेजें",
+        "delivered": "डिलीवर हो गया",
+        "notDelivered": "डिलीवर नहीं हुआ",
+        "confirmingDelivery": "डिलीवरी की पुष्टि हो रही है…",
+        "deliveryLabel": "डिलीवरी",
+        "sendFailed": "संदेश नहीं भेजा गया",
+        "noReason": "प्रदाता ने कोई कारण नहीं बताया।",
+        "deliveryStatus": {
+            "SENT": "भेजा गया",
+            "DELIVERED": "डिलीवर हो गया",
+            "READ": "पढ़ा गया",
+            "FAILED": "विफल"
+        },
+        "messagePreviewLabel": "जो संदेश भेजा जाएगा"
+    },
+    "footer": {
+        "back": "पीछे",
+        "next": "आगे"
+    },
+    "templatePicker": {
+        "showFullMessage": "पूरा संदेश देखें",
+        "showLess": "कम दिखाएं"
+    },
+    "waPreview": {
+        "image": "छवि",
+        "video": "वीडियो",
+        "document": "दस्तावेज़",
+        "emptyBody": "इस टेम्पलेट में कोई संदेश सामग्री नहीं है।"
+    }
+}

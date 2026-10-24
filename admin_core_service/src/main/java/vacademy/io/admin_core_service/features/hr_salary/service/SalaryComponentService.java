@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_salary.dto.SalaryComponentDTO;
 import vacademy.io.admin_core_service.features.hr_salary.entity.SalaryComponent;
 import vacademy.io.admin_core_service.features.hr_salary.enums.ComponentCategory;
@@ -19,6 +20,9 @@ public class SalaryComponentService {
 
     @Autowired
     private SalaryComponentRepository salaryComponentRepository;
+
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
 
     @Transactional
     public String createComponent(SalaryComponentDTO dto, String instituteId) {
@@ -66,9 +70,10 @@ public class SalaryComponentService {
     }
 
     @Transactional
-    public String updateComponent(String id, SalaryComponentDTO dto) {
+    public String updateComponent(String id, SalaryComponentDTO dto, String instituteId) {
         SalaryComponent component = salaryComponentRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Salary component not found"));
+        hrAccessGuard.requireInstituteMatch(component.getInstituteId(), instituteId, "Salary component");
 
         if (StringUtils.hasText(dto.getName())) {
             component.setName(dto.getName());

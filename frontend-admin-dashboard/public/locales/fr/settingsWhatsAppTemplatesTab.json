@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "Modèles WhatsApp",
+        "subtitle": "Associez vos modèles WhatsApp approuvés par Meta à des champs de données internes."
+    },
+    "infoBox": {
+        "title": "Gestion des modèles WhatsApp",
+        "description": "Les modèles doivent être créés et approuvés via l'API WhatsApp Business de Meta ou le Gestionnaire d'entreprise. Utilisez cette interface pour synchroniser les modèles approuvés et associer des valeurs dynamiques aux données de votre CRM."
+    },
+    "search": {
+        "placeholder": "Rechercher des modèles..."
+    },
+    "actions": {
+        "syncing": "Synchronisation...",
+        "syncTemplates": "Synchroniser les modèles"
+    },
+    "templateCount": "Modèles WhatsApp ({{count}})",
+    "loading": {
+        "templates": "Chargement des modèles WhatsApp..."
+    },
+    "emptyState": {
+        "title": "Aucun modèle approuvé",
+        "description": "Aucun modèle WhatsApp approuvé trouvé. Créez d'abord des modèles via le Gestionnaire d'entreprise de Meta."
+    },
+    "table": {
+        "headers": {
+            "templateName": "Nom du modèle",
+            "language": "Langue",
+            "category": "Catégorie",
+            "status": "Statut",
+            "mappings": "Associations",
+            "lastSynced": "Dernière synchronisation",
+            "actions": "Actions"
+        },
+        "never": "Jamais",
+        "editMappings": "Modifier les associations",
+        "mapValues": "Associer des valeurs",
+        "editShort": "Modifier",
+        "mapShort": "Associer"
+    },
+    "mappingStatus": {
+        "configured": "Configuré",
+        "notConfigured": "Non configuré"
+    },
+    "errors": {
+        "loadFailed": "Échec du chargement des modèles WhatsApp.",
+        "syncFailed": "Échec de la synchronisation des modèles."
+    },
+    "success": {
+        "synced": "Modèles WhatsApp synchronisés avec succès !",
+        "mappingSaved": "Association du modèle enregistrée avec succès !"
+    }
+}

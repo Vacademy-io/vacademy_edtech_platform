@@ -1,0 +1,61 @@
+{
+    "header": {
+        "title": "إضافة مشاركين",
+        "update": "تحديث",
+        "next": "التالي"
+    },
+    "participantAccess": {
+        "heading": "إعدادات وصول المشاركين",
+        "closedTest": {
+            "label": "اختبار مغلق:",
+            "description": "قصر التقييم على مشاركين محددين عن طريق تخصيصه لمجموعات المؤسسة أو تحديد {{term}} فرديين."
+        },
+        "openTest": {
+            "label": "اختبار مفتوح:",
+            "description": "السماح لأي شخص بالتسجيل في هذا التقييم عبر رابط مشترك. يمكن أيضًا تسجيل {{term}} المؤسسة مسبقًا عن طريق اختيار المجموعات أو الأفراد."
+        }
+    },
+    "registration": {
+        "heading": "تسجيل التقييم",
+        "startDateLabel": "تاريخ ووقت البدء",
+        "endDateLabel": "تاريخ ووقت الانتهاء",
+        "aboutHeading": "حول تسجيل التقييم",
+        "instructionsPlaceholder": "تعليمات التسجيل",
+        "fields": {
+            "heading": "حقول نموذج التسجيل",
+            "helperText": "انقر على أيقونة القلم لإعادة تسمية حقل أو تعديل خياراته",
+            "addGenderButton": "إضافة الجنس",
+            "addStateButton": "إضافة الولاية",
+            "addCityButton": "إضافة المدينة",
+            "addSchoolCollegeButton": "إضافة المدرسة/الكلية",
+            "addCustomFieldButton": "إضافة حقل مخصص"
+        },
+        "preview": {
+            "triggerButton": "معاينة نموذج التسجيل",
+            "heading": "معاينة نموذج التسجيل",
+            "registerNowButton": "سجّل الآن"
+        }
+    },
+    "joinLink": {
+        "heading": "رابط الانضمام",
+        "placeholder": "رابط الانضمام"
+    },
+    "qrCode": {
+        "heading": "رمز الاستجابة السريعة"
+    },
+    "notifyParticipants": {
+        "heading": "إشعار المشاركين عبر البريد الإلكتروني:",
+        "whenAssessmentCreated": "عند إنشاء التقييم",
+        "beforeAssessmentGoesLive": "قبل أن يصبح التقييم مباشرًا",
+        "notifyBeforeLabel": "الإشعار قبل",
+        "whenAssessmentLive": "عندما يصبح التقييم مباشرًا",
+        "whenReportGenerated": "عند إنشاء تقارير التقييم"
+    },
+    "toasts": {
+        "updateSuccess": "تم تحديث بيانات الخطوة 3 بنجاح!",
+        "saveSuccess": "تم حفظ بيانات الخطوة 3 بنجاح!"
+    },
+    "errors": {
+        "saveFailed": "فشل حفظ المشاركين."
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "toasts": {
+        "pdfExportSuccess": "Student question insights data for PDF exported successfully"
+    },
+    "questionCard": {
+        "heading": "Question ({{number}}.)",
+        "correctAnswerLabel": "Correct Answer:",
+        "explanationLabel": "Explanation:",
+        "topResponsesTitle": "Top 3 quick correct responses",
+        "secondsSuffix_one": "{{count}} sec",
+        "secondsSuffix_other": "{{count}} sec"
+    },
+    "summary": {
+        "totalAttempts_one": "Total Attempt: {{count}} student",
+        "totalAttempts_other": "Total Attempt: {{count}} students"
+    },
+    "respondents": {
+        "correctLabel": "Correct Respondents: ",
+        "partialLabel": "Partially Correct Respondents: ",
+        "wrongLabel": "Wrong Respondents: ",
+        "skippedLabel": "Skipped: ",
+        "viewList": "View List",
+        "notAvailable": "N/A"
+    },
+    "dialogs": {
+        "correctTitle": "Correct Respondents",
+        "partialTitle": "Partially Correct Respondents",
+        "wrongTitle": "Wrong Respondents",
+        "skippedTitle": "Skipped Respondents"
+    }
+}

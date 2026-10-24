@@ -1,0 +1,12 @@
+{
+    "title": "Marks-Rank Graph",
+    "chart": {
+        "rankAxisLabel": "Rank",
+        "marksAxisLabel": "Marks Obtained",
+        "markSeriesLabel": "Marks"
+    },
+    "export": {
+        "pdfSuccess": "Student rank mark data for PDF exported successfully",
+        "csvSuccess": "Student rank mark data for CSV exported successfully"
+    }
+}

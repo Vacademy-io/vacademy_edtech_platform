@@ -1,0 +1,187 @@
+{
+    "productPageOffer": {
+        "seeAll": "عرض الكل",
+        "pickPage": "اختر صفحة منتج من لوحة الخصائص لعرض دوراتها هنا.",
+        "loading": "جاري تحميل الدورات…",
+        "noCourses": "لا تحتوي صفحة المنتج هذه على دورات نشطة بعد.",
+        "courseFallback": "دورة",
+        "free": "مجاني",
+        "viewCourse": "عرض الدورة",
+        "enrolNow": "سجّل الآن",
+        "addToCart": "أضف إلى السلة",
+        "checkout": "المتابعة إلى الدفع",
+        "basketPreviewCount_zero": "لم يتم تحديد أي دورة",
+        "basketPreviewCount_one": "تم تحديد دورة واحدة",
+        "basketPreviewCount_two": "تم تحديد دورتان",
+        "basketPreviewCount_few": "تم تحديد {{count}} دورات",
+        "basketPreviewCount_many": "تم تحديد {{count}} دورة",
+        "basketPreviewCount_other": "تم تحديد {{count}} دورة",
+        "hiddenCountCapped_zero": "+ {{count}} دورة إضافية — ينتهي الصف ببطاقة ترتبط بصفحة المنتج الكاملة.",
+        "hiddenCountCapped_one": "+ {{count}} دورة واحدة إضافية — ينتهي الصف ببطاقة ترتبط بصفحة المنتج الكاملة.",
+        "hiddenCountCapped_two": "+ {{count}} دورتان إضافيتان — ينتهي الصف ببطاقة ترتبط بصفحة المنتج الكاملة.",
+        "hiddenCountCapped_few": "+ {{count}} دورات إضافية — ينتهي الصف ببطاقة ترتبط بصفحة المنتج الكاملة.",
+        "hiddenCountCapped_many": "+ {{count}} دورة إضافية — ينتهي الصف ببطاقة ترتبط بصفحة المنتج الكاملة.",
+        "hiddenCountCapped_other": "+ {{count}} دورة إضافية — ينتهي الصف ببطاقة ترتبط بصفحة المنتج الكاملة.",
+        "hiddenCountPaged_zero": "+ {{count}} دورة إضافية — يتصفح الزوار {{totalPages}} صفحة{{suffix}}.",
+        "hiddenCountPaged_one": "+ {{count}} دورة واحدة إضافية — يتصفح الزوار {{totalPages}} صفحات{{suffix}}.",
+        "hiddenCountPaged_two": "+ {{count}} دورتان إضافيتان — يتصفح الزوار {{totalPages}} صفحات{{suffix}}.",
+        "hiddenCountPaged_few": "+ {{count}} دورات إضافية — يتصفح الزوار {{totalPages}} صفحات{{suffix}}.",
+        "hiddenCountPaged_many": "+ {{count}} دورة إضافية — يتصفح الزوار {{totalPages}} صفحة{{suffix}}.",
+        "hiddenCountPaged_other": "+ {{count}} دورة إضافية — يتصفح الزوار {{totalPages}} صفحة{{suffix}}.",
+        "pagedSuffixCarousel": "، مع تمرير كل صف أفقيًا",
+        "pagedSuffixScrollable": "، مع التمرير داخل القسم"
+    },
+    "leadForm": {
+        "pickCampaign": "اختر حملة من لوحة الخصائص — ستظهر حقول النموذج هنا.",
+        "loading": "جاري تحميل حقول النموذج…",
+        "noFields": "لا تحتوي هذه الحملة على حقول نموذج بعد — أضفها في مدير الجمهور.",
+        "submit": "إرسال"
+    },
+    "detailBlocks": {
+        "empty": "أضف كتلة لكل برنامج تريد توثيقه."
+    },
+    "header": {
+        "getStarted": "ابدأ الآن",
+        "logoAlt": "الشعار"
+    },
+    "hero": {
+        "titleFallback": "عنوان القسم الرئيسي",
+        "getStarted": "ابدأ الآن",
+        "photoFallback": "صورة {{index}}",
+        "imageArea": "منطقة الصورة"
+    },
+    "footer": {
+        "platform": "المنصة",
+        "bottomNote": "© 2025"
+    },
+    "stats": {
+        "empty": "لم تتم إضافة إحصاءات بعد"
+    },
+    "testimonial": {
+        "textFallback": "نص الشهادة…",
+        "authorFallback": "طالب",
+        "empty": "أضف شهادات في لوحة الخصائص"
+    },
+    "mediaShowcase": {
+        "slideFallback": "الشريحة {{index}}",
+        "moreSlides_zero": "+ {{count}} شريحة أخرى",
+        "moreSlides_one": "+ {{count}} شريحة واحدة أخرى",
+        "moreSlides_two": "+ {{count}} شريحتان أخريان",
+        "moreSlides_few": "+ {{count}} شرائح أخرى",
+        "moreSlides_many": "+ {{count}} شريحة أخرى",
+        "moreSlides_other": "+ {{count}} شريحة أخرى",
+        "slideCount_zero": "{{count}} شريحة · تخطيط شرائح متحركة",
+        "slideCount_one": "{{count}} شريحة واحدة · تخطيط شرائح متحركة",
+        "slideCount_two": "{{count}} شريحتان · تخطيط شرائح متحركة",
+        "slideCount_few": "{{count}} شرائح · تخطيط شرائح متحركة",
+        "slideCount_many": "{{count}} شريحة · تخطيط شرائح متحركة",
+        "slideCount_other": "{{count}} شريحة · تخطيط شرائح متحركة",
+        "mediaItemFallback": "عنصر وسائط",
+        "typeImage": "صورة",
+        "typeVideo": "فيديو",
+        "empty": "أضف شرائح أو عناصر وسائط في لوحة الخصائص"
+    },
+    "video": {
+        "addUrl": "أضف رابط فيديو في الخصائص"
+    },
+    "ctaBanner": {
+        "headingFallback": "دعوة لاتخاذ إجراء"
+    },
+    "gallery": {
+        "imageFallback": "صورة {{index}}"
+    },
+    "dataPlaceholder": {
+        "defaultDescription": "يعرض بيانات مباشرة على الصفحة المنشورة"
+    },
+    "marquee": {
+        "defaultItem1": "دورات الأعلى تقييمًا",
+        "defaultItem2": "أكثر من 10,000 متعلم",
+        "defaultItem3": "مدربون خبراء",
+        "scrollingHint": "→ تمرير"
+    },
+    "dispatcher": {
+        "buyRentHeading": "اختر مسارك",
+        "buy": "شراء",
+        "rent": "استئجار",
+        "courseCatalogLabel": "كتالوج الدورات",
+        "courseCatalogDesc": "يعرض الدورات المباشرة — \"{{title}}\"",
+        "ourCoursesDefault": "دوراتنا",
+        "bookCatalogueLabel": "كتالوج الكتب",
+        "bookCatalogueDesc": "يعرض الكتب المباشرة — \"{{title}}\"",
+        "bookCollectionDefault": "مجموعة الكتب",
+        "cartLabel": "عربة التسوق",
+        "cartDesc": "عربة الطالب مع العناصر وتدفق الدفع",
+        "courseDetailsLabel": "تفاصيل الدورة",
+        "courseDetailsDesc": "يعرض بيانات تفاصيل الدورة الحالية",
+        "bookDetailsLabel": "تفاصيل الكتاب",
+        "bookDetailsDesc": "يعرض بيانات تفاصيل الكتاب الحالي",
+        "policyLabel": "صفحة السياسة",
+        "policyDesc": "يعرض محتوى السياسة / الشروط",
+        "tabItemFallback": "عنصر {{index}}",
+        "tabTabFallback": "تبويب {{index}}",
+        "tabContentDefault": "محتوى التبويب",
+        "logoCloudEmptyTicker": "أضف عناصر الشريط المتحرك عبر لوحة الخصائص",
+        "logoCloudEmptyLogos": "أضف الشعارات عبر لوحة الخصائص",
+        "mapEmbedPreview": "معاينة تضمين الخريطة",
+        "mapEmbedAddUrl": "أضف رابط تضمين خرائط جوجل",
+        "countdownHeadingFallback": "يبدأ الحدث خلال",
+        "unitDays": "أيام",
+        "unitHours": "ساعات",
+        "unitMins": "دقائق",
+        "unitSecs": "ثوانٍ",
+        "textBlockDefault": "كتلة نصية — انقر لتعديل المحتوى",
+        "uploadImage": "قم بتحميل صورة",
+        "buttonFallback": "زر",
+        "newsletterPlaceholder": "أدخل بريدك الإلكتروني",
+        "newsletterButton": "اشترك",
+        "columnLayoutLabel": "تخطيط {{cols}} أعمدة · الفجوة: {{gap}}",
+        "slotEmpty": "الفتحة {{index}} — فارغة",
+        "slotComponentCount_zero": "{{count}} مكوّن",
+        "slotComponentCount_one": "{{count}} مكوّن واحد",
+        "slotComponentCount_two": "{{count}} مكوّنان",
+        "slotComponentCount_few": "{{count}} مكوّنات",
+        "slotComponentCount_many": "{{count}} مكوّنًا",
+        "slotComponentCount_other": "{{count}} مكوّن",
+        "filterCategory": "الفئة",
+        "filterLevel": "المستوى",
+        "filterPrice": "السعر",
+        "courseImage": "صورة الدورة",
+        "courseGridNote": "شبكة الدورات · يتم تحميل المحتوى عند التشغيل",
+        "htmlPageEmptyTitle": "صفحة HTML فارغة",
+        "htmlPageEmptyBody": "الصق كود HTML وCSS في لوحة الخصائص.",
+        "htmlBlockLabel": "كتلة HTML",
+        "htmlBlockEmpty": "كتلة HTML فارغة",
+        "unknownComponent": "مكوّن غير معروف: {{type}}"
+    },
+    "documentViewer": {
+        "noFile": "لا يوجد ملف PDF بعد",
+        "addPdf": "أضف ملف PDF من اللوحة على اليمين",
+        "openDocument": "فتح المستند",
+        "download": "تنزيل PDF"
+    },
+    "blog": {
+        "sampleCategory": "نصائح للدراسة",
+        "sampleTitle": "مقال تجريبي {{n}}",
+        "sampleExcerpt": "يظهر هنا مقتطف قصير من المقال.",
+        "readMore": "اقرأ المزيد",
+        "liveNote": "تظهر المقالات المنشورة هنا على الموقع المباشر. اكتبها في Manage Pages → Blog."
+    },
+    "jobOpenings": {
+        "view": "عرض وصف الوظيفة",
+        "empty": "لا توجد وظائف بعد — أضف وظيفة من إعدادات القسم.",
+        "liveNote": "على الموقع، تفتح كل وظيفة في صفحتها الخاصة."
+    },
+    "catalogFeatures": {
+        "hero": "واجهة رئيسية",
+        "streamIcons": "أيقونات المسارات",
+        "streamTabs": "علامات تبويب المسارات",
+        "filterSidebar": "شريط التصفية الجانبي",
+        "highlightedRows_zero": "لا توجد صفوف مميزة",
+        "highlightedRows_one": "صف مميز واحد",
+        "highlightedRows_two": "صفان مميزان",
+        "highlightedRows_few": "{{count}} صفوف مميزة",
+        "highlightedRows_many": "{{count}} صفًا مميزًا",
+        "highlightedRows_other": "{{count}} صف مميز",
+        "editorialCards": "بطاقات تحريرية"
+    }
+}

@@ -102,6 +102,18 @@ public class InstituteDomainRouting {
     @Column(name = "comma_separated_preferred_country", length = 500)
     private String commaSeparatedPreferredCountry;
 
+    /**
+     * How phone inputs on this portal pick their country code — one of
+     * {@link vacademy.io.admin_core_service.features.domain_routing.enums.PhoneCountryGeoMode}.
+     *
+     * <p>
+     * Null means INSTITUTE_FIRST: {@link #commaSeparatedPreferredCountry} wins,
+     * and the country the visitor is actually in is consulted only when no
+     * preferred countries are configured.
+     */
+    @Column(name = "phone_country_geo_mode", length = 30)
+    private String phoneCountryGeoMode;
+
     @Column(name = "hide_institute_name")
     private Boolean hideInstituteName;
 
@@ -116,4 +128,29 @@ public class InstituteDomainRouting {
 
     @Column(name = "apply_naming_setting", nullable = false)
     private boolean applyNamingSetting;
+
+    /**
+     * True when this host is the institute's chosen portal URL for the roles it
+     * serves — i.e. the one that belongs in
+     * <code>institutes.&lt;role&gt;_portal_base_url</code> and therefore in every
+     * outbound learner link.
+     *
+     * <p>It is an intent, not a fact: the host is only copied into the institute
+     * row once Cloudflare reports it ACTIVE. Until then the institute keeps
+     * whatever origin it had, because a pending Pages domain does not serve.
+     * See {@code PortalUrlReconciler}.
+     */
+    @Column(name = "is_primary", nullable = false)
+    private boolean primary;
+
+    /**
+     * Tag of the course catalogue that answers on this host's ROOT. When set,
+     * the learner app renders that catalogue at <code>/</code> and its pages at
+     * <code>/&lt;page-route&gt;</code>, and forwards the legacy
+     * <code>/&lt;tag&gt;/...</code> URLs to the clean ones. Null keeps the
+     * classic behaviour where <code>/</code> redirects to {@link #redirect}.
+     * Only meaningful for LEARNER rows.
+     */
+    @Column(name = "root_catalogue_tag")
+    private String rootCatalogueTag;
 }

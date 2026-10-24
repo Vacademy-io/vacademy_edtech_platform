@@ -1,0 +1,129 @@
+{
+    "channels": {
+        "EMAIL": "E-mail",
+        "WHATSAPP": "WhatsApp",
+        "PUSH": "Notification push",
+        "SMS": "SMS",
+        "CALL": "Appel"
+    },
+    "statuses": {
+        "PENDING": "En attente",
+        "SENT": "Envoyé",
+        "DELIVERED": "Distribué",
+        "READ": "Lu",
+        "CLICKED": "Cliqué",
+        "FAILED": "Échec",
+        "BOUNCED": "Rejeté",
+        "COMPLAINT": "Plainte",
+        "RECEIVED": "Reçu"
+    },
+    "filters": {
+        "all": "Tous"
+    },
+    "headerMedia": {
+        "viewDocument": "Voir le document",
+        "attachmentAlt": "pièce jointe"
+    },
+    "expandedDetail": {
+        "senderFallback": "E-mail",
+        "toRecipient": "à {{recipient}}",
+        "messageHeading": "Message",
+        "templateLabel": "Modèle :",
+        "fromLabel": "De :",
+        "toLabel": "À :",
+        "sourceLabel": "Source :",
+        "deliveryTimelineHeading": "Chronologie de livraison",
+        "collapse": "Réduire"
+    },
+    "direction": {
+        "received": "Reçu via {{channel}}",
+        "sent": "Envoyé via {{channel}}"
+    },
+    "noSubject": "(aucun objet)",
+    "emptyStates": {
+        "noContactTitle": "Aucune coordonnée",
+        "noContactHint": "Sélectionnez un élève ayant un e-mail ou un numéro de téléphone pour voir ses échanges.",
+        "loadErrorTitle": "Échec du chargement des échanges",
+        "loadErrorHint": "Une erreur est survenue lors du chargement des messages. Veuillez réessayer.",
+        "noCommunicationsTitle": "Aucun échange trouvé",
+        "noChannelMessages": "Aucun message {{channel}} pour l'instant. Essayez de sélectionner « {{allLabel}} » pour voir les autres canaux.",
+        "noMessagesYet": "Aucun message n'a encore été envoyé à cet élève ou reçu de sa part.",
+        "sendFirstMessage": "Envoyer le premier message",
+        "noCalls": "Aucun appel avec cet élève pour l'instant. Utilisez le bouton Appeler de l'onglet Aperçu pour en passer un."
+    },
+    "sendCard": {
+        "heading": "Envoyer une notification",
+        "subheading": "Message e-mail ou WhatsApp"
+    },
+    "resend": {
+        "button": "Renvoyer",
+        "buttonTooltip": "Envoyer ce message à nouveau",
+        "blocked": {
+            "noTemplate": "Seuls les messages modèles peuvent être renvoyés — celui-ci a été saisi dans la boîte de réception",
+            "noBody": "Le corps du message d'origine n'a pas été conservé : il n'y a rien à renvoyer",
+            "unsupportedChannel": "Ce canal ne peut pas être renvoyé depuis ici"
+        },
+        "title": "Renvoyer ce message {{channel}} ?",
+        "confirmQuestion": "Voulez-vous vraiment le renvoyer à {{recipient}} ?",
+        "subjectLabel": "Objet :",
+        "hasVariables_one": "Ce modèle comporte {{count}} variable.",
+        "hasVariables_other": "Ce modèle comporte {{count}} variables.",
+        "modeSame": "Renvoyer à l'identique",
+        "modeSameHint": "Conserver les valeurs du premier envoi",
+        "modeSameBlockedHint": "Impossible — le premier envoi est parti sans {{names}}",
+        "modeEdit": "Modifier les variables",
+        "modeEditHint": "Modifier les valeurs avant l'envoi",
+        "variablePlaceholder": "Valeur de {{name}}",
+        "variableEmpty": "(vide)",
+        "previewHeading": "Aperçu",
+        "deliveryCaveat": "Ceci envoie un vrai message à l'apprenant.",
+        "variablesRequired": "Renseignez chaque variable — WhatsApp rejette le message tant que l'une d'elles reste vide.",
+        "cancel": "Annuler",
+        "confirmSame": "Renvoyer",
+        "confirmEdited": "Envoyer avec les nouvelles valeurs",
+        "emailSent": "E-mail renvoyé",
+        "whatsappQueued": "Message WhatsApp transmis au fournisseur",
+        "rejected": "Le fournisseur a refusé le renvoi",
+        "rejectedWithReason": "Le fournisseur a refusé le renvoi : {{reason}}",
+        "failed": "Impossible de renvoyer le message",
+        "noInstitute": "Aucun établissement sélectionné",
+        "noRecipient": "Ce message n'a aucun destinataire"
+    },
+    "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {{current}} sur {{total}}"
+    },
+    "totalCount_one": "{{count}} message au total",
+    "totalCount_many": "{{count}} de messages au total",
+    "totalCount_other": "{{count}} messages au total",
+    "call": {
+        "outbound": "Appel sortant",
+        "inbound": "Appel entrant",
+        "aiCall": "Appel IA",
+        "status": {
+            "COMPLETED": "Répondu",
+            "NO_ANSWER": "Sans réponse",
+            "BUSY": "Occupé",
+            "FAILED": "Échoué",
+            "CANCELLED": "Annulé",
+            "IN_PROGRESS": "En cours",
+            "QUEUED": "Lancé",
+            "INITIATED": "Lancé",
+            "COUNSELLOR_RINGING": "Sonnerie",
+            "COUNSELLOR_ANSWERED": "Connexion"
+        },
+        "duration": "{{minutes}} min {{seconds}} s",
+        "outcome": "Résultat",
+        "attempt": "Tentative {{n}}",
+        "recordingHeading": "Enregistrement",
+        "noRecording": "Aucun enregistrement pour cet appel",
+        "byCounsellor": "par {{name}}"
+    },
+    "origin": {
+        "workflow": "Envoyé par le flux de travail « {{name}} »",
+        "workflowUnnamed": "Envoyé par un flux de travail",
+        "chatbotFlow": "Envoyé par le flux de chatbot « {{name}} »",
+        "chatbotFlowUnnamed": "Envoyé par un flux de chatbot"
+    }
+}

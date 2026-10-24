@@ -38,6 +38,22 @@ public class PortalRoutingConfig {
     @JsonProperty("allow_signup")
     private Boolean allowSignup;
 
+    /**
+     * Sub-organisation this domain belongs to, when the portal is one sub-org's
+     * white-label rather than the parent institute's.
+     *
+     * <p>It is not cosmetic. The routing row's {@code institute_id} stays the
+     * PARENT — every sub-org admin is a parent-institute user with the same JWT —
+     * so this id is the only thing distinguishing one sub-org's portal from
+     * another's. It drives the logo/name/theme overlay AND the login check in
+     * {@code loginFlowHandler}: with it absent, any sub-org admin can sign in on
+     * any sibling sub-org's portal.
+     *
+     * <p>Null leaves an existing mapping untouched; an empty string clears it.
+     */
+    @JsonProperty("sub_org_id")
+    private String subOrgId;
+
     @JsonProperty("tab_icon_file_id")
     private String tabIconFileId;
 
@@ -81,6 +97,21 @@ public class PortalRoutingConfig {
      */
     @JsonProperty("comma_separated_preferred_country")
     private String commaSeparatedPreferredCountry;
+
+    /**
+     * How a phone field on this portal picks its country code — one of
+     * {@code INSTITUTE_FIRST} (default), {@code GEO_FIRST} or
+     * {@code INSTITUTE_ONLY}. See {@code PhoneCountryGeoMode}.
+     *
+     * <p>
+     * {@code INSTITUTE_FIRST} keeps {@link #commaSeparatedPreferredCountry}
+     * authoritative and only follows the visitor's own country when no
+     * preferred countries are configured. {@code GEO_FIRST} pre-selects the
+     * visitor's country and uses the configured list to order the rest of the
+     * picker. {@code INSTITUTE_ONLY} never looks at the visitor.
+     */
+    @JsonProperty("phone_country_geo_mode")
+    private String phoneCountryGeoMode;
 
     /**
      * When true, the institute name is suppressed next to the logo on the login

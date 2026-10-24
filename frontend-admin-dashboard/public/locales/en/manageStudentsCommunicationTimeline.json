@@ -1,0 +1,128 @@
+{
+    "channels": {
+        "EMAIL": "Email",
+        "WHATSAPP": "WhatsApp",
+        "PUSH": "Push",
+        "SMS": "SMS",
+        "CALL": "Call"
+    },
+    "statuses": {
+        "PENDING": "Pending",
+        "SENT": "Sent",
+        "DELIVERED": "Delivered",
+        "READ": "Read",
+        "CLICKED": "Clicked",
+        "FAILED": "Failed",
+        "BOUNCED": "Bounced",
+        "COMPLAINT": "Complaint",
+        "RECEIVED": "Received"
+    },
+    "filters": {
+        "all": "All"
+    },
+    "headerMedia": {
+        "viewDocument": "View document",
+        "attachmentAlt": "attachment"
+    },
+    "expandedDetail": {
+        "senderFallback": "Email",
+        "toRecipient": "to {{recipient}}",
+        "messageHeading": "Message",
+        "templateLabel": "Template:",
+        "fromLabel": "From:",
+        "toLabel": "To:",
+        "sourceLabel": "Source:",
+        "deliveryTimelineHeading": "Delivery Timeline",
+        "collapse": "Collapse"
+    },
+    "direction": {
+        "received": "Received via {{channel}}",
+        "sent": "Sent via {{channel}}"
+    },
+    "noSubject": "(no subject)",
+    "emptyStates": {
+        "noContactTitle": "No contact details",
+        "noContactHint": "Select a student with an email or phone number to view their communications.",
+        "loadErrorTitle": "Failed to load communications",
+        "loadErrorHint": "Something went wrong while fetching messages. Please try again.",
+        "noCommunicationsTitle": "No communications found",
+        "noChannelMessages": "No {{channel}} messages yet. Try selecting \"{{allLabel}}\" to see other channels.",
+        "noMessagesYet": "No messages have been sent to or received from this student yet.",
+        "sendFirstMessage": "Send first message",
+        "noCalls": "No calls with this student yet. Use the Call button on the Overview tab to place one."
+    },
+    "sendCard": {
+        "heading": "Send Notification",
+        "subheading": "Email or WhatsApp message"
+    },
+    "resend": {
+        "button": "Resend",
+        "buttonTooltip": "Send this message again",
+        "blocked": {
+            "noTemplate": "Only template messages can be resent — this one was typed in the Inbox",
+            "noBody": "The original message body was not stored, so there is nothing to resend",
+            "unsupportedChannel": "This channel cannot be resent from here"
+        },
+        "title": "Resend this {{channel}} message?",
+        "confirmQuestion": "Are you sure you want to send this again to {{recipient}}?",
+        "subjectLabel": "Subject:",
+        "hasVariables_one": "This template has {{count}} variable.",
+        "hasVariables_other": "This template has {{count}} variables.",
+        "modeSame": "Resend the same",
+        "modeSameHint": "Keep the values that went out the first time",
+        "modeSameBlockedHint": "Not possible — the first send went out without {{names}}",
+        "modeEdit": "Change the variables",
+        "modeEditHint": "Edit the values before sending",
+        "variablePlaceholder": "Value for {{name}}",
+        "variableEmpty": "(empty)",
+        "previewHeading": "Preview",
+        "deliveryCaveat": "This sends a real message to the learner.",
+        "variablesRequired": "Fill in every variable — WhatsApp rejects the message while any is empty.",
+        "cancel": "Cancel",
+        "confirmSame": "Send again",
+        "confirmEdited": "Send with new values",
+        "emailSent": "Email resent",
+        "whatsappQueued": "WhatsApp message handed to the provider",
+        "rejected": "The provider refused the resend",
+        "rejectedWithReason": "The provider refused the resend: {{reason}}",
+        "failed": "Could not resend the message",
+        "noInstitute": "No institute selected",
+        "noRecipient": "This message has no recipient to resend to"
+    },
+    "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {{current}} of {{total}}"
+    },
+    "totalCount_one": "{{count}} total",
+    "totalCount_other": "{{count}} total",
+    "call": {
+        "outbound": "Outbound call",
+        "inbound": "Inbound call",
+        "aiCall": "AI call",
+        "status": {
+            "COMPLETED": "Answered",
+            "NO_ANSWER": "No answer",
+            "BUSY": "Busy",
+            "FAILED": "Failed",
+            "CANCELLED": "Cancelled",
+            "IN_PROGRESS": "In progress",
+            "QUEUED": "Placed",
+            "INITIATED": "Placed",
+            "COUNSELLOR_RINGING": "Ringing",
+            "COUNSELLOR_ANSWERED": "Connecting"
+        },
+        "duration": "{{minutes}}m {{seconds}}s",
+        "outcome": "Outcome",
+        "attempt": "Attempt {{n}}",
+        "recordingHeading": "Recording",
+        "noRecording": "No recording for this call",
+        "byCounsellor": "by {{name}}"
+    },
+    "origin": {
+        "workflow": "Sent by workflow “{{name}}”",
+        "workflowUnnamed": "Sent by a workflow",
+        "chatbotFlow": "Sent by chatbot flow “{{name}}”",
+        "chatbotFlowUnnamed": "Sent by a chatbot flow"
+    }
+}

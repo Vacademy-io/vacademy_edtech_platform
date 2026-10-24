@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "टेम्पलेट मैपिंग",
+        "templateBody": "टेम्पलेट बॉडी",
+        "noBodyContent": "कोई बॉडी सामग्री नहीं"
+    },
+    "errors": {
+        "loadFields": "उपलब्ध फ़ील्ड लोड करने में विफल",
+        "saveMapping": "टेम्पलेट मैपिंग सहेजने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "mappings": {
+        "sectionTitle": "डायनामिक वैल्यू मैप करें",
+        "vacademyDataField": "Vacademy डेटा फ़ील्ड",
+        "dataCategory": "डेटा श्रेणी",
+        "selectCategoryPlaceholder": "डेटा श्रेणी चुनें...",
+        "field": "फ़ील्ड",
+        "selectFieldPlaceholder": "फ़ील्ड चुनें...",
+        "mappedTo": "इससे मैप किया गया:"
+    },
+    "preview": {
+        "title": "व्हाट्सएप संदेश पूर्वावलोकन",
+        "completeAllToSeePreview": "पूरा पूर्वावलोकन देखने के लिए सभी मैपिंग पूरी करें"
+    },
+    "completionStatus": {
+        "title": "पूर्णता स्थिति",
+        "mapped": "मैप किया गया",
+        "pending": "लंबित",
+        "allComplete": "सभी मैपिंग पूर्ण हो गईं!"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है...",
+        "saveMapping": "मैपिंग सहेजें"
+    }
+}

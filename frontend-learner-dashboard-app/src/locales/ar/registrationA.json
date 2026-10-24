@@ -1,0 +1,215 @@
+{
+    "common": {
+        "email": "البريد الإلكتروني",
+        "resendOtp": "إعادة إرسال رمز التحقق",
+        "registrationCompletedBadge": "تم التسجيل",
+        "liveNow": "مباشر الآن",
+        "registrationFormHeading": "نموذج التسجيل",
+        "verifying": "جارٍ التحقق..."
+    },
+    "closedExpired": {
+        "assessmentLabel": "الاختبار",
+        "defaultAssessmentName": "هذا الاختبار",
+        "accessDenied": {
+            "badge": "تم رفض الوصول",
+            "title": "تم رفض الوصول إلى الاختبار",
+            "description": "أنت غير مسجّل في هذا الاختبار."
+        },
+        "expired": {
+            "badge": "منتهي",
+            "title": "انتهت صلاحية الاختبار",
+            "description": "لم يعد هذا الاختبار متاحاً. انتهت مهلة إجراء هذا الاختبار."
+        },
+        "closed": {
+            "badge": "مغلق",
+            "title": "التسجيل مغلق",
+            "description": "أُغلق باب التسجيل لهذا الاختبار. يرجى التواصل مع مؤسستك لمزيد من المعلومات."
+        }
+    },
+    "completed": {
+        "badge": "تم التسجيل",
+        "title": "كل شيء جاهز!",
+        "liveBadge": "مباشر الآن",
+        "liveMessage": "اختبارك جاهز للبدء",
+        "goesLiveIn": "يبدأ الاختبار بشكل مباشر خلال",
+        "cta": "الذهاب إلى الاختبار",
+        "unlockHint": "سيتم تفعيل هذا الزر تلقائياً عند بدء الاختبار.",
+        "toast": {
+            "fetchDetailsError": "تعذّر جلب التفاصيل"
+        }
+    },
+    "form": {
+        "notYetOpenBadge": "التسجيل لم يفتح بعد",
+        "opensIn": "يفتح التسجيل خلال",
+        "openBadge": "التسجيل مفتوح",
+        "closesIn": "يُغلق التسجيل خلال",
+        "closingSoon": "يُغلق قريباً",
+        "registerNowMobile": "سجّل الآن",
+        "countdown": {
+            "hr": "س",
+            "min": "د",
+            "sec": "ث",
+            "dayUnit_zero": "يوم",
+            "dayUnit_one": "يوم",
+            "dayUnit_two": "يومان",
+            "dayUnit_few": "أيام",
+            "dayUnit_many": "يوماً",
+            "dayUnit_other": "يوم"
+        },
+        "meta": {
+            "duration": "المدة",
+            "durationValue": "{{minutes}} دقيقة",
+            "mode": "الوضع",
+            "evaluation": "التقييم",
+            "attempts": "المحاولات"
+        },
+        "dates": {
+            "heading": "تواريخ مهمة",
+            "registrationWindow": "فترة التسجيل",
+            "assessmentLive": "بث الاختبار المباشر"
+        },
+        "dateBlock": {
+            "start": "البداية",
+            "end": "النهاية"
+        },
+        "instructions": "التعليمات",
+        "aboutAssessment": "عن الاختبار",
+        "registrationFormSubheading": "أدخل بياناتك للتسجيل في هذا الاختبار.",
+        "phoneNumberLabel": "رقم الهاتف",
+        "phoneNumberPlaceholder": "123 456 7890",
+        "register": "تسجيل",
+        "resetForm": "إعادة تعيين النموذج",
+        "toast": {
+            "registeredSuccess": "لقد تم تسجيلك بنجاح!",
+            "accountUnresolved": "تعذّر التعرّف على حسابك. يرجى المحاولة مرة أخرى."
+        }
+    },
+    "checkEmailDialog": {
+        "title": "التحقق من حالة التسجيل",
+        "subtitle": "تحقق من بريدك الإلكتروني للمتابعة في تسجيل الاختبار.",
+        "emailPlaceholder": "أدخل بريدك الإلكتروني",
+        "resendIn": "إعادة إرسال رمز التحقق خلال {{seconds}} ثانية",
+        "sending": "جارٍ إرسال رمز التحقق...",
+        "send": "إرسال رمز التحقق",
+        "verify": "تحقق وتابع",
+        "toast": {
+            "otpSent": "تم إرسال رمز التحقق بنجاح",
+            "notRegisteredTitle": "هذا البريد الإلكتروني غير مسجّل",
+            "notRegisteredDescription": "يرجى التسجيل لمحاولة هذا الاختبار",
+            "attemptsOverTitle": "لقد استنفدت محاولاتك المتبقية لهذا الاختبار!",
+            "attemptsOverDescription": "لقد انتهت محاولاتك!",
+            "invalidOtpTitle": "رمز التحقق غير صحيح",
+            "invalidOtpDescription": "يرجى المحاولة مرة أخرى",
+            "fillAllOtp": "يرجى تعبئة جميع خانات رمز التحقق"
+        }
+    },
+    "otpVerify": {
+        "title": "خطوة أخيرة!",
+        "subtitle": "تحقق من بريدك الإلكتروني للوصول إلى {{assessmentName}}",
+        "otpSentToLabel": "أُرسل رمز التحقق إلى",
+        "verify": "تحقق واذهب إلى الاختبار",
+        "verifying": "جارٍ التحقق…",
+        "resendPrompt": "لم يصلك الرمز؟",
+        "resendIn": "إعادة الإرسال خلال {{seconds}} ثانية",
+        "toast": {
+            "otpSentTo": "تم إرسال رمز التحقق إلى {{email}}",
+            "sendFailed": "تعذّر إرسال رمز التحقق. يرجى المحاولة مرة أخرى.",
+            "enterFullOtp": "يرجى إدخال رمز التحقق المكوّن من 6 أرقام كاملاً",
+            "invalidOtp": "رمز التحقق غير صحيح. يرجى المحاولة مرة أخرى."
+        }
+    },
+    "liveClass": {
+        "countdown": {
+            "startsIn": "يبدأ خلال",
+            "days": "أيام",
+            "hours": "ساعات",
+            "mins": "دقائق",
+            "secs": "ثوانٍ"
+        },
+        "sessionInfo": {
+            "instituteFallback": "المؤسسة",
+            "registrationAlt": "التسجيل",
+            "start": "البداية",
+            "end": "النهاية"
+        },
+        "registrationForm": {
+            "joinPrompt": "أدخل بياناتك للانضمام إلى {{session}}",
+            "alreadyRegistered": "هل أنت مسجّل بالفعل؟",
+            "continueHere": "تابع من هنا",
+            "enterFieldPlaceholder": "أدخل {{fieldName}}",
+            "joinNow": "انضم الآن",
+            "toast": {
+                "invalidEmail": "يرجى إدخال بريد إلكتروني صحيح",
+                "invalidMobile": "يرجى إدخال رقم هاتف صحيح"
+            },
+            "lookup": {
+                "title": "ابحث عن تسجيلك",
+                "descriptionPhone": "أدخل رقم الهاتف الذي سجّلت به",
+                "descriptionEmail": "أدخل البريد الإلكتروني الذي سجّلت به",
+                "placeholderPhone": "رقم الهاتف (مع رمز الدولة)",
+                "placeholderEmail": "you@example.com",
+                "notFound": "لم يُعثر على تسجيل بهذا {{channel}}. يرجى التحقق منه، أو تعبئة نموذج التسجيل بدلاً من ذلك.",
+                "channelMobile": "رقم الهاتف",
+                "channelEmail": "البريد الإلكتروني",
+                "continue": "متابعة",
+                "checking": "جارٍ التحقق...",
+                "backToForm": "جديد هنا؟ عبّئ نموذج التسجيل"
+            }
+        },
+        "otpDialog": {
+            "emailSubject": "التحقق من البريد الإلكتروني",
+            "verifyEmailTitle": "تحقق من بريدك الإلكتروني",
+            "verifyPhoneTitle": "تحقق من رقم هاتفك",
+            "descriptionEmail": "لقد أرسلنا رمزاً مكوّناً من 6 أرقام إلى {{value}}.",
+            "descriptionPhone": "لقد أرسلنا رمزاً مكوّناً من 6 أرقام عبر واتساب إلى {{value}}.",
+            "stepOf": " (الخطوة {{current}} من {{total}})",
+            "placeholder": "أدخل الرمز المكوّن من 6 أرقام",
+            "verify": "تحقق",
+            "resend": "إعادة إرسال الرمز",
+            "sending": "جارٍ الإرسال...",
+            "toast": {
+                "otpSentTo": "تم إرسال رمز التحقق إلى {{value}}",
+                "otpSentWhatsapp": "تم إرسال رمز التحقق عبر واتساب",
+                "sendFailedEmail": "تعذّر إرسال رمز التحقق عبر البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
+                "sendFailedWhatsapp": "تعذّر إرسال رمز التحقق عبر واتساب. يرجى المحاولة مرة أخرى.",
+                "enterOtp": "يرجى إدخال رمز التحقق",
+                "verifiedEmail": "تم التحقق من البريد الإلكتروني",
+                "verifiedPhone": "تم التحقق من رقم الهاتف",
+                "invalidOtp": "رمز التحقق غير صحيح أو منتهي الصلاحية. يرجى المحاولة مرة أخرى."
+            }
+        },
+        "statusCard": {
+            "joinLive": "انضم مباشرةً إلى {{session}}",
+            "waitingRoomOpenBadge": "غرفة الانتظار مفتوحة",
+            "enterWaitingRoom": "ادخل غرفة الانتظار",
+            "notStarted": "لم تبدأ {{session}} بعد",
+            "willStartSoon": "ستبدأ {{session}} قريباً",
+            "alreadyRegisteredTitle": "أنت مسجّل بالفعل!",
+            "registeredWith": "أنت مسجّل في هذه {{session}} باستخدام:",
+            "startTime": "وقت البدء",
+            "waitingRoomOpens": "موعد فتح غرفة الانتظار"
+        },
+        "page": {
+            "priceLabel": "السعر",
+            "completeRegistration": "أكمل تسجيلك",
+            "completeRegistrationDescription": "تم حجز مكانك. أكمل الدفع لتأكيده — ستحصل على إيصال عبر البريد الإلكتروني ويمكنك الانضمام عند حلول الموعد.",
+            "total": "الإجمالي",
+            "payAndConfirm": "ادفع وأكّد",
+            "toast": {
+                "buildRequestError": "حدث خطأ أثناء إنشاء الطلب",
+                "identityRequired": "يرجى إدخال بريدك الإلكتروني أو رقم هاتفك",
+                "emailRequiredPaid": "يلزم إدخال بريد إلكتروني لهذه {{liveSession}} المدفوعة",
+                "emailRequired": "يلزم إدخال بريد إلكتروني لهذه {{liveSession}}",
+                "phoneRequired": "يلزم إدخال رقم هاتف لهذه {{liveSession}}",
+                "registrationSuccess": "تم التسجيل بنجاح",
+                "spotReserved": "تم حجز مكانك — أكمل الدفع لتأكيد تسجيلك",
+                "alreadyRegistered": "أنت مسجّل بالفعل في هذه {{session}}"
+            }
+        },
+        "hooks": {
+            "registrationFailed": "فشل التسجيل",
+            "registrationFailedRetry": "فشل التسجيل. يرجى المحاولة مرة أخرى.",
+            "markAttendanceFailed": "تعذّر تسجيل الحضور"
+        }
+    }
+}

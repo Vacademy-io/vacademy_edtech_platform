@@ -1,4 +1,7 @@
-import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
+import {
+    getActiveRoleDisplaySettingsKey,
+    getRolesForCurrentInstitute,
+} from '@/lib/auth/instituteUtils';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -14,6 +17,16 @@ import {
     ChalkboardTeacher,
     Student,
     ArrowLeft,
+    AddressBook,
+    Buildings,
+    EnvelopeSimple,
+    Globe,
+    MapPin,
+    MapTrifold,
+    IdentificationCard,
+    PencilSimple,
+    Phone,
+    UserCircle,
 } from '@phosphor-icons/react';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useSidebarStore } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-utils/global-states';
@@ -23,11 +36,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    getTokenFromCookie,
-    getUserRoles,
-    removeCookiesAndLogout,
-} from '@/lib/auth/sessionUtility';
+import { removeCookiesAndLogout } from '@/lib/auth/sessionUtility';
 import { useNavigate } from '@tanstack/react-router';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import useInstituteLogoStore from '../sidebar/institutelogo-global-zustand';
@@ -45,12 +54,16 @@ import { useInstituteQuery } from '@/services/student-list-section/getInstituteD
 import { Separator } from '@/components/ui/separator';
 import EditDashboardProfileComponent from '@/routes/dashboard/-components/EditDashboardProfileComponent';
 import AdminProfile from '@/routes/dashboard/-components/AdminProfile';
-import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { handleGetAdminDetails } from '@/services/student-list-section/getAdminDetails';
 import useAdminLogoStore from '../sidebar/admin-logo-zustand';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { SSOSwitcher } from '../../auth/SSOSwitcher';
-import { TokenKey } from '@/constants/auth/tokens';
+import {
+    InstituteSwitcherDialog,
+    InstituteSwitcherMenuSection,
+    useCanSwitchInstitute,
+} from '../../auth/InstituteSwitcher';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getUserId, getUserName } from '@/utils/userDetails';
@@ -64,8 +77,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { PagedResponse, SystemAlertItem } from '@/services/notifications/system-alerts';
-import { DEFAULT_ADMIN_DISPLAY_SETTINGS } from '@/constants/display-settings/admin-defaults';
-import { DEFAULT_TEACHER_DISPLAY_SETTINGS } from '@/constants/display-settings/teacher-defaults';
+import { useSystemAlertToasts } from '@/components/common/notifications/useSystemAlertToasts';
+import { getDefaultAdminDisplaySettings } from '@/constants/display-settings/admin-defaults';
+import { getDefaultTeacherDisplaySettings } from '@/constants/display-settings/teacher-defaults';
 import { MyButton } from '@/components/design-system/button';
 import { ClearAllAlertsButton } from '@/components/common/notifications/ClearAllAlertsButton';
 import { DismissAlertButton } from '@/components/common/notifications/DismissAlertButton';
@@ -88,15 +102,9 @@ import { useLanguageStore } from '@/stores/localization/useLanguageStore';
 import { getEnabledLocales } from '@/services/language-settings';
 import { dueLabel, useDueFollowupReminders } from '@/components/shared/leads/followup-reminders';
 import { Alarm } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolean }) {
-    const roleColors: Record<string, string> = {
-        ADMIN: '#F4F9FF',
-        'CONTENT CREATOR': '#F4FFF9',
-        'ASSESSMENT CREATOR': '#FFF4F5',
-        TEACHER: '#FFF4F5',
-        EVALUATOR: '#F5F0FF',
-    };
     const queryClient = useQueryClient();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { data: adminDetails } = useSuspenseQuery(handleGetAdminDetails());
@@ -114,33 +122,55 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
     const { instituteLogo, setInstituteLogo } = useInstituteLogoStore();
     const { getPublicUrl } = useFileUpload();
     const { adminLogo, setAdminLogo, resetAdminLogo } = useAdminLogoStore();
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const roles = getUserRoles(accessToken);
+    // Roles in the institute being viewed — not every institute in the token. An ADMIN
+    // elsewhere who is a STUDENT here must get this institute's chrome (and vice versa).
+    const roles = getRolesForCurrentInstitute();
     const userId = getUserId();
     const [showEditAccountDetails, setShowEditAccountDetails] = useState(false);
+    // Institute switcher: offered only with ≥2 admin-eligible institutes in the token.
+    const canSwitchInstitute = useCanSwitchInstitute();
+    const [showInstituteSwitcher, setShowInstituteSwitcher] = useState(false);
     const isMobile = useIsMobile();
     const { setOpenMobile } = useSidebar();
     const { isCompact } = useCompactMode();
+
+    // Subscribe to language changes so the navbar (a persistent, always-mounted
+    // chrome component) re-renders immediately when the language switcher
+    // changes locale, rather than waiting for some unrelated state update.
+    const { t } = useTranslation('navbar');
 
     // Effective display settings (cached or defaults) for permission gating
     const isAdminRoleForDS = roles.includes('ADMIN');
     const roleKeyForDS = getActiveRoleDisplaySettingsKey();
     const cachedDS = getDisplaySettingsFromCache(roleKeyForDS);
-    const defaultDS = isAdminRoleForDS
-        ? DEFAULT_ADMIN_DISPLAY_SETTINGS
-        : DEFAULT_TEACHER_DISPLAY_SETTINGS;
+    // Only the permission flags and `ui` are read from this fallback, and neither
+    // depends on the sidebar labels the getters resolve through i18n — so the
+    // role is the whole dependency. Memoized because the navbar is always
+    // mounted and building the defaults walks every sidebar entry.
+    const defaultDS = useMemo(
+        () =>
+            isAdminRoleForDS
+                ? getDefaultAdminDisplaySettings()
+                : getDefaultTeacherDisplaySettings(),
+        [isAdminRoleForDS]
+    );
     const effectiveDS = cachedDS || defaultDS;
     const canViewProfile = effectiveDS.permissions.canViewProfileDetails;
     const canEditProfile = effectiveDS.permissions.canEditProfileDetails;
     const canViewInstitute = effectiveDS.permissions.canViewInstituteDetails;
     const canEditInstitute = effectiveDS.permissions.canEditInstituteDetails;
 
-    // Alerts: last 5
+    // Alerts: last 5. Polled while the tab is visible so a job finishing in
+    // the background (a bulk AI check, say) reaches the bell - and a toast -
+    // without a page change.
     const { data: alertsList, isLoading: isAlertsLoading } = useSuspenseQuery<
         PagedResponse<SystemAlertItem>
-    >(getSystemAlertsQuery(userId, 5));
+    >({ ...getSystemAlertsQuery(userId, 5), refetchInterval: 60_000 });
+    useSystemAlertToasts(alertsList?.content);
 
-    // Alerts: full list (infinite)
+    const [showAllDialog, setShowAllDialog] = useState(false);
+    // Alerts: full list (infinite) — only once the "see all" dialog is open. The bell's
+    // unread badge reads the 5-item query above, not this one.
     const infiniteAlerts = useInfiniteQuery<PagedResponse<SystemAlertItem>>({
         queryKey: ['SYSTEM_ALERTS_INFINITE', userId, 20] as const,
         queryFn: ({ pageParam = 0 }) =>
@@ -148,6 +178,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
         getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.number + 1),
         initialPageParam: 0,
         staleTime: 30_000,
+        enabled: showAllDialog,
     });
 
     const showAiCredits = effectiveDS.ui?.showAiCredits !== false;
@@ -158,7 +189,6 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
     const currentLocale = useLanguageStore((state) => state.locale);
     const showLanguageSwitcher = getEnabledLocales(currentLocale).length > 1;
 
-    const [showAllDialog, setShowAllDialog] = useState(false);
     const unreadCount = useMemo(() => {
         return alertsList?.content?.reduce((acc, item) => acc + (item.isRead ? 0 : 1), 0) || 0;
     }, [alertsList]);
@@ -351,7 +381,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                     <button
                         onClick={() => window.history.back()}
                         className="flex items-center justify-center rounded-md p-2 transition-colors hover:bg-neutral-100"
-                        aria-label="Go back"
+                        aria-label={t('aria.goBack')}
                     >
                         <ArrowLeft className="size-5 text-neutral-600" weight="bold" />
                     </button>
@@ -362,7 +392,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                     <button
                         onClick={() => setOpenMobile(true)}
                         className="flex items-center justify-center rounded-md p-2 transition-colors hover:bg-neutral-100"
-                        aria-label="Open menu"
+                        aria-label={t('aria.openMenu')}
                     >
                         <List className="size-5 text-neutral-600" weight="bold" />
                     </button>
@@ -381,7 +411,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 >
                                     <img
                                         src={instituteLogo}
-                                        alt="logo"
+                                        alt={t('profile.logo')}
                                         className="h-full w-full object-contain"
                                     />
                                 </div>
@@ -408,7 +438,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 )}
                             >
                                 <span className="whitespace-nowrap text-[10px] font-medium text-neutral-500 md:text-xs">
-                                    Powered by
+                                    {t('poweredBy')}
                                 </span>
                                 {mainInstituteLogoUrl ? (
                                     <div className="flex shrink-0 items-center justify-center overflow-hidden rounded">
@@ -467,7 +497,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                             {finalInstructorPortalUrl && (
                                 <div className="mb-2">
                                     <div className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                                        Instructor Section
+                                        {t('appsMenu.instructorSection')}
                                     </div>
                                     <div className="grid grid-cols-4 gap-2 px-2 py-1">
                                         <a
@@ -475,14 +505,14 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex flex-col items-center justify-center gap-1 rounded-md p-1 hover:bg-neutral-100"
-                                            title="Instructor Portal"
+                                            title={t('appsMenu.instructorPortal')}
                                         >
                                             <ChalkboardTeacher
                                                 className="size-6 text-primary-500"
                                                 weight="fill"
                                             />
                                             <span className="text-center text-[10px] leading-tight text-neutral-600">
-                                                Portal
+                                                {t('appsMenu.portal')}
                                             </span>
                                         </a>
                                     </div>
@@ -497,7 +527,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 <div>
                                     {finalInstructorPortalUrl && <Separator className="my-1" />}
                                     <div className="my-1 px-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                                        Learner Section
+                                        {t('appsMenu.learnerSection')}
                                     </div>
                                     <div className="grid grid-cols-4 gap-2 px-2 py-1">
                                         {finalLearnerPortalUrl && (
@@ -506,14 +536,14 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex flex-col items-center justify-center gap-1 rounded-md p-1 hover:bg-neutral-100"
-                                                title="Learner Portal"
+                                                title={t('appsMenu.learnerPortal')}
                                             >
                                                 <Student
                                                     className="size-6 text-primary-500"
                                                     weight="fill"
                                                 />
                                                 <span className="text-center text-[10px] leading-tight text-neutral-600">
-                                                    Portal
+                                                    {t('appsMenu.portal')}
                                                 </span>
                                             </a>
                                         )}
@@ -523,14 +553,14 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex flex-col items-center justify-center gap-1 rounded-md p-1 hover:bg-neutral-100"
-                                                title="Google Play Store"
+                                                title={t('appsMenu.googlePlayStore')}
                                             >
                                                 <AndroidLogo
                                                     className="size-6 text-green-600"
                                                     weight="fill"
                                                 />
                                                 <span className="text-[10px] text-neutral-600">
-                                                    Android
+                                                    {t('appsMenu.android')}
                                                 </span>
                                             </a>
                                         )}
@@ -540,14 +570,14 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex flex-col items-center justify-center gap-1 rounded-md p-1 hover:bg-neutral-100"
-                                                title="App Store"
+                                                title={t('appsMenu.appStore')}
                                             >
                                                 <AppleLogo
                                                     className="size-6 text-black"
                                                     weight="fill"
                                                 />
                                                 <span className="text-[10px] text-neutral-600">
-                                                    iOS
+                                                    {t('appsMenu.ios')}
                                                 </span>
                                             </a>
                                         )}
@@ -557,14 +587,14 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex flex-col items-center justify-center gap-1 rounded-md p-1 hover:bg-neutral-100"
-                                                title="Windows App"
+                                                title={t('appsMenu.windowsApp')}
                                             >
                                                 <WindowsLogo
                                                     className="size-6 text-blue-600"
                                                     weight="fill"
                                                 />
                                                 <span className="text-[10px] text-neutral-600">
-                                                    Win
+                                                    {t('appsMenu.windows')}
                                                 </span>
                                             </a>
                                         )}
@@ -574,14 +604,14 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex flex-col items-center justify-center gap-1 rounded-md p-1 hover:bg-neutral-100"
-                                                title="Mac App"
+                                                title={t('appsMenu.macApp')}
                                             >
                                                 <Desktop
                                                     className="size-6 text-neutral-600"
                                                     weight="fill"
                                                 />
                                                 <span className="text-[10px] text-neutral-600">
-                                                    Mac
+                                                    {t('appsMenu.mac')}
                                                 </span>
                                             </a>
                                         )}
@@ -621,7 +651,9 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 <div className="flex items-center justify-between bg-warning-50 px-3 py-2">
                                     <span className="flex items-center gap-1.5 text-sm font-medium text-warning-700">
                                         <Alarm size={15} weight="bold" />
-                                        Follow-ups due ({dueFollowups.length})
+                                        {t('notifications.followUpsDue', {
+                                            count: dueFollowups.length,
+                                        })}
                                     </span>
                                     <button
                                         className="text-xs text-primary-500 hover:underline"
@@ -629,7 +661,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                             navigate({ to: '/audience-manager/follow-ups' })
                                         }
                                     >
-                                        View all
+                                        {t('notifications.viewAll')}
                                     </button>
                                 </div>
                                 <div className="max-h-40 overflow-y-auto p-2">
@@ -645,7 +677,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                             >
                                                 <span className="min-w-0">
                                                     <span className="block truncate text-xs font-medium text-neutral-800">
-                                                        {f.lead_name ?? 'Lead'}
+                                                        {f.lead_name ?? t('notifications.lead')}
                                                     </span>
                                                     {f.lead_mobile && (
                                                         <span className="block text-caption text-neutral-500">
@@ -668,7 +700,9 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                     })}
                                     {dueFollowups.length > 4 && (
                                         <p className="p-1 text-center text-caption text-neutral-500">
-                                            +{dueFollowups.length - 4} more due
+                                            {t('notifications.moreDue', {
+                                                count: dueFollowups.length - 4,
+                                            })}
                                         </p>
                                     )}
                                 </div>
@@ -676,7 +710,9 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                             </>
                         )}
                         <div className="flex items-center justify-between px-3 py-2">
-                            <span className="text-sm font-medium">System Alerts</span>
+                            <span className="text-sm font-medium">
+                                {t('notifications.systemAlerts')}
+                            </span>
                             <div className="flex items-center gap-2">
                                 <ClearAllAlertsButton
                                     userId={userId}
@@ -687,7 +723,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                     className="text-xs text-primary-500 hover:underline"
                                     onClick={() => setShowAllDialog(true)}
                                 >
-                                    See all
+                                    {t('notifications.seeAll')}
                                 </button>
                             </div>
                         </div>
@@ -744,7 +780,11 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                             </div>
                                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-neutral-500">
                                                 <span>
-                                                    Sent by {item.createdByName || 'System'}
+                                                    {t('notifications.sentBy', {
+                                                        name:
+                                                            item.createdByName ||
+                                                            t('notifications.system'),
+                                                    })}
                                                 </span>
                                                 <span>•</span>
                                                 <span>{formatAlertTimestamp(sentAt)}</span>
@@ -754,7 +794,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 })
                             ) : (
                                 <div className="p-3 text-center text-xs text-neutral-500">
-                                    No alerts
+                                    {t('notifications.noAlerts')}
                                 </div>
                             )}
                         </div>
@@ -764,7 +804,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 className="text-xs font-medium text-primary-500 hover:underline"
                                 onClick={() => setShowAllDialog(true)}
                             >
-                                See all notifications
+                                {t('notifications.seeAllNotifications')}
                             </button>
                         </div>
                     </DropdownMenuContent>
@@ -779,7 +819,9 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                         )}
                     >
                         <div className="flex items-center justify-between gap-2 px-5 py-4">
-                            <DialogTitle className="text-base">System Alerts</DialogTitle>
+                            <DialogTitle className="text-base">
+                                {t('notifications.systemAlerts')}
+                            </DialogTitle>
                             <ClearAllAlertsButton
                                 userId={userId}
                                 hasAlerts={
@@ -812,9 +854,16 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                                 </div>
                                                                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500">
                                                                     <span>
-                                                                        Sent by{' '}
-                                                                        {item.createdByName ||
-                                                                            'System'}
+                                                                        {t(
+                                                                            'notifications.sentBy',
+                                                                            {
+                                                                                name:
+                                                                                    item.createdByName ||
+                                                                                    t(
+                                                                                        'notifications.system'
+                                                                                    ),
+                                                                            }
+                                                                        )}
                                                                     </span>
                                                                     <span>•</span>
                                                                     <span>
@@ -870,8 +919,8 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                     onClick={() => infiniteAlerts.fetchNextPage()}
                                                 >
                                                     {infiniteAlerts.isFetchingNextPage
-                                                        ? 'Loading...'
-                                                        : 'Load more'}
+                                                        ? t('notifications.loading')
+                                                        : t('notifications.loadMore')}
                                                 </button>
                                             </div>
                                         )}
@@ -888,7 +937,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                     </div>
                                 ) : (
                                     <div className="py-8 text-center text-xs text-neutral-500">
-                                        No alerts found
+                                        {t('notifications.noAlertsFound')}
                                     </div>
                                 )}
                             </div>
@@ -908,12 +957,12 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
                         <DropdownMenuTrigger
                             className="flex items-center gap-1 md:gap-2"
-                            aria-label="Open profile menu"
+                            aria-label={t('aria.openProfileMenu')}
                         >
                             {adminLogo !== '' ? (
                                 <img
                                     src={adminLogo}
-                                    alt="logo"
+                                    alt={t('profile.logo')}
                                     className={cn(
                                         'rounded-full object-cover',
                                         isCompact ? 'size-8' : 'size-8 md:size-10'
@@ -940,10 +989,21 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                             </span>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="flex flex-col items-start">
+                            <InstituteSwitcherMenuSection
+                                instituteName={instituteDetails?.institute_name}
+                                logoFileId={instituteDetails?.institute_logo_file_id}
+                                canSwitch={canSwitchInstitute}
+                                onSwitchClick={() => {
+                                    setIsOpen(false);
+                                    // Open after the menu has closed so its focus return
+                                    // doesn't fight the dialog's focus trap.
+                                    setTimeout(() => setShowInstituteSwitcher(true), 0);
+                                }}
+                            />
                             {canViewProfile && (
                                 <Sheet>
                                     <SheetTrigger className="w-full p-2 text-left text-sm hover:rounded-sm hover:bg-accent hover:text-accent-foreground">
-                                        View Profile Details
+                                        {t('profile.viewProfileDetails')}
                                     </SheetTrigger>
                                     <SheetContent
                                         className={cn(
@@ -952,46 +1012,52 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                         )}
                                     >
                                         <SheetTitle className="text-primary-500">
-                                            Profile Details
+                                            {t('profile.profileDetails')}
                                         </SheetTitle>
-                                        <div className="flex flex-col gap-8">
-                                            <div className="flex flex-col items-center justify-center gap-4">
-                                                {adminLogo !== '' && (
-                                                    <img
-                                                        src={adminLogo}
-                                                        alt="logo"
-                                                        className="size-32 rounded-full object-cover md:size-48"
-                                                    />
-                                                )}
-                                                <h1 className="text-center">
-                                                    {adminDetails?.full_name}
-                                                </h1>
-                                                <div className="flex flex-wrap items-center justify-center gap-2">
-                                                    <h1 className="whitespace-nowrap">Role Type</h1>
-                                                    {adminDetails.roles?.map((role, idx) => {
-                                                        const bgColor =
-                                                            roleColors[
-                                                                role.role_name.toUpperCase()
-                                                            ] || '#EDEDED';
-                                                        return (
-                                                            <Badge
-                                                                key={idx}
-                                                                className={`whitespace-nowrap rounded-lg border border-neutral-300 py-1.5 font-thin shadow-none`}
-                                                                style={{ backgroundColor: bgColor }}
-                                                            >
-                                                                {role.role_name}
-                                                            </Badge>
-                                                        );
-                                                    })}
+                                        <div className="mt-6 flex flex-col gap-4">
+                                            <div className="flex flex-col items-center gap-4 rounded-lg border border-neutral-200 bg-white p-6 text-center">
+                                                <Avatar className="size-24 border-4 border-primary-50 md:size-28">
+                                                    {adminLogo !== '' && (
+                                                        <AvatarImage
+                                                            src={adminLogo}
+                                                            alt={t('profile.logo')}
+                                                            className="object-cover"
+                                                        />
+                                                    )}
+                                                    <AvatarFallback className="bg-primary-100 text-h2 font-semibold text-primary-500">
+                                                        {getInitials(adminDetails?.full_name)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <h2 className="break-words text-h3 font-semibold text-neutral-700">
+                                                        {adminDetails?.full_name}
+                                                    </h2>
+                                                    {adminDetails.roles?.length ? (
+                                                        <div
+                                                            className="flex flex-wrap items-center justify-center gap-2"
+                                                            aria-label={t('profile.roleType')}
+                                                        >
+                                                            {adminDetails.roles.map((role, idx) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    className="whitespace-nowrap rounded-md border border-primary-200 bg-primary-50 px-2 py-0.5 text-caption font-semibold uppercase text-primary-500"
+                                                                >
+                                                                    {role.role_name}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : null}
                                                 </div>
                                                 {canEditProfile ? (
                                                     <AdminProfile adminDetails={adminDetails} />
                                                 ) : null}
                                             </div>
-                                            <Separator />
-                                            <div className="flex flex-col gap-2">
+                                            <section className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <h1>Account Information</h1>
+                                                    <h3 className="flex items-center gap-2 text-subtitle font-semibold text-neutral-700">
+                                                        <IdentificationCard className="size-5 text-primary-500" />
+                                                        {t('profile.accountInformation')}
+                                                    </h3>
                                                     <MyButton
                                                         buttonType="secondary"
                                                         scale="small"
@@ -999,38 +1065,47 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                                             setShowEditAccountDetails(true);
                                                         }}
                                                     >
-                                                        Edit Details
+                                                        <PencilSimple className="size-3.5" />
+                                                        {t('profile.editDetails')}
                                                     </MyButton>
                                                 </div>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Username:&nbsp;</span>
-                                                    <span className="break-all">
-                                                        {getUserName()}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                            <Separator />
-                                            <div className="flex flex-col gap-2">
-                                                <h1>Contact Information</h1>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Email:&nbsp;</span>
-                                                    <span className="break-all">
-                                                        {adminDetails?.email}
-                                                    </span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Mobile:&nbsp;</span>
-                                                    <span>+{adminDetails?.mobile_number}</span>
-                                                </p>
-                                            </div>
+                                                <ProfileDetailRow
+                                                    icon={<UserCircle className="size-5" />}
+                                                    label={t('profile.usernameLabel')}
+                                                    value={getUserName()}
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                            </section>
+                                            <section className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
+                                                <h3 className="flex items-center gap-2 text-subtitle font-semibold text-neutral-700">
+                                                    <AddressBook className="size-5 text-primary-500" />
+                                                    {t('profile.contactInformation')}
+                                                </h3>
+                                                <ProfileDetailRow
+                                                    icon={<EnvelopeSimple className="size-5" />}
+                                                    label={t('profile.emailLabel')}
+                                                    value={adminDetails?.email}
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                                <ProfileDetailRow
+                                                    icon={<Phone className="size-5" />}
+                                                    label={t('profile.mobileLabel')}
+                                                    value={
+                                                        adminDetails?.mobile_number
+                                                            ? `+${adminDetails.mobile_number}`
+                                                            : ''
+                                                    }
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                            </section>
                                         </div>
                                     </SheetContent>
                                 </Sheet>
                             )}
                             {canViewInstitute && (
                                 <Sheet>
-                                    <SheetTrigger className="w-full p-2 text-sm hover:rounded-sm hover:bg-accent hover:text-accent-foreground">
-                                        View Institute Details
+                                    <SheetTrigger className="w-full p-2 text-left text-sm hover:rounded-sm hover:bg-accent hover:text-accent-foreground">
+                                        {t('institute.viewInstituteDetails')}
                                     </SheetTrigger>
                                     <SheetContent
                                         className={cn(
@@ -1039,74 +1114,100 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                         )}
                                     >
                                         <SheetTitle className="text-primary-500">
-                                            Institute Details
+                                            {t('institute.instituteDetails')}
                                         </SheetTitle>
-                                        <div className="flex flex-col gap-8">
-                                            <div className="flex flex-col items-center justify-center gap-4">
-                                                {instituteLogo !== '' && (
-                                                    <img
-                                                        src={instituteLogo}
-                                                        alt="logo"
-                                                        className="size-32 object-contain md:size-48"
-                                                    />
-                                                )}
-                                                <h1 className="text-center">
-                                                    {instituteDetails?.institute_name}
-                                                </h1>
-                                                <div className="flex items-center gap-2">
-                                                    <h1>Institute Type</h1>
-                                                    <p className="rounded-lg border px-2 py-1 text-sm text-neutral-600">
-                                                        {instituteDetails?.type}
-                                                    </p>
+                                        <div className="mt-6 flex flex-col gap-4">
+                                            <div className="flex flex-col items-center gap-4 rounded-lg border border-neutral-200 bg-white p-6 text-center">
+                                                <div className="flex size-28 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white p-2 md:size-32">
+                                                    {instituteLogo !== '' ? (
+                                                        <img
+                                                            src={instituteLogo}
+                                                            alt={t('profile.logo')}
+                                                            className="size-full object-contain"
+                                                        />
+                                                    ) : (
+                                                        <Buildings className="size-12 text-neutral-300" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <h2 className="break-words text-h3 font-semibold text-neutral-700">
+                                                        {instituteDetails?.institute_name}
+                                                    </h2>
+                                                    {instituteDetails?.type ? (
+                                                        <span
+                                                            className="rounded-md border border-primary-200 bg-primary-50 px-2 py-0.5 text-caption font-semibold text-primary-500"
+                                                            title={t('institute.instituteType')}
+                                                        >
+                                                            {instituteDetails.type}
+                                                        </span>
+                                                    ) : null}
                                                 </div>
                                                 {canEditInstitute ? (
                                                     <EditDashboardProfileComponent isEdit={true} />
                                                 ) : null}
                                             </div>
-                                            <Separator />
-                                            <div className="flex flex-col gap-2">
-                                                <h1>Contact Information</h1>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Institute Email:&nbsp;</span>
-                                                    <span className="break-all">
-                                                        {instituteDetails?.email}
-                                                    </span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Institute Mobile:&nbsp;</span>
-                                                    <span>+{instituteDetails?.phone}</span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Institute Website:&nbsp;</span>
-                                                    <span className="break-all">
-                                                        {instituteDetails?.website_url}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                            <Separator />
-                                            <div className="flex flex-col gap-2">
-                                                <h1>Location Details</h1>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Address:&nbsp;</span>
-                                                    <span>{instituteDetails?.address}</span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>City/Village:&nbsp;</span>
-                                                    <span>{instituteDetails?.city}</span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>State:&nbsp;</span>
-                                                    <span>{instituteDetails?.state}</span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Country:&nbsp;</span>
-                                                    <span>{instituteDetails?.country}</span>
-                                                </p>
-                                                <p className="text-sm text-neutral-600">
-                                                    <span>Pincode:&nbsp;</span>
-                                                    <span>{instituteDetails?.pin_code}</span>
-                                                </p>
-                                            </div>
+                                            <section className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
+                                                <h3 className="flex items-center gap-2 text-subtitle font-semibold text-neutral-700">
+                                                    <AddressBook className="size-5 text-primary-500" />
+                                                    {t('institute.contactInformation')}
+                                                </h3>
+                                                <ProfileDetailRow
+                                                    icon={<EnvelopeSimple className="size-5" />}
+                                                    label={t('institute.emailLabel')}
+                                                    value={instituteDetails?.email}
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                                <ProfileDetailRow
+                                                    icon={<Phone className="size-5" />}
+                                                    label={t('institute.mobileLabel')}
+                                                    value={
+                                                        instituteDetails?.phone
+                                                            ? `+${instituteDetails.phone}`
+                                                            : ''
+                                                    }
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                                <ProfileDetailRow
+                                                    icon={<Globe className="size-5" />}
+                                                    label={t('institute.websiteLabel')}
+                                                    value={instituteDetails?.website_url}
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                            </section>
+                                            <section className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
+                                                <h3 className="flex items-center gap-2 text-subtitle font-semibold text-neutral-700">
+                                                    <MapPin className="size-5 text-primary-500" />
+                                                    {t('institute.locationDetails')}
+                                                </h3>
+                                                <ProfileDetailRow
+                                                    icon={<MapTrifold className="size-5" />}
+                                                    label={t('institute.addressLabel')}
+                                                    value={instituteDetails?.address}
+                                                    emptyText={t('profile.notProvided')}
+                                                />
+                                                <div className="grid grid-cols-2 gap-4 border-t border-neutral-100 pt-4">
+                                                    <InstituteDetailCell
+                                                        label={t('institute.cityLabel')}
+                                                        value={instituteDetails?.city}
+                                                        emptyText={t('profile.notProvided')}
+                                                    />
+                                                    <InstituteDetailCell
+                                                        label={t('institute.stateLabel')}
+                                                        value={instituteDetails?.state}
+                                                        emptyText={t('profile.notProvided')}
+                                                    />
+                                                    <InstituteDetailCell
+                                                        label={t('institute.countryLabel')}
+                                                        value={instituteDetails?.country}
+                                                        emptyText={t('profile.notProvided')}
+                                                    />
+                                                    <InstituteDetailCell
+                                                        label={t('institute.pincodeLabel')}
+                                                        value={instituteDetails?.pin_code}
+                                                        emptyText={t('profile.notProvided')}
+                                                    />
+                                                </div>
+                                            </section>
                                         </div>
                                     </SheetContent>
                                 </Sheet>
@@ -1120,7 +1221,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 onClick={handleLogout}
                                 className="w-full cursor-pointer"
                             >
-                                Logout
+                                {t('logout')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -1131,6 +1232,74 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                     open={showEditAccountDetails}
                     setOpen={setShowEditAccountDetails}
                 />
+            )}
+            {canSwitchInstitute && (
+                <InstituteSwitcherDialog
+                    open={showInstituteSwitcher}
+                    onOpenChange={setShowInstituteSwitcher}
+                />
+            )}
+        </div>
+    );
+}
+
+function getInitials(name?: string | null) {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    return parts
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
+}
+
+function ProfileDetailRow({
+    icon,
+    label,
+    value,
+    emptyText,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value?: string | null;
+    emptyText: string;
+}) {
+    return (
+        <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-500">
+                {icon}
+            </span>
+            <div className="flex min-w-0 flex-col">
+                <span className="text-caption text-neutral-500">{label}</span>
+                {value ? (
+                    <span className="break-all text-body font-semibold text-neutral-700">
+                        {value}
+                    </span>
+                ) : (
+                    <span className="text-body italic text-neutral-400">{emptyText}</span>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function InstituteDetailCell({
+    label,
+    value,
+    emptyText,
+}: {
+    label: string;
+    value?: string | null;
+    emptyText: string;
+}) {
+    return (
+        <div className="flex min-w-0 flex-col">
+            <span className="text-caption text-neutral-500">{label}</span>
+            {value ? (
+                <span className="break-words text-body font-semibold text-neutral-700">
+                    {value}
+                </span>
+            ) : (
+                <span className="text-body italic text-neutral-400">{emptyText}</span>
             )}
         </div>
     );

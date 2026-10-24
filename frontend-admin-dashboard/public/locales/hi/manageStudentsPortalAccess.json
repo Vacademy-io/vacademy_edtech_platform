@@ -1,0 +1,43 @@
+{
+    "batchPicker": {
+        "openPortalForLabel": "पोर्टल खोलें इसके लिए"
+    },
+    "credentials": {
+        "title": "खाता क्रेडेंशियल",
+        "edit": "संपादित करें",
+        "share": "साझा करें",
+        "usernameLabel": "उपयोगकर्ता नाम:",
+        "passwordLabel": "पासवर्ड:",
+        "usernameFieldName": "उपयोगकर्ता नाम",
+        "passwordFieldName": "पासवर्ड",
+        "usernameNotFound": "उपलब्ध नहीं",
+        "loadingPlaceholder": "लोड हो रहा है...",
+        "notFoundPlaceholder": "पासवर्ड नहीं मिला"
+    },
+    "actions": {
+        "learnerPortal": {
+            "title": "लर्नर पोर्टल",
+            "description": "लर्नर पोर्टल को सीधे एक्सेस करें",
+            "button": "लर्नर पोर्टल एक्सेस करें"
+        },
+        "resetPassword": {
+            "title": "पासवर्ड रीसेट करें",
+            "description": "पासवर्ड रीसेट ईमेल भेजें",
+            "button": "पासवर्ड रीसेट ईमेल भेजें"
+        }
+    },
+    "emptyState": {
+        "title": "कोई पोर्टल एक्सेस सुविधा सक्षम नहीं है",
+        "description": "पोर्टल एक्सेस सेटिंग्स सक्षम करने के लिए एडमिन से संपर्क करें"
+    },
+    "toast": {
+        "copiedToClipboard": "{{field}} क्लिपबोर्ड पर कॉपी हो गया!",
+        "copyFailed": "{{field}} कॉपी करने में विफल",
+        "studentUserIdNotFound": "छात्र का यूज़र आईडी नहीं मिला",
+        "studentPackageIdNotFound": "छात्र का पैकेज आईडी नहीं मिला",
+        "accessingPortal": "लर्नर पोर्टल एक्सेस किया जा रहा है...",
+        "portalOpened": "लर्नर पोर्टल नए टैब में खोला गया",
+        "noRedirectUrl": "कोई रीडायरेक्ट यूआरएल प्राप्त नहीं हुआ",
+        "accessPortalFailed": "लर्नर पोर्टल एक्सेस करने में विफल। कृपया पुनः प्रयास करें।"
+    }
+}

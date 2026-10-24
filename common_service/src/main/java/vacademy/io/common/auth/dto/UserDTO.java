@@ -1,6 +1,7 @@
 package vacademy.io.common.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.Email;
@@ -14,6 +15,7 @@ import vacademy.io.common.auth.entity.User;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -66,6 +68,30 @@ public class UserDTO {
     @Size(max = 10, message = "Preferred locale must not exceed 10 characters")
     private String preferredLocale;
 
+    // Author metadata (serialized as author_subtitle / author_description).
+    // Set from the Add Course -> Add Authors flow; surfaced on catalogue and
+    // course-detail instructor lists. Optional - null when not set.
+    @Size(max = 255, message = "Author subtitle must not exceed 255 characters")
+    private String authorSubtitle;
+    private String authorDescription;
+
+    // Request-only hints for the institute's username strategy (Settings > Student
+    // Display > Login & Signup). Never stored; omitted from responses when unset.
+    // usernameExplicit: an admin typed this username by hand, so the strategy must not
+    // replace it. usernameFieldValues: custom field values captured with this
+    // enrollment, keyed by custom field id, so a field such as roll number can
+    // become the username.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean usernameExplicit;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Map<String, String> usernameFieldValues;
+
+    // Response-only: this person's display role in ONE course (Author / Instructor /
+    // Acharya ...), set by admin-core on course instructor lists from the faculty
+    // mapping. Never stored on the user; omitted when unset.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String roleLabel;
+
     public UserDTO(User user) {
         this.id = user.getId();
         this.username = user.getUsername();
@@ -84,6 +110,8 @@ public class UserDTO {
         this.isParent=user.getIsParent();
         this.linkedParentId=user.getLinkedParentId();
         this.preferredLocale = user.getPreferredLocale();
+        this.authorSubtitle = user.getAuthorSubtitle();
+        this.authorDescription = user.getAuthorDescription();
     }
 
     public UserDTO(User user, UserDTO userDTO) {
@@ -105,6 +133,8 @@ public class UserDTO {
         this.isParent=user.getIsParent();
         this.linkedParentId=user.getLinkedParentId();
         this.preferredLocale = user.getPreferredLocale();
+        this.authorSubtitle = user.getAuthorSubtitle();
+        this.authorDescription = user.getAuthorDescription();
 
     }
 }

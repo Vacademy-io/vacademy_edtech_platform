@@ -1,0 +1,10 @@
+{
+    "noAttemptsYet": "No attempts yet — the score spread appears once learners submit.",
+    "scoreSpread": "Score spread",
+    "learnersCount_one": "{{count}} learner",
+    "learnersCount_other": "{{count}} learners",
+    "bucketTitle_one": "{{from}}–{{to}}%: {{count}} learner",
+    "bucketTitle_other": "{{from}}–{{to}}%: {{count}} learners",
+    "passMark": "pass {{percentage}}%",
+    "axisCaption": "Score (%) — each bar covers 10 points"
+}

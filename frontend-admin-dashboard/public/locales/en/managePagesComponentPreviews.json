@@ -1,0 +1,159 @@
+{
+    "productPageOffer": {
+        "seeAll": "See all",
+        "pickPage": "Pick a product page in the properties panel to show its courses here.",
+        "loading": "Loading courses…",
+        "noCourses": "This product page has no active courses yet.",
+        "courseFallback": "Course",
+        "free": "Free",
+        "viewCourse": "View course",
+        "enrolNow": "Enrol now",
+        "addToCart": "Add to Cart",
+        "checkout": "Proceed to checkout",
+        "basketPreviewCount_one": "{{count}} course selected",
+        "basketPreviewCount_other": "{{count}} courses selected",
+        "hiddenCountCapped_one": "+ {{count}} more course — the row ends with a card linking to the full product page.",
+        "hiddenCountCapped_other": "+ {{count}} more courses — the row ends with a card linking to the full product page.",
+        "hiddenCountPaged_one": "+ {{count}} more course — visitors page through {{totalPages}} pages{{suffix}}.",
+        "hiddenCountPaged_other": "+ {{count}} more courses — visitors page through {{totalPages}} pages{{suffix}}.",
+        "pagedSuffixCarousel": ", scrolling each row sideways",
+        "pagedSuffixScrollable": ", scrolling inside the section"
+    },
+    "leadForm": {
+        "pickCampaign": "Pick a campaign in the properties panel — its form fields render here.",
+        "loading": "Loading form fields…",
+        "noFields": "This campaign has no form fields yet — add them in Audience Manager.",
+        "submit": "Submit"
+    },
+    "detailBlocks": {
+        "empty": "Add a block for each programme you want to document."
+    },
+    "header": {
+        "getStarted": "Get Started",
+        "logoAlt": "Logo"
+    },
+    "hero": {
+        "titleFallback": "Hero Title",
+        "getStarted": "Get Started",
+        "photoFallback": "Photo {{index}}",
+        "imageArea": "Image area"
+    },
+    "footer": {
+        "platform": "Platform",
+        "bottomNote": "© 2025"
+    },
+    "stats": {
+        "empty": "No stats added yet"
+    },
+    "testimonial": {
+        "textFallback": "Testimonial text…",
+        "authorFallback": "Student",
+        "empty": "Add testimonials in the properties panel"
+    },
+    "mediaShowcase": {
+        "slideFallback": "Slide {{index}}",
+        "moreSlides_one": "+{{count}} more",
+        "moreSlides_other": "+{{count}} more",
+        "slideCount_one": "{{count}} slide · slider layout",
+        "slideCount_other": "{{count}} slides · slider layout",
+        "mediaItemFallback": "Media item",
+        "typeImage": "Image",
+        "typeVideo": "Video",
+        "empty": "Add slides or media items in the properties panel"
+    },
+    "video": {
+        "addUrl": "Add a video URL in properties"
+    },
+    "ctaBanner": {
+        "headingFallback": "Call to Action"
+    },
+    "gallery": {
+        "imageFallback": "Image {{index}}"
+    },
+    "dataPlaceholder": {
+        "defaultDescription": "Renders live data on the published page"
+    },
+    "marquee": {
+        "defaultItem1": "Top-rated courses",
+        "defaultItem2": "10,000+ learners",
+        "defaultItem3": "Expert instructors",
+        "scrollingHint": "→ scrolling"
+    },
+    "dispatcher": {
+        "buyRentHeading": "Choose Your Path",
+        "buy": "Buy",
+        "rent": "Rent",
+        "courseCatalogLabel": "Course Catalog",
+        "courseCatalogDesc": "Shows live courses — \"{{title}}\"",
+        "ourCoursesDefault": "Our Courses",
+        "bookCatalogueLabel": "Book Catalogue",
+        "bookCatalogueDesc": "Shows live books — \"{{title}}\"",
+        "bookCollectionDefault": "Book Collection",
+        "cartLabel": "Shopping Cart",
+        "cartDesc": "Student cart with items and checkout flow",
+        "courseDetailsLabel": "Course Details",
+        "courseDetailsDesc": "Renders the current course's detail data",
+        "bookDetailsLabel": "Book Details",
+        "bookDetailsDesc": "Renders the current book's detail data",
+        "policyLabel": "Policy Page",
+        "policyDesc": "Renders policy / terms content",
+        "tabItemFallback": "Item {{index}}",
+        "tabTabFallback": "Tab {{index}}",
+        "tabContentDefault": "Tab content",
+        "logoCloudEmptyTicker": "Add ticker items via the property panel",
+        "logoCloudEmptyLogos": "Add logos via the property panel",
+        "mapEmbedPreview": "Map embed preview",
+        "mapEmbedAddUrl": "Add a Google Maps embed URL",
+        "countdownHeadingFallback": "Event Starts In",
+        "unitDays": "Days",
+        "unitHours": "Hours",
+        "unitMins": "Mins",
+        "unitSecs": "Secs",
+        "textBlockDefault": "Text block — click to edit content",
+        "uploadImage": "Upload an image",
+        "buttonFallback": "Button",
+        "newsletterPlaceholder": "Enter your email",
+        "newsletterButton": "Subscribe",
+        "columnLayoutLabel": "{{cols}}-Column Layout · gap: {{gap}}",
+        "slotEmpty": "Slot {{index}} — empty",
+        "slotComponentCount_one": "{{count}} component",
+        "slotComponentCount_other": "{{count}} components",
+        "filterCategory": "Category",
+        "filterLevel": "Level",
+        "filterPrice": "Price",
+        "courseImage": "Course Image",
+        "courseGridNote": "Course grid · content loads at runtime",
+        "htmlPageEmptyTitle": "Empty HTML page",
+        "htmlPageEmptyBody": "Paste your HTML and CSS in the Properties panel.",
+        "htmlBlockLabel": "HTML Block",
+        "htmlBlockEmpty": "Empty HTML block",
+        "unknownComponent": "Unknown component: {{type}}"
+    },
+    "documentViewer": {
+        "noFile": "No PDF yet",
+        "addPdf": "Add a PDF in the panel on the right",
+        "openDocument": "Open document",
+        "download": "Download PDF"
+    },
+    "blog": {
+        "sampleCategory": "Study tips",
+        "sampleTitle": "Sample post {{n}}",
+        "sampleExcerpt": "A short teaser of the article shows here.",
+        "readMore": "Read more",
+        "liveNote": "Published posts appear here on the live site. Write them under Manage Pages → Blog."
+    },
+    "jobOpenings": {
+        "view": "View job description",
+        "empty": "No jobs yet — add one in the section settings.",
+        "liveNote": "Each job opens on its own page on the live site."
+    },
+    "catalogFeatures": {
+        "hero": "Hero",
+        "streamIcons": "Stream icons",
+        "streamTabs": "Stream tabs",
+        "filterSidebar": "Filter sidebar",
+        "highlightedRows_one": "{{count}} highlighted row",
+        "highlightedRows_other": "{{count}} highlighted rows",
+        "editorialCards": "Editorial cards"
+    }
+}

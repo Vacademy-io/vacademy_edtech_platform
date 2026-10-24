@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
+import vacademy.io.admin_core_service.features.regional_pricing.dto.RegionalQuote;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.enroll_invite.enums.EnrollInviteTag;
 import vacademy.io.admin_core_service.features.enroll_invite.repository.PackageSessionLearnerInvitationToPaymentOptionRepository;
 import vacademy.io.admin_core_service.features.enroll_invite.service.PackageSessionEnrollInviteToPaymentOptionService;
@@ -61,10 +63,16 @@ public class UserPlanService {
     private static final Logger logger = LoggerFactory.getLogger(UserPlanService.class);
 
     @Autowired
+    private vacademy.io.admin_core_service.features.fee_management.service.FeeBillCancellationService feeBillCancellationService;
+
+    @Autowired
     private UserPlanRepository userPlanRepository;
 
     @Autowired
     private PackageSessionEnrollInviteToPaymentOptionService packageSessionEnrollInviteToPaymentOptionService;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
 
     @Autowired
     @Lazy
@@ -72,6 +80,9 @@ public class UserPlanService {
 
     @Autowired
     private PaymentLogRepository paymentLogRepository;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.enroll_invite.service.PhoneIdentifierInviteSubmissionGuard phoneIdentifierInviteSubmissionGuard;
     @Autowired
     private DynamicNotificationService dynamicNotificationService;
 
@@ -108,6 +119,10 @@ public class UserPlanService {
     private vacademy.io.admin_core_service.features.suborg.service.SubOrgSubscriptionService subOrgSubscriptionService;
 
     @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.suborg.service.SubOrgPartnerOnboardingService subOrgPartnerOnboardingService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.suborg.registration.repository.SubOrgRegistrationRepository subOrgRegistrationRepository;
 
     @Autowired
@@ -120,11 +135,22 @@ public class UserPlanService {
     @Autowired
     private vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService workflowTriggerService;
 
+    /**
+     * @Lazy breaks a startup cycle: PlanChangeService needs PaymentService to open an
+     * upgrade checkout, and PaymentService needs this service back.
+     */
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.plan_change.service.PlanChangeService planChangeService;
+
     @Autowired
     private vacademy.io.admin_core_service.features.user_subscription.service.coupon.CouponRedemptionService couponRedemptionService;
 
     @Autowired
     private vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
+
+    @Autowired
+    private UserInstitutePaymentGatewayMappingService mandateService;
 
     public UserPlan createUserPlan(String userId,
             PaymentPlan paymentPlan,
@@ -179,6 +205,17 @@ public class UserPlanService {
                     .readTree(settingJson).path("setting").path("AUTOPAY_SETTING");
             if (ap.path("ENABLED").asBoolean(false)) {
                 Integer trialDays = ap.has("TRIAL_DAYS") ? ap.get("TRIAL_DAYS").asInt(0) : null;
+                // One free trial per learner per institute. Someone who already had one and
+                // comes back through the invite form enrolls as a paying member: no trial
+                // window, and SubscriptionPaymentOptionOperation then charges the plan price
+                // at checkout instead of the Rs 1 mandate authorisation, because that branch
+                // keys off is_trial. Nothing else has to know about the rule.
+                if (trialDays != null && trialDays > 0 && hasConsumedTrial(userPlan, enrollInvite)) {
+                    logger.info("UserPlan {}: learner {} already used their trial at institute {} — "
+                            + "enrolling as a paying member, full price at checkout",
+                            userPlan.getId(), userPlan.getUserId(), enrollInvite.getInstituteId());
+                    trialDays = 0;
+                }
                 // Optional: hold the trial clock until the day the programme actually
                 // starts (e.g. "MONDAY" for an institute whose classes begin on Mondays).
                 // Absent → the trial starts at enrollment, as before.
@@ -188,6 +225,30 @@ public class UserPlanService {
             }
         } catch (Exception e) {
             logger.warn("Could not apply autopay for plan {}: {}", userPlan.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Whether this learner has already consumed a trial at the invite's institute. Any
+     * failure is treated as "no" — a lookup problem must not silently charge someone the
+     * full price when the institute meant to give them a trial.
+     */
+    private boolean hasConsumedTrial(UserPlan userPlan, EnrollInvite enrollInvite) {
+        try {
+            String instituteId = enrollInvite.getInstituteId();
+            java.util.Date now = new java.util.Date();
+            // Where the phone number IS the identity (SuchBliss), the question is whether this
+            // NUMBER has had a trial, not this account: signing up again is precisely how a
+            // second free trial gets taken.
+            if (phoneIdentifierInviteSubmissionGuard.usesPhoneIdentifier(instituteId)) {
+                return userPlanRepository.hasConsumedTrialByPhone(
+                        userPlan.getUserId(), instituteId, userPlan.getId(), now);
+            }
+            return userPlanRepository.hasConsumedTrialAtInstitute(
+                    userPlan.getUserId(), instituteId, userPlan.getId(), now);
+        } catch (Exception e) {
+            logger.warn("Could not check trial history for user {}: {}", userPlan.getUserId(), e.getMessage());
+            return false;
         }
     }
 
@@ -271,11 +332,33 @@ public class UserPlanService {
             String source,
             String subOrgId,
             Date startDate) {
+        return createUserPlan(userId, paymentPlan, appliedCouponDiscount, enrollInvite, paymentOption,
+                paymentInitiationRequestDTO, status, source, subOrgId, startDate, null);
+    }
+
+    /**
+     * @param regionalQuote the viewer's regional price, resolved by a learner checkout
+     *                      (RegionalPriceResolver). When present it is locked onto the UserPlan
+     *                      so this and every later charge use it. Admin-side callers pass null.
+     */
+    @Transactional
+    public UserPlan createUserPlan(String userId,
+            PaymentPlan paymentPlan,
+            AppliedCouponDiscount appliedCouponDiscount,
+            EnrollInvite enrollInvite,
+            PaymentOption paymentOption,
+            PaymentInitiationRequestDTO paymentInitiationRequestDTO,
+            String status,
+            String source,
+            String subOrgId,
+            Date startDate,
+            RegionalQuote regionalQuote) {
         logger.info("Creating UserPlan for userId={}, status={}, source={}, subOrgId={}",
                 userId, status, source, subOrgId);
 
         UserPlan userPlan = new UserPlan();
         userPlan.setStatus(status);
+        RegionalPriceLock.apply(userPlan, regionalQuote);
 
         // ALWAYS set userId - this is preserved for both USER and SUB_ORG sources
         // For SUB_ORG: userId represents the individual learner in the sub-organization
@@ -419,7 +502,13 @@ public class UserPlanService {
                 && UserPlanStatusEnum.PENDING_FOR_PAYMENT.name().equals(saved.getStatus())
                 && paymentPlan != null && paymentPlan.getActualPrice() > 0
                 && enrollInvite != null && enrollInvite.getInstituteId() != null) {
-            double accrualAmount = paymentPlan.getActualPrice();
+            // Regional lock: accrue in the currency and list price the learner was quoted.
+            // Unlocked (every plan unless regional pricing is on): the plan's own price, as before.
+            boolean regionallyPriced = RegionalPriceLock.isLocked(saved);
+            double planListPrice = regionallyPriced
+                    ? saved.getRegionalPrice().doubleValue()
+                    : paymentPlan.getActualPrice();
+            double accrualAmount = planListPrice;
             if (paymentInitiationRequestDTO != null && paymentInitiationRequestDTO.getAmount() != null
                     && paymentInitiationRequestDTO.getAmount() >= 0) {
                 accrualAmount = paymentInitiationRequestDTO.getAmount();
@@ -429,7 +518,7 @@ public class UserPlanService {
                 // (gross list price + discount, amount = net) so the side-view
                 // Transaction History can render "gross struck through → net", and name
                 // the coupon in the remark.
-                double listPrice = paymentPlan.getActualPrice();
+                double listPrice = planListPrice;
                 String accrualRemark = "Plan enrollment payment required";
                 java.math.BigDecimal grossAmount = null;
                 java.math.BigDecimal discountAmount = null;
@@ -446,7 +535,9 @@ public class UserPlanService {
                 userAccountLedgerService.recordDebitAccrual(
                         userId, enrollInvite.getInstituteId(),
                         java.math.BigDecimal.valueOf(accrualAmount),
-                        paymentPlan.getCurrency() != null ? paymentPlan.getCurrency() : "INR",
+                        regionallyPriced
+                                ? saved.getRegionalCurrency()
+                                : (paymentPlan.getCurrency() != null ? paymentPlan.getCurrency() : "INR"),
                         null,
                         "USER_PLAN", saved.getId(),
                         null, accrualRemark,
@@ -558,12 +649,125 @@ public class UserPlanService {
         }
     }
 
+    /**
+     * Transaction-scoped claim on the credential email, so ONE checkout sends ONE.
+     *
+     * A multi-course order activates a UserPlan per course inside a single webhook
+     * transaction, and each activation reached the credential mail — a learner who
+     * bought four subjects got four identical "Course Enrollment" emails seconds
+     * apart. Identical is the point: that mail is
+     * createLearnerEnrollmentNewUserEmailBody(institute, name, username, password,
+     * loginUrl, theme), which takes no course at all, so the copies carried nothing
+     * the first one did not. The learner has one set of credentials.
+     *
+     * Deliberately NOT done by folding the enrollment WORKFLOW: LEARNER_BATCH_ENROLLMENT
+     * triggers are matched per package session, and one institute has 16 of them
+     * driving Moodle and LearnDash provisioning. Coalescing there would enrol a
+     * four-course learner into one course downstream.
+     *
+     * Scoped to the transaction because that is exactly one checkout, and released
+     * on completion — this thread is pooled, and a resource left bound would
+     * swallow the NEXT learner's credentials. With no transaction active there is
+     * nothing to coalesce, so the mail goes out as before.
+     *
+     * @return true when this caller owns the send
+     */
+    // Visible for testing.
+    boolean claimCredentialEmail(String userId, String instituteId) {
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager
+                .isSynchronizationActive()) {
+            return true;
+        }
+        final String key = "credentialEmailSent:" + instituteId + '|' + userId;
+        if (org.springframework.transaction.support.TransactionSynchronizationManager
+                .hasResource(key)) {
+            logger.info("Credential email already claimed for userId={} in this checkout; "
+                    + "not sending a duplicate.", userId);
+            return false;
+        }
+        // Register BEFORE binding. registerSynchronization is the call that can
+        // throw here, and a resource bound with no synchronization to release it
+        // would leak onto this pooled thread — silently swallowing the credentials
+        // of every later learner it serves.
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (org.springframework.transaction.support.TransactionSynchronizationManager
+                                .hasResource(key)) {
+                            org.springframework.transaction.support.TransactionSynchronizationManager
+                                    .unbindResourceIfPossible(key);
+                        }
+                    }
+                });
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .bindResource(key, Boolean.TRUE);
+        return true;
+    }
+
+    /**
+     * Makes sure an already-ACTIVE plan actually has the enrollment its learner paid for.
+     *
+     * <p>Idempotent by construction: it does nothing when an ACTIVE membership already exists
+     * for the invite's package sessions, and otherwise performs the same INVITED -> ACTIVE
+     * shift the normal first-payment path performs. Safe to run on every payment for an
+     * ACTIVE plan, which is the point — the alternative is trusting that the plan's status
+     * tells you whether the learner is enrolled, and it does not.
+     *
+     * <p>Never throws: a payment must not fail because the enrollment repair did.
+     */
+    public void ensureEnrollmentExists(UserPlan userPlan) {
+        try {
+            EnrollInvite enrollInvite = userPlan.getEnrollInvite();
+            if (enrollInvite == null) {
+                return;
+            }
+            List<String> packageSessionIds = packageSessionEnrollInviteToPaymentOptionService
+                    .findPackageSessionsOfEnrollInvite(enrollInvite);
+            if (packageSessionIds == null || packageSessionIds.isEmpty()) {
+                return;
+            }
+            if (studentSessionInstituteGroupMappingRepository
+                    .existsActiveMembership(userPlan.getUserId(), packageSessionIds)) {
+                return;
+            }
+            logger.warn("UserPlan {} is ACTIVE but its learner {} holds no ACTIVE membership in {} — "
+                    + "enrolling now", userPlan.getId(), userPlan.getUserId(), packageSessionIds);
+            int shifted = learnerBatchEnrollService.shiftLearnerFromInvitedToActivePackageSessions(
+                    packageSessionIds, userPlan.getUserId(), enrollInvite.getId(), userPlan.getId());
+            if (shifted == 0) {
+                // The shift only PROMOTES rows that already sit in INVITED or ABANDONED_CART. A
+                // learner whose trial ran and was revoked has neither, so this repair used to
+                // shift nothing and return as though the enrollment now existed — the exact
+                // silent no-op it was written to prevent. Revive their lapsed row instead.
+                logger.warn("Nothing to shift for plan {} — reviving the learner's lapsed enrollment",
+                        userPlan.getId());
+                learnerBatchEnrollService.reviveLapsedEnrollment(
+                        packageSessionIds, userPlan.getUserId(), userPlan);
+            }
+        } catch (Exception e) {
+            logger.error("Could not verify or repair the enrollment for plan {}", userPlan.getId(), e);
+        }
+    }
+
     public void applyOperationsOnFirstPayment(UserPlan userPlan) {
         logger.info("Applying operations on first payment for UserPlan ID={}", userPlan.getId());
 
-        if (UserPlanStatusEnum.ACTIVE.name().equals(userPlan.getStatus())
-                || UserPlanStatusEnum.PENDING.name().equals(userPlan.getStatus())) {
-            logger.info("UserPlan already ACTIVE or pending . Skipping re-activation.");
+        if (UserPlanStatusEnum.ACTIVE.name().equals(userPlan.getStatus())) {
+            // Already ACTIVE does NOT mean already enrolled. Nitika Maheshwari's annual plan
+            // reached ACTIVE through the RENEWAL path — handleSuccessfulRenewal activates and
+            // extends whichever plan the money was paid against — minutes before this method
+            // ran on the very same payment, so this early return skipped the enrollment shift
+            // below. Her Rs 7,200 was recorded, the plan ran to 2027, and she held no ACTIVE
+            // mapping at all: a paying member in no batch, receiving no class links.
+            // Re-activation is indeed not wanted here; the enrollment still has to exist.
+            logger.info("UserPlan {} already ACTIVE — verifying the enrollment exists", userPlan.getId());
+            ensureEnrollmentExists(userPlan);
+            return;
+        }
+        if (UserPlanStatusEnum.PENDING.name().equals(userPlan.getStatus())) {
+            // A stacked plan is enrolled when it is promoted, not now.
+            logger.info("UserPlan {} is stacked (PENDING) — enrollment happens on promotion", userPlan.getId());
             return;
         }
 
@@ -615,11 +819,43 @@ public class UserPlanService {
             // Pass the plan the payment landed on so the ACTIVE mapping references THIS
             // plan — not the plan id of whatever INVITED row is being shifted (which,
             // after a failed-then-retried checkout, is the abandoned first plan).
-            learnerBatchEnrollService.shiftLearnerFromInvitedToActivePackageSessions(packageSessionIds,
-                    userPlan.getUserId(), enrollInvite.getId(), userPlan.getId());
+            int shiftedOnFirstPayment = learnerBatchEnrollService
+                    .shiftLearnerFromInvitedToActivePackageSessions(packageSessionIds,
+                            userPlan.getUserId(), enrollInvite.getId(), userPlan.getId());
+            if (shiftedOnFirstPayment == 0) {
+                // The shift PROMOTES existing INVITED / ABANDONED_CART rows and creates none, so
+                // zero here means this payment enrolled nobody — while everything below (inventory,
+                // ACTIVE status, invoice, confirmation email) carries on as though it had.
+                // Reachable whenever the row the checkout created is not reachable from this plan's
+                // user: under PHONE identity the form's row can belong to a different account on
+                // the same number, which is how a paid learner lands in no batch at all.
+                logger.error("First payment on plan {} shifted NOTHING for user {} in {} — repairing "
+                        + "the enrollment directly", userPlan.getId(), userPlan.getUserId(), packageSessionIds);
+                learnerBatchEnrollService.reviveLapsedEnrollment(
+                        packageSessionIds, userPlan.getUserId(), userPlan);
+            }
 
-            // Decrement inventory (available slots) for each enrolled package session
-            for (String psId : packageSessionIds) {
+            // Decrement inventory (available slots) for each package session THIS payment
+            // activated. The invite's full mapping list is wrong here: gap validation can
+            // drop sessions at checkout, and a bundle invite may map sessions the learner
+            // never bought, so decrementing all of them over-counted seats.
+            List<String> activatedPackageSessionIds;
+            try {
+                Set<String> activeOnPlan = new HashSet<>(studentSessionInstituteGroupMappingRepository
+                        .findActivePackageSessionIdsByUserPlanId(userPlan.getId()));
+                activatedPackageSessionIds = packageSessionIds.stream()
+                        .filter(activeOnPlan::contains)
+                        .toList();
+            } catch (Exception e) {
+                logger.warn("Could not resolve activated sessions for plan {}; skipping inventory decrement: {}",
+                        userPlan.getId(), e.getMessage());
+                activatedPackageSessionIds = List.of();
+            }
+            if (activatedPackageSessionIds.size() != packageSessionIds.size()) {
+                logger.info("Plan {} activated {} of the invite's {} package sessions; decrementing only those",
+                        userPlan.getId(), activatedPackageSessionIds.size(), packageSessionIds.size());
+            }
+            for (String psId : activatedPackageSessionIds) {
                 try {
                     packageSessionService.decrementAvailability(psId, 1);
                 } catch (Exception e) {
@@ -687,6 +923,13 @@ public class UserPlanService {
                     logger.warn("Could not update sub-org registration status after payment: {}",
                             e.getMessage());
                 }
+
+                // Partner onboarding (opt-in per institute): affiliation certificate + welcome
+                // email with credentials. This branch only runs on the FIRST activation (the
+                // method returns early for an already-ACTIVE plan), so a retried webhook cannot
+                // send the welcome twice. Never throws.
+                subOrgPartnerOnboardingService.onPartnerActivated(
+                        enrollInvite.getSubOrgId(), enrollInvite.getInstituteId(), userPlan);
             }
 
             // Send enrollment notifications after successful PAID enrollment
@@ -792,10 +1035,10 @@ public class UserPlanService {
             // Send credential email asynchronously to avoid blocking the payment webhook thread.
             // Gated by showSendCredentials so the post-payment path can't ship credentials the
             // admin disabled at the institute level.
-            if (showSendCredentials) {
+            if (showSendCredentials && claimCredentialEmail(userDTO.getId(), instituteId)) {
                 String learnerPortalUrl = resolveLearnerPortalUrl(packageSessionIds, instituteId);
                 asyncEnrollmentEmailService.sendCredentialEmailForPaidEnrollment(userDTO, instituteId, learnerPortalUrl);
-            } else {
+            } else if (!showSendCredentials) {
                 logger.info("Skipping credential email after payment: COURSE_SETTING.showSendCredentials=false " +
                         "for institute {}", instituteId);
             }
@@ -1109,6 +1352,9 @@ public class UserPlanService {
                 .appliedCouponDiscountJson(userPlan.getAppliedCouponDiscountJson())
                 .appliedCoupon(vacademy.io.admin_core_service.features.user_subscription.dto.CouponSnapshotDTO
                         .fromJson(userPlan.getAppliedCouponDiscountJson()))
+                .discountGrantedByUserId(userPlan.getDiscountGrantedByUserId())
+                .discountGrantedAt(userPlan.getDiscountGrantedAt())
+                .discountCyclesApplied(userPlan.getDiscountCyclesApplied())
                 .enrollInviteId(userPlan.getEnrollInviteId())
                 .paymentOptionId(userPlan.getPaymentOptionId())
                 .paymentOptionJson(userPlan.getPaymentOptionJson())
@@ -1119,7 +1365,8 @@ public class UserPlanService {
                 .updatedAt(userPlan.getUpdatedAt())
                 .startDate(userPlan.getStartDate())
                 .endDate(userPlan.getEndDate())
-                .enrollInvite(userPlan.getEnrollInvite().toEnrollInviteDTO())
+                .enrollInvite(
+                        userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().toEnrollInviteDTO() : null)
                 .paymentPlanDTO(
                         (userPlan.getPaymentPlan() != null ? userPlan.getPaymentPlan().mapToPaymentPlanDTO() : null))
                 .paymentOption(
@@ -1170,6 +1417,9 @@ public class UserPlanService {
                 .appliedCouponDiscountJson(userPlan.getAppliedCouponDiscountJson())
                 .appliedCoupon(vacademy.io.admin_core_service.features.user_subscription.dto.CouponSnapshotDTO
                         .fromJson(userPlan.getAppliedCouponDiscountJson()))
+                .discountGrantedByUserId(userPlan.getDiscountGrantedByUserId())
+                .discountGrantedAt(userPlan.getDiscountGrantedAt())
+                .discountCyclesApplied(userPlan.getDiscountCyclesApplied())
                 .enrollInviteId(userPlan.getEnrollInviteId())
                 .paymentOptionId(userPlan.getPaymentOptionId())
                 .paymentOptionJson(userPlan.getPaymentOptionJson())
@@ -1219,6 +1469,37 @@ public class UserPlanService {
         userPlanRepository.saveAll(userPlans);
     }
 
+    // ── Plan change (admin side) ────────────────────────────────────────────
+
+    /**
+     * The plans an admin could move this learner onto. Same eligibility rules as the
+     * learner-facing listing — an admin cannot move someone onto a plan the institute has
+     * not flagged as switchable — with the proration figures included for information.
+     */
+    public vacademy.io.admin_core_service.features.plan_change.dto.PlanChangeOptionsDTO getPlanChangeOptions(
+            String userPlanId, String instituteId) {
+        return planChangeService.getChangeOptions(findById(userPlanId), instituteId);
+    }
+
+    /**
+     * Admin override: swap the plan with no payment taken. The access window is untouched
+     * (see {@code PlanChangeService.adminApplyChange}); the new price bills at the next
+     * renewal.
+     *
+     * <p>Evicts the same caches as a bulk status change — the side-view membership card,
+     * the plan listing and the membership roster all read through them, and a stale entry
+     * would show the learner on the plan they just left.
+     */
+    @CacheEvict(value = { "userPlanById", "userPlansByUser", "userPlanWithPaymentLogs",
+            "membershipDetails" }, allEntries = true)
+    public UserPlanDTO adminChangePlan(String userPlanId, String instituteId,
+            vacademy.io.admin_core_service.features.plan_change.dto.PlanChangeRequestDTO request,
+            vacademy.io.common.auth.model.CustomUserDetails adminDetails) {
+        UserPlan updated = planChangeService.adminApplyChange(
+                findById(userPlanId), instituteId, request, adminDetails);
+        return mapToDTO(updated);
+    }
+
     /**
      * Activates a stacked PENDING plan when the current plan expires.
      * 1. Updates stacked plan status to ACTIVE.
@@ -1261,7 +1542,14 @@ public class UserPlanService {
                 List.of(LearnerSessionStatusEnum.ACTIVE.name()));
 
         if (mappings.isEmpty()) {
-            logger.warn("No active mappings found for expired plan ID={}. Nothing to transfer.", expiredPlan.getId());
+            // Promoting a plan while transferring nothing leaves an ACTIVE plan with no
+            // enrolment behind it — the learner pays (or already paid) and sits in no batch.
+            // It happens whenever the expired plan's mappings were already revoked, which is
+            // the normal end of a trial. Enrol against the promoted plan instead of returning
+            // empty-handed.
+            logger.warn("No active mappings to transfer from expired plan ID={} — enrolling the "
+                    + "promoted plan {} directly", expiredPlan.getId(), stackedPlan.getId());
+            ensureEnrollmentExists(stackedPlan);
             return;
         }
 
@@ -1290,7 +1578,29 @@ public class UserPlanService {
                 .orElseThrow(() -> new RuntimeException("UserPlan not found with ID: " + userPlanId));
 
         userPlan.setStatus(force ? UserPlanStatusEnum.TERMINATED.name() : UserPlanStatusEnum.CANCELED.name());
+        // Cancelling has to stop autopay too. Leaving auto_renewal_enabled = true meant a
+        // cancelled plan was excluded from the renewal sweep only by its status, so any later
+        // reactivation (the manual "pay to continue" flow reuses the SAME UserPlan and flips it
+        // back to ACTIVE) silently resumed charging someone who had cancelled. Mirrors
+        // SubscriptionService.cancelSubscription, which the learner self-service path already did.
+        userPlan.setAutoRenewalEnabled(false);
         userPlanRepository.save(userPlan);
+
+        // Revoke the stored mandate for the same reason. Wrapped so a mandate failure
+        // can never undo the cancel itself.
+        try {
+            String mandateInstituteId = userPlan.getEnrollInvite() != null
+                    ? userPlan.getEnrollInvite().getInstituteId() : null;
+            String mandateVendor = userPlan.getEnrollInvite() != null
+                    ? userPlan.getEnrollInvite().getVendor() : null;
+            if (mandateInstituteId != null && !mandateInstituteId.isBlank()
+                    && mandateVendor != null && !mandateVendor.isBlank()) {
+                mandateService.revokeMandate(userPlan.getUserId(), mandateInstituteId,
+                        mandateVendor, userPlan.getId());
+            }
+        } catch (Exception me) {
+            logger.warn("Failed to revoke mandate on cancel for plan {}: {}", userPlanId, me.getMessage());
+        }
 
         // Fire the matching workflow trigger so admin/learner workflows can react
         // (welcome-back nudge on CANCEL, access-revoked email on TERMINATED, etc.).
@@ -1326,6 +1636,10 @@ public class UserPlanService {
         }
 
         logger.info("UserPlan ID: {} marked as TERMINATED", userPlanId);
+
+        // The course is gone, so nothing more is owed on it: cancel its open installments
+        // (money already paid stays on record). They used to stay due in the payment history.
+        feeBillCancellationService.cancelOpenBills(userPlanId, "Course removed: installment cancelled");
 
         List<StudentSessionInstituteGroupMapping> mappings = studentSessionRepository.findAllByUserPlanIdAndStatusIn(
                 userPlanId,

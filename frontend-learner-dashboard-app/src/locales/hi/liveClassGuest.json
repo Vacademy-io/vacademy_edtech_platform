@@ -1,0 +1,182 @@
+{
+  "guestHome": {
+    "placeholder": "नमस्ते \"/live-class-guest/\"!"
+  },
+  "common": {
+    "errorLoadingSession": "सत्र विवरण लोड करने में त्रुटि: {{message}}",
+    "markAttendanceFailed": "उपस्थिति दर्ज करने में विफल",
+    "liveBadge": "लाइव",
+    "phoneExamplePlaceholder": "123 456 7890",
+    "hostedBy": "आयोजक",
+    "timezoneLabel": "समय क्षेत्र: {{tz}}",
+    "joinMeetingLink": "मीटिंग लिंक जॉइन करें"
+  },
+  "waitingRoom": {
+    "getReady": "तैयार हो जाएं! सत्र इतनी देर में शुरू होगा:",
+    "thumbnailAlt": "सत्र थंबनेल",
+    "toast": {
+      "notOpenYetTitle": "प्रतीक्षा कक्ष अभी खुला नहीं है।",
+      "notOpenYetDescription": "यह सत्र शुरू होने से {{minutes}} मिनट पहले खुलेगा।"
+    }
+  },
+  "embed": {
+    "bbb": {
+      "joining": "जॉइन हो रहा है...",
+      "joinButton": "{{liveSession}} जॉइन करें",
+      "joinHint": "नई विंडो में {{liveSession}} जॉइन करने के लिए क्लिक करें"
+    },
+    "errors": {
+      "videoUrlUnavailable": "वीडियो क्लास का URL प्राप्त करने में विफल",
+      "notStartedOrEnded": "यह क्लास अभी शुरू नहीं हुई है या समाप्त हो चुकी है।",
+      "joinFailed": "वीडियो क्लास जॉइन करने में विफल। कृपया फिर से प्रयास करें।"
+    },
+    "youtube": {
+      "invalidUrl": "अमान्य YouTube URL फॉर्मैट",
+      "viewLiveLink": "लाइव देखने के लिए यहां क्लिक करें"
+    },
+    "openingNewTab": "मीटिंग लिंक नए टैब में खोला जा रहा है...",
+    "noMeetingLink": "इस सत्र के लिए कोई मीटिंग लिंक उपलब्ध नहीं है।"
+  },
+  "audienceResponse": {
+    "form": {
+      "toast": {
+        "submitFailed": "प्रतिक्रिया सबमिट करने में विफल। कृपया फिर से प्रयास करें।"
+      },
+      "success": {
+        "defaultTitle": "पंजीकरण सफल!",
+        "defaultMessage": "आपकी प्रतिक्रिया के लिए धन्यवाद। आपका फॉर्म सफलतापूर्वक सबमिट हो गया है।",
+        "confirmationEmailNotice": "आपको शीघ्र ही एक पुष्टिकरण ईमेल भेजा जाएगा।",
+        "redirecting_one": "{{count}} सेकंड में रीडायरेक्ट हो रहा है…",
+        "redirecting_other": "{{count}} सेकंड में रीडायरेक्ट हो रहा है…",
+        "submitAnotherDefault": "एक और प्रतिक्रिया सबमिट करें"
+      },
+      "campaign": {
+        "objectiveLabel": "उद्देश्य:"
+      },
+      "details": {
+        "title": "कृपया अपनी जानकारी भरें",
+        "subtitle": "इस जानकारी का उपयोग अभियान के बारे में आपसे संपर्क करने के लिए किया जाएगा।",
+        "requiredLegend": "आवश्यक फ़ील्ड",
+        "progress": "{{total}} में से {{completed}} आवश्यक फ़ील्ड पूरे हुए"
+      },
+      "noFields": {
+        "title": "कोई फॉर्म फ़ील्ड उपलब्ध नहीं है",
+        "description": "इस अभियान में कोई कस्टम फ़ील्ड कॉन्फ़िगर नहीं की गई है।",
+        "debugCount": "API से कस्टम फ़ील्ड: {{count}}"
+      },
+      "selectParentFirst": "पहले {{name}} चुनें",
+      "submitButton": {
+        "submitting": "सबमिट हो रहा है...",
+        "default": "प्रतिक्रिया सबमिट करें"
+      },
+      "errors": {
+        "title": "कृपया चिह्नित फ़ील्ड पूरे करें"
+      }
+    }
+  },
+  "bookingResponse": {
+    "errorPage": {
+      "incompleteTitle": "यह बुकिंग लिंक अधूरा लग रहा है",
+      "incompleteDescription": "कृपया प्राप्त लिंक की जांच करें और उसे बिल्कुल वैसे ही खोलें जैसा आपके साथ साझा किया गया था।",
+      "notFoundTitle": "बुकिंग पेज नहीं मिला",
+      "notFoundDescription": "यह बुकिंग लिंक अमान्य हो सकता है या अब सक्रिय नहीं है। कृपया लिंक जांचें या इसे साझा करने वाले व्यक्ति से संपर्क करें।"
+    },
+    "slotPicker": {
+      "prevDaysAria": "पिछले दिन",
+      "nextDaysAria": "अगले दिन",
+      "loading": "उपलब्ध समय लोड हो रहे हैं…",
+      "loadError": "उपलब्ध समय लोड नहीं हो सके। कृपया फिर से प्रयास करें।",
+      "noSlots": "{{day}} को कोई उपलब्ध समय नहीं है। कोई और दिन आज़माएं।"
+    },
+    "confirmation": {
+      "pendingTitle": "बुकिंग अनुरोध प्राप्त हुआ",
+      "confirmedTitle": "बुकिंग की पुष्टि हो गई",
+      "pendingWithHost": "{{title}} के लिए आपका अनुरोध {{host}} की पुष्टि की प्रतीक्षा में है। स्वीकृत होते ही हम आपको सूचित करेंगे।",
+      "pendingNoHost": "{{title}} के लिए आपका अनुरोध पुष्टि की प्रतीक्षा में है। स्वीकृत होते ही हम आपको सूचित करेंगे।",
+      "confirmedWithHost": "आपकी {{title}} {{host}} के साथ शेड्यूल हो गई है।",
+      "confirmedNoHost": "आपकी {{title}} शेड्यूल हो गई है।",
+      "emailSentWithAddress": "इन विवरणों के साथ एक पुष्टिकरण ईमेल {{email}} पर भेज दिया गया है।",
+      "emailSentGeneric": "इन विवरणों के साथ एक पुष्टिकरण आपको भेज दिया गया है।",
+      "manageLink": "बुकिंग प्रबंधित करें (रद्द करें या पुनर्निर्धारित करें)"
+    },
+    "page": {
+      "bookingFailed": "आपकी बुकिंग पूरी नहीं हो सकी। कृपया फिर से प्रयास करें।",
+      "minutesShort": "मिनट",
+      "bookingInProgress": "आपका सत्र बुक किया जा रहा है…",
+      "chooseSession": "एक सत्र चुनें",
+      "pickATime": "समय चुनें",
+      "backToTimeAria": "समय चयन पर वापस जाएं",
+      "questionsTitle": "कुछ प्रश्न",
+      "detailsTitle": "आपकी जानकारी",
+      "form": {
+        "nameLabel": "नाम",
+        "namePlaceholder": "आपका पूरा नाम",
+        "emailLabel": "ईमेल",
+        "emailPlaceholder": "you@example.com",
+        "phoneLabel": "फ़ोन",
+        "phonePlaceholder": "आपका फ़ोन नंबर",
+        "identityHint": "कृपया कम से कम एक ईमेल या फ़ोन नंबर दें ताकि हम आपकी बुकिंग विवरण साझा कर सकें।",
+        "authedHint": "हम आपके खाते के नाम और संपर्क विवरण का उपयोग करेंगे — बस नीचे दिए गए प्रश्नों के उत्तर दें।"
+      },
+      "submit": {
+        "booking": "बुक हो रहा है…",
+        "requestBooking": "बुकिंग का अनुरोध करें",
+        "confirmBooking": "बुकिंग की पुष्टि करें"
+      },
+      "validation": {
+        "nameRequired": "कृपया अपना नाम दर्ज करें",
+        "emailInvalid": "कृपया एक मान्य ईमेल दर्ज करें",
+        "identityRequired": "कृपया एक ईमेल या फ़ोन नंबर दर्ज करें",
+        "phoneInvalid": "कृपया एक मान्य फ़ोन नंबर दर्ज करें"
+      }
+    }
+  },
+  "bookingManage": {
+    "errorPage": {
+      "incompleteTitle": "यह बुकिंग लिंक अधूरा लग रहा है",
+      "incompleteDescription": "कृपया प्रबंधन लिंक को बिल्कुल वैसे ही खोलें जैसा वह आपके पुष्टिकरण ईमेल में दिखाई देता है।"
+    },
+    "status": {
+      "confirmed": "पुष्ट",
+      "pending": "पुष्टि की प्रतीक्षा में",
+      "cancelled": "रद्द",
+      "rescheduled": "पुनर्निर्धारित"
+    },
+    "notFound": {
+      "title": "बुकिंग नहीं मिली",
+      "description": "यह प्रबंधन लिंक अमान्य या समाप्त हो सकता है। कृपया अपने पुष्टिकरण ईमेल से लिंक का उपयोग करें।"
+    },
+    "toast": {
+      "cancelSuccess": "आपकी बुकिंग रद्द कर दी गई है।",
+      "cancelError": "बुकिंग रद्द नहीं की जा सकी। कृपया फिर से प्रयास करें।",
+      "rescheduleSuccess": "आपकी बुकिंग पुनर्निर्धारित कर दी गई है।",
+      "rescheduleError": "बुकिंग पुनर्निर्धारित नहीं की जा सकी। कृपया फिर से प्रयास करें।"
+    },
+    "viewDetails": "बुकिंग विवरण देखें",
+    "backToDetailsAria": "बुकिंग विवरण पर वापस जाएं",
+    "pickNewTime": "नया समय चुनें",
+    "loadingAvailability": "उपलब्धता लोड हो रही है…",
+    "confirmReschedule": {
+      "confirming": "पुनर्निर्धारित किया जा रहा है…",
+      "default": "पुनर्निर्धारण की पुष्टि करें"
+    },
+    "bookedFor": "इनके लिए बुक किया गया",
+    "statusNotes": {
+      "pending": "यह बुकिंग होस्ट की पुष्टि की प्रतीक्षा में है। स्वीकृत होते ही आपको सूचित किया जाएगा।",
+      "cancelled": "यह बुकिंग रद्द कर दी गई है।",
+      "rescheduled": "यह बुकिंग पुनर्निर्धारित की गई है। कृपया नए समय के लिए अपनी नवीनतम पुष्टि के प्रबंधन लिंक का उपयोग करें।",
+      "past": "यह बुकिंग अतीत में है।"
+    },
+    "reschedule": "पुनर्निर्धारित करें",
+    "cancelBooking": "बुकिंग रद्द करें",
+    "cancelDialog": {
+      "heading": "क्या इस बुकिंग को रद्द करें?",
+      "keepBooking": "बुकिंग रखें",
+      "confirmCancel": "हां, रद्द करें",
+      "cancelling": "रद्द किया जा रहा है…",
+      "releaseNotice": "आपका <bold>{{slot}}</bold> वाला स्लॉट रिलीज़ कर दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।",
+      "reasonLabel": "कारण (वैकल्पिक)",
+      "reasonPlaceholder": "होस्ट को बताएं कि आप क्यों रद्द कर रहे हैं"
+    }
+  }
+}

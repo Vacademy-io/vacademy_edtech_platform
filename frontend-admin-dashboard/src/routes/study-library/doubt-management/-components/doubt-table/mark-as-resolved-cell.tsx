@@ -3,6 +3,7 @@ import { Doubt } from '@/routes/study-library/courses/course-details/subjects/mo
 import { useState, useRef, useEffect } from 'react';
 import { CaretDown } from '@phosphor-icons/react';
 import { getUserId, isUserAdmin } from '@/utils/userDetails';
+import { useTranslation } from 'react-i18next';
 
 export const MarkResolutionDropdown = ({
     resolved,
@@ -13,6 +14,7 @@ export const MarkResolutionDropdown = ({
     handleDoubtResolve: (value: boolean) => void;
     doubt: Doubt;
 }) => {
+    const { t } = useTranslation('studyLibraryMarkAsResolvedCell');
     const isAdmin = isUserAdmin();
     const userId = getUserId();
     const canResolve =
@@ -43,7 +45,7 @@ export const MarkResolutionDropdown = ({
                         : 'border-danger-500 bg-red-50 text-red-700'
                 }`}
             >
-                {resolved ? 'Resolved' : 'Unresolved'}{' '}
+                {resolved ? t('resolved') : t('unresolved')}{' '}
                 <span className="text-caption">
                     <CaretDown />
                 </span>
@@ -57,7 +59,7 @@ export const MarkResolutionDropdown = ({
                         }}
                         className={` w-full rounded-lg py-2 text-center hover:bg-neutral-50 ${!resolved ? 'bg-danger-100 text-danger-700' : 'bg-white text-neutral-600'} ${resolved ? 'cursor-pointer' : 'cursor-default'}`}
                     >
-                        Unresolved
+                        {t('unresolved')}
                     </div>
                     <div
                         onClick={() => {
@@ -70,7 +72,7 @@ export const MarkResolutionDropdown = ({
                                 : 'hover:bg-gray-50'
                         } ${!resolved ? 'cursor-pointer' : 'cursor-default'}`}
                     >
-                        Resolved
+                        {t('resolved')}
                     </div>
                 </div>
             )}
@@ -84,7 +86,7 @@ export const MarkResolutionDropdown = ({
                     : 'border-danger-500 bg-red-50 text-red-700'
             }`}
         >
-            {resolved ? 'Resolved' : 'Unresolved'}
+            {resolved ? t('resolved') : t('unresolved')}
         </button>
     );
 };

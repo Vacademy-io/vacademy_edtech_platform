@@ -1,0 +1,33 @@
+{
+    "title": "Lead Statuses",
+    "description": "The stages a lead moves through in your pipeline (e.g. New, Interested, Converted). Rename, recolour, reorder, or set a default for new leads. Statuses can't be deleted — leads keep their history. Stored in the database so you can filter and report on them.",
+    "loading": "Loading statuses…",
+    "empty": "No statuses yet. Add your first pipeline stage below.",
+    "preview": {
+        "defaultBadge": "· default"
+    },
+    "row": {
+        "changeColorTitle": "Change colour",
+        "colorAriaLabel": "Colour for {{name}}",
+        "statusFallback": "status",
+        "namePlaceholder": "Status name (e.g. Interested)",
+        "defaultStatusAriaLabel": "Default status",
+        "setAsDefaultAriaLabel": "Set as default",
+        "systemDefaultTitle": "System default — can be renamed/recoloured",
+        "systemDefaultBadge": "Default",
+        "showInFilterAriaLabel": "Show in the status filter",
+        "hideFromFilterAriaLabel": "Hide from the status filter",
+        "showInFilterTitle": "Hidden from the status filter — click to show it",
+        "hideFromFilterTitle": "Shown in the status filter — click to hide it"
+    },
+    "addStatus": "Add status",
+    "footer": {
+        "hint": "The starred status is applied to brand-new leads.",
+        "saving": "Saving…",
+        "save": "Save statuses"
+    },
+    "toasts": {
+        "saveSuccess": "Lead statuses saved",
+        "saveError": "Failed to save lead statuses"
+    }
+}

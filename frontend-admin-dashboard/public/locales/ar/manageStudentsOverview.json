@@ -1,0 +1,66 @@
+{
+    "toast": {
+        "copiedToClipboard": "تم نسخ {{field}} إلى الحافظة!",
+        "copyFailed": "فشل نسخ {{field}}"
+    },
+    "password": {
+        "notFound": "كلمة المرور غير موجودة"
+    },
+    "empty": {
+        "noOverviewData": "لا تتوفر بيانات نظرة عامة"
+    },
+    "errors": {
+        "fetchStudentDetails": "خطأ في جلب بيانات الطالب"
+    },
+    "fallback": {
+        "notAvailable": "غير متوفر"
+    },
+    "sections": {
+        "customFields": "الحقول المخصصة",
+        "termsAndConditions": "الشروط والأحكام",
+        "accountCredentials": "بيانات اعتماد الحساب",
+        "generalDetails": "التفاصيل العامة",
+        "referralDetails": "تفاصيل الإحالة",
+        "contactInformation": "معلومات الاتصال",
+        "locationDetails": "تفاصيل الموقع",
+        "guardianDetails": "بيانات ولي الأمر"
+    },
+    "fields": {
+        "status": "الحالة",
+        "signedOn": "تاريخ التوقيع",
+        "signedPdf": "ملف PDF الموقّع",
+        "enrollmentNo": "رقم القيد",
+        "gender": "الجنس",
+        "school": "المدرسة",
+        "country": "الدولة",
+        "state": "المحافظة",
+        "city": "المدينة",
+        "pincode": "الرمز البريدي",
+        "address": "العنوان",
+        "mobileNo": "رقم الجوال",
+        "emailId": "البريد الإلكتروني",
+        "fatherName": "اسم الأب/ولي الأمر",
+        "fatherMobileNo": "رقم جوال الأب/ولي الأمر",
+        "fatherEmailId": "البريد الإلكتروني للأب/ولي الأمر",
+        "motherName": "اسم الأم/ولية الأمر",
+        "motherMobileNo": "رقم جوال الأم/ولية الأمر",
+        "motherEmailId": "البريد الإلكتروني للأم/ولية الأمر",
+        "username": "اسم المستخدم",
+        "password": "كلمة المرور",
+        "attendance": "الحضور",
+        "count": "العدد"
+    },
+    "status": {
+        "signed": "تم التوقيع",
+        "notSigned": "لم يتم التوقيع"
+    },
+    "actions": {
+        "download": "تنزيل"
+    },
+    "otherContacts": {
+        "heading": "بيانات اتصال أخرى",
+        "hint": "أرقام ورسائل بريد قدّمها هذا الشخص في استفسارات أخرى.",
+        "phone": "الهاتف",
+        "email": "البريد الإلكتروني"
+    }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -48,6 +49,7 @@ const markdownComponents = {
 };
 
 export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
+  const { t } = useTranslation("layoutCommonB");
   const navigate = useNavigate();
   const { clearSelectedReport } = useReportStore();
   const [activeSection, setActiveSection] = useState<string>("");
@@ -55,22 +57,22 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(true);
 
   const sections = [
-    { id: "progress", title: "Overall Progress", available: true },
-    { id: "efforts", title: "Student Efforts", available: true },
-    { id: "pattern", title: "Learning Pattern", available: true },
+    { id: "progress", title: t("reportDetailsPage.sections.overallProgress"), available: true },
+    { id: "efforts", title: t("reportDetailsPage.sections.studentEfforts"), available: true },
+    { id: "pattern", title: t("reportDetailsPage.sections.learningPattern"), available: true },
     {
       id: "strengths",
-      title: "Strengths",
+      title: t("reportDetailsPage.sections.strengths"),
       available: Object.keys(report.report?.strengths ?? {}).length > 0,
     },
     {
       id: "weaknesses",
-      title: "Weaknesses",
+      title: t("reportDetailsPage.sections.weaknesses"),
       available: Object.keys(report.report?.weaknesses ?? {}).length > 0,
     },
-    { id: "improvement", title: "Topics of Improvement", available: true },
-    { id: "attention", title: "Topics Needing Attention", available: true },
-    { id: "remedial", title: "Recommended Remedial Actions", available: true },
+    { id: "improvement", title: t("reportDetailsPage.sections.topicsOfImprovement"), available: true },
+    { id: "attention", title: t("reportDetailsPage.sections.topicsNeedingAttention"), available: true },
+    { id: "remedial", title: t("reportDetailsPage.sections.recommendedRemedialActions"), available: true },
   ];
 
   useEffect(() => {
@@ -136,8 +138,8 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
     }
 
     return (
-      <Card id={sectionId} className="w-full p-4">
-        <CardTitle className="text-lg font-semibold text-neutral-800 mb-3">
+      <Card id={sectionId} className="w-full p-4 space-y-stack">
+        <CardTitle className="text-lg font-semibold text-neutral-800">
           {title}
         </CardTitle>
         <CardContent className="grid gap-2">
@@ -160,7 +162,7 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
       {!isMobile && (
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-900">
-            Report Sections
+            {t("reportDetailsPage.reportSections")}
           </h3>
           <Button
             variant="ghost"
@@ -211,7 +213,9 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
   };
 
   const heading = `${safeFormatDate(report.start_date_iso, "MMM dd, yyyy")} - ${safeFormatDate(report.end_date_iso, "MMM dd, yyyy")}`;
-  const description = `Generated on ${safeFormatDate(report.created_at, "MMM dd, yyyy")}`;
+  const description = t("reportDetailsPage.generatedOn", {
+    date: safeFormatDate(report.created_at, "MMM dd, yyyy"),
+  });
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -280,7 +284,7 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
               {renderSection(report.report.student_efforts, "efforts")}
               {renderSection(report.report.learning_frequency, "pattern")}
 
-              <div className="flex flex-col md:flex-row gap-6 w-full">
+              <div className="flex flex-col md:flex-row gap-section w-full">
                 {Object.keys(report.report?.strengths ?? {}).length > 0 &&
                   renderStrengthsWeaknesses(
                     "Strengths",
@@ -322,7 +326,7 @@ export default function ReportDetailsPage({ report }: ReportDetailsPageProps) {
             <div className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Report Sections
+                  {t("reportDetailsPage.reportSections")}
                 </h3>
                 <Button
                   variant="ghost"

@@ -1,0 +1,24 @@
+{
+    "heading": {
+        "title": "मूल्यांकन विवरण"
+    },
+    "helmet": {
+        "title": "मूल्यांकन विवरण",
+        "description": "यह पृष्ठ किसी मूल्यांकन से संबंधित सभी विवरण दिखाता है।"
+    },
+    "actions": {
+        "previewAssessment": "मूल्यांकन पूर्वावलोकन करें",
+        "exportOffline": "ऑफ़लाइन निर्यात करें",
+        "noSectionsError": "इस मूल्यांकन के लिए कोई सेक्शन नहीं जोड़ा गया है।"
+    },
+    "tabs": {
+        "overview": "अवलोकन",
+        "submissions": "सबमिशन",
+        "individualRespondents": "व्यक्तिगत उत्तरदाता",
+        "basicInfo": "बुनियादी जानकारी",
+        "questions": "प्रश्न",
+        "participants": "प्रतिभागी",
+        "accessControl": "एक्सेस नियंत्रण",
+        "reattemptRequests": "पुनः प्रयास अनुरोध"
+    }
+}

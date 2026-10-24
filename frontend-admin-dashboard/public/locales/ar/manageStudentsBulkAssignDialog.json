@@ -1,0 +1,31 @@
+{
+    "dialogTitle": "تسجيل {{term}}",
+    "stepper": {
+        "learners": "اختيار {{term}}",
+        "courses": "اختيار {{term}}",
+        "config": "إعدادات التسجيل",
+        "suborg": "المؤسسة الفرعية",
+        "preview": "المعاينة والتأكيد"
+    },
+    "footer": {
+        "back": "← رجوع",
+        "cancel": "إلغاء",
+        "linkingGuardians": "جارٍ ربط أولياء الأمور…",
+        "loading": "جارٍ التحميل…",
+        "previewButton": "معاينة ←",
+        "next": "التالي ←",
+        "enrolling": "جارٍ التسجيل…",
+        "confirmEnrollment": "✓ تأكيد التسجيل"
+    },
+    "toasts": {
+        "previewFailed": "فشل إنشاء المعاينة. يرجى المحاولة مرة أخرى.",
+        "enrollmentComplete": "اكتمل التسجيل! ✅ تم تسجيل {{successful}}، ⏭ تم تخطي {{skipped}}، ❌ فشل {{failed}}.",
+        "enrollmentFailed": "فشل التسجيل. يرجى المحاولة مرة أخرى.",
+        "guardianLinkFailed": "فشل ربط ولي الأمر لـ {{name}}: {{message}}"
+    },
+    "errors": {
+        "guardianLinkFallback": "فشل ربط ولي الأمر.",
+        "invalidGuardianLinkSelection": "اختيار ربط ولي الأمر غير صالح.",
+        "couldNotResolveCreatedUser": "تعذّر تحديد معرّف المستخدم الذي تم إنشاؤه لـ {{name}}."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "dropzoneHint": "Déposez votre PDF ici, ou cliquez pour parcourir",
+    "dropzoneFormats": "Prend en charge les fichiers PDF jusqu'à 10 Mo",
+    "invalidFileType": "Veuillez téléverser uniquement des fichiers PDF",
+    "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
+    "pdfSelectedWithPages_one": "PDF sélectionné : {{count}} page détectée.",
+    "pdfSelectedWithPages_many": "PDF sélectionné : {{count}} de pages détectées.",
+    "pdfSelectedWithPages_other": "PDF sélectionné : {{count}} pages détectées.",
+    "pdfSelected": "PDF sélectionné avec succès",
+    "selectFileFirst": "Veuillez d'abord sélectionner un fichier",
+    "pdfUploaded": "PDF téléversé avec succès !",
+    "uploadFailed": "Échec du téléversement. Veuillez réessayer.",
+    "pageCount_one": "{{count}} page",
+    "pageCount_many": "{{count}} de pages",
+    "pageCount_other": "{{count}} pages",
+    "uploadingPdf": "Téléversement du PDF...",
+    "uploadingEllipsis": "Téléversement...",
+    "uploadPdf": "Téléverser le PDF"
+}

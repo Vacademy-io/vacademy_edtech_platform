@@ -1,0 +1,38 @@
+{
+    "header": {
+        "title": "Learner Management Buttons",
+        "description": "Show or hide the built-in Enroll / Invite buttons and add custom link buttons (e.g. an invite link or sub-org learner registration link) to the Learner Management header."
+    },
+    "showEnrollButton": "Show Enroll button",
+    "showInviteButton": "Show Invite button",
+    "customButtons": {
+        "title": "Custom buttons",
+        "addButton": "Add button",
+        "empty": "No custom buttons. Add one to surface an invite link or sub-org learner registration link in the header.",
+        "buttonType": {
+            "label": "Button type"
+        },
+        "kindOptions": {
+            "url": {
+                "label": "Custom URL",
+                "hint": "Opens the link you enter below."
+            },
+            "suborgLearnerInvite": {
+                "label": "Sub-org learner invite link",
+                "hint": "Auto-fills the sub-org learner invite for the course being viewed. Shows only for a sub-org admin on a course’s Learner tab — learners who enroll through it appear in the sub-org admin’s learner list."
+            },
+            "courseInvite": {
+                "label": "Course learner invite link",
+                "hint": "Auto-fills the course’s default learner invite link for the course being viewed."
+            }
+        },
+        "label": {
+            "label": "Button label",
+            "placeholder": "e.g. Invite learners"
+        },
+        "url": {
+            "label": "Link (URL)",
+            "placeholder": "https://..."
+        }
+    }
+}

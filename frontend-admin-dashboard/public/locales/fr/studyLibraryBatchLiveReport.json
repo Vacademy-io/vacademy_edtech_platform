@@ -1,0 +1,112 @@
+{
+    "duration": {
+        "none": "—",
+        "minutes_one": "{{count}} min",
+        "minutes_many": "{{count}} min",
+        "minutes_other": "{{count}} min",
+        "hours_one": "{{count}} h",
+        "hours_many": "{{count}} h",
+        "hours_other": "{{count}} h",
+        "hoursMinutes": "{{h}} h {{m}} min"
+    },
+    "engagement": {
+        "talkTime_one": "{{count}} min de parole",
+        "talkTime_many": "{{count}} min de parole",
+        "talkTime_other": "{{count}} min de parole",
+        "chats_one": "{{count}} message",
+        "chats_many": "{{count}} messages",
+        "chats_other": "{{count}} messages",
+        "polls_one": "{{count}} sondage",
+        "polls_many": "{{count}} sondages",
+        "polls_other": "{{count}} sondages",
+        "raiseHand_one": "{{count}} main levée",
+        "raiseHand_many": "{{count}} mains levées",
+        "raiseHand_other": "{{count}} mains levées",
+        "emojis_one": "{{count}} emoji",
+        "emojis_many": "{{count}} emojis",
+        "emojis_other": "{{count}} emojis",
+        "none": "aucune interaction"
+    },
+    "table": {
+        "date": "Date",
+        "class": "Classe",
+        "present": "Présent",
+        "absent": "Absent",
+        "attendance": "Présence",
+        "avgDuration": "Durée moyenne",
+        "engagement": "Engagement",
+        "rank": "Rang",
+        "name": "Nom",
+        "classesAttended": "Classes suivies"
+    },
+    "export": {
+        "generatedOn": "Généré le {{date}}",
+        "exportSuccess": "Rapport de classe en direct exporté",
+        "exportFailed": "Échec de l'export du PDF",
+        "csvExportSuccess": "CSV exporté",
+        "csvExportFailed": "Échec de l'export CSV"
+    },
+    "errors": {
+        "loadFailed": "Une erreur s'est produite lors du chargement du rapport. Veuillez réessayer.",
+        "batchLoadFailed": "Impossible de charger le rapport pour {{name}}."
+    },
+    "emptyState": {
+        "title": "Aucune classe en direct trouvée",
+        "description": "Aucune classe en direct n'a eu lieu pour ce groupe durant la période sélectionnée."
+    },
+    "actions": {
+        "attendanceTracker": "Suivi de présence",
+        "exporting": "Exportation…",
+        "exportPdf": "Exporter le PDF",
+        "exportCsv": "Exporter en CSV"
+    },
+    "metrics": {
+        "avgAttendance": "Présence moyenne",
+        "learnersCount_one": "{{count}} apprenant",
+        "learnersCount_many": "{{count}} apprenants",
+        "learnersCount_other": "{{count}} apprenants",
+        "classesHeld": "Classes tenues",
+        "avgDurationPerClass": "Durée moyenne / classe",
+        "presentLearners": "apprenants présents",
+        "avgEngagement": "Engagement moyen",
+        "participationPoints": "points de participation",
+        "engagementInfo": "Points d'engagement — un total pondéré de la participation en classe (le temps de parole compte le plus, puis les sondages, les messages et les mains levées), cumulé sur toutes les classes de la période. Plus élevé = plus engagé ; il n'y a pas de limite supérieure. Disponible uniquement pour les classes synchronisées avec le fournisseur (Zoom/BBB)."
+    },
+    "sections": {
+        "attendanceTrendTitle": "Tendance de présence",
+        "attendanceTrendSubtitle": "Taux de présence classe par classe sur la période sélectionnée",
+        "classBreakdownTitle": "Répartition par classe",
+        "classBreakdownSubtitle": "Présence, durée et engagement pour chaque classe tenue",
+        "leaderboardTitle": "Classement",
+        "leaderboardSubtitle": "Classé par présence, puis par engagement. Les totaux d'interaction sont cumulés sur toutes les classes de la période sélectionnée."
+    },
+    "multiBatchTitle": "Rapport {{term}} · {{count}} sélectionné(s)",
+    "comparison": {
+        "title": "Comparaison des {{term}}",
+        "subtitle": "Assiduité, durée et engagement de chaque groupe sélectionné, côte à côte",
+        "learners": "Apprenants"
+    },
+    "csv": {
+        "fileStem": "rapport-classes-en-direct",
+        "summaryTitle": "Résumé",
+        "startDate": "Date de début",
+        "endDate": "Date de fin",
+        "avgAttendancePct": "Assiduité moyenne (%)",
+        "avgDurationMin": "Durée moyenne (min)",
+        "avgEngagementIndex": "Engagement moyen (points)",
+        "classesTitle": "Détail par classe",
+        "unmarked": "Non marqué",
+        "invited": "Invités",
+        "attendancePct": "Assiduité (%)",
+        "leaderboardTitle": "Classement",
+        "attended": "Classes suivies",
+        "totalClasses": "Classes au total",
+        "engagementIndex": "Engagement (points)",
+        "engagementScore": "Score d'engagement (0-100)",
+        "talkTimeMin": "Temps de parole (min)",
+        "chats": "Messages",
+        "polls": "Votes aux sondages",
+        "raiseHands": "Mains levées",
+        "emojis": "Émojis"
+    }
+}

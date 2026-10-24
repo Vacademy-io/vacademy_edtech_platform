@@ -1,0 +1,342 @@
+{
+  "common": {
+    "back": "Retour",
+    "cancel": "Annuler",
+    "continue": "Continuer",
+    "submitting": "Envoi en cours...",
+    "submitRegistration": "Soumettre l'inscription",
+    "sessionMissing": "Session d'inscription introuvable. Veuillez recommencer"
+  },
+  "subOrgRegistration": {
+    "linkError": {
+      "title": "Lien d'inscription fermé",
+      "defaultMessage": "Ce lien d'inscription n'est pas valide ou n'accepte plus de nouvelles inscriptions.",
+      "contactHint": "Veuillez contacter l'établissement pour obtenir un nouveau lien d'inscription."
+    },
+    "paymentResult": {
+      "notFoundTitle": "Nous n'avons pas retrouvé votre session d'inscription",
+      "notFoundDescription": "Pas d'inquiétude — si votre paiement a bien été effectué, votre organisation sera enregistrée automatiquement et les identifiants de connexion seront envoyés à l'adresse e-mail de l'{{admin}} que vous avez indiquée.",
+      "notFoundEmailHint": "Si l'e-mail n'arrive pas dans quelques minutes, veuillez contacter l'établissement.",
+      "waitingTitle": "Confirmation de votre paiement...",
+      "waitingDescription": "Cela prend généralement quelques instants. Gardez cette page ouverte — elle se met à jour automatiquement une fois le paiement confirmé.",
+      "reassurancePrefix": "La confirmation prend plus de temps que d'habitude. Vous pouvez fermer cette page en toute sécurité — une fois le paiement confirmé, votre organisation sera enregistrée et les identifiants de connexion seront envoyés",
+      "reassuranceTo": "à",
+      "reassuranceToAdminEmail": "à l'adresse e-mail de l'{{admin}} que vous avez indiquée"
+    },
+    "wizard": {
+      "defaultTemplateName": "Inscription de l'organisation",
+      "subtitle": "Inscrivez votre organisation auprès de {{instituteName}}",
+      "defaultInstituteName": "l'établissement",
+      "steps": {
+        "details": "Détails",
+        "verifyEmail": "Vérifier l'e-mail",
+        "additionalInfo": "Informations complémentaires",
+        "terms": "Conditions",
+        "identityVerification": "Vérification d'identité",
+        "payment": "Paiement"
+      },
+      "toast": {
+        "completeError": "Échec de la finalisation de l'inscription. Veuillez réessayer",
+        "codeSentNewEmail": "Code de vérification envoyé à votre nouvelle adresse e-mail",
+        "detailsUpdated": "Détails mis à jour",
+        "codeSent": "Code de vérification envoyé à votre adresse e-mail",
+        "saveError": "Échec de l'enregistrement de vos informations. Veuillez réessayer",
+        "startError": "Échec du démarrage de l'inscription. Veuillez réessayer",
+        "resumeError": "Impossible de reprendre cette inscription. Veuillez réessayer",
+        "emailVerified": "E-mail vérifié avec succès !",
+        "invalidOtp": "Code invalide ou expiré",
+        "resendError": "Échec du renvoi. Veuillez réessayer",
+        "codeResent": "Code de vérification renvoyé"
+      }
+    },
+    "details": {
+      "validation": {
+        "orgNameRequired": "Le nom de l'organisation est requis",
+        "adminNameRequired": "Le nom de l'{{admin}} est requis",
+        "adminEmailRequired": "L'e-mail de l'{{admin}} est requis",
+        "adminEmailInvalid": "Saisissez une adresse e-mail valide",
+        "phoneInvalid": "Saisissez un numéro de téléphone valide pour le pays sélectionné",
+        "pincodeTooLong": "Le code postal est trop long",
+        "addressLine1Required": "L'adresse (ligne 1) est requise",
+        "cityRequired": "La ville est requise",
+        "stateRequired": "L'état/la région est requis(e)",
+        "pincodeRequired": "Le code postal est requis"
+      },
+      "title": "Informations sur l'organisation",
+      "subtitle": "Parlez-nous de votre organisation et de son {{admin}}",
+      "orgName": {
+        "label": "Nom de l'organisation",
+        "placeholder": "ex. Acme Coaching Center"
+      },
+      "logo": {
+        "label": "Logo de l'organisation",
+        "previewAlt": "Aperçu du logo de l'organisation",
+        "uploading": "Envoi en cours...",
+        "change": "Changer le logo",
+        "upload": "Ajouter un logo",
+        "remove": "Supprimer",
+        "hint": "Facultatif — PNG ou JPG de préférence"
+      },
+      "adminName": {
+        "label": "Nom complet de l'{{admin}}",
+        "placeholder": "Nom complet de l'{{admin}} de l'organisation"
+      },
+      "adminEmail": {
+        "label": "E-mail de l'{{admin}}",
+        "placeholder": "admin@yourorg.com",
+        "hint": "Nous enverrons un code de vérification à cette adresse e-mail"
+      },
+      "adminPhone": {
+        "label": "Téléphone de l'{{admin}}",
+        "placeholder": "123 456 7890"
+      },
+      "address": {
+        "line1": { "label": "Adresse (ligne 1)", "placeholder": "Bâtiment, rue" },
+        "line2": { "label": "Adresse (ligne 2)", "placeholder": "Quartier, point de repère (facultatif)" },
+        "city": { "label": "Ville", "placeholder": "Ville" },
+        "state": { "label": "État / Région", "placeholder": "État / Région" },
+        "pincode": { "label": "Code postal", "placeholder": "ex. 110001" }
+      },
+      "submit": {
+        "saving": "Enregistrement...",
+        "sendingCode": "Envoi du code..."
+      },
+      "toast": {
+        "logoInvalidType": "Veuillez sélectionner un fichier image pour le logo",
+        "logoUploadFailed": "Échec de l'envoi du logo. Veuillez réessayer"
+      },
+      "resume": {
+        "inProgress": "Une inscription avec cette adresse e-mail est déjà en cours.",
+        "descriptionPrefix": "Reprenez-la là où vous vous étiez arrêté — nous enverrons un code de vérification à",
+        "descriptionSuffix": ".",
+        "button": "Reprendre l'inscription"
+      }
+    },
+    "otp": {
+      "toast": {
+        "invalidCode": "Veuillez saisir un code de vérification valide"
+      },
+      "title": "Vérifiez votre e-mail",
+      "sentTo": "Nous avons envoyé un code de vérification à",
+      "sentToResume": "Nous avons envoyé un code pour reprendre votre inscription à",
+      "cantFindEmail": "Vous ne trouvez pas l'e-mail ?",
+      "checkSpam": "Vérifiez votre dossier <b1>Spams</b1> ou <b2>Courrier indésirable</b2>",
+      "correctEmail": "Assurez-vous que l'adresse e-mail est correcte",
+      "waitRefresh": "Attendez quelques secondes et actualisez votre boîte de réception",
+      "enterCodeLabel": "Saisissez le code de vérification",
+      "codePlaceholder": "Saisissez le code à 6 chiffres",
+      "verifying": "Vérification en cours...",
+      "verifyContinue": "Vérifier et continuer",
+      "editDetails": "Modifier les informations",
+      "resending": "Envoi en cours...",
+      "resendCode": "Renvoyer le code"
+    },
+    "customFields": {
+      "title": "Informations complémentaires",
+      "subtitle": "Quelques informations supplémentaires demandées par l'établissement",
+      "noFieldsMessage": "Aucune information complémentaire n'est requise.",
+      "phonePlaceholder": "123 456 7890"
+    },
+    "tnc": {
+      "title": "Conditions générales",
+      "subtitle": "Veuillez consulter et accepter les conditions pour terminer l'inscription",
+      "loadingDocument": "Chargement du document...",
+      "loadError": "Nous n'avons pas pu charger le document des conditions générales. Vous pouvez tout de même accepter les conditions ci-dessous pour continuer.",
+      "openInNewTab": "Ouvrir dans un nouvel onglet",
+      "noDocNoConsent": "Veuillez confirmer que vous acceptez les conditions générales de l'établissement pour terminer l'inscription.",
+      "acceptCheckboxLabel": "J'accepte les conditions générales"
+    },
+    "kyc": {
+      "defaultPanInstructions": "Dans DigiLocker, cochez les cases pour Aadhaar ET PAN lorsque le consentement est demandé — la vérification ne peut pas aboutir si l'une des deux n'est pas sélectionnée.",
+      "failure": {
+        "consentDenied": "Le consentement DigiLocker a été refusé. Pour vérifier votre identité, veuillez réessayer et autoriser l'accès à vos documents.",
+        "expired": "Le lien de vérification a expiré avant d'être terminé. Lancez une nouvelle vérification pour continuer.",
+        "failed": "Nous n'avons pas pu vérifier votre identité. Veuillez réessayer."
+      },
+      "title": "Vérification d'identité",
+      "subtitle": "Vérifiez en toute sécurité l'identité de l'{{admin}} de l'organisation via DigiLocker",
+      "checkingStatus": "Vérification du statut en cours...",
+      "intro": "En tant qu'{{admin}} de l'organisation, votre identité doit être vérifiée avant que l'inscription puisse être finalisée. Vous serez redirigé vers DigiLocker (gouvernement indien) pour partager les documents suivants en toute sécurité — aucune copie n'est téléversée ici.",
+      "requiredDocuments": "Documents requis",
+      "preparingVerification": "Préparation de la vérification...",
+      "verifyWithDigiLocker": "Vérifier avec DigiLocker",
+      "completeInTab": "Terminez la vérification dans l'onglet DigiLocker",
+      "autoUpdateHint": "Cette page se met à jour automatiquement une fois terminé — laissez-la ouverte.",
+      "tabBlocked": "L'onglet DigiLocker a été bloqué par votre navigateur.",
+      "openVerification": "Ouvrir la vérification DigiLocker",
+      "preparingNewLink": "Préparation d'un nouveau lien...",
+      "restartVerification": "Un problème avec l'onglet ? Redémarrer la vérification",
+      "verifiedSuccess": "Identité vérifiée avec succès",
+      "verifiedName": "Nom vérifié",
+      "aadhaar": "Aadhaar",
+      "pan": "PAN",
+      "verificationNotCompleted": "Vérification non terminée",
+      "tryAgain": "Réessayer",
+      "startVerificationFailed": "Échec du démarrage de la vérification d'identité. Veuillez réessayer"
+    },
+    "payment": {
+      "stripeLoading": "Le formulaire de paiement est encore en cours de chargement. Veuillez patienter un instant et réessayer",
+      "stripeFailed": "Échec du traitement du paiement. Veuillez vérifier les informations de votre carte",
+      "ewayIncomplete": "Veuillez d'abord compléter les informations de la carte",
+      "sessionPrepFailed": "Impossible de préparer la session de paiement. Veuillez contacter le support",
+      "initFailedContactSupport": "Échec de l'initialisation du paiement. Veuillez réessayer ou contacter le support",
+      "initFailed": "Échec de l'initialisation du paiement. Veuillez réessayer",
+      "orderCreateFailed": "Échec de la création de la commande de paiement. Veuillez réessayer",
+      "gatewayNotReady": "La passerelle de paiement n'est pas encore prête. Veuillez réessayer",
+      "phonepeFailed": "Impossible de démarrer le paiement PhonePe. Veuillez réessayer ou contacter le support",
+      "vendorUnsupported": "La passerelle de paiement « {{vendor}} » n'est pas encore prise en charge. Veuillez contacter le support",
+      "processFailed": "Le paiement n'a pas pu être traité. Veuillez réessayer",
+      "alreadyInProgressTitle": "Paiement déjà en cours",
+      "alreadyInProgressPrefix": "Un paiement pour cette inscription est déjà en cours de traitement. Si vous l'avez terminé, vos identifiants de connexion seront envoyés par e-mail à",
+      "alreadyInProgressSuffix": "sous peu.",
+      "retryHint": "Si le paiement n'a pas abouti, vous pouvez le relancer ci-dessous.",
+      "completePaymentButton": "Finaliser le paiement",
+      "retryConfirmTitle": "Finalisez votre paiement",
+      "retryConfirmFor": "Votre inscription pour",
+      "retryConfirmLockedIn": "est enregistrée — seul le paiement est en attente. Votre offre est déjà verrouillée",
+      "retryConfirmAt": "à",
+      "proceedButton": "Procéder au paiement",
+      "selectedPlanLabel": "Offre sélectionnée",
+      "paymentLabel": "Paiement",
+      "changePlanButton": "Changer d'offre",
+      "registrationPaymentFor": "Paiement d'inscription pour {{templateName}}",
+      "tryAgainButton": "Réessayer",
+      "confirmAndPayButton": "Confirmer et payer",
+      "processingButton": "Traitement en cours...",
+      "continueToPaymentButton": "Continuer vers le paiement"
+    },
+    "completion": {
+      "redirectingPaid": "Paiement confirmé — redirection en cours...",
+      "redirectingFree": "Inscription confirmée — redirection en cours...",
+      "paidTitle": "Paiement reçu — votre organisation est enregistrée.",
+      "freeTitle": "Votre organisation a été enregistrée !",
+      "orgReadySuffix": "est prête.",
+      "credentialsSentPrefix": "Les identifiants de connexion ont été envoyés à",
+      "defaultPrefix": "Votre organisation est enregistrée. Les identifiants de connexion ont été envoyés à",
+      "goToAdminPortal": "Accéder au portail {{admin}}"
+    }
+  },
+  "subOrgLearners": {
+    "page": {
+      "navHeading": "Gestion des membres du cabinet",
+      "toast": {
+        "notAuthenticated": "Utilisateur non authentifié",
+        "instituteNotFound": "Identifiant de l'établissement introuvable",
+        "accessCheckFailed": "Échec de la vérification des droits d'accès"
+      },
+      "checkingPermissions": "Vérification des droits d'accès...",
+      "accessDeniedTitle": "Accès refusé",
+      "accessDeniedDescription": "Vous n'avez pas les droits nécessaires pour accéder à cette page. Veuillez contacter votre {{admin}}.",
+      "defaultOrgName": "Sous-organisation",
+      "subtitle": "Gérez le personnel de votre {{orgName}}",
+      "refreshButton": "Actualiser",
+      "bulkUploadButton": "Import groupé",
+      "selectBatchTitle": "Sélectionner un(e) {{batch}}",
+      "selectBatchPlaceholder": "Sélectionnez un(e) {{batch}}",
+      "practiceGroupTitle": "Groupe de pratique"
+    },
+    "toast": {
+      "selectBatch": "Veuillez sélectionner un(e) {{batch}}",
+      "invalidBatch": "{{batch}} sélectionné(e) invalide",
+      "loadFormConfigFailed": "Échec du chargement de la configuration du formulaire d'inscription"
+    },
+    "addStaff": {
+      "addButton": "Ajouter un membre du personnel",
+      "addingLabel": "Ajout en cours...",
+      "dialogTitle": "Ajouter un nouveau membre du personnel",
+      "phonePlaceholder": "+1 234 567 8900",
+      "fallback": {
+        "emailLabel": "E-mail *",
+        "emailPlaceholder": "staff@example.com",
+        "fullNameLabel": "Nom complet *",
+        "fullNamePlaceholder": "Saisissez le nom complet",
+        "mobileLabel": "Numéro de mobile *"
+      },
+      "toast": {
+        "configProblem": "Le formulaire d'invitation de cet établissement ne comporte pas de champ E-mail ou Nom complet reconnaissable. Demandez à un(e) {{admin}} de vérifier la configuration du formulaire d'invitation.",
+        "emailNameRequired": "L'e-mail et le nom sont des champs obligatoires.",
+        "invalidEmail": "Veuillez saisir une adresse e-mail valide",
+        "invalidPhone": "Veuillez saisir un numéro de téléphone valide avec l'indicatif du pays (ex. : +1234567890)",
+        "addFailed": "Échec de l'ajout du membre du personnel"
+      }
+    },
+    "table": {
+      "staffCountTitle": "Personnel ({{count}})",
+      "selectedCount_one": "{{count}} membre du personnel sélectionné",
+      "selectedCount_many": "{{count}} membres du personnel sélectionnés",
+      "selectedCount_other": "{{count}} membres du personnel sélectionnés",
+      "loading": "Chargement du personnel...",
+      "emptyTitle": "Aucun membre du personnel trouvé",
+      "emptyDescription": "Commencez par ajouter du personnel à ce(tte) {{batch}}.",
+      "statusColumn": "Statut"
+    },
+    "terminate": {
+      "selectedButton": "Résilier la sélection ({{count}})",
+      "confirmTitle": "Confirmer la résiliation",
+      "confirmDescription_one": "Retirer <b1>{{count}}</b1> membre du personnel de cette adhésion.",
+      "confirmDescription_many": "Retirer <b1>{{count}}</b1> membres du personnel de cette adhésion.",
+      "confirmDescription_other": "Retirer <b1>{{count}}</b1> membres du personnel de cette adhésion.",
+      "modeLabel": "Mode de résiliation",
+      "hardLabel": "Résilier maintenant",
+      "hardDescription": "— L'accès est révoqué immédiatement.",
+      "softLabel": "Conserver jusqu'à une date",
+      "softDescription": "— L'accès se poursuit jusqu'à la date d'accès ci-dessous, puis prend fin automatiquement.",
+      "lastAccessDateLabel": "Dernière date d'accès",
+      "pickDateHint": "Choisissez une date jusqu'à laquelle conserver l'accès.",
+      "schedulingLabel": "Planification en cours...",
+      "terminatingLabel": "Résiliation en cours...",
+      "toast": {
+        "selectMembers": "Veuillez sélectionner des membres à résilier",
+        "pickDate": "Veuillez choisir une dernière date d'accès pour une résiliation progressive",
+        "softSuccess_one": "L'accès de {{count}} membre du personnel se poursuivra jusqu'au {{date}}",
+        "softSuccess_many": "L'accès de {{count}} membres du personnel se poursuivra jusqu'au {{date}}",
+        "softSuccess_other": "L'accès de {{count}} membres du personnel se poursuivra jusqu'au {{date}}",
+        "hardSuccess_one": "{{count}} membre du personnel a été résilié avec succès",
+        "hardSuccess_many": "{{count}} membres du personnel ont été résiliés avec succès",
+        "hardSuccess_other": "{{count}} membres du personnel ont été résiliés avec succès",
+        "failed": "Échec de la résiliation du personnel. Veuillez réessayer."
+      }
+    },
+    "bulkUpload": {
+      "dialogTitle": "Import groupé du personnel",
+      "instructionsTitle": "Instructions",
+      "steps": {
+        "step1": "Téléchargez le modèle d'exemple pour voir le format requis",
+        "step2": "Renseignez les informations du personnel (les champs marqués d'un * sont obligatoires)",
+        "step3": "Enregistrez votre fichier et importez-le ci-dessous",
+        "step4": "Chaque ligne sera traitée individuellement"
+      },
+      "downloadButton": "Télécharger le modèle d'exemple",
+      "downloadHint": "Modèle Excel avec tous les champs requis",
+      "processingLabel": "Traitement de {{processed}} sur {{total}} membres du personnel...",
+      "dropHere": "Déposez votre fichier ici",
+      "dragDropPrompt": "Glissez-déposez votre fichier ici, ou",
+      "browseButton": "Parcourir les fichiers",
+      "supportsHint": "Formats pris en charge : .xlsx, .xls et .csv",
+      "resultsTitle": "Résultats de l'import",
+      "resultsSuccessBadge": "{{count}} réussi(s)",
+      "resultsFailedBadge": "{{count}} échoué(s)",
+      "resultRowLabel": "Ligne {{rowNumber}} : {{fullName}}",
+      "unknownValue": "Inconnu",
+      "closeButton": "Fermer",
+      "result": {
+        "invalidData": "Données invalides : l'e-mail et le nom sont requis. Veuillez vérifier le format.",
+        "success": "Ajouté avec succès"
+      },
+      "toast": {
+        "templateDownloaded": "Modèle d'exemple téléchargé avec succès",
+        "parseFailed": "Échec de l'analyse du fichier. Veuillez vous assurer qu'il s'agit d'un fichier Excel ou CSV valide.",
+        "readFailed": "Échec de la lecture du fichier",
+        "invalidFileType": "Veuillez importer un fichier Excel (.xlsx, .xls) ou CSV valide",
+        "emptyFile": "Le fichier semble être vide",
+        "processFailed": "Échec du traitement du fichier",
+        "addedSuccess_one": "{{count}} membre du personnel ajouté avec succès",
+        "addedSuccess_many": "{{count}} membres du personnel ajoutés avec succès",
+        "addedSuccess_other": "{{count}} membres du personnel ajoutés avec succès",
+        "addedFailedCount_one": "Échec de l'ajout de {{count}} membre du personnel. Consultez les résultats ci-dessous.",
+        "addedFailedCount_many": "Échec de l'ajout de {{count}} membres du personnel. Consultez les résultats ci-dessous.",
+        "addedFailedCount_other": "Échec de l'ajout de {{count}} membres du personnel. Consultez les résultats ci-dessous."
+      }
+    }
+  }
+}

@@ -329,3 +329,84 @@ Use the latest capable Claude model via the registry for generation quality; the
 - **Draft persistence/audit:** ship the `ai_workflow_draft` audit table in Phase 1 for the eval loop, or defer. (Recommendation: ship a minimal version — it's the only way to measure quality.)
 - **Freeform ceiling:** how far to let the model compose novel graphs vs. always requiring a human to wire routing for anything template-less.
 ```
+
+---
+
+## 14. The MCP path — authoring automations from Claude / ChatGPT / Cursor (2026-09-19)
+
+An admin with the Vacademy MCP server connected (see `ai_service/MCP_SERVER_GUIDE.md`)
+can now build automations from their own AI app. This is the Phase-3 "fold into the
+Assistant" step, done the way the website builder did it: **the connected LLM is the
+only model**. Nothing on this path calls `/v1/workflow/ai-draft`, OpenRouter, or spends
+credits — which also sidesteps the missing `OPENROUTER_API_KEY` on admin_core.
+
+Two tools in `ai_service/app/services/assistant_tools_workflow.py`, each one toggle in
+Settings → MCP Server (and in Assistant settings, same groups):
+
+| Tool | Group | Actions |
+|---|---|---|
+| `workflows` (READ) | `workflows` | `list`, `get`, `runs` (executions + per-node log), `catalog`, `context`, `template` |
+| `workflows_edit` (WRITE, draft-only + additive) | `workflows_edits` | `validate`, `create_draft`, `update_draft`, `discard_draft`, `create_email_template`, `create_whatsapp_template`, `sync_whatsapp_templates` |
+
+**Grounding is the existing grounding.** `workflows(catalog)` proxies
+`GET /v1/workflow/ai-catalog` (§2b's AI-grade schema) in sections — `overview` (JSON shape
++ generation rules), `node_types`, `queries`, `triggers`, plus the plain catalog's
+`trigger_events` and `query_keys` — so the rules the in-product drafter obeys are the
+rules an external model reads. `workflows(context)` is the §5 entity grounding served as
+data: batches (`package_session_id`), lead campaigns, ACTIVE email + APPROVED WhatsApp
+templates with their placeholders, live sessions, enroll invites. The description tells
+the model to take ids and template names only from there.
+
+**The write path is the §6/§7 loop with the model outside the server.**
+`workflows_edit(validate | create_draft | update_draft)` runs one shared `check_workflow`:
+
+1. *Normalise* — accept the drafter contract (`{workflow: …}`), the builder shape or the
+   canvas shape (`data.nodeType`), camel or snake case; fold `config.routing[]` into
+   edges (the builder derives routing from edges); copy a CONDITION node's predicate onto
+   its true edge and label the other `false` (what `workflow-builder.tsx` does on save);
+   backfill `trigger.trigger_event_name` from the TRIGGER node; default the start node;
+   and **force** `id` (none / the draft's), `institute_id` (the pinned principal's) and
+   `status = DRAFT`.
+2. *Lint* — the §7 rules the backend validator does not cover: L4 dead node types
+   (ROUTER, SEND_PUSH_NOTIFICATION) are errors; L8 flat DELAY is an error; L9
+   reachability from the start node; L2 `on` must be SpEL; L1 `resultKey` warns; L6
+   mutating query keys and `SET_LEAD_STATUS`/`COMBOT` warn; L5 missing idempotency warns;
+   L7 INVITE_FORM_FILL / LIVE_SESSION_* warn; non-cron cron strings error.
+3. *Templates (L10)* — `templateName` on SEND_EMAIL must be a real institute email
+   template (error), on SEND_WHATSAPP/COMBOT an APPROVED one (warning otherwise) — the
+   same split as `WorkflowAiDraftService.verifyTemplates`.
+4. *Institute scoping (L11)* — trigger `event_ids` and literal QUERY `batchId` /
+   `packageSessionIds` / `audienceId` are checked against the institute (exact lookups
+   for batches and campaigns → error; list membership for sessions/invites → warning).
+5. *Backend `/validate`* — its ERRORs block, its WARNINGs are relayed.
+
+Only a clean check reaches `POST /v1/workflow` (or `PUT /{id}` for a draft). The result
+carries `editor_url` (`<institute admin portal>/workflow/<id>/edit`) and the instruction
+to have the admin review and publish there. `update_draft` and `discard_draft` load the
+workflow through `/edit`, refuse it if `institute_id` differs, and refuse it if
+`status != DRAFT` — a published automation cannot be changed or removed from an AI app.
+
+**Templates (L10, the other half of the flow).** A send node is only as good as the
+template it names, so the model can create what is missing: `create_email_template`
+posts to `/institute/template/v1/create` with `status=ACTIVE`, `contentType=text/html`
+and `dynamicParameters` derived from the `{{placeholders}}` in subject + HTML (empty
+`dynamic_parameters` is why the builder's mapping UI sometimes never appears); the
+response carries a `send_node_hint` with the `templateVars` keys to fill.
+`create_whatsapp_template` creates a draft in notification-service and submits it to
+Meta (`PENDING`), after checking Meta's rules locally — name `[a-z0-9_]`, positional
+`{{1}}…{{n}}` with no gaps, no leading/trailing variable, one sample value per
+variable, body ≤ 1024, UTILITY (default; MARKETING repeats to one number are
+rate-limited by Meta, AUTHENTICATION refused). `sync_whatsapp_templates` pulls the
+status back. `context` lists DRAFT/PENDING/REJECTED WhatsApp templates separately so a
+just-created one is visible but not offered as sendable, and the lint keeps warning
+until it is APPROVED. Existing templates are never edited or removed from here — a
+live automation may be sending them.
+
+**Deliberately not exposed:** publish/activate (the human-in-the-loop guarantee of §8),
+Test Run (`QUERY`, `SET_LEAD_STATUS`, `COMBOT` have no dry-run gate), `trigger-now`,
+the in-place node-template editor (it edits live workflows), and editing/deleting
+message templates.
+
+Tests: `ai_service/tests/test_workflow_tools.py` (normaliser, lint, template/ownership
+checks, draft-only containment, reads) and the exposure assertions in
+`tests/test_mcp_adapter.py`.

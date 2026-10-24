@@ -1,0 +1,65 @@
+{
+    "emptyState": {
+        "title": "تحليلات القوالب",
+        "message": "لا توجد بيانات قوالب متاحة"
+    },
+    "header": {
+        "title": "تحليلات القوالب اليومية",
+        "subtitle": "الرسائل والتفاعل حسب اليوم والقالب"
+    },
+    "viewToggle": {
+        "chart": "عرض الرسم البياني",
+        "table": "عرض الجدول"
+    },
+    "summary": {
+        "totalDays": "إجمالي الأيام",
+        "messagesSent": "الرسائل المرسلة",
+        "responses": "الردود",
+        "usersReached": "المستخدمون الذين تم الوصول إليهم",
+        "responseRate": "معدل الاستجابة"
+    },
+    "tabs": {
+        "messagesByDay": "الرسائل حسب اليوم",
+        "usersByDay": "المستخدمون حسب اليوم",
+        "combinedView": "عرض مجمّع"
+    },
+    "tooltip": {
+        "outgoing": "الصادر: {{value}}",
+        "incoming": "الوارد: {{value}}",
+        "uniqueUsersOut": "المستخدمون الفريدون (الصادر): {{value}}",
+        "uniqueUsersIn": "المستخدمون الفريدون (الوارد): {{value}}"
+    },
+    "series": {
+        "outgoingMessages": "الرسائل الصادرة",
+        "incomingMessages": "الرسائل الواردة",
+        "uniqueUsersOutgoing": "المستخدمون الفريدون (الصادر)",
+        "uniqueUsersIncoming": "المستخدمون الفريدون (الوارد)",
+        "messagesSent": "الرسائل المرسلة",
+        "responses": "الردود",
+        "responseRatePercent": "معدل الاستجابة (%)"
+    },
+    "table": {
+        "day": "اليوم",
+        "outgoingUsers": "المستخدمون الصادرون",
+        "outgoingMessages": "الرسائل الصادرة",
+        "incomingUsers": "المستخدمون الواردون",
+        "incomingMessages": "الرسائل الواردة",
+        "responseRate": "معدل الاستجابة",
+        "templates": "القوالب"
+    },
+    "dayLabel": "اليوم {{number}}",
+    "outgoingTemplates": "القوالب الصادرة",
+    "incomingTemplatesResponses": "القوالب الواردة (الردود)",
+    "usersCount_zero": "لا يوجد مستخدمون",
+    "usersCount_one": "مستخدم واحد",
+    "usersCount_two": "مستخدمان",
+    "usersCount_few": "{{count}} مستخدمين",
+    "usersCount_many": "{{count}} مستخدمًا",
+    "usersCount_other": "{{count}} مستخدم",
+    "messagesCount_zero": "لا توجد رسائل",
+    "messagesCount_one": "رسالة واحدة",
+    "messagesCount_two": "رسالتان",
+    "messagesCount_few": "{{count}} رسائل",
+    "messagesCount_many": "{{count}} رسالة",
+    "messagesCount_other": "{{count}} رسالة"
+}

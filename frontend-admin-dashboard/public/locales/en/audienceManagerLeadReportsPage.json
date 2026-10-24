@@ -1,0 +1,43 @@
+{
+    "header": {
+        "navTitle": "Reports Center",
+        "title": "Reports Center",
+        "subtitle": "Pipeline health, sources, calling activity, funnel velocity and follow-up hygiene — one place.",
+        "refresh": "Refresh"
+    },
+    "filters": {
+        "presetLabel": "{{days}}d",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "reset": "Reset",
+        "noInstitute": "Pick an institute to view reports."
+    },
+    "tabs": {
+        "overview": "Overview",
+        "sources": "Sources",
+        "funnel": "Funnel",
+        "dispositions": "Dispositions",
+        "calling": "Calling",
+        "leadCalls": "Lead Calls",
+        "callIntelligence": "CRM Intelligence",
+        "activity": "Activity",
+        "followups": "Follow-ups",
+        "counsellors": "Counsellors",
+        "manager": "Manager",
+        "revenue": "Revenue",
+        "cohort": "Cohort",
+        "forecast": "Forecast",
+        "custom": "Builder",
+        "utm": "Campaigns (UTM)"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "Filter by counsellor",
+        "allCounsellors": "All counsellors"
+    },
+    "campaignPicker": {
+        "ariaLabel": "Filter by campaign",
+        "allCampaigns": "All campaigns",
+        "untitledCampaign": "Untitled campaign"
+    }
+}

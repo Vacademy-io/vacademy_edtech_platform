@@ -1,0 +1,40 @@
+{
+    "schema": {
+        "titleRequired": "Le titre est requis",
+        "dateRequired": "La date est requise",
+        "startTimeRequired": "L'heure de début est requise",
+        "durationRequired": "La durée est requise",
+        "emailInvalid": "Saisissez un e-mail valide"
+    },
+    "durationOption_one": "{{count}} minute",
+    "durationOption_many": "{{count}} minutes",
+    "durationOption_other": "{{count}} minutes",
+    "toast": {
+        "missingInstitute": "Contexte d'établissement manquant",
+        "scheduled": "Réunion planifiée",
+        "scheduleFailed": "Échec de la planification de la réunion. Réessayez."
+    },
+    "heading": "Nouvelle réunion",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "Titre de la réunion",
+    "dateLabel": "Date",
+    "startTimeLabel": "Heure de début",
+    "durationLabel": "Durée",
+    "participantsLabel": "Participants",
+    "inviteeFromLead": "Invité (depuis le prospect)",
+    "inviteeExternal": "Invité externe (facultatif)",
+    "prefilledFromLead": "Pré-rempli à partir du prospect — modifiez uniquement si les informations sont incorrectes.",
+    "inviteeNameLabel": "Nom de l'invité",
+    "inviteeNamePlaceholder": "Nom complet",
+    "inviteeEmailLabel": "E-mail de l'invité",
+    "inviteeEmailPlaceholder": "nom@exemple.com",
+    "inviteePhoneLabel": "Téléphone de l'invité",
+    "inviteePhonePlaceholder": "Numéro de téléphone",
+    "allocateMeetTitle": "Attribuer un lien Google Meet",
+    "allocateMeetDescription": "Attacher automatiquement un lien Meet à cette réunion",
+    "actions": {
+        "cancel": "Annuler",
+        "scheduling": "Planification...",
+        "scheduleMeeting": "Planifier la réunion"
+    }
+}

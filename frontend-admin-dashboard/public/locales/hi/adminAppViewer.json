@@ -1,0 +1,17 @@
+{
+    "android": "एंड्रॉइड",
+    "appNameSuffix": "{{platformName}} ऐप",
+    "back": "वापस",
+    "getTheAdminApp": "एडमिन ऐप प्राप्त करें",
+    "installAppDescription": "अपने फोन पर Vacademy Admin ऐप इंस्टॉल करें। WhatsApp पर डाउनलोड लिंक पाने के लिए अपना प्लेटफ़ॉर्म चुनें।",
+    "invalidMobileNumber": "एक मान्य मोबाइल नंबर दर्ज करें (भारत के बाहर के नंबरों के लिए देश कोड सहित)।",
+    "ios": "आईओएस",
+    "linkSendFailedToast": "लिंक भेजा नहीं जा सका। कृपया फिर से प्रयास करें।",
+    "linkSentToast": "लिंक भेज दिया गया — उस नंबर पर WhatsApp देखें।",
+    "mobileNumberLabel": "मोबाइल नंबर",
+    "mobileNumberPlaceholder": "उदा. 9876543210",
+    "sendLink": "लिंक भेजें",
+    "sendOverWhatsappNote": "हम आपके मोबाइल नंबर पर WhatsApp के ज़रिए ऐप लिंक भेजेंगे।",
+    "sendTheAppLink": "ऐप लिंक भेजें",
+    "sending": "भेजा जा रहा है…"
+}

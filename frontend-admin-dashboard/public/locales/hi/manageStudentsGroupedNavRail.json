@@ -1,0 +1,11 @@
+{
+  "ariaLabelProfileSections": "प्रोफ़ाइल अनुभाग",
+  "group": {
+    "Snapshot": "सारांश",
+    "Learning": "शिक्षण",
+    "Finance": "वित्त",
+    "CRM": "ग्राहक प्रबंधन",
+    "Account": "खाता",
+    "Records": "अभिलेख"
+  }
+}

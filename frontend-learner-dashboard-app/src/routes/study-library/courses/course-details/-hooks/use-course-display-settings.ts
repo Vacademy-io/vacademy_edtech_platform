@@ -28,6 +28,8 @@ export function useCourseDisplaySettings() {
   const [showCourseConfiguration, setShowCourseConfiguration] =
     useState<boolean>(true);
   const [overviewVisible, setOverviewVisible] = useState<boolean>(true);
+  // Tag chips above the title; shown unless the institute hides them.
+  const [hideTags, setHideTags] = useState<boolean>(false);
   const [hideAuthorName, setHideAuthorName] = useState<boolean>(false);
   // Teachers/Instructors section is hidden unless the institute opts in.
   const [showInstructors, setShowInstructors] = useState<boolean>(false);
@@ -53,6 +55,7 @@ export function useCourseDisplaySettings() {
         const cd = settings?.courseDetails;
         if (cd) {
           setShowCourseConfiguration(cd.showCourseConfiguration ?? true);
+          setHideTags(cd.hideTags === true);
           setOverviewVisible(cd.courseOverview?.visible ?? true);
           setHideAuthorName(cd.hideAuthorName ?? false);
           setShowInstructors(cd.showInstructors ?? false);
@@ -65,6 +68,7 @@ export function useCourseDisplaySettings() {
       })
       .catch(() => {
         setShowCourseConfiguration(true);
+        setHideTags(false);
         setOverviewVisible(true);
         setHideAuthorName(false);
         setShowInstructors(false);
@@ -76,6 +80,7 @@ export function useCourseDisplaySettings() {
 
   return {
     showCourseConfiguration,
+    hideTags,
     overviewVisible,
     hideAuthorName,
     showInstructors,

@@ -1,0 +1,265 @@
+---
+title: "Rubrics and model answers"
+description: "Tell the grader how marks are earned on long-answer questions, with criteria that add up to the question's max marks."
+icon: "list-check"
+---
+
+Objective questions have an answer key. A `long_answer` question needs something more: a **rubric** (named criteria, each worth part of the marks) or a **model answer** (the answer an examiner would accept), or both. Rubrics and model answers apply to `long_answer` questions in both handwritten and typed exams.
+
+<Tip>
+Send a rubric or a model answer for every long-answer question **before the first submission**. It is the single biggest factor in marking quality and consistency.
+</Tip>
+
+## The rubric object
+
+```json
+{
+  "partial_marking": true,
+  "instructions": "UPSC GS2. Judge content, structure and balance. Do not reward length beyond the word limit.",
+  "criteria": [
+    {"name": "Introduction", "marks": 2, "keywords": ["Article 356", "federalism"],
+     "guidance": "Defines the issue in context; a fact or judgment helps."},
+    {"name": "Dimensions covered", "marks": 6, "keywords": ["S.R. Bommai", "Sarkaria", "Punchhi", "Governor"],
+     "guidance": "Constitutional, judicial, political and administrative dimensions; credit each well-argued dimension."},
+    {"name": "Examples and data", "marks": 3, "keywords": ["1994", "President's Rule"],
+     "guidance": "Specific cases, commissions, data."},
+    {"name": "Way forward", "marks": 2, "keywords": ["inter-state council", "guidelines"],
+     "guidance": "Concrete, balanced suggestions."},
+    {"name": "Conclusion and presentation", "marks": 2, "keywords": [],
+     "guidance": "Ties back to cooperative federalism; legible structure, headings, flow."}
+  ]
+}
+```
+
+This is a rubric for a 15-mark question: its criteria add up to 2 + 6 + 3 + 2 + 2 = 15.
+
+<ParamField body="partial_marking" type="boolean" default="true">
+  Whether a criterion can earn part of its marks.
+</ParamField>
+
+<ParamField body="instructions" type="string">
+  Instructions for this question, up to 4,000 characters.
+</ParamField>
+
+<ParamField body="criteria" type="object[]" required>
+  1 to 30 criteria.
+  <Expandable title="criterion">
+    <ParamField body="name" type="string" required>
+      Up to 200 characters, unique within the question (ignoring case). Cannot contain `<` or `>`. Results report marks per criterion under this exact name.
+    </ParamField>
+    <ParamField body="marks" type="number" required>
+      Greater than 0. All criteria together must equal the question's `max_marks`.
+    </ParamField>
+    <ParamField body="keywords" type="string[]">
+      Up to 30 terms the answer is expected to use, each 1 to 100 characters.
+    </ParamField>
+    <ParamField body="guidance" type="string">
+      What earns this criterion, up to 2,000 characters. No mark figures: see below.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Validation rules
+
+Rubrics are checked when you send them, so a wrong rubric never silently changes how a paper is marked.
+
+| Rule | Error |
+|---|---|
+| Criterion marks add up exactly to the question's `max_marks`. | `422 rubric_marks_mismatch`, with `details.question_label`, `details.criteria_total` and `details.max_marks` |
+| Criterion names are unique within the question (ignoring case). | `422 rubric_duplicate_criterion`, with `details.question_label` and `details.criterion` |
+| Guidance contains no mark figures. | `422 rubric_guidance_has_marks`, with `details.question_label` and `details.criterion` |
+| Shape: at least one criterion, at most 30; `name` and `marks` present; `marks` > 0; length limits. | `422 validation_failed`, with `details.errors[]` |
+| A criterion worth a non-multiple of 0.5 (for example 1.25). | Accepted, with warning `rubric_marks_not_half_step`; final marks are rounded to 0.5 |
+| Rubrics only on `long_answer` questions. | `422 validation_failed` (field code `not_allowed`) |
+
+```json
+{
+  "error": {
+    "code": "rubric_marks_mismatch",
+    "message": "Criteria for question 3(a) add up to 4, question max is 5.",
+    "request_id": "req_01J9X2...",
+    "details": {"question_label": "3(a)", "criteria_total": 4, "max_marks": 5}
+  }
+}
+```
+
+### Keep marks out of guidance
+
+Marks belong in `criteria[].marks` only. If guidance also mentions marks, the grader gets two sources of truth that can disagree. The check refuses:
+
+- A number followed by `mark`, `marks`, `mk`, `point`, `pts` and similar: "2 marks", "1.5 points".
+- A number word followed by `mark(s)`: "half marks", "full marks", "two marks".
+- An awarding verb (`award`, `give`, `deduct`, `allot`, `allocate`, `assign`, `grant`, `cut`) followed by an amount: "award 1", "give half", "deduct one".
+- The signs `½`, `¼` and `¾`.
+
+Bare numbers are fine, so "Article 356", "Section 80C", "the 1994 judgment" and "two dimensions" all pass.
+
+<Tabs>
+  <Tab title="Refused">
+    ```json
+    {"name": "Balanced equation", "marks": 2,
+     "guidance": "Award 1 mark for correct formulae and 1 mark for balancing."}
+    ```
+  </Tab>
+  <Tab title="Accepted">
+    ```json
+    [
+      {"name": "Correct formulae", "marks": 1,
+       "guidance": "All reactants and products written with correct chemical formulae."},
+      {"name": "Balanced", "marks": 1,
+       "guidance": "Atoms of each element equal on both sides."}
+    ]
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+Phrases like "give full credit" also match the check, because "give" is followed by "full". Write "credit if the student names glucose" instead.
+</Note>
+
+## Model answers
+
+A model answer is plain text, up to 20,000 characters: the answer an examiner would accept, with the points that earn marks. You can send it on its own or alongside a rubric.
+
+```json
+{
+  "label": "21",
+  "type": "long_answer",
+  "max_marks": 2,
+  "text": "Why is respiration considered an exothermic reaction? Explain.",
+  "model_answer": "During respiration, glucose is oxidised in the cells to carbon dioxide and water. This process releases energy, which is why respiration is an exothermic reaction."
+}
+```
+
+## Without a rubric
+
+| You send | What happens |
+|---|---|
+| Rubric (with or without a model answer) | The grader marks against your criteria. `GET /exams/{id}/rubrics` shows `source: "partner"`. |
+| Model answer only | The grader uses your model answer as the reference answer. |
+| Neither | Accepted, with an `auto_rubric` warning. On the first copy, a rubric is generated from the question text and then reused for every candidate, so marking stays consistent. It shows as `source: "generated"`. |
+
+A generated rubric is consistent, but nobody has reviewed it. Read it with `GET /exams/{id}/rubrics` after the first copy, and replace it with your own if needed.
+
+## Set rubrics and model answers
+
+You can send rubrics and model answers inline with each question on `POST /exams` or `POST /exams/{id}/questions`. To change them later, use one of the endpoints below. They work in draft and after open, until the exam is finalized.
+
+<Tabs>
+  <Tab title="One question: PUT">
+    `PUT /exams/{id}/questions/{question_id}/rubric`
+
+    ```bash
+    curl -X PUT https://api.evalezy.com/v1/exams/$EXAM_ID/questions/$QUESTION_ID/rubric \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "If-Match: 4" \
+      -d '{
+        "rubric": {
+          "partial_marking": true,
+          "criteria": [
+            {"name": "Oxidation of glucose", "marks": 1, "keywords": ["glucose", "oxidation", "CO2"],
+             "guidance": "Mentions breakdown or oxidation of glucose."},
+            {"name": "Energy released", "marks": 1, "keywords": ["energy", "exothermic"],
+             "guidance": "States that energy is released."}
+          ]
+        }
+      }'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "version": 5,
+      "question": {"id": "d9a4...", "label": "21", "type": "long_answer", "max_marks": 2.0,
+                   "rubric": {"partial_marking": true, "criteria": [...]}, "model_answer": "..."}
+    }
+    ```
+  </Tab>
+  <Tab title="Many questions: PATCH">
+    `PATCH /exams/{id}/rubrics` sets rubrics and model answers for up to 200 questions in one call, with a single version bump.
+
+    ```bash
+    curl -X PATCH https://api.evalezy.com/v1/exams/$EXAM_ID/rubrics \
+      -H "X-API-Key: $EVALEZY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "questions": {
+          "d9a4...": {"model_answer": "Glucose is oxidised to CO2 and water, releasing energy."},
+          "f310...": {"rubric": null},
+          "a77c...": {"rubric": {"criteria": [{"name": "Diagram", "marks": 3}, {"name": "Labels", "marks": 2}]}}
+        }
+      }'
+    ```
+
+    The response carries `version` and the updated `questions[]`.
+  </Tab>
+</Tabs>
+
+Each question's change is `{"rubric": {...} | null, "model_answer": "..." | null}`:
+
+- **Key left out:** that part is left as it is.
+- **`null`:** that part is deleted.
+- **Value:** that part is replaced.
+
+At least one of the two keys is required. Each rubric is checked against its question's current `max_marks`. You can also set or clear a rubric with `PATCH /exams/{id}/questions/{question_id}` and a `rubric` or `model_answer` field.
+
+### Versions and If-Match
+
+Every accepted change bumps the exam's **rubric version**. Each result records the `rubric_version` it was graded with, so you can tell which results were graded before a change.
+
+To avoid overwriting someone else's edit (for example, a teacher editing the same rubric in the dashboard), send `If-Match: <version>` with the version you last read:
+
+1. Read the current version with `GET /exams/{id}/rubrics`.
+2. Send your change with `If-Match: 4`.
+3. If the rubric is no longer at version 4, you get `412 rubric_version_mismatch` with `details.expected` and `details.current`. Re-read, merge and retry.
+
+`If-Match` takes a plain number (`4`, `"4"` and `W/"4"` are all accepted). Anything else returns `422 validation_failed`. An exam with no stored rubric yet is at version 0.
+
+### Sync status
+
+Changes are saved straight away and then delivered to the grader. Usually that takes a moment and the response carries the new `version`. If delivery is delayed, the response carries `"version": null, "sync": "pending"`, and delivery is retried automatically every minute. While changes are pending, a write with `If-Match` returns `412 rubric_version_mismatch`, because the current version isn't known yet. Retry shortly.
+
+If the grader refuses a change that was already accepted, `GET /exams/{id}/rubrics` shows `"sync": "failed"` and a `sync_error` object listing the affected `question_ids`. Set those questions' rubrics again to clear it.
+
+## Read rubrics
+
+`GET /exams/{id}/rubrics` (scope `evaluation:read`) returns every question's rubric and model answer, with changes that are still syncing already applied:
+
+```json
+{
+  "version": 5,
+  "locked": false,
+  "locked_at": null,
+  "questions": [
+    {"question_id": "d9a4...", "label": "21", "source": "partner", "state": "draft",
+     "rubric": {"partial_marking": true, "criteria": [...]},
+     "model_answer": "Glucose is oxidised...", "updated_at": "2026-10-02T09:20:11Z"},
+    {"question_id": "e51b...", "label": "33", "source": "generated", "state": "draft",
+     "rubric": {"partial_marking": true, "criteria": [...]}, "model_answer": null, "updated_at": "..."},
+    {"question_id": "f310...", "label": "34", "source": "none", "state": "draft",
+     "rubric": null, "model_answer": null, "updated_at": "..."}
+  ]
+}
+```
+
+`source` is `partner` (you set it), `generated` (created from the question text) or `none`. If the grader is briefly unreachable, this call returns `503 engine_unavailable` with `Retry-After: 30`.
+
+<Info>
+Rubric generation on request and rubric locking are on the [roadmap](/platform/roadmap). Until then, write rubrics yourself, or let the first copy generate them and review them afterwards.
+</Info>
+
+## Errors
+
+| Status and code | When |
+|---|---|
+| `422 rubric_marks_mismatch` | Criterion marks don't add up to the question's `max_marks`. |
+| `422 rubric_duplicate_criterion` | Two criteria in the same question have the same name. |
+| `422 rubric_guidance_has_marks` | Guidance mentions marks. |
+| `422 validation_failed` | Shape problems, a non-`long_answer` question, a bad `If-Match` value, or an empty change. |
+| `412 rubric_version_mismatch` | `If-Match` doesn't match the current version, or earlier changes are still syncing. |
+| `409 rubric_locked` | The exam's rubric is locked. |
+| `409 exam_finalized` | The exam is finalized. |
+| `404 question_not_found` | A question id isn't in this exam. |
+| `503 engine_unavailable` | The grader is briefly unreachable (reads only). Retry after the `Retry-After` interval. |

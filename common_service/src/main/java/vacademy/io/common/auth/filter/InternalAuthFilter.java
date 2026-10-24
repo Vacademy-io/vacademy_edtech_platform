@@ -8,13 +8,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UriUtils;
 import vacademy.io.common.auth.service.ClientAuthentication;
 import vacademy.io.common.auth.service.ClientAuthenticationService;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class InternalAuthFilter extends OncePerRequestFilter {
+
+    private static final String INTERNAL_SEGMENT = "internal";
 
     @Autowired
     private ClientAuthenticationService clientAuthenticationService;
@@ -24,7 +28,7 @@ public class InternalAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
 
-        if (request.getRequestURI().contains("internal")) {
+        if (isInternalPath(request.getRequestURI())) {
             String clientName = request.getHeader("clientName");
             String clientToken = request.getHeader("Signature");
           
@@ -41,6 +45,37 @@ public class InternalAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+    }
+
+    /**
+     * True when any path segment is exactly "internal" (e.g. /auth-service/internal/user,
+     * /auth-service/v1/user/internal/create-user). Matching a whole segment, not a substring,
+     * so a path variable or route that merely contains the word is not forced through
+     * client auth. Each segment is checked both raw and after dropping ";matrix" params and
+     * percent-decoding, because Spring routes "/%69nternal/..." to the same "/internal/..."
+     * handler and the raw URI must not be a way around this filter.
+     */
+    static boolean isInternalPath(String requestUri) {
+        if (requestUri == null) {
+            return false;
+        }
+        for (String segment : requestUri.split("/")) {
+            int matrixStart = segment.indexOf(';');
+            String withoutMatrix = matrixStart >= 0 ? segment.substring(0, matrixStart) : segment;
+            if (INTERNAL_SEGMENT.equals(withoutMatrix)) {
+                return true;
+            }
+            if (withoutMatrix.indexOf('%') >= 0) {
+                try {
+                    if (INTERNAL_SEGMENT.equals(UriUtils.decode(withoutMatrix, StandardCharsets.UTF_8))) {
+                        return true;
+                    }
+                } catch (IllegalArgumentException malformedEscape) {
+                    // Not decodable, so it cannot be routed as "internal" either.
+                }
+            }
+        }
+        return false;
     }
 
 }

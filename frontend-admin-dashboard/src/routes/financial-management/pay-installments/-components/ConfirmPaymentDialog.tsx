@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -32,33 +33,34 @@ export function ConfirmPaymentDialog({
     isSubmitting,
     onConfirm,
 }: ConfirmPaymentDialogProps) {
+    const { t } = useTranslation('financialManagementConfirmPaymentDialog');
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
                     <DialogTitle className="text-lg font-bold text-gray-800">
-                        Confirm Payment
+                        {t('title')}
                     </DialogTitle>
                     <DialogDescription className="mt-1 text-sm text-gray-500">
-                        Please review the payment details before confirming.
+                        {t('description')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="px-6 py-5 space-y-4">
                     <div className="space-y-3">
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Student</span>
+                            <span className="text-gray-500">{t('student')}</span>
                             <span className="font-semibold text-gray-800">{studentName}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Installments</span>
+                            <span className="text-gray-500">{t('installments')}</span>
                             <span className="font-semibold text-gray-800">
                                 {installmentCount}
                             </span>
                         </div>
                         {paymentMode && (
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Payment Mode</span>
+                                <span className="text-gray-500">{t('paymentMode')}</span>
                                 <span className="font-semibold text-gray-800">
                                     {paymentMode}
                                 </span>
@@ -66,14 +68,14 @@ export function ConfirmPaymentDialog({
                         )}
                         {transactionId && (
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Transaction ID</span>
+                                <span className="text-gray-500">{t('transactionId')}</span>
                                 <span className="font-semibold text-gray-800">
                                     {transactionId}
                                 </span>
                             </div>
                         )}
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Amount</span>
+                            <span className="text-gray-500">{t('amount')}</span>
                             <span className="font-bold text-lg text-blue-600">
                                 {formatCurrency(amount)}
                             </span>
@@ -81,8 +83,7 @@ export function ConfirmPaymentDialog({
                     </div>
 
                     <p className="text-xs text-gray-400">
-                        The amount will be distributed across the selected installments by fee-type
-                        priority order.
+                        {t('distributionNote')}
                     </p>
                 </div>
 
@@ -92,14 +93,14 @@ export function ConfirmPaymentDialog({
                         disabled={isSubmitting}
                         className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
                     >
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button
                         onClick={onConfirm}
                         disabled={isSubmitting}
                         className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                     >
-                        {isSubmitting ? 'Processing...' : 'Confirm Payment'}
+                        {isSubmitting ? t('processing') : t('confirmPayment')}
                     </button>
                 </div>
             </DialogContent>

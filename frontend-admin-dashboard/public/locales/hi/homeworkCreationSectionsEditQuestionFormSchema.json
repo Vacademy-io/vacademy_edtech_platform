@@ -1,0 +1,14 @@
+{
+    "questionNameRequired": "प्रश्न का नाम आवश्यक है",
+    "optionRequired": "विकल्प {{number}} आवश्यक है",
+    "mcqs": {
+        "optionsRequired": "MCQS प्रश्नों में singleChoiceOptions होने चाहिए",
+        "exactlyFourOptions": "MCQS में ठीक 4 विकल्प होने चाहिए",
+        "exactlyOneSelected": "MCQS में ठीक एक विकल्प चयनित होना चाहिए"
+    },
+    "mcqm": {
+        "optionsRequired": "MCQM प्रश्नों में multipleChoiceOptions होने चाहिए",
+        "exactlyFourOptions": "MCQM में ठीक 4 विकल्प होने चाहिए",
+        "atLeastOneSelected": "MCQM में कम से कम एक विकल्प चयनित होना चाहिए"
+    }
+}

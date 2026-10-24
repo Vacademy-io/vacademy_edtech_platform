@@ -113,7 +113,8 @@ public class EngagementTaskController {
                                        @RequestParam String instituteId,
                                        @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
-        int updated = actionRepository.reopenFailed(taskId, instituteId, Instant.now());
+        Instant now = Instant.now();
+        int updated = actionRepository.reopenFailed(taskId, instituteId, now, now.plus(java.time.Duration.ofHours(72)));
         if (updated == 0) throw new VacademyException("Task not found or not in a FAILED state");
         return ResponseEntity.ok().build();
     }

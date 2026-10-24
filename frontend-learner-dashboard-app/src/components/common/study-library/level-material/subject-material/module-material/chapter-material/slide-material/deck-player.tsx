@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CaretLeft,
   CaretRight,
@@ -49,6 +50,7 @@ interface DeckPlayerProps {
 }
 
 export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
+  const { t } = useTranslation("libraryCommonA");
   const [steps, setSteps] = useState<FlatStep[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
@@ -95,14 +97,14 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
           });
         });
         if (!flat.length) {
-          setError("This presentation has no slides.");
+          setError(t("deckPlayer.noSlides"));
           return;
         }
         setSteps(flat);
       })
       .catch((e) => {
         if (cancelled) return;
-        setError("Couldn't load the presentation.");
+        setError(t("deckPlayer.loadFailed"));
         console.error("[DeckPlayer] manifest load failed", e);
       });
 
@@ -255,7 +257,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
           <img
             key={index}
             src={current.url}
-            alt={`Slide ${currentSlideNo}`}
+            alt={t("deckPlayer.slideAlt", { number: currentSlideNo })}
             className={cn(
               "absolute inset-0 size-full object-contain",
               fade && "animate-in fade-in duration-300"
@@ -302,7 +304,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
           className="rounded-full hover:bg-neutral-50/10"
           onClick={() => go(-1)}
           disable={atStart}
-          aria-label="Previous"
+          aria-label={t("deckPlayer.previous")}
         >
           <CaretLeft size={18} className={atStart ? "text-neutral-50/30" : "text-neutral-50"} />
         </MyButton>
@@ -316,7 +318,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
           className="rounded-full hover:bg-neutral-50/10"
           onClick={() => go(1)}
           disable={atEnd}
-          aria-label="Next"
+          aria-label={t("deckPlayer.next")}
         >
           <CaretRight size={18} className={atEnd ? "text-neutral-50/30" : "text-neutral-50"} />
         </MyButton>
@@ -327,7 +329,7 @@ export default function DeckPlayer({ baseUrl }: DeckPlayerProps) {
           buttonType="text"
           className="rounded-full hover:bg-neutral-50/10"
           onClick={toggleFullscreen}
-          aria-label={isFullscreen ? "Exit full screen" : "Play full screen"}
+          aria-label={isFullscreen ? t("videoPlayer.exitFullScreen") : t("deckPlayer.playFullScreen")}
         >
           {isFullscreen ? (
             <CornersIn size={18} className="text-neutral-50" />

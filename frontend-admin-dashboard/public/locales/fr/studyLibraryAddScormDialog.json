@@ -1,0 +1,45 @@
+{
+    "validation": {
+        "titleRequired": "Le titre est requis",
+        "scormFileRequired": "Un fichier zip SCORM est requis"
+    },
+    "dropzone": {
+        "title": "Importez votre package SCORM",
+        "hint": "Glissez ou cliquez pour téléverser",
+        "formats": "Compatible avec SCORM 1.2 et SCORM 2004 (.zip)",
+        "selected": "Sélectionné : {{fileName}}"
+    },
+    "errors": {
+        "imsManifestHintPrefix": "Assurez-vous que",
+        "imsManifestHintSuffix": "se trouve à la racine du zip, pas dans un sous-dossier — recompressez directement le contenu du package, pas le dossier qui le contient, puis réessayez."
+    },
+    "fields": {
+        "title": "Titre",
+        "titlePlaceholder": "Saisissez le titre de la diapositive SCORM",
+        "description": "Description (facultatif)",
+        "descriptionPlaceholder": "Saisissez une description pour ce module SCORM..."
+    },
+    "details": {
+        "title": "Détails du package",
+        "versionLabel": "Version :",
+        "versionValue": "SCORM {{version}}",
+        "launchFileLabel": "Fichier de lancement :"
+    },
+    "toasts": {
+        "uploadFailed": "Échec du téléversement du package SCORM",
+        "selectZipFile": "Veuillez sélectionner un fichier .zip",
+        "fileTooLarge": "Le package SCORM est trop volumineux ({{size}}). La taille maximale autorisée est de {{max}}.",
+        "uploading": "Téléversement du package SCORM...",
+        "uploadSuccessDetected": "Téléversé avec succès ! Package SCORM {{version}} détecté.",
+        "uploadParseSuccess": "Package SCORM téléversé et analysé avec succès !",
+        "dropZipFile": "Veuillez déposer un fichier .zip",
+        "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
+        "waitForUpload": "Veuillez attendre la fin du téléversement du package SCORM",
+        "createSuccess": "Diapositive SCORM créée avec succès !",
+        "createFailed": "Échec de la création de la diapositive SCORM"
+    },
+    "actions": {
+        "creatingSlide": "Création de la diapositive...",
+        "createSlide": "Créer la diapositive SCORM"
+    }
+}

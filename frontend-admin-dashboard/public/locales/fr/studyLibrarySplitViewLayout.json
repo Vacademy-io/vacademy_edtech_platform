@@ -1,0 +1,14 @@
+{
+    "back": "Retour",
+    "courseDetails": "Détails du cours",
+    "details": "Détails",
+    "percent": "{{value}} %",
+    "createCourse": "Créer le cours",
+    "createDraftCourse": "Créer un brouillon de cours",
+    "generatePageContent": "Générer le contenu des pages",
+    "generate": "Générer",
+    "generatingContent": "Génération du contenu...",
+    "pagesProgress": "{{completed}} sur {{total}} pages",
+    "chapters": "Chapitres",
+    "content": "Contenu"
+}

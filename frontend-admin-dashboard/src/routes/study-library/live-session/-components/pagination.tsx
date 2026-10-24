@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { MyButton } from '@/components/design-system/button';
@@ -18,6 +19,7 @@ export default function Pagination({
     onPrevious,
     onNext,
 }: PaginationProps) {
+    const { t } = useTranslation('studyLibraryPagination');
     if (totalPages <= 1) return null;
 
     const renderPageNumbers = () => {
@@ -121,7 +123,7 @@ export default function Pagination({
                 }`}
             >
                 <CaretLeft size={16} />
-                Previous
+                {t('previous')}
             </button>
 
             {/* Page Numbers */}
@@ -137,13 +139,13 @@ export default function Pagination({
                         : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
-                Next
+                {t('next')}
                 <CaretRight size={16} />
             </button>
 
             {/* Go to page input */}
-            <div className="ml-4 flex items-center gap-2">
-                <span className="text-sm text-gray-600">Go to</span>
+            <div className="ms-4 flex items-center gap-2">
+                <span className="text-sm text-gray-600">{t('goTo')}</span>
                 <input
                     type="number"
                     min={1}

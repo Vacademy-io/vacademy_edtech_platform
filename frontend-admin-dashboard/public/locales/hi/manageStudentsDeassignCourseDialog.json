@@ -1,0 +1,84 @@
+{
+    "dialogTitle": "{{term}} से हटाएं",
+    "config": {
+        "removePrompt": "<strong>{{name}}</strong> को चुने गए कोर्स से हटाएं।",
+        "noCourses": "हटाने के लिए कोई कोर्स नहीं है",
+        "unnamedCourse": "अनाम कोर्स",
+        "removalMode": "निष्कासन मोड",
+        "softCancel": {
+            "label": "सॉफ्ट कैंसिल",
+            "description": "— प्लान की समाप्ति तक पहुंच जारी रहेगी। स्थिति → रद्द"
+        },
+        "lastAccessDate": {
+            "label": "अंतिम पहुंच तिथि",
+            "ariaLabel": "अंतिम पहुंच तिथि",
+            "pickAriaLabel": "कैलेंडर से अंतिम पहुंच तिथि चुनें",
+            "hintSelected": "चुनी गई तिथि पर पहुंच समाप्त हो जाएगी।",
+            "hintDefaultWithDate": "प्लान की अपनी समाप्ति तिथि तक पहुंच बनाए रखने के लिए खाली छोड़ें — {{date}}।",
+            "hintDefaultNoDate": "प्लान की अपनी समाप्ति तिथि तक पहुंच बनाए रखने के लिए खाली छोड़ें।",
+            "reset": "प्लान की समाप्ति तिथि पर रीसेट करें"
+        },
+        "hardTerminate": {
+            "label": "हार्ड टर्मिनेट",
+            "description": "— तत्काल पहुंच रद्द। स्थिति → समाप्त",
+            "cannotUndo": "⚠ इसे पूर्ववत नहीं किया जा सकता"
+        },
+        "reason": {
+            "label": "टर्मिनेशन का कारण",
+            "optional": "(वैकल्पिक)",
+            "placeholder": "इस शिक्षार्थी को क्यों टर्मिनेट किया जा रहा है?"
+        },
+        "deletePaymentHistory": {
+            "label": "पेमेंट हिस्ट्री भी डिलीट करें",
+            "description": "इस कोर्स के पेमेंट, किस्तें, इनवॉइस और फ़ीस प्लान हमेशा के लिए हटा देता है, ताकि वे Payment History, Manage Payments या रिपोर्ट में न दिखें। ऑनलाइन (गेटवे) पेमेंट डिलीट नहीं किए जा सकते।",
+            "warning": "पुरानी रिपोर्ट में Collected राशि कम हो जाएगी। इसे पूर्ववत नहीं किया जा सकता।"
+        },
+        "notifyLearners": "शिक्षार्थी को निष्कासन की सूचना दें"
+    },
+    "preview": {
+        "title": "पूर्वावलोकन — ड्राई रन परिणाम",
+        "reason": "कारण:",
+        "willBeRemoved_one": "{{count}} कोर्स हटाया जाएगा",
+        "willBeRemoved_other": "{{count}} कोर्स हटाए जाएंगे",
+        "skipped_one": "{{count}} छोड़ा गया",
+        "skipped_other": "{{count}} छोड़े गए",
+        "failed_one": "{{count}} विफल",
+        "failed_other": "{{count}} विफल",
+        "tableHeaders": {
+            "course": "कोर्स",
+            "action": "कार्रवाई",
+            "status": "स्थिति"
+        }
+    },
+    "results": {
+        "title": "निष्कासन पूर्ण",
+        "removed_one": "{{count}} हटाया गया",
+        "removed_other": "{{count}} हटाए गए",
+        "skipped_one": "{{count}} छोड़ा गया",
+        "skipped_other": "{{count}} छोड़े गए",
+        "failed_one": "{{count}} विफल",
+        "failed_other": "{{count}} विफल",
+        "tableHeaders": {
+            "course": "कोर्स",
+            "status": "स्थिति",
+            "message": "संदेश"
+        }
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "loading": "लोड हो रहा है...",
+        "previewButton_one": "पूर्वावलोकन ({{count}} कोर्स)",
+        "previewButton_other": "पूर्वावलोकन ({{count}} कोर्स)",
+        "back": "← वापस",
+        "removing": "हटाया जा रहा है...",
+        "confirmRemoval": "✓ निष्कासन की पुष्टि करें",
+        "done": "पूर्ण"
+    },
+    "toasts": {
+        "previewFailed": "पूर्वावलोकन विफल",
+        "deassignFailed": "निष्कासन विफल",
+        "deassignSuccess_one": "{{count}} कोर्स सफलतापूर्वक हटाया गया!",
+        "deassignSuccess_other": "{{count}} कोर्स सफलतापूर्वक हटाए गए!",
+        "deassignPartial": "{{successful}} हटाए गए, {{failed}} विफल।"
+    }
+}

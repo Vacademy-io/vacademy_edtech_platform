@@ -1,4 +1,5 @@
 import { ClipboardText } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { ApplicationDetails } from '../application-details';
 import { ProfileEmpty } from '../profile-ui';
 
@@ -7,12 +8,14 @@ interface StudentApplicationProps {
 }
 
 export const StudentApplication = ({ applicantId }: StudentApplicationProps) => {
+    const { t } = useTranslation('manageStudentsStudentApplication');
+
     if (!applicantId) {
         return (
             <ProfileEmpty
                 icon={ClipboardText}
-                title="No application found"
-                hint="No application is linked to this learner yet."
+                title={t('empty.title')}
+                hint={t('empty.hint')}
             />
         );
     }

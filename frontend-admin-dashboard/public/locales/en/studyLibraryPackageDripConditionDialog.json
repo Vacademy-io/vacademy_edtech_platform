@@ -1,0 +1,37 @@
+{
+    "dialog": {
+        "editHeading": "Edit Drip Condition",
+        "addHeading": "Add Drip Condition",
+        "course": "Course: {{packageName}}",
+        "enableTargetCondition": "Enable {{target}} drip condition",
+        "enableTargetConditionHint": "Controls whether this specific {{target}} drip condition is active"
+    },
+    "form": {
+        "targetContent": "Target Content",
+        "selectTarget": "Select target",
+        "appliesToAll": "This condition will apply to all {{level}}s in this package",
+        "behavior": "Behavior",
+        "selectBehavior": "Select behavior",
+        "unlockRule": "Unlock Rule",
+        "noRuleConfigured": "No rule configured. Please configure an unlock rule below.",
+        "releaseDate": "Release Date",
+        "metric": "Metric",
+        "averageOfAll": "Average of All",
+        "averageOfLastN": "Average of Last N",
+        "count": "Count",
+        "thresholdPercent": "Threshold %"
+    },
+    "behaviorOptions": {
+        "lock": "Lock (show but prevent access)",
+        "hide": "Hide (completely hidden)"
+    },
+    "ruleTypes": {
+        "dateBased": "Date-based",
+        "completionBased": "Completion-based"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "updateCondition": "Update Condition",
+        "addCondition": "Add Condition"
+    }
+}

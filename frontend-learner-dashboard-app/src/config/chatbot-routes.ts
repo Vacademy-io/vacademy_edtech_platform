@@ -3,7 +3,9 @@
  * Each category has route prefixes that match learner app routes.
  */
 const PAGE_CATEGORY_ROUTES: Record<string, string[]> = {
-  dashboard: ['/dashboard'],
+  // The daily-tasks page is part of the learner's home: the tutor helps
+  // there ("Why was I wrong?" after a reveal, the Buddy line).
+  dashboard: ['/dashboard', '/engagement'],
   all_courses: ['/study-library'],
   course_details: ['/study-library/courses'],
   study_material: ['/study-library/courses/course-details'],
@@ -17,6 +19,8 @@ const ALWAYS_HIDDEN_ROUTES = [
   '/delete-user', '/change-password', '/logout',
   '/learner-invitation-response', '/payment-result', '/audience-response',
   '/live-class-guest',
+  // The Site Assistant's own iframe on an institute's website.
+  '/site-assistant-embed',
   // Assessment brief → preview → live test. An AI assistant floating over a
   // proctored paper is an integrity problem, and its launcher sits exactly
   // where the exam's own bottom-right controls are. The catalogue fallback

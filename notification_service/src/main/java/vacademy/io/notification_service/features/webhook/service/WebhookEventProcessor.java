@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import vacademy.io.common.logging.SentryLogger;
 import vacademy.io.notification_service.features.chatbot_flow.engine.ChatbotFlowEngine;
 import vacademy.io.notification_service.features.combot.action.dto.FlowContext;
 import vacademy.io.notification_service.features.combot.action.service.FlowActionRouter;
@@ -21,7 +22,9 @@ import vacademy.io.notification_service.features.notification_log.repository.Not
 import vacademy.io.notification_service.features.webhook.dto.UnifiedWebhookEvent;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -54,6 +57,23 @@ public class WebhookEventProcessor {
 
     // Dedup: WATI sends to both /{channelId} and /{channelId}/incoming
     private final ConcurrentHashMap<String, Long> processedMessageIds = new ConcurrentHashMap<>();
+
+    /**
+     * Provider error codes that mean the ACCOUNT cannot send at all, not that one recipient could
+     * not be reached. Recipient-level codes (131026 undeliverable, 131047 re-engagement window,
+     * 131049 per-user marketing cap) are deliberately absent — they are normal traffic and alerting
+     * on them would bury the ones that need a human.
+     * <p>
+     * 131042 business eligibility / payment method, 131031 account restricted or locked,
+     * 131045 phone number not registered or certificate problem.
+     */
+    private static final Set<String> ACCOUNT_LEVEL_FAILURE_CODES = Set.of("131042", "131031", "131045");
+
+    private static final long ACCOUNT_FAILURE_ALERT_WINDOW_MS = 30 * 60 * 1000L;
+
+    // institute:errorCode → last alert time, so a dead account raises one Sentry event per half
+    // hour instead of one per rejected message.
+    private final ConcurrentHashMap<String, Long> accountFailureAlertedAt = new ConcurrentHashMap<>();
 
     /**
      * Process a unified webhook event from any vendor.
@@ -140,6 +160,22 @@ public class WebhookEventProcessor {
                     .ifPresent(m -> notificationLog.setInstituteId(m.getInstituteId()));
         }
 
+        // Record the verdict this event carried on the row itself. Without it the status lives
+        // only inside the raw payload, in a different shape per vendor, so nothing can later ask
+        // "what did the provider say about this message" — which is exactly what a send row that
+        // was written AFTER its own status webhook needs to ask. See
+        // NotificationLogRepository#backfillDeliveryStatusFromRecordedEvents.
+        switch (event.getEventType()) {
+            case SENT, DELIVERED, READ, FAILED -> {
+                notificationLog.setDeliveryStatus(event.getEventType().name());
+                notificationLog.setDeliveryErrorCode(truncate(event.getErrorCode(), 50));
+                notificationLog.setDeliveryErrorMessage(truncate(event.getErrorMessage(), 500));
+                notificationLog.setDeliveryUpdatedAt(
+                        event.getTimestamp() != null ? event.getTimestamp() : Instant.now());
+            }
+            default -> { /* replies and verification responses are not delivery statuses */ }
+        }
+
         // Store raw payload as JSON
         try {
             if (event.getRawPayload() != null) {
@@ -197,6 +233,7 @@ public class WebhookEventProcessor {
                 maskPhoneNumber(event.getPhoneNumber()),
                 event.getBusinessChannelId(),
                 logEntry.getId());
+        reconcileOutboundRow(event, "SENT");
     }
 
     private void handleMessageDelivered(UnifiedWebhookEvent event, NotificationLog logEntry) {
@@ -205,6 +242,7 @@ public class WebhookEventProcessor {
                 maskPhoneNumber(event.getPhoneNumber()),
                 event.getBusinessChannelId(),
                 logEntry.getId());
+        reconcileOutboundRow(event, "DELIVERED");
     }
 
     private void handleMessageRead(UnifiedWebhookEvent event, NotificationLog logEntry) {
@@ -213,6 +251,7 @@ public class WebhookEventProcessor {
                 maskPhoneNumber(event.getPhoneNumber()),
                 event.getBusinessChannelId(),
                 logEntry.getId());
+        reconcileOutboundRow(event, "READ");
     }
 
     private void handleMessageFailed(UnifiedWebhookEvent event, NotificationLog logEntry) {
@@ -223,6 +262,80 @@ public class WebhookEventProcessor {
                 event.getErrorMessage(),
                 event.getErrorCode(),
                 logEntry.getId());
+        reconcileOutboundRow(event, "FAILED");
+        alertIfAccountLevelFailure(event, logEntry);
+    }
+
+    /**
+     * Stamp the provider's verdict onto the outbound row that sent the message, so the Inbox and the
+     * communication timeline stop reporting a rejected message as delivered. A provider 2xx is only
+     * an acceptance receipt; this webhook is the first and only place the real outcome is known.
+     * <p>
+     * Best-effort by contract: the status row has already been persisted by the caller, so a failure
+     * here loses an annotation, never an event. Webhook processing must not break because a
+     * reconciliation UPDATE did.
+     */
+    private void reconcileOutboundRow(UnifiedWebhookEvent event, String status) {
+        String providerMessageId = event.getExternalMessageId();
+        if (providerMessageId == null || providerMessageId.isBlank()) {
+            return;
+        }
+        try {
+            int updated = notificationLogRepository.applyDeliveryStatusByProviderMessageId(
+                    providerMessageId,
+                    status,
+                    event.getErrorCode(),
+                    event.getErrorMessage(),
+                    event.getTimestamp() != null ? event.getTimestamp() : Instant.now());
+            if (updated == 0) {
+                // Normal for a status that outran its own send row, or a send path that stores no
+                // wamid — worth a debug line when tracing "why is this message still unmarked".
+                log.debug("No outbound row to mark {} for messageId={}", status, providerMessageId);
+            }
+        } catch (Exception e) {
+            log.warn("Could not stamp delivery status {} on outbound row for messageId={}: {}",
+                    status, providerMessageId, e.getMessage());
+        }
+    }
+
+    /**
+     * Raise a Sentry event for failures that are ACCOUNT-level rather than recipient-level. These
+     * kill every send on the number until a human fixes billing or the account itself, and they are
+     * invisible everywhere else: the send API still returns success, and Meta's own health_status
+     * keeps reporting can_send_message=AVAILABLE throughout. HCCA lost 202 messages over three weeks
+     * to 131042 with nothing to alert on.
+     * <p>
+     * Throttled to one event per institute+code per 30 minutes — a broken account fails EVERY send,
+     * so an unthrottled alert would be a few hundred identical Sentry events an hour.
+     */
+    private void alertIfAccountLevelFailure(UnifiedWebhookEvent event, NotificationLog logEntry) {
+        String code = event.getErrorCode();
+        if (code == null || !ACCOUNT_LEVEL_FAILURE_CODES.contains(code.trim())) {
+            return;
+        }
+        String instituteId = logEntry.getInstituteId() != null ? logEntry.getInstituteId() : "unknown";
+        String throttleKey = instituteId + ":" + code.trim();
+        long now = System.currentTimeMillis();
+        Long lastAlert = accountFailureAlertedAt.get(throttleKey);
+        if (lastAlert != null && now - lastAlert < ACCOUNT_FAILURE_ALERT_WINDOW_MS) {
+            return;
+        }
+        accountFailureAlertedAt.put(throttleKey, now);
+        accountFailureAlertedAt.entrySet()
+                .removeIf(e -> now - e.getValue() > ACCOUNT_FAILURE_ALERT_WINDOW_MS * 2);
+
+        SentryLogger.logError(
+                new IllegalStateException("WhatsApp account-level send failure: " + code),
+                "WhatsApp sends are failing for the whole account — every message on this number is "
+                        + "being rejected by the provider, while the send API still reports success",
+                Map.of(
+                        "institute.id", instituteId,
+                        "whatsapp.error.code", code.trim(),
+                        "whatsapp.error.message",
+                        event.getErrorMessage() != null ? event.getErrorMessage() : "unknown",
+                        "whatsapp.business.channel.id",
+                        event.getBusinessChannelId() != null ? event.getBusinessChannelId() : "unknown",
+                        "vendor", event.getVendor() != null ? event.getVendor() : "unknown"));
     }
 
     /**
@@ -400,5 +513,14 @@ public class WebhookEventProcessor {
         if (text == null)
             return null;
         return text.length() <= maxLength ? text : text.substring(0, maxLength) + "...";
+    }
+
+    /**
+     * Hard cut to a column's width — no ellipsis, unlike {@link #truncateText}. A value that
+     * overflowed delivery_error_code/message would abort the insert and lose the whole event.
+     */
+    private static String truncate(String value, int maxLength) {
+        if (value == null) return null;
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 }

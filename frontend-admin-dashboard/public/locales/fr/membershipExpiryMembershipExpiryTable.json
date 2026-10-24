@@ -1,0 +1,35 @@
+{
+    "columns": {
+        "user": "Utilisateur",
+        "plan": "Forfait",
+        "status": "Statut",
+        "autoRenewal": "Renouvellement automatique",
+        "planEndDate": "Date de fin du forfait",
+        "finalExpiry": "Expiration finale",
+        "reenrollment": "Réinscription"
+    },
+    "unknownUser": "Utilisateur inconnu",
+    "unknownPlan": "Forfait inconnu",
+    "notApplicable": "N/A",
+    "autoRenewal": "Renouvellement automatique",
+    "noAutoRenewal": "Pas de renouvellement automatique",
+    "paymentAttemptOn": "Le paiement sera tenté le {{date}}",
+    "scheduledDate": "date prévue",
+    "autoRenewalDisabled": "Le renouvellement automatique est désactivé pour cette adhésion",
+    "gracePeriod_one": "{{count}} jour de délai de grâce",
+    "gracePeriod_many": "{{count}} de jours de délai de grâce",
+    "gracePeriod_other": "{{count}} jours de délai de grâce",
+    "notAllowed": "Non autorisé",
+    "availableNow": "Disponible maintenant",
+    "reenrollmentGap_one": "{{count}} jour d'attente requis avant la réinscription",
+    "reenrollmentGap_many": "{{count}} de jours d'attente requis avant la réinscription",
+    "reenrollmentGap_other": "{{count}} jours d'attente requis avant la réinscription",
+    "reenrollImmediately": "Réinscription possible immédiatement après l'expiration",
+    "errorLoadingData": "Erreur lors du chargement des données",
+    "status": {
+        "ended": "Terminée",
+        "aboutToEnd": "Sur le point de se terminer",
+        "lifetime": "À vie",
+        "active": "Active"
+    }
+}

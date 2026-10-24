@@ -2,13 +2,14 @@
 Layer 3 — Assessment generation from a class-recording transcript.
 
 Takes the English transcript of a lecture (admin_core_service fetches it from
-S3 after Whisper transcription completes), uses Gemini 2.5 Flash to author a
+S3 after Whisper transcription completes), uses the `agent` use-case model
+(GLM by default, switchable from the super-admin portal) to author a
 concise title + N MCQ questions, and emits them in the original audio language
 detected by Whisper (so a Hindi lecture yields Hindi questions even though the
 transcript fed to the LLM is the English translation).
 
-Model resolution: reuses the existing `agent` use case in `ai_model_defaults`
-(google/gemini-2.5-flash) — no schema change required for v1.
+Model resolution: request `model` > institute/user ai_api_keys.default_model >
+the `agent` use case in `ai_model_defaults` (its fallback chain is the failover).
 
 Auth: same dual-auth shape as the transcription router (institute API key OR
 internal service token), so admin_core_service can call it server-to-server.
@@ -18,7 +19,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -26,8 +27,9 @@ from ..db import db_dependency
 from ..dependencies import get_institute_id_or_internal
 from ..models.ai_token_usage import RequestType
 from ..repositories.ai_api_keys_repository import AiApiKeysRepository  # noqa: F401  (kept for parity)
-from ..services.ai_billing import preflight_tool_credits, record_tool_billing
-from ..services.ai_models_service import AIModelsService
+from ..services.ai_billing import metering_from_request, preflight_tool_credits, record_tool_billing
+from ..constants.model_defaults import GLM_DEFAULT
+from ..services.model_selection import resolve_models
 from ..services.api_key_resolver import ApiKeyResolver
 from ..services.chat_llm_client import ChatLLMClient
 from ..services.quiz_service import QuizService
@@ -40,7 +42,7 @@ router = APIRouter(prefix="/assessment", tags=["assessment-generation"])
 MAX_NUM_QUESTIONS = 50
 
 # Fallback if ai_model_defaults isn't populated for any reason.
-FALLBACK_MODEL = "google/gemini-2.5-flash"
+FALLBACK_MODEL = GLM_DEFAULT
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +121,7 @@ async def generate_from_transcript(
     request: GenerateAssessmentRequest,
     auth: tuple = Depends(get_institute_id_or_internal),
     db: Session = Depends(db_dependency),
+    http_request: Request = None,
 ):
     """Generate a title + MCQ questions from a lecture transcript.
 
@@ -157,15 +160,21 @@ async def generate_from_transcript(
             ),
         )
 
-    # Resolve model: explicit override > `agent` use case default > hardcoded fallback.
-    model = request.model
-    if not model:
-        try:
-            resp = AIModelsService(db).get_models_for_use_case("agent")
-            if resp and resp.default_model:
-                model = resp.default_model.model_id
-        except Exception as e:
-            logger.warning(f"[assessment-gen] AIModelsService lookup failed, using fallback: {e}")
+    # Resolve model: explicit override > `agent` use case default > hardcoded
+    # fallback. The explicit override is honoured as sent; the use-case chain
+    # (default, fallback, non-GLM tail) is the failover behind it.
+    # An institute/user default model (ai_api_keys) still beats the use case.
+    model = request.model or ApiKeyResolver(db).byo_default_model(institute_id, request.user_id)
+    fallback_models: list = []
+    try:
+        primary, chain = resolve_models(db, "agent", hard_fallback=FALLBACK_MODEL)
+        if not model:
+            model = primary
+            fallback_models = list(chain)
+        else:
+            fallback_models = [m for m in [primary, *chain] if m != model]
+    except Exception as e:
+        logger.warning(f"[assessment-gen] model resolution failed, using fallback: {e}")
     if not model:
         model = FALLBACK_MODEL
 
@@ -184,9 +193,13 @@ async def generate_from_transcript(
             user_id=request.user_id,
             model=model,
             include_images=request.include_images,
+            fallback_models=fallback_models,
         )
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
+    # Bill and report the model that actually answered (a failover leg may
+    # have served the call).
+    model = result.get("model_used") or model
 
     # Charge credits: max(parametric estimate, actual token cost). Best-effort —
     # the assessment has already been generated, so billing must never 500.
@@ -208,6 +221,11 @@ async def generate_from_transcript(
         user_id=request.user_id,
         user_role="ADMIN" if request.user_id else None,
         idempotency_key=request.idempotency_key,
+        # Usage-event attribution only (the ledger role above is unchanged).
+        use_case="assessment_generation",
+        metering=metering_from_request(http_request, institute_id,
+                                       user={"user_id": request.user_id} if request.user_id else None,
+                                       auth_mode=auth_mode),
     )
 
     logger.info(

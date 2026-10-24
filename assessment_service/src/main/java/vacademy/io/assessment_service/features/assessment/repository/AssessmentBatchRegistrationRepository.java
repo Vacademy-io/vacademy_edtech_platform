@@ -46,5 +46,18 @@ public interface AssessmentBatchRegistrationRepository extends JpaRepository<Ass
     );
 
 
+    /**
+     * Batches this assessment was assigned to. Needed by the "enrolled but has not
+     * attempted" list, which starts from batch membership rather than from any row in
+     * this database — batch learners get no registration row until they actually start.
+     */
+    @Query("SELECT abr.batchId FROM AssessmentBatchRegistration abr " +
+            "WHERE abr.assessment.id = :assessmentId " +
+            "AND abr.instituteId = :instituteId " +
+            "AND abr.status IN :statuses")
+    List<String> findBatchIdsByAssessmentAndInstitute(@Param("assessmentId") String assessmentId,
+                                                      @Param("instituteId") String instituteId,
+                                                      @Param("statuses") List<String> statuses);
+
     boolean existsByInstituteIdAndAssessmentIdAndBatchId(String instituteId, String assessmentId, String batchId);
 }

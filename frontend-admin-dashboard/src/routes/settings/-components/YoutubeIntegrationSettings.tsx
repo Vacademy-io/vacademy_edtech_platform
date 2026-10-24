@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     YoutubeLogo,
     ArrowSquareOut,
@@ -45,23 +47,42 @@ import {
 // YouTube content categories most relevant for an EdTech platform. Full list
 // at https://developers.google.com/youtube/v3/docs/videoCategories/list — we
 // only surface the ones an admin will ever realistically pick.
-const CATEGORY_OPTIONS: { id: string; label: string }[] = [
-    { id: '27', label: 'Education' },
-    { id: '28', label: 'Science & Technology' },
-    { id: '22', label: 'People & Blogs' },
-    { id: '25', label: 'News & Politics' },
-    { id: '24', label: 'Entertainment' },
-    { id: '20', label: 'Gaming' },
-    { id: '26', label: 'How-to & Style' },
-];
+function getCategoryOptions(t: TFunction): { id: string; label: string }[] {
+    return [
+        { id: '27', label: t('categoryOptions.education') },
+        { id: '28', label: t('categoryOptions.scienceAndTechnology') },
+        { id: '22', label: t('categoryOptions.peopleAndBlogs') },
+        { id: '25', label: t('categoryOptions.newsAndPolitics') },
+        { id: '24', label: t('categoryOptions.entertainment') },
+        { id: '20', label: t('categoryOptions.gaming') },
+        { id: '26', label: t('categoryOptions.howToAndStyle') },
+    ];
+}
 
-const PRIVACY_OPTIONS: { value: 'public' | 'unlisted' | 'private'; label: string; help: string }[] = [
-    { value: 'unlisted', label: 'Unlisted', help: 'Anyone with the link can watch. Recommended for embed-only.' },
-    { value: 'private', label: 'Private', help: 'Only you can watch. Use for review before publishing.' },
-    { value: 'public', label: 'Public', help: 'Searchable on YouTube and your channel.' },
-];
+function getPrivacyOptions(
+    t: TFunction
+): { value: 'public' | 'unlisted' | 'private'; label: string; help: string }[] {
+    return [
+        {
+            value: 'unlisted',
+            label: t('privacyOptions.unlisted.label'),
+            help: t('privacyOptions.unlisted.help'),
+        },
+        {
+            value: 'private',
+            label: t('privacyOptions.private.label'),
+            help: t('privacyOptions.private.help'),
+        },
+        {
+            value: 'public',
+            label: t('privacyOptions.public.label'),
+            help: t('privacyOptions.public.help'),
+        },
+    ];
+}
 
 export default function YoutubeIntegrationSettings() {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const queryClient = useQueryClient();
     const instituteId = getCurrentInstituteId() ?? '';
 
@@ -74,8 +95,9 @@ export default function YoutubeIntegrationSettings() {
         const reason = url.searchParams.get('reason');
         if (yt) {
             setOauthFlag(yt);
-            if (yt === 'connected') toast.success('YouTube channel connected');
-            if (yt === 'error') toast.error(`Connect failed: ${reason ?? 'unknown'}`);
+            if (yt === 'connected') toast.success(t('toasts.channelConnected'));
+            if (yt === 'error')
+                toast.error(t('toasts.connectFailed', { reason: reason ?? t('toasts.unknownReason') }));
             url.searchParams.delete('yt');
             url.searchParams.delete('reason');
             window.history.replaceState({}, '', url.toString());
@@ -117,11 +139,8 @@ export default function YoutubeIntegrationSettings() {
         <div className="flex flex-col gap-5 p-1">
             <header className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-xl font-semibold text-neutral-800">YouTube Integration</h2>
-                    <p className="text-sm text-neutral-500">
-                        Auto-upload recorded live sessions to your YouTube channel. Connect once;
-                        every recording from this institute lands on your channel.
-                    </p>
+                    <h2 className="text-xl font-semibold text-neutral-800">{t('header.title')}</h2>
+                    <p className="text-sm text-neutral-500">{t('header.subtitle')}</p>
                 </div>
             </header>
 
@@ -173,6 +192,7 @@ function FeatureGateCard({
     defaults?: YoutubeUploadDefaults;
     loading: boolean;
 }) {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const queryClient = useQueryClient();
 
     // Mutation flips the master switch. We send the full defaults payload so
@@ -184,12 +204,12 @@ function FeatureGateCard({
                 featureEnabled: next,
             }),
         onSuccess: (_data, next) => {
-            toast.success(next ? 'YouTube Integration enabled' : 'YouTube Integration turned off');
+            toast.success(next ? t('toasts.featureEnabled') : t('toasts.featureDisabled'));
             queryClient.invalidateQueries({ queryKey: ['youtube-defaults', instituteId] });
             queryClient.invalidateQueries({ queryKey: ['youtube-status', instituteId] });
             queryClient.invalidateQueries({ queryKey: ['youtube-jobs', instituteId] });
         },
-        onError: () => toast.error('Failed to update toggle'),
+        onError: () => toast.error(t('toasts.toggleFailed')),
     });
 
     const featureEnabled = defaults?.featureEnabled ?? false;
@@ -201,12 +221,8 @@ function FeatureGateCard({
                     <YoutubeLogo size={20} weight="fill" />
                 </div>
                 <div className="flex-1">
-                    <CardTitle className="text-base">Enable YouTube Integration</CardTitle>
-                    <CardDescription>
-                        Turn this on if this institute wants to publish recorded live sessions to
-                        YouTube. When off, no recording is uploaded and no "Upload to YouTube"
-                        button appears on any session.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('featureGate.title')}</CardTitle>
+                    <CardDescription>{t('featureGate.description')}</CardDescription>
                 </div>
                 <Switch
                     checked={featureEnabled}
@@ -216,9 +232,7 @@ function FeatureGateCard({
             </CardHeader>
             {!featureEnabled && (
                 <CardContent className="border-t border-neutral-100 p-5 text-sm text-neutral-500">
-                    Once enabled, you'll be able to connect a YouTube channel, configure upload
-                    defaults (privacy, title template, category), and see the upload history of
-                    every recording.
+                    {t('featureGate.hint')}
                 </CardContent>
             )}
         </Card>
@@ -255,21 +269,22 @@ function ConnectionCard({
     instituteId: string;
     onReload: () => void;
 }) {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const { mutate: connect, isPending: connecting } = useMutation({
         mutationFn: () => initiateYoutubeOAuth(instituteId),
         onSuccess: (data) => {
             window.location.href = data.authorization_url;
         },
-        onError: () => toast.error('Failed to start YouTube OAuth — check console.'),
+        onError: () => toast.error(t('toasts.oauthStartFailed')),
     });
 
     const { mutate: disconnect, isPending: disconnecting } = useMutation({
         mutationFn: () => disconnectYoutube(instituteId),
         onSuccess: () => {
-            toast.success('YouTube disconnected');
+            toast.success(t('toasts.disconnected'));
             onReload();
         },
-        onError: () => toast.error('Failed to disconnect'),
+        onError: () => toast.error(t('toasts.disconnectFailed')),
     });
 
     const s = status?.status ?? 'NOT_CONNECTED';
@@ -281,29 +296,26 @@ function ConnectionCard({
                     <YoutubeLogo size={20} weight="fill" />
                 </div>
                 <div className="flex-1">
-                    <CardTitle className="text-base">YouTube Channel</CardTitle>
-                    <CardDescription>
-                        Sign in with the Google account that owns the channel you want to publish
-                        to. Required: edit access to that channel.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('connection.title')}</CardTitle>
+                    <CardDescription>{t('connection.description')}</CardDescription>
                 </div>
                 <StatusBadge status={s} />
             </CardHeader>
             <CardContent className="border-t border-neutral-100 p-5">
                 {loading ? (
-                    <div className="text-sm text-neutral-500">Loading…</div>
+                    <div className="text-sm text-neutral-500">{t('connection.loading')}</div>
                 ) : s === 'ACTIVE' ? (
                     <div className="flex flex-wrap items-center gap-4">
                         {status?.channelThumbnailUrl && (
                             <img
                                 src={status.channelThumbnailUrl}
-                                alt={status.channelTitle ?? 'channel'}
+                                alt={status.channelTitle ?? t('channelThumbnailAlt')}
                                 className="size-12 rounded-full"
                             />
                         )}
                         <div className="flex-1 min-w-[200px]">
                             <div className="text-sm font-medium text-neutral-800">
-                                {status?.channelTitle ?? '(unnamed channel)'}
+                                {status?.channelTitle ?? t('connection.unnamedChannel')}
                             </div>
                             {status?.channelId && (
                                 <a
@@ -325,7 +337,7 @@ function ConnectionCard({
                                 disabled={connecting}
                             >
                                 <ArrowsClockwise className="mr-1 size-3.5" />
-                                Reconnect
+                                {t('connection.reconnect')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -334,7 +346,7 @@ function ConnectionCard({
                                 disabled={disconnecting}
                                 className="text-red-600 hover:text-red-700"
                             >
-                                Disconnect
+                                {t('connection.disconnect')}
                             </Button>
                         </div>
                     </div>
@@ -343,27 +355,25 @@ function ConnectionCard({
                         <div className="flex-1 min-w-[240px]">
                             <div className="flex items-center gap-2 text-sm font-medium text-amber-700">
                                 <Warning size={16} />
-                                Connection invalid
+                                {t('connection.invalidTitle')}
                             </div>
                             <p className="mt-1 text-xs text-neutral-500">
-                                {status?.lastError ??
-                                    'Google rejected the refresh token. This usually means access was revoked in Google Account settings.'}
+                                {status?.lastError ?? t('connection.invalidDefaultReason')}
                             </p>
                         </div>
                         <Button onClick={() => connect()} disabled={connecting}>
                             <PlugsConnected className="mr-1 size-4" />
-                            {connecting ? 'Redirecting…' : 'Reconnect YouTube'}
+                            {connecting ? t('connection.redirecting') : t('connection.reconnectYoutube')}
                         </Button>
                     </div>
                 ) : (
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex-1 min-w-[240px] text-sm text-neutral-500">
-                            No channel connected yet. Once connected, every BBB recording will
-                            auto-upload to that channel.
+                            {t('connection.notConnected')}
                         </div>
                         <Button onClick={() => connect()} disabled={connecting}>
                             <Plug className="mr-1 size-4" />
-                            {connecting ? 'Redirecting…' : 'Connect YouTube'}
+                            {connecting ? t('connection.redirecting') : t('connection.connectYoutube')}
                         </Button>
                     </div>
                 )}
@@ -373,10 +383,11 @@ function ConnectionCard({
 }
 
 function StatusBadge({ status }: { status: 'ACTIVE' | 'INVALID' | 'NOT_CONNECTED' }) {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const cfg = {
-        ACTIVE: { label: 'Connected', color: 'bg-green-100 text-green-700' },
-        INVALID: { label: 'Needs reconnect', color: 'bg-amber-100 text-amber-700' },
-        NOT_CONNECTED: { label: 'Not connected', color: 'bg-neutral-100 text-neutral-600' },
+        ACTIVE: { label: t('status.active'), color: 'bg-green-100 text-green-700' },
+        INVALID: { label: t('status.invalid'), color: 'bg-amber-100 text-amber-700' },
+        NOT_CONNECTED: { label: t('status.notConnected'), color: 'bg-neutral-100 text-neutral-600' },
     }[status];
     return (
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cfg.color}`}>
@@ -396,6 +407,7 @@ function DefaultsCard({
     defaults?: YoutubeUploadDefaults;
     loading: boolean;
 }) {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const queryClient = useQueryClient();
     const [draft, setDraft] = useState<YoutubeUploadDefaults | null>(null);
 
@@ -411,25 +423,30 @@ function DefaultsCard({
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: (next: YoutubeUploadDefaults) => updateYoutubeDefaults(instituteId, next),
         onSuccess: () => {
-            toast.success('Upload defaults saved');
+            toast.success(t('toasts.defaultsSaved'));
             queryClient.invalidateQueries({ queryKey: ['youtube-defaults', instituteId] });
         },
-        onError: () => toast.error('Failed to save defaults'),
+        onError: () => toast.error(t('toasts.defaultsSaveFailed')),
     });
 
     if (loading || !draft) {
         return (
             <Card className="border-neutral-200 shadow-none">
                 <CardHeader className="p-5">
-                    <CardTitle className="text-base">Upload Defaults</CardTitle>
+                    <CardTitle className="text-base">{t('defaults.title')}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-5 pt-0 text-sm text-neutral-500">Loading…</CardContent>
+                <CardContent className="p-5 pt-0 text-sm text-neutral-500">
+                    {t('defaults.loading')}
+                </CardContent>
             </Card>
         );
     }
 
     const set = (patch: Partial<YoutubeUploadDefaults>) =>
         setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+
+    const privacyOptions = getPrivacyOptions(t);
+    const categoryOptions = getCategoryOptions(t);
 
     return (
         <Card className="border-neutral-200 shadow-none">
@@ -438,11 +455,8 @@ function DefaultsCard({
                     <CloudArrowUp size={18} />
                 </div>
                 <div className="flex-1">
-                    <CardTitle className="text-base">Upload Defaults</CardTitle>
-                    <CardDescription>
-                        Applied to every recording that auto-uploads. Manual upload can override
-                        privacy per recording.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('defaults.title')}</CardTitle>
+                    <CardDescription>{t('defaults.description')}</CardDescription>
                 </div>
                 <div className="flex gap-2">
                     <Button
@@ -451,7 +465,7 @@ function DefaultsCard({
                         disabled={!dirty || saving}
                         onClick={() => defaults && setDraft(defaults)}
                     >
-                        Reset
+                        {t('defaults.reset')}
                     </Button>
                     <Button
                         size="sm"
@@ -459,14 +473,14 @@ function DefaultsCard({
                         onClick={() => draft && save(draft)}
                         className="bg-primary-500 hover:bg-primary-600"
                     >
-                        {saving ? 'Saving…' : 'Save'}
+                        {saving ? t('defaults.saving') : t('defaults.save')}
                     </Button>
                 </div>
             </CardHeader>
             <CardContent className="space-y-5 border-t border-neutral-100 p-5">
                 <SettingRow
-                    title="Auto-upload on recording ready"
-                    description="When off, recordings won't upload automatically. Anyone can still trigger an upload from the live-session view."
+                    title={t('defaults.autoUpload.title')}
+                    description={t('defaults.autoUpload.description')}
                     checked={draft.autoUploadEnabled}
                     onChange={(v) => set({ autoUploadEnabled: v })}
                 />
@@ -475,7 +489,7 @@ function DefaultsCard({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                        <Label className="text-xs">Privacy</Label>
+                        <Label className="text-xs">{t('defaults.privacyLabel')}</Label>
                         <Select
                             value={draft.privacyStatus}
                             onValueChange={(v) =>
@@ -486,7 +500,7 @@ function DefaultsCard({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {PRIVACY_OPTIONS.map((opt) => (
+                                {privacyOptions.map((opt) => (
                                     <SelectItem key={opt.value} value={opt.value}>
                                         {opt.label}
                                     </SelectItem>
@@ -494,11 +508,11 @@ function DefaultsCard({
                             </SelectContent>
                         </Select>
                         <p className="text-[11px] text-neutral-500">
-                            {PRIVACY_OPTIONS.find((p) => p.value === draft.privacyStatus)?.help}
+                            {privacyOptions.find((p) => p.value === draft.privacyStatus)?.help}
                         </p>
                     </div>
                     <div className="space-y-1.5">
-                        <Label className="text-xs">Category</Label>
+                        <Label className="text-xs">{t('defaults.categoryLabel')}</Label>
                         <Select
                             value={draft.categoryId}
                             onValueChange={(v) => set({ categoryId: v })}
@@ -507,7 +521,7 @@ function DefaultsCard({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {CATEGORY_OPTIONS.map((opt) => (
+                                {categoryOptions.map((opt) => (
                                     <SelectItem key={opt.id} value={opt.id}>
                                         {opt.label}
                                     </SelectItem>
@@ -516,7 +530,7 @@ function DefaultsCard({
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <Label className="text-xs">License</Label>
+                        <Label className="text-xs">{t('defaults.licenseLabel')}</Label>
                         <Select
                             value={draft.license}
                             onValueChange={(v) =>
@@ -527,15 +541,19 @@ function DefaultsCard({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="youtube">Standard YouTube License</SelectItem>
-                                <SelectItem value="creativeCommon">Creative Commons</SelectItem>
+                                <SelectItem value="youtube">
+                                    {t('defaults.licenseStandard')}
+                                </SelectItem>
+                                <SelectItem value="creativeCommon">
+                                    {t('defaults.licenseCreativeCommons')}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <Label className="text-xs">Default language</Label>
+                        <Label className="text-xs">{t('defaults.defaultLanguageLabel')}</Label>
                         <Input
-                            placeholder="en, hi, …"
+                            placeholder={t('defaults.defaultLanguagePlaceholder')}
                             value={draft.defaultLanguage ?? ''}
                             onChange={(e) => set({ defaultLanguage: e.target.value })}
                         />
@@ -545,26 +563,26 @@ function DefaultsCard({
                 <Separator />
 
                 <SettingRow
-                    title="Allow embedding"
-                    description="Required if you want to play these videos inside Vacademy. Turn off only for download-restricted content."
+                    title={t('defaults.embeddable.title')}
+                    description={t('defaults.embeddable.description')}
                     checked={draft.embeddable}
                     onChange={(v) => set({ embeddable: v })}
                 />
                 <SettingRow
-                    title="Public stats viewable"
-                    description="Whether view-count / like-count are visible on the video page."
+                    title={t('defaults.publicStats.title')}
+                    description={t('defaults.publicStats.description')}
                     checked={draft.publicStatsViewable}
                     onChange={(v) => set({ publicStatsViewable: v })}
                 />
                 <SettingRow
-                    title="Made for kids"
-                    description="YouTube requires this declaration. Most adult-learner lectures should be off."
+                    title={t('defaults.madeForKids.title')}
+                    description={t('defaults.madeForKids.description')}
                     checked={draft.madeForKids}
                     onChange={(v) => set({ madeForKids: v })}
                 />
                 <SettingRow
-                    title="Notify channel subscribers"
-                    description="When on, YouTube pushes a subscriber notification for every uploaded recording. Usually off for routine recordings."
+                    title={t('defaults.notifySubscribers.title')}
+                    description={t('defaults.notifySubscribers.description')}
                     checked={draft.notifySubscribers}
                     onChange={(v) => set({ notifySubscribers: v })}
                 />
@@ -573,52 +591,50 @@ function DefaultsCard({
 
                 <div className="space-y-1.5">
                     <Label className="text-xs">
-                        Title template
+                        {t('defaults.titleTemplateLabel')}
                         <span className="ml-2 font-normal text-neutral-500">
-                            Tokens: {'{session_title}, {subject}, {date}'}
+                            {t('defaults.titleTemplateTokens')}
                         </span>
                     </Label>
                     <Input
                         value={draft.titleTemplate}
                         onChange={(e) => set({ titleTemplate: e.target.value })}
-                        placeholder="{session_title} | {date}"
+                        placeholder={t('defaults.titleTemplatePlaceholder')}
                     />
                 </div>
 
                 <div className="space-y-1.5">
                     <Label className="text-xs">
-                        Description template
+                        {t('defaults.descriptionTemplateLabel')}
                         <span className="ml-2 font-normal text-neutral-500">
-                            Same tokens as title
+                            {t('defaults.descriptionTemplateTokensHint')}
                         </span>
                     </Label>
                     <Textarea
                         rows={4}
                         value={draft.descriptionTemplate ?? ''}
                         onChange={(e) => set({ descriptionTemplate: e.target.value })}
-                        placeholder="Recorded session of {session_title} on {date}. © Your Institute."
+                        placeholder={t('defaults.descriptionTemplatePlaceholder')}
                     />
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label className="text-xs">Tags (comma-separated)</Label>
+                    <Label className="text-xs">{t('defaults.tagsLabel')}</Label>
                     <Input
                         value={draft.tagsCsv ?? ''}
                         onChange={(e) => set({ tagsCsv: e.target.value })}
-                        placeholder="lecture, class 12, jee"
+                        placeholder={t('defaults.tagsPlaceholder')}
                     />
                 </div>
 
                 <div className="space-y-1.5">
-                    <Label className="text-xs">Default playlist ID (optional)</Label>
+                    <Label className="text-xs">{t('defaults.playlistLabel')}</Label>
                     <Input
                         value={draft.defaultPlaylistId ?? ''}
                         onChange={(e) => set({ defaultPlaylistId: e.target.value })}
-                        placeholder="PLxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        placeholder={t('defaults.playlistPlaceholder')}
                     />
-                    <p className="text-[11px] text-neutral-500">
-                        Videos uploaded with auto-upload will be added to this playlist.
-                    </p>
+                    <p className="text-[11px] text-neutral-500">{t('defaults.playlistHint')}</p>
                 </div>
             </CardContent>
         </Card>
@@ -658,17 +674,18 @@ function UploadHistoryCard({
     loading: boolean;
     connected: boolean;
 }) {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const queryClient = useQueryClient();
     const { mutate: retry, isPending: retrying } = useMutation({
         mutationFn: (jobId: string) => retryYoutubeUpload(jobId),
         onSuccess: () => {
-            toast.success('Re-queued for upload');
+            toast.success(t('toasts.requeued'));
             queryClient.invalidateQueries({ queryKey: ['youtube-jobs'] });
         },
         onError: (err: unknown) => {
             const msg =
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                'Failed to retry';
+                t('toasts.retryFailed');
             toast.error(msg);
         },
     });
@@ -676,33 +693,30 @@ function UploadHistoryCard({
     return (
         <Card className="border-neutral-200 shadow-none">
             <CardHeader className="p-5 pb-4">
-                <CardTitle className="text-base">Upload History</CardTitle>
-                <CardDescription>
-                    Most recent 50 uploads for this institute. Failures can be retried; quota
-                    errors auto-retry after the daily window resets.
-                </CardDescription>
+                <CardTitle className="text-base">{t('history.title')}</CardTitle>
+                <CardDescription>{t('history.description')}</CardDescription>
             </CardHeader>
             <CardContent className="border-t border-neutral-100 p-0">
                 {!connected ? (
                     <div className="p-8 text-center text-sm text-neutral-500">
-                        Connect a YouTube channel to start uploading recordings.
+                        {t('history.notConnected')}
                     </div>
                 ) : loading ? (
-                    <div className="p-6 text-sm text-neutral-500">Loading…</div>
+                    <div className="p-6 text-sm text-neutral-500">{t('history.loading')}</div>
                 ) : jobs.length === 0 ? (
                     <div className="p-8 text-center text-sm text-neutral-500">
-                        No uploads yet. Recordings will appear here once they finish processing.
+                        {t('history.empty')}
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead className="border-b bg-neutral-50 text-xs text-neutral-500">
                                 <tr>
-                                    <th className="px-4 py-2">When</th>
-                                    <th className="px-4 py-2">Title</th>
-                                    <th className="px-4 py-2">Status</th>
-                                    <th className="px-4 py-2">Trigger</th>
-                                    <th className="px-4 py-2">Video</th>
+                                    <th className="px-4 py-2">{t('history.columns.when')}</th>
+                                    <th className="px-4 py-2">{t('history.columns.title')}</th>
+                                    <th className="px-4 py-2">{t('history.columns.status')}</th>
+                                    <th className="px-4 py-2">{t('history.columns.trigger')}</th>
+                                    <th className="px-4 py-2">{t('history.columns.video')}</th>
                                     <th className="px-4 py-2" />
                                 </tr>
                             </thead>
@@ -710,12 +724,14 @@ function UploadHistoryCard({
                                 {jobs.map((j) => (
                                     <tr key={j.id} className="border-b last:border-0">
                                         <td className="whitespace-nowrap px-4 py-2 text-xs text-neutral-500">
-                                            {formatWhen(j.createdAt)}
+                                            {formatWhen(j.createdAt, t)}
                                         </td>
                                         <td className="max-w-[280px] truncate px-4 py-2">
                                             {j.title ?? (
                                                 <span className="text-neutral-400">
-                                                    (pending — file {short(j.recordingFileId)})
+                                                    {t('history.pendingFile', {
+                                                        fileId: short(j.recordingFileId),
+                                                    })}
                                                 </span>
                                             )}
                                         </td>
@@ -723,7 +739,9 @@ function UploadHistoryCard({
                                             <JobStatusPill job={j} />
                                         </td>
                                         <td className="px-4 py-2 text-xs text-neutral-500">
-                                            {j.triggeredVia === 'AUTO' ? 'Auto' : 'Manual'}
+                                            {j.triggeredVia === 'AUTO'
+                                                ? t('history.triggerAuto')
+                                                : t('history.triggerManual')}
                                         </td>
                                         <td className="px-4 py-2">
                                             {j.youtubeVideoUrl ? (
@@ -733,7 +751,7 @@ function UploadHistoryCard({
                                                     rel="noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"
                                                 >
-                                                    Open
+                                                    {t('history.open')}
                                                     <ArrowSquareOut size={12} />
                                                 </a>
                                             ) : (
@@ -748,7 +766,7 @@ function UploadHistoryCard({
                                                     disabled={retrying}
                                                     onClick={() => retry(j.id)}
                                                 >
-                                                    Retry
+                                                    {t('history.retry')}
                                                 </Button>
                                             )}
                                         </td>
@@ -764,20 +782,31 @@ function UploadHistoryCard({
 }
 
 function JobStatusPill({ job }: { job: YoutubeUploadJob }) {
+    const { t } = useTranslation('settingsYoutubeIntegration');
     const map: Record<YoutubeUploadJob['status'], { label: string; color: string; Icon: Icon }> = {
         QUEUED: {
-            label: `Queued${job.attempts > 0 ? ` (try ${job.attempts + 1}/${job.maxAttempts})` : ''}`,
+            label:
+                job.attempts > 0
+                    ? t('jobStatus.queuedWithAttempt', {
+                          attempt: job.attempts + 1,
+                          maxAttempts: job.maxAttempts,
+                      })
+                    : t('jobStatus.queued'),
             color: 'bg-neutral-100 text-neutral-600',
             Icon: ArrowsClockwise,
         },
         UPLOADING: {
-            label: 'Uploading…',
+            label: t('jobStatus.uploading'),
             color: 'bg-blue-100 text-blue-700',
             Icon: CloudArrowUp,
         },
-        DONE: { label: 'Uploaded', color: 'bg-green-100 text-green-700', Icon: Check },
-        FAILED: { label: 'Failed', color: 'bg-red-100 text-red-700', Icon: Warning },
-        CANCELLED: { label: 'Cancelled', color: 'bg-neutral-100 text-neutral-500', Icon: Warning },
+        DONE: { label: t('jobStatus.done'), color: 'bg-green-100 text-green-700', Icon: Check },
+        FAILED: { label: t('jobStatus.failed'), color: 'bg-red-100 text-red-700', Icon: Warning },
+        CANCELLED: {
+            label: t('jobStatus.cancelled'),
+            color: 'bg-neutral-100 text-neutral-500',
+            Icon: Warning,
+        },
     };
     const cfg = map[job.status];
     return (
@@ -791,14 +820,14 @@ function JobStatusPill({ job }: { job: YoutubeUploadJob }) {
     );
 }
 
-function formatWhen(iso?: string) {
-    if (!iso) return '—';
+function formatWhen(iso: string | undefined, t: TFunction) {
+    if (!iso) return t('time.unknown');
     const d = new Date(iso);
     const now = new Date();
     const diffMin = Math.round((now.getTime() - d.getTime()) / 60_000);
-    if (diffMin < 1) return 'just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffMin < 60 * 24) return `${Math.round(diffMin / 60)}h ago`;
+    if (diffMin < 1) return t('time.justNow');
+    if (diffMin < 60) return t('time.minutesAgo', { count: diffMin });
+    if (diffMin < 60 * 24) return t('time.hoursAgo', { count: Math.round(diffMin / 60) });
     return d.toLocaleDateString();
 }
 

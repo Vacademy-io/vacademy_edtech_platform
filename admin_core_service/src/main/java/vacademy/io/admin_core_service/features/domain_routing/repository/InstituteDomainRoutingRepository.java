@@ -14,6 +14,20 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
 
   List<InstituteDomainRouting> findByInstituteId(String instituteId);
 
+  /**
+   * Every institute that has at least one white-label host configured — i.e. the
+   * only institutes whose {@code <role>_portal_base_url} columns a reconcile pass
+   * could ever change. Ordered so a sweep that is cut short by its lock timeout
+   * resumes over the same sequence rather than a random one.
+   */
+  @Query(value = """
+      SELECT DISTINCT institute_id
+      FROM institute_domain_routing
+      WHERE institute_id IS NOT NULL
+      ORDER BY institute_id
+      """, nativeQuery = true)
+  List<String> findDistinctInstituteIds();
+
   @Query(value = """
       SELECT *
       FROM institute_domain_routing

@@ -1,0 +1,13 @@
+{
+    "viewDetails": "عرض التفاصيل",
+    "heading": "تقرير تفاصيل الوحدة",
+    "exporting": "جارٍ التصدير…",
+    "exportPdf": "تصدير PDF",
+    "date": "التاريخ",
+    "noActivity": "لم يتم العثور على أي نشاط لهذا {{term}}.",
+    "toast": {
+        "noDataToExport": "لا توجد بيانات للتصدير بعد",
+        "exportSuccess": "تم تصدير التقرير",
+        "exportFailed": "فشل تصدير PDF"
+    }
+}

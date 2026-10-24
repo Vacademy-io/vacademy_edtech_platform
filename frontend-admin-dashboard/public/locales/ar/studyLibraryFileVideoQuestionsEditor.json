@@ -1,0 +1,20 @@
+{
+    "toasts": {
+        "questionDeleted": "تم حذف السؤال",
+        "questionDeleteFailed": "فشل حذف السؤال"
+    },
+    "labels": {
+        "timestamp": "الطابع الزمني: {{time}}",
+        "timeStampIndexed": "{{index}}. الطابع الزمني - {{time}}",
+        "correct": "صحيح"
+    },
+    "deleteDialog": {
+        "title": "حذف السؤال",
+        "confirmMessage": "هل أنت متأكد أنك تريد حذف هذا السؤال؟",
+        "description": "سيؤدي هذا إلى إزالة السؤال في هذا الطابع الزمني نهائيًا ولا يمكن التراجع عنه."
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "delete": "حذف"
+    }
+}

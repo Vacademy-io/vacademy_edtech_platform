@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "779885739059",
+    "project_id": "vacademy-app-2",
+    "storage_bucket": "vacademy-app-2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779885739059:android:4c74248a6156827aec3746",
+        "android_client_info": {
+          "package_name": "com.brahmvarchas.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpxngpK_0waQLPKq7ypuMrPW_S3QeaPTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779885739059:android:db58864e6f928824ec3746",
+        "android_client_info": {
+          "package_name": "com.dumbee.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpxngpK_0waQLPKq7ypuMrPW_S3QeaPTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

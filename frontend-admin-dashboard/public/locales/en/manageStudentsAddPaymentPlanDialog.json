@@ -1,0 +1,11 @@
+{
+    "errors": {
+        "generic": "Error in {{operation}}",
+        "operations": {
+            "savePaymentPlan": "save payment plan"
+        }
+    },
+    "success": {
+        "feePlanCreated": "Fee plan created — select it from the plans list"
+    }
+}

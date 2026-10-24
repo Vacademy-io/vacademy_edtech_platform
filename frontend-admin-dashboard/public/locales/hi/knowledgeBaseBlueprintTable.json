@@ -1,0 +1,36 @@
+{
+    "typeLabel": {
+        "MCQS": "बहुविकल्पीय",
+        "MCQM": "बहुविकल्पीय (कई उत्तर)",
+        "TRUE_FALSE": "सही / गलत",
+        "ONE_WORD": "एक शब्द",
+        "LONG_ANSWER": "दीर्घ उत्तर",
+        "NUMERIC": "संख्यात्मक",
+        "PASSAGE": "गद्यांश / बोध",
+        "ASSERTION_REASON": "कथन–कारण"
+    },
+    "difficultyLabel": {
+        "EASY": "आसान",
+        "MEDIUM": "मध्यम",
+        "HARD": "कठिन"
+    },
+    "columns": {
+        "section": "खंड",
+        "whatItTests": "यह क्या जांचता है",
+        "type": "प्रकार",
+        "questions": "प्रश्न",
+        "marksEach": "प्रत्येक अंक",
+        "difficulty": "कठिनाई",
+        "total": "कुल"
+    },
+    "aria": {
+        "oneFewer": "{{topic}} में एक कम प्रश्न",
+        "oneMore": "{{topic}} में एक अधिक प्रश्न",
+        "marksPer": "{{topic}} में प्रति प्रश्न अंक",
+        "remove": "{{topic}} हटाएं"
+    },
+    "footer": {
+        "total": "कुल"
+    },
+    "pageRange": "पृ. {{range}}"
+}

@@ -1,0 +1,93 @@
+{
+    "inviteLinks": "Liens d'invitation",
+    "add": "Ajouter",
+    "defaultTag": "PAR DÉFAUT",
+    "makeDefault": "Définir par défaut",
+    "madeDefault": "Lien d'invitation défini par défaut",
+    "noInviteLinksAvailable": "Aucun lien d'invitation pour l'instant. Utilisez Ajouter pour en créer un pour un groupe.",
+    "invitePage": "Page d'invitation",
+    "copyFailed": "Échec de la copie",
+    "unexpectedError": "Une erreur inattendue s'est produite",
+    "searchPlaceholder": "Rechercher par nom ou code d'invitation",
+    "clearSearch": "Effacer la recherche",
+    "resultCount_one": "{{count}} lien d'invitation",
+    "resultCount_other": "{{count}} liens d'invitation",
+    "sortedNewest": "plus récents en premier",
+    "linkCount_one": "{{count}} lien",
+    "linkCount_other": "{{count}} liens",
+    "noSearchResults": "Aucun lien d'invitation ne correspond à « {{term}} ».",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "copyLink": "Copier le lien",
+    "copied": "Copié",
+    "shortUrlUnavailable": "Pas encore d'URL courte pour cette invitation",
+    "qr": {
+        "title": "Code QR d'invitation",
+        "description": "Scanner ce code ouvre le formulaire d'inscription de « {{name}} ».",
+        "copyLink": "Copier le lien",
+        "downloadPng": "Télécharger en PNG",
+        "downloaded": "Code QR téléchargé",
+        "downloadFailed": "Impossible de télécharger le code QR",
+        "useShortUrl": "Encoder l'URL courte à la place",
+        "useShortUrlHint": "Une adresse plus courte donne un code plus simple, mieux lisible de loin, mais il dépend du maintien du lien court.",
+        "shortUrlWarning": "Ce code pointe vers le lien court. Si celui-ci est désactivé, les copies imprimées cesseront de fonctionner.",
+        "fullUrlNote": "Ce code encode l'URL complète de l'invitation : il fonctionne tant que l'invitation existe."
+    },
+    "deleteDialog": {
+        "heading": "Supprimer le lien d'invitation",
+        "confirmText": "Supprimer le lien d'invitation « {{name}} » ? Personne ne pourra plus s'inscrire en l'ouvrant.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer",
+        "deleting": "Suppression…",
+        "success": "Lien d'invitation « {{name}} » supprimé",
+        "error": "Échec de la suppression du lien d'invitation"
+    },
+    "meta": {
+        "created": "Créé le",
+        "by": "par",
+        "unknownDate": "date indisponible"
+    },
+    "actions": "Plus d'actions",
+    "shortUrlCopied": "URL courte copiée : {{url}}",
+    "menu": {
+        "copyShortUrl": "Copier l'URL courte",
+        "qrCode": "Code QR",
+        "utmGenerator": "Générateur UTM",
+        "configurePayment": "Configurer la formule de paiement"
+    },
+    "loading": "Chargement",
+    "loadError": "Impossible de charger les liens d'invitation.",
+    "retry": "Réessayer",
+    "payment": {
+        "label": "Paiement",
+        "needsApproval": "approbation requise",
+        "planCount_one": "{{count}} formule",
+        "planCount_other": "{{count}} formules",
+        "type": {
+            "free": "Gratuit",
+            "oneTime": "Paiement unique",
+            "subscription": "Abonnement",
+            "donation": "Don",
+            "feeStructure": "Structure de frais",
+            "unknown": "Inconnu"
+        }
+    },
+    "configurePayment": {
+        "heading": "Configurer la formule de paiement",
+        "description": "Choisissez la formule de paiement proposée aux apprenants qui s’inscrivent via « {{name}} » pour ce groupe.",
+        "current": "Formule actuelle",
+        "new": "Nouvelle formule",
+        "noCurrent": "Aucune formule de paiement n’est associée à ce groupe. Utilisez Modifier pour en définir une.",
+        "currencyMismatch": "Cette formule facture en {{planCurrency}}, mais ce lien d’invitation facture en {{inviteCurrency}}. Changez-la depuis Modifier pour que la devise du lien change aussi.",
+        "referralNote": "Les récompenses de parrainage de l’ancienne formule ne sont pas reprises. Ajoutez-les à nouveau depuis Modifier si ce lien utilise le parrainage.",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "saved": "Formule de paiement mise à jour pour « {{name}} »",
+        "saveFailed": "Impossible de mettre à jour la formule de paiement",
+        "pickerFailed": "Impossible de charger les formules de paiement. Utilisez Modifier pour changer la formule.",
+        "chooseNew": "Choisir une nouvelle formule",
+        "chooseHint": "Choisissez parmi les formules de paiement de votre établissement, ou créez-en une.",
+        "change": "Changer"
+    }
+}

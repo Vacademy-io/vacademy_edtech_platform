@@ -22,26 +22,33 @@ import { handleOAuthSignUp } from '@/hooks/signup/oauth-signup';
 import VacademyVoltLogo from '@/components/core/volt-logo';
 import VacademyVSmartLogo from '@/components/core/vsmart-logo';
 import useInstituteLogoStore from '@/components/common/layout-container/sidebar/institutelogo-global-zustand';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const items = [
-    { id: 'assess', label: 'Assess', description: 'Smart assessment and evaluation platform' },
-    { id: 'lms', label: 'LMS', description: 'Complete learning management system' },
-    { id: 'volt', label: 'Volt', description: 'Interactive live classroom experience' },
-    { id: 'vsmart', label: 'Vsmart', description: 'AI-powered learning assistant' },
-] as const;
+const buildItems = (t: TFunction) =>
+    [
+        { id: 'assess', label: 'Assess', description: t('items.assess.description') },
+        { id: 'lms', label: 'LMS', description: t('items.lms.description') },
+        { id: 'volt', label: 'Volt', description: t('items.volt.description') },
+        { id: 'vsmart', label: 'Vsmart', description: t('items.vsmart.description') },
+    ] as const;
 
-const FormSchema = z.object({
-    items: z
-        .record(z.boolean())
-        .refine((value) => Object.values(value).some((checked) => checked), {
-            message: 'You have to select at least one item.',
-        }),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        items: z
+            .record(z.boolean())
+            .refine((value) => Object.values(value).some((checked) => checked), {
+                message: t('validation.selectAtLeastOne'),
+            }),
+    });
 
 export function SignUpComponent() {
+    const { t } = useTranslation('signupSignUpComponent');
     const navigate = useNavigate();
     const { resetForm } = useOrganizationStore();
     const { instituteLogo } = useInstituteLogoStore();
+    const items = buildItems(t);
+    const FormSchema = buildFormSchema(t);
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -70,7 +77,7 @@ export function SignUpComponent() {
                 {instituteLogo ? (
                     <img
                         src={instituteLogo}
-                        alt="Institute Logo"
+                        alt={t('instituteLogoAlt')}
                         className="mb-4 size-16 rounded-full object-cover"
                     />
                 ) : null}
@@ -85,11 +92,10 @@ export function SignUpComponent() {
                         <div className="flex w-full flex-col items-center justify-center">
                             <div className="mb-10 flex flex-col items-center justify-center">
                                 <FormLabel className="text-center text-[1.5rem]">
-                                    Evaluate smarter, learn better
+                                    {t('heading')}
                                 </FormLabel>
                                 <FormDescription className="text-center">
-                                    Redefining Education with Insightful Tools for Smarter
-                                    Evaluations and Better Learning Outcomes.
+                                    {t('subheading')}
                                 </FormDescription>
                             </div>
 
@@ -112,7 +118,7 @@ export function SignUpComponent() {
                                     }
                                 >
                                     <GoogleIcon size={20} />
-                                    Continue with Google
+                                    {t('continueWithGoogle')}
                                 </button>
 
                                 <button
@@ -135,7 +141,7 @@ export function SignUpComponent() {
                                     }
                                 >
                                     <GitHubIcon className="size-5" />
-                                    Continue with GitHub
+                                    {t('continueWithGithub')}
                                 </button>
 
                                 <div className="relative flex items-center justify-center">
@@ -143,7 +149,7 @@ export function SignUpComponent() {
                                         <span className="w-full border-t" />
                                     </div>
                                     <div className="relative bg-white px-4 text-sm text-neutral-500">
-                                        or continue with
+                                        {t('orContinueWith')}
                                     </div>
                                 </div>
                             </div>
@@ -212,16 +218,16 @@ export function SignUpComponent() {
                             disable={!form.formState.isValid}
                         >
                             <Plus size={32} />
-                            Create Free Account
+                            {t('createFreeAccount')}
                         </MyButton>
 
                         <p className="text-sm text-neutral-500">
-                            Already have an account?{' '}
+                            {t('alreadyHaveAccount')}{' '}
                             <span
                                 className="cursor-pointer text-primary-500"
                                 onClick={() => navigate({ to: '/login' })}
                             >
-                                Login
+                                {t('login')}
                             </span>
                         </p>
                     </form>

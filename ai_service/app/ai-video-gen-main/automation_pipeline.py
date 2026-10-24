@@ -25,6 +25,7 @@ import re
 import subprocess
 import sys
 import textwrap
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple
@@ -228,6 +229,68 @@ class PipelineCancelled(Exception):
     so callers can differentiate cancellation from a real pipeline error."""
     pass
 
+
+try:
+    from video_llm_reasoning import plan_reasoning as _plan_reasoning
+    from video_llm_reasoning import video_effort as _video_effort
+except ImportError:  # pragma: no cover - module sits next to this file
+    import contextlib as _contextlib
+
+    def _plan_reasoning(model, max_tokens):  # type: ignore[misc]
+        return None, None, max_tokens
+
+    def _video_effort(level):  # type: ignore[misc]
+        return _contextlib.nullcontext()
+
+# Code-level model defaults (the DB is the source of truth; these are only the
+# safety net). Production runs `uvicorn ai_service.main:app` from /app, where a
+# bare `app.` import fails, so the package name is tried first. The render
+# worker has neither package, hence the literal last resort.
+try:
+    from ai_service.app.constants.model_defaults import GLM_DEFAULT, NON_GLM_FALLBACK
+except ImportError:
+    try:
+        from app.constants.model_defaults import GLM_DEFAULT, NON_GLM_FALLBACK  # type: ignore
+    except ImportError:  # pragma: no cover - no ai_service package (render worker)
+        GLM_DEFAULT = "z-ai/glm-5.3-flash"
+        NON_GLM_FALLBACK = "google/gemini-2.5-flash"
+
+_ROUTER_IMPORT_WARNED = False
+
+
+def _llm_router():
+    """The llm_router module, or None where there is none (the render worker).
+
+    ai-service runs as `uvicorn ai_service.main:app` from /app, so its package
+    is `ai_service.app` and a bare `app.` import raises ModuleNotFoundError.
+    This client used to import the router only as `app.services.llm_router` and
+    swallow the ImportError, so every video LLM call went to OpenRouter even with
+    a route configured — from 2026-09-27, when GLM was routed to Isoquant, until
+    2026-10-01, with nothing in any log to say so.
+
+    The production name is tried first. When neither resolves, that is expected
+    in the render worker (no ai_service package at all); inside ai-service it
+    means routing is off, so it is said out loud, once.
+    """
+    global _ROUTER_IMPORT_WARNED
+    import importlib
+    import importlib.util
+
+    errors = []
+    for name in ("ai_service.app.services.llm_router", "app.services.llm_router"):
+        try:
+            return importlib.import_module(name)
+        except Exception as exc:  # noqa: BLE001 - any failure means "no router here"
+            errors.append(f"{name}: {type(exc).__name__}: {exc}")
+    try:
+        inside_ai_service = importlib.util.find_spec("ai_service") is not None
+    except Exception:  # noqa: BLE001
+        inside_ai_service = False
+    if inside_ai_service and not _ROUTER_IMPORT_WARNED:
+        _ROUTER_IMPORT_WARNED = True
+        print(f"⚠️ llm_router could not be imported inside ai-service — video LLM calls "
+              f"stay on OpenRouter ({'; '.join(errors)})")
+    return None
 
 try:
     from rembg import remove as rembg_remove, new_session as rembg_new_session
@@ -658,6 +721,42 @@ def _shot_is_high_impact(shot: Dict[str, Any], shot_idx: int, total_shots: int) 
     return False
 
 
+def _hero_shot_settings(
+    shot_model: Optional[str],
+    hero_model: Optional[str],
+    per_shot_entry: Any,
+    tier_config: Dict[str, Any],
+    high_impact: bool,
+) -> Tuple[Optional[str], Optional[str], Optional[int]]:
+    """(model, effort, max_tokens) for one shot's HTML calls. Pure.
+
+    A high-impact shot switches to `hero_model` (the 'hero_shot' stage row)
+    only when one is set, it differs from the per-shot model, and the user has
+    not pinned per_shot_html — both provenances are explicit user picks: a
+    per-stage override AND the legacy video-wide `model=` field (source
+    "user_default"). Escalate over neither. On a tier with `hero_effort` the
+    shot also thinks harder (effort override) with `hero_max_tokens` of room.
+    effort/max_tokens are None when nothing changes.
+    """
+    if not high_impact:
+        return shot_model, None, None
+    user_pinned = (
+        isinstance(per_shot_entry, tuple) and len(per_shot_entry) > 1
+        and per_shot_entry[1] in ("user_per_stage", "user_default")
+    )
+    model = shot_model
+    if hero_model and hero_model != shot_model and not user_pinned:
+        model = hero_model
+    effort = tier_config.get("hero_effort") or None
+    max_tokens = None
+    if effort:
+        try:
+            max_tokens = int(tier_config.get("hero_max_tokens") or 0) or None
+        except (TypeError, ValueError):
+            max_tokens = None
+    return model, effort, max_tokens
+
+
 def _select_best_of_n_shots(shots: List[Dict[str, Any]], max_shots: int, total_shots: int) -> set:
     """The set of shot indices to run best-of-N on, capped at max_shots,
     prioritizing high-impact shots in plan order. Deterministic + pure."""
@@ -823,6 +922,41 @@ except ImportError:
     # numeric default in lockstep with `ai_video_constants.py`.
     AI_VIDEO_PER_VIDEO_COST_CAP_USD = 24.00
 
+def _img_label_for(index: int) -> str:
+    """Spreadsheet-style label for an input image: A..Z, then AA, AB, ...
+
+    The old inline lookup indexed a 10-character string and fell back to the
+    bare integer past position 9, so an image-led run mixed letters and digits
+    in the same list ("Image I", "Image 10"). The Director cites these labels
+    back when it plans IMAGE_CLIP shots, so they need to stay one namespace.
+    """
+    if index < 0:
+        index = 0
+    label = ""
+    n = index
+    while True:
+        label = chr(ord("A") + n % 26) + label
+        n = n // 26 - 1
+        if n < 0:
+            break
+    return label
+
+
+# How much of a per-shot failure to keep on the emitted event. 200 characters
+# cut the model's raw output mid-JSON, so a well-formed-but-rejected response
+# and a genuinely truncated one looked identical — that ambiguity cost a wrong
+# diagnosis on a real incident. Raising the aggregator's own cap did not help:
+# this emit is the binding one, and it clips before the aggregator ever sees it.
+_SHOT_ERROR_KEEP = 4000
+
+# Per-shot HTML ceiling when a tier does not set `per_shot_max_tokens` (every
+# built-in tier does). Reasoning tokens count against it on GLM; see "free".
+_PER_SHOT_MAX_TOKENS = 24000
+# A per-shot RETRY attempt's ceiling. It was 8000, which GLM's reasoning alone
+# can fill, so a retry stopped on "length" and re-ran at double the budget.
+_PER_SHOT_RETRY_MAX_TOKENS = 16000
+
+
 QUALITY_TIERS: dict[str, dict[str, Any]] = {
     "free": {
         "script_temperature": 0.5,
@@ -836,9 +970,12 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         "segment_context": False,
         # Stock-only: no AI image generation; use CSS gradients + stock photos/videos
         "stock_preference": "stock_only",
-        # Use cheap flash model for all LLM calls in this tier
-        "preferred_script_model": "google/gemini-3-flash-preview",
-        "preferred_shot_model": "google/gemini-3-flash-preview",
+        # Every LLM step on every tier runs on the registry's video model (the
+        # stage matrix / ai_model_defaults) — no tier names a model here.
+        # Per-shot HTML ceiling. GLM's reasoning tokens count against it, and
+        # every "length" stop re-runs the whole call at double the budget, so
+        # the ceiling is set high; billing counts generated tokens only.
+        "per_shot_max_tokens": 24000,
         # Per-shot TTS migration flag (Phase 0). Off everywhere by default; the
         # legacy monolithic TTS path remains live. Flip true on a tier to opt
         # into per-shot TTS once the implementation lands and verifies.
@@ -862,16 +999,15 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         "segment_context": True,
         # Strongly prefer stock; fall back to AI only for abstract/conceptual content
         "stock_preference": "stock_first",
-        "preferred_script_model": "google/gemini-3-flash-preview",
-        "preferred_shot_model": "google/gemini-3-flash-preview",
+        "per_shot_max_tokens": 24000,  # see "free" tier comment
         # Background music: standard does not run Director, so the music_plan is
         # synthesized from a generic cinematic-ambient default in run().
         "background_music_enabled": True,
         "background_music_default_volume": 0.10,
         # Vision reviewer: catches visible defects the regex validator can't.
-        # Reviewer model is Gemini 2.5 Pro (~$0.014/shot base, ~17× Flash) —
-        # the cost is justified because Flash missed mid-word text breaks that
-        # ship-blocked real videos. Cap sized for ~5-8 shots × Pro + 1-2 regens.
+        # Reviewer model is the 'vision_review' stage row (registry video
+        # default when unset). The cap was sized for ~5-8 shots on Gemini 2.5
+        # Pro + 1-2 regens; on GLM it leaves wide headroom.
         "shot_vision_review": True,
         "vision_review_run_cost_cap_usd": 0.40,
         "vision_review_max_regens_pct": 30,
@@ -885,8 +1021,11 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         "ai_video_eligible": False,
     },
     "premium": {
-        # ── Cheap-model quality engine (frontier concept + prompt-divergence) ──
-        "concept_model": "anthropic/claude-opus-4-8",   # frontier model for the creative-concept/plan call
+        # ── Cheap-model quality engine (concept enforcement + prompt-divergence) ──
+        # Turns on concept enforcement in the shot plan and beat-energy
+        # temperature modulation. It used to be `concept_model` (an Opus id),
+        # doubling as flag and model; the model now comes from the stage matrix.
+        "concept_enabled": True,
         "concept_temperature": 0.8,                      # hot ideation temp for the plan call
         "shot_planner_verbalized_sampling": True,        # internal 3-option concept divergence (prompt-only)
         "shot_denial_prompting": True,                   # per-shot anti-repetition (prompt-only)
@@ -912,7 +1051,7 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         "director_max_tokens": 14000,  # was 20000 — Director JSON plans don't need essay budgets
         "shot_pack_enabled": True,
         "shot_templates_enabled": True,
-        "per_shot_max_tokens": 12000,  # was 16000 — measured outputs 8-12K; cap removed waste
+        "per_shot_max_tokens": 24000,  # was 12000 — GLM reasoning counts against it; see "free"
         "crossfade_duration": 0.35,
         "transition_picker_enabled": True,
         "sound_enabled": True,
@@ -923,10 +1062,8 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         # the UI-button/multimedia-mouse sounds we worked to eliminate.
         "sfx_generation_enabled": True,
         "audio_density_mode": "normal",
-        # Prefer stock; Director runs on main model, script+shots use flash
+        # Prefer stock
         "stock_preference": "stock_first",
-        "preferred_script_model": "google/gemini-3-flash-preview",
-        "preferred_shot_model": "google/gemini-3-flash-preview",
         # Vision reviewer — see "standard" tier comment.
         "shot_vision_review": True,
         "vision_review_run_cost_cap_usd": 0.50,
@@ -942,7 +1079,7 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
     },
     "ultra": {
         # ── Cheap-model quality engine ──
-        "concept_model": "anthropic/claude-opus-4-8",
+        "concept_enabled": True,                         # see "premium" tier comment
         "concept_temperature": 0.8,
         "shot_planner_verbalized_sampling": True,
         "shot_denial_prompting": True,
@@ -955,7 +1092,11 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         # distinct composition ANGLE appended to its prompt.
         "best_of_n_temperature": 0.85,
         "best_of_n_visual_judge": True,                  # judge compares rendered mid-frames, not regex digests
-        "hero_shot_model": "google/gemini-2.5-pro",      # hook/CTA/hero shots escalate off the flash executor
+        # Hook/CTA/hero shots think harder on the same model: Isoquant effort
+        # "max" (OpenRouter is sent "high") with a bigger ceiling. A different
+        # hero model comes only from the 'hero_shot' stage row in the matrix.
+        "hero_effort": "max",
+        "hero_max_tokens": 24000,
         "stock_photo_llm_ranking": "visual",             # top-5 thumbnails → vision pick (was photos[0])
         "shot_creativity_critic": True,                  # director's-eye elevation gate (hero shots)
         "creativity_critic_run_cost_cap_usd": 0.40,
@@ -1006,7 +1147,7 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         # preamble does the heavy lifting at ultra+.
         "skill_library_enabled": False,
         "image_continuity_enabled": True,
-        "per_shot_max_tokens": 16000,  # was 24000 — measured outputs ~10-14K
+        "per_shot_max_tokens": 24000,  # was 16000 — GLM reasoning counts against it; see "free"
         "crossfade_duration": 0.35,
         "transition_picker_enabled": True,
         "sound_enabled": True,
@@ -1057,7 +1198,7 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
     },
     "super_ultra": {
         # ── Cheap-model quality engine ──
-        "concept_model": "anthropic/claude-opus-4-8",
+        "concept_enabled": True,                         # see "premium" tier comment
         "concept_temperature": 0.8,
         "shot_planner_verbalized_sampling": True,
         "shot_denial_prompting": True,
@@ -1067,7 +1208,8 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         "best_of_n_run_cost_cap_usd": 0.45,
         "best_of_n_temperature": 0.9,                    # Phase C: hotter than the 0.82 baseline
         "best_of_n_visual_judge": True,
-        "hero_shot_model": "anthropic/claude-opus-4-8",  # top tier: frontier executor on hero shots
+        "hero_effort": "max",                            # see "ultra" tier comment
+        "hero_max_tokens": 24000,
         "stock_photo_llm_ranking": "visual",
         "shot_creativity_critic": True,
         "creativity_critic_run_cost_cap_usd": 0.60,
@@ -1097,7 +1239,7 @@ QUALITY_TIERS: dict[str, dict[str, Any]] = {
         # to the same handful of motion primitives across every shot.
         "skill_library_enabled": False,
         "image_continuity_enabled": True,
-        "per_shot_max_tokens": 20000,  # was 32000 — densest HTML ~14-18K; 20K gives headroom
+        "per_shot_max_tokens": 24000,  # was 20000 — GLM reasoning counts against it; see "free"
         "kinetic_text_shots": True,
         "crossfade_duration": 0.35,
         "transition_picker_enabled": True,
@@ -1477,6 +1619,14 @@ def _extract_json_blob(raw: str) -> Any:
     except json.JSONDecodeError:
         pass
 
+    # 2b. Raw newlines / tabs inside the "html" string (multi-line <script>
+    # and /* comment */ blocks) are invalid strict JSON but unambiguous —
+    # strict parsing threw away complete shots after 3 attempts.
+    try:
+        return json.loads(text, strict=False)
+    except json.JSONDecodeError:
+        pass
+
     # 3. Find the outermost JSON object by matching balanced braces.
     # LLMs sometimes prepend <style> or text. We find `{` and matching `}`.
     # We will search for EVERY candidate and try them all.
@@ -1513,7 +1663,7 @@ def _extract_json_blob(raw: str) -> Any:
         if end_idx != -1:
             candidate = text[start_idx : end_idx + 1]
             try:
-                data = json.loads(candidate)
+                data = json.loads(candidate, strict=False)
                 # If it's a valid dict or list, return it immediately!
                 if isinstance(data, (dict, list)):
                     return data
@@ -1522,8 +1672,128 @@ def _extract_json_blob(raw: str) -> Any:
                 
         # Move on to the next potential '{' character if this one didn't work out
         start_idx = text.find('{', start_idx + 1)
-                
+
+    # 4. Last resort for shot objects: models sometimes leave RAW double quotes
+    # inside the "html" string (narration quoted in a /* timeline */ comment),
+    # which no JSON parser can recover. When "html" is the last key, its value
+    # runs from `"html": "` to the final quote before the closing brace.
+    _repaired = _repair_trailing_html_field(text)
+    if _repaired is not None:
+        return _repaired
+
     raise ValueError(f"Could not parse JSON from response. Raw output:\n{raw}")
+
+
+_JSON_ESCAPE = re.compile(r'\\(u[0-9a-fA-F]{4}|["\\/bfnrt])')
+_JSON_ESCAPE_MAP = {'"': '"', "\\": "\\", "/": "/", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t"}
+
+
+def _repair_trailing_html_field(text: str) -> Optional[Dict[str, Any]]:
+    m = re.search(r'"html"\s*:\s*"', text)
+    if not m:
+        return None
+    end = text.rfind('"')
+    if end <= m.end() or not text[end + 1:].strip().startswith("}"):
+        return None
+    body = text[m.end():end]
+    html = _JSON_ESCAPE.sub(
+        lambda e: chr(int(e.group(1)[1:], 16)) if e.group(1).startswith("u") else _JSON_ESCAPE_MAP[e.group(1)],
+        body,
+    )
+    if "<" not in html:
+        return None
+    head = text[text.find("{"):m.start()].rstrip().rstrip(",")
+    try:
+        meta = json.loads(head + "}", strict=False) if head.startswith("{") else {}
+    except json.JSONDecodeError:
+        meta = {}
+    if not isinstance(meta, dict):
+        meta = {}
+    meta["html"] = html
+    return meta
+
+
+# Default for `_call_image_generation_llm(cost_events=...)`: book the image on
+# the stage tracker current at call time. None means "record nowhere".
+_RUN_TRACKER: Any = object()
+
+
+def _image_cost_usd(usage: Optional[Dict[str, Any]]) -> Optional[float]:
+    """OpenRouter's `usage.cost` for an image call as a float, or None when the
+    response did not carry one (billing then uses the model's unit price)."""
+    try:
+        cost = (usage or {}).get("cost")
+        if cost is None or isinstance(cost, bool):
+            return None
+        cost = float(cost)
+        return cost if cost >= 0 else None
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def _record_image_cost_event(
+    tracker: Optional[Any],
+    model: str,
+    usage: Optional[Dict[str, Any]],
+    purpose: str,
+    phase: str = "base",
+) -> None:
+    """Book one generated image on `tracker` (a CostEventTracker). The stage
+    reads `image_<purpose>`. Observability must never fail the image."""
+    if tracker is None:
+        return
+    try:
+        tracker.record_image(
+            stage=f"image_{purpose or 'other'}",
+            model=model,
+            phase=phase or "base",
+            cost_usd=_image_cost_usd(usage),
+            purpose=purpose or "other",
+        )
+    except Exception as _rec_err:  # noqa: BLE001
+        print(f"   ⚠️ image cost event not recorded ({model}): {_rec_err}")
+
+
+# Image models chosen in the super-admin "Model defaults" page
+# (ai_model_defaults rows, read through app.services.image_model_resolver).
+# The literals below are what each row falls back to — and what the pipeline
+# used before the rows were read here.
+VIDEO_IMAGE_USE_CASE = "video_image"
+VIDEO_IMAGE_DEFAULT = "recraft/recraft-v4.1"
+VIDEO_SUPPORT_VISUAL_USE_CASE = "video_support_visual"
+VIDEO_SUPPORT_VISUAL_DEFAULT = "bytedance-seed/seedream-4.5"
+
+try:
+    from app.services import image_model_resolver as _IMAGE_RESOLVER_MODULE
+except ImportError:  # standalone / renderer image: no registry, literal defaults
+    _IMAGE_RESOLVER_MODULE = None
+
+
+def _image_model_for(use_case: str, hard_default: str) -> str:
+    """The super-admin image model for a video use case, else `hard_default`.
+    Never raises — a settings read must not cost a video its pictures."""
+    mod = _IMAGE_RESOLVER_MODULE
+    if mod is None:
+        return hard_default
+    try:
+        return mod.image_model_for(use_case, hard_default) or hard_default
+    except Exception:  # noqa: BLE001
+        return hard_default
+
+
+# OpenRouter serves images on two APIs that do not share models (see
+# app/services/image_service.py). Recraft and Seedream answer on
+# chat/completions with `modalities`; dedicated models such as Qwen answer
+# only on /api/v1/images and 404 on chat ("is an image generation model and
+# cannot be used with the chat/completions endpoint"). Verified 2026-10-23
+# for qwen/qwen-image-2.1-turbo: 19 s, 1024x576 PNG for 16:9 at "1K",
+# usage.cost $0.0184 reported.
+_OPENROUTER_IMAGES_API_URL = "https://openrouter.ai/api/v1/images"
+_IMAGES_API_MODEL_PREFIXES = ("qwen/",)
+
+
+def _uses_images_api(model: Optional[str]) -> bool:
+    return str(model or "").startswith(_IMAGES_API_MODEL_PREFIXES)
 
 
 class OpenRouterClient:
@@ -1593,6 +1863,9 @@ class OpenRouterClient:
         # fails over to the configured fallback instead of burning the whole
         # retry budget on one model.
         self.use_case_fallback_chain: list[str] = []
+        # The admin's default model for video (`ai_model_defaults.default_model_id`).
+        # A call that names no model uses this before the recommended list.
+        self.use_case_default_model: Optional[str] = None
         try:
             # These modules live in the `ai_service.app` package, but this file is
             # loaded flat via sys.path (the dir name is hyphenated), so a bare
@@ -1615,6 +1888,8 @@ class OpenRouterClient:
                 _free_mid = getattr(_free, "model_id", None) if _free else None
                 if _free_mid:
                     models.append(_free_mid)
+            _dm = getattr(getattr(resp, "default_model", None), "model_id", None)
+            self.use_case_default_model = _dm or None
             # Build the always-on fallback chain (deduped; order fallback → default → free).
             for _m in (
                 getattr(resp, "fallback_model", None),
@@ -1627,6 +1902,113 @@ class OpenRouterClient:
         except Exception as e:
             print(f"Warning: Failed to load model chain from registry: {e}")
         return models
+
+    def _user_default_model(self) -> Optional[str]:
+        """The video-wide model the user chose, or None.
+
+        `model_overrides.default` (or the legacy `model=` field) is stamped by the
+        stage resolver on every user-overridable stage with source "user_default",
+        so any such entry carries it.
+        """
+        for entry in (self.stage_model_map or {}).values():
+            if isinstance(entry, tuple) and len(entry) > 1 and entry[1] == "user_default" and entry[0]:
+                return entry[0]
+        return None
+
+    def _select_models(self, model: Optional[str]) -> Tuple[List[str], str]:
+        """Models to try for one call, in order, and the provenance of the first.
+
+        explicit `model=`  >  the stage's routed model  >  the model the user
+        chose  >  the registry's default for video  >  the registry's
+        recommended list  >  this client's default — then the use-case
+        fallback chain, so a dead model fails over instead of failing the run.
+
+        The user's choice and the registry default used to sit BELOW the
+        recommended list. That list is a catalogue ordering, not a routing
+        preference, and it starts with x-ai/grok-4.6 — so every call that named
+        no model and ran outside a mapped stage went to Grok, on a run whose
+        user had picked z-ai/glm-5.3-flash and whose registry default for
+        video is also z-ai/glm-5.3-flash. Nothing in the video pipeline sets
+        the stage for its main calls, so that was most unnamed calls.
+        """
+        source = ""
+        if model:
+            models_to_try = [model]
+        else:
+            stage_routed: Optional[str] = None
+            if self.stage_model_map:
+                _canonical = _normalize_stage_to_taxonomy(_llm_stage.get())
+                if _canonical:
+                    _entry = self.stage_model_map.get(_canonical)
+                    if isinstance(_entry, tuple) and len(_entry) == 2:
+                        stage_routed, source = _entry[0], (_entry[1] or "matrix")
+                    elif isinstance(_entry, str) and _entry:
+                        # Legacy flat-string callers — source unknown.
+                        stage_routed, source = _entry, "matrix"
+            user_default = self._user_default_model()
+            registry_default = getattr(self, "use_case_default_model", None)
+            if stage_routed:
+                models_to_try = [stage_routed]
+            elif user_default:
+                models_to_try, source = [user_default], "user_default"
+            elif registry_default:
+                models_to_try, source = [registry_default], "use_case_default"
+            elif self.model_chain:
+                models_to_try = list(self.model_chain)
+            else:
+                models_to_try = [self.default_model]
+
+        # Always allow failing over to the use-case fallback chain (from
+        # `ai_model_defaults`: fallback_model_id → default_model_id → free_tier).
+        # A single dead/empty model (explicit OR stage-routed) then fails over to
+        # the configured fallback instead of the retry decorator re-hitting the
+        # same broken model 4× and failing the whole run.
+        for _fb in getattr(self, "use_case_fallback_chain", []):
+            if _fb and _fb not in models_to_try:
+                models_to_try = models_to_try + [_fb]
+        return models_to_try, source
+
+    def _open_chat(
+        self,
+        url: str,
+        headers: Dict[str, str],
+        wire: Dict[str, Any],
+        openrouter_payload: Dict[str, Any],
+        route: Optional[Any],
+        model: str,
+        timeout: float,
+    ):
+        """Open one chat completion, failing over from a routed gateway.
+
+        `route` is the llm_router ChatRoute when the model is routed off
+        OpenRouter (e.g. GLM to Isoquant), else None. A gateway that is down,
+        refuses the key, rate-limits or times out is retried ONCE on OpenRouter
+        with the SAME model and marked failed for its cooldown.
+
+        Without this, a gateway outage raised straight into chat()'s model
+        loop, which moved on to the NEXT model in the chain - so an Isoquant
+        blip silently turned a GLM video into a Gemini one, at Gemini prices.
+        A 400 is the request's own fault and is not retried: OpenRouter would
+        reject it too.
+        """
+        def _req(u: str, h: Dict[str, str], w: Dict[str, Any]) -> urllib.request.Request:
+            return urllib.request.Request(u, data=json.dumps(w).encode("utf-8"), headers=h, method="POST")
+
+        try:
+            return urllib.request.urlopen(_req(url, headers, wire), timeout=timeout)
+        except Exception as exc:
+            router = _llm_router() if route is not None else None
+            if router is None:
+                raise
+            status = getattr(exc, "code", None)
+            if not router.should_fail_over(route, status):
+                raise
+            router.mark_router_failed(route.router)
+            print(
+                f"   ↪ {route.label} failed for {model} at stage '{_llm_stage.get()}' "
+                f"({status or type(exc).__name__}) — retrying the same model on OpenRouter"
+            )
+            return urllib.request.urlopen(_req(self.base_url, self.headers, openrouter_payload), timeout=timeout)
 
     @retry_with_backoff(max_retries=4, initial_delay=2.0, exceptions=(urllib.error.URLError, RuntimeError))
     def chat(
@@ -1642,36 +2024,7 @@ class OpenRouterClient:
         # caller's `_llm_stage` ContextVar maps to a taxonomy entry that has a
         # row in `self.stage_model_map`, use that model. Stamps `_source` on
         # the cost event so forensics can attribute the choice.
-        _stage_routed_source = ""
-        if model:
-            models_to_try = [model]
-        else:
-            stage_routed: Optional[str] = None
-            if self.stage_model_map:
-                _runtime_stage = _llm_stage.get()
-                _canonical = _normalize_stage_to_taxonomy(_runtime_stage)
-                if _canonical:
-                    _entry = self.stage_model_map.get(_canonical)
-                    if isinstance(_entry, tuple) and len(_entry) == 2:
-                        stage_routed, _stage_routed_source = _entry[0], (_entry[1] or "matrix")
-                    elif isinstance(_entry, str) and _entry:
-                        # Legacy flat-string callers — source unknown.
-                        stage_routed, _stage_routed_source = _entry, "matrix"
-            if stage_routed:
-                models_to_try = [stage_routed]
-            elif self.model_chain:
-                models_to_try = self.model_chain
-            else:
-                models_to_try = [self.default_model]
-
-        # Always allow failing over to the use-case fallback chain (from
-        # `ai_model_defaults`: fallback_model_id → default_model_id → free_tier).
-        # A single dead/empty model (explicit OR stage-routed) then fails over to
-        # the configured fallback instead of the retry decorator re-hitting the
-        # same broken model 4× and failing the whole run.
-        for _fb in getattr(self, "use_case_fallback_chain", []):
-            if _fb and _fb not in models_to_try:
-                models_to_try = models_to_try + [_fb]
+        models_to_try, _stage_routed_source = self._select_models(model)
 
         # Apply prompt caching: wrap system message content in cache_control array
         if self.use_prompt_cache:
@@ -1692,14 +2045,33 @@ class OpenRouterClient:
         last_error = None
         for _model_idx, model_to_use in enumerate(models_to_try):
             try:
+                # How hard this model thinks on this call, and its ceiling: a
+                # reasoning-mandatory model (GLM 5.x) sent no reasoning setting
+                # thinks at its own heavy default — 8x the reasoning tokens of
+                # an explicit "high" for the same complete plan. A `video_effort`
+                # block overrides the effort (hero shots: "max", which only the
+                # gateway gets — OpenRouter is sent "high"); a small call with
+                # no override thinks at "low" with room to finish.
+                # See video_llm_reasoning.py for the measurements.
+                _reasoning, _gateway_effort, _planned_max_tokens = _plan_reasoning(
+                    model_to_use, max_tokens
+                )
                 # A thinking model (e.g. claude-sonnet-5) can spend its entire
                 # budget reasoning and get cut off (finish_reason "length")
                 # before emitting any `content`. Rather than immediately failing
                 # over to the next model, retry the SAME model ONCE with a
                 # doubled budget — which is exactly what the code's own hint
                 # ("raise max_tokens for this model") recommends.
-                _effective_max_tokens = max_tokens
-                for _length_bump in range(2):
+                _effective_max_tokens = _planned_max_tokens
+                # Measured on qwen3.8-max planning a 20-shot video: reasoning
+                # consumed the ENTIRE 16k completion budget (reasoning_tokens
+                # 16000/16000, finish_reason "length") and emitted zero content.
+                # One doubling to 32k is not obviously enough for that, so allow
+                # two — 16k → 32k → 64k. Note `reasoning: {exclude: true}` does
+                # NOT help: it hides the reasoning from the response, it does
+                # not stop the model spending the budget on it. Only headroom
+                # does.
+                for _length_bump in range(3):
                     payload: Dict[str, Any] = {
                         "model": model_to_use,
                         "messages": cached_messages,
@@ -1708,14 +2080,51 @@ class OpenRouterClient:
                     }
                     if response_format is not None:
                         payload["response_format"] = response_format
-                    request = urllib.request.Request(
-                        self.base_url,
-                        data=json.dumps(payload).encode("utf-8"),
-                        headers=self.headers,
-                        method="POST",
+                    # OpenRouter-shaped: this is also what a failover to
+                    # OpenRouter sends, so it never carries "max".
+                    if _reasoning:
+                        payload["reasoning"] = _reasoning
+                    _url, _headers, _wire, _route = self.base_url, self.headers, payload, None
+                    _router = _llm_router()
+                    if _router is not None:
+                        try:
+                            _routed = _router.route_chat(payload, self.api_key)
+                            if not _routed[3].is_default:
+                                _url, _headers, _wire, _route = _routed[0], _routed[1], _routed[2], _routed[3]
+                                if _gateway_effort and _reasoning:
+                                    # Only the routed gateway's wire request gets
+                                    # the higher effort; its own prepare() maps
+                                    # it to a level it accepts (Isoquant "max").
+                                    _wire = _route.prepare(
+                                        dict(payload, reasoning=dict(_reasoning, effort=_gateway_effort))
+                                    )
+                        except Exception as _route_err:  # noqa: BLE001
+                            # A routing fault must never take generation down:
+                            # this call simply stays on OpenRouter.
+                            print(f"   ⚠️ routing {model_to_use} failed ({_route_err}) — using OpenRouter")
+                    # Say where each call actually went. The router fell back to
+                    # OpenRouter silently for four days; a line per call is the
+                    # cheapest way to make that visible next time.
+                    print(
+                        f"   ⇢ {model_to_use} via "
+                        f"{_route.label if _route is not None else 'OpenRouter'}"
+                        f"{(' reasoning_effort=' + str(_wire['reasoning_effort'])) if _wire.get('reasoning_effort') else ''}"
+                        f"{(' reasoning=' + str((_wire.get('reasoning') or {}).get('effort'))) if _wire.get('reasoning') else ''}"
+                        f" stage='{_llm_stage.get()}'"
                     )
                     _t_start = time.perf_counter()
-                    with urllib.request.urlopen(request, timeout=180) as response:
+                    # A flat 180s was sized for a fast non-reasoning model. A
+                    # thinking model planning a 20-shot video spends minutes in
+                    # its reasoning channel before the first content token, so
+                    # 180s cut it off, the call failed over to the next model in
+                    # the chain, and the model the user actually picked was
+                    # never the one that answered — silently, since a fallback
+                    # is not an error. Scale with the token budget instead: a
+                    # small utility prompt keeps a tight timeout, a big
+                    # generation gets room to finish.
+                    _req_timeout = max(180, min(900, 120 + int(_effective_max_tokens * 0.05)))
+                    with self._open_chat(_url, _headers, _wire, payload, _route,
+                                         model_to_use, _req_timeout) as response:
                         raw = response.read().decode("utf-8")
                         # Parse JSON response and return content
                         data = json.loads(raw)
@@ -1729,23 +2138,32 @@ class OpenRouterClient:
                         # `reasoning` / `reasoning_content`. Salvage it so a
                         # thinking model isn't treated as a hard failure; JSON
                         # callers pull the object out via `_extract_json_blob`.
+                        # (Its own name: `_reasoning` is the planned request
+                        # setting the length-bump retry below re-sends.)
                         if not content or not content.strip():
-                            _reasoning = _message.get("reasoning_content") or _message.get("reasoning")
-                            if _reasoning and str(_reasoning).strip():
-                                content = str(_reasoning)
+                            _reasoning_text = _message.get("reasoning_content") or _message.get("reasoning")
+                            if _reasoning_text and str(_reasoning_text).strip():
+                                content = str(_reasoning_text)
+
+                        # finish_reason "length" means the answer was CUT OFF,
+                        # whether or not any content came back. The budget bump
+                        # used to sit inside the empty-content branch, so a
+                        # partial answer was returned as-is and failed downstream —
+                        # measured on gpt-5.6-luna at reasoning effort "high":
+                        # well-formed JSON that simply stopped at char 40,689,
+                        # which the shot-plan parser can only report as garbage.
+                        # Retry on the cut-off itself; emptiness is a separate
+                        # question handled below.
+                        if _finish == "length" and _length_bump < 2:
+                            _effective_max_tokens = min(_effective_max_tokens * 2, 64000)
+                            print(
+                                f"   ↻ {model_to_use} hit max_tokens at stage "
+                                f"'{_llm_stage.get()}' (content={len(content or '')} chars) — "
+                                f"retrying same model with max_tokens={_effective_max_tokens}"
+                            )
+                            continue
 
                         if not content or not content.strip():
-                            # Empty because the model exhausted its budget before
-                            # emitting content → retry the same model once with a
-                            # bigger budget before failing over to the next one.
-                            if _finish == "length" and _length_bump == 0:
-                                _effective_max_tokens = min(_effective_max_tokens * 2, 64000)
-                                print(
-                                    f"   ↻ {model_to_use} hit max_tokens with empty content at "
-                                    f"stage '{_llm_stage.get()}' — retrying same model with "
-                                    f"max_tokens={_effective_max_tokens}"
-                                )
-                                continue
                             _hint = (
                                 " (finish_reason=length — model hit max_tokens before emitting"
                                 " content even after a budget bump)"
@@ -2278,8 +2696,10 @@ class VideoGenerationPipeline:
     def __init__(
         self,
         openrouter_key: str,
-        script_model: str = "xiaomi/mimo-v2-flash:free",  # Free tier model for script generation
-        html_model: str = "xiaomi/mimo-v2-flash:free",  # Free tier model for HTML generation
+        # Client last-resort defaults only: calls resolve the stage matrix, the
+        # user's pick and the registry's video default first.
+        script_model: str = GLM_DEFAULT,
+        html_model: str = GLM_DEFAULT,
         voice_id: str = "Qggl4b0xRMiqOwhPtVWT",
         voice_model: str = "eleven_multilingual_v2",
         pexels_api_keys: str = DEFAULT_PEXELS_API_KEYS,
@@ -2384,6 +2804,11 @@ class VideoGenerationPipeline:
         # attribute below (audited via AST 2026-07-10). Values mirror the
         # inert defaults run() starts from.
         self._stop_event = None  # cooperative-cancel Event (None = no cancel)
+        # Resume checkpointing: the service's per-leg uploader hook (see
+        # `_checkpoint`) and the resume flavour ("auto" = deterministic
+        # crash/deploy resume — reuse per-shot TTS from run_dir/tts).
+        self._checkpoint_cb = None
+        self._resume_mode: Optional[str] = None
         # Vision-review / bbox-lint per-run state.
         self._vision_review_banner_shown = False
         self._vision_review_run_cost_usd = 0.0
@@ -2795,6 +3220,21 @@ class VideoGenerationPipeline:
             return None
         # entry is (model_id, source) tuple
         return entry[0] if isinstance(entry, tuple) else entry
+
+    def _resolve_vision_stage_model(self, stage: str) -> str:
+        """The model for a non-user-overridable VISION gate: its own stage row,
+        else the registry's video default, else GLM_DEFAULT — always a model id.
+
+        Never None: `chat(model=None)` resolves through the enclosing stage's
+        row and then the user's video-wide pick (`_user_default_model`) before
+        the registry default, so a user's text-only or premium model would
+        reach the critic / clip QC / visual stock ranking / best-of-N judge
+        with their screenshots and frames."""
+        return (
+            self._resolve_stage_model(stage)
+            or getattr(getattr(self, "html_client", None), "use_case_default_model", None)
+            or GLM_DEFAULT
+        )
 
     def _resolve_visual_style_mode(self) -> str:
         """Resolve the visual aesthetic mode for this run (cached once known).
@@ -3256,6 +3696,179 @@ class VideoGenerationPipeline:
         if self._stop_event is not None and self._stop_event.is_set():
             raise PipelineCancelled("Pipeline cancelled by user")
 
+    # ── Resume checkpointing ───────────────────────────────────────────
+    # The service passes `checkpoint_callback(kind, paths)` into run(); it
+    # enqueues the files for an off-thread S3 upload so a crashed / drained
+    # leg can resume from the last finished artifact. Kinds:
+    #   shot          one shot_cache/shot_NNN[_subK].json just written
+    #   tts           run_dir/tts/* + narration.mp3 / narration_raw.json /
+    #                 narration.words.{json,csv} / narration_unmixed.mp3
+    #   director      director_plan.json / style_guide.json / asset_selections.json
+    #   host_outputs  host_outputs.json (AvatarBatch end)
+    #   teacher       lesson_teacher.json (+ lesson/teacher_raw.mp4 only when
+    #                 the teacher's own public upload of it failed)
+    #   preamble      routing_plan.json / video_type.json / host_plan.json /
+    #                 visual_preferences.json / reference_context.json
+    # Checkpointing is best-effort: it must never fail or stall the run.
+    _TTS_CHECKPOINT_FILES = (
+        "narration.mp3",
+        "narration_raw.json",
+        "narration.words.json",
+        "narration.words.csv",
+        "narration_unmixed.mp3",
+    )
+    _PREAMBLE_CHECKPOINT_FILES = (
+        "routing_plan.json",
+        "video_type.json",
+        "host_plan.json",
+        "visual_preferences.json",
+        "reference_context.json",
+    )
+    _DIRECTOR_CHECKPOINT_FILES = (
+        "director_plan.json",
+        "style_guide.json",
+        "asset_selections.json",
+    )
+
+    def _checkpoint(self, kind: str, paths: Any) -> None:
+        """Hand finished files to the service's checkpoint uploader.
+
+        Swallows every error — a broken uploader must never fail or block a
+        generation. Missing paths are dropped; nothing is called when no
+        file is left. The callback is expected to enqueue and return."""
+        cb = getattr(self, "_checkpoint_cb", None)
+        if cb is None:
+            return
+        try:
+            if isinstance(paths, (str, Path)):
+                paths = [paths]
+            files = [Path(p) for p in (paths or []) if p and Path(p).is_file()]
+            if not files:
+                return
+            cb(kind, files)
+        except Exception as _ck_err:  # noqa: BLE001 — best-effort by contract
+            try:
+                print(f"   ⚠️ checkpoint '{kind}' skipped: {type(_ck_err).__name__}: {_ck_err}")
+            except Exception:
+                pass
+
+    @staticmethod
+    def _atomic_write_text(path: Path, text: str) -> None:
+        """Write via a sibling temp file + os.replace so a concurrent reader
+        (the checkpoint uploader, a resume download) never sees half a file.
+        The temp name is unique per call — shot workers write in parallel."""
+        path = Path(path)
+        tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+        try:
+            tmp.write_text(text, encoding="utf-8")
+            os.replace(tmp, path)
+        finally:
+            if tmp.exists():
+                try:
+                    tmp.unlink()
+                except Exception:
+                    pass
+
+    def _write_shot_cache(self, cache_path: Path, body: Dict[str, Any]) -> None:
+        """Atomically persist one shot's cache file and checkpoint it.
+        Never raises (a cache write failure only costs a regen on resume)."""
+        try:
+            self._atomic_write_text(cache_path, json.dumps(body, default=str))
+        except Exception as _sc_err:
+            print(f"   ⚠️ shot cache write failed ({cache_path.name}): {_sc_err}")
+            return
+        self._checkpoint("shot", [cache_path])
+
+    def _retry_empty_shot_html(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float,
+        max_tokens: int,
+        primary_model: Optional[str],
+        usage: Dict[str, Any],
+        log_label: str,
+    ) -> Optional[Dict[str, Any]]:
+        """ONE retry of a shot whose HTML came back empty, on the
+        different-vendor fallback model (NON_GLM_FALLBACK) with the same
+        prompt. Returns the parsed shot object when it carries HTML, else
+        None (caller ships the fallback card as before). Tokens are added
+        to `usage` either way. Never raises."""
+        fb_model = NON_GLM_FALLBACK
+        if not fb_model:
+            return None
+        _attempt_usage: Dict[str, Any] = {}
+        try:
+            print(
+                f"   🔁 {log_label}: empty HTML from {primary_model or 'default model'} "
+                f"— retrying once on {fb_model}"
+            )
+            raw_fb, _attempt_usage = self.html_client.chat(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                model=fb_model,
+            )
+        except Exception as _fb_err:
+            print(f"   ⚠️ {log_label}: fallback-model retry failed ({type(_fb_err).__name__}: {_fb_err})")
+            return None
+        finally:
+            for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
+                usage[_k] = usage.get(_k, 0) + (_attempt_usage or {}).get(_k, 0)
+        try:
+            data_fb = _extract_json_blob(raw_fb)
+        except Exception as _pe:
+            print(f"   ⚠️ {log_label}: fallback-model retry unparseable ({_pe})")
+            return None
+        if isinstance(data_fb, dict) and str(data_fb.get("html") or "").strip():
+            print(f"   ✅ {log_label}: fallback model {fb_model} produced the shot")
+            return data_fb
+        print(f"   ⚠️ {log_label}: fallback model {fb_model} also returned empty HTML")
+        return None
+
+    def _checkpoint_tts(self, run_dir: Path) -> None:
+        """Checkpoint the narration set (per-shot TTS + master + word timings).
+        Must run BEFORE the lesson teacher job is submitted: a resumed run
+        that re-synthesised a different voice would no longer match the
+        teacher video rendered from the first one."""
+        try:
+            run_dir = Path(run_dir)
+            files: List[Path] = []
+            tts_dir = run_dir / "tts"
+            if tts_dir.is_dir():
+                files.extend(
+                    sorted(p for p in tts_dir.iterdir()
+                           if p.is_file() and not p.name.startswith("."))
+                )
+            files.extend(run_dir / n for n in self._TTS_CHECKPOINT_FILES)
+        except Exception as _tts_ck_err:
+            print(f"   ⚠️ checkpoint 'tts' skipped: {_tts_ck_err}")
+            return
+        self._checkpoint("tts", files)
+
+    def _checkpoint_preamble(self, run_dir: Path) -> None:
+        """SCRIPT-end checkpoint: the routing / video-type / host / visual
+        preference plans the service wrote into run_dir, plus the final
+        merged reference context (written here as reference_context.json so
+        a cross-pod resume keeps the user's uploads + scrape artifacts)."""
+        try:
+            run_dir = Path(run_dir)
+            ref_ctx = getattr(self, "_reference_context", None)
+            if isinstance(ref_ctx, dict) and ref_ctx:
+                self._atomic_write_text(
+                    run_dir / "reference_context.json",
+                    json.dumps(ref_ctx, ensure_ascii=False, default=str),
+                )
+        except Exception as _rc_err:
+            print(f"   ⚠️ reference_context.json write failed: {_rc_err}")
+        self._checkpoint(
+            "preamble", [Path(run_dir) / n for n in self._PREAMBLE_CHECKPOINT_FILES]
+        )
+
     def run(
         self,
         base_prompt: Optional[str],
@@ -3300,6 +3913,9 @@ class VideoGenerationPipeline:
         routing_plan: Optional[Dict[str, Any]] = None,
         video_type_plan: Optional[Dict[str, Any]] = None,
         host_plan: Optional[Dict[str, Any]] = None,
+        # Lesson mode (lesson_mode.normalize_lesson_plan output): an education
+        # video taught by a Spatius teacher at a board. None ⇒ off.
+        lesson_plan: Optional[Dict[str, Any]] = None,
         visual_preferences: Optional[Dict[str, Any]] = None,
         # AI video (Phase 3b): per-run opt-in, ultra+ only. Tier eligibility is
         # gated by `QUALITY_TIERS[tier]["ai_video_eligible"]`; passing
@@ -3323,12 +3939,23 @@ class VideoGenerationPipeline:
         # {enabled, enabled_gates, answered_decisions, auto_all_gates}. None ⇒
         # fully autonomous (every assist branch below is a no-op).
         assist_state: Optional[Dict[str, Any]] = None,
+        # Resume checkpointing (see `_checkpoint`): called as
+        # `checkpoint_callback(kind, [paths])` whenever a resumable artifact
+        # is finished. Must be non-blocking (enqueue + return). None ⇒ off.
+        checkpoint_callback: Optional[Callable[[str, List[Path]], None]] = None,
+        # "auto" ⇒ deterministic crash/deploy resume: per-shot TTS reuses
+        # run_dir/tts/shot_NNN.{mp3,_raw.json} when the text matches, so the
+        # resumed narration (and the cached shots timed against it) is
+        # identical. None ⇒ legacy behaviour (always re-synthesise).
+        resume_mode: Optional[str] = None,
     ) -> Dict[str, Any]:
         # Stash the cooperative stop signal on the instance so deeply-nested
         # methods (per-shot HTML, sound planner, etc.) can check it via
         # `self._check_stop()` without threading the parameter through every
         # call site. None disables checking entirely (legacy / tests).
         self._stop_event = stop_event
+        self._checkpoint_cb = checkpoint_callback
+        self._resume_mode = (str(resume_mode).strip().lower() or None) if resume_mode else None
 
         # Assist mode: gate config + the per-query forced media selections the
         # user made on a previous leg (loaded from asset_selections.json once
@@ -3823,6 +4450,20 @@ class VideoGenerationPipeline:
                         f"cap=${_cap:.2f})"
                     )
 
+        # Lesson mode — None ⇒ every lesson branch below is a no-op.
+        self._lesson_plan: Optional[Dict[str, Any]] = lesson_plan or None
+        self._lesson_teacher_thread = None
+        self._lesson_teacher_result: Optional[Dict[str, Any]] = None
+        self._lesson_teacher_error: Optional[str] = None
+        if self._lesson_plan:
+            # A lesson is always the clean educational board look.
+            self._visual_style_override = "educational"
+            _lt_teacher = (self._lesson_plan.get("teacher") or {})
+            print(
+                f"🧑‍🏫 Lesson mode: teacher={_lt_teacher.get('avatar_id') or 'none'} "
+                f"layout={self._lesson_plan.get('layout')} subject={self._lesson_plan.get('subject') or '-'}"
+            )
+
         # When enabled=False (default): pipeline behaves identically to today.
         self._host_plan: Dict[str, Any] = host_plan or {}
         self._host_enabled: bool = bool(self._host_plan.get("enabled"))
@@ -3937,6 +4578,22 @@ class VideoGenerationPipeline:
         run_dir = self._resolve_run_dir(run_name, resume_run)
         run_dir.mkdir(parents=True, exist_ok=True)
 
+        # Resume: the final merged reference context (uploads + web capture +
+        # scrape artifacts) is checkpointed as reference_context.json at
+        # SCRIPT end. A resumed leg may get no reference_context from the
+        # service (reference_files are not part of the persisted request) —
+        # restore it from run_dir so the board keeps the user's material.
+        if not self._reference_context:
+            _rc_path = run_dir / "reference_context.json"
+            if _rc_path.exists():
+                try:
+                    _rc_loaded = json.loads(_rc_path.read_text(encoding="utf-8"))
+                    if isinstance(_rc_loaded, dict) and _rc_loaded:
+                        self._reference_context = _rc_loaded
+                        print("♻️  reference_context.json restored from run_dir")
+                except Exception as _rc_err:
+                    print(f"⚠️ reference_context.json unreadable on resume: {_rc_err}")
+
         # Assist mode: load the user's forced media picks from a prior leg so the
         # HTML-stage casting gate doesn't re-prompt and the resolver forces the
         # chosen URL per query. No-op when the file is absent (first leg / auto).
@@ -4016,6 +4673,14 @@ class VideoGenerationPipeline:
                         )
             except Exception:
                 self._shot_regen_notes = {}
+            # A sent-back shot's AI-video re-render is a NEW charge — keep its
+            # ledger idempotency key apart from the first render's.
+            _av_led = getattr(self, "_ai_video_ledger", None)
+            if self._shot_regen_notes and _av_led is not None:
+                try:
+                    _av_led.regen_shots = set(self._shot_regen_notes)
+                except Exception:
+                    pass
 
         # Cache the run identifier so downstream stages (host avatar batch,
         # post-processing) can namespace their S3 uploads. Without this every
@@ -4816,6 +5481,11 @@ class VideoGenerationPipeline:
                         f"({type(_v3r_err).__name__}: {_v3r_err}) — falling back to v2 behavior"
                     )
 
+        # SCRIPT end (fresh or resumed): checkpoint the preamble plans + the
+        # final merged reference context so a cross-pod resume keeps the
+        # host, routing and the user's reference material.
+        self._checkpoint_preamble(run_dir)
+
         # Content types that produce no audio (purely visual)
         NO_AUDIO_TYPES = {"SLIDES"}
 
@@ -5006,6 +5676,9 @@ class VideoGenerationPipeline:
                                       "message": "Voice narration ready",
                                       "tts_character_count": _tts_chars,
                                       "cumulative_tokens": dict(total_usage)})
+                # Monolithic TTS finished — checkpoint narration.mp3 +
+                # narration_raw.json now rather than only at stage end.
+                self._checkpoint_tts(run_dir)
             elif content_type not in NO_AUDIO_TYPES:
                 # Resuming from a checkpoint after TTS — files must already exist
                 self._require_file(response_json, "narration_raw.json (ElevenLabs response)")
@@ -5018,8 +5691,15 @@ class VideoGenerationPipeline:
                     _resumed_tts_chars = len(_script_text_for_tts)
                 except Exception:
                     _resumed_tts_chars = 0
+                # Billing: this TTS was synthesised (and billed) by an
+                # earlier leg. Report it under a separate, NEVER-billed key
+                # for the cost report only — adding it to
+                # tts_character_count re-billed premium TTS on every resume.
                 if _resumed_tts_chars:
-                    accumulate_usage({"tts_character_count": _resumed_tts_chars})
+                    total_usage["tts_character_count_resumed"] = (
+                        int(total_usage.get("tts_character_count_resumed", 0) or 0)
+                        + _resumed_tts_chars
+                    )
                 tts_outputs = {
                     "response_json": response_json,
                     "audio_path": audio_path,
@@ -5040,6 +5720,8 @@ class VideoGenerationPipeline:
                 self._check_stop()  # stage-boundary cancel checkpoint (before word alignment)
                 print("🔤 Deriving word timings ...")
                 word_outputs = self._parse_timestamps(tts_outputs["response_json"], run_dir)
+                # Word timings are part of the narration set a resume needs.
+                self._checkpoint_tts(run_dir)
             elif content_type not in NO_AUDIO_TYPES:
                 # Resuming from a checkpoint after WORDS — files must already exist
                 self._require_file(words_json, "narration.words.json")
@@ -5661,6 +6343,12 @@ class VideoGenerationPipeline:
                         print(f"   ⚠️ Could not start thumbnail batch: {_tb_err}")
 
                 if _director_plan and _director_plan.get("shots"):
+                    # director_done: checkpoint the plan + style guide (and the
+                    # assist casting picks) so a resume skips the Director.
+                    self._checkpoint(
+                        "director",
+                        [run_dir / n for n in self._DIRECTOR_CHECKPOINT_FILES],
+                    )
                     # ── Phase B: v2 per-shot TTS (after Director, before avatar) ──
                     # Director plan is final and AudioPolicyPlanner has set
                     # `audio_policy` per shot. Now produce per-shot narration
@@ -5688,6 +6376,17 @@ class VideoGenerationPipeline:
                             _v2_chars = int(tts_outputs.get("tts_character_count") or 0)
                             if _v2_chars > 0:
                                 accumulate_usage({"tts_character_count": _v2_chars})
+                            # Of which reused from run_dir/tts on an auto
+                            # resume (no vendor call this leg). Informational:
+                            # combine-mode TTS is billed once at HTML end, so
+                            # the service decides whether these chars were
+                            # already billed by an earlier leg.
+                            _v2_cached = int(tts_outputs.get("tts_character_count_cached") or 0)
+                            if _v2_cached > 0:
+                                total_usage["tts_character_count_cached"] = (
+                                    int(total_usage.get("tts_character_count_cached", 0) or 0)
+                                    + _v2_cached
+                                )
                             # Refresh words + seg_audio_dur from concat result.
                             try:
                                 _v2_raw = tts_outputs.get("response_json")
@@ -5795,6 +6494,11 @@ class VideoGenerationPipeline:
                                 print(f"   ❌ Monolithic TTS fallback also failed: {_fb_err}")
                                 # Re-raise — the run can't proceed without audio
                                 raise
+                        # Narration is final (per-shot mp3s → concat → timing
+                        # reconcile → word timings). Checkpoint it NOW — before
+                        # the avatar batch and, critically, before the lesson
+                        # teacher job is submitted below.
+                        self._checkpoint_tts(run_dir)
 
                     # Per-shot HTML generation using Director plan
                     print(f"🎬 Using Director plan: {len(_director_plan['shots'])} shots")
@@ -5876,6 +6580,9 @@ class VideoGenerationPipeline:
                             _nw_usage = _regen.get("nw_usage") or {}
                             if _nw_usage:
                                 accumulate_usage(_nw_usage)
+                            # The narration was re-recorded — re-checkpoint
+                            # it before the lesson teacher is submitted.
+                            self._checkpoint_tts(run_dir)
 
                     # ── Late emphasis_map build (post per-shot TTS) ──────
                     # v2 builds emphasis_map inside `_run_director` from the
@@ -5972,6 +6679,14 @@ class VideoGenerationPipeline:
                             accumulate_usage({"image_count": _sv_images})
                     except Exception as _sv_err:
                         print(f"   ⚠️ support-visuals resolve failed: {_sv_err}")
+
+                    # Lesson mode: the voice track is final here (music is
+                    # mixed only after the HTML stage), so the Spatius teacher
+                    # renders in the background while the board is generated.
+                    if getattr(self, "_lesson_plan", None):
+                        self._lesson_teacher_start(
+                            run_dir, Path(tts_outputs.get("audio_path") or audio_path)
+                        )
 
                     self._emit_progress({
                         "type": "sub_stage", "sub_stage": "html_generating",
@@ -6076,10 +6791,17 @@ class VideoGenerationPipeline:
                         continue
                     if _res:
                         _early_image_results.append(_res)
-                        _early_image_usage["image_count"] += 1
+                        # Count what the result IS: a stock pick is not an
+                        # AI image, and neither is an SVG placeholder. Every
+                        # AI image also records its own cost event.
+                        if _res.get("stock_url"):
+                            _early_image_usage["stock_count"] = _early_image_usage.get("stock_count", 0) + 1
+                        elif _res.get("ai_generated"):
+                            _early_image_usage["image_count"] += 1
                         # Phase C: stock-photo ranking tokens ride the task
                         # result's usage (snake_case) — merge them or the
                         # ranking LLM spend is never billed on this path.
+                        # (Image-API tokens are not in it: images bill per image.)
                         _ru = _res.get("usage") or {}
                         for _uk in ("prompt_tokens", "completion_tokens", "total_tokens"):
                             _early_image_usage[_uk] = _early_image_usage.get(_uk, 0) + (_ru.get(_uk, 0) or 0)
@@ -6102,6 +6824,9 @@ class VideoGenerationPipeline:
                         pass
 
                 _img_executor.shutdown(wait=False)
+                # These images and their ranking tokens were never added to the
+                # stage usage, so pipelined AI images reached no bill at all.
+                accumulate_usage(_early_image_usage)
 
                 # Apply in-memory replacements from pipelined results.
                 # Generated images: emit the local filename so the post-upload
@@ -6564,6 +7289,17 @@ class VideoGenerationPipeline:
                 print(f"⚠️ Could not persist cost_breakdown.json locally: {_werr}")
         except Exception as _cerr:
             print(f"⚠️ Cost breakdown build failed: {_cerr}")
+
+        # Contract with billing: total_tokens is always prompt + completion. A
+        # step that reported no total (the v3 script stage did) must not hide
+        # its tokens from the `total_tokens > 0` billing gate.
+        try:
+            total_usage["total_tokens"] = (
+                int(total_usage.get("prompt_tokens", 0) or 0)
+                + int(total_usage.get("completion_tokens", 0) or 0)
+            )
+        except (TypeError, ValueError):
+            pass
 
         return {
             "run_dir": run_dir,
@@ -7829,6 +8565,35 @@ class VideoGenerationPipeline:
         shot_script_path = tts_dir / f"shot_{shot_idx:03d}_script.txt"
         shot_audio_path = tts_dir / f"shot_{shot_idx:03d}.mp3"
         shot_raw_json = tts_dir / f"shot_{shot_idx:03d}_raw.json"
+
+        # Auto resume (crash / deploy): reuse this shot's audio restored into
+        # run_dir/tts when it was recorded for the SAME text (mirrors the
+        # regen_shot_narration cache check). Re-synthesising would cost the
+        # TTS again AND produce different durations, misaligning every cached
+        # shot. char_count is still reported (combine-mode TTS is billed once,
+        # at HTML end); `cache_hit` lets the service tell the two apart.
+        if getattr(self, "_resume_mode", None) == "auto":
+            try:
+                if (
+                    shot_script_path.is_file()
+                    and shot_audio_path.is_file()
+                    and shot_audio_path.stat().st_size > 0
+                    and shot_raw_json.is_file()
+                    and shot_script_path.read_text(encoding="utf-8").strip() == narration_text
+                ):
+                    json.loads(shot_raw_json.read_text(encoding="utf-8"))  # corrupt ⇒ re-synth
+                    print(f"   ♻️  shot {shot_idx} TTS reused from run_dir/tts (auto resume)")
+                    return {
+                        "shot_idx": shot_idx,
+                        "skipped": False,
+                        "mp3_path": shot_audio_path,
+                        "raw_json_path": shot_raw_json,
+                        "char_count": len(narration_text),
+                        "cache_hit": True,
+                    }
+            except Exception as _tc_err:
+                print(f"   ⚠️ shot {shot_idx} TTS cache unusable ({_tc_err}) — re-synthesising")
+
         shot_script_path.write_text(narration_text, encoding="utf-8")
 
         tts_result = self._synthesize_voice(
@@ -8376,6 +9141,7 @@ class VideoGenerationPipeline:
                 width=self.video_width,
                 height=self.video_height,
                 model_override="bytedance-seed/seedream-4.5",
+                purpose="cast_sheet",
             )
             if not img_bytes:
                 return None
@@ -8444,6 +9210,7 @@ class VideoGenerationPipeline:
                             width=self.video_width,
                             height=self.video_height,
                             model_override="bytedance-seed/seedream-4.5",
+                            purpose="cast_sheet",
                         )
                         if not img_bytes:
                             continue
@@ -8482,6 +9249,7 @@ class VideoGenerationPipeline:
                             height=self.video_height,
                             reference_image_url=_primary,
                             model_override="bytedance-seed/seedream-4.5",
+                            purpose="cast_sheet",
                         )
                         if not alt_bytes:
                             continue
@@ -8576,6 +9344,7 @@ class VideoGenerationPipeline:
                                 height=self.video_height,
                                 reference_image_url=anchor[base],
                                 model_override="bytedance-seed/seedream-4.5",
+                                purpose="keyframe",
                             )
                         else:
                             img_bytes, _ = self._call_image_generation_llm(
@@ -8586,6 +9355,7 @@ class VideoGenerationPipeline:
                                 width=self.video_width,
                                 height=self.video_height,
                                 model_override="bytedance-seed/seedream-4.5",
+                                purpose="keyframe",
                             )
                         if img_bytes:
                             _safe = re.sub(r"[^a-z0-9_-]", "_", f"{base}_{todk}")[:40]
@@ -8679,6 +9449,7 @@ class VideoGenerationPipeline:
                 width=self.video_width,
                 height=self.video_height,
                 model_override="bytedance-seed/seedream-4.5",
+                purpose="cast_sheet",
             )
             if not img_bytes:
                 return None
@@ -8972,6 +9743,9 @@ class VideoGenerationPipeline:
                             )
                             if not self._dialogue_ledger.enabled:
                                 print("⚠️  dialogue credit ledger disabled (missing institute/video id)")
+                            self._dialogue_ledger.regen_shots = set(
+                                getattr(self, "_shot_regen_notes", None) or {}
+                            )
                         except Exception as _dl_err:
                             print(f"⚠️  dialogue credit ledger unavailable: {_dl_err}")
                             self._dialogue_ledger = False  # tried and failed; no retry
@@ -9434,7 +10208,9 @@ class VideoGenerationPipeline:
             for n, u in portraits[:2]:
                 content.append({"type": "text", "text": f"REFERENCE PORTRAIT — {n}:"})
                 content.append({"type": "image_url", "image_url": {"url": u}})
-            model = self._resolve_stage_model("vision_review") or "google/gemini-2.5-flash"
+            # The 'dialogue_clip_qc' stage row, else the registry's video
+            # default — named explicitly so a user's model pick never runs it.
+            model = self._resolve_vision_stage_model("dialogue_clip_qc")
             _qc_messages = [
                 {"role": "system", "content": (
                     "You QC AI-generated film clips. Respond with ONE JSON object "
@@ -9443,10 +10219,11 @@ class VideoGenerationPipeline:
             ]
             # max_tokens must cover THINKING models' reasoning burn — 400 came
             # back empty from gemini-2.5-pro in prod (every clip "QC
-            # unavailable"). Failing that, one retry on Flash (non-thinking,
-            # reliable JSON emitter).
+            # unavailable"). Failing that, one retry on a different vendor
+            # (non-thinking Flash, a reliable JSON emitter).
             parsed: Any = None
-            for _attempt_model, _mt in ((model, 1500), ("google/gemini-2.5-flash", 800)):
+            _qc_attempts = ((model, 1500), (NON_GLM_FALLBACK, 800))
+            for _qc_idx, (_attempt_model, _mt) in enumerate(_qc_attempts):
                 try:
                     raw, _u = self.html_client.chat(
                         messages=_qc_messages,
@@ -9460,9 +10237,10 @@ class VideoGenerationPipeline:
                         break
                     parsed = None
                 except Exception as _qc_llm_err:
-                    print(f"   ⚠️ clip QC judge ({_attempt_model}) failed: {str(_qc_llm_err)[:120]}")
+                    print(f"   ⚠️ clip QC judge ({_attempt_model or 'registry default'}) failed: "
+                          f"{str(_qc_llm_err)[:120]}")
                     parsed = None
-                if _attempt_model == "google/gemini-2.5-flash":
+                if _qc_idx == len(_qc_attempts) - 1:
                     break
             if not isinstance(parsed, dict) or "pass" not in parsed:
                 return None
@@ -9591,6 +10369,10 @@ class VideoGenerationPipeline:
                 # subjects, invented imagery presented as if observed. Follow the
                 # run's resolved visual direction instead.
                 _style_suffix = self._support_visual_style_suffix()
+                # The super-admin 'video_support_visual' row (Seedream when
+                # unset). Read once per video, not per picture.
+                _sv_model = _image_model_for(VIDEO_SUPPORT_VISUAL_USE_CASE, VIDEO_SUPPORT_VISUAL_DEFAULT)
+                print(f"   🖼️  Support visuals on {_sv_model}")
 
                 def _gen(kv):
                     key, concept = kv
@@ -9599,7 +10381,9 @@ class VideoGenerationPipeline:
                         try:
                             img, _ = self._call_image_generation_llm(
                                 _prompt, width=1024, height=576,
-                                model_override="bytedance-seed/seedream-4.5",
+                                model_override=_sv_model,
+                                fallback_model=VIDEO_SUPPORT_VISUAL_DEFAULT,
+                                purpose="support_visual",
                             )
                         except _ImageGenRateLimitError:
                             # One paced retry — the blanket except below was
@@ -9609,7 +10393,9 @@ class VideoGenerationPipeline:
                             _t.sleep(15)
                             img, _ = self._call_image_generation_llm(
                                 _prompt, width=1024, height=576,
-                                model_override="bytedance-seed/seedream-4.5",
+                                model_override=_sv_model,
+                                fallback_model=VIDEO_SUPPORT_VISUAL_DEFAULT,
+                                purpose="support_visual",
                             )
                         if not img:
                             return key, None
@@ -10476,6 +11262,7 @@ class VideoGenerationPipeline:
         # ── Per-shot TTS loop with progress events ────────────────────
         per_shot_outputs: List[Dict[str, Any]] = []
         total_chars = 0
+        cached_chars = 0  # reused from run_dir/tts on an auto resume
         for loop_idx, shot in enumerate(_v2_shots):
             shot_idx = self._coerce_shot_index(shot.get("shot_index"), loop_idx)
             narration_text = shot.get("_v2_narration_text") or ""
@@ -10509,6 +11296,8 @@ class VideoGenerationPipeline:
             result["intended_duration_s"] = float(shot.get("shot_duration_s") or 0.0)
             per_shot_outputs.append(result)
             total_chars += int(result.get("char_count") or 0)
+            if result.get("cache_hit"):
+                cached_chars += int(result.get("char_count") or 0)
             self._emit_progress({
                 "type": "sub_stage",
                 "sub_stage": "tts_shot_done",
@@ -10562,6 +11351,7 @@ class VideoGenerationPipeline:
         tts_outputs["audio_path"] = master_audio_path
         tts_outputs["response_json"] = master_raw_json
         tts_outputs["tts_character_count"] = total_chars
+        tts_outputs["tts_character_count_cached"] = cached_chars
         tts_outputs["deferred_to_html"] = False
 
         # Track TTS character count for credit deduction (mirrors the
@@ -10571,6 +11361,7 @@ class VideoGenerationPipeline:
             "sub_stage": "tts_done",
             "message": f"Per-shot narration ready ({total_dur:.1f}s, {total_chars} chars)",
             "tts_character_count": total_chars,
+            "tts_character_count_cached": cached_chars,
             "shot_count": total_shots,
         })
         print(
@@ -11541,7 +12332,7 @@ class VideoGenerationPipeline:
             if not slides:
                 print(f"    ⚠️  SLIDES: 'slides' key missing or empty. Available keys: {list(plan_data.keys())}")
                 print(f"    ⚠️  This usually means the model ran out of tokens or ignored the slides-array format.")
-                print(f"    ⚠️  Tip: use a model with high output token limits (e.g. google/gemini-2.5-pro).")
+                print(f"    ⚠️  Tip: raise max_tokens, or use a model with a higher output token limit.")
             for i, slide in enumerate(slides):
                 html = slide.get("html", f"<div>Slide {i+1}</div>")
                 # If the slide has an image_prompt but no data-img-prompt in its HTML, inject it
@@ -12039,7 +12830,38 @@ class VideoGenerationPipeline:
         size. The directive is intentionally concrete (demote tier / break /
         max-width) so the LLM has 3 acknowledged escapes rather than freewheeling.
         """
-        lines = [
+        zoned = [v for v in violations if v.get("zone")]
+        zl: List[str] = []
+        if zoned:
+            names = sorted({str(v.get("zone")) for v in zoned})
+            zl = [
+                "Your previous shot HTML has layout defects measured by a headless-Chromium "
+                f"bounding-box walk ({', '.join(names)}). `teacher`: board content inside the area the "
+                "teacher video is composited over (hidden / collides). `squeezed`: text forced into a "
+                "column so narrow its words break letter by letter (e.g. \"Veri / fy / the\"):",
+            ]
+            for v in zoned[:6]:
+                r = v.get("rect") or {}
+                txt = str(v.get("text") or "")
+                zl.append(
+                    f"  - [{v.get('zone')}] {v.get('selector') or '?'}"
+                    + (f' "{txt[:50]}"' if txt else "")
+                    + f" rect=(l={r.get('l', 0):.0f}, t={r.get('t', 0):.0f}, r={r.get('r', 0):.0f}, b={r.get('b', 0):.0f})"
+                )
+            zl += [
+                "Fix: move or resize elements so nothing overlaps the teacher area (shift up/left, reduce "
+                "sizes, reflow into fewer columns; keep that area plain background). Give every text "
+                "column room for at least ~12 characters per line — `min-width`, `flex:1 1 auto`, "
+                "`flex-wrap:wrap`, or fewer columns; never let a flex child shrink a text block to a sliver.",
+                "",
+            ]
+            if len(zoned) == len(violations):
+                return "\n".join(zl + [
+                    "Keep the same shot_pack tokens, the same animation_strategy, and the same narration sync. "
+                    "Return only the JSON shot object.",
+                ])
+            violations = [v for v in violations if not v.get("zone")]
+        lines = zl + [
             "Your previous shot HTML had text/media that OVERFLOWED the canvas. This is a "
             "deterministic check from a headless-Chromium bounding-box walk — not a vision-model "
             "interpretation. Every element listed below had a `getBoundingClientRect()` that crossed "
@@ -12239,7 +13061,7 @@ class VideoGenerationPipeline:
                         {"role": "user", "content": corrective},
                     ],
                     temperature=0.4,
-                    max_tokens=self._tier_config.get("per_shot_max_tokens", 16000),
+                    max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
                 )
             except Exception as exc:
                 print(f"   ⚠️ Shot {shot_idx + 1} brand-asset regen failed ({exc}) — shipping original")
@@ -12249,7 +13071,14 @@ class VideoGenerationPipeline:
             _llm_phase.reset(_phase_tok)
             _llm_stage.reset(_stage_tok)
 
-        data2 = _extract_json_blob(raw2)
+        try:
+            data2 = _extract_json_blob(raw2)
+        except ValueError as exc:
+            # An unparseable retry must not take the (already rendered) shot
+            # down with it — the exception killed the shot task and it
+            # shipped as a blank fallback frame.
+            record["regen_error"] = f"unparseable regen: {str(exc)[:120]}"
+            return record
         html2 = (data2 or {}).get("html", "")
         if usage2:
             usage["prompt_tokens"] = usage.get("prompt_tokens", 0) + usage2.get("prompt_tokens", 0)
@@ -12277,6 +13106,201 @@ class VideoGenerationPipeline:
 
         return record
 
+    def _crash_fallback_entry(
+        self, shot: Dict[str, Any], shot_idx: int, palette: Optional[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """A neutral card in the run's palette for a shot whose task raised,
+        carrying the narration so the frame is not empty."""
+        import html as _html_fb
+        start = float(shot.get("start_time", 0) or 0)
+        end = float(shot.get("end_time", start + 8) or (start + 8))
+        if end <= start:
+            return None
+        pal = palette or {}
+        bg = pal.get("background") or "var(--brand-bg, #f5f0e8)"
+        fg = pal.get("text") or "var(--brand-text, #2a1a0a)"
+        accent = pal.get("accent") or "var(--brand-accent, #FF7A1A)"
+        text = _html_fb.escape(str(
+            shot.get("narration_excerpt") or shot.get("narration_text")
+            or shot.get("visual_description") or ""
+        ).strip()[:200])
+        w = int(getattr(self, "video_width", 1920) or 1920)
+        h = int(getattr(self, "video_height", 1080) or 1080)
+        body = (
+            "<div id='shot-root' style='position:relative;width:100%;height:100%;overflow:hidden;"
+            f"background:{bg};display:flex;align-items:center;justify-content:center;padding:6%;'>"
+            + (f"<div id='fbc_t' style='max-width:80%;text-align:center;font-size:2.4rem;font-weight:700;"
+               f"color:{fg};line-height:1.4;opacity:0;'>{text}</div>" if text else "")
+            + f"<div id='fbc_b' style='position:absolute;bottom:10%;left:50%;transform:translateX(-50%);"
+            f"width:6rem;height:4px;background:{accent};border-radius:2px;opacity:0;'></div>"
+            "<script>(function(){if(typeof gsap==='undefined')return;"
+            + ("gsap.to('#fbc_t',{opacity:1,duration:0.5,delay:0.1});" if text else "")
+            + "gsap.to('#fbc_b',{opacity:1,duration:0.4,delay:0.4});})();</script></div>"
+        )
+        return {
+            "start": start, "end": end,
+            "htmlStartX": 0, "htmlStartY": 0, "htmlEndX": w, "htmlEndY": h,
+            "html": self._ensure_fonts(body),
+            "id": f"shot-{shot_idx}", "index": shot_idx,
+            "z": shot.get("z", 10),
+            "_shot_type": "FALLBACK",
+            "_narration_excerpt": shot.get("narration_excerpt", ""),
+            "_visual_description": shot.get("visual_description", ""),
+            "_skill_audio_events": [],
+        }
+
+    def _lesson_proper_nouns(self, lm_mod: Any, plan: Dict[str, Any]) -> List[str]:
+        """Names the lesson board may show that the fact-check must never
+        'correct' (prod: the institute "ITRC" in a heading was flagged as a
+        garbled "CHAPTER"): branding / brand-kit names, the teacher's name and
+        ALL-CAPS tokens of the user's prompt. Computed once per run."""
+        cached = getattr(self, "_lesson_proper_nouns_cache", None)
+        if isinstance(cached, tuple) and len(cached) == 2 and cached[0] is plan:
+            return cached[1]
+        try:
+            nouns = lm_mod.known_proper_nouns(
+                prompt=getattr(self, "_user_prompt_raw", "") or "",
+                branding=getattr(self, "_current_branding", None),
+                brand_system_prompt=getattr(self, "_current_brand_system_prompt", None),
+                teacher=(plan or {}).get("teacher"),
+            )
+        except Exception as _pn_err:
+            print(f"   ⚠️ lesson proper-noun list failed ({_pn_err}) — checking without it")
+            nouns = []
+        self._lesson_proper_nouns_cache = (plan, nouns)
+        return nouns
+
+    def _lesson_check_shot(
+        self,
+        *,
+        html: str,
+        shot: Dict[str, Any],
+        shot_idx: int,
+        start_time: float,
+        end_time: float,
+        system_prompt: str,
+        user_prompt: str,
+        last_raw_response: str,
+        usage: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Lesson board correctness: deterministic notation lint + one model
+        check of formulas / numbers / facts against the narration; on a
+        definite error, ONE corrective regen. Returns a record (with
+        `regen_html` when the fix ships) or None outside lesson mode.
+        Never raises — the shot ships as-is on any failure."""
+        plan = getattr(self, "_lesson_plan", None)
+        if not plan or not (html or "").strip():
+            return None
+        import lesson_mode as _lm_f
+        narration = str(shot.get("narration_text") or shot.get("narration_excerpt") or "")
+        record: Dict[str, Any] = {"issues": [], "shipped": "original", "regen_html": None}
+        proper_nouns = self._lesson_proper_nouns(_lm_f, plan)
+        issues = _lm_f.notation_issues(html, narration)
+        board = _lm_f.board_text(html)
+        if board and narration:
+            _phase_tok = _llm_phase.set("lesson_check")
+            _stage_tok = _llm_stage.set(f"lesson_fact_check_shot_{shot_idx}")
+            try:
+                raw_c, usage_c = self.script_client.chat(
+                    messages=[
+                        {"role": "system", "content": _lm_f.FACT_CHECK_SYSTEM},
+                        {"role": "user", "content": _lm_f.fact_check_user_prompt(
+                            narration=narration, board=board, subject=plan.get("subject"),
+                            proper_nouns=proper_nouns)},
+                    ],
+                    model=(self._resolve_stage_model("vision_review")
+                           or self._resolve_stage_model("narration_writer")),
+                    temperature=0.0,
+                    max_tokens=3000,
+                    response_format={"type": "json_object"},
+                )
+                for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
+                    usage[_k] = usage.get(_k, 0) + (usage_c or {}).get(_k, 0)
+                issues += _lm_f.parse_fact_check(
+                    _extract_json_blob(raw_c or "{}"), proper_nouns=proper_nouns
+                )
+            except Exception as exc:
+                record["check_error"] = str(exc)[:200]
+                print(f"   ⚠️ Shot {shot_idx + 1} lesson fact-check skipped ({str(exc)[:80]})")
+            finally:
+                _llm_phase.reset(_phase_tok)
+                _llm_stage.reset(_stage_tok)
+        record["issues"] = issues
+        if not issues:
+            return record
+        print(f"   🧮 Shot {shot_idx + 1} lesson check FOUND {len(issues)} error(s): {issues[0][:120]}")
+        _phase_tok = _llm_phase.set("regen")
+        _stage_tok = _llm_stage.set(f"lesson_fact_regen_shot_{shot_idx}")
+        try:
+            raw2, usage2 = self.html_client.chat(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": (last_raw_response or "")[:4000]},
+                    {"role": "user", "content": _lm_f.correction_prompt(issues, proper_nouns)},
+                ],
+                temperature=0.3,
+                max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+            )
+            for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
+                usage[_k] = usage.get(_k, 0) + (usage2 or {}).get(_k, 0)
+            html2 = ((_extract_json_blob(raw2) or {}).get("html") or "").strip()
+        except Exception as exc:
+            record["regen_error"] = str(exc)[:200]
+            print(f"   ⚠️ Shot {shot_idx + 1} lesson fix regen failed ({str(exc)[:80]}) — shipping original")
+            return record
+        finally:
+            _llm_phase.reset(_phase_tok)
+            _llm_stage.reset(_stage_tok)
+        if not html2:
+            record["regen_error"] = "regen returned empty html"
+            return record
+        candidate = self._sanitize_html_content(html2)
+        candidate = self._clamp_entry_animations(candidate, float(end_time - start_time))
+        if _lm_f.notation_issues(candidate, narration):
+            record["regen_error"] = "regen still has notation errors"
+            print(f"   ⏪ Shot {shot_idx + 1} lesson fix still wrong — shipping original")
+            return record
+        record["regen_html"] = candidate
+        record["shipped"] = "regen"
+        print(f"   ✅ Shot {shot_idx + 1} lesson fix shipped")
+        return record
+
+    def _lesson_keep_out(self, shot: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Keep-out rects (shot canvas coords) for a lesson shot: the teacher's
+        corner / bubble and the caption strip. [] outside lesson mode."""
+        plan = getattr(self, "_lesson_plan", None)
+        if not plan or not isinstance(shot, dict):
+            return []
+        try:
+            import lesson_mode as _lm_k
+        except Exception:
+            return []
+        w, h = self._lesson_canvas(shot)
+        return _lm_k.keep_out_zones(
+            plan, shot.get("teacher_layout"),
+            int(getattr(self, "video_width", 1920) or 1920),
+            int(getattr(self, "video_height", 1080) or 1080),
+            canvas_w=w, canvas_h=h,
+        )
+
+    def _lesson_canvas(self, shot: Optional[Dict[str, Any]]) -> Tuple[int, int]:
+        """Canvas a shot is laid out on: the lesson board area (above the
+        caption band, beside a teacher panel — lesson_mode.board_area), else
+        the frame.
+        QA screenshots use it so they judge the layout the viewer gets."""
+        w = int(getattr(self, "video_width", 1920) or 1920)
+        h = int(getattr(self, "video_height", 1080) or 1080)
+        if getattr(self, "_lesson_plan", None) and isinstance(shot, dict):
+            try:
+                import lesson_mode as _lm_c
+                lay = (shot.get("teacher_layout") or "board") if _lm_c.has_teacher(self._lesson_plan) else "board"
+                area = _lm_c.board_area(lay, w, h)
+                return int(area["w"]), int(area["h"])
+            except Exception:
+                pass
+        return w, h
+
     def _lint_shot_bbox(
         self,
         *,
@@ -12303,11 +13327,15 @@ class VideoGenerationPipeline:
 
         Never raises — every failure path returns None (skip) so the shot ships.
         """
-        if not self._tier_config.get("shot_bbox_check"):
+        # Lessons run the lint on every tier: it is what keeps the teacher's
+        # corner and the caption strip clear (keep-out zones below).
+        _lesson_zones = self._lesson_keep_out(shot)
+        _lesson_on = bool(getattr(self, "_lesson_plan", None))
+        if not (self._tier_config.get("shot_bbox_check") or _lesson_on):
             return None
 
         shot_type = (shot.get("shot_type") or shot.get("type") or "").upper()
-        if shot_type in self._BBOX_LINT_SKIP_SHOT_TYPES:
+        if shot_type in self._BBOX_LINT_SKIP_SHOT_TYPES and not _lesson_on:
             return None
 
         duration_s = float(end_time - start_time)
@@ -12342,8 +13370,9 @@ class VideoGenerationPipeline:
 
         self._emit_shot_substage(shot_idx, "bbox_lint", "Bounding-box check…")
         timestamps = self._bbox_lint_pick_timestamps(duration_s)
-        canvas_w = int(getattr(self, "video_width", 1920))
-        canvas_h = int(getattr(self, "video_height", 1080))
+        # Lesson side/presenter shots ship on the board area, not the full
+        # frame — check overflow at the size the viewer actually sees.
+        canvas_w, canvas_h = self._lesson_canvas(shot)
         bg = str(
             shot.get("background")
             or shot.get("bg")
@@ -12360,6 +13389,8 @@ class VideoGenerationPipeline:
                 height=canvas_h,
                 timestamps=timestamps,
                 background=bg,
+                keep_out=_lesson_zones or None,
+                check_squeeze=_lesson_on,
             )
         except ScreenshotClientError as exc:
             print(f"   ⚠️ Shot {shot_idx + 1}: bbox-lint SKIPPED — render worker /bbox-check failed: {exc}")
@@ -12371,6 +13402,7 @@ class VideoGenerationPipeline:
                 {
                     "t": v.t, "selector": v.selector, "rect": dict(v.rect),
                     "text": v.text, "is_media": v.is_media,
+                    "zone": getattr(v, "zone", ""),
                 }
                 for v in violations
             ],
@@ -12416,7 +13448,7 @@ class VideoGenerationPipeline:
                         {"role": "user", "content": corrective},
                     ],
                     temperature=0.4,
-                    max_tokens=self._tier_config.get("per_shot_max_tokens", 16000),
+                    max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
                 )
             except Exception as exc:
                 print(f"   ⚠️ Shot {shot_idx + 1} bbox-lint regen failed ({exc}) — shipping original")
@@ -12426,7 +13458,14 @@ class VideoGenerationPipeline:
             _llm_phase.reset(_phase_tok)
             _llm_stage.reset(_stage_tok)
 
-        data2 = _extract_json_blob(raw2)
+        try:
+            data2 = _extract_json_blob(raw2)
+        except ValueError as exc:
+            # An unparseable retry must not take the (already rendered) shot
+            # down with it — the exception killed the shot task and it
+            # shipped as a blank fallback frame.
+            record["regen_error"] = f"unparseable regen: {str(exc)[:120]}"
+            return record
         html2 = (data2 or {}).get("html", "")
         if usage2:
             usage["prompt_tokens"] = usage.get("prompt_tokens", 0) + usage2.get("prompt_tokens", 0)
@@ -12450,6 +13489,8 @@ class VideoGenerationPipeline:
                 height=canvas_h,
                 timestamps=timestamps,
                 background=bg,
+                keep_out=_lesson_zones or None,
+                check_squeeze=_lesson_on,
             )
         except ScreenshotClientError as exc:
             print(f"   ⚠️ Shot {shot_idx + 1} bbox-lint regen re-check failed ({exc}) — shipping original")
@@ -12460,6 +13501,7 @@ class VideoGenerationPipeline:
             {
                 "t": v.t, "selector": v.selector, "rect": dict(v.rect),
                 "text": v.text, "is_media": v.is_media,
+                "zone": getattr(v, "zone", ""),
             }
             for v in violations2
         ]
@@ -12767,8 +13809,16 @@ class VideoGenerationPipeline:
         cap = self._tier_config.get("vision_review_run_cost_cap_usd", 0.15)
         _enabled_lines: List[str] = []
         if vision_on:
+            # The model the reviewer will actually call: its stage row, else
+            # the registry's video default (it used to print a hard-coded
+            # gemini-2.5-pro whatever ran).
+            _vr_model = (
+                self._resolve_stage_model("vision_review")
+                or getattr(getattr(self, "html_client", None), "use_case_default_model", None)
+                or "registry default"
+            )
             _enabled_lines.append(
-                f"      • Vision review: model=google/gemini-2.5-pro, cap=${cap:.2f}/run"
+                f"      • Vision review: model={_vr_model}, cap=${cap:.2f}/run"
             )
         if bbox_on:
             _enabled_lines.append(
@@ -12847,8 +13897,10 @@ class VideoGenerationPipeline:
         _cc = getattr(self, "_creative_concept", None) or {}
         _emotion = shot.get("emotion") or ""
         _canvas = "portrait" if getattr(self, "video_height", 1080) > getattr(self, "video_width", 1920) else "landscape"
-        _model = (self._resolve_stage_model("shot_creativity_critic")
-                  or self._resolve_stage_model("vision_review"))
+        # The 'shot_creativity_critic' stage row, else the registry's video
+        # default (vision-capable — the critic may get a screenshot); named
+        # explicitly so a user's model pick never runs it.
+        _model = self._resolve_vision_stage_model("shot_creativity_critic")
         try:
             _shot = self._review_thumbnails.get(shot_idx) if isinstance(getattr(self, "_review_thumbnails", None), dict) else None
         except Exception:
@@ -12887,11 +13939,7 @@ class VideoGenerationPipeline:
                         )},
                         {"type": "image_url", "image_url": {"url": _cc_data_url(_shot)}},
                     ]
-                    _regen_model = (
-                        _model
-                        or self._resolve_stage_model("vision_review")
-                        or "google/gemini-2.5-pro"
-                    )
+                    _regen_model = _model or self._resolve_stage_model("vision_review")
                 except Exception:
                     _regen_content = corrective
             messages = [
@@ -12907,7 +13955,7 @@ class VideoGenerationPipeline:
                 raw2, _usage2 = self.html_client.chat(
                     messages=messages,
                     temperature=self._tier_config.get("html_temperature", 0.7),
-                    max_tokens=self._tier_config.get("per_shot_max_tokens", 16000),
+                    max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
                     model=_regen_model,
                 )
             finally:
@@ -13059,8 +14107,8 @@ class VideoGenerationPipeline:
                 # LLM var(--brand-*), which would be unresolved without it, and
                 # the finishing layer must be visible to the reviewer.
                 html=self._ensure_fonts(html),
-                width=int(getattr(self, "video_width", 1920)),
-                height=int(getattr(self, "video_height", 1080)),
+                width=self._lesson_canvas(shot)[0],
+                height=self._lesson_canvas(shot)[1],
                 timestamps=timestamps,
                 background=str(
                     shot.get("background")
@@ -13104,11 +14152,10 @@ class VideoGenerationPipeline:
             palette=_palette,
             prior_shot_screenshot=_prior_thumb,
             llm_chat=self.html_client.chat,
-            # Preserve the legacy Pro safety net when stage routing is off
-            # (_resolve_stage_model returns None on empty map). Vision review
-            # has always been Pro and that's the matrix default too — admins
-            # can flip via SQL but the BE never silently downgrades.
-            model=self._resolve_stage_model("vision_review") or "google/gemini-2.5-pro",
+            # The 'vision_review' stage row, else (empty map, e.g. single-shot
+            # and insert pipelines) the registry's video default — named
+            # explicitly so a user's model pick never reviews screenshots.
+            model=self._resolve_vision_stage_model("vision_review"),
             visual_style_mode=self._resolve_visual_style_mode(),
         )
 
@@ -13189,7 +14236,12 @@ class VideoGenerationPipeline:
         if (
             review.get("severity_max", 0) >= 3
             and review.get("issues")
-            and self._tier_config.get("vision_review_regen_enabled", True)
+            and (
+                self._tier_config.get("vision_review_regen_enabled", True)
+                # Lessons fix what the reviewer flags on every tier — a
+                # learner cannot read a collapsed or clipped board.
+                or bool(getattr(self, "_lesson_plan", None))
+            )
         ):
             _issue_codes = ",".join(
                 str(i.get("code") or i.get("type") or "issue")
@@ -13245,9 +14297,11 @@ class VideoGenerationPipeline:
                         {"role": "user", "content": _regen_user_content},
                     ],
                     temperature=0.4,
-                    max_tokens=self._tier_config.get("per_shot_max_tokens", 16000),
+                    max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                    # With screenshots attached: the vision reviewer's model
+                    # (else the registry default, which takes images).
                     model=(
-                        self._resolve_stage_model("vision_review") or "google/gemini-2.5-pro"
+                        self._resolve_vision_stage_model("vision_review")
                     ) if not isinstance(_regen_user_content, str) else None,
                 )
             except Exception as _re_exc:
@@ -13285,8 +14339,8 @@ class VideoGenerationPipeline:
                     try:
                         frames2 = client.take_shot_screenshots(
                             html=self._ensure_fonts(candidate),
-                            width=int(getattr(self, "video_width", 1920)),
-                            height=int(getattr(self, "video_height", 1080)),
+                            width=self._lesson_canvas(shot)[0],
+                            height=self._lesson_canvas(shot)[1],
                             timestamps=timestamps,
                             background=str(
                     shot.get("background")
@@ -13306,11 +14360,8 @@ class VideoGenerationPipeline:
                             palette=_palette,
                             prior_shot_screenshot=_prior_thumb,
                             llm_chat=self.html_client.chat,
-                            # Preserve the legacy Pro safety net when stage routing is off
-            # (_resolve_stage_model returns None on empty map). Vision review
-            # has always been Pro and that's the matrix default too — admins
-            # can flip via SQL but the BE never silently downgrades.
-            model=self._resolve_stage_model("vision_review") or "google/gemini-2.5-pro",
+                            # Same reviewer model as the first pass.
+                            model=self._resolve_vision_stage_model("vision_review"),
                             visual_style_mode=self._resolve_visual_style_mode(),
                         )
                         # If regen ships, overwrite the cached thumbnail with
@@ -14273,6 +15324,8 @@ class VideoGenerationPipeline:
                 wpm_override=target_wpm,
                 regen_note=regen_note,
                 source_request=getattr(self, "_base_prompt", None),
+                teaching_voice=bool(getattr(self, "_lesson_plan", None)),
+                max_tokens=(16000 if getattr(self, "_lesson_plan", None) else 6000),
             )
         except NarrationWriteError as _nw_err:
             print(f"   ⚠️ v3 overrun NarrationWriter regen unparseable: {_nw_err}")
@@ -14389,6 +15442,16 @@ class VideoGenerationPipeline:
                 target[k] = int(target.get(k, 0) or 0) + int(src.get(k, 0) or 0)
             except (TypeError, ValueError):
                 continue
+        # total_tokens is always prompt + completion. It used to be dropped
+        # here, and the billing gate (`total_tokens > 0`) then skipped the
+        # whole script stage — its LLM tokens were never charged.
+        try:
+            target["total_tokens"] = (
+                int(target.get("prompt_tokens", 0) or 0)
+                + int(target.get("completion_tokens", 0) or 0)
+            )
+        except (TypeError, ValueError):
+            pass
 
     def _run_v3_shot_planning(
         self,
@@ -14433,7 +15496,6 @@ class VideoGenerationPipeline:
         # when the stage map is empty (rollout flag off, DB miss).
         shot_planner_model = (
             self._resolve_stage_model("shot_planner")       # explicit V200 per-stage routing wins
-            or tier_config.get("concept_model")             # else frontier concept model (Opus on premium+)
             or tier_config.get("shot_planner_model")
             or tier_config.get("director_model")
             or getattr(self.script_client, "model", None)
@@ -14566,17 +15628,26 @@ class VideoGenerationPipeline:
                 and (self._assist_state or {}).get("enabled")
             ),
             article_screenshots=self._v3_article_screenshots(),
+            input_images=self._input_image_contexts or None,
             cultural_context=getattr(self, "_cultural_context", None),
             template_catalog_md=_tmpl_catalog_md or None,
             valid_template_ids=_tmpl_valid_ids,
+            subject_domain=((getattr(self, "_lesson_plan", None) or {}).get("subject") or None),
+            lesson=getattr(self, "_lesson_plan", None),
             include_music_plan=self._is_background_music_enabled(),
             music_plan_target_duration_s=target_duration_s,
             temperature=tier_config.get("concept_temperature") or 0.6,
             verbalized_sampling=bool(tier_config.get("shot_planner_verbalized_sampling")),
             # Gate the concept-conformance re-plan to tiers with the concept feature
-            # (premium+ set concept_model); free/standard skip it to avoid the ~2x
+            # (premium+ set concept_enabled); free/standard skip it to avoid the ~2x
             # ShotPlanner cost of a corrective re-plan on the cheapest tiers.
-            enforce_concept=bool(tier_config.get("concept_model")),
+            enforce_concept=bool(tier_config.get("concept_enabled")),
+            # The plan is the largest single response in a run, and the prompt
+            # behind it can run to hundreds of thousands of tokens. Starting at
+            # the 16k default meant a length cut-off re-sent that whole prompt
+            # to buy a bigger budget. max_tokens is a ceiling, not a charge, so
+            # starting higher costs nothing unless the room is actually used.
+            max_tokens=32000,
         )
         shot_plan_dict = {
             "shots": sp_result["shots"],
@@ -14645,7 +15716,15 @@ class VideoGenerationPipeline:
         if tier_config.get("edit_choreographer_enabled"):
             try:
                 from edit_choreographer import choreograph_transitions
-                _ec_model = tier_config.get("concept_model") or shot_planner_model
+                # An explicit user model choice comes first — the rule hero-shot
+                # escalation already follows ("escalate over neither") — then the
+                # 'edit_choreographer' stage row; None = the registry's video
+                # default. The tier used to name Opus here (concept_model).
+                _ec_model = (
+                    self.script_client._user_default_model()
+                    or self._resolve_stage_model("edit_choreographer")
+                    or None
+                )
                 _ec_map, _ec_usage = choreograph_transitions(
                     shot_plan_dict["shots"],
                     llm_chat=self.script_client.chat,
@@ -14707,10 +15786,12 @@ class VideoGenerationPipeline:
                 _di_fonts_locked = bool(
                     (_di_bh or _di_bb) and (_di_bh, _di_bb) != ("Inter", "Inter")
                 )
+                # Same rule as the edit choreographer: the user's choice, then
+                # the 'design_identity' stage row, else the registry default.
                 _di_model = (
-                    self._resolve_stage_model("design_identity")
-                    or tier_config.get("concept_model")
-                    or shot_planner_model
+                    self.script_client._user_default_model()
+                    or self._resolve_stage_model("design_identity")
+                    or None
                 )
                 _di_identity, _di_usage = _di_mod.generate_design_identity(
                     self.script_client.chat,
@@ -14755,9 +15836,11 @@ class VideoGenerationPipeline:
                             _sf_prompt,
                             width=getattr(self, "video_width", 1920),
                             height=getattr(self, "video_height", 1080),
+                            purpose="other",
                         )
-                        if _sf_usage:
-                            self._v3_accumulate_partial_usage(sp_usage, _sf_usage)
+                        # The image API's own tokens are NOT LLM tokens: the
+                        # image is billed per image from its cost event (and
+                        # image_count below), not at LLM token prices.
                         if _sf_bytes:
                             # Bill the image: the token accumulator drops
                             # image_count, so track it on sp_usage explicitly
@@ -14846,8 +15929,7 @@ class VideoGenerationPipeline:
         narration_writer_model = (
             self._resolve_stage_model("narration_writer")
             or tier_config.get("narration_writer_model")
-            # NOT shot_planner_model — that now carries the frontier concept_model
-            # (Opus); NarrationWriter is execution and must stay on the cheap model.
+            # NOT shot_planner_model — NarrationWriter has its own stage row.
             or tier_config.get("shot_planner_model")
             or tier_config.get("director_model")
             or getattr(self.script_client, "model", None)
@@ -14872,6 +15954,10 @@ class VideoGenerationPipeline:
             # Ground-truth for names/numbers/claims (writer rule 15) — without
             # it the writer only ever sees 1-2 sentence briefs.
             source_request=base_prompt,
+            teaching_voice=bool(getattr(self, "_lesson_plan", None)),
+            # A 10-minute lesson is ~1,500 words of narration; 6k left no
+            # room for a reasoning model's thinking on top.
+            max_tokens=(16000 if getattr(self, "_lesson_plan", None) else 6000),
         )
         nw_usage = nw_result.get("usage") or {}
         # Record NarrationWriter tokens. (ShotPlanner already recorded above
@@ -14916,6 +16002,9 @@ class VideoGenerationPipeline:
             "shot_planner": sp_usage,
             "narration_writer": nw_usage,
         }
+        # Without total_tokens the stage's billing gate (`total_tokens > 0`)
+        # skipped every script-stage LLM token.
+        usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
 
         self._emit_progress({
             "type": "sub_stage",
@@ -15329,10 +16418,15 @@ class VideoGenerationPipeline:
         # URL itself is in source_public_url — Director embeds it as <img src>
         # in the IMAGE_CLIP HTML (no render-worker compositing).
         if self._input_image_contexts:
-            _img_labels = "ABCDEFGHIJ"
+            _num_images = len(self._input_image_contexts)
+            # OCR blocks are the bulk of an image section. A screenshot-led run
+            # can now carry 15-20 stills, so scale the per-image allowance down
+            # as the count rises rather than emitting 15 blocks x 20 images.
+            # Mirrors the transcript budget in the SOURCE VIDEO block above.
+            _ocr_per_image = max(4, 90 // max(1, _num_images))
             _image_sections = []
             for _iidx, _ictx in enumerate(self._input_image_contexts):
-                _label = _img_labels[_iidx] if _iidx < len(_img_labels) else str(_iidx)
+                _label = _img_label_for(_iidx)
                 _img_meta_blob = _ictx.get("context", {})  # parsed image_metadata.json
                 _img_meta = _img_meta_blob.get("meta", {})
                 _img_caption = _img_meta_blob.get("caption") or {}
@@ -15353,7 +16447,7 @@ class VideoGenerationPipeline:
                 )
                 _ocr_lines = [
                     f"  \"{b.get('text', '')}\" @ bbox_norm={b.get('bbox_norm', [])}"
-                    for b in _img_ocr_blocks[:15]
+                    for b in _img_ocr_blocks[:_ocr_per_image]
                 ]
                 _tags_line = ", ".join(_img_caption.get("tags", [])[:10])
                 _ui_elements = _img_caption.get("ui_elements") or []
@@ -16684,15 +17778,16 @@ class VideoGenerationPipeline:
                 raise RuntimeError("no API key on script_client")
 
             # V200: prefer per-stage routing (host_description matrix row);
-            # falls back to the legacy DEFAULT_MODEL constant when the stage
-            # map is empty (rollout flag off or matrix lookup failed).
-            from app.constants.models import DEFAULT_MODEL as _ROUTER_MODEL
+            # None = the registry's video default. (The old fallback imported
+            # `app.constants.models`, which does not resolve where the service
+            # runs as `ai_service.app`; that ImportError sent the run to the
+            # generic fallback set below.)
             raw, _usage = self.script_client.chat(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                model=self._resolve_stage_model("host_description") or _ROUTER_MODEL,
+                model=self._resolve_stage_model("host_description"),
                 temperature=0.4,
                 max_tokens=200,
             )
@@ -17292,6 +18387,7 @@ class VideoGenerationPipeline:
                 reference_image_url=face_image_url,
                 # Host shot — needs identity preservation; route to Seedream 4.5.
                 model_override="bytedance-seed/seedream-4.5",
+                purpose="host_identity",
             )
         except Exception as e:
             return _fail_all(f"Seedream raised: {e}", error_stage="seedream")
@@ -18274,6 +19370,7 @@ class VideoGenerationPipeline:
                     # facial structure). Recraft i2i drifts the face. Seedream
                     # 4.5 preserves identity reliably in i2i mode.
                     model_override="bytedance-seed/seedream-4.5",
+                    purpose="host_identity",
                 )
                 if not img_bytes:
                     raise RuntimeError("Seedream returned no bytes for host image")
@@ -18642,9 +19739,11 @@ class VideoGenerationPipeline:
             "errors": errors,
         }
         try:
-            (_Path(run_dir) / "host_outputs.json").write_text(
-                _json.dumps(outputs, indent=2), encoding="utf-8"
+            self._atomic_write_text(
+                _Path(run_dir) / "host_outputs.json", _json.dumps(outputs, indent=2)
             )
+            # Resume skips every avatar shot listed here (paid renders).
+            self._checkpoint("host_outputs", [_Path(run_dir) / "host_outputs.json"])
         except Exception as e:
             print(f"[AvatarBatch] ⚠️  Could not persist host_outputs.json: {e}")
 
@@ -18935,11 +20034,20 @@ class VideoGenerationPipeline:
                     for _i, _ss in enumerate(_sub_shots):
                         _ss["_is_sub_shot"] = True
                         _ss["_sub_idx"] = _i
-                        _e, _u = _shot_task(shot_idx, _ss)
+                        try:
+                            _e, _u = _shot_task(shot_idx, _ss)
+                        except RuntimeError as _empty:
+                            # One empty sub-shot shouldn't sink its sibling;
+                            # only a fully empty shot falls back to a card.
+                            if "returned empty HTML" not in str(_empty):
+                                raise
+                            continue
                         _all_entries.extend(_e)
                         for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                             if _k in _u:
                                 _agg_usage[_k] = _agg_usage.get(_k, 0) + _u[_k]
+                    if not _all_entries:
+                        raise RuntimeError(f"Shot {shot_idx + 1} returned empty HTML")
                     return _all_entries, _agg_usage
 
             shot_type = shot.get("shot_type", "TEXT_DIAGRAM")
@@ -19008,12 +20116,7 @@ class VideoGenerationPipeline:
                             on_segment_done([_ds_entry])
                         except Exception:
                             pass
-                    try:
-                        _cache_path.write_text(
-                            json.dumps({"entries": [_ds_entry], "usage": {}}, default=str)
-                        )
-                    except Exception:
-                        pass
+                    self._write_shot_cache(_cache_path, {"entries": [_ds_entry], "usage": {}})
                     return [_ds_entry], {}
                 # Demote: plain visual beat over the (already silent) window.
                 print(
@@ -19205,12 +20308,7 @@ class VideoGenerationPipeline:
                                 on_segment_done([_av_entry])
                             except Exception:
                                 pass
-                        try:
-                            _cache_path.write_text(
-                                json.dumps({"entries": [_av_entry], "usage": {}}, default=str)
-                            )
-                        except Exception:
-                            pass
+                        self._write_shot_cache(_cache_path, {"entries": [_av_entry], "usage": {}})
                         return [_av_entry], {}
                     else:
                         # Failure (fal error, budget/cap exhausted, safety
@@ -19279,6 +20377,9 @@ class VideoGenerationPipeline:
             if (
                 _template_enabled and _template_compose_fn is not None
                 and shot.get("template_id")
+                # Templates fill the whole frame; a lesson section with the
+                # teacher on screen must keep the teacher's area clear.
+                and (shot.get("teacher_layout") or "board") == "board"
                 # A user revision note / real asset needs the LLM path — the
                 # deterministic template would re-render the identical frame
                 # and silently discard the user's input.
@@ -19350,12 +20451,7 @@ class VideoGenerationPipeline:
                         except Exception:
                             pass
                     # Cache so a resume can skip; usage = empty since we skipped the LLM.
-                    try:
-                        _cache_path.write_text(
-                            json.dumps({"entries": [_t_entry], "usage": {}}, default=str)
-                        )
-                    except Exception:
-                        pass
+                    self._write_shot_cache(_cache_path, {"entries": [_t_entry], "usage": {}})
                     return [_t_entry], {}
                 else:
                     # Template said skip — log and fall through to the LLM path.
@@ -20126,6 +21222,19 @@ class VideoGenerationPipeline:
                 )
                 user_prompt = user_prompt + _host_block
 
+            # ── Lesson mode: board guidance + the teacher's safe area ──
+            if getattr(self, "_lesson_plan", None):
+                try:
+                    from lesson_mode import shot_prompt_block as _lesson_shot_block
+                    user_prompt = user_prompt + _lesson_shot_block(
+                        self._lesson_plan,
+                        shot.get("teacher_layout"),
+                        int(getattr(self, "video_width", 1920) or 1920),
+                        int(getattr(self, "video_height", 1080) or 1080),
+                    )
+                except Exception as _lsb_err:
+                    print(f"   ⚠️ Lesson board block skipped for shot {shot_idx}: {_lsb_err}")
+
             # Inject the shared shot pack (premium/ultra/super_ultra only).
             # Rewrite the id_prefix placeholder with this shot's concrete index.
             if _shot_pack_block:
@@ -20639,25 +21748,27 @@ class VideoGenerationPipeline:
             _shot_look_stash: Optional[Dict[str, Any]] = None
 
             # ── Phase C: per-shot model + temperature ─────────────────────
-            # Model: hero shots (hook/CTA/moment/first/last) may escalate to
-            # the tier's `hero_shot_model` — the craft review's "frontier
-            # intent, flash execution" fix. An explicit USER per-stage pick
-            # always wins over escalation (provenance lives in the raw
-            # stage-model map; _resolve_stage_model discards it).
-            _shot_model = self._resolve_stage_model("per_shot_html")
-            _hero_model = self._tier_config.get("hero_shot_model")
-            if _hero_model and _shot_is_high_impact(shot, shot_idx, total_shots):
-                _psm_entry = (getattr(self, "_stage_model_map", None) or {}).get("per_shot_html")
-                _user_pinned = (
-                    isinstance(_psm_entry, tuple) and len(_psm_entry) > 1
-                    # Both provenances are explicit user picks: a per-stage
-                    # override AND the legacy video-wide `model=` field
-                    # (source "user_default"). Escalate over neither.
-                    and _psm_entry[1] in ("user_per_stage", "user_default")
-                )
-                if not _user_pinned:
-                    _shot_model = _hero_model
-                    print(f"   ⬆️ Shot {shot_idx + 1}: hero-shot model escalation → {_hero_model}")
+            # Hero shots (hook/CTA/moment/first/last) may switch to the
+            # 'hero_shot' stage model (matrix row; none by default) and, on
+            # tiers with `hero_effort`, think harder on the same model. An
+            # explicit USER per-stage pick always wins over a model switch
+            # (provenance lives in the raw stage-model map;
+            # _resolve_stage_model discards it).
+            _per_shot_model = self._resolve_stage_model("per_shot_html")
+            _shot_model, _hero_effort, _hero_max_tokens = _hero_shot_settings(
+                _per_shot_model,
+                self._resolve_stage_model("hero_shot"),
+                (getattr(self, "_stage_model_map", None) or {}).get("per_shot_html"),
+                self._tier_config,
+                _shot_is_high_impact(shot, shot_idx, total_shots),
+            )
+            if _shot_model != _per_shot_model:
+                print(f"   ⬆️ Shot {shot_idx + 1}: hero-shot model escalation → {_shot_model}")
+            if _hero_effort:
+                print(f"   ⬆️ Shot {shot_idx + 1}: hero shot — reasoning effort {_hero_effort}")
+            _shot_max_tokens = _hero_max_tokens or self._tier_config.get(
+                "per_shot_max_tokens", _PER_SHOT_MAX_TOKENS
+            )
             # Temperature: modulated by the shot's beat-map section energy
             # (already resolved into _bm_energy above) so calm sections render
             # conservatively and climax sections sample bolder — instead of
@@ -20666,7 +21777,7 @@ class VideoGenerationPipeline:
             try:
                 # Gated to the concept tiers (premium+): free/standard keep
                 # byte-identical flat-temperature behavior.
-                if isinstance(_bm_energy, (int, float)) and self._tier_config.get("concept_model"):
+                if isinstance(_bm_energy, (int, float)) and self._tier_config.get("concept_enabled"):
                     _shot_temperature = max(
                         0.55, min(0.95, _shot_temperature + 0.25 * (float(_bm_energy) - 0.5))
                     )
@@ -20679,18 +21790,21 @@ class VideoGenerationPipeline:
                 )
                 _attempt_usage: Dict[str, Any] = {}
                 try:
-                    raw, _attempt_usage = self.html_client.chat(
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": _current_prompt},
-                        ],
-                        temperature=_shot_temperature,
-                        max_tokens=(
-                            8000 if attempt > 0
-                            else self._tier_config.get("per_shot_max_tokens", 16000)
-                        ),
-                        model=_shot_model,
-                    )
+                    # The hero effort covers only the calls that write this
+                    # shot's HTML — never the judge / vision / regen calls.
+                    with _video_effort(_hero_effort):
+                        raw, _attempt_usage = self.html_client.chat(
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": _current_prompt},
+                            ],
+                            temperature=_shot_temperature,
+                            max_tokens=(
+                                _shot_max_tokens if attempt == 0 or _hero_max_tokens
+                                else _PER_SHOT_RETRY_MAX_TOKENS
+                            ),
+                            model=_shot_model,
+                        )
                     # Add this attempt's tokens before JSON parsing so parse failures
                     # are still counted in the cost.
                     for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
@@ -20728,7 +21842,7 @@ class VideoGenerationPipeline:
                             "shot_index": shot_idx,
                             "total_shots": total_shots,
                             "shot_type": shot_type,
-                            "error": str(e)[:200],
+                            "error": str(e)[:_SHOT_ERROR_KEEP],
                             "retrying": False,
                             "attempt": max_attempts,
                             "max_attempts": max_attempts,
@@ -20862,7 +21976,7 @@ class VideoGenerationPipeline:
                         "shot_index": shot_idx,
                         "total_shots": total_shots,
                         "shot_type": shot_type,
-                        "error": str(e)[:200],
+                        "error": str(e)[:_SHOT_ERROR_KEEP],
                         "retrying": True,
                         "attempt": attempt + 1,
                         "max_attempts": max_attempts,
@@ -20915,22 +22029,23 @@ class VideoGenerationPipeline:
                         (_bon_rot + _bon_i - 1) % len(_BEST_OF_N_ANGLES)
                     ]
                     try:
-                        _bon_raw, _bon_usage = self.html_client.chat(
-                            messages=[
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": (
-                                    _base_user_prompt
-                                    + "\n\n## ALTERNATE TAKE — COMPOSITION ANGLE (this candidate only)\n"
-                                    + f"Commit fully to this angle: {_bon_angle['directive']}\n"
-                                    + "Same narration, same sync points, same brand tokens — "
-                                    + "different composition. Respond with the same strict JSON "
-                                    + "object format as instructed (first char `{`)."
-                                )},
-                            ],
-                            temperature=_bon_temp,
-                            max_tokens=self._tier_config.get("per_shot_max_tokens", 16000),
-                            model=_bon_model,
-                        )
+                        with _video_effort(_hero_effort):
+                            _bon_raw, _bon_usage = self.html_client.chat(
+                                messages=[
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": (
+                                        _base_user_prompt
+                                        + "\n\n## ALTERNATE TAKE — COMPOSITION ANGLE (this candidate only)\n"
+                                        + f"Commit fully to this angle: {_bon_angle['directive']}\n"
+                                        + "Same narration, same sync points, same brand tokens — "
+                                        + "different composition. Respond with the same strict JSON "
+                                        + "object format as instructed (first char `{`)."
+                                    )},
+                                ],
+                                temperature=_bon_temp,
+                                max_tokens=_shot_max_tokens,
+                                model=_bon_model,
+                            )
                         self._best_of_n_add_cost(_bon_usage, _bon_model)
                         for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                             usage[_k] = usage.get(_k, 0) + (_bon_usage or {}).get(_k, 0)
@@ -20976,10 +22091,35 @@ class VideoGenerationPipeline:
                             f"winner '{_winner.get('angle')}' via {(_judge_meta or {}).get('mode')}"
                         )
 
-            html = data.get("html", "")
-            if not html:
-                print(f"   ⚠️ Shot {shot_idx + 1} returned empty HTML")
-                return [], usage
+            html = data.get("html", "") if isinstance(data, dict) else ""
+            if not (html or "").strip():
+                print(f"   ⚠️ {_log_label} returned empty HTML (model {_shot_model})")
+                # One retry on the different-vendor fallback model with the
+                # SAME prompt before giving up: an empty body is usually a
+                # model-side hiccup (reasoning ate the budget, a filtered
+                # completion), and a real shot beats a fallback card.
+                _fb_html_data = self._retry_empty_shot_html(
+                    system_prompt=system_prompt,
+                    user_prompt=_base_user_prompt,
+                    temperature=_shot_temperature,
+                    max_tokens=_shot_max_tokens,
+                    primary_model=_shot_model,
+                    usage=usage,
+                    log_label=_log_label,
+                )
+                if _fb_html_data is not None:
+                    data = _fb_html_data
+                    html = data.get("html", "")
+                    try:
+                        raw = json.dumps(data, ensure_ascii=False)
+                    except Exception:
+                        pass
+                else:
+                    # Returning no entry left a hole in the timeline (a blank
+                    # 10 s stretch in the LMS player). Raise so the shot loop
+                    # ships its fallback card for this shot instead (an empty
+                    # SUB-shot is skipped by its parent).
+                    raise RuntimeError(f"Shot {shot_idx + 1} returned empty HTML")
 
             html = self._sanitize_html_content(html)
 
@@ -21285,7 +22425,7 @@ class VideoGenerationPipeline:
                                     {"role": "user", "content": corrective},
                                 ],
                                 temperature=0.4,  # lower for more faithful regen
-                                max_tokens=self._tier_config.get("per_shot_max_tokens", 16000),
+                                max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
                             )
                         finally:
                             _llm_phase.reset(_phase_tok)
@@ -21389,6 +22529,22 @@ class VideoGenerationPipeline:
             )
             if _brand_asset_record and _brand_asset_record.get("regen_html"):
                 html = _brand_asset_record["regen_html"]
+
+            # ── Lesson board correctness (lesson mode only) ──
+            # Wrong maths on a teaching board is the worst defect a lesson can
+            # ship (prod: "c₂ = a₂ + b₂" while the teacher said "c squared").
+            try:
+                _lesson_check_record = self._lesson_check_shot(
+                    html=html, shot=shot, shot_idx=shot_idx,
+                    start_time=start_time, end_time=end_time,
+                    system_prompt=system_prompt, user_prompt=user_prompt,
+                    last_raw_response=raw, usage=usage,
+                )
+            except Exception as _lc_err:
+                _lesson_check_record = None
+                print(f"   ⚠️ Shot {shot_idx + 1} lesson check errored ({_lc_err}) — shipping as-is")
+            if _lesson_check_record and _lesson_check_record.get("regen_html"):
+                html = _lesson_check_record["regen_html"]
 
             # ── Vision reviewer — sees the rendered frame ──
             # Catches defects the regex validator can't (legibility, face
@@ -21681,13 +22837,12 @@ class VideoGenerationPipeline:
             # SAME cache file under "shot_look" (resume readers only consume
             # entries/usage — additive-safe) so a future shot_look gate can
             # present them without regenerating.
-            try:
-                _cache_body: Dict[str, Any] = {"entries": entries, "usage": usage}
-                if _shot_look_stash:
-                    _cache_body["shot_look"] = _shot_look_stash
-                _cache_path.write_text(json.dumps(_cache_body, default=str))
-            except Exception:
-                pass  # cache write failure is non-fatal
+            # Atomic (temp + os.replace) and checkpointed the moment it lands,
+            # so a crash / deploy mid-HTML resumes from every finished shot.
+            _cache_body: Dict[str, Any] = {"entries": entries, "usage": usage}
+            if _shot_look_stash:
+                _cache_body["shot_look"] = _shot_look_stash
+            self._write_shot_cache(_cache_path, _cache_body)  # never raises
 
             return entries, usage
 
@@ -21759,6 +22914,18 @@ class VideoGenerationPipeline:
                         import traceback as _tb_e
                         print(f"   ❌ Shot {shot_idx + 1} exception: {e}")
                         print(f"      traceback:\n{_tb_e.format_exc()}")
+                        # Never leave a hole in the timeline: a crashed shot
+                        # task used to vanish, and a 12 s gap is wider than
+                        # gap-snap fills (10 s) — a white screen in the MP4.
+                        try:
+                            _crashed = shots[shot_idx] if 0 <= shot_idx < len(shots) else None
+                            if isinstance(_crashed, dict):
+                                _fb_crash = self._crash_fallback_entry(_crashed, shot_idx, palette)
+                                if _fb_crash:
+                                    all_entries.append(_fb_crash)
+                                    print(f"   🔄 Shot {shot_idx + 1} → fallback card (task crashed)")
+                        except Exception as _fbc_err:
+                            print(f"   ⚠️ Shot {shot_idx + 1} crash fallback failed: {_fbc_err}")
         finally:
             # Cancel queued-but-unstarted shots and return immediately — do NOT
             # block the pipeline thread joining the in-flight ones (wait=False).
@@ -23470,6 +24637,29 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
               word-break: normal;
               overflow-wrap: normal;
             }}
+            /* Headings must never split mid-word. `word-break: break-word` above is
+               a safety valve for prose in a narrow column, but applied to display
+               type it produces "CONFIRM SUBMISSI / ON". A heading that does not
+               fit should be SHRUNK — the fit sweep in dispatcher_install_js
+               already does that — not hacked in half. keep-all breaks at spaces
+               only; the sweep handles the genuinely-too-wide single word. */
+            h1, h2, h3, h4, h5, h6,
+            [class*="title" i],
+            [class*="headline" i],
+            [class*="heading" i],
+            [class*="display" i] {{
+              word-break: keep-all;
+              overflow-wrap: normal;
+              hyphens: none;
+            }}
+            /* ...and the words INSIDE them. Animated headlines wrap each word
+               in its own span, and `*` above sets break-word on that span
+               directly — inheritance never reaches it. "PAR / T" and
+               "RESUME / S" shipped this way (ITRC lesson, 2026-10-22). */
+            h1 *, h2 *, h3 *, h4 *, h5 *, h6 * {{
+              word-break: keep-all;
+              overflow-wrap: normal;
+            }}
             /* Word-level wrappers: prevent internal breaks, allow breaks between words */
             [class*="-word"],
             [class*="word-"] {{
@@ -23498,10 +24688,14 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
             [class*="word-row"] {{
               gap: 0.25em;
             }}
-            /* Ensure large display text doesn't overflow */
+            /* Ensure large display text doesn't overflow. The side padding is a
+               length, not a percentage: a heading in a shrink-to-fit box (an
+               absolutely positioned stack with no width) is measured with %
+               padding counted as 0, then loses 8% of that width to it — every
+               long word came out one letter too wide for its own box. */
             h1, h2, h3, .text-display {{
               max-width: 100%;
-              padding: 0 4%;
+              padding: 0 2vw;
             }}
 
             /* --- FULL SCREEN CENTER CONTAINER (CRITICAL) --- */
@@ -25297,7 +26491,9 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
         # ── AI generation — last resort. Cultural context woven into the prompt. ──
         ai_prompt = prompt if is_cutout else self._inject_cultural_into_ai_prompt(prompt)
         print(f"    🎨 [pipeline] Generating image{' (cutout)' if is_cutout else ''}: {ai_prompt[:60]}...")
-        image_bytes, usage_meta = self._call_image_generation_llm(ai_prompt, is_cutout=is_cutout)
+        # The image API's own usage is not returned as "usage": that dict is
+        # LLM tokens only. The image bills per image from its cost event.
+        image_bytes, _image_usage = self._call_image_generation_llm(ai_prompt, is_cutout=is_cutout)
         if not image_bytes:
             # Seedream returned nothing — cascade through Pexels/Pixabay → SVG
             # placeholder so the shot doesn't ship with a broken `placeholder.png`.
@@ -25312,7 +26508,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                     "image_bytes": fb.get("image_bytes"),
                     "is_svg":      fb.get("is_svg", False),
                     "filename":    None,
-                    "usage":       usage_meta or {},
+                    "usage":       {},
                 }
             return None
         # Remove background for cutout assets, then VALIDATE the result has
@@ -25336,7 +26532,8 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
             "full_tag":    full_tag,
             "image_bytes": image_bytes,
             "filename":    filename,
-            "usage":       usage_meta,
+            "usage":       {},
+            "ai_generated": True,
             "cutout_failed": cutout_failed,
         }
 
@@ -25552,7 +26749,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                         except Exception:
                             pass
                     print(f"    🔄 Image fallback → AI gen ({len(ai_bytes)} bytes): {prompt[:50]}...")
-                    return {"image_bytes": ai_bytes, "is_svg": False}
+                    return {"image_bytes": ai_bytes, "is_svg": False, "ai_generated": True}
             except _ImageGenRateLimitError:
                 # Rate-limit isn't a permanent failure — the executor needs
                 # to see it so the task gets requeued. Don't paper over.
@@ -25802,7 +26999,15 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 # Flat sys.path load (hyphenated dir) — the canonical package
                 # root `ai_service` is always importable in the container.
                 from ai_service.app.constants.models import get_model_pricing as _gmp  # type: ignore
-            pricing = _gmp(model) or {}
+            # No model = the client resolved the registry's video default; price
+            # that (GLM), not the conservative fallback, or a GLM best-of-N
+            # judge with no stage map trips the run cap at Sonnet-class rates.
+            _priced_model = (
+                model
+                or getattr(getattr(self, "html_client", None), "use_case_default_model", None)
+                or GLM_DEFAULT
+            )
+            pricing = _gmp(_priced_model) or {}
             inp = pricing.get("input_token_price") or 0.0
             outp = pricing.get("output_token_price") or 0.0
             if inp or outp:
@@ -25967,8 +27172,8 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                         )
                         _fr = client.take_shot_screenshots(
                             html=self._ensure_fonts(_judge_html),
-                            width=int(getattr(self, "video_width", 1920)),
-                            height=int(getattr(self, "video_height", 1080)),
+                            width=self._lesson_canvas(shot)[0],
+                            height=self._lesson_canvas(shot)[1],
                             timestamps=[_mid_t],
                             background=_bg,
                         )
@@ -26004,9 +27209,9 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                         _content.append(
                             {"type": "image_url", "image_url": {"url": _to_data_url(_png)}}
                         )
-                    _judge_model = (
-                        self._resolve_stage_model("vision_review") or "google/gemini-2.5-pro"
-                    )
+                    # The vision_review row, else the registry's video default
+                    # (vision-capable) — never the user's pick.
+                    _judge_model = self._resolve_vision_stage_model("vision_review")
                     raw, _u = self.html_client.chat(
                         messages=[
                             {"role": "system", "content": (
@@ -26016,7 +27221,9 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                             {"role": "user", "content": _content},
                         ],
                         temperature=0.1,
-                        max_tokens=300,
+                        # 300 left a thinking model no room past its reasoning:
+                        # it stopped on "length" and re-ran at 600, then 1200.
+                        max_tokens=1500,
                         response_format={"type": "json_object"},
                         model=_judge_model,
                     )
@@ -26231,11 +27438,9 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                         "type": "image_url",
                         "image_url": {"url": _c.get("thumb") or _c.get("url", "")},
                     })
-                _model = (
-                    self._resolve_stage_model("stock_photo_ranking")
-                    or self._resolve_stage_model("vision_review")
-                    or "google/gemini-2.5-pro"
-                )
+                # The 'stock_photo_ranking' stage row, else the registry's
+                # video default (vision-capable) — never the user's pick.
+                _model = self._resolve_vision_stage_model("stock_photo_ranking")
                 _messages: List[Dict[str, Any]] = [
                     {"role": "system", "content": (
                         "You art-direct stock photo picks for a premium video. "
@@ -26243,10 +27448,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                     {"role": "user", "content": _content},
                 ]
             else:
-                _model = (
-                    self._resolve_stage_model("stock_photo_ranking")
-                    or self._resolve_stage_model("stock_video_ranking")
-                )
+                _model = self._resolve_vision_stage_model("stock_photo_ranking")
                 _messages = [
                     {"role": "system", "content": (
                         "You art-direct stock photo picks for a premium video. "
@@ -27719,7 +28921,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
             # timeout. Set the event in the 429 path so the requeued task can
             # re-claim or proceed without a reference.
             try:
-                image_bytes, usage_meta = self._call_image_generation_llm(
+                image_bytes, _image_usage = self._call_image_generation_llm(
                     prompt, reference_image_url=_seedream_ref, is_cutout=is_cutout
                 )
             except _ImageGenRateLimitError:
@@ -27739,8 +28941,11 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                     if event:
                         event.set()
                 raise
-            if not usage_meta: usage_meta = {}
-            for k, v in enhance_usage.items():
+            # LLM tokens only (the prompt enhancement). The image API's own
+            # usage is not folded in: the image bills per image from its cost
+            # event, not at LLM token prices.
+            usage_meta: Dict[str, Any] = {}
+            for k, v in (enhance_usage or {}).items():
                 if k in ["prompt_tokens", "completion_tokens", "total_tokens"]:
                     usage_meta[k] = usage_meta.get(k, 0) + v
             if not image_bytes:
@@ -27817,6 +29022,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 "image_bytes": image_bytes,       # pass bytes directly — no re-read
                 "filename":   filename,
                 "usage":      usage_meta,
+                "ai_generated": True,
                 "cutout_failed": cutout_failed,
             }
 
@@ -27868,7 +29074,9 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                         successful_generations += 1
                         if res.get("stock_url"):
                             total_image_usage["stock_count"] += 1
-                        else:
+                        elif res.get("ai_generated"):
+                            # An SVG placeholder is not an AI image; every AI
+                            # image also records its own cost event.
                             total_image_usage["image_count"] += 1
                         u = res.get("usage") or {}
                         # Both shapes: Gemini camelCase (legacy image path) AND
@@ -28194,8 +29402,28 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
         reference_image_url: Optional[str] = None,
         is_cutout: bool = False,
         model_override: Optional[str] = None,
+        purpose: str = "other",
+        cost_events: Any = _RUN_TRACKER,
+        fallback_model: Optional[str] = None,
     ) -> Tuple[Optional[bytes], Optional[Dict[str, Any]]]:
-        """Generate image via OpenRouter. Default model is recraft/recraft-v4.1.
+        """Generate image via OpenRouter. Default model is the super-admin
+        'video_image' row (literal default recraft/recraft-v4.1).
+
+        A model that only answers on /api/v1/images (Qwen) goes there; a call
+        with a reference image, or one that comes back empty, falls back to
+        `fallback_model` (default VIDEO_IMAGE_DEFAULT) on chat/completions —
+        that API has no reference-image input, and a video must not lose a
+        picture because a setting points at a model that failed.
+
+        Every successful generation records ONE image cost event (real image
+        model id, OpenRouter's `usage.cost` when the response carries it) with
+        `purpose` — one of cost_event_tracker.IMAGE_PURPOSES. Billing charges
+        each event once ("host_identity" too: one per real Seedream call).
+        The event goes to `cost_events` when given (None = record nowhere),
+        else to this stage's tracker. A background thread (thumbnails) must
+        pass the tracker of the stage it belongs to: run() replaces
+        `self._cost_events` per stage, so reading it late would book the
+        image on the next stage.
 
         `model_override` lets callers force a different OpenRouter image model.
         Host-avatar shots use `bytedance-seed/seedream-4.5` because Recraft's
@@ -28297,7 +29525,29 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
         else:
             content = full_prompt
 
-        _image_model = model_override or "recraft/recraft-v4.1"
+        _tracker = (
+            getattr(self, "_cost_events", None) if cost_events is _RUN_TRACKER else cost_events
+        )
+        _image_model = model_override or _image_model_for(VIDEO_IMAGE_USE_CASE, VIDEO_IMAGE_DEFAULT)
+        if _uses_images_api(_image_model):
+            _fallback = fallback_model or VIDEO_IMAGE_DEFAULT
+            if reference_image_url:
+                print(f"    ↪️  {_image_model} takes no reference image — using {_fallback} for this one")
+            else:
+                img_bytes, usage_metadata = self._call_openrouter_images_api(
+                    _image_model, full_prompt, aspect_ratio, api_key, prompt,
+                )
+                if img_bytes:
+                    img_bytes = self._enforce_image_orientation(
+                        img_bytes, target_orient, width, height, prompt
+                    )
+                    _record_image_cost_event(
+                        _tracker, _image_model, usage_metadata, purpose,
+                        phase=_llm_phase.get(),
+                    )
+                    return img_bytes, usage_metadata
+                print(f"    ↪️  {_image_model} gave no image — falling back to {_fallback}")
+            _image_model = _fallback
         payload = {
             "model": _image_model,
             "messages": [{"role": "user", "content": content}],
@@ -28312,6 +29562,9 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
             "image_config": {
                 "aspect_ratio": aspect_ratio,
             },
+            # Ask OpenRouter for the call's real cost (usage.cost) — it is
+            # what billing charges for this image.
+            "usage": {"include": True},
         }
 
         max_retries = 3
@@ -28358,6 +29611,10 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                         img_bytes = self._enforce_image_orientation(
                             img_bytes, target_orient, width, height, prompt
                         )
+                        _record_image_cost_event(
+                            _tracker, _image_model, usage_metadata, purpose,
+                            phase=_llm_phase.get(),
+                        )
                         return img_bytes, usage_metadata
 
                 print(f"    ⚠️  Recraft response had no image payload for '{prompt[:50]}...'")
@@ -28398,6 +29655,84 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                       f"{_tb.format_exc()[:400]}")
                 return None, None
 
+        return None, None
+
+    def _call_openrouter_images_api(
+        self,
+        model: str,
+        prompt: str,
+        aspect_ratio: str,
+        api_key: str,
+        label: str = "",
+    ) -> Tuple[Optional[bytes], Optional[Dict[str, Any]]]:
+        """One image from OpenRouter's /api/v1/images (dedicated image models
+        such as Qwen): {model, prompt, aspect_ratio} → data[0].b64_json, with
+        usage.cost for billing. 429 raises _ImageGenRateLimitError like the
+        chat path; 5xx/network errors retry; anything else returns (None, None)
+        so the caller can fall back."""
+        import random as _random
+
+        body = {
+            "model": model,
+            "prompt": prompt,
+            "n": 1,
+            "aspect_ratio": aspect_ratio,
+            "resolution": "1K",
+            "usage": {"include": True},
+        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        max_retries = 3
+        for attempt in range(max_retries):
+            req = urllib.request.Request(
+                _OPENROUTER_IMAGES_API_URL,
+                data=json.dumps(body).encode("utf-8"),
+                headers=headers,
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=180) as response:
+                    data = json.loads(response.read().decode("utf-8"))
+                usage_metadata = data.get("usage", {}) or {}
+                for item in data.get("data") or []:
+                    b64 = (item or {}).get("b64_json")
+                    if not b64:
+                        continue
+                    try:
+                        return base64.b64decode(b64), usage_metadata
+                    except (ValueError, base64.binascii.Error) as e:
+                        print(f"    ⚠️  Could not decode image from {model}: {e}")
+                        return None, None
+                print(f"    ⚠️  {model} response had no image payload for '{label[:50]}...'")
+                return None, None
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    retry_after = 15.0
+                    raw_hdr = e.headers.get("Retry-After") if e.headers else None
+                    if raw_hdr:
+                        try:
+                            retry_after = float(raw_hdr) + 1
+                        except ValueError:
+                            pass
+                    print(f"    ⚠️  {model} 429 for '{label[:40]}...' — signalling rate-limit "
+                          f"(retry-after {retry_after:.0f}s)")
+                    raise _ImageGenRateLimitError(retry_after)
+                if e.code >= 500 and attempt < max_retries - 1:
+                    wait = (2.0 ** attempt) * _random.uniform(0.8, 1.4)
+                    print(f"    ⚠️  {model} HTTP {e.code} (attempt {attempt+1}/{max_retries}). "
+                          f"Retrying in {wait:.1f}s...")
+                    time.sleep(wait)
+                    continue
+                print(f"    ❌ {model} image HTTP {e.code} for '{label[:50]}...': {e}")
+                return None, None
+            except Exception as e:  # noqa: BLE001
+                if attempt < max_retries - 1:
+                    wait = (1.5 ** attempt) * _random.uniform(0.5, 1.5)
+                    print(f"    ⚠️  {model} image attempt {attempt+1}/{max_retries} failed: {e}. "
+                          f"Retrying in {wait:.1f}s...")
+                    time.sleep(wait)
+                    continue
+                print(f"    ❌ {model} image failed after {max_retries} attempts: {e}")
+                return None, None
         return None, None
 
     def _generate_avatar_runpod(self, run_dir: Path) -> Optional[Path]:
@@ -28591,6 +29926,198 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
 
 
     # --- Timeline + video -------------------------------------------------
+    # ── Lesson mode: the Spatius teacher track (lesson_teacher.py) ─────────
+    def _lesson_teacher_start(self, run_dir: Path, voice_audio: Path) -> None:
+        """Render the teacher for the whole voice narration in the background.
+
+        Idempotent per run; a cached render in run_dir is reused. Failure is
+        non-fatal — the lesson ships as a board-only video and the reason is
+        recorded in lesson_outputs.json."""
+        plan = getattr(self, "_lesson_plan", None)
+        if not plan or getattr(self, "_lesson_teacher_thread", None) is not None:
+            return
+        try:
+            import lesson_mode as _lm
+            import lesson_teacher as _lt
+        except Exception as _imp_err:
+            self._lesson_teacher_error = f"lesson modules unavailable: {_imp_err}"
+            print(f"   ⚠️ Lesson teacher skipped — {self._lesson_teacher_error}")
+            return
+        if not _lm.has_teacher(plan):
+            return
+        if not _lt.configured():
+            self._lesson_teacher_error = "Spatius is not configured on this service"
+            print(f"   ⚠️ Lesson teacher skipped — {self._lesson_teacher_error}")
+            return
+        voice_audio = Path(voice_audio)
+        if not voice_audio.exists():
+            self._lesson_teacher_error = f"voice track missing ({voice_audio.name})"
+            print(f"   ⚠️ Lesson teacher skipped — {self._lesson_teacher_error}")
+            return
+        import threading as _th_lt
+        avatar_id = plan["teacher"]["avatar_id"]
+        run_name = run_dir.name
+
+        def _work() -> None:
+            try:
+                self._lesson_teacher_result = _lt.render_track(
+                    voice_audio=voice_audio,
+                    avatar_id=avatar_id,
+                    run_dir=run_dir,
+                    run_name=run_name,
+                    on_progress=lambda st: print(f"   🧑‍🏫 Teacher render: {st}"),
+                    # Persist the Spatius job the moment it is submitted (and
+                    # again when ready) so a resumed leg re-polls the same
+                    # paid job instead of rendering a second one.
+                    checkpoint=lambda paths: self._checkpoint("teacher", paths),
+                )
+                _r = self._lesson_teacher_result or {}
+                print(
+                    f"   🧑‍🏫 Teacher ready: {_r.get('video_seconds')}s video in "
+                    f"{_r.get('render_seconds')}s, voice offset {_r.get('offset_s')}s"
+                )
+                # Pre-cut the per-layout clips now, while the board is still
+                # being generated: section starts are fixed by the recorded
+                # voice, so the timeline step only has to reuse them (keying
+                # is CPU-heavy on this 1.5-CPU pod). +1 s of tail covers the
+                # last section being stretched to the audio end.
+                if _r and not _r.get("precut"):
+                    try:
+                        _shots = ((getattr(self, "_v3_shot_plan", None) or {}).get("shots") or [])
+                        _pseudo = [
+                            {"id": f"shot-{i}", "inTime": float(s.get("start_time") or 0.0),
+                             "exitTime": float(s.get("end_time") or 0.0)}
+                            for i, s in enumerate(_shots) if isinstance(s, dict)
+                        ]
+                        _layouts = {
+                            i: (s.get("teacher_layout") or "board")
+                            for i, s in enumerate(_shots) if isinstance(s, dict)
+                        }
+                        _pre_runs = _lm.teacher_runs(_pseudo, _layouts)
+                        if _pre_runs:
+                            _lt.build_clips(
+                                _r, _pre_runs, content_starts_at=0.0,
+                                width=int(getattr(self, "video_width", 1920) or 1920),
+                                height=int(getattr(self, "video_height", 1080) or 1080),
+                                run_dir=run_dir, run_name=run_name, pad_end_s=1.0,
+                            )
+                            print(f"   🧑‍🏫 Teacher clips pre-cut: {len(_r.get('precut') or [])} run(s)")
+                            # Pre-cut clip URLs ride lesson_teacher.json —
+                            # checkpoint so a resume reuses them.
+                            self._checkpoint("teacher", [run_dir / _lt.CACHE_NAME])
+                    except Exception as _pc_err:
+                        print(f"   ⚠️ Teacher clip pre-cut skipped ({_pc_err}) — cutting at timeline time")
+            except Exception as _err:
+                self._lesson_teacher_error = str(_err)[:500]
+                print(f"   ⚠️ Teacher render failed — lesson ships board-only: {_err}")
+
+        self._lesson_teacher_thread = _th_lt.Thread(target=_work, name="lesson-teacher", daemon=True)
+        self._lesson_teacher_thread.start()
+        self._emit_progress({
+            "type": "sub_stage", "sub_stage": "lesson_teacher",
+            "message": "Recording the teacher...",
+        })
+
+    def _lesson_teacher_entries(
+        self,
+        timeline_entries: List[Dict[str, Any]],
+        run_dir: Path,
+        *,
+        content_starts_at: float,
+        palette: Optional[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Lesson overlays for the timeline: the teacher (one entry per run of
+        sections sharing a layout) and the caption band. Also gives every shot
+        its board canvas. Writes lesson_outputs.json for billing/metadata."""
+        plan = getattr(self, "_lesson_plan", None)
+        if not plan:
+            return []
+        import lesson_mode as _lm
+        import lesson_teacher as _lt
+        outputs: Dict[str, Any] = {"teacher": None, "runs": [], "error": None}
+        width = int(getattr(self, "video_width", 1920) or 1920)
+        height = int(getattr(self, "video_height", 1080) or 1080)
+        shots = ((getattr(self, "_v3_shot_plan", None) or {}).get("shots") or [])
+        # Timeline ids are shot-{enumerate index}, so key by position.
+        layout_by_shot = {
+            i: ((s.get("teacher_layout") or "board") if _lm.has_teacher(plan) else "board")
+            for i, s in enumerate(shots) if isinstance(s, dict)
+        }
+        teacher_entries: List[Dict[str, Any]] = []
+        runs: List[Dict[str, Any]] = []
+        urls: List[Optional[str]] = []
+        try:
+            if _lm.has_teacher(plan):
+                runs = _lm.teacher_runs(timeline_entries, layout_by_shot)
+                outputs["runs"] = runs
+            if runs:
+                if getattr(self, "_lesson_teacher_thread", None) is None and not self._lesson_teacher_result:
+                    # Resume leg / html stage skipped the early start: render
+                    # now from the voice-only track (the mix pass keeps it as
+                    # narration_unmixed.mp3 once music has been baked in).
+                    _voice = run_dir / "narration_unmixed.mp3"
+                    if not _voice.exists():
+                        _voice = run_dir / "narration.mp3"
+                    self._lesson_teacher_start(run_dir, _voice)
+                _thread = getattr(self, "_lesson_teacher_thread", None)
+                if _thread is not None and _thread.is_alive():
+                    self._emit_progress({
+                        "type": "sub_stage", "sub_stage": "lesson_teacher",
+                        "message": "Waiting for the teacher recording...",
+                    })
+                    _thread.join(timeout=4800)
+                track = self._lesson_teacher_result
+                if not track:
+                    outputs["error"] = self._lesson_teacher_error or "teacher render did not finish"
+                else:
+                    urls = _lt.build_clips(
+                        track, runs,
+                        content_starts_at=content_starts_at,
+                        width=width, height=height,
+                        run_dir=run_dir, run_name=run_dir.name,
+                        reuse=track.get("precut"),
+                    )
+                    teacher_entries = _lm.build_teacher_entries(
+                        runs, urls, width=width, height=height,
+                        teacher=plan.get("teacher"), palette=palette,
+                    )
+                    outputs["teacher"] = {
+                        k: track.get(k) for k in (
+                            "provider", "avatar_id", "job_id", "audio_seconds", "video_seconds",
+                            "offset_s", "render_seconds", "vendor_credits", "vendor_usd", "platform_credits",
+                        )
+                    }
+                    outputs["clips_ok"] = sum(1 for u in urls if u)
+                    outputs["clips_failed"] = sum(1 for u in urls if not u)
+                    print(
+                        f"   🧑‍🏫 Teacher on screen: {len(teacher_entries)} run(s) "
+                        f"({', '.join(r['layout'] for r in runs[:12])}{'…' if len(runs) > 12 else ''})"
+                    )
+        except Exception as _lt_err:
+            outputs["error"] = str(_lt_err)[:500]
+            print(f"   ⚠️ Lesson teacher failed — board-only: {_lt_err}")
+            teacher_entries, urls = [], [None] * len(runs)
+        band_entries: List[Dict[str, Any]] = []
+        try:
+            # Every shot gets its board canvas (above the caption band, beside
+            # a teacher panel); #shot-root clips to it, so nothing a shot draws
+            # can land under the captions or the panel.
+            effective = _lm.effective_layouts(layout_by_shot, runs, urls, timeline_entries)
+            outputs["shots_fit_to_board"] = _lm.fit_shots_to_board(
+                timeline_entries, effective, width=width, height=height,
+            )
+            band_entries = _lm.build_band_entries(
+                timeline_entries, effective, width=width, height=height, palette=palette,
+            )
+        except Exception as _band_err:
+            print(f"   ⚠️ Lesson caption band failed: {_band_err}")
+        finally:
+            try:
+                (run_dir / "lesson_outputs.json").write_text(json.dumps(outputs, indent=2, default=str))
+            except Exception:
+                pass
+        return teacher_entries + band_entries
+
     def _write_timeline(
         self,
         html_segments: List[Dict[str, Any]],
@@ -28971,6 +30498,15 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
             }
             timeline_entries.append(watermark_entry)
             print(f"   ➕ Added watermark branding ({content_starts_at}s - {content_max_end}s) at {position}")
+
+        # 3.5 Lesson mode — the teacher overlay (after audio pinning + gap-snap
+        # so its runs line up with the final shot times).
+        if navigation == "time_driven" and getattr(self, "_lesson_plan", None):
+            timeline_entries.extend(self._lesson_teacher_entries(
+                timeline_entries, run_dir,
+                content_starts_at=content_starts_at,
+                palette=((style_guide or {}).get("palette") if isinstance(style_guide, dict) else None),
+            ))
         
         # 4. Add OUTRO entry if enabled (full-screen, after audio ends)
         if outro_enabled and outro_config.get("html"):
@@ -29258,6 +30794,53 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
             if shot_clips:
                 meta_dict["shots"] = shot_clips
                 print(f"   🎬 Added {len(shot_clips)} shot clips to timeline.meta.shots (v3 editor unit)")
+
+        # Last gate before the timeline is written: motion the frame-stepped
+        # renderer cannot seek is silently dropped from the video — the frame
+        # looks right in a browser and renders frozen, with no error anywhere.
+        # The load-handler case is repairable in place (re-dispatch the events so
+        # the handler runs at inject time); the rest can only be reported, since
+        # a CSS keyframe animation has no mechanical rewrite into GSAP.
+        try:
+            from seekable_motion import (
+                apply_ready_kick,
+                dash_bomb_targets,
+                defuse_dash_bombs,
+                unseekable_techniques,
+            )
+            _repaired = 0
+            _defused = {}
+            _still_broken = {}
+            for _e in timeline_entries:
+                _h = _e.get("html") or ""
+                if not _h:
+                    continue
+                _fixed = apply_ready_kick(_h)
+                if _fixed is not _h and _fixed != _h:
+                    _e["html"] = _fixed
+                    _repaired += 1
+                # A dash array animated toward zero hangs the rasteriser and times
+                # out the screenshot, which fails the whole render job rather than
+                # just this shot. Whether it bites depends on where the frame
+                # stepper samples, so it must be removed, not merely reported.
+                _bombs = dash_bomb_targets(_e["html"])
+                if _bombs:
+                    _e["html"] = defuse_dash_bombs(_e["html"])
+                    _defused[_e.get("id") or "?"] = _bombs
+                _bad = unseekable_techniques(_e["html"])
+                if _bad:
+                    _still_broken[_e.get("id") or "?"] = _bad
+            if _repaired:
+                print(f"   🔧 Motion repair: {_repaired} shot(s) had tweens in a load "
+                      f"handler that would never have fired — re-dispatch injected.")
+            if _defused:
+                print(f"   🔧 Dash-array bombs defused in {len(_defused)} shot(s) "
+                      f"(would have hung the renderer): {_defused}")
+            if _still_broken:
+                print(f"   ⚠️ Unseekable motion will be DROPPED from the render in "
+                      f"{len(_still_broken)} shot(s): {_still_broken}")
+        except Exception as _sm_err:
+            print(f"   ⚠️ Seekable-motion check skipped: {_sm_err}")
 
         timeline_output = {
             "meta": meta_dict,
@@ -29814,6 +31397,17 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
         except AttributeError:
             _llm_chat = None  # subject_extractor pattern: pass None → fallback
 
+        # The thumbnail image belongs to THIS stage: capture its tracker now.
+        # run() replaces self._cost_events at the start of every stage, so the
+        # worker reading it later could book the image on the next stage. If
+        # the worker finishes after this stage's report is built, the event
+        # lands in this (already reported) tracker and is simply not billed.
+        _thumb_image_call = functools.partial(
+            self._call_image_generation_llm,
+            purpose="thumbnail",
+            cost_events=getattr(self, "_cost_events", None),
+        )
+
         def _worker() -> None:
             try:
                 from thumbnail_generator import run as _run_thumb  # type: ignore
@@ -29838,7 +31432,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 _inner_plan = (script_plan or {}).get("plan") or script_plan or {}
 
                 thumb_set = _run_thumb(
-                    seedream_call=self._call_image_generation_llm,
+                    seedream_call=_thumb_image_call,
                     run_id=run_name or run_dir.name,
                     script_plan=_inner_plan,
                     director_plan=director_plan,
@@ -29925,8 +31519,8 @@ def parse_args() -> argparse.Namespace:
         help="Stage to begin executing from.",
     )
     parser.add_argument("--openrouter-key", help="Override OpenRouter API key.")
-    parser.add_argument("--script-model", default="xiaomi/mimo-v2-flash:free", help="Model for script drafting.")
-    parser.add_argument("--html-model", default="xiaomi/mimo-v2-flash:free", help="Model for HTML generation.")
+    parser.add_argument("--script-model", default=GLM_DEFAULT, help="Model for script drafting.")
+    parser.add_argument("--html-model", default=GLM_DEFAULT, help="Model for HTML generation.")
     parser.add_argument("--voice-id", default="Qggl4b0xRMiqOwhPtVWT", help="ElevenLabs voice ID.")
     parser.add_argument("--voice-model", default="eleven_multilingual_v2", help="ElevenLabs model ID.")
     parser.add_argument(

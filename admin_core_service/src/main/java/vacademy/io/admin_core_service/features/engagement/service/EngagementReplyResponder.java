@@ -62,6 +62,25 @@ public class EngagementReplyResponder {
             + "paisa|paise|wapas)(?:$|[^\\p{L}])|₹");
 
     /**
+     * An unmistakable request to stop (design §10: opt-out must never be auto-answered). The whole
+     * message is a STOP-style keyword, or it carries an explicit phrase anywhere. en + Hinglish.
+     * Kept narrow on purpose: this opts the person out of every engine, so "I had to stop studying"
+     * must not match — that case is caught by STOP_MENTION and goes to a human instead.
+     */
+    static final Pattern OPT_OUT = Pattern.compile(
+            "(?i)^\\W*(stop|stop all|unsubscribe|opt[ -]?out|band karo|mat bhejo|cancel)\\W*$"
+            + "|(?:^|[^\\p{L}])(?:unsubscribe|opt[ -]?out"
+            + "|stop (?:messaging|sending|texting|contacting|calling|these|this)"
+            + "|(?:don'?t|dont|do not|never) (?:message|msg|text|contact|call|disturb) me"
+            + "|remove (?:me|my number)"
+            + "|(?:message|messages|msg|msgs|sms) (?:mat|band|na) (?:karo|kijiye|bhejo|bhejiye)"
+            + "|mat bhejo|band karo|band kar do)(?:$|[^\\p{L}])");
+
+    /** Mentions stopping or disinterest without an explicit opt-out: a human reads it, never the bot. */
+    static final Pattern STOP_MENTION = Pattern.compile(
+            "(?i)(?:^|[^\\p{L}])(stop|stopped|not interested|no interest|leave me|spam)(?:$|[^\\p{L}])");
+
+    /**
      * Links in a drafted auto-answer: schemed URLs, www.-prefixed, AND bare domain/path tokens
      * (LLMs commonly emit "vacademy.io/join" without a scheme). Labels must be >=2 chars so "i.e"
      * / "e.g" don't trip. A false trip merely escalates — the safe direction.
@@ -103,13 +122,18 @@ public class EngagementReplyResponder {
 
         // Answer with ONE engine — the most recently engaged (query orders by last_decided_at DESC).
         EngagementMemberRepository.AutoReplyCandidate cand = candidates.get(0);
+        try {
+            return respond(instituteId, phone10, replyText, cand, now);
+        } catch (RuntimeException e) {
+            // The wamid is already claimed, so no later sweep re-reads this message. Surface it through
+            // the unanswered-reply wake (a human task within minutes) rather than losing it.
+            memberRepository.markReplyUnhandled(cand.getMemberId(), now.plus(Duration.ofMinutes(leaseMinutes)), now);
+            throw e;
+        }
+    }
 
-        // Take the member's scheduler lease for the LLM window so the concurrent normal sweep can't
-        // pick the still-due member up and write a duplicate reply-response task while we decide.
-        // Losing the lease race is fine — the wamid claim already guarantees a single ANSWER; the
-        // worst residual is one redundant human-reviewed task.
-        memberRepository.claimLease(cand.getMemberId(), now, now.plus(Duration.ofMinutes(leaseMinutes)));
-
+    private boolean respond(String instituteId, String phone10, String replyText,
+                            EngagementMemberRepository.AutoReplyCandidate cand, Instant now) {
         EngagementEngine engine = engineRepository.findById(cand.getEngineId()).orElse(null);
         if (engine == null) {
             // We consumed the wamid but can't answer: nudge the member due so the normal sweep
@@ -119,6 +143,40 @@ public class EngagementReplyResponder {
         }
         EngagementPromptVersion prompt = promptRepository
                 .findTopByEngineIdAndStatusOrderByVersionDesc(engine.getId(), "ACTIVE").orElse(null);
+
+        // They asked us to stop: no AI answer, and no engine of this institute messages them again.
+        // Before this, "please stop messaging me" could be auto-answered and the member stayed ACTIVE,
+        // so the proactive templates kept coming (the WABA-quality risk in design §10).
+        if (OPT_OUT.matcher(replyText).find()) {
+            int stopped = memberRepository.optOutByPhone(instituteId, phone10, now);
+            EngagementAction note = new EngagementAction();
+            note.setEngineId(engine.getId());
+            note.setMemberId(cand.getMemberId());
+            note.setInstituteId(instituteId);
+            note.setPromptVersionId(prompt != null ? prompt.getId() : null);
+            note.setKind("REPLY");
+            note.setActionType("SEND_MESSAGE");
+            note.setChannel("WHATSAPP");
+            note.setStatus("OPEN");
+            note.setRationale(cap("Asked to stop messages — opted out of " + stopped
+                    + " engine membership(s) for this number. No auto-reply was sent. Their message: " + replyText));
+            note.setPriority(BigDecimal.valueOf(85));
+            note.setScheduledFor(now);
+            note.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
+            actionRepository.save(note);
+            log.info("Opt-out reply for member {}: {} membership(s) opted out", cand.getMemberId(), stopped);
+            return true;
+        }
+        // Hold the member for the LLM window. The hold fails only if a proactive decision holds them
+        // right now; answering as well would send two messages at once (the old lease claim was
+        // ignored when it failed), so a human answers this one instead.
+        if (memberRepository.holdForReply(cand.getMemberId(), now, now.plus(Duration.ofMinutes(leaseMinutes))) == 0) {
+            createEscalationTask(engine, cand, prompt, null, now, "concurrent-decision",
+                    "A proactive message for this person was being decided at the same moment. Answer this "
+                    + "reply manually so they do not get two messages. Their message: " + replyText);
+            return true;
+        }
+
         String compiled = prompt != null && prompt.getCompiledText() != null
                 ? prompt.getCompiledText() : (engine.getObjective() != null ? engine.getObjective() : engine.getName());
 
@@ -181,7 +239,7 @@ public class EngagementReplyResponder {
                         // Unknown-outcome failure. Never auto-retry (the send may have landed) — but
                         // never leave it invisible either: create a DETERMINISTIC escalation task so
                         // a human always sees this reply, regardless of the sweep or the LLM's mood.
-                        createEscalationTask(engine, cand, prompt, decision.reply(), now,
+                        createEscalationTask(engine, cand, prompt, decision.reply(), now, "send-failure",
                                 "Auto-answer failed to send (attempt logged as FAILED, correlation "
                                 + action.getId() + "). Check the ledger before re-sending, then reply manually.");
                         settled = true;
@@ -221,7 +279,7 @@ public class EngagementReplyResponder {
     private void createEscalationTask(EngagementEngine engine,
                                       EngagementMemberRepository.AutoReplyCandidate cand,
                                       EngagementPromptVersion prompt, String suggestedReply,
-                                      Instant now, String reason) {
+                                      Instant now, String label, String reason) {
         EngagementAction task = new EngagementAction();
         task.setEngineId(engine.getId());
         task.setMemberId(cand.getMemberId());
@@ -232,7 +290,7 @@ public class EngagementReplyResponder {
         task.setChannel("WHATSAPP");
         task.setStatus("OPEN");
         task.setDraftBody(cap(suggestedReply));
-        task.setRationale(cap("Escalated (send-failure): " + reason));
+        task.setRationale(cap("Escalated (" + label + "): " + reason));
         task.setPriority(BigDecimal.valueOf(85));
         task.setScheduledFor(now);
         task.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
@@ -244,6 +302,9 @@ public class EngagementReplyResponder {
         // Legacy truncated previews (100 chars + "..."): never auto-answer a partially-read message.
         if (inbound.length() >= 100 && inbound.endsWith("...")) {
             return "Reply text appears truncated — a human should read the full message.";
+        }
+        if (STOP_MENTION.matcher(inbound).find()) {
+            return "Reply may be asking to stop or saying they are not interested — human review required.";
         }
         if (ESCALATE_TRIPWIRE.matcher(inbound).find()) {
             return "Reply mentions money/anger/legal terms — human review required.";

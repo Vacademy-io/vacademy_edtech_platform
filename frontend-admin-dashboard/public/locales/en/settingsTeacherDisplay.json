@@ -1,0 +1,192 @@
+{
+    "loading": "Loading...",
+    "resetToDefaults": "Reset to Defaults",
+    "sections": {
+        "coursesAndPermissions": "Courses & Permissions",
+        "layoutAndNavigation": "Layout & Navigation",
+        "contentAndLearners": "Content & Learners",
+        "dashboardAndAccess": "Dashboard & Access"
+    },
+    "common": {
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "locked": "Locked",
+        "default": "Default",
+        "remove": "Remove",
+        "aiTools": "AI Tools"
+    },
+    "toast": {
+        "saveSuccess": "Teacher display settings saved",
+        "saveFailed": "Failed to save"
+    },
+    "sidebarTabs": {
+        "newCustomTabLabel": "Custom Tab",
+        "newCustomSubTabLabel": "Custom Sub Tab"
+    },
+    "cards": {
+        "coursePage": {
+            "title": "Course Page Settings",
+            "description": "Control visibility of course page elements.",
+            "options": {
+                "viewInviteLinks": "View invite links",
+                "viewShortInviteLinks": "View short invite links",
+                "viewCourseConfiguration": "View course configuration",
+                "viewCourseOverviewItem": "View course overview item",
+                "viewContentNumbering": "View content numbering",
+                "allowViewSlidesInReadOnly": "Allow viewing slides on published / in-review courses (read-only)",
+                "showAddSubject": "Show \"Add Subject\" button (Outline & Content Structure)",
+                "showAddModule": "Show \"Add Module\" button (Outline & Content Structure)",
+                "showAddChapter": "Show \"Add Chapter\" button (Outline & Content Structure)",
+                "showAddSlide": "Show \"Add Slide\" button (Outline & Content Structure)",
+                "showLearnerProgressReport": "Show \"Student Progress\" tab in Reports (per-learner course progress)"
+            },
+            "showAdvancedCourseIds": "Show advanced IDs menu on Course Details (course / package session / session / level)"
+        },
+        "coursePermission": {
+            "title": "Course Permission",
+            "description": "Control what this role can do on a course and its slides.",
+            "directEdit": "Can directly edit (without Copy-to-Edit / approval)",
+            "options": {
+                "showCopyTo": "Can copy slide",
+                "showMoveTo": "Can move slide",
+                "showDelete": "Can delete slide"
+            },
+            "editStructure": "Can edit subject / module / chapter",
+            "deleteStructure": "Can delete subject / module / chapter",
+            "showBulkUpload": "Show Bulk Upload (ZIP) button",
+            "deleteCourse": "Can delete course",
+            "requireCourseApproval": "Require admin approval before publishing new courses (Submit for Review)"
+        },
+        "authoredCoursesCard": {
+            "title": "Authored Courses Card",
+            "description": "Control which actions appear on the course card under Explore Courses → Authored Courses.",
+            "showCopyToEdit": "Show \"Copy to Edit\" button"
+        },
+        "courseListCard": {
+            "title": "Course List Card",
+            "description": "Control which details appear on each course card under Explore Courses.",
+            "showEnrolledStudentCount": "Show enrolled student count"
+        },
+        "courseCreation": {
+            "title": "Course Creation",
+            "description": "Control who can create courses, AI entry points, and chapter setup defaults.",
+            "showCreateCourse": "Allow creating courses (show \"Add Course\" button)",
+            "showCreateCourseWithAI": "Show \"Create Course with AI\"",
+            "requirePackageSelectionForNewChapter": "Require package session selection when adding a new chapter",
+            "showAdvancedSettings": "Show Advanced Settings",
+            "limitToSingleLevel": "Limit Course To Single Level"
+        },
+        "courseListTabs": {
+            "title": "Course List Tabs",
+            "description": "Configure visible tabs, their order, and the default tab. Course Approval is admin-only and stays hidden for this role."
+        },
+        "courseDetailsTabs": {
+            "title": "Course Details Tabs",
+            "description": "Choose which tabs are visible and set the default tab.",
+            "offlineLockedHint": "Turned off because offline downloads are disabled for the institute (Settings → Offline Access)."
+        },
+        "uiOptions": {
+            "title": "UI Options",
+            "description": "Global UI preferences",
+            "showSupportButton": "Show Support Button",
+            "showSidebar": "Show Sidebar",
+            "showAiCredits": "Show AI Credits",
+            "showStatus": "Show Status",
+            "showSettings": "Show Settings",
+            "showSettingsHint": "Hides the Settings gear in the sidebar rail. You can still open Settings directly at /settings.",
+            "showAssistDock": "Show Right Side Rail",
+            "showAssistDockHint": "Guides, Training, Assist, Issues, What's new, Explore & Admin App. Hidden for this role by default."
+        },
+        "sidebarCategories": {
+            "title": "Sidebar Categories",
+            "description": "Configure visibility, order, and default category for the sidebar."
+        },
+        "sidebarTabs": {
+            "title": "Sidebar Tabs",
+            "description": "Order and toggle visibility. Settings tab is always hidden for Teachers.",
+            "tabName": "Tab Name",
+            "route": "Route",
+            "subTabs": "Sub Tabs",
+            "addSubTab": "Add Sub Tab",
+            "labelPlaceholder": "Label",
+            "routePlaceholder": "Route",
+            "addCustomTab": "Add Custom Tab"
+        },
+        "courseContentTypes": {
+            "title": "Course Content Types",
+            "description": "Enable or disable slide content types. Video has an extra in-video question option.",
+            "options": {
+                "pdf": "PDF",
+                "ppt": "PPT Presentation",
+                "codeEditor": "Code Editor",
+                "document": "Document",
+                "question": "Question",
+                "quiz": "Quiz",
+                "assignment": "Assignment",
+                "jupyterNotebook": "Jupyter Notebook",
+                "scratch": "Scratch",
+                "audio": "Audio",
+                "scorm": "SCORM Package",
+                "assessment": "Assessment"
+            },
+            "video": "Video",
+            "inVideoQuestionVisible": "In-video Question Visible",
+            "canAddVideoQuestion": "Can add questions to video slides",
+            "canConvertToSplitScreen": "Can convert video to split screen"
+        },
+        "learnerManagement": {
+            "title": "Learner Management",
+            "description": "Configure learner management permissions and access controls."
+        },
+        "dashboardWidgets": {
+            "title": "Dashboard Widgets",
+            "description": "Order and toggle which widgets teachers can see."
+        },
+        "permissions": {
+            "title": "Permissions",
+            "description": "Configure institute and profile visibility and edit access.",
+            "options": {
+                "canViewInstituteDetails": "Can View Institute Details",
+                "canEditInstituteDetails": "Can Edit Institute Details",
+                "canViewProfileDetails": "Can View Profile Details",
+                "canEditProfileDetails": "Can Edit Profile Details"
+            }
+        },
+        "postLoginRedirect": {
+            "title": "Post-login Redirect",
+            "description": "Choose where to redirect teachers after login.",
+            "route": "Route"
+        }
+    },
+    "studentSideViewOptions": {
+        "overviewTab": "Overview Tab",
+        "coursesTab": "Courses Tab",
+        "testTab": "Test Tab",
+        "progressTab": "Progress Tab",
+        "notificationTab": "Notification Tab",
+        "membershipTab": "Membership Tab",
+        "paymentHistoryTab": "Payment History Tab",
+        "userTaggingTab": "User Tagging Tab",
+        "badgesTab": "Badges Tab",
+        "fileTab": "File Tab",
+        "portalAccessTab": "Portal Access Tab",
+        "reportsTab": "Reports Tab",
+        "enrollDerollTab": "Enroll/Deroll Tab",
+        "enquiryTab": "Enquiry Tab",
+        "applicationTab": "Application Tab",
+        "leadTab": "Lead Profile Tab",
+        "fullHistoryTab": "Full History Tab",
+        "workflowsTab": "Workflows Tab",
+        "parentTab": "Guardian Tab",
+        "onboardingTab": "Onboarding Tab"
+    },
+    "learnerManagementOptions": {
+        "allowPortalAccess": "Allow Learner Portal Access",
+        "allowViewPassword": "Allow Viewing Learner Password",
+        "allowEditCredentials": "Allow Editing Learner Username & Password",
+        "allowSendResetPasswordMail": "Allow Sending Reset Password Mail",
+        "showApprovalToggle": "Show Approval Requests toggle on Learners list",
+        "allowDeletePayments": "Allow permanently deleting payments & invoices (cannot be undone)",
+        "canApplyDiscounts": "Allow applying discounts when enrolling learners, bulk assigning, or creating invoices"
+    }
+}

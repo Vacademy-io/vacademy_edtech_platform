@@ -8,8 +8,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useRouter, Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile } from "@/types/parent-portal";
-import { type TabId, NAV_TABS } from "./navigation-config";
+import { useNavTabs, type TabId } from "./navigation-config";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 
 interface ParentPortalSidebarProps {
@@ -25,6 +26,8 @@ export function ParentPortalSidebar({
   instituteName,
   instituteLogoUrl,
 }: ParentPortalSidebarProps) {
+  const { t } = useTranslation("parent");
+  const navTabs = useNavTabs();
   const router = useRouter();
   const { state } = useSidebar();
   const isExpanded = state === "expanded";
@@ -51,7 +54,7 @@ export function ParentPortalSidebar({
                   {instituteLogoUrl ? (
                     <img
                       src={instituteLogoUrl}
-                      alt="Logo"
+                      alt={t("admissionPortal.sidebar.logoAlt")}
                       className="size-8 object-contain rounded-md"
                     />
                   ) : (
@@ -67,7 +70,8 @@ export function ParentPortalSidebar({
                     {instituteName || child.full_name}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {child.grade_applying || "Admission Portal"}
+                    {child.grade_applying ||
+                      t("admissionPortal.sidebar.admissionPortal")}
                   </span>
                 </div>
               </SidebarMenuButton>
@@ -81,7 +85,7 @@ export function ParentPortalSidebar({
             isExpanded ? "items-stretch" : "items-center"
           }`}
         >
-          {NAV_TABS.filter(
+          {navTabs.filter(
             // Reader mode (native iOS): the "Payment" tab embeds an external
             // Razorpay checkout — hide it (Apple 3.1.1). The route is also
             // blocked in __root, so this just removes the now-dead tab.

@@ -1,0 +1,53 @@
+{
+    "title": "Moteurs d'engagement",
+    "subtitle": "Des copilotes IA par objectif qui décident qui contacter, quand, et avec quel message.",
+    "actions": {
+        "taskInbox": "Boîte de tâches",
+        "newEngine": "Nouveau moteur",
+        "createFirstEngine": "Créer votre premier moteur"
+    },
+    "error": "Impossible de charger les moteurs. Veuillez actualiser la page.",
+    "empty": {
+        "title": "Aucun moteur pour l'instant",
+        "description": "Créez un moteur pour un seul objectif — par exemple relancer les {{term}} inactifs ou un défi de 14 jours. Il prépare chaque message pour que vous le validiez avant l'envoi."
+    },
+    "card": {
+        "noChannels": "Aucun canal activé",
+        "cadence": "toutes les {{hours}} h",
+        "lastRun": "Last check-in {{when}}",
+        "stats": {
+            "members": "members",
+            "drafted": "drafted · 30d",
+            "completed": "completed · 30d",
+            "failed": "failed · 30d"
+        },
+        "hint": {
+            "templatesPending": "Approve a WhatsApp template to go live",
+            "dryRun": "Dry run: drafts are simulated, nothing is sent",
+            "draft": "Resolve the audience, then start a dry run or activate"
+        }
+    },
+    "toolbar": {
+        "search": "Search engines by name or objective",
+        "allChannels": "All channels",
+        "anyLanguage": "Any language",
+        "showArchived": "Show archived",
+        "cards": "Cards",
+        "table": "Table"
+    },
+    "filteredEmpty": {
+        "title": "No engines match these filters",
+        "clear": "Clear filters"
+    },
+    "table": {
+        "engine": "Engine",
+        "status": "Status",
+        "channels": "Channels",
+        "language": "Language",
+        "cadence": "Cadence",
+        "members": "Members",
+        "drafted": "Drafted · 30d",
+        "completed": "Completed · 30d",
+        "lastRun": "Last check-in"
+    }
+}

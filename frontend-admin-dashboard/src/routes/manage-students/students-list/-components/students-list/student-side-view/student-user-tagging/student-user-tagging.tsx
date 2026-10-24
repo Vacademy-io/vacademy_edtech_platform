@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import {
@@ -18,6 +19,7 @@ import {
 } from '../profile-ui';
 
 export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
+    const { t } = useTranslation('manageStudentsUserTagging');
     const { selectedStudent } = useStudentSidebar();
     const [userTags, setUserTags] = useState<{ active: TagItem[]; inactive: TagItem[] } | null>(
         null
@@ -61,9 +63,9 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
                 inactive: res.inactiveTags || [],
             });
             setNewTagInput('');
-            toast.success('Tag added successfully');
+            toast.success(t('toast.addSuccess'));
         } catch {
-            toast.error('Failed to add tag');
+            toast.error(t('toast.addError'));
         } finally {
             setTagsLoading(false);
         }
@@ -84,9 +86,9 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
                 active: res.activeTags || [],
                 inactive: res.inactiveTags || [],
             });
-            toast.success('Tag removed successfully');
+            toast.success(t('toast.removeSuccess'));
         } catch {
-            toast.error('Failed to remove tag');
+            toast.error(t('toast.removeError'));
         } finally {
             setTagsLoading(false);
         }
@@ -101,8 +103,8 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
     if (loadError) {
         return (
             <ProfileError
-                title="Couldn't load tags"
-                hint="Something went wrong while fetching tags for this learner."
+                title={t('errors.loadTitle')}
+                hint={t('errors.loadHint')}
                 onRetry={loadUserTags}
             />
         );
@@ -117,11 +119,11 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
             {/* Combined: input + active tags in a single card (LMS-style) */}
             <ProfileSectionCard
                 icon={Tag as PhosphorIcon}
-                heading="Tags"
+                heading={t('activeSection.heading')}
                 action={
                     activeCount > 0 ? (
                         <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-caption font-semibold text-primary-700 ring-1 ring-primary-200">
-                            {activeCount} active
+                            {t('activeSection.activeCount', { count: activeCount })}
                         </span>
                     ) : undefined
                 }
@@ -132,7 +134,7 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
                         <div className="min-w-0 flex-1">
                             <MyInput
                                 label=""
-                                inputPlaceholder="Add a tag (e.g. VIP, High Performer)"
+                                inputPlaceholder={t('activeSection.inputPlaceholder')}
                                 input={newTagInput}
                                 onChangeFunction={(e) => setNewTagInput(e.target.value)}
                                 onKeyDown={(e) => {
@@ -151,34 +153,36 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
                             onAsyncClick={handleAddTag}
                             className="shrink-0"
                         >
-                            Add
+                            {t('activeSection.addButton')}
                         </MyButton>
                     </div>
 
                     {/* Tag chips, or compact empty hint */}
                     {activeCount > 0 ? (
                         <div className="flex flex-wrap gap-1.5">
-                            {activeTags.map((t) => (
+                            {activeTags.map((tag) => (
                                 <span
-                                    key={t.id}
+                                    key={tag.id}
                                     className={cn(
                                         'inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1',
                                         'bg-primary-50 text-caption font-medium text-primary-700 ring-1 ring-primary-200'
                                     )}
-                                    title={t.tagName}
+                                    title={tag.tagName}
                                 >
-                                    <span className="truncate">{t.tagName}</span>
-                                    {t.defaultTag ? (
+                                    <span className="truncate">{tag.tagName}</span>
+                                    {tag.defaultTag ? (
                                         <span className="shrink-0 text-primary-400">
-                                            (default)
+                                            {t('activeSection.defaultLabel')}
                                         </span>
                                     ) : (
                                         <button
                                             type="button"
                                             className="shrink-0 rounded-full p-0.5 text-primary-500 hover:bg-primary-100 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50"
-                                            onClick={() => handleRemoveTag(t.id)}
+                                            onClick={() => handleRemoveTag(tag.id)}
                                             disabled={tagsLoading}
-                                            aria-label={`Remove tag ${t.tagName}`}
+                                            aria-label={t('activeSection.removeAriaLabel', {
+                                                tagName: tag.tagName,
+                                            })}
                                         >
                                             <X className="size-3" />
                                         </button>
@@ -188,8 +192,7 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
                         </div>
                     ) : (
                         <p className="text-caption italic text-muted-foreground">
-                            No tags yet — add one above to start segmenting this
-                            learner.
+                            {t('activeSection.emptyState')}
                         </p>
                     )}
                 </div>
@@ -199,7 +202,7 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
             {inactiveTags.length > 0 && (
                 <ProfileSectionCard
                     icon={Tag as PhosphorIcon}
-                    heading="Inactive Tags"
+                    heading={t('inactiveSection.heading')}
                     action={
                         <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 ring-1 ring-neutral-200">
                             {inactiveTags.length}
@@ -207,13 +210,13 @@ export const StudentUserTagging = ({ isSubmissionTab }: { isSubmissionTab?: bool
                     }
                 >
                     <div className="flex flex-wrap gap-2">
-                        {inactiveTags.map((t) => (
+                        {inactiveTags.map((tag) => (
                             <span
-                                key={t.id}
+                                key={tag.id}
                                 className="inline-flex max-w-full items-center truncate rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-500 ring-1 ring-neutral-200"
-                                title={t.tagName}
+                                title={tag.tagName}
                             >
-                                {t.tagName}
+                                {tag.tagName}
                             </span>
                         ))}
                     </div>

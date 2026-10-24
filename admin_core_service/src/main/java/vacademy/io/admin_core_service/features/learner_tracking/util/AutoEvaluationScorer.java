@@ -91,6 +91,45 @@ public class AutoEvaluationScorer {
         return key == null ? Set.of() : key;
     }
 
+    /**
+     * Share of a question's marks a partially-marked quiz awards: 1 for the exact key,
+     * picked / key-size when the learner chose only correct options but not all of them
+     * (a 1-mark question with two correct options gives 0.5 per option), and 0 as soon
+     * as any wrong option is picked. Mirrors the learner app's scoring.
+     */
+    public static double partialCreditFraction(Set<String> correctIds, Set<String> selectedIds) {
+        // Callers gate on isMultiSelect(questionType): a single-select question keyed with
+        // two acceptable options is graded by the learner app as correct on either one.
+        if (correctIds == null || correctIds.isEmpty() || selectedIds == null || selectedIds.isEmpty()
+                || !correctIds.containsAll(selectedIds)) {
+            return 0.0;
+        }
+        return (double) selectedIds.size() / correctIds.size();
+    }
+
+    /** Question types the learner app renders as tick-any-number checkboxes - the only ones partial marking applies to. */
+    public static boolean isMultiSelect(String questionType) {
+        return "MCQM".equals(questionType) || "CMCQM".equals(questionType);
+    }
+
+    /**
+     * Whether the stored response was scored as partially correct ({@code "isPartial": true},
+     * written by the learner app on partial-marking quizzes). Readers award partial marks
+     * only to these, so switching partial marking on later never re-scores old attempts
+     * behind the learner's back - their own review keeps showing what they were given.
+     */
+    public boolean isMarkedPartial(String responseJson) {
+        if (responseJson == null || responseJson.isBlank() || !responseJson.contains("isPartial")) {
+            return false;
+        }
+        try {
+            JsonNode partial = objectMapper.readTree(responseJson).get("isPartial");
+            return partial != null && partial.asBoolean(false);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /** The option ids the learner selected; empty when unanswered or unrecognised. */
     public Set<String> selectedAnswerIds(String responseJson) {
         Set<String> selected = extractSelectedAnswers(responseJson);

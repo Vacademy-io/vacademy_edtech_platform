@@ -1,0 +1,147 @@
+{
+    "feePlan": {
+        "heading": "خطة الرسوم",
+        "planLabelFallback": "خطة الرسوم",
+        "installments_zero": "بدون أقساط ({{count}})",
+        "installments_one": "قسط واحد ({{count}})",
+        "installments_two": "قسطان ({{count}})",
+        "installments_few": "{{count}} أقساط",
+        "installments_many": "{{count}} قسطًا",
+        "installments_other": "{{count}} قسط",
+        "netPaid": "الصافي {{net}} · المدفوع {{paid}}",
+        "outstanding": "المستحق"
+    },
+    "accountSummary": {
+        "heading": "ملخص الحساب",
+        "totalAccrued": "إجمالي المستحق",
+        "totalPaid": "إجمالي المدفوع",
+        "due": "المستحق",
+        "pastDue": "متأخر السداد"
+    },
+    "markPaidDialog": {
+        "successToast": "تم وضع علامة \"مدفوعة\" على الفاتورة {{invoice}}",
+        "errorToast": "تعذر وضع علامة \"مدفوعة\"",
+        "title": "وضع علامة \"مدفوعة\" على الفاتورة",
+        "descriptionPrefix": "يسجل دفعة غير متصلة مقابل",
+        "descriptionFallback": "يسجل دفعة غير متصلة مقابل هذه الفاتورة.",
+        "transactionReference": "مرجع المعاملة",
+        "transactionReferencePlaceholder": "رقم الشيك، مرجع UPI، رقم الإيصال",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "ملاحظة اختيارية",
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "submit": "وضع علامة \"مدفوعة\""
+    },
+    "invoicesList": {
+        "cancelSuccessToast": "تم إلغاء الفاتورة",
+        "cancelErrorToast": "تعذر إلغاء الفاتورة",
+        "copyLinkSuccessToast": "تم نسخ رابط الدفع",
+        "copyLinkErrorToast": "تعذر النسخ إلى الحافظة",
+        "emptyTitle": "لا توجد فواتير بعد",
+        "emptyHint": "ستظهر هنا الفواتير التي تم إنشاؤها لهذا المتعلم.",
+        "proforma": "أولية",
+        "proformaTitle": "فاتورة أولية — تصبح فاتورة مرقّمة عند الدفع",
+        "discountFallback": "خصم",
+        "sourceAdminInvoice": "فاتورة إدارية",
+        "sourceSubscription": "اشتراك",
+        "sourceFeePayment": "دفع رسوم",
+        "previewTitle": "معاينة ملف PDF للفاتورة دون تنزيله",
+        "preview": "معاينة",
+        "downloadTitle": "تنزيل ملف PDF للفاتورة",
+        "download": "تنزيل",
+        "copied": "تم النسخ",
+        "copyPaymentLink": "نسخ رابط الدفع",
+        "copyPaymentLinkTitle": "نسخ رابط الدفع لمشاركته مع المتعلم",
+        "editTitle": "تعديل هذه الفاتورة غير المدفوعة — يحتفظ بنفس رقم الفاتورة",
+        "edit": "تعديل",
+        "markPaidTitle": "تسجيل دفعة غير متصلة / يدوية",
+        "markPaid": "وضع علامة \"مدفوعة\"",
+        "cancelInvoiceTitle": "إبطال هذه الفاتورة — سيتوقف رابط الدفع عن العمل",
+        "cancelling": "جارٍ الإلغاء…",
+        "cancelAction": "إلغاء",
+        "paginationRange": "{{from}}–{{to}} من {{total}}",
+        "cancelDialog": {
+            "title": "هل تريد إلغاء الفاتورة {{number}}؟",
+            "description": "يؤدي هذا إلى إبطال الفاتورة نهائيًا — سيتوقف رابط الدفع عن العمل ولن يمكن وضع علامة \"مدفوعة\" عليها أبدًا. لا يمكن التراجع عن هذا الإجراء. لتصحيح خطأ، أنشئ فاتورة جديدة لاحقًا.",
+            "keep": "الاحتفاظ بالفاتورة",
+            "confirm": "إلغاء الفاتورة"
+        },
+        "left": "المتبقي {{amount}}",
+        "paidWithReceipt": "مدفوع {{amount}} · الإيصال {{receipt}}",
+        "paidSoFar": "مدفوع {{amount}}"
+    },
+    "invoiceStatus": {
+        "generated": "تم الإنشاء",
+        "sent": "تم الإرسال",
+        "viewed": "تمت المشاهدة",
+        "pendingPayment": "الدفع معلّق",
+        "paid": "مدفوعة",
+        "rejected": "مرفوضة"
+    },
+    "transactionHistory": {
+        "heading": "سجل المعاملات",
+        "loading": "جارٍ تحميل المعاملات…",
+        "empty": "لا يوجد سجل معاملات بعد.",
+        "pageOf": "الصفحة {{page}} من {{total}}",
+        "event": {
+            "debitAccrual": "تم إصدار الفاتورة",
+            "creditPayment": "تم استلام الدفعة",
+            "creditWaiver": "إعفاء",
+            "creditAdjustment": "تسوية",
+            "debitPenalty": "غرامة",
+            "debitReversal": "تم إلغاء الفاتورة",
+            "creditReversal": "تم إلغاء الدفعة"
+        }
+    },
+    "main": {
+        "loadInvoiceError": "تعذر تحميل الفاتورة للتعديل",
+        "noLearnerTitle": "لم يتم اختيار متعلم",
+        "noLearnerHint": "اختر متعلمًا لعرض سجل مدفوعاته.",
+        "installmentsHeading": "الأقساط",
+        "invoicesHeading": "الفواتير",
+        "invoicesHeadingCount": "الفواتير ({{count}})",
+        "createInvoice": "إنشاء فاتورة",
+        "loadingInvoices": "جارٍ تحميل الفواتير..."
+    },
+    "voidPayment": {
+        "action": "إلغاء الدفعة",
+        "actionTitle": "إلغاء هذه الدفعة — عند تسجيلها عن طريق الخطأ",
+        "voidedTag": "ملغاة",
+        "dialog": {
+            "title": "إلغاء هذه الدفعة بقيمة {{amount}}؟",
+            "description": "استخدم هذا الخيار لدفعة سُجّلت عن طريق الخطأ. يعود المبلغ إلى رصيد المتعلم وأقساطه، وتُلغى فاتورتها، ولا تُحتسب ضمن المبالغ المحصّلة. تبقى الدفعة في السجل موسومة بأنها ملغاة. لا يمكن التراجع عن ذلك.",
+            "reasonLabel": "السبب (اختياري)",
+            "reasonPlaceholder": "مثال: أُدخلت مرتين",
+            "keep": "الإبقاء على الدفعة",
+            "confirm": "إلغاء الدفعة"
+        },
+        "successToast": "تم إلغاء الدفعة — عاد {{amount}} إلى رصيد المتعلم",
+        "errorToast": "تعذّر إلغاء هذه الدفعة"
+    },
+    "permanentDelete": {
+        "action": "حذف نهائي",
+        "paymentTitle": "حذف الدفعة بقيمة {{label}} نهائيًا؟",
+        "invoiceTitle": "حذف الفاتورة {{label}} نهائيًا؟",
+        "cannotUndo": "لا يمكن التراجع عن هذا الإجراء.",
+        "whatHappens": "ما الذي سيحدث",
+        "payment": {
+            "removed": "سيُحذف سجل الدفع نهائيًا.",
+            "balance": "إذا كان لا يزال محتسبًا، يعود المبلغ إلى رصيد المتعلم وأقساطه.",
+            "invoice": "تُحذف فاتورة الإيصال الصادرة له، ويُحرَّر رقمها للفاتورة التالية."
+        },
+        "invoice": {
+            "removed": "ستُحذف الفاتورة نهائيًا.",
+            "balance": "الفاتورة غير المدفوعة لن تُحتسب ضمن رصيد المتعلم.",
+            "number": "يُحرَّر رقم الفاتورة ويُمنح للفاتورة التالية."
+        },
+        "auditLog": "يُحتفظ بسجل للحذف في سجل نشاط المسؤول.",
+        "typePrefix": "اكتب",
+        "typeSuffix": "للتأكيد",
+        "keep": "الإبقاء",
+        "confirm": "حذف نهائي",
+        "deleting": "جارٍ الحذف…",
+        "paymentDeletedToast": "تم حذف الدفعة {{label}}",
+        "invoiceDeletedToast": "تم حذف الفاتورة {{label}}",
+        "errorToast": "تعذّر الحذف"
+    }
+}

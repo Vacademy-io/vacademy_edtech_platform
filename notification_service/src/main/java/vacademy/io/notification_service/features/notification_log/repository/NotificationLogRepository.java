@@ -3,8 +3,10 @@ package vacademy.io.notification_service.features.notification_log.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 
 import java.time.Instant;
@@ -630,6 +632,45 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             @Param("limit") int limit);
 
     /**
+     * Our outbound messages by provider message id (wamid) — what a learner's reaction points at.
+     * Rides idx_nl_source_id_outgoing; reactions on the learner's own messages are not looked up.
+     */
+    @Query(value = """
+            SELECT * FROM notification_log
+            WHERE notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+              AND source_id IS NOT NULL
+              AND source_id = ANY(CAST(:sourceIds AS text[]))
+              AND institute_id = :instituteId
+            """, nativeQuery = true)
+    List<NotificationLog> findOutgoingBySourceIds(@Param("instituteId") String instituteId,
+                                                  @Param("sourceIds") String[] sourceIds);
+
+    /**
+     * The failure events WhatsApp sent for these messages: source_id, body, error code, error
+     * message. Read when an outbound row says FAILED but carries no reason — the "failed" webhook
+     * can land before the send has written its row, and the reason then only exists here.
+     * Scoped by phone so it rides idx_nl_channel_date rather than scanning every status row.
+     */
+    @Query(value = """
+            SELECT source_id, body, delivery_error_code, delivery_error_message
+            FROM notification_log
+            WHERE channel_id = :phone
+              AND notification_type IN ('WHATSAPP_MESSAGE_FAILED', 'WHATSAPP_STATUS_EVENT')
+              AND source_id = ANY(CAST(:sourceIds AS text[]))
+            ORDER BY notification_date DESC
+            """, nativeQuery = true)
+    List<Object[]> findFailureEventsBySourceIds(@Param("phone") String phone,
+                                                @Param("sourceIds") String[] sourceIds);
+
+    /**
+     * The learner's most recent inbound message on this conversation — the clock Meta's 24-hour
+     * customer service window runs from. Same equality scoping as {@link #findMessagesForPhone}
+     * (exact channel_id, exact institute_id), so the two agree about what "this conversation" is.
+     */
+    Optional<NotificationLog> findTopByChannelIdAndInstituteIdAndNotificationTypeOrderByNotificationDateDesc(
+            String channelId, String instituteId, String notificationType);
+
+    /**
      * Batch count unread messages for multiple phones in one query.
      * Returns rows of (channel_id, unread_count).
      */
@@ -647,6 +688,130 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             GROUP BY sub.channel_id
             """, nativeQuery = true)
     List<Object[]> batchCountUnreadMessages(@Param("phones") List<String> phones);
+
+    /**
+     * Batch count the outgoing messages per phone that are <b>still</b> undelivered, in one query.
+     *
+     * <p>"Undelivered" has two independent sources and both count:
+     * <ul>
+     *   <li>{@code delivery_status = 'FAILED'} — WhatsApp accepted the send and then reported a
+     *       failure on its status webhook. This is how nearly every real failure arrives.</li>
+     *   <li>a message_payload carrying the FAILED marker (see {@code WhatsAppSendFailureService}) —
+     *       the provider refused the send outright, so no webhook ever follows.</li>
+     * </ul>
+     * Matching the marker on the raw JSON text keeps this a plain scan of the institute's WhatsApp
+     * rows rather than requiring a jsonb cast on a column that is declared TEXT. The marker comes
+     * in as a bind parameter rather than a literal so the JSON colon can never be mistaken for a
+     * named parameter by the query parser.
+     *
+     * <p><b>Only failures nothing has recovered from count.</b> A failure with a later message
+     * WhatsApp positively reported (SENT, DELIVERED or READ) is history, not a problem: the channel
+     * demonstrably works and there is nothing for an admin to do. Counting every failure that ever
+     * happened badged a conversation "Not delivered" for good — one rejected free-form reply on a
+     * Sunday kept the badge and the tab entry through five later messages that were all read.
+     *
+     * <p>Returns rows of (channel_id, failed_count); a conversation that has recovered is absent
+     * rather than present with a zero.
+     *
+     * <p>Written as a NOT EXISTS rather than a window function so it states the rule directly —
+     * "this failure has no delivered message after it" — and means the same thing on Postgres and
+     * on the H2 the @SpringBootTest suite runs against.
+     */
+    @Query(value = """
+            SELECT f.channel_id, COUNT(*) AS failed_count
+            FROM notification_log f
+            WHERE f.institute_id = :instituteId
+              AND f.channel_id IN (:phones)
+              AND f.notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+              AND (f.delivery_status = 'FAILED' OR f.message_payload LIKE :failedMarker)
+              AND NOT EXISTS (
+                    SELECT 1 FROM notification_log ok
+                    WHERE ok.institute_id = f.institute_id
+                      AND ok.channel_id = f.channel_id
+                      AND ok.notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+                      AND ok.delivery_status IN ('SENT', 'DELIVERED', 'READ')
+                      AND ok.notification_date > f.notification_date
+              )
+            GROUP BY f.channel_id
+            """, nativeQuery = true)
+    List<Object[]> batchCountFailedMessages(@Param("instituteId") String instituteId,
+                                            @Param("phones") List<String> phones,
+                                            @Param("failedMarker") String failedMarker);
+
+    /**
+     * Latest message per conversation, restricted to conversations nobody has answered — the
+     * "Unanswered" filter in the WhatsApp Inbox.
+     *
+     * <p>A conversation is unanswered when its most recent message came FROM the learner: whatever
+     * they said last, no reply followed it. That is the plain reading of the tab, and it holds for
+     * every institute, including the ones that run no chatbot at all.
+     *
+     * <p>{@code :phones} additionally forces in the conversations the chatbot explicitly handed
+     * over and nobody has closed. Those usually end on an inbound message anyway, but a hand-over
+     * whose last row is the bot's own "let me get someone" reply is still open work, so it stays
+     * on the list. The caller must never pass an empty list — an empty SQL {@code IN ()} is a
+     * syntax error — so it passes a sentinel that matches no phone instead.
+     */
+    @Query(value = """
+            SELECT * FROM (
+                SELECT DISTINCT ON (nl.channel_id) nl.*
+                FROM notification_log nl
+                WHERE nl.institute_id = :instituteId
+                  AND nl.notification_type IN ('WHATSAPP_MESSAGE_OUTGOING', 'WHATSAPP_MESSAGE_INCOMING')
+                ORDER BY nl.channel_id, nl.notification_date DESC
+            ) conversations
+            WHERE conversations.notification_type = 'WHATSAPP_MESSAGE_INCOMING'
+               OR conversations.channel_id IN (:phones)
+            ORDER BY conversations.notification_date DESC
+            LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<NotificationLog> findUnansweredConversations(
+            @Param("instituteId") String instituteId,
+            @Param("phones") List<String> phones,
+            @Param("limit") int limit,
+            @Param("offset") int offset);
+
+    /**
+     * Latest message per conversation, restricted to conversations whose newest news is a failure
+     * — the "Not delivered" filter in the WhatsApp Inbox. Both sources of "undelivered" count,
+     * exactly as in {@link #batchCountFailedMessages}: a failure WhatsApp reported afterwards on
+     * its status webhook ({@code delivery_status}), and a send the provider refused outright (the
+     * message_payload marker).
+     *
+     * <p>And, exactly as there, a failure a later delivered message has superseded does not
+     * qualify. The tab is a work list; a conversation whose last five messages were read has
+     * nothing on it to act on, however badly one message went three days ago.
+     */
+    @Query(value = """
+            SELECT * FROM (
+                SELECT DISTINCT ON (nl.channel_id) nl.*
+                FROM notification_log nl
+                WHERE nl.institute_id = :instituteId
+                  AND nl.notification_type IN ('WHATSAPP_MESSAGE_OUTGOING', 'WHATSAPP_MESSAGE_INCOMING')
+                  AND nl.channel_id IN (
+                        SELECT DISTINCT f.channel_id FROM notification_log f
+                        WHERE f.institute_id = :instituteId
+                          AND f.notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+                          AND (f.delivery_status = 'FAILED' OR f.message_payload LIKE :failedMarker)
+                          AND NOT EXISTS (
+                                SELECT 1 FROM notification_log ok
+                                WHERE ok.institute_id = f.institute_id
+                                  AND ok.channel_id = f.channel_id
+                                  AND ok.notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+                                  AND ok.delivery_status IN ('SENT', 'DELIVERED', 'READ')
+                                  AND ok.notification_date > f.notification_date
+                          )
+                  )
+                ORDER BY nl.channel_id, nl.notification_date DESC
+            ) conversations
+            ORDER BY conversations.notification_date DESC
+            LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<NotificationLog> findConversationsWithFailedSends(
+            @Param("instituteId") String instituteId,
+            @Param("failedMarker") String failedMarker,
+            @Param("limit") int limit,
+            @Param("offset") int offset);
 
     /**
      * Search WhatsApp conversations by phone number or sender name, scoped to an institute.
@@ -682,23 +847,68 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     long countEmailSent(@Param("fromAddresses") List<String> fromAddresses,
                        @Param("since") String since);
 
+    // ==== Email events for the hub ====
+    //
+    // Each EMAIL_EVENT joins to its parent EMAIL log via source = parent.id; the parent is
+    // scoped by the institute's configured from-addresses. The body prefix matches strings
+    // produced in EmailEventService.createEventDetailsBody ("Email Event: DELIVERY\\n...").
+    //
+    // The two sides are MATERIALIZED and joined, not written as a plain join: with
+    // idx_nl_source_type (V37) available the planner merge-joined on source, which walks
+    // every EMAIL_EVENT ever recorded in source order and took 7-38 s per count (2026-10-23).
+    // The events in the window come from idx_nl_email_event_window (V38) instead, and
+    // left(body, 30) is the expression that index carries.
+
+    interface EmailEventCounts {
+        Long getDelivered();
+        Long getOpened();
+        Long getClicked();
+        Long getBounced();
+        Long getComplained();
+    }
+
+    /** All five overview tiles in one pass over the window. */
+    @Query(value = """
+            WITH ev AS MATERIALIZED (
+              SELECT source, left(body, 30) AS head
+                FROM notification_log
+               WHERE notification_type = 'EMAIL_EVENT'
+                 AND notification_date >= CAST(:since AS TIMESTAMP)
+            ), orig AS MATERIALIZED (
+              SELECT id
+                FROM notification_log
+               WHERE notification_type = 'EMAIL'
+                 AND sender_business_channel_id IN (:fromAddresses)
+            )
+            SELECT COUNT(*) FILTER (WHERE ev.head LIKE 'Email Event: DELIVERY%') AS delivered,
+                   COUNT(*) FILTER (WHERE ev.head LIKE 'Email Event: OPEN%') AS opened,
+                   COUNT(*) FILTER (WHERE ev.head LIKE 'Email Event: CLICK%') AS clicked,
+                   COUNT(*) FILTER (WHERE ev.head LIKE 'Email Event: BOUNCE%') AS bounced,
+                   COUNT(*) FILTER (WHERE ev.head LIKE 'Email Event: COMPLAINT%') AS complained
+              FROM ev
+              JOIN orig ON orig.id = ev.source
+            """, nativeQuery = true)
+    EmailEventCounts countEmailEventsByType(@Param("fromAddresses") List<String> fromAddresses,
+                                            @Param("since") String since);
+
     /**
-     * Count EMAIL_EVENTs by event name within window for an institute. Joins each event to
-     * its parent EMAIL log via `source = parent.id`, then scopes by the institute's
-     * configured from-addresses on the parent.
-     *
-     * The body prefix matches strings produced in EmailEventService.createEventDetailsBody:
-     * "Email Event: DELIVERY\\n...", "Email Event: OPEN\\n...", etc. Pass the uppercase
+     * Count EMAIL_EVENTs of one event name within window for an institute. Pass the uppercase
      * event name (DELIVERY / OPEN / CLICK / BOUNCE / COMPLAINT / SEND / REJECT).
      */
     @Query(value = """
-            SELECT COUNT(*) FROM notification_log ev
-            INNER JOIN notification_log orig ON orig.id = ev.source
-            WHERE ev.notification_type = 'EMAIL_EVENT'
-              AND ev.body LIKE CONCAT('Email Event: ', :eventName, '%')
-              AND orig.notification_type = 'EMAIL'
-              AND orig.sender_business_channel_id IN (:fromAddresses)
-              AND ev.notification_date >= CAST(:since AS TIMESTAMP)
+            WITH ev AS MATERIALIZED (
+              SELECT source
+                FROM notification_log
+               WHERE notification_type = 'EMAIL_EVENT'
+                 AND notification_date >= CAST(:since AS TIMESTAMP)
+                 AND left(body, 30) LIKE CONCAT('Email Event: ', :eventName, '%')
+            ), orig AS MATERIALIZED (
+              SELECT id
+                FROM notification_log
+               WHERE notification_type = 'EMAIL'
+                 AND sender_business_channel_id IN (:fromAddresses)
+            )
+            SELECT COUNT(*) FROM ev JOIN orig ON orig.id = ev.source
             """, nativeQuery = true)
     long countEmailEvent(@Param("fromAddresses") List<String> fromAddresses,
                         @Param("eventName") String eventName,
@@ -710,15 +920,28 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
      * filtered by the institute's configured from-addresses, event within window. Newest first.
      */
     @Query(value = """
-            SELECT ev.* FROM notification_log ev
-            INNER JOIN notification_log orig ON orig.id = ev.source
-            WHERE ev.notification_type = 'EMAIL_EVENT'
-              AND ev.body LIKE CONCAT('Email Event: ', :eventName, '%')
-              AND orig.notification_type = 'EMAIL'
-              AND orig.sender_business_channel_id IN (:fromAddresses)
-              AND ev.notification_date >= CAST(:since AS TIMESTAMP)
-            ORDER BY ev.notification_date DESC
-            LIMIT :limit OFFSET :offset
+            WITH ev AS MATERIALIZED (
+              SELECT id, source, notification_date
+                FROM notification_log
+               WHERE notification_type = 'EMAIL_EVENT'
+                 AND notification_date >= CAST(:since AS TIMESTAMP)
+                 AND left(body, 30) LIKE CONCAT('Email Event: ', :eventName, '%')
+            ), orig AS MATERIALIZED (
+              SELECT id
+                FROM notification_log
+               WHERE notification_type = 'EMAIL'
+                 AND sender_business_channel_id IN (:fromAddresses)
+            ), page AS (
+              SELECT ev.id, ev.notification_date
+                FROM ev
+                JOIN orig ON orig.id = ev.source
+               ORDER BY ev.notification_date DESC, ev.id
+               LIMIT :limit OFFSET :offset
+            )
+            SELECT nl.*
+              FROM page
+              JOIN notification_log nl ON nl.id = page.id
+             ORDER BY page.notification_date DESC, page.id
             """, nativeQuery = true)
     List<NotificationLog> findEmailEventsForInstitute(@Param("fromAddresses") List<String> fromAddresses,
                                                       @Param("eventName") String eventName,
@@ -823,6 +1046,103 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             @Param("types") List<String> types,
             @Param("cursor") String cursor,
             @Param("limit") int limit);
+
+    /**
+     * Outbound EMAIL rows for one counterparty inside a closed timestamp window
+     * {@code [from, to]} — the rows the thread page BEFORE {@code from} already showed. The inbox
+     * feeds them to the twin merger as context so an announcement row that lands on the next
+     * page still finds (and folds into) the HTML row shown on the previous one, instead of
+     * rendering as a second title-only card. Same cursor casting rules as
+     * {@link #findEmailMessagesForConversation}.
+     */
+    @Query(value = """
+            SELECT * FROM notification_log
+            WHERE channel_id = :email
+              AND institute_id = :instituteId
+              AND (:senderFilter IS NULL OR sender_business_channel_id = :senderFilter)
+              AND notification_type = 'EMAIL'
+              AND notification_date >= CAST(:fromTs AS TIMESTAMP)
+              AND notification_date <= CAST(:toTs AS TIMESTAMP)
+            ORDER BY notification_date DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<NotificationLog> findOutboundEmailsInWindow(
+            @Param("email") String email,
+            @Param("instituteId") String instituteId,
+            @Param("senderFilter") String senderFilter,
+            @Param("fromTs") String fromTs,
+            @Param("toTs") String toTs,
+            @Param("limit") int limit);
+
+    /**
+     * Latest non-blank inbound sender display name per counterparty, institute-scoped —
+     * outbound EMAIL rows never carry sender_name, so the conversation list would otherwise
+     * lose the person's name the moment the institute replies. Rows: [channel_id, sender_name].
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (nl.channel_id) nl.channel_id, nl.sender_name
+            FROM notification_log nl
+            WHERE nl.institute_id = :instituteId
+              AND nl.channel_id IN (:emails)
+              AND nl.notification_type = 'INBOUND_EMAIL'
+              AND nl.sender_name IS NOT NULL
+              AND nl.sender_name <> ''
+            ORDER BY nl.channel_id, nl.notification_date DESC
+            """, nativeQuery = true)
+    List<Object[]> findLatestInboundSenderNames(
+            @Param("instituteId") String instituteId,
+            @Param("emails") List<String> emails);
+
+    /**
+     * Counterparties (of the given page) that sent this institute at least one email with a
+     * real (non-inline) attachment — the inbox list's paperclip. Reads the attachment index
+     * InboundEmailService / InboundEmailContentService write into message_payload.
+     */
+    @Query(value = """
+            SELECT DISTINCT nl.channel_id
+            FROM notification_log nl
+            WHERE nl.institute_id = :instituteId
+              AND nl.channel_id IN (:emails)
+              AND nl.notification_type = 'INBOUND_EMAIL'
+              AND nl.message_payload LIKE '%"inline":false%'
+            """, nativeQuery = true)
+    List<String> findInboundCounterpartiesWithAttachments(
+            @Param("instituteId") String instituteId,
+            @Param("emails") List<String> emails);
+
+    /**
+     * Inbound rows whose raw email location is known (s3Key) but whose parts were never indexed
+     * (no "attachments" key) — rows stored before ingest indexed attachments, once backfilled
+     * with their S3 key. Newest first so recent threads gain attachments first.
+     */
+    @Query(value = """
+            SELECT * FROM notification_log nl
+            WHERE nl.notification_type = 'INBOUND_EMAIL'
+              AND nl.message_payload LIKE '%"s3Key"%'
+              AND nl.message_payload NOT LIKE '%"attachments"%'
+            ORDER BY nl.notification_date DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<NotificationLog> findInboundEmailsToIndex(@Param("limit") int limit);
+
+    /**
+     * The WhatsApp profile name the provider reported on this number's latest inbound message
+     * to the institute. Used to name a lead created by a chatbot flow. Empty list when none.
+     */
+    @Query(value = """
+            SELECT nl.sender_name
+            FROM notification_log nl
+            WHERE nl.institute_id = :instituteId
+              AND nl.channel_id = :phone
+              AND nl.notification_type = 'WHATSAPP_MESSAGE_INCOMING'
+              AND nl.sender_name IS NOT NULL
+              AND nl.sender_name <> ''
+            ORDER BY nl.notification_date DESC
+            LIMIT 1
+            """, nativeQuery = true)
+    List<String> findLatestWhatsAppSenderName(
+            @Param("instituteId") String instituteId,
+            @Param("phone") String phone);
 
     /**
      * Batch unread counts for email conversations: number of INBOUND_EMAIL rows newer than
@@ -992,4 +1312,141 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             @Param("instituteId") String instituteId,
             @Param("emails") List<String> emails,
             @Param("recentSince") Instant recentSince);
+
+    /**
+     * Copy a status webhook's verdict onto the outbound row that produced the message, matched by
+     * wamid (both rows carry it in source_id). Without this the outbound row keeps its send-time
+     * "Status: SUCCESS" forever and every read surface reports an undelivered message as delivered.
+     * <p>
+     * Monotonic by design: status webhooks are not ordered, so a late SENT must never overwrite a
+     * DELIVERED/READ already recorded, and nothing may overwrite FAILED — which is terminal, and the
+     * one verdict a human needs to see. The rank comparison, not "last write wins", enforces that.
+     * <p>
+     * Returns rows updated; 0 is normal and NOT an error — the outbound row may not be written yet
+     * (WhatsAppService saves the batch's log rows after the whole send loop), or the message may
+     * have been sent by a path that stores no wamid. The status row itself is saved either way, so
+     * nothing is lost.
+     */
+    /**
+     * What the provider ended up doing with these messages, keyed by wamid. Exists so a caller that
+     * just sent something can find out whether it ARRIVED — the send response can only report that
+     * the provider accepted it, and the verdict lands a second or two later on the status webhook.
+     * <p>
+     * A message with no row here, or a null deliveryStatus, is still awaiting its webhook; that is
+     * not a failure and must not be rendered as one.
+     */
+    interface DeliveryStatusRow {
+        String getMessageId();
+        String getDeliveryStatus();
+        String getErrorCode();
+        String getErrorMessage();
+        java.sql.Timestamp getReportedAt();
+    }
+
+    @Query(value = """
+            SELECT source_id AS "messageId",
+                   delivery_status AS "deliveryStatus",
+                   delivery_error_code AS "errorCode",
+                   delivery_error_message AS "errorMessage",
+                   delivery_updated_at AS "reportedAt"
+            FROM notification_log
+            WHERE notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+              AND source_id = ANY(CAST(:messageIds AS text[]))
+            """, nativeQuery = true)
+    // The literal notification_type (rather than a bound parameter) is what lets the planner use
+    // the partial index idx_nl_source_id_outgoing instead of scanning the table.
+    List<DeliveryStatusRow> findDeliveryStatusByProviderMessageIds(
+            @Param("messageIds") String[] messageIds);
+
+    /**
+     * Stamp statuses that were reported BEFORE their own send row existed.
+     *
+     * <p>A blast sends every recipient first and writes all the notification_log rows at the end,
+     * so WhatsApp's sent/delivered/read webhooks for the early recipients land while there is still
+     * nothing to stamp — measured at 24 seconds early on average, and every one of those messages
+     * then keeps a single grey tick forever however many events arrived. The webhook path cannot
+     * fix this on its own: it has already run. So the send path asks, right after writing its rows,
+     * what the provider has already said about them.
+     *
+     * <p>Reads both shapes of status row: the unified webhook writes WHATSAPP_STATUS_EVENT rows
+     * carrying delivery_status, and the Com.bot path writes one row per outcome whose type IS the
+     * outcome. Strongest verdict per message wins, on the same SENT &lt; DELIVERED &lt; READ &lt;
+     * FAILED precedence the single-event update uses, and an existing status is only ever upgraded.
+     *
+     * <p>Scoped to one institute and a recent window on purpose: unscoped, the status side of this
+     * has no usable index and scans every WhatsApp status row ever written (72k rows / 419ms in
+     * production, growing forever) on EVERY send, single transactional messages included. With the
+     * scope it rides idx_notification_log_institute_date and costs ~9ms. The trade-off is that a
+     * status row with no institute_id is not seen — the unified webhook always stamps one, the
+     * Com.bot path does not always, and that path stamps its own outbound row at webhook time.
+     *
+     * <p>PostgreSQL syntax ({@code UPDATE … FROM}, array binding), like the rest of the native SQL
+     * here — verified against production with a rolled-back run, not in the H2 test database.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(value = """
+            WITH reported AS (
+                SELECT source_id,
+                       MAX(CASE COALESCE(delivery_status, replace(notification_type, 'WHATSAPP_MESSAGE_', ''))
+                               WHEN 'SENT' THEN 1 WHEN 'DELIVERED' THEN 2
+                               WHEN 'READ' THEN 3 WHEN 'FAILED' THEN 4 ELSE 0 END) AS rank,
+                       MAX(delivery_error_code) AS error_code,
+                       MAX(delivery_error_message) AS error_message,
+                       MAX(delivery_updated_at) AS reported_at
+                FROM notification_log
+                WHERE institute_id = :instituteId
+                  AND notification_date >= :since
+                  AND source_id = ANY(CAST(:messageIds AS text[]))
+                  AND (
+                        (notification_type = 'WHATSAPP_STATUS_EVENT' AND delivery_status IS NOT NULL)
+                     OR notification_type IN ('WHATSAPP_MESSAGE_SENT', 'WHATSAPP_MESSAGE_DELIVERED',
+                                              'WHATSAPP_MESSAGE_READ', 'WHATSAPP_MESSAGE_FAILED')
+                  )
+                GROUP BY source_id
+            )
+            UPDATE notification_log o
+            SET delivery_status = CASE r.rank
+                    WHEN 1 THEN 'SENT' WHEN 2 THEN 'DELIVERED'
+                    WHEN 3 THEN 'READ' WHEN 4 THEN 'FAILED' END,
+                delivery_error_code = LEFT(r.error_code, 50),
+                delivery_error_message = LEFT(r.error_message, 500),
+                delivery_updated_at = COALESCE(r.reported_at, o.notification_date)
+            FROM reported r
+            WHERE o.source_id = r.source_id
+              AND o.notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+              AND o.institute_id = :instituteId
+              AND r.rank > 0
+              AND r.rank > CASE o.delivery_status
+                      WHEN 'SENT' THEN 1 WHEN 'DELIVERED' THEN 2
+                      WHEN 'READ' THEN 3 WHEN 'FAILED' THEN 4 ELSE 0 END
+            """, nativeQuery = true)
+    int backfillDeliveryStatusFromRecordedEvents(@Param("instituteId") String instituteId,
+                                                 @Param("since") Instant since,
+                                                 @Param("messageIds") String[] messageIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE notification_log
+            SET delivery_status = :status,
+                delivery_error_code = LEFT(:errorCode, 50),
+                delivery_error_message = LEFT(:errorMessage, 500),
+                delivery_updated_at = :reportedAt
+            WHERE source_id = :providerMessageId
+              AND notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
+              AND (delivery_status IS NULL
+                   OR CASE CAST(:status AS varchar)
+                          WHEN 'SENT' THEN 1 WHEN 'DELIVERED' THEN 2
+                          WHEN 'READ' THEN 3 WHEN 'FAILED' THEN 4 ELSE 0 END
+                      > CASE delivery_status
+                          WHEN 'SENT' THEN 1 WHEN 'DELIVERED' THEN 2
+                          WHEN 'READ' THEN 3 WHEN 'FAILED' THEN 4 ELSE 0 END)
+            """, nativeQuery = true)
+    int applyDeliveryStatusByProviderMessageId(
+            @Param("providerMessageId") String providerMessageId,
+            @Param("status") String status,
+            @Param("errorCode") String errorCode,
+            @Param("errorMessage") String errorMessage,
+            @Param("reportedAt") Instant reportedAt);
 }

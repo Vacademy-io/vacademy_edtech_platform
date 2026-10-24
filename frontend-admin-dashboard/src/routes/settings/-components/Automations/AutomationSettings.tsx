@@ -12,6 +12,8 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightning, ArrowRight } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
@@ -29,28 +31,33 @@ interface Props {
     isTab?: boolean;
 }
 
-const SECTION_META: Record<AutomationSection, { label: string; tagline: string }> = {
+const buildSectionMeta = (
+    t: TFunction
+): Record<AutomationSection, { label: string; tagline: string }> => ({
     general: {
-        label: 'General Automations',
-        tagline: 'Automatic emails for every part of your platform.',
+        label: t('sections.general.label'),
+        tagline: t('sections.general.tagline'),
     },
     parents: {
-        label: 'Parents',
-        tagline: 'Keep parents in the loop — same triggers, but emails go to the parent address.',
+        label: t('sections.parents.label'),
+        tagline: t('sections.parents.tagline'),
     },
     admin: {
-        label: 'Admin & Team',
-        tagline: 'Operational alerts and report digests routed to your admin / teacher team.',
+        label: t('sections.admin.label'),
+        tagline: t('sections.admin.tagline'),
     },
-};
+});
 
 const SECTION_ORDER: AutomationSection[] = ['general', 'parents', 'admin'];
 
 export default function AutomationSettings({ isTab = true }: Props) {
+    const { t } = useTranslation('settingsAutomation');
     const instituteId = getInstituteId() ?? '';
     const { data: workflows = [], refetch, isLoading } = useQuery(getActiveWorkflowsQuery(instituteId));
 
     const [openFeature, setOpenFeature] = useState<AutomationFeature | null>(null);
+
+    const sectionMeta = useMemo(() => buildSectionMeta(t), [t]);
 
     /** recipeId → workflowId (only counts workflows managed by this Settings tab). */
     const enabledMap = useMemo(() => {
@@ -90,11 +97,11 @@ export default function AutomationSettings({ isTab = true }: Props) {
                     <span className="text-3xl">{feature.icon}</span>
                     {onCount > 0 ? (
                         <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                            {onCount} on
+                            {t('card.onCount', { count: onCount })}
                         </Badge>
                     ) : (
                         <Badge className="bg-gray-100 text-gray-500 hover:bg-gray-100">
-                            Off
+                            {t('card.off')}
                         </Badge>
                     )}
                 </div>
@@ -103,11 +110,9 @@ export default function AutomationSettings({ isTab = true }: Props) {
                 </h3>
                 <p className="mt-1 text-xs text-gray-500">{feature.description}</p>
                 <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                    <span>
-                        {totalRecipes} {totalRecipes === 1 ? 'option' : 'options'} available
-                    </span>
+                    <span>{t('card.optionsAvailable', { count: totalRecipes })}</span>
                     <span className="flex items-center gap-1 font-medium text-primary-500 opacity-0 transition-opacity group-hover:opacity-100">
-                        Open <ArrowRight size={12} />
+                        {t('card.open')} <ArrowRight size={12} />
                     </span>
                 </div>
             </button>
@@ -119,19 +124,16 @@ export default function AutomationSettings({ isTab = true }: Props) {
             {isTab && (
                 <div>
                     <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800">
-                        <Lightning weight="fill" className="text-primary-500" /> General Automations
+                        <Lightning weight="fill" className="text-primary-500" /> {t('header.title')}
                     </h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Set up automatic emails and reminders — no technical setup needed. Pick a
-                        feature below and switch on the messages you want.
-                    </p>
+                    <p className="mt-1 text-sm text-gray-600">{t('header.subtitle')}</p>
                 </div>
             )}
 
             {SECTION_ORDER.map((section) => {
                 const features = featuresBySection[section];
                 if (features.length === 0) return null;
-                const meta = SECTION_META[section];
+                const meta = sectionMeta[section];
                 return (
                     <section key={section} className="space-y-3">
                         {/* The first (general) section doesn't need its own heading,
@@ -152,22 +154,24 @@ export default function AutomationSettings({ isTab = true }: Props) {
             })}
 
             {isLoading && (
-                <p className="text-xs text-gray-400">Loading your automations…</p>
+                <p className="text-xs text-gray-400">{t('loading')}</p>
             )}
 
             {/* Help card */}
             <Card className="border-dashed border-gray-200 bg-gray-50">
                 <CardHeader className="py-3">
-                    <CardTitle className="text-sm text-gray-700">Need something custom?</CardTitle>
+                    <CardTitle className="text-sm text-gray-700">{t('helpCard.title')}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                     <p className="text-xs text-gray-500">
-                        Looking for an automation that isn’t listed here, or want to fine-tune
-                        recipients and conditions? You can use the{' '}
-                        <a href="/workflow/create" className="font-medium text-primary-600 hover:underline">
-                            advanced workflow builder
-                        </a>{' '}
-                        to design exactly what you need.
+                        <Trans i18nKey="settingsAutomation:helpCard.description">
+                            Looking for an automation that isn’t listed here, or want to fine-tune
+                            recipients and conditions? You can use the{' '}
+                            <a href="/workflow/create" className="font-medium text-primary-600 hover:underline">
+                                advanced workflow builder
+                            </a>{' '}
+                            to design exactly what you need.
+                        </Trans>
                     </p>
                 </CardContent>
             </Card>

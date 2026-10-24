@@ -1,0 +1,47 @@
+{
+    "sectionInfo": {
+        "descriptionTitle": "Description de la section"
+    },
+    "stats": {
+        "sectionDuration": {
+            "label": "Durée de la section",
+            "value": "{{duration}} min"
+        },
+        "avgMarksPerQuestion": "Moy. points / question",
+        "totalMarks": "Total des points",
+        "negativeMarking": "Points négatifs"
+    },
+    "badges": {
+        "partialMarking": "Notation partielle",
+        "cutoffMarks": "Points d'élimination",
+        "problemRandomization": "Aléatoire des questions"
+    },
+    "table": {
+        "heading": {
+            "survey": "Questions du sondage",
+            "adaptiveMarking": "Règles de notation adaptative"
+        },
+        "columns": {
+            "index": "#",
+            "question": "Question",
+            "type": "Type",
+            "marks": "Points",
+            "penalty": "Pénalité",
+            "criteria": "Critères",
+            "time": "Temps"
+        },
+        "criteriaNotSet": "Non défini"
+    },
+    "toasts": {
+        "invalidCriteriaFormat": "Impossible d'afficher l'aperçu des critères. Format de données invalide."
+    },
+    "accordion": {
+        "questionCount_one": "{{count}} question",
+        "questionCount_many": "{{count}} de questions",
+        "questionCount_other": "{{count}} questions",
+        "mcqSingle": "QCM · Simple {{count}}",
+        "mcqMultiple": "QCM · Multiple {{count}}",
+        "total": "Total {{count}}"
+    },
+    "sectionTotal": "Total de la section"
+}

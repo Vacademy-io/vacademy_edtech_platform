@@ -1,0 +1,23 @@
+{
+    "dialogs": {
+        "attentionLabel": "ध्यान दें",
+        "close": "बंद करें",
+        "closeSubmission": {
+            "title": "सबमिशन बंद करें",
+            "confirmMessagePrefix": "क्या आप वाकई इसका आकलन सबमिशन बंद करना चाहते हैं"
+        },
+        "increaseTime": {
+            "title": "आकलन का समय बढ़ाएं",
+            "increaseByLabel": "इतना बढ़ाएं",
+            "selectSectionPlaceholder": "सेक्शन चुनें",
+            "entireAssessment": "संपूर्ण आकलन",
+            "section": "सेक्शन {{number}}",
+            "question": "प्रश्न {{number}}"
+        }
+    },
+    "dropdown": {
+        "increaseSubmissionTime": "सबमिशन का समय बढ़ाएं",
+        "closeSubmission": "सबमिशन बंद करें",
+        "proctoring": "प्रॉक्टरिंग"
+    }
+}

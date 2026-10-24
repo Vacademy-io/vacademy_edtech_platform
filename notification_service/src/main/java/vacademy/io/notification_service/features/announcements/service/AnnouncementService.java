@@ -147,7 +147,7 @@ public class AnnouncementService {
     @Transactional(readOnly = true)
     public Page<AnnouncementResponse> getAnnouncementsByInstitute(String instituteId, Pageable pageable) {
         return announcementRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId, pageable)
-                .map(this::mapToAnnouncementResponse);
+                .map(this::mapToListResponse);
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +155,7 @@ public class AnnouncementService {
                                                                           AnnouncementStatus status, 
                                                                           Pageable pageable) {
         return announcementRepository.findByInstituteIdAndStatusOrderByCreatedAtDesc(instituteId, status, pageable)
-                .map(this::mapToAnnouncementResponse);
+                .map(this::mapToListResponse);
     }
 
     @Transactional(readOnly = true)
@@ -398,6 +398,8 @@ public class AnnouncementService {
         announcement.setCreatedByName(request.getCreatedByName());
         announcement.setCreatedByRole(request.getCreatedByRole());
         announcement.setTimezone(request.getTimezone() != null ? request.getTimezone() : "UTC");
+        announcement.setEntity(request.getEntity());
+        announcement.setEntityId(request.getEntityId());
         announcement.setStatus(AnnouncementStatus.DRAFT);
         return announcement;
     }
@@ -587,6 +589,17 @@ public class AnnouncementService {
     }
 
     private AnnouncementResponse mapToAnnouncementResponse(Announcement announcement) {
+        return mapToAnnouncementResponse(announcement, true);
+    }
+
+    // List rows skip stats: the email part reads notification_log by source_id, which has no index,
+    // so every row cost a full scan of that table. The history page loads stats per row on demand
+    // from /{id}/stats instead.
+    private AnnouncementResponse mapToListResponse(Announcement announcement) {
+        return mapToAnnouncementResponse(announcement, false);
+    }
+
+    private AnnouncementResponse mapToAnnouncementResponse(Announcement announcement, boolean includeStats) {
         // Map entity to response DTO with all related data
         AnnouncementResponse response = new AnnouncementResponse();
         response.setId(announcement.getId());
@@ -684,14 +697,16 @@ public class AnnouncementService {
                     schedulingResponse.setTimezone(scheduledMessage.getTimezone());
                     schedulingResponse.setStartDate(scheduledMessage.getStartDate());
                     schedulingResponse.setEndDate(scheduledMessage.getEndDate());
-                    schedulingResponse.setNextRunTime(scheduledMessage.getNextRunTime());
+                    schedulingResponse.setNextRunTime(schedulingService.nextRunTimeInScheduleZone(scheduledMessage));
                     schedulingResponse.setLastRunTime(scheduledMessage.getLastRunTime());
                     schedulingResponse.setIsActive(scheduledMessage.getIsActive());
                     response.setScheduling(schedulingResponse);
                 });
         
         // Map stats
-        response.setStats(computeAnnouncementStats(announcement.getId()));
+        if (includeStats) {
+            response.setStats(computeAnnouncementStats(announcement.getId()));
+        }
         
         return response;
     }
@@ -1013,7 +1028,7 @@ public class AnnouncementService {
             item.setTimezone(sm.getTimezone());
             item.setStartDate(sm.getStartDate());
             item.setEndDate(sm.getEndDate());
-            item.setNextRunTime(sm.getNextRunTime());
+            item.setNextRunTime(schedulingService.nextRunTimeInScheduleZone(sm));
             item.setLastRunTime(sm.getLastRunTime());
         });
         return item;

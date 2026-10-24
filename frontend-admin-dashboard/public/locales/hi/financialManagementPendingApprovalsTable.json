@@ -1,0 +1,34 @@
+{
+    "toast": {
+        "approved": "समायोजन स्वीकृत किया गया",
+        "rejected": "समायोजन अस्वीकृत किया गया",
+        "reviewFailed": "समायोजन की समीक्षा विफल रही"
+    },
+    "errors": {
+        "unableToLoad": "लंबित अनुमोदन लोड नहीं हो सके",
+        "tryAgain": "कृपया पुनः प्रयास करें।"
+    },
+    "empty": {
+        "noPendingApprovals": "कोई लंबित अनुमोदन नहीं",
+        "allReviewed": "सभी समायोजन अनुरोधों की समीक्षा हो चुकी है।"
+    },
+    "table": {
+        "student": "छात्र",
+        "feeType": "शुल्क प्रकार",
+        "cpoPlan": "सीपीओ / योजना",
+        "type": "प्रकार",
+        "expected": "अपेक्षित",
+        "amount": "राशि",
+        "reason": "कारण",
+        "dueDate": "देय तिथि",
+        "actions": "कार्रवाई"
+    },
+    "adjustmentType": {
+        "concession": "रियायत",
+        "penalty": "जुर्माना"
+    },
+    "actions": {
+        "approve": "स्वीकृत करें",
+        "reject": "अस्वीकृत करें"
+    }
+}

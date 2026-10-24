@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "chapterNameRequired": "अध्याय का नाम आवश्यक है",
+        "descriptionMaxLength": "विवरण अधिकतम {{max}} अक्षरों का होना चाहिए"
+    },
+    "toast": {
+        "invalidImageFile": "कृपया एक मान्य इमेज फ़ाइल चुनें",
+        "thumbnailUploadSuccess": "थंबनेल सफलतापूर्वक अपलोड हुआ",
+        "thumbnailUploadFailed": "थंबनेल अपलोड करने में विफल",
+        "selectPackageRequired": "कृपया दृश्यता के लिए कम से कम एक पैकेज चुनें",
+        "packageSessionNotFound": "पैकेज सत्र नहीं मिला",
+        "chapterAddSuccess": "अध्याय सफलतापूर्वक जोड़ा गया",
+        "noChapterToUpdate": "अपडेट करने के लिए कोई अध्याय नहीं है",
+        "chapterUpdateSuccess": "अध्याय सफलतापूर्वक अपडेट किया गया",
+        "chapterActionFailedCreate": "अध्याय बनाने में विफल। कृपया पुनः प्रयास करें।",
+        "chapterActionFailedEdit": "अध्याय संपादित करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "loadingVisibilityData": "पूरा दृश्यता डेटा लोड हो रहा है...",
+    "nameLabel": "{{term}} नाम",
+    "descriptionLabel": "विवरण (वैकल्पिक)",
+    "descriptionPlaceholder": "{{term}} का विवरण दर्ज करें",
+    "descriptionCharCount": "{{term}} कार्ड पर दिखेगा — {{current}}/{{max}} अक्षर",
+    "thumbnailLabel": "{{term}} थंबनेल",
+    "optional": "(वैकल्पिक)",
+    "thumbnailHelpText": "इस अध्याय के लिए एक थंबनेल इमेज अपलोड करें। स्थिरता के लिए इसे 16:9 अनुपात में क्रॉप किया जाएगा (16:9 अनुशंसित)।",
+    "thumbnailPreviewAlt": "थंबनेल पूर्वावलोकन",
+    "uploading": "अपलोड हो रहा है...",
+    "selectThumbnail": "थंबनेल चुनें",
+    "visibilityHeading": "{{term}} दृश्यता",
+    "visibilityHelpText": "उन स्तरों का चयन करें जिन्हें आप इस अध्याय तक पहुंच देना चाहते हैं। केवल चुने गए स्तर ही सामग्री देख पाएंगे। आप कभी भी दृश्यता अपडेट कर सकते हैं।",
+    "academicSession": "शैक्षणिक सत्र:",
+    "defaultSuffix": " (डिफ़ॉल्ट)",
+    "selectAllAriaLabel": "सभी चुनें",
+    "loadingCompleteData": "कृपया प्रतीक्षा करें जब तक हम पूरा डेटा लोड करते हैं...",
+    "adding": "जोड़ा जा रहा है...",
+    "updating": "अपडेट किया जा रहा है...",
+    "addButton": "{{term}} जोड़ें",
+    "editButton": "{{term}} संपादित करें",
+    "cropDialogTitle": "अध्याय थंबनेल क्रॉप करें",
+    "saveThumbnail": "थंबनेल सहेजें"
+}

@@ -1,0 +1,38 @@
+{
+    "title": "Counsellor performance",
+    "summary": {
+        "counsellorCount_one": "{{count}} counsellor",
+        "counsellorCount_other": "{{count}} counsellors",
+        "avgResponse": "avg resp",
+        "avgConversion": "avg conv."
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "Counsellor",
+            "assigned": "Assigned",
+            "responded": "Responded",
+            "conversions": "Conversions",
+            "convRate": "Conv. rate %",
+            "avgResponse": "Avg response (min)",
+            "tatMet": "TAT met %",
+            "open": "Open",
+            "overdue": "Overdue"
+        }
+    },
+    "table": {
+        "loading": "Loading counsellors…",
+        "empty": "No counsellor activity in this range.",
+        "topPerformer": "Top performer",
+        "headers": {
+            "counsellor": "Counsellor",
+            "assigned": "Assigned",
+            "responded": "Responded",
+            "conversions": "Conversions",
+            "convRate": "Conv. rate",
+            "avgResponse": "Avg response",
+            "tatMet": "TAT met",
+            "open": "Open",
+            "overdue": "Overdue"
+        }
+    }
+}

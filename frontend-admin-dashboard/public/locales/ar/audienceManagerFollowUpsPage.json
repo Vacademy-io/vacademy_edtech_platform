@@ -1,0 +1,167 @@
+{
+    "navHeading": "المتابعات",
+    "heading": {
+        "team": "المتابعات",
+        "mine": "متابعاتي",
+        "blurb": "أدِر وتابع جميع متابعات الإرشاد في مكان واحد."
+    },
+    "subline": {
+        "teamAllCaughtUp": "الفريق أنجز كل شيء",
+        "selfAllCaughtUp": "أنجزتَ كل شيء",
+        "tasksDueToday_admin_zero": "لا توجد لدى الفريق مهام مستحقة اليوم ({{count, number}})",
+        "tasksDueToday_admin_one": "لدى الفريق مهمة واحدة مستحقة اليوم ({{count, number}})",
+        "tasksDueToday_admin_two": "لدى الفريق مهمتان مستحقتان اليوم ({{count, number}})",
+        "tasksDueToday_admin_few": "لدى الفريق {{count, number}} مهام مستحقة اليوم",
+        "tasksDueToday_admin_many": "لدى الفريق {{count, number}} مهمة مستحقة اليوم",
+        "tasksDueToday_admin_other": "لدى الفريق {{count, number}} مهمة مستحقة اليوم",
+        "tasksDueToday_user_zero": "ليس لديك مهام مستحقة اليوم ({{count, number}})",
+        "tasksDueToday_user_one": "لديك مهمة واحدة مستحقة اليوم ({{count, number}})",
+        "tasksDueToday_user_two": "لديك مهمتان مستحقتان اليوم ({{count, number}})",
+        "tasksDueToday_user_few": "لديك {{count, number}} مهام مستحقة اليوم",
+        "tasksDueToday_user_many": "لديك {{count, number}} مهمة مستحقة اليوم",
+        "tasksDueToday_user_other": "لديك {{count, number}} مهمة مستحقة اليوم",
+        "overdueSuffix_zero": " · لا يوجد متأخر ({{count, number}})",
+        "overdueSuffix_one": " · مهمة واحدة متأخرة ({{count, number}})",
+        "overdueSuffix_two": " · مهمتان متأخرتان ({{count, number}})",
+        "overdueSuffix_few": " · {{count, number}} مهام متأخرة",
+        "overdueSuffix_many": " · {{count, number}} مهمة متأخرة",
+        "overdueSuffix_other": " · {{count, number}} مهمة متأخرة"
+    },
+    "tabs": {
+        "list": "قائمة",
+        "calendar": "تقويم"
+    },
+    "showing": {
+        "prefix": "عرض",
+        "suffix_zero": "متابعة",
+        "suffix_one": "متابعة",
+        "suffix_two": "متابعتان",
+        "suffix_few": "متابعات",
+        "suffix_many": "متابعة",
+        "suffix_other": "متابعة",
+        "suffix_overdue_zero": "متابعة متأخرة",
+        "suffix_overdue_one": "متابعة متأخرة",
+        "suffix_overdue_two": "متابعتان متأخرتان",
+        "suffix_overdue_few": "متابعات متأخرة",
+        "suffix_overdue_many": "متابعة متأخرة",
+        "suffix_overdue_other": "متابعة متأخرة",
+        "suffix_today_zero": "متابعة مستحقة اليوم",
+        "suffix_today_one": "متابعة مستحقة اليوم",
+        "suffix_today_two": "متابعتان مستحقتان اليوم",
+        "suffix_today_few": "متابعات مستحقة اليوم",
+        "suffix_today_many": "متابعة مستحقة اليوم",
+        "suffix_today_other": "متابعة مستحقة اليوم",
+        "suffix_upcoming_zero": "متابعة قادمة",
+        "suffix_upcoming_one": "متابعة قادمة",
+        "suffix_upcoming_two": "متابعتان قادمتان",
+        "suffix_upcoming_few": "متابعات قادمة",
+        "suffix_upcoming_many": "متابعة قادمة",
+        "suffix_upcoming_other": "متابعة قادمة",
+        "suffix_completed_one": "متابعة مكتملة",
+        "suffix_completed_other": "متابعة مكتملة",
+        "suffix_completed_zero": "متابعة مكتملة",
+        "suffix_completed_two": "متابعة مكتملة",
+        "suffix_completed_few": "متابعة مكتملة",
+        "suffix_completed_many": "متابعة مكتملة"
+    },
+    "table": {
+        "actionHeader": "إجراء"
+    },
+    "callReasons": {
+        "noSubmissionId": "لا يوجد معرّف تقديم لهذا العميل المحتمل",
+        "noPhone": "لا يوجد رقم هاتف مسجل لهذا العميل المحتمل",
+        "callInProgress": "هناك مكالمة أخرى قيد البدء…"
+    },
+    "errors": {
+        "loadFailedTitle": "تعذّر تحميل المتابعات",
+        "loadFailedDescription": "حدث خطأ ما أثناء جلب المتابعات. حاول مرة أخرى."
+    },
+    "empty": {
+        "title": {
+            "teamAllCaughtUp": "لا توجد متابعات معلّقة على مستوى الفريق",
+            "selfAllCaughtUp": "أنجزتَ كل شيء",
+            "noOverdue": "لا توجد متابعات متأخرة",
+            "nothingToday": "لا شيء مستحق اليوم",
+            "noUpcoming": "لا توجد متابعات قادمة خلال الأيام السبعة القادمة",
+            "default": "لا توجد متابعات",
+            "noMatches": "لا توجد متابعات مطابقة لبحثك"
+        },
+        "description": {
+            "overdueNudge_zero": "لا لديك مهام متأخرة ({{count, number}}) — بدّل إلى \"المعلّقة\" أعلاه.",
+            "overdueNudge_one": "لديك مهمة واحدة متأخرة ({{count, number}}) — بدّل إلى \"المعلّقة\" أعلاه.",
+            "overdueNudge_two": "لديك مهمتان متأخرتان ({{count, number}}) — بدّل إلى \"المعلّقة\" أعلاه.",
+            "overdueNudge_few": "لديك {{count, number}} مهام متأخرة — بدّل إلى \"المعلّقة\" أعلاه.",
+            "overdueNudge_many": "لديك {{count, number}} مهمة متأخرة — بدّل إلى \"المعلّقة\" أعلاه.",
+            "overdueNudge_other": "لديك {{count, number}} مهمة متأخرة — بدّل إلى \"المعلّقة\" أعلاه.",
+            "upcomingNudge": "بدّل إلى \"القادمة\" أعلاه لترى ما هو مستحق تاليًا.",
+            "teamAllCaughtUp": "أنجز الفريق كل المتابعات في هذا العرض.",
+            "selfAllCaughtUp": "لا توجد لديك متابعات معلّقة في هذا العرض.",
+            "noMatches": "لم يطابق «{{query}}» أي شيء. امسح البحث لعرض القائمة كاملة."
+        }
+    },
+    "search": {
+        "placeholder": "ابحث بالاسم أو الهاتف أو البريد…"
+    },
+    "export": {
+        "action": "تصدير",
+        "running": "جارٍ التصدير…",
+        "failed": "تعذّر تصدير المتابعات. حاول مرة أخرى.",
+        "columns": {
+            "name": "اسم العميل",
+            "email": "البريد",
+            "phone": "الهاتف",
+            "source": "المصدر",
+            "status": "الحالة",
+            "dueAt": "الاستحقاق",
+            "leadOwner": "مالك العميل المحتمل",
+            "interestLevel": "مستوى الاهتمام",
+            "followUpNote": "ملاحظة المتابعة",
+            "studentResponse": "رد الطالب",
+            "followUpMode": "طريقة المتابعة",
+            "nextAction": "الإجراء التالي"
+        },
+        "progress": "جارٍ تصدير المتابعات… {{done}} من {{total}}",
+        "done_one": "تم تصدير متابعة واحدة",
+        "done_other": "تم تصدير {{count, number}} متابعة",
+        "alreadyRunning": "هناك تصدير قيد التشغيل بالفعل — سيتم التنزيل عند انتهائه.",
+        "truncated_other": "تم تصدير أول {{count, number}} متابعة. ضيّق العامل للحصول على الباقي.",
+        "partial_other": "توقف التصدير مبكرًا. تم تنزيل الـ {{count, number}} متابعة التي تم جمعها — أعد المحاولة للباقي.",
+        "truncated_one": "تم تصدير أول {{count, number}} متابعة. ضيّق العامل للحصول على الباقي.",
+        "partial_one": "توقف التصدير مبكرًا. تم تنزيل الـ {{count, number}} متابعة التي تم جمعها — أعد المحاولة للباقي.",
+        "done_zero": "تم تصدير {{count, number}} متابعة",
+        "done_two": "تم تصدير {{count, number}} متابعة",
+        "done_few": "تم تصدير {{count, number}} متابعة",
+        "done_many": "تم تصدير {{count, number}} متابعة",
+        "truncated_zero": "تم تصدير أول {{count, number}} متابعة. ضيّق العامل للحصول على الباقي.",
+        "truncated_two": "تم تصدير أول {{count, number}} متابعة. ضيّق العامل للحصول على الباقي.",
+        "truncated_few": "تم تصدير أول {{count, number}} متابعة. ضيّق العامل للحصول على الباقي.",
+        "truncated_many": "تم تصدير أول {{count, number}} متابعة. ضيّق العامل للحصول على الباقي.",
+        "partial_zero": "توقف التصدير مبكرًا. تم تنزيل الـ {{count, number}} متابعة التي تم جمعها — أعد المحاولة للباقي.",
+        "partial_two": "توقف التصدير مبكرًا. تم تنزيل الـ {{count, number}} متابعة التي تم جمعها — أعد المحاولة للباقي.",
+        "partial_few": "توقف التصدير مبكرًا. تم تنزيل الـ {{count, number}} متابعة التي تم جمعها — أعد المحاولة للباقي.",
+        "partial_many": "توقف التصدير مبكرًا. تم تنزيل الـ {{count, number}} متابعة التي تم جمعها — أعد المحاولة للباقي."
+    },
+    "filters": {
+        "campaignType": "كل {{term}}",
+        "audience": "كل {{term}}",
+        "audienceUntitled": "جمهور بلا اسم",
+        "interestLevel": "كل مستويات الاهتمام"
+    },
+    "completedRange": {
+        "preset_one": "اليوم",
+        "preset_other": "آخر {{count}} أيام",
+        "custom": "نطاق مخصص",
+        "from": "من تاريخ",
+        "to": "إلى تاريخ",
+        "preset_zero": "آخر {{count}} أيام",
+        "preset_two": "آخر {{count}} أيام",
+        "preset_few": "آخر {{count}} أيام",
+        "preset_many": "آخر {{count}} أيام",
+        "allTime": "كل الوقت"
+    },
+    "dueRange": {
+        "from": "الاستحقاق من",
+        "to": "الاستحقاق إلى",
+        "clear": "مسح تواريخ الاستحقاق"
+    }
+}

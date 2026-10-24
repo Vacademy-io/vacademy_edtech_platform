@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -54,8 +55,8 @@ function reportLabel(report: ReportListItem): string {
 function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="flex items-center justify-center min-h-reg-400 px-6">
-      <div className="text-center">
-        <h2 className="text-xl font-semibold text-neutral-700 mb-2">{title}</h2>
+      <div className="text-center space-y-2">
+        <h2 className="text-xl font-semibold text-neutral-700">{title}</h2>
         <p className="text-neutral-500">{message}</p>
       </div>
     </div>
@@ -89,6 +90,7 @@ function TabButton({
 type ReportsTab = "term" | "activity";
 
 export default function MyReportsPage() {
+  const { t } = useTranslation("layoutCommonB");
   const navigate = useNavigate();
   const { permissions, isLoading: permissionsLoading } =
     useStudentPermissions();
@@ -170,16 +172,16 @@ export default function MyReportsPage() {
     if (error) {
       return (
         <EmptyState
-          title="Error Loading Reports"
-          message="Please try again later."
+          title={t("myReportsPage.errorLoading.title")}
+          message={t("myReportsPage.errorLoading.message")}
         />
       );
     }
     if (termReports.length === 0) {
       return (
         <EmptyState
-          title="No Reports Found"
-          message="You don't have any reports yet."
+          title={t("myReportsPage.emptyTerm.title")}
+          message={t("myReportsPage.emptyTerm.message")}
         />
       );
     }
@@ -195,7 +197,7 @@ export default function MyReportsPage() {
                 <CardTitle className="text-lg">{reportLabel(report)}</CardTitle>
                 <CardDescription>
                   {report.created_at
-                    ? `Created: ${safeFormatDate(report.created_at)}`
+                    ? t("myReportsPage.term.created", { date: safeFormatDate(report.created_at) })
                     : ""}
                 </CardDescription>
               </CardHeader>
@@ -213,7 +215,7 @@ export default function MyReportsPage() {
                     </span>
                     {report.report_version === "v2" && (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-600 border border-primary-200">
-                        Comprehensive
+                        {t("myReportsPage.term.comprehensive")}
                       </span>
                     )}
                   </div>
@@ -222,7 +224,7 @@ export default function MyReportsPage() {
                     size="sm"
                     buttonType="secondary"
                   >
-                    View Details
+                    {t("myReportsPage.term.viewDetails")}
                   </MyButton>
                 </div>
               </CardContent>
@@ -248,8 +250,8 @@ export default function MyReportsPage() {
     if (insights.length === 0) {
       return (
         <EmptyState
-          title="No Activity Insights Yet"
-          message="Insights appear here after you complete a quiz, question or assignment. They're prepared shortly after you submit."
+          title={t("myReportsPage.emptyActivity.title")}
+          message={t("myReportsPage.emptyActivity.message")}
         />
       );
     }
@@ -281,7 +283,7 @@ export default function MyReportsPage() {
                     size="sm"
                     buttonType="secondary"
                   >
-                    View Insights
+                    {t("myReportsPage.activity.viewInsights")}
                   </MyButton>
                 </div>
               </CardContent>
@@ -315,7 +317,7 @@ export default function MyReportsPage() {
                 <X size={24} />
               </button>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                My Reports
+                {t("myReportsPage.header.title")}
               </h1>
             </div>
             <div className="hidden md:flex gap-3">
@@ -326,7 +328,7 @@ export default function MyReportsPage() {
                 layoutVariant="default"
                 onClick={handleClose}
               >
-                Back to Dashboard
+                {t("myReportsPage.header.backToDashboard")}
               </MyButton>
             </div>
           </div>
@@ -337,14 +339,14 @@ export default function MyReportsPage() {
                 active={activeTab === "term"}
                 onClick={() => setActiveTab("term")}
               >
-                Progress Reports
+                {t("myReportsPage.header.progressReportsTab")}
               </TabButton>
               <TabButton
                 active={activeTab === "activity"}
                 onClick={() => setActiveTab("activity")}
               >
                 <Sparkle size={14} weight="fill" className="text-primary-500" />
-                Activity Insights
+                {t("myReportsPage.header.activityInsightsTab")}
               </TabButton>
             </div>
           )}

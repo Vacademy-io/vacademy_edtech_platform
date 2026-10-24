@@ -1,0 +1,122 @@
+{
+    "schema": {
+        "titleRequired": "शीर्षक आवश्यक है",
+        "durationRequired": "अवधि आवश्यक है",
+        "timezoneRequired": "समय क्षेत्र आवश्यक है",
+        "horizonDaysInvalid": "दिनों की संख्या दर्ज करें"
+    },
+    "days": {
+        "monday": "सोमवार",
+        "tuesday": "मंगलवार",
+        "wednesday": "बुधवार",
+        "thursday": "गुरुवार",
+        "friday": "शुक्रवार",
+        "saturday": "शनिवार",
+        "sunday": "रविवार"
+    },
+    "durationOption_one": "{{count}} मिनट",
+    "durationOption_other": "{{count}} मिनट",
+    "noMinimumNotice": "न्यूनतम सूचना नहीं",
+    "hoursOption_one": "{{count}} घंटा",
+    "hoursOption_other": "{{count}} घंटे",
+    "daysOption_one": "{{count}} दिन",
+    "daysOption_other": "{{count}} दिन",
+    "noReminder": "मीटिंग से पहले कोई रिमाइंडर नहीं",
+    "minutesBeforeOption_one": "{{count}} मिनट पहले",
+    "minutesBeforeOption_other": "{{count}} मिनट पहले",
+    "hoursBeforeOption_one": "{{count}} घंटा पहले",
+    "hoursBeforeOption_other": "{{count}} घंटे पहले",
+    "daysBeforeOption_one": "{{count}} दिन पहले",
+    "daysBeforeOption_other": "{{count}} दिन पहले",
+    "fieldOptions": {
+        "inviteeName": "आमंत्रित व्यक्ति का नाम",
+        "meetingDatetime": "मीटिंग की तारीख और समय",
+        "meetingDate": "मीटिंग की तारीख",
+        "meetingTime": "मीटिंग का समय",
+        "meetLink": "Google Meet / जॉइन लिंक",
+        "hostName": "होस्ट का नाम",
+        "meetingTitle": "मीटिंग का शीर्षक",
+        "durationMinutes": "अवधि (मिनट)"
+    },
+    "defaultHostSelected": "चयनित होस्ट",
+    "defaultHostMe": "मैं",
+    "toast": {
+        "enableOneDay": "साप्ताहिक उपलब्धता के लिए कम से कम एक दिन सक्षम करें",
+        "updated": "बुकिंग पेज अपडेट किया गया",
+        "created": "बुकिंग पेज बनाया गया",
+        "updateFailed": "बुकिंग पेज अपडेट करने में विफल",
+        "createFailed": "बुकिंग पेज बनाने में विफल"
+    },
+    "basics": {
+        "title": "मूल जानकारी",
+        "description": "जो जरूरी जानकारी लोग आपके साथ समय बुक करते समय देखते हैं।",
+        "titleLabel": "शीर्षक",
+        "titlePlaceholder": "जैसे काउंसलिंग कॉल",
+        "hostLabel": "होस्ट",
+        "hostDescription": "मीटिंग कौन संचालित करता है और संपर्क व्यक्ति के रूप में दिखता है।",
+        "durationLabel": "अवधि",
+        "timezoneLabel": "समय क्षेत्र",
+        "audienceLabel": "ऑडियंस सूची (वैकल्पिक)",
+        "audienceNone": "कोई नहीं"
+    },
+    "availability": {
+        "title": "उपलब्धता",
+        "description": "चुनें कि लोग किन दिनों और घंटों में बुकिंग कर सकते हैं, और आपको कितनी अग्रिम सूचना चाहिए।",
+        "weeklyAvailability": "साप्ताहिक उपलब्धता",
+        "weeklyAvailabilityDescription": "जिन दिनों आप खाली हैं उन्हें चुनें, फिर हर दिन के लिए अपने घंटे सेट करें।",
+        "to": "से",
+        "minNoticeLabel": "न्यूनतम सूचना",
+        "horizonLabel": "बुकिंग सीमा (दिन)",
+        "horizonPlaceholder": "30",
+        "footnote": "न्यूनतम सूचना अंतिम समय की बुकिंग को रोकती है; बुकिंग सीमा यह तय करती है कि लोग कितने आगे तक बुकिंग कर सकते हैं।"
+    },
+    "location": {
+        "title": "स्थान और बुकिंग नियम",
+        "description": "तय करें कि मीटिंग कैसे होगी, और क्या आपको पहले बुकिंग स्वीकृत करनी होगी।",
+        "meetTitle": "Google Meet आवंटित करें",
+        "meetDescription": "हर बुक की गई मीटिंग में Google Meet लिंक जोड़ें",
+        "approvalTitle": "स्वीकृति आवश्यक",
+        "approvalDescription": "होस्ट के स्वीकृत करने तक नई बुकिंग लंबित रहती हैं"
+    },
+    "reminders": {
+        "title": "रिमाइंडर",
+        "description": "मीटिंग से पहले ईमेल या WhatsApp द्वारा आमंत्रितों को सूचित करें।",
+        "email": "ईमेल",
+        "whatsapp": "WhatsApp",
+        "templateLabel": "WhatsApp टेम्पलेट",
+        "templatePlaceholder": "एक स्वीकृत टेम्पलेट चुनें",
+        "templateEmptyText": "आपकी खोज से कोई स्वीकृत टेम्पलेट मेल नहीं खाता।",
+        "noTemplateOption": "कोई टेम्पलेट नहीं (WhatsApp नहीं भेजा जाएगा)",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं…",
+        "noApprovedTemplates": "अभी तक कोई स्वीकृत WhatsApp टेम्पलेट नहीं है। पहले Communication → WhatsApp Templates में एक बनाएं और स्वीकृत कराएं।",
+        "fillVariables": "टेम्पलेट वेरिएबल भरें",
+        "mapToPlaceholder": "इससे मैप करें…",
+        "notSet": "— सेट नहीं —",
+        "noVariables": "इस टेम्पलेट में कोई वेरिएबल नहीं है — यह जैसा है वैसे ही भेजा जाएगा।",
+        "remindBeforeLabel": "मीटिंग से पहले याद दिलाएं",
+        "remindBeforeFootnote": "बुकिंग-पुष्टि संदेश के अतिरिक्त, मीटिंग शुरू होने से इतने समय पहले एक और रिमाइंडर भेजता है।"
+    },
+    "formQuestions": {
+        "title": "फ़ॉर्म प्रश्न",
+        "description": "नाम, ईमेल और फोन के अलावा, बुकिंग करते समय आमंत्रित व्यक्ति जिन अतिरिक्त प्रश्नों का उत्तर देता है।",
+        "addQuestion": "प्रश्न जोड़ें",
+        "empty": "अभी तक कोई कस्टम प्रश्न नहीं है।",
+        "questionPlaceholder": "प्रश्न (जैसे आपको किस चीज़ में मदद चाहिए?)",
+        "fieldTypes": {
+            "text": "छोटा टेक्स्ट",
+            "textarea": "लंबा टेक्स्ट",
+            "dropdown": "ड्रॉपडाउन",
+            "number": "संख्या",
+            "email": "ईमेल",
+            "phone": "फोन"
+        },
+        "required": "आवश्यक",
+        "optionsPlaceholder": "विकल्प, अल्पविराम से अलग करें (जैसे करियर, इंटरव्यू, रिज्यूमे)"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है...",
+        "saveChanges": "परिवर्तन सहेजें",
+        "createBookingPage": "बुकिंग पेज बनाएं"
+    }
+}

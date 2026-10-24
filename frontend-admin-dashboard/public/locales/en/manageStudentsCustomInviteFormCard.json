@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "Customize Invite Form",
+        "subtitle": "Configure the fields students will fill out"
+    },
+    "quickAddButtons": {
+        "gender": "Add Gender",
+        "state": "Add State",
+        "city": "Add City",
+        "schoolCollege": "Add School/College"
+    },
+    "customFieldDialog": {
+        "triggerButton": "Add Custom Field",
+        "title": "Add Custom Field",
+        "typePrompt": "Select the type of custom field you want to add:",
+        "fieldTypeOptions": {
+            "textField": "Text Field",
+            "dropdown": "Dropdown"
+        },
+        "textFieldNameLabel": "Text Field Name",
+        "dropdownNameLabel": "Dropdown Name",
+        "dropdownOptionsLabel": "Dropdown Options",
+        "addOptionButton": "Add",
+        "doneButton": "Done"
+    },
+    "placeholders": {
+        "typeHere": "Type Here"
+    },
+    "previewDialog": {
+        "triggerButton": "Preview Registration Form",
+        "title": "Preview Registration Form"
+    }
+}

@@ -775,11 +775,15 @@ export const ChapterSidebarSlides = () => {
                 const sessionId =
                   currentSearch.sessionId || (await getPackageSessionId());
 
-                // ✅ Navigate with all required parameters
+                // ✅ Navigate with all required parameters. A citation's
+                // ?page / ?t belong to the slide it named, never to this one.
+                const nextSearch = { ...currentSearch };
+                delete nextSearch.page;
+                delete nextSearch.t;
                 router.navigate({
                   to: router.state.location.pathname,
                   search: {
-                    ...currentSearch,
+                    ...nextSearch,
                     slideId: slide.id,
                     sessionId: sessionId || "",
                   },

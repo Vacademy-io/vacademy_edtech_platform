@@ -1,4 +1,5 @@
 import { Export } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -107,6 +108,7 @@ export const TestReportDialog = ({
   assessmentDetails,
   evaluationType,
 }: TestReportDialogProps) => {
+  const { t } = useTranslation("testRecords");
   const report = useRouter();
   const [instituteDetails, setInstituteDetails] =
     useState<InstituteDetails | null>(null);
@@ -315,13 +317,14 @@ export const TestReportDialog = ({
         onClick={() => window.history.back()}
         className="cursor-pointer size-5"
       />
-      <div>Report</div>
+      <div>{t("testReportDialog.navHeadingReport")}</div>
     </div>
   );
 
   useEffect(() => {
     setNavHeading(heading);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   useEffect(() => {
     const fetchInstituteDetails = async () => {
@@ -413,7 +416,7 @@ export const TestReportDialog = ({
           const publicUrl = await getPublicUrl(evaluated_file_id);
           setPdfFile({
             fileId: evaluated_file_id,
-            fileName: "Evaluated File.pdf",
+            fileName: t("testReportDialog.evaluatedFileName"),
             fileUrl: publicUrl,
             size: 0,
             file: null,
@@ -501,11 +504,11 @@ export const TestReportDialog = ({
 
   // Get performance level
   const getPerformanceLevel = (percentage: number) => {
-    if (percentage >= 90) return { label: "Excellent", color: "bg-emerald-500" };
-    if (percentage >= 75) return { label: "Very Good", color: "bg-green-500" };
-    if (percentage >= 60) return { label: "Good", color: "bg-blue-500" };
-    if (percentage >= 50) return { label: "Average", color: "bg-amber-500" };
-    return { label: "Needs Improvement", color: "bg-rose-500" };
+    if (percentage >= 90) return { label: t("common.excellent"), color: "bg-emerald-500" };
+    if (percentage >= 75) return { label: t("testReportDialog.veryGood"), color: "bg-green-500" };
+    if (percentage >= 60) return { label: t("common.good"), color: "bg-blue-500" };
+    if (percentage >= 50) return { label: t("common.average"), color: "bg-amber-500" };
+    return { label: t("testReportDialog.needsImprovement"), color: "bg-rose-500" };
   };
 
   const performanceLevel = getPerformanceLevel(percentageScore);
@@ -514,7 +517,7 @@ export const TestReportDialog = ({
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         {/* Premium Header Section */}
-        <div className="bg-gradient-to-br from-slate-50 via-white to-blue-50/30 shadow-sm">
+        <div className="bg-gradient-to-br from-slate-50 via-white to-info-50/30 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Title and Export Button Row */}
             <div className="flex items-center justify-between mb-6">
@@ -531,7 +534,10 @@ export const TestReportDialog = ({
                   return shouldShowSubject ? (
                     <div className="flex items-center gap-3 mb-2">
                       <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {getTerminology(ContentTerms.Subjects, SystemTerms.Subjects)}: {subjectName}
+                        {t("testReportDialog.subjectLabel", {
+                          subject: getTerminology(ContentTerms.Subjects, SystemTerms.Subjects),
+                          name: subjectName,
+                        })}
                       </Badge>
                     </div>
                   ) : null;
@@ -548,7 +554,7 @@ export const TestReportDialog = ({
                 disabled={isLoading}
               >
                 <Export weight="duotone" />
-                {isLoading ? <span className="ms-2">Exporting...</span> : <>Export Report</>}
+                {isLoading ? <span className="ms-2">{t("testReportDialog.exporting")}</span> : <>{t("testReportDialog.exportReport")}</>}
               </MyButton>
             </div>
 
@@ -558,8 +564,8 @@ export const TestReportDialog = ({
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <CalendarBlank size={20} weight="duotone" className="text-blue-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Attempt Date</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("testReportDialog.attemptDate")}</div>
                   <div className="text-sm md:text-base font-semibold text-slate-900 leading-tight">
                     {extractDateTime(convertToLocalDateTime(studentReport.start_time)).date}
                   </div>
@@ -569,8 +575,8 @@ export const TestReportDialog = ({
                 <div className="p-2 bg-emerald-50 rounded-lg">
                   <Timer size={20} weight="duotone" className="text-emerald-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Duration</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("testReportDialog.duration")}</div>
                   <div className="text-sm md:text-base font-semibold text-slate-900 leading-tight">
                     {formatDuration(studentReport.duration_in_seconds)}
                   </div>
@@ -580,8 +586,8 @@ export const TestReportDialog = ({
                 <div className="p-2 bg-amber-50 rounded-lg">
                   <Clock size={20} weight="duotone" className="text-amber-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Start Time</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("testReportDialog.startTime")}</div>
                   <div className="text-sm md:text-base font-semibold text-slate-900 leading-tight">
                     {extractDateTime(convertToLocalDateTime(studentReport.start_time)).time}
                   </div>
@@ -591,8 +597,8 @@ export const TestReportDialog = ({
                 <div className="p-2 bg-rose-50 rounded-lg">
                   <Clock size={20} weight="duotone" className="text-rose-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">End Time</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("testReportDialog.endTime")}</div>
                   <div className="text-sm md:text-base font-semibold text-slate-900 leading-tight">
                     {extractDateTime(convertToLocalDateTime(studentReport.end_time)).time}
                   </div>
@@ -612,20 +618,20 @@ export const TestReportDialog = ({
             papers={[
               {
                 key: "submitted",
-                label: "Your answer sheet",
-                description: "The paper you submitted, as scanned by your institute.",
+                label: t("testReportDialog.papers.answerSheetLabel"),
+                description: t("testReportDialog.papers.answerSheetDescription"),
                 fileId: testReport?.response_file_id,
               },
               {
                 key: "checked",
-                label: "Checked copy",
-                description: "Your answer sheet with the evaluator's marks and remarks.",
+                label: t("testReportDialog.papers.checkedCopyLabel"),
+                description: t("testReportDialog.papers.checkedCopyDescription"),
                 fileId: testReport?.evaluated_file_id,
               },
               {
                 key: "report",
-                label: "Result report",
-                description: "The result report prepared by your institute.",
+                label: t("common.resultReport"),
+                description: t("testReportDialog.papers.resultReportDescription"),
                 fileId: testReport?.report_file_id,
               },
             ]}
@@ -637,7 +643,7 @@ export const TestReportDialog = ({
             <Card className="lg:col-span-1 border-slate-200 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="text-center pb-4">
                 <CardDescription className="text-sm font-medium text-slate-600 uppercase tracking-wide">
-                  Your Score
+                  {t("testReportDialog.yourScore")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center space-y-4">
@@ -650,7 +656,10 @@ export const TestReportDialog = ({
                 <div className="space-y-2">
                   <Progress value={percentageScore} className="h-3" />
                   <div className="text-sm font-medium text-slate-600">
-                    {studentReport.total_marks} / {testMarks?.total_achievable_marks ?? "-"} marks
+                    {t("testReportDialog.marksFraction", {
+                      achieved: studentReport.total_marks,
+                      total: testMarks?.total_achievable_marks ?? "-",
+                    })}
                   </div>
                 </div>
                 <Badge className={`${performanceLevel.color} text-white border-none px-4 py-1`}>
@@ -663,7 +672,7 @@ export const TestReportDialog = ({
             <Card className="border-slate-200 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="pb-4">
                 <CardDescription className="text-sm font-medium text-slate-600 uppercase tracking-wide text-center">
-                  Class Rank
+                  {t("testReportDialog.classRank")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center space-y-3">
@@ -672,13 +681,15 @@ export const TestReportDialog = ({
                     <Crown />
                   )}
                   <div className="text-5xl font-bold text-slate-900">
-                    {testReport.question_overall_detail_dto?.rank ?? 'N/A'}
+                    {testReport.question_overall_detail_dto?.rank ?? t("testReportDialog.notAvailable")}
                   </div>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-slate-600">
                   <TrendUp size={20} weight="duotone" className="text-emerald-500" />
                   <span className="text-sm font-medium">
-                    Top {testReport.question_overall_detail_dto?.percentile ?? 0}% Percentile
+                    {t("testReportDialog.topPercentile", {
+                      pct: testReport.question_overall_detail_dto?.percentile ?? 0,
+                    })}
                   </span>
                 </div>
               </CardContent>
@@ -688,28 +699,28 @@ export const TestReportDialog = ({
             <Card className="border-slate-200 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="pb-4">
                 <CardDescription className="text-sm font-medium text-slate-600 uppercase tracking-wide text-center">
-                  Quick Stats
+                  {t("testReportDialog.quickStats")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <CheckCircle size={20} weight="fill" className="text-emerald-600" />
-                    <span className="text-sm font-medium text-slate-700">Correct</span>
+                    <span className="text-sm font-medium text-slate-700">{t("common.correct")}</span>
                   </div>
                   <span className="text-lg font-bold text-emerald-700">{marksData.correct}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-rose-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <XCircle size={20} weight="fill" className="text-rose-600" />
-                    <span className="text-sm font-medium text-slate-700">Incorrect</span>
+                    <span className="text-sm font-medium text-slate-700">{t("common.incorrect")}</span>
                   </div>
                   <span className="text-lg font-bold text-rose-700">{marksData.wrongResponse}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <MinusCircle size={20} weight="fill" className="text-slate-600" />
-                    <span className="text-sm font-medium text-slate-700">Skipped</span>
+                    <span className="text-sm font-medium text-slate-700">{t("common.skipped")}</span>
                   </div>
                   <span className="text-lg font-bold text-slate-700">{marksData.skipped}</span>
                 </div>
@@ -720,32 +731,36 @@ export const TestReportDialog = ({
           {/* Analytics Section */}
           <Card className="border-slate-200 shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-slate-900">Performance Analytics</CardTitle>
-              <CardDescription>Detailed breakdown of your responses and marks</CardDescription>
+              <CardTitle className="text-2xl font-bold text-slate-900">{t("testReportDialog.performanceAnalytics")}</CardTitle>
+              <CardDescription>{t("testReportDialog.performanceAnalyticsDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-section md:gap-8">
                 {/* Response Breakdown */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-slate-800">Response Breakdown</h3>
+                  <h3 className="text-lg font-semibold text-slate-800">{t("testReportDialog.responseBreakdown")}</h3>
                   <div className="flex justify-center">
                     <ResponseBreakdownComponent responseData={responseData} />
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-4">
                     <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
                       <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                      <span className="text-sm text-slate-700">Attempted: {responseData.attempted}</span>
+                      <span className="text-sm text-slate-700">
+                        {t("testReportDialog.attemptedCount", { count: responseData.attempted })}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 p-2 bg-slate-100 rounded-lg">
                       <div className="w-3 h-3 rounded-full bg-slate-400"></div>
-                      <span className="text-sm text-slate-700">Skipped: {responseData.skipped}</span>
+                      <span className="text-sm text-slate-700">
+                        {t("testReportDialog.skippedCount", { count: responseData.skipped })}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Marks Breakdown */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-slate-800">Marks Breakdown</h3>
+                  <h3 className="text-lg font-semibold text-slate-800">{t("testReportDialog.marksBreakdown")}</h3>
                   <div className="flex justify-center">
                     <MarksBreakdownComponent marksData={marksData} />
                   </div>
@@ -753,28 +768,37 @@ export const TestReportDialog = ({
                     <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                        <span className="text-sm text-slate-700">Correct</span>
+                        <span className="text-sm text-slate-700">{t("common.correct")}</span>
                       </div>
                       <span className="text-sm font-semibold text-slate-900">
-                        {marksData.correct} (+{testReport.question_overall_detail_dto?.totalCorrectMarks ?? 0})
+                        {t("testReportDialog.marksAwardedWithPlus", {
+                          count: marksData.correct,
+                          marks: testReport.question_overall_detail_dto?.totalCorrectMarks ?? 0,
+                        })}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                        <span className="text-sm text-slate-700">Partial</span>
+                        <span className="text-sm text-slate-700">{t("testReportDialog.partial")}</span>
                       </div>
                       <span className="text-sm font-semibold text-slate-900">
-                        {marksData.partiallyCorrect} (+{testReport.question_overall_detail_dto?.totalPartialMarks ?? 0})
+                        {t("testReportDialog.marksAwardedWithPlus", {
+                          count: marksData.partiallyCorrect,
+                          marks: testReport.question_overall_detail_dto?.totalPartialMarks ?? 0,
+                        })}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-2 bg-rose-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                        <span className="text-sm text-slate-700">Incorrect</span>
+                        <span className="text-sm text-slate-700">{t("common.incorrect")}</span>
                       </div>
                       <span className="text-sm font-semibold text-slate-900">
-                        {marksData.wrongResponse} ({testReport.question_overall_detail_dto?.totalIncorrectMarks ?? 0})
+                        {t("testReportDialog.marksAwardedPlain", {
+                          count: marksData.wrongResponse,
+                          marks: testReport.question_overall_detail_dto?.totalIncorrectMarks ?? 0,
+                        })}
                       </span>
                     </div>
                   </div>
@@ -816,24 +840,26 @@ export const TestReportDialog = ({
             <CardHeader className="border-b border-slate-100">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-slate-900">Answer Review</CardTitle>
-                  <CardDescription className="mt-1">Detailed analysis of your responses</CardDescription>
+                  <CardTitle className="text-2xl font-bold text-slate-900">{t("testReportDialog.answerReview")}</CardTitle>
+                  <CardDescription className="mt-1">{t("testReportDialog.answerReviewDesc")}</CardDescription>
                 </div>
                 <Badge variant="outline" className="text-sm font-medium border-slate-300">
-                  Section Total: {testMarks?.section_wise_achievable_marks?.[selectedSection ?? "0"]} Marks
+                  {t("testReportDialog.sectionTotal", {
+                    marks: testMarks?.section_wise_achievable_marks?.[selectedSection ?? "0"],
+                  })}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-card-lg space-y-6">
               {currentSectionAllQuestions && currentSectionAllQuestions.length > 0 ? (
                 currentSectionAllQuestions.map((review: any, index: number) => (
                   <Card key={index} className="border-slate-200 hover:shadow-md transition-shadow">
                     <CardHeader className="bg-slate-50 border-b border-slate-100">
                       <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
                             <CardTitle className="text-lg font-semibold text-slate-900">
-                              Question {index + 1}
+                              {t("testReportDialog.questionNumber", { number: index + 1 })}
                             </CardTitle>
                             <Badge variant="secondary" className="text-xs">
                               {review.question_type}
@@ -850,11 +876,11 @@ export const TestReportDialog = ({
                       </div>
                     </CardHeader>
 
-                    <CardContent className="p-6 space-y-5">
+                    <CardContent className="p-card-lg space-y-5">
                       {/* Student Response */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-semibold text-slate-700">Your Response</span>
+                          <span className="text-sm font-semibold text-slate-700">{t("common.yourResponse")}</span>
                           <MarksStatusIndicator
                             mark={review.mark}
                             answer_status={
@@ -877,7 +903,7 @@ export const TestReportDialog = ({
                             }`}
                         >
                           <AlertDescription className="text-sm text-slate-700">
-                            {renderStudentResponse(review, questionsData)}
+                            {renderStudentResponse(review, questionsData, t)}
                           </AlertDescription>
                         </Alert>
                       </div>
@@ -885,10 +911,10 @@ export const TestReportDialog = ({
                       {/* Correct Answer */}
                       {review.answer_status !== "CORRECT" && (
                         <div className="space-y-2">
-                          <span className="text-sm font-semibold text-slate-700">Correct Answer</span>
+                          <span className="text-sm font-semibold text-slate-700">{t("testReportDialog.correctAnswerLabel")}</span>
                           <Alert className="border-s-4 border-s-emerald-500 bg-emerald-50/50 border-emerald-200">
                             <AlertDescription className="text-sm text-slate-700">
-                              {renderCorrectAnswer(review, questionsData)}
+                              {renderCorrectAnswer(review, questionsData, t)}
                             </AlertDescription>
                           </Alert>
                         </div>
@@ -897,7 +923,7 @@ export const TestReportDialog = ({
                       {/* Explanation */}
                       {review.explanation && (
                         <div className="space-y-2 pt-2 border-t border-slate-100">
-                          <span className="text-sm font-semibold text-slate-700">Explanation</span>
+                          <span className="text-sm font-semibold text-slate-700">{t("common.explanation")}</span>
                           <div className="text-sm text-slate-600 bg-slate-50 rounded-lg p-4 leading-relaxed">
                             {parseHtmlToString(review.explanation)}
                           </div>
@@ -908,7 +934,7 @@ export const TestReportDialog = ({
                       {review.evaluator_feedback && (
                         <div className="space-y-2 pt-2 border-t border-neutral-100">
                           <span className="text-sm font-semibold text-primary-500">
-                            Evaluator feedback
+                            {t("testReportDialog.evaluatorFeedback")}
                           </span>
                           <div className="whitespace-pre-line rounded-lg bg-primary-50 p-4 text-sm leading-relaxed text-neutral-700">
                             {review.evaluator_feedback}
@@ -920,7 +946,7 @@ export const TestReportDialog = ({
                 ))
               ) : (
                 <div className="text-center py-12 text-slate-500">
-                  <p className="text-lg">No questions available for review</p>
+                  <p className="text-lg">{t("testReportDialog.noQuestionsAvailable")}</p>
                 </div>
               )}
             </CardContent>
@@ -937,7 +963,7 @@ export const TestReportDialog = ({
             className="w-full"
           >
             <Export />
-            {isLoading ? <span className="ms-2">Exporting...</span> : <>Export Report</>}
+            {isLoading ? <span className="ms-2">{t("testReportDialog.exporting")}</span> : <>{t("testReportDialog.exportReport")}</>}
           </MyButton>
         </div>
 
@@ -952,7 +978,7 @@ export const TestReportDialog = ({
               className="shadow-lg"
             >
               <FileText className="h-4 w-4" />
-              View Evaluated Copy
+              {t("testReportDialog.viewEvaluatedCopy")}
             </MyButton>
           </div>
         )}
@@ -972,7 +998,7 @@ export const TestReportDialog = ({
                   buttonType="secondary"
                   onClick={() => setShowPdfPreview(false)}
                 >
-                  Close
+                  {t("testReportDialog.close")}
                 </MyButton>
               </div>
             </div>

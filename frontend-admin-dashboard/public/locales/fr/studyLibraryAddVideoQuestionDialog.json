@@ -1,0 +1,21 @@
+{
+    "next": "Suivant",
+    "addQuestion": "Ajouter une question",
+    "quickAccess": "Accès rapide",
+    "optionBased": "Basé sur des options",
+    "mathBased": "Basé sur les mathématiques",
+    "writingSkills": "Compétences rédactionnelles",
+    "readingSkills": "Compétences de lecture",
+    "invalidTimestamp": "Horodatage invalide. Veuillez saisir une durée valide au format MM:SS ou en secondes ; l'horodatage actuel doit être inférieur à la durée de la vidéo",
+    "questionTypes": {
+        "mcqSingle": "Questions à choix multiples (une seule bonne réponse)",
+        "mcqMultiple": "Questions à choix multiples (plusieurs bonnes réponses)",
+        "numerical": "Numérique",
+        "trueFalse": "Vrai Faux",
+        "longAnswer": "Réponse longue",
+        "singleWord": "Un seul mot",
+        "comprehensionMcqSingle": "Questions à choix multiples de compréhension (une seule bonne réponse)",
+        "comprehensionMcqMultiple": "Questions à choix multiples de compréhension (plusieurs bonnes réponses)",
+        "comprehensionNumeric": "Compréhension numérique"
+    }
+}

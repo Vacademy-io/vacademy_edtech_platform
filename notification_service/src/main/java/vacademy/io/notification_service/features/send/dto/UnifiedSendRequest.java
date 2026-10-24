@@ -121,5 +121,14 @@ public class UnifiedSendRequest {
         // General
         private String source;  // caller identifier for logging
         private String sourceId;
+
+        /**
+         * Who is sending, for the WhatsApp Inbox and student timeline ("sent by workflow X"):
+         * WORKFLOW + workflow id + workflow name. Stored on the log row's message_payload only —
+         * notification_log.source / correlation_id are left exactly as before.
+         */
+        private String originType;
+        private String originId;
+        private String originName;
     }
 }

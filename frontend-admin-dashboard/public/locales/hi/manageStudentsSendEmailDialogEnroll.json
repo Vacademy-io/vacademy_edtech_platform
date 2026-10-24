@@ -1,0 +1,80 @@
+{
+    "dialogTitle": "छात्रों को ईमेल भेजें",
+    "cancel": "रद्द करें",
+    "sending": "भेजा जा रहा है...",
+    "sendButton_one": "{{count}} को भेजें",
+    "sendButton_other": "{{count}} को भेजें",
+    "composeNotice_one": "नीचे अपना ईमेल लिखें। ईमेल पता रखने वाला {{count}} छात्र इसे प्राप्त करेगा।",
+    "composeNotice_other": "नीचे अपना ईमेल लिखें। ईमेल पता रखने वाले {{count}} छात्र इसे प्राप्त करेंगे।",
+    "templateLabel": "ईमेल टेम्पलेट (वैकल्पिक)",
+    "selectTemplatePlaceholder": "एक टेम्पलेट चुनें",
+    "noTemplateOption": "कोई टेम्पलेट नहीं - नए सिरे से शुरू करें",
+    "subjectLabel": "विषय *",
+    "showPreview": "पूर्वावलोकन दिखाएं",
+    "subjectPlaceholder": "अपना ईमेल विषय लिखें",
+    "bodyLabel": "मुख्य भाग *",
+    "clickToInsertVariables": "वेरिएबल जोड़ने के लिए नीचे दिए गए बटन पर क्लिक करें:",
+    "bodyPlaceholder": "यहां अपना ईमेल संदेश लिखें... वेरिएबल जोड़ने के लिए ऊपर दिए गए बटन पर क्लिक करें।",
+    "customMessageLabel": "कस्टम मैसेज टेक्स्ट (custom_message_text वेरिएबल के लिए)",
+    "customMessagePlaceholder": "अपना कस्टम संदेश दर्ज करें...",
+    "sendingProgress": "भेजने की प्रगति ({{done}}/{{total}}):",
+    "status": {
+        "pending": "प्रतीक्षा में...",
+        "sent": "भेजा गया",
+        "failed": "विफल"
+    },
+    "toasts": {
+        "templateLoaded": "टेम्पलेट \"{{name}}\" लोड हो गया।",
+        "subjectBodyRequired": "विषय और मुख्य भाग आवश्यक हैं।",
+        "noValidRecipients": "ईमेल भेजने के लिए कोई मान्य प्राप्तकर्ता नहीं है।",
+        "processingEmails": "ईमेल भेजे जा रहे हैं...",
+        "noPayloadPrepared": "किसी भी छात्र के लिए डेटा तैयार नहीं किया जा सका।",
+        "sendSuccess_one": "{{count}} ईमेल सफलतापूर्वक भेजा गया।",
+        "sendSuccess_other": "{{count}} ईमेल सफलतापूर्वक भेजे गए।",
+        "sendPartial": "{{sent}} भेजे गए, {{failed}} ईमेल विफल रहे।",
+        "sendFailed": "ईमेल भेजने में विफल।",
+        "errorPrefix": "त्रुटि: {{message}}",
+        "unexpectedError": "एक अप्रत्याशित त्रुटि हुई।"
+    },
+    "templates": {
+        "welcome": {
+            "name": "स्वागत ईमेल",
+            "subject": "हमारे लर्निंग प्लेटफ़ॉर्म में आपका स्वागत है",
+            "content": "प्रिय {{name}},\n\nहमारे लर्निंग प्लेटफ़ॉर्म में आपका स्वागत है! हमें आपके जुड़ने की खुशी है।\n\nआपकी लॉगिन जानकारी:\nईमेल: {{email}}\nमोबाइल: {{mobile_number}}\n\nसादर,\nटीम"
+        },
+        "sessionUpdate": {
+            "name": "सत्र अपडेट",
+            "subject": "सत्र अपडेट - {{name}}",
+            "content": "नमस्ते {{name}},\n\nयह आपके वर्तमान सत्र से संबंधित एक अपडेट है।\n\nनवीनतम जानकारी के लिए कृपया अपना डैशबोर्ड देखें।\n\nसादर,\nटीम"
+        },
+        "custom": {
+            "name": "कस्टम ईमेल",
+            "subject": "महत्वपूर्ण अपडेट",
+            "content": "प्रिय {{name}},\n\n{{custom_message_text}}\n\nसादर,\nटीम"
+        }
+    },
+    "placeholders": {
+        "studentName": "छात्र का नाम",
+        "emailAddress": "ईमेल पता",
+        "mobileNumber": "मोबाइल नंबर",
+        "customMessage": "कस्टम संदेश",
+        "courseName": "कोर्स का नाम",
+        "batchName": "बैच का नाम",
+        "loginUsername": "लॉगिन यूज़रनेम",
+        "registrationDate": "पंजीकरण तिथि",
+        "currentDate": "वर्तमान तिथि"
+    },
+    "previewSampleData": {
+        "name": "राहुल शर्मा",
+        "courseName": "गणित कोर्स",
+        "batchName": "बैच ए"
+    },
+    "preview": {
+        "heading": "ईमेल पूर्वावलोकन",
+        "close": "बंद करें",
+        "usingFirstStudent": "पहले चुने गए छात्र के डेटा का उपयोग करके पूर्वावलोकन",
+        "subjectLabel": "विषय:",
+        "bodyLabel": "ईमेल का मुख्य भाग:",
+        "emptyState": "पूर्वावलोकन के लिए कोई सामग्री नहीं है। पूर्वावलोकन देखने हेतु विषय या मुख्य भाग जोड़ें।"
+    }
+}

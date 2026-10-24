@@ -1,0 +1,59 @@
+{
+    "title": "مقاييس المشاركة اليومية",
+    "subtitle": "نشاط الرسائل ومعدلات الاستجابة حسب اليوم",
+    "emptyState": "لا توجد بيانات مشاركة متاحة للفترة المحددة",
+    "kpi": {
+        "days": "الأيام",
+        "sent": "المرسلة",
+        "received": "المستلمة",
+        "response": "الاستجابة"
+    },
+    "tabs": {
+        "chart": "الرسوم البيانية",
+        "table": "تفاصيل اليوم"
+    },
+    "charts": {
+        "responseRateTrend": "اتجاه معدل الاستجابة",
+        "messagesByDay": "الرسائل حسب اليوم",
+        "completeOverview": "نظرة عامة كاملة",
+        "outgoingLabel": "الصادرة",
+        "incomingLabel": "الواردة",
+        "outgoingMessagesLabel": "الرسائل الصادرة",
+        "incomingMessagesLabel": "الرسائل الواردة",
+        "responseRateLabel": "معدل الاستجابة",
+        "responseRateValue": "معدل الاستجابة: {{value}}%",
+        "responseValue": "الاستجابة: {{value}}%",
+        "messagesCount_zero": "لا توجد رسائل",
+        "messagesCount_one": "رسالة واحدة",
+        "messagesCount_two": "رسالتان",
+        "messagesCount_few": "{{count}} رسائل",
+        "messagesCount_many": "{{count}} رسالة",
+        "messagesCount_other": "{{count}} رسالة",
+        "usersCount_zero": "لا يوجد مستخدمون",
+        "usersCount_one": "مستخدم واحد",
+        "usersCount_two": "مستخدمان",
+        "usersCount_few": "{{count}} مستخدمين",
+        "usersCount_many": "{{count}} مستخدمًا",
+        "usersCount_other": "{{count}} مستخدم"
+    },
+    "table": {
+        "day": "اليوم",
+        "label": "التسمية",
+        "outgoing": "الصادرة",
+        "incoming": "الواردة",
+        "responseRate": "معدل الاستجابة",
+        "trend": "الاتجاه",
+        "status": "الحالة"
+    },
+    "status": {
+        "noMessages": "لا توجد رسائل",
+        "lowEngagement": "تفاعل منخفض",
+        "good": "جيد"
+    },
+    "templates": {
+        "breakdown": "توزيع القوالب",
+        "dayHeading": "اليوم {{day}} - {{label}}",
+        "outgoing": "القوالب الصادرة:",
+        "incoming": "القوالب الواردة:"
+    }
+}

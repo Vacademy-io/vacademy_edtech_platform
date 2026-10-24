@@ -1,0 +1,15 @@
+{
+    "planDescription": {
+        "complexPaymentOption": "خيار دفع معقّد (على أقساط).",
+        "donation": "الوصول إلى خطة التبرع.",
+        "free": "الوصول إلى الخطة المجانية.",
+        "oneTime": "الوصول إلى خطة الدفع لمرة واحدة.",
+        "subscription": "الوصول إلى خطة الاشتراك."
+    },
+    "planOption": {
+        "fallbackTitle": "{{name}} - الخيار {{number}}"
+    },
+    "referral": {
+        "defaultBonusContentTitle": "محتوى إضافي"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "byLearner": "By learner",
+    "byLearnerCaption": "One row per learner. Click a learner to see every quiz they have taken, their answers, marks and attempts.",
+    "byQuiz": "By quiz",
+    "byQuizCaption": "One row per quiz. Click a quiz to see who took it, how they scored, and which questions the class got wrong.",
+    "selectBatchTitle": "Select a batch to see quiz results",
+    "selectBatchSubtitle": "Quiz results are reported per batch, because the same quiz slide can be shared across several of them.",
+    "quizResultViewsAriaLabel": "Quiz result views"
+}

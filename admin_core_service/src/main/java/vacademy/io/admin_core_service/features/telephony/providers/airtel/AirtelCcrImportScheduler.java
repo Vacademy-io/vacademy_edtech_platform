@@ -58,7 +58,19 @@ public class AirtelCcrImportScheduler {
     @Scheduled(
             fixedDelayString = "${telephony.airtel.import.poll-ms:120000}",
             initialDelayString = "${telephony.airtel.import.initial-delay-ms:60000}")
-    @SchedulerLock(name = "AirtelCcrImportScheduler_poll", lockAtMostFor = "PT15M", lockAtLeastFor = "PT30S")
+    // lockAtLeastFor is just UNDER the 2m poll interval, not a token 30s. ShedLock
+    // shortens the lease to locked_at + lockAtLeastFor when the run finishes, so a
+    // short value only prevents CONCURRENT runs, not extra ones: with 4 replicas
+    // ticking on staggered 2m timers, a 30s floor left the lock free again after
+    // ~30s and whichever pod ticked next simply re-ran the sweep. Observed in
+    // production as the lock changing hands every 50-80s across all four pods,
+    // which held the s3-key probe reduction to 47% instead of the ~75% that
+    // single-pod execution should give. Holding the lease for almost the whole
+    // interval makes the sweep genuinely once-per-interval.
+    //
+    // Keep this strictly below the poll interval -- at or above it, a tick can find
+    // the lock still held and skip the cycle entirely.
+    @SchedulerLock(name = "AirtelCcrImportScheduler_poll", lockAtMostFor = "PT15M", lockAtLeastFor = "PT110S")
     public void poll() {
         try {
             int imported = 0;

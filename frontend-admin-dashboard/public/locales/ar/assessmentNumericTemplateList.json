@@ -1,0 +1,16 @@
+{
+    "settings": {
+        "title": "إعدادات الأسئلة",
+        "questionType": "نوع السؤال",
+        "numericalType": "النوع العددي",
+        "decimalPrecision": "دقة الأرقام العشرية"
+    },
+    "comprehensionText": "نص الاستيعاب",
+    "question": {
+        "label": "السؤال"
+    },
+    "defaults": {
+        "answer": "الإجابة:",
+        "explanation": "الشرح:"
+    }
+}

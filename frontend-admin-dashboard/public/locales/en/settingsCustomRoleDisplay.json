@@ -1,0 +1,183 @@
+{
+    "common": {
+        "loading": "Loading...",
+        "resetToDefaults": "Reset to Defaults",
+        "visible": "Visible",
+        "hidden": "Hidden",
+        "locked": "Locked",
+        "default": "Default",
+        "remove": "Remove",
+        "route": "Route",
+        "labelPlaceholder": "Label",
+        "tabName": "Tab Name",
+        "subTabs": "Sub Tabs",
+        "addSubTab": "Add Sub Tab",
+        "addCustomTab": "Add Custom Tab"
+    },
+    "sections": {
+        "coursesPermissions": "Courses & Permissions",
+        "layoutNavigation": "Layout & Navigation",
+        "contentLearners": "Content & Learners",
+        "dashboardAccess": "Dashboard & Access"
+    },
+    "coursePage": {
+        "title": "Course Page Settings",
+        "description": "Control visibility of course page elements.",
+        "viewInviteLinks": "View invite links",
+        "viewShortInviteLinks": "View short invite links",
+        "viewCourseConfiguration": "View course configuration",
+        "viewCourseOverviewItem": "View course overview item",
+        "viewContentNumbering": "View content numbering",
+        "allowViewSlidesInReadOnly": "Allow viewing slides on published / in-review courses (read-only)",
+        "showAddSubject": "Show \"Add Subject\" button (Outline & Content Structure)",
+        "showAddModule": "Show \"Add Module\" button (Outline & Content Structure)",
+        "showAddChapter": "Show \"Add Chapter\" button (Outline & Content Structure)",
+        "showAddSlide": "Show \"Add Slide\" button (Outline & Content Structure)",
+        "showLearnerProgressReport": "Show \"Student Progress\" tab in Reports (per-learner course progress)",
+        "showAdvancedCourseIds": "Show advanced IDs menu on Course Details (course / package session / session / level)"
+    },
+    "coursePermission": {
+        "title": "Course Permission",
+        "description": "Control what this role can do on a course and its slides.",
+        "directEditPublishedCourse": "Can directly edit (without Copy-to-Edit / approval)",
+        "showCopyTo": "Can copy slide",
+        "showMoveTo": "Can move slide",
+        "showDelete": "Can delete slide",
+        "canEditCourseStructure": "Can edit subject / module / chapter",
+        "canDeleteCourseStructure": "Can delete subject / module / chapter",
+        "showBulkUpload": "Show Bulk Upload (ZIP) button",
+        "canDeleteCourse": "Can delete course",
+        "requireCourseApproval": "Require admin approval before publishing new courses (Submit for Review)"
+    },
+    "authoredCoursesCard": {
+        "title": "Authored Courses Card",
+        "description": "Control which actions appear on the course card under Explore Courses → Authored Courses.",
+        "showCopyToEdit": "Show \"Copy to Edit\" button"
+    },
+    "courseListCard": {
+        "title": "Course List Card",
+        "description": "Control which details appear on each course card under Explore Courses.",
+        "showEnrolledStudentCount": "Show enrolled student count"
+    },
+    "courseCreation": {
+        "title": "Course Creation",
+        "description": "Control who can create courses, AI entry points, and chapter setup defaults.",
+        "showCreateCourse": "Allow creating courses (show \"Add Course\" button)",
+        "showCreateCourseWithAI": "Show \"Create Course with AI\"",
+        "requirePackageSelectionForNewChapter": "Require package session selection when adding a new chapter",
+        "showAdvancedSettings": "Show Advanced Settings",
+        "limitToSingleLevel": "Limit Course To Single Level"
+    },
+    "courseListTabs": {
+        "title": "Course List Tabs",
+        "description": "Configure visible tabs, their order, and the default tab. Course Approval is admin-only and stays hidden for this role."
+    },
+    "courseDetailsTabs": {
+        "title": "Course Details Tabs",
+        "description": "Choose which tabs are visible and set the default tab.",
+        "offlineLockedMessage": "Turned off because offline downloads are disabled for the institute (Settings → Offline Access)."
+    },
+    "uiOptions": {
+        "title": "UI Options",
+        "description": "Global UI preferences",
+        "showSupportButton": "Show Support Button",
+        "showSidebar": "Show Sidebar",
+        "showAiCredits": "Show AI Credits",
+        "showStatus": "Show Status",
+        "showSettings": "Show Settings",
+        "showSettingsDescription": "Hides the Settings gear in the sidebar rail. You can still open Settings directly at /settings.",
+        "showAssistDock": "Show Right Side Rail",
+        "showAssistDockDescription": "Guides, Training, Assist, Issues, What's new, Explore & Admin App. Hidden for this role by default."
+    },
+    "sidebarCategories": {
+        "title": "Sidebar Categories",
+        "description": "Configure visibility, order, and default category for the sidebar.",
+        "aiToolsLabel": "AI Tools"
+    },
+    "sidebarTabs": {
+        "title": "Sidebar Tabs",
+        "description": "Order and toggle visibility. Settings tab is always hidden for Teachers.",
+        "tabLms": "LMS",
+        "tabCrm": "CRM",
+        "tabAiTools": "AI Tools",
+        "defaultCustomTabLabel": "Custom Tab",
+        "defaultCustomSubTabLabel": "Custom Sub Tab"
+    },
+    "courseContentTypes": {
+        "title": "Course Content Types",
+        "description": "Enable or disable slide content types. Video has an extra in-video question option.",
+        "pdf": "PDF",
+        "ppt": "PPT Presentation",
+        "codeEditor": "Code Editor",
+        "document": "Document",
+        "question": "Question",
+        "quiz": "Quiz",
+        "assignment": "Assignment",
+        "jupyterNotebook": "Jupyter Notebook",
+        "scratch": "Scratch",
+        "audio": "Audio",
+        "scorm": "SCORM Package",
+        "assessment": "Assessment",
+        "video": "Video",
+        "showInVideoQuestion": "In-video Question Visible",
+        "showAddVideoQuestion": "Can add questions to video slides",
+        "showConvertToSplitScreen": "Can convert video to split screen"
+    },
+    "studentSideView": {
+        "overviewTab": "Overview Tab",
+        "coursesTab": "Courses Tab",
+        "testTab": "Test Tab",
+        "progressTab": "Progress Tab",
+        "notificationTab": "Notification Tab",
+        "membershipTab": "Membership Tab",
+        "paymentHistoryTab": "Payment History Tab",
+        "userTaggingTab": "User Tagging Tab",
+        "badgesTab": "Badges Tab",
+        "fileTab": "File Tab",
+        "portalAccessTab": "Portal Access Tab",
+        "reportsTab": "Reports Tab",
+        "enrollDerollTab": "Enroll/Deroll Tab",
+        "enquiryTab": "Enquiry Tab",
+        "applicationTab": "Application Tab",
+        "leadTab": "Lead Profile Tab",
+        "fullHistoryTab": "Full History Tab",
+        "workflowsTab": "Workflows Tab",
+        "parentTab": "Guardian Tab",
+        "onboardingTab": "Onboarding Tab"
+    },
+    "learnerManagement": {
+        "title": "Learner Management",
+        "description": "Configure learner management permissions and access controls.",
+        "allowPortalAccess": "Allow Learner Portal Access",
+        "allowViewPassword": "Allow Viewing Learner Password",
+        "allowEditCredentials": "Allow Editing Learner Username & Password",
+        "allowSendResetPasswordMail": "Allow Sending Reset Password Mail",
+        "showApprovalToggle": "Show Approval Requests toggle on Learners list",
+        "allowDeletePayments": "Allow permanently deleting payments & invoices (cannot be undone)",
+        "canApplyDiscounts": "Allow applying discounts when enrolling learners, bulk assigning, or creating invoices"
+    },
+    "dashboardWidgets": {
+        "title": "Dashboard Widgets",
+        "description": "Order and toggle which widgets teachers can see."
+    },
+    "permissions": {
+        "title": "Permissions",
+        "description": "Configure institute and profile visibility and edit access.",
+        "canViewInstituteDetails": "Can View Institute Details",
+        "canEditInstituteDetails": "Can Edit Institute Details",
+        "canViewProfileDetails": "Can View Profile Details",
+        "canEditProfileDetails": "Can Edit Profile Details"
+    },
+    "postLoginRedirect": {
+        "title": "Post-login Redirect",
+        "description": "Choose where to redirect teachers after login."
+    },
+    "subOrg": {
+        "thisRoleFallback": "this role"
+    },
+    "toast": {
+        "saveSuccess": "Custom role display settings saved",
+        "saveFailed": "Failed to save: {{message}}",
+        "unknownError": "Unknown error"
+    }
+}

@@ -1,0 +1,31 @@
+{
+    "title": "Reports",
+    "description": "How the Reports Center buckets and counts activity. Changes apply to all report tabs (Sources, Calling, Funnel, Follow-ups, Counsellors).",
+    "loading": "Loading report settings…",
+    "timezone": {
+        "label": "Report timezone",
+        "hint": "All daily and hourly report bucketing uses this timezone.",
+        "placeholder": "Select timezone"
+    },
+    "connectedStatuses": {
+        "label": "Connected call statuses",
+        "hint": "Call outcomes that count as a connected call in connect-rate and source reports. Default: Completed.",
+        "placeholder": "Select call statuses"
+    },
+    "interestedStatuses": {
+        "label": "Interested statuses",
+        "hint": "Lead statuses that count as \"interested\" in source and funnel reports. Default: Interested.",
+        "placeholder": "Select lead statuses",
+        "placeholderLoading": "Loading statuses…"
+    },
+    "save": {
+        "button": "Save report settings",
+        "saving": "Saving…"
+    },
+    "toasts": {
+        "saved": "Report settings saved",
+        "saveFailed": "Failed to save report settings",
+        "connectedRequired": "Pick at least one connected call status",
+        "interestedRequired": "Pick at least one interested status"
+    }
+}

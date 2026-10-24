@@ -1,0 +1,3 @@
+{
+    "disabledMessage": "Cette fonctionnalité est actuellement désactivée pour votre établissement. Un administrateur peut l'activer sous <bold>Settings → Admin Display Settings → {{settingsLabel}}</bold>."
+}

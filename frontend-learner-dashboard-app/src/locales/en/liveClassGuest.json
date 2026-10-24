@@ -1,0 +1,182 @@
+{
+  "guestHome": {
+    "placeholder": "Hello \"/live-class-guest/\"!"
+  },
+  "common": {
+    "errorLoadingSession": "Error loading session details: {{message}}",
+    "markAttendanceFailed": "Failed to mark attendance",
+    "liveBadge": "Live",
+    "phoneExamplePlaceholder": "123 456 7890",
+    "hostedBy": "Hosted by",
+    "timezoneLabel": "Timezone: {{tz}}",
+    "joinMeetingLink": "Join meeting link"
+  },
+  "waitingRoom": {
+    "getReady": "Get ready! The session will begin in:",
+    "thumbnailAlt": "Session Thumbnail",
+    "toast": {
+      "notOpenYetTitle": "The waiting room is not open yet.",
+      "notOpenYetDescription": "It will open {{minutes}} minutes before the session starts."
+    }
+  },
+  "embed": {
+    "bbb": {
+      "joining": "Joining...",
+      "joinButton": "Join {{liveSession}}",
+      "joinHint": "Click to join the {{liveSession}} in a new window"
+    },
+    "errors": {
+      "videoUrlUnavailable": "Failed to get video class URL",
+      "notStartedOrEnded": "This class has not started yet or has ended.",
+      "joinFailed": "Failed to join video class. Please try again."
+    },
+    "youtube": {
+      "invalidUrl": "Invalid YouTube URL format",
+      "viewLiveLink": "Click here to view the live"
+    },
+    "openingNewTab": "Opening meeting link in a new tab...",
+    "noMeetingLink": "No meeting link available for this session."
+  },
+  "audienceResponse": {
+    "form": {
+      "toast": {
+        "submitFailed": "Failed to submit response. Please try again."
+      },
+      "success": {
+        "defaultTitle": "Registration Successful!",
+        "defaultMessage": "Thank you for your response. Your form has been submitted successfully.",
+        "confirmationEmailNotice": "A confirmation email will be sent to you shortly.",
+        "redirecting_one": "Redirecting in {{count}} second…",
+        "redirecting_other": "Redirecting in {{count}} seconds…",
+        "submitAnotherDefault": "Submit another response"
+      },
+      "campaign": {
+        "objectiveLabel": "Objective:"
+      },
+      "details": {
+        "title": "Please fill in your details",
+        "subtitle": "This information will be used to contact you about the campaign.",
+        "requiredLegend": "Required field",
+        "progress": "{{completed}} of {{total}} required fields completed"
+      },
+      "noFields": {
+        "title": "No form fields available",
+        "description": "This campaign does not have any custom fields configured.",
+        "debugCount": "Custom Fields from API: {{count}}"
+      },
+      "selectParentFirst": "Select {{name}} first",
+      "submitButton": {
+        "submitting": "Submitting...",
+        "default": "Submit Response"
+      },
+      "errors": {
+        "title": "Please complete the highlighted fields"
+      }
+    }
+  },
+  "bookingResponse": {
+    "errorPage": {
+      "incompleteTitle": "This booking link looks incomplete",
+      "incompleteDescription": "Please check the link you received and open it exactly as shared with you.",
+      "notFoundTitle": "Booking page not found",
+      "notFoundDescription": "This booking link may be invalid or no longer active. Please check the link or contact the person who shared it with you."
+    },
+    "slotPicker": {
+      "prevDaysAria": "Previous days",
+      "nextDaysAria": "Next days",
+      "loading": "Loading available times…",
+      "loadError": "Could not load available times. Please try again.",
+      "noSlots": "No available times on {{day}}. Try another day."
+    },
+    "confirmation": {
+      "pendingTitle": "Booking request received",
+      "confirmedTitle": "Booking confirmed",
+      "pendingWithHost": "Your request for {{title}} is awaiting confirmation from {{host}}. We'll let you know as soon as it's approved.",
+      "pendingNoHost": "Your request for {{title}} is awaiting confirmation. We'll let you know as soon as it's approved.",
+      "confirmedWithHost": "You're scheduled for {{title}} with {{host}}.",
+      "confirmedNoHost": "You're scheduled for {{title}}.",
+      "emailSentWithAddress": "A confirmation email with these details has been sent to {{email}}.",
+      "emailSentGeneric": "A confirmation with these details has been sent to you.",
+      "manageLink": "Manage booking (cancel or reschedule)"
+    },
+    "page": {
+      "bookingFailed": "Could not complete your booking. Please try again.",
+      "minutesShort": "min",
+      "bookingInProgress": "Booking your session…",
+      "chooseSession": "Choose a session",
+      "pickATime": "Pick a time",
+      "backToTimeAria": "Back to time selection",
+      "questionsTitle": "A few questions",
+      "detailsTitle": "Your details",
+      "form": {
+        "nameLabel": "Name",
+        "namePlaceholder": "Your full name",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@example.com",
+        "phoneLabel": "Phone",
+        "phonePlaceholder": "Your phone number",
+        "identityHint": "Provide at least an email or a phone number so we can share your booking details.",
+        "authedHint": "We'll use the name and contact details on your account — just answer the questions below."
+      },
+      "submit": {
+        "booking": "Booking…",
+        "requestBooking": "Request booking",
+        "confirmBooking": "Confirm booking"
+      },
+      "validation": {
+        "nameRequired": "Please enter your name",
+        "emailInvalid": "Please enter a valid email",
+        "identityRequired": "Please provide an email or a phone number",
+        "phoneInvalid": "Please enter a valid phone number"
+      }
+    }
+  },
+  "bookingManage": {
+    "errorPage": {
+      "incompleteTitle": "This booking link looks incomplete",
+      "incompleteDescription": "Please open the manage link exactly as it appears in your confirmation email."
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Awaiting confirmation",
+      "cancelled": "Cancelled",
+      "rescheduled": "Rescheduled"
+    },
+    "notFound": {
+      "title": "Booking not found",
+      "description": "This manage link may be invalid or expired. Please use the link from your confirmation email."
+    },
+    "toast": {
+      "cancelSuccess": "Your booking has been cancelled.",
+      "cancelError": "Could not cancel the booking. Please try again.",
+      "rescheduleSuccess": "Your booking has been rescheduled.",
+      "rescheduleError": "Could not reschedule the booking. Please try again."
+    },
+    "viewDetails": "View booking details",
+    "backToDetailsAria": "Back to booking details",
+    "pickNewTime": "Pick a new time",
+    "loadingAvailability": "Loading availability…",
+    "confirmReschedule": {
+      "confirming": "Rescheduling…",
+      "default": "Confirm reschedule"
+    },
+    "bookedFor": "Booked for",
+    "statusNotes": {
+      "pending": "This booking is awaiting confirmation from the host. You will be notified once it is approved.",
+      "cancelled": "This booking has been cancelled.",
+      "rescheduled": "This booking was rescheduled. Please use the manage link from your latest confirmation for the new time.",
+      "past": "This booking is in the past."
+    },
+    "reschedule": "Reschedule",
+    "cancelBooking": "Cancel booking",
+    "cancelDialog": {
+      "heading": "Cancel this booking?",
+      "keepBooking": "Keep booking",
+      "confirmCancel": "Yes, cancel",
+      "cancelling": "Cancelling…",
+      "releaseNotice": "Your slot on <bold>{{slot}}</bold> will be released. This cannot be undone.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Let the host know why you're cancelling"
+    }
+  }
+}

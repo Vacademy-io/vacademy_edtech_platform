@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { MediumType, ModeType } from '@/services/announcement';
 import { InstituteAnnouncementSettingsService } from '@/services/announcement';
 import { getInstituteId } from '@/constants/helper';
@@ -26,8 +28,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { useCampaignsList } from '@/routes/audience-manager/list/-hooks/useCampaignsList';
 import type { CampaignItem } from '@/routes/audience-manager/list/-services/get-campaigns-list';
-import { getTokenFromCookie, getUserRoles } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getPrimaryRole, getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { defaultModeSettings } from '../-utils/constants';
 import type {
@@ -65,8 +66,8 @@ export function createRule(
         userIds: [],
         tagIds: [],
         tagScope: 'ALL',
-        campaignId: '',
-        campaignName: '',
+        campaignIds: [],
+        campaignNames: {},
         fieldFilters: [],
         exclusions: [],
         ...patch,
@@ -90,9 +91,15 @@ const stripHtml = (html: string): string => {
 };
 
 export function useAnnouncementDraft() {
+    const { t } = useTranslation('announcementUseAnnouncementDraft');
     const instituteId = getInstituteId() || '';
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const primaryRole = useMemo(() => getUserRoles(accessToken)?.[0] ?? 'TEACHER', [accessToken]);
+    // The sender's role in THIS institute (ADMIN first, never STUDENT); 'UNKNOWN' means
+    // no staff role here, which keeps the old TEACHER default.
+    const primaryRole = useMemo(() => {
+        const role = getPrimaryRole(getRolesForCurrentInstitute());
+        return role === 'UNKNOWN' ? 'TEACHER' : role;
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- re-read on institute switch
+    }, [instituteId]);
 
     // ---------------------------------------------------------------- content
     const [title, setTitle] = useState('');
@@ -247,7 +254,7 @@ export function useAnnouncementDraft() {
                 if (!cancelled) setTags(list);
             })
             .catch((err) => {
-                if (!cancelled) setTagsError(errorText(err, 'Could not load tags.'));
+                if (!cancelled) setTagsError(errorText(err, t('errors.loadTags')));
             })
             .finally(() => {
                 if (!cancelled) setTagsLoading(false);
@@ -296,7 +303,7 @@ export function useAnnouncementDraft() {
             .catch((err) => {
                 if (!cancelled) {
                     setCustomFields([]);
-                    setCustomFieldsError(errorText(err, 'Could not load custom fields.'));
+                    setCustomFieldsError(errorText(err, t('errors.loadCustomFields')));
                 }
             });
         return () => {
@@ -355,7 +362,7 @@ export function useAnnouncementDraft() {
             })
             .catch((err) => {
                 if (!cancelled)
-                    setEmailSendersError(errorText(err, 'Could not load sender addresses.'));
+                    setEmailSendersError(errorText(err, t('errors.loadSenders')));
             })
             .finally(() => {
                 if (!cancelled) setEmailSendersLoading(false);
@@ -386,7 +393,7 @@ export function useAnnouncementDraft() {
             .then((res) => setEmailTemplates(res.templates ?? []))
             .catch((err) => {
                 setEmailTemplates([]);
-                setEmailTemplatesError(errorText(err, 'Could not load email templates.'));
+                setEmailTemplatesError(errorText(err, t('errors.loadEmailTemplates')));
             })
             .finally(() => setEmailTemplatesLoading(false));
     }, []);
@@ -411,25 +418,23 @@ export function useAnnouncementDraft() {
                 if (full.subject) setTitle(full.subject);
                 if (full.content) setHtmlContent(full.content);
                 setPreviewText(full.previewText ?? '');
-                toast.success(`Applied “${full.name}”`);
+                toast.success(t('toast.templateApplied', { name: full.name }));
             } catch (err) {
-                const cached = emailTemplates.find((t) => t.id === templateId);
+                const cached = emailTemplates.find((template) => template.id === templateId);
                 if (cached) {
                     setEmail((prev) => ({ ...prev, templateId, templateName: cached.name }));
                     if (cached.subject) setTitle(cached.subject);
                     if (cached.content) setHtmlContent(cached.content);
                     setPreviewText(cached.previewText ?? '');
-                    toast.warning(
-                        'Loaded a cached copy of this template — reopen to get the latest.'
-                    );
+                    toast.warning(t('toast.templateCachedCopy'));
                 } else {
-                    toast.error(errorText(err, 'Could not load that template.'));
+                    toast.error(errorText(err, t('errors.loadTemplate')));
                 }
             } finally {
                 setApplyingEmailTemplate(false);
             }
         },
-        [emailTemplates]
+        [emailTemplates, t]
     );
 
     // ---------------------------------------------------------------- whatsapp templates
@@ -450,11 +455,11 @@ export function useAnnouncementDraft() {
                 .then((list) => setWaTemplates(Array.isArray(list) ? list : []))
                 .catch((err) => {
                     setWaTemplates([]);
-                    setWaTemplatesError(errorText(err, 'Could not load WhatsApp templates.'));
+                    setWaTemplatesError(errorText(err, t('errors.loadWhatsappTemplates')));
                 })
                 .finally(() => setWaTemplatesLoading(false));
         },
-        [instituteId]
+        [instituteId, t]
     );
 
     const syncWhatsAppTemplates = useCallback(async () => {
@@ -465,15 +470,15 @@ export function useAnnouncementDraft() {
             loadWhatsAppTemplates(true);
             toast.success(
                 res?.synced
-                    ? `Synced ${res.synced} template(s) from Meta.`
-                    : 'Templates are up to date.'
+                    ? t('toast.templatesSynced', { count: res.synced })
+                    : t('toast.templatesUpToDate')
             );
         } catch (err) {
-            toast.error(errorText(err, 'Sync failed. Check the WhatsApp connection in Settings.'));
+            toast.error(errorText(err, t('errors.syncFailed')));
         } finally {
             setWaSyncing(false);
         }
-    }, [instituteId, loadWhatsAppTemplates]);
+    }, [instituteId, loadWhatsAppTemplates, t]);
 
     const approvedWaTemplates = useMemo(
         () => waTemplates.filter((t) => (t.status ?? '').toUpperCase() === 'APPROVED'),
@@ -623,7 +628,7 @@ export function useAnnouncementDraft() {
 
         campaigns,
         campaignsLoading,
-        campaignsError: campaignsErrorRaw ? 'Could not load campaigns.' : null,
+        campaignsError: campaignsErrorRaw ? t('errors.loadCampaigns') : null,
         reloadCampaigns: refetchCampaigns,
 
         emailSenders,

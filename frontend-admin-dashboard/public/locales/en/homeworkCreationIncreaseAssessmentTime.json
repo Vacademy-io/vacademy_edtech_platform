@@ -1,0 +1,23 @@
+{
+    "dialog": {
+        "heading": "Increase Assessment Time"
+    },
+    "assessment": {
+        "title": "Entire Assessment",
+        "increaseByLabel": "Increase By",
+        "selectSectionPlaceholder": "Select Section",
+        "doneButton": "Done"
+    },
+    "section": {
+        "title": "Section {{index}}",
+        "increaseByLabel": "Increase By",
+        "selectSectionPlaceholder": "Select Section",
+        "doneButton": "Done"
+    },
+    "question": {
+        "title": "Question {{index}}",
+        "increaseByLabel": "Increase By",
+        "selectSectionPlaceholder": "Select Section",
+        "doneButton": "Done"
+    }
+}

@@ -1,0 +1,79 @@
+{
+    "dialog": {
+        "title": {
+            "add": "Add Drip Condition",
+            "edit": "Edit Drip Condition"
+        },
+        "description": "Configure content release rules for specific packages, chapters, or slides."
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "addCondition": "Add Condition",
+        "saveChanges": "Save Changes"
+    },
+    "basicSettings": {
+        "level": {
+            "label": "Content Level",
+            "placeholder": "Select level",
+            "package": "Package (Template)"
+        },
+        "levelId": {
+            "packageLabel": "Package",
+            "idLabel": "{{term}} ID",
+            "packagePlaceholder": "Select package",
+            "idPlaceholder": "Enter ID"
+        },
+        "target": {
+            "label": "Apply To",
+            "placeholder": "Select target",
+            "allItems": "All {{term}}",
+            "hint": "This drip condition will apply as a template to all items of this type within the package."
+        },
+        "behavior": {
+            "label": "Behavior",
+            "placeholder": "Select behavior",
+            "lock": "Lock - Visible but not accessible",
+            "hide": "Hide - Completely hidden",
+            "both": "Both - Progressive unlock"
+        },
+        "enabled": {
+            "label": "Enable Condition",
+            "hint": "Activate this drip condition"
+        }
+    },
+    "rules": {
+        "title": "Rules",
+        "hint": "All rules must be satisfied for content to unlock",
+        "addPlaceholder": "Add Rule",
+        "types": {
+            "dateBased": "Date-Based",
+            "completionBased": "Completion-Based",
+            "prerequisite": "Prerequisite",
+            "sequential": "Sequential"
+        },
+        "empty": "No rules added yet. Add at least one rule to continue."
+    },
+    "ruleEditor": {
+        "dateBased": {
+            "label": "Unlock Date & Time"
+        },
+        "completionBased": {
+            "metricLabel": "Metric Type",
+            "averageOfAll": "Average of All Items",
+            "averageOfLastN": "Average of Last N Items",
+            "countLabel": "Number of Items (N)",
+            "thresholdLabel": "Threshold (%)"
+        },
+        "prerequisite": {
+            "typeLabel": "Prerequisite Type",
+            "requiredItems": "Required {{term}}",
+            "itemIdsLabel": "Item IDs (comma-separated)",
+            "itemIdsPlaceholder": "chapter-1, chapter-2, chapter-3",
+            "thresholdLabel": "Completion Threshold (%)"
+        },
+        "sequential": {
+            "thresholdLabel": "Completion Threshold (%)",
+            "hint": "Previous item must be completed to this threshold"
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "columns": {
+        "name": "Nom de l'institut",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "address": "Adresse",
+        "city": "Ville",
+        "state": "État",
+        "pincode": "Code postal",
+        "status": "Statut",
+        "learners": "Apprenants",
+        "seats": "Places",
+        "createdOn": "Créé le",
+        "actions": "Actions"
+    },
+    "csv": {
+        "name": "Nom",
+        "admin": "Administrateur",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "address": "Adresse",
+        "city": "Ville",
+        "state": "État",
+        "pincode": "Code postal",
+        "status": "Statut",
+        "learners": "Apprenants",
+        "seatsUsed": "Places utilisées",
+        "seatsTotal": "Places totales",
+        "inviteCode": "Code d'invitation",
+        "createdOn": "Créé le"
+    },
+    "fallback": {
+        "unknown": "Inconnu"
+    },
+    "seats": {
+        "percentUsedAriaLabel_one": "{{percent}}% des places utilisées",
+        "percentUsedAriaLabel_many": "{{percent}}% des places utilisées",
+        "percentUsedAriaLabel_other": "{{percent}}% des places utilisées"
+    },
+    "actions": {
+        "ariaLabel": "Actions pour {{name}}",
+        "thisRow": "cette ligne",
+        "openDetails": "Ouvrir les détails",
+        "copyInviteLink": "Copier le lien d'invitation",
+        "shareCredentials": "Partager les identifiants"
+    }
+}

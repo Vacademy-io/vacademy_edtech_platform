@@ -1,0 +1,875 @@
+{
+  "aiReportDetails": {
+    "areasOfImprovement": {
+      "title": "📝 Areas of Improvement"
+    },
+    "behavioralInsights": {
+      "difficultyResponse": "📈 Difficulty Response",
+      "fatigueIndicator": "😴 Fatigue Indicator",
+      "skipPattern": "⏭️ Skip Pattern",
+      "timeManagement": "⏱️ Time Management",
+      "title": "🧩 Behavioral Insights"
+    },
+    "bloomLevels": {
+      "analyze": "Analyze",
+      "apply": "Apply",
+      "create": "Create",
+      "evaluate": "Evaluate",
+      "remember": "Remember",
+      "understand": "Understand"
+    },
+    "bloomsTaxonomy": {
+      "caption": "How you performed at different thinking levels — from basic recall to higher-order analysis and problem solving.",
+      "performanceByLevel": "Performance by Cognitive Level",
+      "title": "🎓 Bloom's Taxonomy"
+    },
+    "confidence": {
+      "aiInsight": "AI Insight:",
+      "caption": "Estimated confidence based on response time, answer patterns, and question difficulty.",
+      "high": "HIGH",
+      "highConfCorrect": "High conf & correct",
+      "highConfWrong": "High conf & wrong",
+      "likelyGuessed": "Likely guessed",
+      "low": "LOW",
+      "lowConfCorrect": "Low conf & correct",
+      "medium": "MED",
+      "perQuestion": "Confidence Per Question",
+      "title": "🎯 Confidence Estimation"
+    },
+    "defaultSubtitle": "Personalized Performance Analysis",
+    "downloadPdf": "Download PDF",
+    "failed": "Failed",
+    "flashcards": {
+      "answer": "Answer",
+      "flip": "Flip",
+      "question": "Question",
+      "title": "🃏 Flashcards"
+    },
+    "generating": "Generating...",
+    "improvementPath": {
+      "title": "🚀 Improvement Path"
+    },
+    "leaderboard": {
+      "marks": "Marks",
+      "ofNStudents": "of {{total}} students",
+      "percentile": "Percentile",
+      "rank": "Rank",
+      "student": "Student",
+      "title": "🏅 Leaderboard (Your Position)",
+      "youMarker": ">> {{name}} (You)",
+      "yourRankPrefix": "Your rank:"
+    },
+    "learningPath": {
+      "title": "🗺️ Recommended Learning Path"
+    },
+    "misconceptions": {
+      "caption": "Questions you got wrong and the specific conceptual errors behind each mistake.",
+      "correct": "Correct:",
+      "misconceptionLabel": "Misconception:",
+      "title": "🔍 Misconception Analysis",
+      "yourAnswer": "Your Answer:"
+    },
+    "performanceAnalysis": {
+      "title": "📊 Performance Analysis"
+    },
+    "scoreOverview": {
+      "marksObtained": "Marks Obtained",
+      "percentile": "Percentile",
+      "rankOf": "Rank (of {{total}})"
+    },
+    "strengths": {
+      "title": "💪 Strengths"
+    },
+    "topicAnalysis": {
+      "caption": "How you performed across different topics covered in this assessment.",
+      "table": {
+        "accuracy": "Accuracy",
+        "avgTime": "Avg Time",
+        "correct": "Correct",
+        "mastery": "Mastery",
+        "questions": "Qs",
+        "topic": "Topic"
+      },
+      "title": "🧠 Topic Analysis"
+    },
+    "vsClass": {
+      "accuracyCaption": "Accuracy (You vs Class Avg)",
+      "avg": "Avg: {{value}}",
+      "highest": "Highest:",
+      "lowest": "Lowest:",
+      "marksCaption": "Marks (You vs Class Avg)",
+      "participants": "Participants:",
+      "title": "📊 Your Performance vs Class",
+      "you": "You: {{value}}"
+    },
+    "weaknesses": {
+      "title": "🎯 Weaknesses"
+    }
+  },
+  "attendanceReport": {
+    "attendanceRate": "Attendance Rate",
+    "bestRegards": "Best regards,",
+    "closingNote": "Regular attendance is the key to success.",
+    "downloadPdf": "Download PDF",
+    "engagement": {
+      "attendanceLabel": "Attendance:",
+      "attendancePts": "80 pts",
+      "breakdownTitle": "Engagement Score Breakdown",
+      "chats_one": "{{count}} chat",
+      "chats_other": "{{count}} chats",
+      "emojis_one": "{{count}} emoji",
+      "emojis_other": "{{count}} emojis",
+      "explanationMiddle": "based on attendance time vs. total session length, plus",
+      "explanationPrefix": "How each session's score is computed:",
+      "explanationSuffix": "from in-session interactions. Total capped at 100.",
+      "interactionPts": "20 pts",
+      "interactionsLabel": "Interactions:",
+      "joinedOf": "({{joined}} of {{total}} min joined)",
+      "polls_one": "{{count}} poll",
+      "polls_other": "{{count}} polls",
+      "raises_one": "{{count}} raise",
+      "raises_other": "{{count}} raises",
+      "talkTime": "{{count}} talktime (in sec)",
+      "total": "Total: {{score}}/100"
+    },
+    "generated": "Generated",
+    "generating": "Generating...",
+    "greeting": {
+      "middle": ", here's your attendance summary for",
+      "prefix": "Hi",
+      "to": "to"
+    },
+    "loadFailed": "Failed to load report.",
+    "minutesTotal": "{{count}} min total",
+    "noData": "No attendance data available for this period.",
+    "pdfGenerationFailed": "Failed to generate PDF. Please try again.",
+    "sessionDetails": "Session Details",
+    "sessionsAttended": "{{count}} sessions attended",
+    "title": "Attendance Report",
+    "unknownError": "Unknown error"
+  },
+  "comprehensiveReportCard": {
+    "academics": {
+      "average": "Average",
+      "best": "Best:",
+      "needsWork": "Needs work:",
+      "subjectPerformanceVsClass": "{{subject}} performance vs class",
+      "table": {
+        "assessment": "Assessment",
+        "needsWorkBadge": "Needs work",
+        "rank": "Rank",
+        "score": "Score",
+        "status": "Status"
+      },
+      "title": "Academic Performance",
+      "vsClassAverage": "vs class average {{percent}}%"
+    },
+    "achievements": {
+      "title": "Achievements"
+    },
+    "aiInsights": {
+      "recommendedNextSteps": "Recommended next steps",
+      "whatWeNoticed": "What we noticed"
+    },
+    "assignments": {
+      "assigned": "Assigned",
+      "avgScore": "Avg. score",
+      "late": "Late",
+      "onTime": "On time",
+      "pending": "Pending",
+      "submitted": "Submitted",
+      "title": "Assignments"
+    },
+    "attendance": {
+      "absent": "Absent",
+      "late": "Late",
+      "present": "Present",
+      "presentOfTotal": "{{present}} / {{total}} present",
+      "title": "Attendance",
+      "weeklyTrend": "Weekly trend"
+    },
+    "courseProgress": {
+      "title": "{{course}} Progress — {{percent}}% complete"
+    },
+    "footer": "Generated by {{institute}} on {{date}} · This report covers {{period}}.",
+    "header": {
+      "classBatch": "Class / Batch",
+      "downloadPdf": "Download PDF",
+      "enrollmentNo": "Enrollment No.",
+      "periodGenerated": "{{period}} · Generated {{date}}",
+      "preparing": "Preparing…",
+      "rollNo": "Roll No.",
+      "statusGrade": "● {{status}} · Grade {{grade}}",
+      "student": "Student",
+      "title": "Student Progress Report"
+    },
+    "liveClasses": {
+      "attendance": "Attendance",
+      "attended": "Attended",
+      "missed": "Missed",
+      "notMarked": "Not marked",
+      "total": "Total classes"
+    },
+    "parentSummary": {
+      "title": "Summary for Parents"
+    },
+    "strengths": {
+      "areasToImproveTitle": "Areas to Improve",
+      "strengthsTitle": "Strengths"
+    },
+    "studyHabits": {
+      "activeDays": "Active days",
+      "contentExplored": "Content explored:",
+      "dailyStudyTime": "Daily study time (minutes) · {{count}} days",
+      "dayN": "Day {{day}}",
+      "days": "days",
+      "documents": "documents",
+      "focusScore": "Focus score",
+      "longestStreak": "Longest streak",
+      "mostActive": "Most active",
+      "quizzes": "quizzes",
+      "title": "Study Habits & Daily Engagement",
+      "videos": "videos"
+    },
+    "subjectMarks": {
+      "caption": "Aggregated across assessments, assignments, quizzes and practice questions.",
+      "title": "Marks by {{subject}}"
+    }
+  },
+  "couponInput": {
+    "apply": "Apply",
+    "applying": "Applying...",
+    "couponCode": "Coupon code",
+    "discountOff": "— {{amount}} off",
+    "errors": {
+      "applyFailed": "Could not apply coupon. Please try again.",
+      "enterCodeFirst": "Enter a coupon code first.",
+      "notApplicable": "This coupon isn’t valid for this {{course}}."
+    },
+    "heading": "Coupon Code",
+    "placeholder": "Enter coupon code",
+    "removeCoupon": "Remove coupon"
+  },
+  "customFields": {
+    "enterField": "Enter {{name}}",
+    "file": {
+      "allowedTypes": "Allowed: {{allowed}}",
+      "maxSize": " · Max {{maxSizeMB}}MB",
+      "tooLarge": "File size must be less than {{maxSizeMB}}MB",
+      "typeNotAllowed": "File type .{{ext}} is not allowed. Allowed: {{allowed}}",
+      "uploadFailed": "File upload failed. Please try again.",
+      "uploaded": "Uploaded: {{fileName}}",
+      "uploading": "Uploading...",
+      "viewCurrentFile": "View current file"
+    },
+    "pickDate": "Pick a date",
+    "selectField": "Select {{name}}"
+  },
+  "donation": {
+    "amountSelector": {
+      "customAmountPlaceholder": "{{symbol}} (min {{minAmount}})",
+      "other": "Other"
+    },
+    "dialog": {
+      "chooseAmount": "Choose an amount to donate",
+      "close": "Close",
+      "continue": "Continue",
+      "loadingOptions": "Loading donation options...",
+      "processing": "Processing...",
+      "skip": "Skip",
+      "supportFreeLearning": "Support Free Learning",
+      "tryAgain": "Try Again"
+    },
+    "emailForm": {
+      "emailPlaceholder": "you@example.com",
+      "receiptNotice": "We'll send your receipt to this email address",
+      "yourEmail": "Your Email"
+    },
+    "hook": {
+      "errors": {
+        "accessDenied": "Access denied. Please check your permissions and try again.",
+        "alreadyEnrolled": "You are already enrolled in this {{course}}. Please check your enrolled {{courses}}.",
+        "cardMountFailed": "Failed to load card input. Please refresh and try again.",
+        "courseConfigError": "{{course}} configuration error. Please refresh the page and try again.",
+        "courseDataError": "{{course}} data error. Please refresh the page and try again.",
+        "enrollmentError": "Enrollment error. Please try again or contact support.",
+        "enrollmentFailed": "Enrollment failed. Please try again.",
+        "enterAmount": "Please enter a donation amount",
+        "enterEmail": "Please enter your email address",
+        "invalidAmount": "Please enter a valid donation amount",
+        "invalidEmail": "Please enter a valid email address",
+        "invalidEmailFormat": "Invalid email format",
+        "loginAgain": "Please log in again and try again.",
+        "minimumAmount": "Minimum donation amount is {{amount}}",
+        "paymentFailed": "Payment failed. Please try again.",
+        "paymentFormLoadFailed": "Failed to load payment form. Please refresh and try again.",
+        "paymentFormNotLoaded": "Payment form not loaded. Please refresh and try again.",
+        "paymentGatewayError": "Payment system error. Please try again or contact support.",
+        "selectAmount": "⚠️ Please select or enter a donation amount to continue",
+        "somethingWentWrong": "Something went wrong. Please try again or contact support.",
+        "systemError": "System error. Please try again or contact support.",
+        "unableToFetchUserData": "Unable to fetch user data. Please try again."
+      }
+    },
+    "paymentForm": {
+      "cardDetails": "Card Details",
+      "donateNow": "Donate Now",
+      "loadingPaymentForm": "Loading payment form...",
+      "processing": "Processing...",
+      "securePaymentPoweredBy": "Secure payment powered by",
+      "skip": "Skip",
+      "stripe": "Stripe"
+    },
+    "summary": {
+      "amount": "Amount:",
+      "edit": "Edit",
+      "email": "Email:",
+      "plan": "Plan:",
+      "title": "Donation Summary"
+    }
+  },
+  "instructionPage": {
+    "assessmentInstructions": {
+      "attachment": "Attachment",
+      "attemptOf": "Attempt {{used}} of {{max}}",
+      "downloadPaper": "Download",
+      "instructionsFromInstitute": "Instructions from your institute",
+      "no": "No",
+      "noAdditionalInstructions": "No additional instructions were provided for this assessment.",
+      "readBeforeYouBegin": "Read these before you begin. The timer starts the moment you enter the test.",
+      "rules": {
+        "attempts": {
+          "bodyFirst": "This is your first attempt on this paper.",
+          "bodyUsed_one": "You have already used {{count}} attempt on this paper.",
+          "bodyUsed_other": "You have already used {{count}} attempts on this paper."
+        },
+        "autoSave": {
+          "body": "Every response syncs as you go. If your connection drops, answers are held on this device and re-sent when you are back online.",
+          "title": "Your answers save automatically"
+        },
+        "clock": {
+          "bodyFixed": "Sections open in order. Once a section's time ends you cannot return to it.",
+          "bodySwitchable": "You may move between sections freely until the overall timer ends.",
+          "title": "{{duration}} on the clock"
+        },
+        "fullScreen": {
+          "body": "The test runs in full screen. Leaving it, switching tabs, or opening another window is recorded. Three warnings will auto-submit your paper.",
+          "title": "Stay in full screen"
+        },
+        "preview": {
+          "body": "You get a read-only look at the paper before the answering time begins.",
+          "title": "Preview before you start"
+        },
+        "questionPalette": {
+          "body": "The palette shows what is answered, skipped or marked for review. Marking a question for review still submits any answer you selected.",
+          "title": "Use the question palette"
+        },
+        "tools": {
+          "and": " and ",
+          "body": "This test gives you {{tools}}. Open them from the toolbar during the test.",
+          "title": "Tools you can use"
+        }
+      },
+      "stats": {
+        "duration": "Duration",
+        "preview": "Preview",
+        "switching": "Switching"
+      },
+      "tools": {
+        "calculator": "a calculator",
+        "scientificCalculator": "a scientific calculator",
+        "scratchpad": "a scratchpad for rough work"
+      },
+      "yes": "Yes"
+    },
+    "instructionPage": {
+      "acknowledgement": "I have read the instructions and understand that leaving full screen is recorded and may auto-submit my paper.",
+      "detailsUnavailable": "Assessment details unavailable",
+      "loadFailed": "We couldn't load this assessment. Please go back and try again.",
+      "loadingDetails": "Loading assessment details…",
+      "tickToBegin": "Tick the acknowledgement above to begin."
+    },
+    "navbar": {
+      "assessmentBrief": "Assessment brief",
+      "goBack": "Go back"
+    },
+    "sectionDetails": {
+      "cutoffMarks": "Cut off marks:",
+      "description": "Section Description:",
+      "duration": "Section Duration:",
+      "notApplicable": "NA",
+      "totalMarks": "Total Marks:"
+    },
+    "startAssessment": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirmBody": "Once you start the assessment, you must complete it without interruption. Begin only when you're ready.",
+      "loading": "Loading...",
+      "proceed": "Proceed",
+      "startAssessment": "Start Assessment",
+      "uploadAnswer": "Upload Answer"
+    }
+  },
+  "languageDropdown": {
+    "changeLanguage": "Change language"
+  },
+  "myFilesPage": {
+    "actions": {
+      "download": "Download",
+      "downloadFile": "Download File",
+      "edit": "Edit",
+      "editFile": "Edit File",
+      "openUrl": "Open URL",
+      "view": "View",
+      "viewNote": "View Note"
+    },
+    "backToDashboard": "Back to Dashboard",
+    "empty": {
+      "message": "You don't have any reports yet.",
+      "title": "No Reports Found"
+    },
+    "errorLoading": {
+      "message": "Please try again later.",
+      "title": "Error Loading Files"
+    },
+    "fileType": {
+      "note": "Note",
+      "text": "Text"
+    },
+    "table": {
+      "actions": "Actions",
+      "addedBy": "Added By",
+      "dateAdded": "Date Added",
+      "mediaType": "Media Type",
+      "name": "Name",
+      "type": "Type"
+    },
+    "title": "My Files"
+  },
+  "myReportsPage": {
+    "activity": {
+      "viewInsights": "View Insights"
+    },
+    "emptyActivity": {
+      "message": "Insights appear here after you complete a quiz, question or assignment. They're prepared shortly after you submit.",
+      "title": "No Activity Insights Yet"
+    },
+    "emptyTerm": {
+      "message": "You don't have any reports yet.",
+      "title": "No Reports Found"
+    },
+    "errorLoading": {
+      "message": "Please try again later.",
+      "title": "Error Loading Reports"
+    },
+    "header": {
+      "activityInsightsTab": "Activity Insights",
+      "backToDashboard": "Back to Dashboard",
+      "progressReportsTab": "Progress Reports",
+      "title": "My Reports"
+    },
+    "term": {
+      "comprehensive": "Comprehensive",
+      "created": "Created: {{date}}",
+      "viewDetails": "View Details"
+    }
+  },
+  "notificationSettings": {
+    "categories": {
+      "announcements": {
+        "description": "Important announcements from your institute",
+        "label": "Announcements"
+      },
+      "assignments": {
+        "description": "New assignments and submission reminders",
+        "label": "Assignments"
+      },
+      "description": "Choose which types of content you want to be notified about",
+      "general": {
+        "description": "General app updates and information",
+        "label": "General"
+      },
+      "liveClasses": {
+        "description": "{{liveClasses}} reminders and updates",
+        "label": "{{liveClasses}}"
+      },
+      "title": "Notification Categories"
+    },
+    "helpText": {
+      "body": "To receive push notifications, you need to grant permission. Click \"Enable Notifications\" above to get started. You can always change these settings later in your device's notification settings.",
+      "title": "Enable Notifications"
+    },
+    "preferences": {
+      "appBadge": {
+        "description": "Show notification count on app icon",
+        "label": "App Badge"
+      },
+      "description": "Choose what types of notifications you want to receive",
+      "enableNotifications": {
+        "description": "Turn all notifications on or off",
+        "label": "Enable Notifications"
+      },
+      "sound": {
+        "description": "Play sound when notifications arrive",
+        "label": "Sound"
+      },
+      "title": "Notification Preferences"
+    },
+    "status": {
+      "description": "Manage your push notification preferences across all devices",
+      "enableNotifications": "Enable Notifications",
+      "enabled": "Enabled",
+      "notSupported": "Not Supported",
+      "notificationsDisabled": "Notifications are disabled",
+      "notificationsEnabled": "Notifications are enabled",
+      "permissionStatus": "Permission Status",
+      "platform": "Platform",
+      "sendTest": "Send Test",
+      "supported": "Supported",
+      "testNotifications": "Test Notifications",
+      "testNotificationsDescription": "Send a test notification to verify everything is working",
+      "title": "Notification Status",
+      "unreadBadge": "{{count}} unread"
+    },
+    "testNotification": {
+      "body": "This is a test notification from Vacademy Learner!",
+      "title": "Test Notification"
+    },
+    "toasts": {
+      "disableViaDeviceSettings": "Notifications are currently enabled. To disable, please use your device settings."
+    }
+  },
+  "offline": {
+    "deviceLimitDialog": {
+      "heading": "Offline device limit reached",
+      "remove": "Remove",
+      "removed": "Removed",
+      "retryDownload": "Retry download",
+      "toasts": {
+        "removeFailed": "Couldn't remove that device. Please try again.",
+        "removed": "Device removed. You can now register this device."
+      },
+      "unknownPlatform": "unknown",
+      "unnamedDevice": "Unnamed device"
+    },
+    "downloadNodeButton": {
+      "cancelDownload": "Cancel download",
+      "confirmDelete": {
+        "cancel": "Cancel",
+        "confirm": "Remove",
+        "description": "This content will be removed from this device. You'll need an internet connection to download it again.",
+        "title": "Remove downloaded content?"
+      },
+      "removeDownload": "Remove download",
+      "status": {
+        "downloaded": "Downloaded — available offline",
+        "downloading": "Downloading…",
+        "error": "Download failed — tap to retry",
+        "notDownloaded": "Download for offline use",
+        "partial": "Partly saved — tap to download the rest",
+        "removedByAdmin": "Removed by admin",
+        "savedWithOnlineOnly": "Saved for offline — some content in here still needs internet",
+        "updateAvailable": "Update available — tap to refresh"
+      },
+      "toasts": {
+        "changeSettings": "Change settings",
+        "downloadStarted": "Download started",
+        "networkError": "Couldn't reach the server — check your connection and try again",
+        "startFailed": "Couldn't start the download — please try again",
+        "wifiOnlyDescription": "You're on mobile data.",
+        "wifiOnlyTitle": "Download over Wi-Fi only"
+      }
+    },
+    "downloadsPage": {
+      "confirmDialog": {
+        "cancel": "Cancel",
+        "clearAllConfirm": "Clear all",
+        "clearAllDescription": "Everything saved on this device will be removed. You'll need an internet connection to download it again.",
+        "clearAllTitle": "Clear all downloads?",
+        "removeConfirm": "Remove",
+        "removeContentDescription": "This content will be removed from this device. You'll need an internet connection to download it again.",
+        "removeNamedTitle": "Remove \"{{label}}\"?",
+        "removeOtherDeviceDescription": "That device will lose offline access and its downloaded content will be removed the next time it connects.",
+        "removeThisDeviceDescription": "This device will lose offline access and all downloaded content on it will be deleted. You can download again later.",
+        "removeThisDeviceTitle": "Remove this device?"
+      },
+      "content": {
+        "clearAll": "Clear all downloads",
+        "delete": "Delete",
+        "emptyDescription": "Open a {{course}} and tap the download icon to save it for offline use.",
+        "emptyTitle": "Nothing downloaded yet",
+        "newContentInPrefix": "New content in",
+        "open": "Open",
+        "update": "Update",
+        "updateAvailable": "Update available",
+        "updating": "Updating…"
+      },
+      "devices": {
+        "loading": "Loading…",
+        "none": "No devices registered for offline access.",
+        "remove": "Remove",
+        "thisDeviceFallbackLabel": "this device",
+        "thisDeviceSuffix": "(this device)",
+        "title": "Offline devices",
+        "unknownPlatform": "unknown",
+        "unnamedDevice": "Unnamed device"
+      },
+      "dismiss": "Dismiss",
+      "downloadSettings": {
+        "mobileDataAllowed": "Mobile data can be used",
+        "title": "Download settings",
+        "waitsForWifi": "Downloads wait for Wi-Fi",
+        "wifiOnly": "Download over Wi-Fi only"
+      },
+      "downloadedContent": "Downloaded content",
+      "heading": "Downloads",
+      "lease": {
+        "expired": "Offline access needs to reconnect to renew.",
+        "none": "No offline device registered yet.",
+        "revoked": "Offline access is turned off for this device.",
+        "validUntil": "Offline access valid until {{date}}"
+      },
+      "offlineAccess": {
+        "title": "Offline access"
+      },
+      "storage": {
+        "availableOnDevice": "Available on device",
+        "lowSpace": "Storage is running low — new downloads may fail.",
+        "title": "Storage",
+        "usedByDownloads": "Used by downloads"
+      },
+      "subheading": "Manage what's saved to this device for offline use.",
+      "tabs": {
+        "content": "Content",
+        "contentWithCount": "Content ({{count}})",
+        "settings": "Settings"
+      },
+      "toasts": {
+        "allCleared": "All downloads cleared",
+        "clearFailed": "Couldn't clear downloads — please try again",
+        "deviceRemoveFailed": "Couldn't remove that device. Please try again.",
+        "deviceRemoved": "Device removed from offline access.",
+        "openChapterFailed": "Couldn't open this chapter — try opening it from the {{course}}",
+        "removeDownloadFailed": "Couldn't remove that download — please try again",
+        "removedFromDownloads": "Removed from downloads",
+        "thisDeviceRemoved": "This device was removed. Downloaded content has been deleted.",
+        "updateFetchFailed": "Couldn't fetch the update — please try again",
+        "updateStarted": "Updating — new content is downloading"
+      },
+      "unavailable": {
+        "description": "Offline access works in the mobile app, and only when your institute has enabled it.",
+        "title": "Offline downloads aren't available here"
+      }
+    },
+    "revokedDeviceDialog": {
+      "body": "Your institute revoked offline access for this device. All downloaded content on this device has been removed. You can still access everything online, and register a different device for offline use.",
+      "gotIt": "Got it",
+      "heading": "Offline access removed"
+    }
+  },
+  "reportDetailsDialog": {
+    "generatedOn": "Generated on {{date}}",
+    "heading": "Report: {{start}} - {{end}}",
+    "sections": {
+      "areasForImprovement": "Areas for Improvement",
+      "learningFrequency": "Learning Frequency",
+      "overallProgress": "Overall Progress",
+      "recommendedRemedialActions": "Recommended Remedial Actions",
+      "strengths": "Strengths",
+      "topicsNeedingAttention": "Topics Needing Attention",
+      "topicsOfImprovement": "Topics of Improvement"
+    }
+  },
+  "reportDetailsPage": {
+    "generatedOn": "Generated on {{date}}",
+    "reportSections": "Report Sections",
+    "sections": {
+      "learningPattern": "Learning Pattern",
+      "overallProgress": "Overall Progress",
+      "recommendedRemedialActions": "Recommended Remedial Actions",
+      "strengths": "Strengths",
+      "studentEfforts": "Student Efforts",
+      "topicsNeedingAttention": "Topics Needing Attention",
+      "topicsOfImprovement": "Topics of Improvement",
+      "weaknesses": "Weaknesses"
+    }
+  },
+  "reviewItem": {
+    "actions": {
+      "delete": "Delete"
+    },
+    "deleteDialog": {
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "description": "Are you sure you want to delete this review? This action cannot be undone.",
+      "title": "Delete Review"
+    },
+    "timeAgo": {
+      "days": "{{count}}d ago",
+      "hours": "{{count}}h ago",
+      "minutes": "{{count}}m ago",
+      "seconds": "{{count}}s ago"
+    }
+  },
+  "safetyWarningModal": {
+    "adultVerification": {
+      "body": "To access social features (like chat or live sessions), an adult must verify this action.",
+      "challengeLabel": "What is 12 + 7?",
+      "placeholder": "Enter the number",
+      "title": "Adult Verification Required"
+    },
+    "agreeAndProceed": "I Agree & Proceed",
+    "goBack": "Go Back",
+    "incorrectAnswer": "Incorrect answer. Please try again.",
+    "readCarefully": "Please read carefully before proceeding:",
+    "rules": {
+      "beSafeOnline": {
+        "body": "Never share personal information (like your phone number, address, or school) with strangers.",
+        "title": "Be Safe Online:"
+      },
+      "chatWithCaution": {
+        "body": "Only interact with people you know and trust.",
+        "title": "Chat with Caution:"
+      },
+      "respectOthers": {
+        "body": "Be kind and respectful in all online interactions.",
+        "title": "Respect Others:"
+      }
+    },
+    "title": "Safety First"
+  },
+  "studentReportCard": {
+    "charts": {
+      "confidence": "confidence",
+      "confidenceDonutAriaLabel": "Confidence calibration donut",
+      "radarAriaLabel": "Thinking-skill radar chart"
+    },
+    "fallbacks": {
+      "institute": "Institute",
+      "progressReport": "Progress Report",
+      "student": "Student"
+    },
+    "masthead": {
+      "enrolment": "Enrolment {{enrollment}}",
+      "generated": "Generated {{date}}",
+      "roll": "Roll {{roll}}"
+    },
+    "sections": {
+      "achievements": {
+        "caption": "Badges & certificates earned",
+        "title": "Achievements"
+      },
+      "aiInsights": {
+        "aiSummary": "AI summary",
+        "mediumPriority": "Medium",
+        "recommendedNextSteps": "Recommended next steps",
+        "whatWeNoticed": "What we noticed"
+      },
+      "assessments": {
+        "title": "Assessments",
+        "caption": "{{count}} in this period",
+        "rank": "Rank {{rank}}"
+      },
+      "assignments": {
+        "assigned": "Assigned",
+        "avgScore": "Avg. score",
+        "late": "Late",
+        "onTime": "On time",
+        "pending": "Pending",
+        "submitted": "Submitted",
+        "title": "Assignments"
+      },
+      "attendance": {
+        "absent": "Absent",
+        "late": "Late",
+        "present": "Present",
+        "title": "Attendance",
+        "totalSessions": "Total sessions",
+        "vsLastPeriod": "{{change}} vs last period"
+      },
+      "courseProgress": {
+        "percentComplete": "{{percent}}% complete overall",
+        "title": "{{course}} Progress"
+      },
+      "doubts": {
+        "avgResolutionTime": "Avg. resolution time",
+        "hours": "{{count}} hrs",
+        "questionsAsked": "Questions asked",
+        "resolved": "Resolved",
+        "title": "Doubts & Engagement"
+      },
+      "gradeMix": {
+        "title": "Grades earned",
+        "summary_one": "{{good}} of {{total}} test at grade B or above",
+        "summary_other": "{{good}} of {{total}} tests at grade B or above",
+        "testCount_one": "{{count}} test",
+        "testCount_other": "{{count}} tests",
+        "range": {
+          "ap": "90% and above",
+          "a": "80–89%",
+          "bp": "70–79%",
+          "b": "60–69%",
+          "c": "50–59%",
+          "d": "below 50%"
+        }
+      },
+      "liveClasses": {
+        "attendance": "Attendance",
+        "attended": "Attended",
+        "missed": "Missed",
+        "title": "{{liveClasses}}",
+        "total": "Total classes"
+      },
+      "marksBySubject": {
+        "note": "across assessments, assignments, quizzes & questions",
+        "title": "Marks by {{subject}}",
+        "vsClassAverage": "{{subject}} performance vs. class average"
+      },
+      "misconceptions": {
+        "note": "specific misconceptions + how to fix them",
+        "title": "What to Work On Next"
+      },
+      "narrative": {
+        "actionChecklist": "Action checklist",
+        "detailedAnalysis": "Detailed analysis",
+        "effortVsOutput": "Effort vs. output",
+        "learningFrequency": "Learning frequency",
+        "progress": "Progress",
+        "topicsImproving": "Topics improving",
+        "topicsNeedingAttention": "Topics needing attention"
+      },
+      "strengthsAreas": {
+        "areasToImprove": "Areas to Improve",
+        "strengths": "Strengths"
+      },
+      "studyHabits": {
+        "activeDaysOf": "Active days / {{total}}",
+        "caption": "Daily study minutes this period",
+        "consistency": "Consistency",
+        "days": "days",
+        "longestStreak": "Longest streak",
+        "title": "Study habits"
+      },
+      "thinking": {
+        "confidenceCaption": "Confidence calibration across answered questions",
+        "confidenceTitle": "Knows vs. guesses",
+        "confidentlyRight": "Confidently right",
+        "confidentlyWrong": "Confidently wrong",
+        "note": "from AI analysis of {{count}} recent attempts",
+        "radarCaption": "Accuracy across cognitive levels (Bloom's taxonomy)",
+        "radarTitle": "Thinking-skill profile",
+        "rightButUnsure": "Right but unsure",
+        "title": "How {{firstName}} Thinks"
+      },
+      "topicMastery": {
+        "note": "accuracy per topic, all attempts this period",
+        "title": "Topic Mastery"
+      },
+      "trend": {
+        "title": "Score over time",
+        "classAverage": "Class average",
+        "ariaLabel": "Score in each assessment compared with the class average"
+      }
+    }
+  }
+}

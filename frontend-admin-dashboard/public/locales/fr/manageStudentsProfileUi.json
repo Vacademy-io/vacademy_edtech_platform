@@ -1,0 +1,15 @@
+{
+    "fieldRow": {
+        "copyAriaLabel": "Copier {{label}}"
+    },
+    "error": {
+        "defaultTitle": "Impossible de charger cette section",
+        "defaultHint": "Une erreur s'est produite. Veuillez réessayer.",
+        "retry": "Réessayer"
+    },
+    "quickContact": {
+        "email": "E-mail",
+        "call": "Appeler",
+        "whatsapp": "WhatsApp"
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "title": "Receipt series by field",
+    "description": "Number receipts from a separate counter for each value of a learner field, for example one series per branch. Learners who match no series use the default numbering above.",
+    "enable": {
+        "label": "Number receipts by a learner field",
+        "hint": "Off by default. When on, each enrolment's first payment asks for the field, and every later receipt of that course stays in the same series."
+    },
+    "field": {
+        "label": "Field that picks the series",
+        "placeholder": "Choose a field",
+        "loading": "Loading fields…",
+        "hint": "Only fields with a list of options can be used."
+    },
+    "series": {
+        "heading": "Series {{n}}",
+        "remove": "Remove series",
+        "values": "Learners whose {{field}} is",
+        "format": "Receipt number format",
+        "formatPlaceholder": "e.g. {{example}}",
+        "startFrom": "Next number",
+        "example": "Next receipt: {{example}}",
+        "add": "Add series"
+    },
+    "defaultSeries": "Everyone else: the default numbering ({{format}}).",
+    "policy": {
+        "ask": "Ask for it when the first payment of an enrolment is recorded",
+        "required": "Required: no receipt without it",
+        "hint": "Asked once per course. Later installments, whoever records them, and online payments use the same series."
+    },
+    "errors": {
+        "field": "Choose the field that picks the series.",
+        "values": "Series {{n}}: tick at least one value.",
+        "format": "Series {{n}}: the format needs {{token}}.",
+        "duplicateValue": "\"{{value}}\" is in two series."
+    }
+}

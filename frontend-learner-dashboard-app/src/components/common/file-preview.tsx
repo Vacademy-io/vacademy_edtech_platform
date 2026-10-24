@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import SimplePDFViewer from "@/components/common/simple-pdf-viewer";
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif|avif)$/i;
@@ -33,12 +34,13 @@ interface FilePreviewProps {
  * whatever the admin uploaded instead of assuming a PDF.
  */
 export function FilePreview({ url, fileName, fileType }: FilePreviewProps) {
+  const { t } = useTranslation("layoutCommonA");
   if (isImageFile(fileType, fileName)) {
     return (
       <div className="flex size-full items-center justify-center overflow-auto bg-neutral-100 p-4">
         <img
           src={url}
-          alt={fileName || "Attachment"}
+          alt={fileName || t("filePreview.attachmentAlt")}
           className="max-h-full max-w-full object-contain"
         />
       </div>

@@ -1,0 +1,14 @@
+{
+    "courseDetails": "Course Details",
+    "editYourCourseMetadata": "Edit your course metadata",
+    "courseThumbnail": "Course Thumbnail",
+    "courseThumbnailAlt": "Course thumbnail",
+    "courseName": "Course Name",
+    "enterCourseName": "Enter course name",
+    "courseDescription": "Course Description",
+    "enterCourseDescription": "Enter course description",
+    "tags": "Tags",
+    "addTags": "Add tags...",
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes"
+}

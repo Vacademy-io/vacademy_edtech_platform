@@ -1,0 +1,12 @@
+{
+    "loading": "Loading calls…",
+    "error": "Could not load calls. Try refreshing.",
+    "empty": "No calls yet for this counsellor.",
+    "unknownLead": "Unknown lead",
+    "inbound": "Inbound",
+    "outbound": "Outbound",
+    "pagination": {
+        "pageOf": "Page {{page}} of {{total}}",
+        "loadingSuffix": " · loading…"
+    }
+}

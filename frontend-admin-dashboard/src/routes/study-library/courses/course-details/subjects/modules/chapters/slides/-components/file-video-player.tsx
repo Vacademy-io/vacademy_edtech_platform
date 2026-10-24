@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Play,
     Pause,
@@ -88,6 +90,7 @@ interface FileVideoPlayerProps {
  * would hide any overlay).
  */
 export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError }: FileVideoPlayerProps) {
+    const { t } = useTranslation('fileVideoPlayer');
     const containerRef = useRef<HTMLDivElement>(null);
     const progressRef = useRef<HTMLDivElement>(null);
     const volumeRef = useRef<HTMLDivElement>(null);
@@ -363,14 +366,14 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
                 <source src={src} type="video/webm" />
                 <source src={src} type="video/mp4" />
                 <source src={src} type="video/ogg" />
-                Your browser does not support the video tag or the video format.
+                {t('unsupportedFormat')}
             </video>
 
             {/* Center play affordance while paused */}
             {!isPlaying && (
                 <button
                     type="button"
-                    aria-label="Play"
+                    aria-label={t('controls.play')}
                     onClick={togglePlay}
                     className="absolute inset-0 z-10 grid place-items-center bg-black/20 transition-colors hover:bg-black/30"
                 >
@@ -421,16 +424,22 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
 
                 {/* Buttons row */}
                 <div className="flex items-center gap-1 text-white">
-                    <ControlButton label={isPlaying ? 'Pause' : 'Play'} onClick={togglePlay}>
+                    <ControlButton label={isPlaying ? t('controls.pause') : t('controls.play')} onClick={togglePlay}>
                         {isPlaying ? <Pause size={20} weight="fill" /> : <Play size={20} weight="fill" />}
                     </ControlButton>
 
-                    <ControlButton label={`Rewind ${SKIP_SECONDS} seconds`} onClick={() => skip(-SKIP_SECONDS)}>
+                    <ControlButton
+                        label={t('controls.rewindSeconds', { count: SKIP_SECONDS })}
+                        onClick={() => skip(-SKIP_SECONDS)}
+                    >
                         <ArrowCounterClockwise size={20} weight="bold" />
                         <span className="text-xs font-semibold">{SKIP_SECONDS}</span>
                     </ControlButton>
 
-                    <ControlButton label={`Forward ${SKIP_SECONDS} seconds`} onClick={() => skip(SKIP_SECONDS)}>
+                    <ControlButton
+                        label={t('controls.forwardSeconds', { count: SKIP_SECONDS })}
+                        onClick={() => skip(SKIP_SECONDS)}
+                    >
                         <span className="text-xs font-semibold">{SKIP_SECONDS}</span>
                         <ArrowClockwise size={20} weight="bold" />
                     </ControlButton>
@@ -440,7 +449,7 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
                         onMouseEnter={() => setAdjustingVolume(true)}
                         onMouseLeave={() => setAdjustingVolume(false)}
                     >
-                        <ControlButton label={isSilent ? 'Unmute' : 'Mute'} onClick={toggleMute}>
+                        <ControlButton label={isSilent ? t('controls.unmute') : t('controls.mute')} onClick={toggleMute}>
                             {isSilent ? <SpeakerX size={20} /> : <SpeakerHigh size={20} />}
                         </ControlButton>
                         <div
@@ -476,7 +485,7 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
 
                     <div className="ml-auto flex items-center gap-1">
                         <ControlButton
-                            label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                            label={isFullscreen ? t('controls.exitFullScreen') : t('controls.fullScreen')}
                             onClick={toggleFullscreen}
                         >
                             {isFullscreen ? <CornersIn size={20} /> : <CornersOut size={20} />}
@@ -484,7 +493,7 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
 
                         <div ref={menuRef} className="relative">
                             <ControlButton
-                                label="More options"
+                                label={t('controls.moreOptions')}
                                 onClick={() => setMenuOpen((o) => !o)}
                                 className={cn(menuOpen && 'bg-white/20')}
                             >
@@ -492,10 +501,10 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
                             </ControlButton>
 
                             {menuOpen && (
-                                <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-white/10 bg-black/90 py-1.5 text-white shadow-lg">
+                                <div className="absolute bottom-full end-0 mb-2 w-56 rounded-lg border border-white/10 bg-black/90 py-1.5 text-white shadow-lg">
                                     <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white/70">
                                         <Gauge size={16} weight="bold" />
-                                        Playback speed
+                                        {t('menu.playbackSpeed')}
                                     </div>
                                     <div className="flex flex-wrap gap-1 px-3 pb-2 pt-1">
                                         {PLAYBACK_RATES.map((r) => (
@@ -510,7 +519,7 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
                                                         : 'bg-white/10 text-white hover:bg-white/20'
                                                 )}
                                             >
-                                                {r === 1 ? 'Normal' : `${r}x`}
+                                                {r === 1 ? t('menu.normalSpeed') : `${r}x`}
                                             </button>
                                         ))}
                                     </div>
@@ -524,7 +533,7 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
                                                 className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-white/10"
                                             >
                                                 <PictureInPicture size={18} />
-                                                <span className="flex-1 text-left">Picture-in-picture</span>
+                                                <span className="flex-1 text-start">{t('menu.pictureInPicture')}</span>
                                                 {isPip && <Check size={16} weight="bold" />}
                                             </button>
                                         </>
@@ -539,7 +548,7 @@ export function FileVideoPlayer({ src, videoRef, allowDownload = false, onError 
                                                 className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-white/10"
                                             >
                                                 <DownloadSimple size={18} />
-                                                <span className="flex-1 text-left">Download</span>
+                                                <span className="flex-1 text-start">{t('menu.download')}</span>
                                             </button>
                                         </>
                                     )}

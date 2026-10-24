@@ -1,0 +1,59 @@
+{
+    "backToAll": "كل قواعد المعرفة",
+    "suggestions": {
+        "whatTopics": "ما الموضوعات التي يغطيها {{title}}؟",
+        "mainFormulas": "اذكر أهم الصيغ في هذه المادة.",
+        "suggestExamQuestions": "اقترح خمسة أسئلة امتحانية من هذه المادة."
+    },
+    "pageTitleWithName": "{{name}} — قاعدة المعرفة",
+    "pageTitleDefault": "قاعدة المعرفة",
+    "navHeadingDefault": "قاعدة المعرفة",
+    "loadError": "تعذّر تحميل قاعدة المعرفة هذه.",
+    "tryAgainButton": "حاول مرة أخرى",
+    "sharedLibraryBadge": "مكتبة مشتركة — للقراءة فقط",
+    "whatItCoversButton": "ما الذي تغطيه",
+    "createQuestionPaperButton": "إنشاء ورقة أسئلة",
+    "createCourseButton": "إنشاء دورة",
+    "addMaterialButton": "إضافة مادة",
+    "stats": {
+        "sources": "المصادر",
+        "pages": "الصفحات",
+        "searchablePassages": "المقاطع القابلة للبحث",
+        "diagramsAndTables": "الرسوم والجداول"
+    },
+    "processingSources_zero": "جارٍ قراءة {{count}} مصدر — يمكنك مغادرة هذه الصفحة، فستستمر العملية.",
+    "processingSources_one": "جارٍ قراءة مصدر واحد — يمكنك مغادرة هذه الصفحة، فستستمر العملية.",
+    "processingSources_two": "جارٍ قراءة مصدرين — يمكنك مغادرة هذه الصفحة، فستستمر العملية.",
+    "processingSources_few": "جارٍ قراءة {{count}} مصادر — يمكنك مغادرة هذه الصفحة، فستستمر العملية.",
+    "processingSources_many": "جارٍ قراءة {{count}} مصدرًا — يمكنك مغادرة هذه الصفحة، فستستمر العملية.",
+    "processingSources_other": "جارٍ قراءة {{count}} مصدر — يمكنك مغادرة هذه الصفحة، فستستمر العملية.",
+    "reviewPagesWarning_zero": "{{formatted}} صفحة قد تكون غير دقيقة",
+    "reviewPagesWarning_one": "صفحة واحدة قد تكون غير دقيقة",
+    "reviewPagesWarning_two": "صفحتان قد تكونان غير دقيقتين",
+    "reviewPagesWarning_few": "{{formatted}} صفحات قد تكون غير دقيقة",
+    "reviewPagesWarning_many": "{{formatted}} صفحة قد تكون غير دقيقة",
+    "reviewPagesWarning_other": "{{formatted}} صفحة قد تكون غير دقيقة",
+    "materialHeading": "المادة",
+    "checkItWorksHeading": "تحقق من أنه يعمل",
+    "madeFromHeading": "أُنشئ من قاعدة المعرفة هذه",
+    "purpose": {
+        "instituteInfo": "معلومات المؤسسة",
+        "generalReference": "مرجع عام"
+    },
+    "reviewDialog": {
+        "heading": "صفحات قد تكون غير دقيقة",
+        "description": "هذه الصفحات كانت ممسوحة ضوئيًا وليست رقمية، وخرجت غير موثوقة عند قراءتها. كل شيء آخر في قاعدة المعرفة هذه غير متأثر. الحل المعتاد هو إعادة رفع نسخة أوضح لهذه الصفحات فقط كمستند منفصل.",
+        "empty": "لا شيء يحتاج إلى مراجعة الآن.",
+        "pageLabel": "صفحة {{number}}",
+        "noTextRead": "تعذّرت قراءة أي نص",
+        "charsRead": "تمت قراءة {{formatted}} حرفًا فقط",
+        "confidence": "ثقة {{percent}}٪"
+    },
+    "outlineDialog": {
+        "heading": "ما الذي تغطيه قاعدة المعرفة هذه",
+        "description": "تم بناؤه أثناء قراءة مادتك. هذا ما سيستخدمه الذكاء الاصطناعي لتخطيط الدورات وأوراق الأسئلة، لذا يستحق نظرة سريعة — إذا كان فصل ما مفقودًا هنا، فسيكون مفقودًا من أي شيء يُنشأ لاحقًا.",
+        "empty": "لا يوجد ملخص بعد. يتم بناؤه بمجرد الانتهاء من معالجة أحد المستندات.",
+        "untitled": "بلا عنوان",
+        "pagePrefix": "ص. {{start}}"
+    }
+}

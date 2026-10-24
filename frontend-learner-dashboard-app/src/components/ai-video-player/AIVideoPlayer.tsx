@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -37,6 +38,7 @@ import {
 import { processHtmlContent, fixHtmlContent } from "./html-processor";
 import { useWebAudioMixer } from "./hooks/useWebAudioMixer";
 import { useSoundScheduler, collectCuesFromEntries } from "./hooks/useSoundScheduler";
+import { canvasBackground, entryBoxStyle, fillSceneGaps } from './entry-layout';
 
 // Re-export types for backward compatibility
 export type { Frame, TimelineMeta, TimelineData, ContentType, NavigationType };
@@ -58,6 +60,8 @@ export interface AIVideoPlayerProps {
   height?: number;
   onEntryChange?: (entry: Frame, index: number) => void;
   onContentComplete?: () => void;
+  /** Playback position in seconds (time-driven videos), reported as it moves and on seeks. */
+  onTimeUpdate?: (seconds: number) => void;
 }
 
 // Default meta for backward compatibility
@@ -80,7 +84,9 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
   width: propWidth,
   height: propHeight,
   onEntryChange,
-  onContentComplete, }) => {
+  onContentComplete,
+  onTimeUpdate, }) => {
+  const { t } = useTranslation("courseComponentsExtra");
   // Core state
   const [frames, setFrames] = useState<Frame[]>([]);
   const [meta, setMeta] = useState<TimelineMeta>(DEFAULT_META);
@@ -124,10 +130,16 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
   const onEntryChangeRef = useRef(onEntryChange);
   const handlingNavChangeRef = useRef(false);
 
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  const lastReportedTimeRef = useRef<number | null>(null);
+
   // Keep callback ref up to date without causing effect re-runs
   useEffect(() => {
     onEntryChangeRef.current = onEntryChange;
   }, [onEntryChange]);
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onTimeUpdate]);
 
   // Web Audio API mixer for extra tracks (background music, SFX, etc.)
   useWebAudioMixer({
@@ -169,16 +181,29 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
   // Derived values
   const contentType = meta.content_type || "VIDEO";
   const navigationMode = meta.navigation || "time_driven";
-  const entryLabel = meta.entry_label || CONTENT_TYPE_ENTRY_LABELS[contentType] || "segment";
+  const entryLabel =
+    meta.entry_label ||
+    t(`entryLabel.${contentType}`, CONTENT_TYPE_ENTRY_LABELS[contentType] || "segment");
   const isTimeDriven = navigationMode === "time_driven";
+
+  // Report the master clock to the parent (e.g. the "stuck at this part?" detector).
+  // It ticks every animation frame; half a second of change is enough.
+  useEffect(() => {
+    if (!isTimeDriven || !onTimeUpdateRef.current) return;
+    const last = lastReportedTimeRef.current;
+    if (last !== null && Math.abs(currentTime - last) < 0.5) return;
+    lastReportedTimeRef.current = currentTime;
+    onTimeUpdateRef.current(currentTime);
+  }, [currentTime, isTimeDriven]);
   const isUserDriven = navigationMode === "user_driven";
   const isSelfContained = navigationMode === "self_contained";
 
   // Content type badge
   const contentTypeBadge = useMemo(() => {
     const config = CONTENT_TYPE_LABELS[contentType];
-    return config ? `${config.emoji} ${config.label}` : "🎬 Video";
-  }, [contentType]);
+    const label = t(`contentType.${contentType}`, config?.label ?? "Video");
+    return config ? `${config.emoji} ${label}` : `🎬 ${label}`;
+  }, [contentType, t]);
 
   // Load timeline data
   useEffect(() => {
@@ -236,7 +261,9 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
           lastFrame: framesArray[framesArray.length - 1],
         });
 
-        setFrames(framesArray);
+        setFrames(
+          timelineMeta.navigation === 'user_driven' ? framesArray : fillSceneGaps(framesArray)
+        );
         setMeta(timelineMeta);
 
         // Use meta.total_duration if available, otherwise calculate from last frame
@@ -255,7 +282,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
         console.log("[AIVideoPlayer] Duration set to:", videoDuration);
       } catch (err) {
         console.error("[AIVideoPlayer] Error loading timeline:", err);
-        setError(err instanceof Error ? err.message : "Failed to load timeline");
+        setError(err instanceof Error ? err.message : t("errors.failedToLoadTimeline"));
       } finally {
         setIsLoading(false);
       }
@@ -328,7 +355,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
         audioUrl: audioUrl,
       });
 
-      let errorMessage = "Failed to load audio";
+      let errorMessage = t("errors.failedToLoadAudio");
       if (audio.error) {
         const MEDIA_ERR_ABORTED = 1;
         const MEDIA_ERR_NETWORK = 2;
@@ -337,16 +364,16 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
 
         switch (audio.error.code) {
           case MEDIA_ERR_ABORTED:
-            errorMessage = "Audio loading aborted";
+            errorMessage = t("errors.audioLoadingAborted");
             break;
           case MEDIA_ERR_NETWORK:
-            errorMessage = "Network error loading audio. Check CORS settings.";
+            errorMessage = t("errors.audioNetworkError");
             break;
           case MEDIA_ERR_DECODE:
-            errorMessage = "Audio decode error";
+            errorMessage = t("errors.audioDecodeError");
             break;
           case MEDIA_ERR_SRC_NOT_SUPPORTED:
-            errorMessage = "Audio format not supported";
+            errorMessage = t("errors.audioFormatNotSupported");
             break;
         }
       }
@@ -584,7 +611,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
         audioRef.current.currentTime = Math.max(0, audioTime);
         audioRef.current.play().catch((err) => {
           console.error("Error playing audio:", err);
-          setError("Failed to play audio");
+          setError(t("errors.failedToPlayAudio"));
         });
         if (!audioStarted) {
           setAudioStarted(true);
@@ -837,17 +864,17 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
       const label = entryLabel.charAt(0).toUpperCase() + entryLabel.slice(1);
       const current = currentEntryIndex + 1;
       const total = frames.length;
-      return `${label} ${current} of ${total} `;
+      return t("progressOfTotal", { label, current, total });
     }
     return null;
-  }, [isUserDriven, isSelfContained, entryLabel, currentEntryIndex, frames.length]);
+  }, [isUserDriven, isSelfContained, entryLabel, currentEntryIndex, frames.length, t]);
 
   if (isLoading) {
     return (
       <div className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`} style={{ aspectRatio: "16/9" }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading {contentTypeBadge}...</p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-gray-600">{t("loading", { type: contentTypeBadge })}</p>
         </div>
       </div>
     );
@@ -856,8 +883,8 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
   if (error) {
     return (
       <div className={`flex items-center justify-center bg-red-50 rounded-lg border border-red-200 ${className}`} style={{ aspectRatio: "16/9" }}>
-        <div className="text-center p-4">
-          <p className="text-red-600 font-semibold mb-2">Error</p>
+        <div className="text-center p-4 space-y-2">
+          <p className="text-red-600 font-semibold">{t("errorTitle")}</p>
           <p className="text-red-500 text-sm">{error}</p>
         </div>
       </div>
@@ -883,10 +910,10 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
             size="sm"
             onClick={handlePrint}
             className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-8 px-3"
-            title="Print Worksheet"
+            title={t("controls.printWorksheetTitle")}
           >
             <Printer className="h-3 w-3 me-1" />
-            Print
+            {t("controls.print")}
           </Button>
         )}
       </div>
@@ -933,10 +960,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
               }
 
               const frameStyle = {
-                left: 0,
-                top: 0,
-                width: '100%',
-                height: '100%',
+                ...entryBoxStyle(frame, width, height),
                 zIndex: frame.z || 0,
                 opacity: frameOpacity,
               };
@@ -949,9 +973,9 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   className="border-0 bg-transparent absolute"
                   sandbox="allow-scripts allow-same-origin allow-modals"
                   allow="autoplay"
-                  title={`AI Video Layer ${frame.id}`}
+                  title={t("frameLayerTitle", { id: frame.id })}
                   style={{
-                    backgroundColor: index === 0 ? "white" : "transparent",
+                    backgroundColor: index === 0 ? canvasBackground(meta.palette) : "transparent",
                     pointerEvents: frame.id?.startsWith('branding-watermark') ? 'none' : 'auto',
                     ...frameStyle
                   }}
@@ -960,7 +984,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
             })
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-              No frame content available
+              {t("noFrameContent")}
             </div>
           )}
         {/* MCQ Question Overlay */}
@@ -974,13 +998,13 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
               {/* Header */}
               <div className="flex items-center gap-2 mb-4">
                 <Question className="h-4 w-4 text-blue-400 shrink-0" />
-                <span className="text-blue-400 text-xs font-bold uppercase tracking-widest">Quick Check</span>
+                <span className="text-blue-400 text-xs font-bold uppercase tracking-widest">{t("mcq.quickCheck")}</span>
                 <div className="flex-1" />
                 <button
                   onClick={handleDismissQuestion}
                   className="text-gray-500 hover:text-gray-300 text-xs px-2 py-1 transition-colors"
                 >
-                  Skip
+                  {t("mcq.skip")}
                 </button>
               </div>
 
@@ -1030,7 +1054,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
               {/* Explanation */}
               {selectedAnswer !== null && activeQuestion.explanation && (
                 <div className="bg-blue-950/40 border border-blue-800/40 rounded-lg px-4 py-3 mb-4 text-sm text-gray-300 leading-relaxed">
-                  <span className="font-bold text-blue-400">Explanation: </span>
+                  <span className="font-bold text-blue-400">{t("mcq.explanationLabel")}</span>
                   {activeQuestion.explanation}
                 </div>
               )}
@@ -1041,7 +1065,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   onClick={handleDismissQuestion}
                   className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold"
                 >
-                  Continue <Play className="h-3.5 w-3.5 ms-2" />
+                  {t("mcq.continue")} <Play className="h-3.5 w-3.5 ms-2" />
                 </Button>
               )}
             </div>
@@ -1071,7 +1095,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                         width: `${((exitT - inT) / duration) * 100}%`,
                         zIndex: 0,
                       }}
-                      title="Source video audio"
+                      title={t("controls.sourceVideoAudio")}
                     />
                   );
                 })}
@@ -1098,7 +1122,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   onClick={handleBackward}
                   className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
                   disabled={!audioRef.current && !!audioUrl}
-                  title="Rewind 10 seconds"
+                  title={t("controls.rewind10")}
                 >
                   <Rewind className="h-4 w-4" />
                 </Button>
@@ -1108,7 +1132,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   onClick={handlePlayPause}
                   className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
                   disabled={!audioRef.current && !!audioUrl}
-                  title={isPlaying ? "Pause" : "Play"}
+                  title={isPlaying ? t("controls.pause") : t("controls.play")}
                 >
                   {isPlaying ? (
                     <Pause className="h-4 w-4" />
@@ -1122,7 +1146,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   onClick={handleForward}
                   className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
                   disabled={!audioRef.current && !!audioUrl}
-                  title="Forward 10 seconds"
+                  title={t("controls.forward10")}
                 >
                   <FastForward className="h-4 w-4" />
                 </Button>
@@ -1132,7 +1156,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   onClick={handleReset}
                   className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
                   disabled={!audioRef.current && !!audioUrl}
-                  title="Reset to beginning"
+                  title={t("controls.resetToBeginning")}
                 >
                   <ArrowCounterClockwise className="h-4 w-4" />
                 </Button>
@@ -1147,7 +1171,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                     size="icon"
                     onClick={handleToggleMute}
                     className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-8 w-8"
-                    title={isMuted ? "Unmute" : "Mute"}
+                    title={isMuted ? t("controls.unmute") : t("controls.mute")}
                   >
                     {isMuted || volume === 0 ? (
                       <SpeakerSlash className="h-4 w-4" />
@@ -1171,7 +1195,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                     size="sm"
                     onClick={() => setShowPlaybackSpeedMenu(!showPlaybackSpeedMenu)}
                     className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-8px-3"
-                    title="Playback speed"
+                    title={t("controls.playbackSpeed")}
                   >
                     <Gear className="h-3 w-3 me-1" />
                     {playbackRate}x
@@ -1202,10 +1226,10 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                         ? 'bg-purple-900/40 text-purple-300 border-purple-700 hover:bg-purple-900/60'
                         : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
-                    title={questionsEnabled ? 'Disable quiz questions' : 'Enable quiz questions'}
+                    title={questionsEnabled ? t("controls.disableQuiz") : t("controls.enableQuiz")}
                   >
                     <Question className="h-3.5 w-3.5 me-1" />
-                    Quiz {questionsEnabled ? 'ON' : 'OFF'}
+                    {questionsEnabled ? t("controls.quizOn") : t("controls.quizOff")}
                   </Button>
                 )}
 
@@ -1215,7 +1239,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                   size="icon"
                   onClick={handleToggleFullscreen}
                   className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-8 w-8"
-                  title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                  title={isFullscreen ? t("controls.exitFullscreen") : t("controls.enterFullscreen")}
                 >
                   {isFullscreen ? (
                     <ArrowsIn className="h-4 w-4" />
@@ -1239,10 +1263,10 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                 onClick={handlePrevEntry}
                 disabled={currentEntryIndex === 0}
                 className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700 disabled:opacity-50"
-                title="Previous"
+                title={t("controls.previous")}
               >
                 <CaretLeft className="h-4 w-4 me-1" />
-                Previous
+                {t("controls.previous")}
               </Button>
 
               <span className="text-white text-smpx-3">
@@ -1255,9 +1279,9 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                 onClick={handleNextEntry}
                 disabled={currentEntryIndex === frames.length - 1}
                 className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700 disabled:opacity-50"
-                title="Next"
+                title={t("controls.next")}
               >
-                Next
+                {t("controls.next")}
                 <CaretRight className="h-4 w-4 ms-1" />
               </Button>
             </div>
@@ -1268,7 +1292,7 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
               size="icon"
               onClick={handleReset}
               className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
-              title="Reset to beginning"
+              title={t("controls.resetToBeginning")}
             >
               <ArrowCounterClockwise className="h-4 w-4" />
             </Button>
@@ -1283,13 +1307,13 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
               size="sm"
               onClick={handleReset}
               className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
-              title="Reset"
+              title={t("controls.reset")}
             >
               <ArrowCounterClockwise className="h-4 w-4 me-1" />
-              Reset
+              {t("controls.reset")}
             </Button>
             <span className="text-gray-400 text-sm">
-              Interact with the content above
+              {t("interactHint")}
             </span>
           </div>
         )}

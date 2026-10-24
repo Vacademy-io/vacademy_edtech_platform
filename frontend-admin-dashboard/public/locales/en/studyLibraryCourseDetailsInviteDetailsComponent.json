@@ -1,0 +1,93 @@
+{
+    "inviteLinks": "Invite Links",
+    "add": "Add",
+    "defaultTag": "DEFAULT",
+    "makeDefault": "Make default",
+    "madeDefault": "Invite link set as default",
+    "noInviteLinksAvailable": "No invite links yet. Use Add to create one for a batch.",
+    "invitePage": "Invite Page",
+    "copyFailed": "Copy failed",
+    "unexpectedError": "An unexpected error occurred",
+    "searchPlaceholder": "Search by invite name or code",
+    "clearSearch": "Clear search",
+    "resultCount_one": "{{count}} invite link",
+    "resultCount_other": "{{count}} invite links",
+    "sortedNewest": "newest first",
+    "linkCount_one": "{{count}} link",
+    "linkCount_other": "{{count}} links",
+    "noSearchResults": "No invite links match “{{term}}”.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "shortUrlUnavailable": "No short URL for this invite yet",
+    "qr": {
+        "title": "Invite QR code",
+        "description": "Scanning this code opens the enrolment form for “{{name}}”.",
+        "copyLink": "Copy link",
+        "downloadPng": "Download PNG",
+        "downloaded": "QR code downloaded",
+        "downloadFailed": "Could not download the QR code",
+        "useShortUrl": "Encode the short URL instead",
+        "useShortUrlHint": "A shorter address gives a simpler code that scans better from a distance, but it depends on the short link staying active.",
+        "shortUrlWarning": "This code points at the short link. If the short link is ever disabled, printed copies stop working.",
+        "fullUrlNote": "This code encodes the full invite URL, so it keeps working for as long as the invite does."
+    },
+    "deleteDialog": {
+        "heading": "Delete invite link",
+        "confirmText": "Delete the invite link “{{name}}”? Anyone opening it afterwards will no longer be able to enrol.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleting": "Deleting…",
+        "success": "Deleted invite link “{{name}}”",
+        "error": "Failed to delete the invite link"
+    },
+    "meta": {
+        "created": "Created",
+        "by": "by",
+        "unknownDate": "date unavailable"
+    },
+    "actions": "More actions",
+    "shortUrlCopied": "Short URL copied: {{url}}",
+    "menu": {
+        "copyShortUrl": "Copy short URL",
+        "qrCode": "QR code",
+        "utmGenerator": "UTM generator",
+        "configurePayment": "Configure payment plan"
+    },
+    "loading": "Loading",
+    "loadError": "Could not load invite links.",
+    "retry": "Try again",
+    "payment": {
+        "label": "Payment",
+        "needsApproval": "needs approval",
+        "planCount_one": "{{count}} plan",
+        "planCount_other": "{{count}} plans",
+        "type": {
+            "free": "Free",
+            "oneTime": "One-time",
+            "subscription": "Subscription",
+            "donation": "Donation",
+            "feeStructure": "Fee structure",
+            "unknown": "Unknown"
+        }
+    },
+    "configurePayment": {
+        "heading": "Configure payment plan",
+        "description": "Choose the payment plan learners see when they enrol through “{{name}}” for this batch.",
+        "current": "Current plan",
+        "new": "New plan",
+        "noCurrent": "No payment plan is attached to this batch. Use Edit to set one up.",
+        "currencyMismatch": "This plan charges in {{planCurrency}}, but this invite link charges in {{inviteCurrency}}. Change it from Edit so the link's currency changes with it.",
+        "referralNote": "Referral rewards set on the previous plan aren't carried over. Add them again from Edit if this link uses referrals.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Payment plan updated for “{{name}}”",
+        "saveFailed": "Could not update the payment plan",
+        "pickerFailed": "Payment plans could not be loaded. Use Edit to change the plan.",
+        "chooseNew": "Choose a new plan",
+        "chooseHint": "Pick from your institute's payment plans, or create a new one.",
+        "change": "Change"
+    }
+}

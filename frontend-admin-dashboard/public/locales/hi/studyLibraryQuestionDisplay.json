@@ -1,0 +1,22 @@
+{
+    "optionsLabel": "विकल्प:",
+    "correct": "सही",
+    "correctAnswerLabel_one": "सही उत्तर:",
+    "correctAnswerLabel_other": "सही उत्तर:",
+    "correctAnswerSingularLabel": "सही उत्तर:",
+    "correctAnswersLabel": "सही उत्तर:",
+    "noAnswerProvided": "कोई उत्तर नहीं दिया गया",
+    "optionWithIndex": "विकल्प {{letter}} (इंडेक्स: {{index}})",
+    "optionId": "विकल्प आईडी: {{id}}",
+    "explanationLabel": "स्पष्टीकरण:",
+    "passageLabel": "गद्यांश",
+    "questionLabel": "प्रश्न",
+    "marksBadge_one": "{{count}} अंक",
+    "marksBadge_other": "{{count}} अंक",
+    "showLess": "कम दिखाएँ",
+    "showMore": "अधिक दिखाएँ",
+    "untitledQuestion": "शीर्षक रहित प्रश्न",
+    "noteLabel": "नोट:",
+    "noOptionsFound": "इस {{type}} प्रश्न के लिए कोई विकल्प नहीं मिला",
+    "noTrueFalseOptionsFound": "इस प्रश्न के लिए सही/गलत विकल्प नहीं मिले"
+}

@@ -1,0 +1,100 @@
+{
+    "description": "ما يتوجب على المؤسسة دفعه لموظفيها مقابل الخدمة الطويلة، والمكافأة القانونية السنوية. هذه مخصصات دفترية فقط — لا يُدفع لأحد شيء حتى تُدرجها في كشوف الرواتب.",
+    "tabs": {
+        "eosb": "مكافأة نهاية الخدمة (EOSB)",
+        "gratuity": "مكافأة الخدمة (Gratuity)",
+        "bonus": "المكافأة القانونية"
+    },
+    "asOf": {
+        "label": "حتى تاريخ",
+        "downloadCsv": "تنزيل CSV",
+        "preparing": "جارٍ التحضير…"
+    },
+    "gratuity": {
+        "downloadSuccess": "تم تنزيل مخصص مكافأة الخدمة",
+        "downloadError": "تعذّر تنزيل مخصص مكافأة الخدمة.",
+        "computeError": "تعذّر احتساب مخصص مكافأة الخدمة.",
+        "emptyTitle": "لا يوجد موظفون لتخصيص المكافأة لهم",
+        "emptyDescription": "لا أحد في السجل لديه مدة خدمة مسجّلة حتى هذا التاريخ.",
+        "stats": {
+            "employees": "الموظفون",
+            "totalLiability": "إجمالي الالتزام",
+            "vested": "مستحق",
+            "monthlyRunRate": "المعدل الشهري"
+        },
+        "table": {
+            "employee": "الموظف",
+            "years": "السنوات",
+            "monthlyBasic": "الراتب الأساسي الشهري",
+            "liability": "الالتزام",
+            "runRate": "المعدل الشهري",
+            "vested": "مستحق"
+        },
+        "vestedChip": "مستحق",
+        "notYetChip": "ليس بعد"
+    },
+    "eosb": {
+        "downloadSuccess": "تم تنزيل مخصص نهاية الخدمة",
+        "downloadError": "تعذّر تنزيل مخصص نهاية الخدمة.",
+        "description": "الالتزام القانوني هو ما يمكن للموظف المطالبة به اليوم؛ أما الاستحقاق المحاسبي فهو ما يجب أن تحمله الدفاتر بالفعل. يختلف الاثنان قبل أن يصبح الموظف مؤهلاً.",
+        "computeError": "تعذّر احتساب مخصص نهاية الخدمة.",
+        "emptyTitle": "لا يوجد موظفون لتخصيص المكافأة لهم",
+        "emptyDescription": "لا أحد في السجل لديه مدة خدمة مسجّلة حتى هذا التاريخ.",
+        "stats": {
+            "employees": "الموظفون",
+            "statutoryLiability": "الالتزام القانوني",
+            "accountingAccrual": "الاستحقاق المحاسبي",
+            "monthlyRunRate": "المعدل الشهري"
+        },
+        "table": {
+            "employee": "الموظف",
+            "years": "السنوات",
+            "monthlyBasic": "الراتب الأساسي الشهري",
+            "statutory": "القانوني",
+            "accrual": "الاستحقاق",
+            "eligible": "مؤهل"
+        },
+        "eligibleChip": "مؤهل",
+        "notYetChip": "ليس بعد"
+    },
+    "bonus": {
+        "financialYear": "السنة المالية",
+        "rate": "المعدل (%)",
+        "rateHint": "يسمح القانون بنسبة تتراوح بين 8.33% و20%.",
+        "invalidRateTitle": "أدخل معدلاً بين 8.33 و20",
+        "invalidRateDescription": "يحدد قانون دفع المكافآت هذين الرقمين كحد أدنى وحد أقصى.",
+        "computeError": "تعذّر احتساب المكافأة.",
+        "emptyTitle": "لا يوجد أحد للاحتساب",
+        "emptyDescription": "لم يكن هناك أي موظف في السجل خلال هذه السنة المالية.",
+        "stats": {
+            "eligibleEmployees": "الموظفون المؤهلون",
+            "totalBonus": "إجمالي المكافأة",
+            "appliedRate": "المعدل المطبق"
+        },
+        "payCardTitle": "دفع هذه المكافأة",
+        "payCardDescription": "ينشئ تسوية واحدة من نوع BONUS لكل موظف مؤهل. تقوم دورة رواتب ذلك الشهر بدفعها وتطبيق الضريبة عليها.",
+        "payoutLabel": "شهر الصرف",
+        "materializing": "جارٍ الإنشاء…",
+        "materialize": "إنشاء",
+        "table": {
+            "employee": "الموظف",
+            "monthlyBasic": "الراتب الأساسي الشهري",
+            "months": "الأشهر",
+            "wageBase": "أساس الأجر",
+            "bonus": "المكافأة"
+        },
+        "materializeSuccess_zero": "لم تُنشأ أي تسويات مكافأة لِـ {{period}}",
+        "materializeSuccess_one": "تم إنشاء تسوية مكافأة واحدة لِـ {{period}}",
+        "materializeSuccess_two": "تم إنشاء تسويتَي مكافأة لِـ {{period}}",
+        "materializeSuccess_few": "تم إنشاء {{count}} تسويات مكافأة لِـ {{period}}",
+        "materializeSuccess_many": "تم إنشاء {{count}} تسوية مكافأة لِـ {{period}}",
+        "materializeSuccess_other": "تم إنشاء {{count}} تسوية مكافأة لِـ {{period}}",
+        "alreadyExisted_zero": "",
+        "alreadyExisted_one": " · كانت واحدة موجودة مسبقًا",
+        "alreadyExisted_two": " · كانت اثنتان موجودتان مسبقًا",
+        "alreadyExisted_few": " · كانت {{count}} موجودة مسبقًا",
+        "alreadyExisted_many": " · كانت {{count}} موجودة مسبقًا",
+        "alreadyExisted_other": " · كانت {{count}} موجودة مسبقًا",
+        "materializeError": "تعذّر إنشاء تسويات المكافأة."
+    }
+}

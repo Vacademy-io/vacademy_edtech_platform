@@ -1,0 +1,132 @@
+{
+    "pageTitle": "New engagement engine",
+    "heading": "New engine",
+    "steps": {
+        "basics": "Basics",
+        "dataPoints": "Data points",
+        "channels": "Channels",
+        "audience": "Audience",
+        "cadence": "Cadence",
+        "review": "Review"
+    },
+    "basics": {
+        "name": "Engine name",
+        "namePlaceholder": "Re-engage dormant {{learners}}",
+        "objective": "Objective (short)",
+        "objectivePlaceholder": "Bring back {{learners}} who went quiet",
+        "brief": "The brief",
+        "briefHint": "Describe the objective, tone, what to say and what to avoid, and any links. This becomes the AI's instructions, so the more specific, the better.",
+        "briefPlaceholder": "You are re-engaging {{learners}} who stopped attending. Be warm and brief…",
+        "language": "Language"
+    },
+    "dataPoints": {
+        "intro": "Pick the signals the AI may read about each person. More context means smarter, better-timed messages.",
+        "sensitive": "sensitive",
+        "alwaysOn": "always on",
+        "consent": "I confirm this institute has consent to use the sensitive data points above for messaging.",
+        "sensitivity": {
+            "LOW": "low",
+            "MEDIUM": "medium",
+            "HIGH": "sensitive · high"
+        }
+    },
+    "channels": {
+        "intro": "Which channels can this engine use? Until a channel graduates, you review every message before it sends. WhatsApp needs Meta-approved templates (set up after creating).",
+        "enableAria": "Enable {{channel}}",
+        "auto": "Auto-send proactively (after this channel graduates; until then you review and send each one)",
+        "autoAria": "Auto-send proactively on {{channel}}",
+        "autoReply": "Auto-answer replies (AI replies within 24h; money, anger, requests to stop and uncertainty always come to you)",
+        "autoReplyAria": "Auto-answer replies for {{channel}}",
+        "autoTitle": "Auto-send proactively",
+        "autoHint": "After this channel graduates; until then you review and send each one.",
+        "autoReplyTitle": "Auto-answer replies",
+        "autoReplyHint": "AI replies within 24h; money, anger, requests to stop and uncertainty always come to you.",
+        "callNote": "The engine proposes a call for your team. Calls are never placed from the task inbox.",
+        "whatsappNote": "Needs Meta-approved templates — the AI proposes them after you create the engine."
+    },
+    "audience": {
+        "intro": "Who should this engine engage? Combine {{batches}} and {{audiences}}. People are de-duplicated automatically.",
+        "select": "Select {{audiences}}",
+        "count_one": "{{count}} source selected.",
+        "count_other": "{{count}} sources selected.",
+        "audiencesHint": "CRM audience campaigns (first 100)."
+    },
+    "cadence": {
+        "recheck": "Re-check each person every (hours)",
+        "recheckHint": "A safety floor. The AI decides the actual timing; this caps how often it revisits someone.",
+        "quietHours": "Quiet hours",
+        "quietHint": "No messages between these hours, in the timezone below. The institute's own quiet-hours floor still applies on top of this.",
+        "from": "From",
+        "to": "To",
+        "timezone": "Timezone",
+        "legendQuiet": "Quiet (no messages)",
+        "legendOpen": "Can send"
+    },
+    "autonomy": {
+        "title": "Autonomy",
+        "hint": "Controls that apply only to channels you set to auto-send.",
+        "firstN": "Graduate after N approved sends",
+        "firstNPlaceholder": "default (5)",
+        "firstNHint": "Each auto-send channel stays copilot until you have approved this many of its drafts on that channel; then it starts sending on its own. Leave blank for the default.",
+        "holdout": "Holdout %",
+        "holdoutHint": "A share of the audience (0–100%) that is enrolled but never messaged, so you can measure the engine's real lift against them."
+    },
+    "review": {
+        "name": "Name",
+        "objective": "Objective",
+        "language": "Language",
+        "dataPoints": "Data points",
+        "dataPointsNone": "Always-on only",
+        "channels": "Channels",
+        "audienceSources": "Audience sources",
+        "cadence": "Cadence",
+        "cadenceValue": "every {{hours}}h",
+        "quietHours": "Quiet hours",
+        "autoSendChannels": "Auto-send channels",
+        "autoSendNone": "None (copilot only)",
+        "holdout": "Holdout",
+        "draftNote": "The engine starts as a Draft. After creating it, enroll the audience and (for WhatsApp) set up templates, then activate it.",
+        "consentGiven": "consent given",
+        "whatNext": "What happens next",
+        "next": {
+            "draft": {
+                "title": "Starts as a Draft",
+                "text": "Nothing is sent yet."
+            },
+            "enroll": {
+                "title": "Enroll the audience",
+                "text": "Use “Resolve audience” on the engine page to add the people from your sources."
+            },
+            "templates": {
+                "title": "Approve WhatsApp templates",
+                "text": "The AI proposes them; you approve and submit; Meta reviews."
+            },
+            "activate": {
+                "title": "Dry run, then activate",
+                "text": "See simulated drafts in the task inbox before anything goes out."
+            }
+        }
+    },
+    "actions": {
+        "back": "Back",
+        "continue": "Continue",
+        "create": "Create engine",
+        "creating": "Creating…",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "nameAndBrief": "An engine needs a name and a brief."
+    },
+    "subtitle": "Six short steps. You can review everything before it is created — nothing is sent until you activate it.",
+    "stepHints": {
+        "basics": "Name, brief, language",
+        "dataPoints": "What the AI may read",
+        "channels": "Where it can message",
+        "audience": "Who it engages",
+        "cadence": "Timing & autonomy",
+        "review": "Check and create"
+    },
+    "footer": {
+        "step": "Step {{n}} of {{total}} · {{label}}"
+    }
+}

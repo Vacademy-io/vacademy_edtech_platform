@@ -1,0 +1,11 @@
+{
+    "title": "WhatsApp Inbox",
+    "subtitle": "View and reply to WhatsApp conversations",
+    "refresh": "Refresh",
+    "waitingCount_one": "{{count}} handed over by the bot",
+    "waitingCount_other": "{{count}} handed over by the bot",
+    "errors": {
+        "conversationsFallback": "Could not load conversations",
+        "messagesFallback": "Could not load this conversation"
+    }
+}

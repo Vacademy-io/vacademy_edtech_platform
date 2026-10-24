@@ -1,0 +1,140 @@
+{
+    "header": {
+        "title": "Déduplication",
+        "description": "Contrôlez ce qui se passe lorsqu'une nouvelle soumission de prospect correspond à un prospect déjà existant. Désactivé par défaut — l'activation de cette option n'affecte pas les prospects déjà capturés."
+    },
+    "loading": "Chargement des paramètres de déduplication…",
+    "enabled": {
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "fields": {
+        "matchBy": {
+            "label": "Faire correspondre les prospects par",
+            "hint": "L'identifiant qui compte comme doublon.",
+            "placeholder": "Sélectionner un champ",
+            "options": {
+                "email": "Adresse e-mail",
+                "phone": "Numéro de téléphone"
+            }
+        },
+        "scope": {
+            "label": "S'applique à",
+            "hint": "Vérifiez uniquement la liste de prospects sur laquelle la soumission est faite, un ensemble spécifique de listes de prospects, ou toutes les listes de prospects de l'établissement.",
+            "placeholder": "Sélectionner une portée",
+            "options": {
+                "campaign": "Cette liste de prospects uniquement",
+                "selected": "Listes de prospects spécifiques",
+                "institute": "Toutes les listes de prospects de cet établissement"
+            }
+        },
+        "audienceLists": {
+            "label": "Listes de prospects",
+            "hint": "Les doublons ne sont vérifiés que dans les listes de prospects sélectionnées ici. Les sélectionner toutes bascule automatiquement vers l'ensemble de l'établissement.",
+            "placeholder": "Sélectionner des listes de prospects",
+            "placeholderLoading": "Chargement des listes de prospects…"
+        },
+        "action": {
+            "label": "Lorsqu'un doublon est trouvé",
+            "hint": "Bloquez la soumission, ou laissez-la passer et appliquez les règles de prospect répété ci-dessous.",
+            "placeholder": "Sélectionner une action",
+            "options": {
+                "reject": "Rejeter la soumission",
+                "allowReassign": "Laisser passer et réattribuer"
+            }
+        }
+    },
+    "repeatLead": {
+        "title": "Gestion des prospects répétés",
+        "counsellorMode": {
+            "label": "Attribuer un conseiller ?",
+            "placeholder": "Sélectionner",
+            "options": {
+                "none": "N'en attribuer aucun",
+                "sameAsPrevious": "Conserver leur conseiller précédent",
+                "specific": "Toujours attribuer un conseiller spécifique",
+                "roundRobin": "Utiliser la répartition tournante, comme pour les nouveaux prospects"
+            }
+        },
+        "counsellorPicker": {
+            "label": "Conseiller"
+        },
+        "statusMode": {
+            "label": "Statut du prospect",
+            "placeholder": "Sélectionner",
+            "options": {
+                "keepExisting": "Conserver leur statut actuel",
+                "resetToNew": "Réinitialiser à Nouveau",
+                "resetClosedToNew": "Remettre à Nouveau seulement si converti ou écarté"
+            }
+        },
+        "alsoMatchEmail": {
+            "label": "Comparer aussi l'e-mail",
+            "hint": "Une demande avec un nouveau numéro compte quand même comme une répétition si son e-mail correspond à un prospect existant (par ex. un formulaire Google prérempli avec un autre numéro)."
+        },
+        "samePersonByPhone": {
+            "label": "Considérer le même téléphone comme la même personne",
+            "hint": "Une nouvelle demande avec un autre e-mail rejoint le prospect existant et garde son conseiller, au lieu de créer un second prospect."
+        },
+        "blockOwnedManualAdd": {
+            "label": "Empêcher les conseillers d'ajouter le prospect d'un autre conseiller",
+            "hint": "Quand un conseiller ajoute un prospect à la main et que le téléphone appartient déjà au prospect d'un autre conseiller, afficher le propriétaire et ne pas l'ajouter. Les administrateurs peuvent toujours l'ajouter."
+        },
+        "blockOpenLeadManualAdd": {
+            "label": "Empêcher les conseillers d'ajouter un prospect encore ouvert",
+            "hint": "Quand un conseiller ajoute un prospect à la main alors qu'il existe déjà et est encore en cours (ni converti ni écarté), afficher un message et ne pas l'ajouter, quel que soit son propriétaire. Un prospect écarté ou converti peut être ajouté à nouveau. Les administrateurs peuvent toujours l'ajouter."
+        },
+        "reattempt": {
+            "title": "Nouvelle tentative (un prospect existant se manifeste à nouveau)",
+            "hint": "Ce que laisse une demande répétée. Chaque option fonctionne seule.",
+            "markDuplicate": {
+                "label": "Marquer la répétition comme doublon",
+                "hint": "La nouvelle demande est marquée comme doublon du prospect qu'elle répète, pour la distinguer et la filtrer."
+            },
+            "duplicateOpenOnly": {
+                "label": "Seulement si le prospect précédent est ouvert",
+                "hint": "Une répétition n'est un doublon que si le prospect précédent n'est ni converti ni écarté. Celle d'un prospect converti ou écarté arrive comme un nouveau prospect."
+            },
+            "journeyEntry": {
+                "label": "Ajouter une entrée Nouvelle tentative au parcours",
+                "hint": "Le parcours du prospect d'origine indique quand et par quelle source la personne s'est à nouveau manifestée."
+            },
+            "notifyOwner": {
+                "label": "Avertir le conseiller du prospect",
+                "hint": "Le conseiller propriétaire reçoit une notification Nouvelle tentative (pas s'il l'a ajoutée lui-même)."
+            },
+            "followUp": {
+                "label": "Ouvrir un suivi prioritaire",
+                "hint": "Un suivi immédiat est ouvert pour le conseiller du prospect, qui apparaît en tête de la page Suivis jusqu'à sa clôture."
+            },
+            "showBadge": {
+                "label": "Afficher un badge Doublon dans les tableaux",
+                "hint": "Les demandes en double affichent un badge Doublon à côté du nom du prospect."
+            },
+            "duplicatesTabOnly": {
+                "label": "Afficher les doublons uniquement dans Prospects en double",
+                "hint": "Les demandes en double apparaissent uniquement dans l'onglet Prospects en double. Tous les prospects et les autres listes affichent le prospect une seule fois, avec un badge Doublon. Désactivez pour garder les listes telles quelles."
+            },
+            "tier": {
+                "label": "Passer {{tier}} à",
+                "hint": "Le {{tier}} du prospect prend cette valeur quand la personne se manifeste à nouveau.",
+                "keep": "Ne pas modifier"
+            }
+        }
+    },
+    "counsellorPicker": {
+        "clearAriaLabel": "Effacer le conseiller sélectionné",
+        "searchPlaceholder": "Tapez pour rechercher des conseillers…",
+        "searching": "Recherche en cours…"
+    },
+    "toasts": {
+        "saved": "Paramètres de déduplication enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres de déduplication",
+        "pickLeadList": "Choisissez au moins une liste de prospects, ou sélectionnez une autre portée",
+        "pickCounsellor": "Choisissez un conseiller, ou sélectionnez une autre option de conseiller pour prospect répété"
+    },
+    "footer": {
+        "save": "Enregistrer les paramètres de déduplication",
+        "saving": "Enregistrement…"
+    }
+}

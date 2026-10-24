@@ -1,4 +1,4 @@
-import { SidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
+import { getSidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
 import type { SidebarItemsType } from '@/types/layout-container/layout-container-types';
 import type {
     DisplaySettingsData,
@@ -7,12 +7,15 @@ import type {
 } from '@/types/display-settings';
 import { DEFAULT_ASSESSMENT_ACTION_SETTINGS } from '@/types/display-settings';
 
+// Built-in tabs are seeded WITHOUT a `label` — see the note on
+// mapSidebarToConfig in admin-defaults.ts. A seeded name would be read back as a
+// user customization and freeze the nav at whatever wording was current when the
+// config was saved.
 function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[] {
     return menu
         .filter((item) => item.id !== 'settings') // settings tab must be hidden for teacher
         .map((item, index) => ({
             id: item.id,
-            label: item.title,
             route: item.to,
             order: index + 1,
             // By default, show everything except tabs which are inherently admin-only filtered elsewhere;
@@ -31,6 +34,11 @@ function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[]
                 item.id !== 'automations' &&
                 item.id !== 'manage-contacts' &&
                 item.id !== 'admin-activity-logs' &&
+                // Live activity ships hidden for teachers too -- this is what makes
+                // the toggle genuinely per-role rather than institute-wide.
+                item.id !== 'live-activity' &&
+                // Access Passes ship hidden for every role; opt in via Display Settings.
+                item.id !== 'access-passes' &&
                 // AI Course/Program Creator ships hidden; admins opt in via Display Settings.
                 item.id !== 'ai-copilot-tab'
                     ? true
@@ -40,12 +48,14 @@ function mapSidebarToTeacherConfig(menu: SidebarItemsType[]): SidebarTabConfig[]
                     const subId = sub.subItemId || sub.subItem || `${item.id}-${subIndex + 1}`;
                     return {
                         id: subId,
-                        label: sub.subItem,
                         route: sub.subItemLink || '#',
                         order: subIndex + 1,
                         // Sub-org teams + manage-institute-suborgs + notification hub
                         // are hidden by default for teachers — opt-in via settings.
+                        // adminOnly sub-items too: the sidebar shows them to a
+                        // non-admin role exactly when this says visible.
                         visible:
+                            !sub.adminOnly &&
                             subId !== 'suborg-teams' &&
                             subId !== 'manage-institute-suborgs' &&
                             subId !== 'notification-hub',
@@ -60,6 +70,7 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
     // teacher's operational set. OFF by default = admin/finance widgets that
     // make no sense for a teacher (admins can still toggle them on).
     const teacherOn = new Set<DashboardWidgetConfig['id']>([
+        'assistantLaunchBar',
         'quickActions',
         'kpiBand',
         'pendingActions',
@@ -80,7 +91,11 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
     ]);
 
     const orderedIds: DashboardWidgetConfig['id'][] = [
+        // 0. Integration health — first on the page. Hidden for teachers (absent from
+        //    teacherOn): integration health is an admin concern.
+        'lmsConnectionHealth',
         // 1. Navigation shortcuts
+        'assistantLaunchBar',
         'quickActions',
         // 2. KPIs
         'kpiBand',
@@ -106,6 +121,7 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
         'realTimeActiveUsers',
         'currentlyActiveUsers',
         // 6. LMS operations
+        'lmsConnectionHealth',
         'liveClasses',
         'enrollLearners',
         'learningCenter',
@@ -124,8 +140,9 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
     }));
 }
 
-export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
-    sidebar: mapSidebarToTeacherConfig(SidebarItemsData),
+// Everything except `sidebar`, which is built per call below — see the matching
+// note in admin-defaults.ts.
+const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
     dashboard: {
         widgets: defaultDashboardWidgetsTeacher(),
     },
@@ -137,6 +154,7 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
         viewContentNumbering: true,
         allowViewSlidesInReadOnly: true,
         directEditPublishedCourse: false,
+        requireCourseApproval: true,
         canEditCourseStructure: false,
         canDeleteCourseStructure: false,
         showBulkUpload: false,
@@ -162,6 +180,17 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
             { id: 'LEARNER', order: 3, visible: true },
             { id: 'TEACHER', order: 4, visible: true },
             { id: 'ASSESSMENT', order: 5, visible: true },
+            // Quiz Results sits next to Assessment: both answer "how did they do",
+            // one for exams and one for the quiz slides inside the course.
+            // Ordered 5.5 so it slots between Assessment (5) and whatever a role has
+            // at 6, WITHOUT renumbering the tabs after it. Renumbering looked tidier
+            // but collides: 92 of the 94 institutes with a saved courseDetails config
+            // already store a tab at order 6 (32x LIVE_SESSION, 60x PLANNING), and
+            // saved values win the merge — so a shared order is what would actually
+            // ship. Two tabs on the same order make the Display Settings up/down
+            // arrows a dead click, because swapOrder swaps the two order VALUES and
+            // swapping equal numbers changes nothing.
+            { id: 'QUIZ_RESULTS', order: 5.5, visible: true },
             { id: 'LIVE_SESSION', order: 6, visible: false },
             { id: 'PLANNING', order: 7, visible: false },
             { id: 'ACTIVITY', order: 8, visible: false },
@@ -172,6 +201,12 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
             // saved `visible: false` is stripped by mergeArrayById.
             { id: 'DOWNLOADS', order: 12, visible: true },
             { id: 'SETTINGS', order: 13, visible: false },
+            // Live AI Tutor (2026-09): 13.5 slots it after Settings without renumbering
+            // tabs institutes have already saved orders for (same trick as QUIZ_RESULTS).
+            { id: 'TUTOR_MODE', order: 13.5, visible: true },
+            // Course knowledge (2026-10): rendered only when the platform has made the
+            // feature available to the institute (course-knowledge GET /status).
+            { id: 'AI_KNOWLEDGE', order: 13.6, visible: true },
         ],
         defaultTab: 'CONTENT_STRUCTURE',
     },
@@ -225,6 +260,15 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
         showEnrolledStudentCount: false,
     },
     assessmentPage: { ...DEFAULT_ASSESSMENT_ACTION_SETTINGS },
+    // Off for teachers and custom roles (which share these defaults) — an admin
+    // grants it per role from Display Settings.
+    liveClassActions: {
+        allowDeletePastSessions: false,
+    },
+    // Off for every role — an institute opts a role in from Display Settings.
+    leadActions: {
+        showAddLead: false,
+    },
     courseCreation: {
         showCreateCourseWithAI: false,
         requirePackageSelectionForNewChapter: true,
@@ -237,6 +281,9 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
         progressTab: true,
         coursesTab: true,
         notificationTab: false,
+        // Off by default: resending sends a real message to a learner, so it is
+        // opt-in for this role even where the Notifications tab is enabled.
+        allowResendMessage: false,
         membershipTab: false,
         paymentHistoryTab: true,
         userTaggingTab: false,
@@ -249,6 +296,7 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
         applicationTab: false,
         leadTab: false,
         fullHistoryTab: false,
+        workflowsTab: false,
         parentTab: false,
         onboardingTab: false,
         tabOrders: {
@@ -270,6 +318,7 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
             lead: 16,
             fullHistory: 17,
             parent: 18,
+            workflows: 19,
         },
         defaultTab: 'overview',
     },
@@ -280,6 +329,8 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
         showApprovalToggle: false,
         // Opt-in: changing credentials signs the learner out of their session.
         allowEditCredentials: false,
+        allowDeletePayments: false,
+        canApplyDiscounts: false,
     },
     studentManagementActions: {
         showEnrollButton: true,
@@ -306,3 +357,14 @@ export const DEFAULT_TEACHER_DISPLAY_SETTINGS: DisplaySettingsData = {
     leadsFilterCustomFields: [],
     postLoginRedirectRoute: '/dashboard',
 };
+
+/**
+ * Default teacher display settings. See getDefaultAdminDisplaySettings() for why
+ * this must not be cached at module scope.
+ */
+export function getDefaultTeacherDisplaySettings(): DisplaySettingsData {
+    return {
+        ...TEACHER_DEFAULTS_BASE,
+        sidebar: mapSidebarToTeacherConfig(getSidebarItemsData()),
+    };
+}

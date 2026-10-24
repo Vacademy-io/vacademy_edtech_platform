@@ -1,0 +1,11 @@
+{
+    "certificateGeneration": "प्रमाणपत्र जनरेशन",
+    "backTo": "{{term}} पर वापस जाएं",
+    "studentsSelected_one": "{{count}} {{term}} चयनित",
+    "studentsSelected_other": "{{count}} {{term}} चयनित",
+    "certificateSettings": "प्रमाणपत्र सेटिंग्स",
+    "steps": {
+        "studentData": "छात्र डेटा और सीएसवी अपलोड",
+        "pdfAnnotation": "पीडीएफ एनोटेशन"
+    }
+}

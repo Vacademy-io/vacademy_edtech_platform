@@ -32,7 +32,7 @@ from ..services import ai_task_service
 from ..services.ai_billing import preflight_tool_credits
 from ..services.ai_task_service import AiTaskService
 from ..services.kb import ingest as kb_ingest
-from ..services.kb.repository import KbRepository
+from ..services.kb.repository import KbRepository, is_curriculum_kb
 from ..services.kb.retrieval import KbRetrievalService
 
 logger = logging.getLogger(__name__)
@@ -50,10 +50,13 @@ VALID_SOURCE_KINDS = ("PDF", "URL", "YOUTUBE", "TEXT")
 class Caller:
     """The verified identity behind a request: institute + (optional) user."""
 
-    def __init__(self, institute_id: Optional[str], mode: str, user_id: Optional[str] = None):
+    def __init__(self, institute_id: Optional[str], mode: str, user_id: Optional[str] = None,
+                 metering: Any = None):
         self.institute_id = institute_id
         self.mode = mode
         self.user_id = user_id
+        # Usage-event attribution for this caller's charges (never changes one).
+        self.metering = metering
 
     def require_institute(self, body_institute_id: Optional[str] = None) -> str:
         """The institute to act for.
@@ -90,12 +93,15 @@ async def get_caller(
     get_current_user trusts the clientId header verbatim, which would let a member
     of institute A pass clientId=B and spend B's credits on B's corpus.
     """
+    from ..services.ai_billing import metering_from_request
+
     if x_institute_key or x_internal_service_token:
         institute_id, mode = get_institute_id_or_internal(x_institute_key, x_internal_service_token)
-        return Caller(institute_id, mode)
+        return Caller(institute_id, mode, metering=metering_from_request(request, institute_id, auth_mode=mode))
     if authorization:
         principal = await get_pinned_principal(request, authorization, settings)
-        return Caller(principal.institute_id, "INSTITUTE", principal.user_id)
+        return Caller(principal.institute_id, "INSTITUTE", principal.user_id,
+                      metering=metering_from_request(request, principal.institute_id, user=principal))
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=(
@@ -115,6 +121,12 @@ class KbCreate(BaseModel):
     purpose: str = "general"
     language_hint: Optional[str] = Field(None, max_length=20)
     institute_id: Optional[str] = None  # INTERNAL callers only
+    # Free-form per-base metadata (V517). The curriculum loader sets
+    # {topic_tree_mode: "AUTHORED", curriculum: {...}} here.
+    meta: Optional[Dict[str, Any]] = None
+    # A registered embedder id (kb_embedding_model). Default = the platform
+    # default; the curriculum loader picks the in-process BAAI/bge-base-en-v1.5.
+    embedding_model: Optional[str] = Field(None, max_length=100)
 
 
 class KbUpdate(BaseModel):
@@ -129,17 +141,21 @@ class SourceCreate(BaseModel):
     source_kind: str
     title: Optional[str] = Field(None, max_length=500)
     file_id: Optional[str] = None       # PDF (media_service fileId)
-    source_url: Optional[str] = None    # URL / YOUTUBE
+    source_url: Optional[str] = None    # URL / YOUTUBE — or a public PDF URL
     raw_text: Optional[str] = None      # TEXT
     # Client-side page count (pdfjs) used ONLY to pre-flight the credit check
     # fast. The charge is always computed from the server-parsed page count.
     expected_pages: Optional[int] = Field(None, ge=0)
     institute_id: Optional[str] = None  # INTERNAL callers only
+    # Per-source metadata, merged into meta_json. The curriculum loader tags
+    # chapters here ({chapter_no, chapter_title, book_code, ...}).
+    meta: Optional[Dict[str, Any]] = None
 
 
 class SourceUpdate(BaseModel):
     is_active: Optional[bool] = None
     title: Optional[str] = Field(None, max_length=500)
+    meta: Optional[Dict[str, Any]] = None   # merged into meta_json
 
 
 class EstimateRequest(BaseModel):
@@ -229,8 +245,15 @@ def _preflight_or_402(
     return estimate
 
 
+def _ingest_meter(caller: Any) -> dict:
+    """{"metering": ...} for _start_ingest_task when it takes it (shim-safe)."""
+    from ..services.ai_billing import supported_kwargs
+    return supported_kwargs(_start_ingest_task, {"metering": getattr(caller, "metering", None)})
+
+
 def _start_ingest_task(
-    db: Session, *, source_id: str, institute_id: str, user_id: Optional[str], source_kind: str
+    db: Session, *, source_id: str, institute_id: str, user_id: Optional[str], source_kind: str,
+    metering: Any = None,
 ) -> str:
     """Create the durable ai_task row and fire the background job."""
     task = AiTaskService(AiTaskRepository(db)).create(
@@ -244,8 +267,10 @@ def _start_ingest_task(
     KbRepository(db).update_source_progress(source_id, ai_task_id=str(task.id))
 
     async def work() -> str:
+        from ..services.ai_billing import supported_kwargs
         return await kb_ingest.ingest_source(
-            source_id=source_id, institute_id=institute_id, user_id=user_id
+            source_id=source_id, institute_id=institute_id, user_id=user_id,
+            **supported_kwargs(kb_ingest.ingest_source, {"metering": metering}),
         )
 
     ai_task_service.schedule(str(task.id), work)
@@ -296,6 +321,8 @@ async def create_base(
             purpose=body.purpose,
             language_hint=body.language_hint,
             created_by=caller.user_id,
+            meta=body.meta,
+            embedding_model=body.embedding_model,
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("Knowledge base creation failed")
@@ -533,12 +560,14 @@ async def add_source(
     expected_pages = body.expected_pages or 0
 
     if kind == "PDF":
-        if not body.file_id:
-            raise HTTPException(400, "file_id is required for a PDF source")
+        if not body.file_id and not body.source_url:
+            raise HTTPException(400, "file_id (upload) or source_url (public PDF) is required")
         # ONE download yields both the dedup hash and the page count. Fetching
         # them separately meant pulling a 100MB textbook twice per request.
         try:
-            expected_pages, content_hash = await kb_ingest.probe_pdf(body.file_id)
+            expected_pages, content_hash = await kb_ingest.probe_pdf(
+                body.file_id, source_url=None if body.file_id else body.source_url
+            )
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(400, f"Could not read that PDF: {exc}") from exc
 
@@ -567,10 +596,11 @@ async def add_source(
                 f"{kb_ingest.parsing.MAX_PAGES_PER_SOURCE}. Please split it.",
             )
         title = title or "Untitled document"
-        _preflight_or_402(
-            db, tool_key="kb_ingest_page",
-            tool_params={"num_pages": expected_pages}, institute_id=resolved,
-        )
+        if not is_curriculum_kb(kb):
+            _preflight_or_402(
+                db, tool_key="kb_ingest_page",
+                tool_params={"num_pages": expected_pages}, institute_id=resolved,
+            )
 
     elif kind in ("URL", "YOUTUBE"):
         if not body.source_url:
@@ -578,7 +608,8 @@ async def add_source(
         if kind == "YOUTUBE" and not kb_ingest.parsing.youtube_video_id(body.source_url):
             raise HTTPException(400, "That does not look like a YouTube video URL")
         title = title or body.source_url[:200]
-        _preflight_or_402(db, tool_key="kb_ingest_url", tool_params={}, institute_id=resolved)
+        if not is_curriculum_kb(kb):
+            _preflight_or_402(db, tool_key="kb_ingest_url", tool_params={}, institute_id=resolved)
 
     else:  # TEXT
         if not (body.raw_text or "").strip():
@@ -592,10 +623,12 @@ async def add_source(
         kb_id=kb_id, institute_id=resolved, source_kind=kind, title=title,
         file_id=body.file_id, source_url=body.source_url, raw_text=body.raw_text,
         content_hash=content_hash, page_count=expected_pages, created_by=caller.user_id,
+        meta=body.meta,
     )
     task_id = _start_ingest_task(
         db, source_id=source_id, institute_id=resolved,
         user_id=caller.user_id, source_kind=kind,
+        **_ingest_meter(caller),
     )
     return {
         "source": repo.get_source(source_id, resolved),
@@ -651,9 +684,13 @@ async def update_source(
             _start_ingest_task(
                 db, source_id=source_id, institute_id=resolved,
                 user_id=caller.user_id, source_kind=source["source_kind"],
+                **_ingest_meter(caller),
             )
-    if body.title:
-        repo.update_source_fields(source_id, resolved, title=body.title.strip())
+    if body.title or body.meta:
+        repo.update_source_fields(
+            source_id, resolved,
+            title=body.title.strip() if body.title else None, meta=body.meta,
+        )
     return repo.get_source(source_id, resolved)
 
 
@@ -682,6 +719,7 @@ async def reindex_source(
     task_id = _start_ingest_task(
         db, source_id=source_id, institute_id=resolved,
         user_id=caller.user_id, source_kind=source["source_kind"],
+        **_ingest_meter(caller),
     )
     return {"source": repo.get_source(source_id, resolved), "task_id": task_id}
 
@@ -761,7 +799,7 @@ async def ask_base(
     # made no LLM call and must not cost the institute a credit.
     if result.get("grounded"):
         from ..models.ai_token_usage import RequestType
-        from ..services.ai_billing import record_tool_billing
+        from ..services.ai_billing import UC, record_tool_billing
 
         usage = result.get("usage") or {}
         record_tool_billing(
@@ -771,6 +809,8 @@ async def ask_base(
             prompt_tokens=int(usage.get("prompt_tokens") or 0),
             completion_tokens=int(usage.get("completion_tokens") or 0),
             institute_id=resolved, user_id=caller.user_id, user_role="ADMIN",
+            use_case=UC.KNOWLEDGE_BASE, metering=getattr(caller, "metering", None),
+            usage_context={"kb_id": kb_id, "feature": "kb_ask"},
         )
     result.pop("usage", None)
     return result
@@ -893,6 +933,7 @@ async def legacy_create_item(
     _start_ingest_task(
         db, source_id=source_id, institute_id=resolved,
         user_id=caller.user_id, source_kind="TEXT",
+        **_ingest_meter(caller),
     )
     return _legacy_shape(repo.get_source(source_id, resolved))
 
@@ -933,6 +974,7 @@ async def legacy_update_item(
         _start_ingest_task(
             db, source_id=item_id, institute_id=resolved,
             user_id=caller.user_id, source_kind="TEXT",
+            **_ingest_meter(caller),
         )
     return _legacy_shape(repo.get_source(item_id, resolved))
 

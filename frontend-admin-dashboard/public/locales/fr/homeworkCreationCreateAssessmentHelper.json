@@ -1,0 +1,8 @@
+{
+    "qrCodeNotFound": "Code QR introuvable !",
+    "defaultRegistrationFields": {
+        "fullName": "Nom complet",
+        "email": "E-mail",
+        "phoneNumber": "Numéro de téléphone"
+    }
+}

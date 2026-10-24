@@ -86,9 +86,23 @@ export const controlledTabs = [
     // Audit log: opt-in per institute via Display Settings. Off by default
     // (see admin-defaults.ts) so the UI only surfaces it where it's wanted.
     'admin-activity-logs',
+    // Live activity feed: opt-in per institute AND per role, with each category
+    // separately toggleable via its sub-tab.
+    'live-activity',
     // Mentorship: hidden by default (feature not broadly rolled out); admins
     // opt it in per institute via Display Settings (see admin-defaults.ts).
     'mentorship',
+    // Access Passes: hidden for every role until turned on in Display Settings.
+    'access-passes',
+    // ERP (HR & Payroll): opt-in per institute, same as above. Payroll is not
+    // something to surface by accident.
+    'erp-my-hr',
+    'erp-people',
+    'erp-leave',
+    'erp-attendance',
+    'erp-payroll',
+    'erp-compliance',
+    'erp-finance',
 ];
 
 export const modules = ['ASSESS', 'ENGAGE', 'VOLT', 'VSMART_AI_TOOLS'];

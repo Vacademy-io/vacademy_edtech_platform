@@ -1,0 +1,54 @@
+{
+    "adminList": {
+        "noAdmins": "لا يوجد لهذه المؤسسة أي مسؤول مسجَّل بعد.",
+        "unnamedAdmin": "مسؤول بدون اسم",
+        "noEmailOnRecord": "لا يوجد بريد إلكتروني مسجَّل"
+    },
+    "picker": {
+        "label": "المؤسسة الفرعية *",
+        "placeholder": "اختر مؤسسة",
+        "memberCount_zero": " · {{count}} عضو",
+        "memberCount_one": " · عضو واحد ({{count}})",
+        "memberCount_two": " · عضوان ({{count}})",
+        "memberCount_few": " · {{count}} أعضاء",
+        "memberCount_many": " · {{count}} عضوًا",
+        "memberCount_other": " · {{count}} عضو",
+        "createNewOption": "+ إنشاء مؤسسة جديدة",
+        "skipOption": "عدم ربط مؤسسة",
+        "emptyState": "لم يتم تسجيل أي مؤسسة في هذه الدفعة بعد — أنشئ الأولى."
+    },
+    "skippedNotice": "تم التسجيل كـ {{learnerTerm}} عادي دون ربط بمؤسسة. يعمل بأتمتة التسجيل القياسية، وليس أتمتة عضو المؤسسة الفرعية.",
+    "adminInfo": {
+        "heading": "مسؤولو المؤسسة",
+        "contactLine": "جهة اتصال المؤسسة: {{email}}{{mobile}}"
+    },
+    "newOrgForm": {
+        "heading": "تفاصيل المؤسسة الجديدة",
+        "nameLabel": "اسم المؤسسة *",
+        "namePlaceholder": "مثال: Green Valley Clinic",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "contact@organisation.com",
+        "phoneLabel": "الهاتف",
+        "phonePlaceholder": "رقم الاتصال"
+    },
+    "role": {
+        "label": "الدور داخل المؤسسة",
+        "staffOption": "موظف — {{learnerTerm}} (افتراضي)",
+        "adminOption": "مسؤول + {{learnerTerm}}",
+        "adminOnlyOption": "مسؤول فقط",
+        "adminOnlyDescription": "يدير سجل المؤسسة دون الوصول إلى الدورات. لا تعمل أتمتة تسجيل الأعضاء للأعضاء المخصصين للإدارة فقط.",
+        "adminDescription": "يحصل على الوصول إلى الدورات ويدير سجل المؤسسة أيضًا — سيظهر كمسؤول عن المؤسسة.",
+        "staffDescription": "الوصول إلى الدورات فقط. لا صلاحيات إدارية على المؤسسة."
+    },
+    "emptyState": {
+        "heading": "لم يتم تحديد أي {{batchTerm}} مرتبطة بمؤسسة"
+    },
+    "warningBanner": {
+        "message_zero": "لا توجد دفعات مباعة لمؤسسات. اختر المؤسسة التي ينضم إليها كل {{learnerSingular}} محدَّد والدور الذي سيشغله فيها. ينطبق نفس الاختيار على كل {{learnerPlural}} في هذا التشغيل.",
+        "message_one": "هذه الدفعة مباعة لمؤسسات. اختر المؤسسة التي ينضم إليها كل {{learnerSingular}} محدَّد والدور الذي سيشغله فيها. ينطبق نفس الاختيار على كل {{learnerPlural}} في هذا التشغيل.",
+        "message_two": "هاتان الدفعتان مباعتان لمؤسسات. اختر المؤسسة التي ينضم إليها كل {{learnerSingular}} محدَّد والدور الذي سيشغله فيها. ينطبق نفس الاختيار على كل {{learnerPlural}} في هذا التشغيل.",
+        "message_few": "هذه الدفعات مباعة لمؤسسات. اختر المؤسسة التي ينضم إليها كل {{learnerSingular}} محدَّد والدور الذي سيشغله فيها. ينطبق نفس الاختيار على كل {{learnerPlural}} في هذا التشغيل.",
+        "message_many": "هذه الدفعات مباعة لمؤسسات. اختر المؤسسة التي ينضم إليها كل {{learnerSingular}} محدَّد والدور الذي سيشغله فيها. ينطبق نفس الاختيار على كل {{learnerPlural}} في هذا التشغيل.",
+        "message_other": "هذه الدفعات مباعة لمؤسسات. اختر المؤسسة التي ينضم إليها كل {{learnerSingular}} محدَّد والدور الذي سيشغله فيها. ينطبق نفس الاختيار على كل {{learnerPlural}} في هذا التشغيل."
+    }
+}

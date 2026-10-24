@@ -1,0 +1,84 @@
+{
+    "dialogTitle": "Send WhatsApp Message",
+    "dialogDescription": "Send an approved WhatsApp template to the selected students.",
+    "steps": {
+        "selectTemplate": "Select Template",
+        "mapVariables": "Map Variables",
+        "reviewSend": "Review & Send"
+    },
+    "systemFields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "city": "City",
+        "region": "Region",
+        "gender": "Gender",
+        "enrollmentId": "Enrollment ID",
+        "username": "Username",
+        "password": "Password"
+    },
+    "toasts": {
+        "loadTemplatesFailed": "Failed to load WhatsApp templates",
+        "selectTemplateFirst": "Select a WhatsApp template first.",
+        "noValidRecipients": "No valid recipients with a mobile number.",
+        "sendFailed": "Failed to send WhatsApp messages. Please try again.",
+        "partialSuccess": "Accepted for {{accepted}} of {{total}} — {{failed}} failed. See the list below.",
+        "sendSuccess_one": "WhatsApp message accepted for {{count}} recipient",
+        "sendSuccess_other": "WhatsApp message accepted for {{count}} recipients",
+        "unexpectedError": "An unexpected error occurred. Please try again."
+    },
+    "templateStep": {
+        "templateLabel": "Template",
+        "loadingTemplates": "Loading templates...",
+        "selectPlaceholder": "Select an approved template",
+        "emptyText": "No approved template matches your search.",
+        "noTemplatesFound": "No approved WhatsApp templates found for this institute.",
+        "languageCodeLabel": "Language Code",
+        "templatePreviewLabel": "Template Preview",
+        "recipientsNotice_one": "{{count}} recipient will receive this message.",
+        "recipientsNotice_other": "{{count}} recipients will receive this message.",
+        "skippedNotice_one": "({{count}} skipped — no mobile number)",
+        "skippedNotice_other": "({{count}} skipped — no mobile number)"
+    },
+    "variableMappingStep": {
+        "noVariables": "No variables to map. You can proceed.",
+        "mapHint": "Map each template variable to a student field, or set a fixed value. Values are resolved per student on send.",
+        "columnVariable": "Variable",
+        "columnMappedField": "Mapped Field",
+        "selectFieldPlaceholder": "Select field...",
+        "staticValueOption": "Static value…",
+        "staticValuePlaceholder": "e.g. \"Student\"",
+        "searchPlaceholder": "Search fields...",
+        "noMatch": "No field matches your search.",
+        "credentialsLoading": "Fetching login details... {{done}}/{{total}}",
+        "credentialsFailed": "Could not fetch login details. Close the dialog and try again.",
+        "credentialsMissing_one": "{{count}} student has no username/password stored and will be skipped.",
+        "credentialsMissing_other": "{{count}} students have no username/password stored and will be skipped.",
+        "credentialsReady_one": "Login details ready for {{count}} student.",
+        "credentialsReady_other": "Login details ready for {{count}} students."
+    },
+    "reviewStep": {
+        "messagesSent": "Messages Sent",
+        "sendCompleted": "Send Completed",
+        "recipientsLabel": "Recipients",
+        "sentLabel": "Sent",
+        "failedLabel": "Failed",
+        "stillProcessing": "Still processing in the background — final counts appear in the communication history.",
+        "close": "Close",
+        "channelLabel": "WhatsApp",
+        "channelHeading": "Channel",
+        "templateLabel": "Template",
+        "selectedStudentsCount_one": "{{count}} selected student",
+        "selectedStudentsCount_other": "{{count}} selected students",
+        "variableMappingsLabel": "Variable Mappings",
+        "staticValueLabel": "Static: \"{{value}}\"",
+        "sending": "Sending...",
+        "sendButton_one": "Send to {{count}} student",
+        "sendButton_other": "Send to {{count}} students",
+        "sampleFor": "example for {{name}}"
+    },
+    "footer": {
+        "back": "Back",
+        "next": "Next"
+    }
+}

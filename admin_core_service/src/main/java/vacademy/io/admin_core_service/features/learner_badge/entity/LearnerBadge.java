@@ -64,8 +64,9 @@ public class LearnerBadge {
     private String awardedByUserId;
 
     // Set explicitly at award time so the award() response carries it (the DB
-    // default still applies as a fallback). updatable=false keeps it immutable.
-    @Column(name = "awarded_at", updatable = false)
+    // default still applies as a fallback). Mutable because a staff award that
+    // lands on an existing AUTO row upgrades it in place and re-stamps this.
+    @Column(name = "awarded_at")
     private Timestamp awardedAt;
 
     @Column(name = "revoked_by_user_id")

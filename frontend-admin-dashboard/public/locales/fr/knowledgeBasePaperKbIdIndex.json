@@ -1,0 +1,93 @@
+{
+    "pageTitle": "Créer un sujet d'examen",
+    "fallbackKnowledgeBase": "Base de connaissances",
+    "steps": {
+        "chooseMaterial": "Choisir le contenu",
+        "planPaper": "Planifier le sujet",
+        "reviewQuestions": "Vérifier les questions"
+    },
+    "errors": {
+        "notEnoughCredits": "Crédits insuffisants.",
+        "reopenFailed": "Impossible de rouvrir ce sujet",
+        "rebuildTopicMapFailed": "Impossible de reconstruire la carte des thèmes",
+        "planFailed": "Impossible de planifier le sujet",
+        "startGenerationFailed": "Impossible de démarrer la génération",
+        "generationFailed": "Échec de la génération",
+        "sectionMissing": "La section de cette question ne fait plus partie du plan.",
+        "rewriteFailed": "Impossible de réécrire cette question",
+        "saveFailed": "Impossible d'enregistrer le sujet"
+    },
+    "toasts": {
+        "topicMapRebuilt": "Carte des thèmes reconstruite",
+        "questionRewritten": "Question réécrite",
+        "savedToQuestionBank": "Enregistré dans votre banque de questions"
+    },
+    "resumingMessage": "Réouverture de votre sujet…",
+    "scope": {
+        "materialHeading": "Que doit couvrir le sujet ?",
+        "materialDescription": "Les thèmes trouvés dans tout le contenu de cette base de connaissances. Choisissez un thème pour l'inclure entièrement, ou ouvrez-le pour sélectionner des sous-thèmes. Ne cochez rien pour puiser dans toute la base de connaissances.",
+        "rebuildButton": "Reconstruire",
+        "rebuildingButton": "Reconstruction…",
+        "noTopicMap": "Pas encore de carte des thèmes. Elle est construite automatiquement dès qu'un document a fini d'être traité.",
+        "buildTopicMapButton": "Construire la carte des thèmes",
+        "buildingButton": "Construction…",
+        "paperKindHeading": "Quel type de sujet ?",
+        "numQuestionsLabel": "Nombre de questions",
+        "numQuestionsPlaceholder": "20",
+        "durationLabel": "Durée (minutes)",
+        "durationPlaceholder": "90",
+        "difficultyLabel": "Difficulté générale",
+        "difficulty": {
+            "easy": "Facile",
+            "medium": "Moyen",
+            "hard": "Difficile",
+            "mixed": "Mixte"
+        },
+        "gradeLabel": "Classe ou niveau",
+        "gradePlaceholder": "ex. Classe 9",
+        "examStyleLabel": "Suivre un modèle (facultatif)",
+        "examStylePlaceholder": "ex. modèle du programme CBSE",
+        "planPaperButton": "Planifier le sujet",
+        "planningButton": "Planification…",
+        "planHint": "Vous verrez le plan complet et pourrez le modifier avant qu'aucune question ne soit rédigée."
+    },
+    "blueprint": {
+        "questionsCount_one": "{{count}} question",
+        "questionsCount_many": "{{count}} de questions",
+        "questionsCount_other": "{{count}} questions",
+        "marksCount_one": "{{formatted}} point",
+        "marksCount_many": "{{formatted}} de points",
+        "marksCount_other": "{{formatted}} points",
+        "durationSuffix": " · {{minutes}} min",
+        "changeMaterialButton": "Changer de contenu",
+        "generateButton_one": "Générer {{count}} question",
+        "generateButton_many": "Générer {{count}} questions",
+        "generateButton_other": "Générer {{count}} questions",
+        "generateCreditsSuffix": " · ≈{{credits}} crédits",
+        "insufficientCredits": "Cela nécessite environ {{needed}} crédits, mais seuls {{available}} sont disponibles.",
+        "askForChangeHeading": "Demander une modification",
+        "suggestions": {
+            "numericals": "Ajouter une section de calculs",
+            "harderSectionB": "Rendre la section B plus difficile",
+            "moreApplicationBased": "Plus de questions d'application"
+        },
+        "refinePlaceholder": "ex. retirer les questions rédactionnelles et ajouter 5 QCM du chapitre 2",
+        "updatePlanButton": "Mettre à jour le plan",
+        "updatingButton": "Mise à jour…"
+    },
+    "generating": {
+        "writingHeading_one": "Rédaction de {{count}} question à partir de votre contenu",
+        "writingHeading_many": "Rédaction de {{count}} questions à partir de votre contenu",
+        "writingHeading_other": "Rédaction de {{count}} questions à partir de votre contenu",
+        "hint": "Cela prend généralement quelques minutes. Vous pouvez quitter cette page — le sujet continue d'être généré et vous attendra dans les brouillons de votre banque de questions."
+    },
+    "review": {
+        "deliveredCount": "{{delivered}} question(s) rédigée(s) sur {{planned}}",
+        "needFixing_one": "{{count}} à corriger",
+        "needFixing_many": "{{count}} à corriger",
+        "needFixing_other": "{{count}} à corriger",
+        "allChecksPassed": "Toutes les vérifications ont réussi",
+        "saveButton": "Enregistrer dans la banque de questions",
+        "savingButton": "Enregistrement…"
+    }
+}

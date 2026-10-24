@@ -1,0 +1,360 @@
+{
+    "design": {
+        "heading": "डिज़ाइन"
+    },
+    "sections": {
+        "spacing": "स्पेसिंग",
+        "layoutWidth": "लेआउट और चौड़ाई",
+        "background": "बैकग्राउंड",
+        "borderShadow": "बॉर्डर और शैडो",
+        "premiumEffects": "प्रीमियम इफ़ेक्ट्स",
+        "decorations": "सजावट",
+        "effects": "इफ़ेक्ट्स",
+        "typography": "टाइपोग्राफी",
+        "animation": "एनिमेशन",
+        "visibility": "दृश्यता"
+    },
+    "presetRow": {
+        "custom": "कस्टम ({{value}})"
+    },
+    "spacing": {
+        "paddingTop": "पैडिंग टॉप",
+        "paddingBottom": "पैडिंग बॉटम",
+        "paddingLeft": "पैडिंग लेफ़्ट",
+        "paddingRight": "पैडिंग राइट",
+        "marginTop": "मार्जिन टॉप",
+        "marginBottom": "मार्जिन बॉटम"
+    },
+    "layoutWidth": {
+        "description": "सेक्शन शेल: बैकग्राउंड पूरे पेज की चौड़ाई तक फैलता है जबकि कंटेंट एक केंद्रित कॉलम में रहता है। क्लासिक सिंगल-ब्लॉक लेआउट के लिए सब कुछ बंद रखें।",
+        "contentWidth": {
+            "label": "कंटेंट चौड़ाई",
+            "options": {
+                "off": "बंद",
+                "text": "टेक्स्ट",
+                "narrow": "संकरी",
+                "default": "डिफ़ॉल्ट",
+                "wide": "चौड़ी",
+                "full": "पूरी"
+            }
+        },
+        "customMaxWidth": {
+            "label": "कस्टम अधिकतम चौड़ाई",
+            "placeholder": "जैसे 820px (प्रीसेट को ओवरराइड करता है)"
+        },
+        "overlapTop": {
+            "label": "पिछले सेक्शन पर ओवरलैप",
+            "options": {
+                "none": "कोई नहीं"
+            }
+        },
+        "overlapHint": "मोबाइल पर ओवरलैप अपने-आप सपाट हो जाते हैं।",
+        "zIndex": {
+            "label": "स्टैक ऑर्डर (z-index)",
+            "options": {
+                "auto": "ऑटो"
+            }
+        },
+        "minHeight": {
+            "label": "न्यूनतम ऊँचाई",
+            "options": {
+                "off": "बंद",
+                "fullScreen": "पूरी स्क्रीन"
+            }
+        },
+        "verticalAlign": {
+            "label": "वर्टिकल अलाइनमेंट (न्यूनतम ऊँचाई के भीतर)",
+            "options": {
+                "top": "ऊपर",
+                "center": "बीच में",
+                "bottom": "नीचे"
+            }
+        },
+        "sticky": {
+            "label": "स्क्रॉल करते समय पिन करें (स्टिकी)",
+            "options": {
+                "off": "बंद",
+                "top80": "टॉप 80",
+                "top96": "टॉप 96",
+                "top120": "टॉप 120"
+            },
+            "hint": "यह ब्लॉक कॉलम लेआउट के भीतर पिन होता है — इसे घूमने की जगह देने के लिए लेआउट का वर्टिकल अलाइन “स्ट्रेच” पर सेट करें।"
+        }
+    },
+    "background": {
+        "color": {
+            "label": "बैकग्राउंड रंग"
+        },
+        "image": {
+            "label": "बैकग्राउंड इमेज",
+            "placeholder": "इमेज URL या अपलोड करें"
+        },
+        "size": {
+            "label": "बैकग्राउंड साइज़",
+            "options": {
+                "cover": "कवर",
+                "contain": "कंटेन",
+                "auto": "ऑटो"
+            }
+        },
+        "overlayColor": {
+            "label": "ओवरले रंग"
+        },
+        "gradient": {
+            "label": "ग्रेडिएंट",
+            "enabled": "सक्षम",
+            "off": "बंद",
+            "type": {
+                "label": "प्रकार",
+                "options": {
+                    "linear": "लीनियर",
+                    "radial": "रेडियल"
+                }
+            },
+            "angle": {
+                "label": "कोण ({{angle}}°)"
+            },
+            "stop": {
+                "label": "स्टॉप {{index}}"
+            },
+            "addStop": "+ स्टॉप जोड़ें"
+        }
+    },
+    "borderShadow": {
+        "borderWidth": {
+            "label": "बॉर्डर चौड़ाई"
+        },
+        "borderColor": {
+            "label": "बॉर्डर रंग"
+        },
+        "borderStyle": {
+            "label": "बॉर्डर स्टाइल",
+            "options": {
+                "solid": "सॉलिड",
+                "dashed": "डैश्ड",
+                "dotted": "डॉटेड"
+            }
+        },
+        "borderRadius": {
+            "label": "बॉर्डर रेडियस",
+            "options": {
+                "none": "कोई नहीं",
+                "full": "पूरा"
+            }
+        },
+        "boxShadow": {
+            "label": "बॉक्स शैडो",
+            "options": {
+                "none": "कोई नहीं",
+                "sm": "छोटा",
+                "md": "मध्यम",
+                "lg": "बड़ा",
+                "xl": "बहुत बड़ा",
+                "xxl": "अतिबड़ा"
+            }
+        }
+    },
+    "premiumEffects": {
+        "glassSurface": {
+            "label": "ग्लास सरफ़ेस",
+            "options": {
+                "off": "बंद",
+                "subtle": "हल्का",
+                "medium": "मध्यम",
+                "strong": "गहरा"
+            }
+        },
+        "glow": {
+            "label": "ग्लो",
+            "options": {
+                "off": "बंद",
+                "soft": "हल्का",
+                "medium": "मध्यम",
+                "bold": "तेज़"
+            }
+        },
+        "borderGradient": {
+            "label": "बॉर्डर ग्रेडिएंट",
+            "options": {
+                "off": "बंद",
+                "primary": "प्राइमरी",
+                "bold": "बोल्ड",
+                "aurora": "ऑरोरा"
+            },
+            "hint": "बॉर्डर ग्रेडिएंट सतह पर हावी रहता है — जब तक यह चालू है, बैकग्राउंड लेयर और इमेज नज़रअंदाज़ की जाती हैं।"
+        },
+        "meshBackground": {
+            "label": "मेश बैकग्राउंड",
+            "options": {
+                "off": "बंद",
+                "soft": "हल्का",
+                "bold": "गहरा",
+                "aurora": "ऑरोरा"
+            }
+        },
+        "imageOverlay": {
+            "label": "इमेज ओवरले",
+            "options": {
+                "off": "बंद",
+                "scrim": "स्क्रिम",
+                "bottom": "नीचे से",
+                "light": "हल्का",
+                "brand": "ब्रांड"
+            }
+        }
+    },
+    "decorations": {
+        "ornaments": {
+            "label": "आभूषण",
+            "off": "बंद"
+        },
+        "ornamentsHint": "कंटेंट के पीछे बनी परिवेशी आकृतियाँ, सक्रिय थीम के अनुसार रंगीन। जानबूझकर हल्की रखी गई हैं।",
+        "divider": {
+            "labelTop": "डिवाइडर · ऊपरी किनारा",
+            "labelBottom": "डिवाइडर · निचला किनारा",
+            "options": {
+                "off": "बंद",
+                "wave": "वेव",
+                "angle": "एंगल",
+                "curve": "कर्व"
+            }
+        },
+        "dividerHeight": {
+            "label": "डिवाइडर ऊँचाई",
+            "options": {
+                "s": "छोटा",
+                "m": "मध्यम",
+                "l": "बड़ा"
+            },
+            "hint": "डिवाइडर पेज के बैकग्राउंड रंग में कटा होता है, जो इस सेक्शन को उसके पड़ोसी सेक्शन के साथ मिला देता है। आकार साफ़ दिखाने के लिए सेक्शन को अपना बैकग्राउंड दें।"
+        }
+    },
+    "effects": {
+        "opacity": {
+            "label": "ओपैसिटी ({{percent}}%)"
+        },
+        "maxWidth": {
+            "label": "अधिकतम चौड़ाई",
+            "layoutHint": "जब तक सेक्शन शेल चालू है, चौड़ाई “लेआउट और चौड़ाई” से नियंत्रित होती है (वहाँ मौजूद “कस्टम अधिकतम चौड़ाई” का उपयोग करें)।",
+            "options": {
+                "none": "कोई नहीं"
+            }
+        },
+        "minHeight": {
+            "label": "न्यूनतम ऊँचाई (कस्टम — प्रीसेट लेआउट और चौड़ाई में हैं)",
+            "placeholder": "जैसे 400px"
+        },
+        "customClass": {
+            "label": "कस्टम CSS क्लास",
+            "placeholder": "जैसे my-hero-section"
+        }
+    },
+    "typography": {
+        "fontFamily": {
+            "label": "फ़ॉन्ट फ़ैमिली",
+            "default": "डिफ़ॉल्ट",
+            "serifSuffix": "{{label}} (सेरिफ़)"
+        },
+        "fontSize": {
+            "label": "फ़ॉन्ट साइज़"
+        },
+        "fontWeight": {
+            "label": "फ़ॉन्ट वेट",
+            "options": {
+                "regular": "रेगुलर",
+                "medium": "मीडियम",
+                "semi": "सेमी-बोल्ड",
+                "bold": "बोल्ड",
+                "extra": "एक्स्ट्रा बोल्ड"
+            }
+        },
+        "lineHeight": {
+            "label": "लाइन हाइट ({{value}})"
+        },
+        "letterSpacing": {
+            "label": "लेटर स्पेसिंग",
+            "options": {
+                "tight": "टाइट",
+                "normal": "सामान्य",
+                "wide": "चौड़ी",
+                "wider": "अधिक चौड़ी"
+            }
+        },
+        "textColor": {
+            "label": "टेक्स्ट रंग"
+        },
+        "textAlign": {
+            "label": "टेक्स्ट अलाइन",
+            "options": {
+                "left": "बाएँ",
+                "center": "बीच में",
+                "right": "दाएँ"
+            }
+        },
+        "textTransform": {
+            "label": "टेक्स्ट ट्रांसफ़ॉर्म",
+            "options": {
+                "none": "कोई नहीं",
+                "upper": "अपरकेस",
+                "lower": "लोअरकेस",
+                "title": "टाइटल केस"
+            }
+        }
+    },
+    "animation": {
+        "entrance": {
+            "label": "एंट्रेंस एनिमेशन",
+            "options": {
+                "none": "कोई नहीं",
+                "fadeIn": "फ़ेड इन",
+                "fadeUp": "फ़ेड अप",
+                "fadeDown": "फ़ेड डाउन",
+                "fadeLeft": "फ़ेड लेफ़्ट",
+                "fadeRight": "फ़ेड राइट",
+                "scaleUp": "स्केल अप",
+                "slideUp": "स्लाइड अप"
+            }
+        },
+        "stagger": {
+            "label": "स्टैगर चिल्ड्रेन (कार्ड/आइटम क्रम से आते हैं)",
+            "options": {
+                "off": "बंद",
+                "fast": "तेज़",
+                "normal": "सामान्य",
+                "slow": "धीमा"
+            }
+        },
+        "duration": {
+            "label": "अवधि ({{ms}}ms)"
+        },
+        "delay": {
+            "label": "देरी ({{ms}}ms)"
+        },
+        "easing": {
+            "label": "ईज़िंग",
+            "options": {
+                "ease": "ईज़",
+                "easeIn": "ईज़ इन",
+                "easeOut": "ईज़ आउट",
+                "easeInOut": "ईज़ इन-आउट"
+            }
+        },
+        "hover": {
+            "label": "होवर इफ़ेक्ट",
+            "options": {
+                "none": "कोई नहीं",
+                "lift": "लिफ़्ट",
+                "glow": "ग्लो",
+                "scale": "स्केल",
+                "brighten": "ब्राइटन"
+            }
+        }
+    },
+    "visibility": {
+        "viewports": {
+            "desktop": "डेस्कटॉप",
+            "tablet": "टैबलेट",
+            "mobile": "मोबाइल"
+        }
+    }
+}

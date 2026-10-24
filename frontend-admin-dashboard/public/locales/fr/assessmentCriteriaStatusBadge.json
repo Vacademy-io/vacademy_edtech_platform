@@ -1,0 +1,9 @@
+{
+  "labels": {
+    "aiGenerated": "Généré par IA",
+    "manual": "Manuel",
+    "template": "Modèle",
+    "notAdded": "Non ajouté"
+  },
+  "previewTooltip": "Aperçu des critères"
+}

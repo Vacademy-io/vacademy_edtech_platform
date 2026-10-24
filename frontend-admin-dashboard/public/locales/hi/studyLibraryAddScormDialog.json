@@ -1,0 +1,45 @@
+{
+    "validation": {
+        "titleRequired": "शीर्षक आवश्यक है",
+        "scormFileRequired": "SCORM zip फ़ाइल आवश्यक है"
+    },
+    "dropzone": {
+        "title": "अपना SCORM पैकेज आयात करें",
+        "hint": "अपलोड करने के लिए खींचें या क्लिक करें",
+        "formats": "SCORM 1.2 और SCORM 2004 (.zip) समर्थित हैं",
+        "selected": "चयनित: {{fileName}}"
+    },
+    "errors": {
+        "imsManifestHintPrefix": "सुनिश्चित करें कि",
+        "imsManifestHintSuffix": "zip के मूल में है, किसी उप-फ़ोल्डर के अंदर नहीं — फ़ोल्डर की बजाय पैकेज की सामग्री को सीधे फिर से ज़िप करें, फिर पुनः प्रयास करें।"
+    },
+    "fields": {
+        "title": "शीर्षक",
+        "titlePlaceholder": "SCORM स्लाइड का शीर्षक दर्ज करें",
+        "description": "विवरण (वैकल्पिक)",
+        "descriptionPlaceholder": "इस SCORM मॉड्यूल के लिए विवरण दर्ज करें..."
+    },
+    "details": {
+        "title": "पैकेज विवरण",
+        "versionLabel": "संस्करण:",
+        "versionValue": "SCORM {{version}}",
+        "launchFileLabel": "लॉन्च फ़ाइल:"
+    },
+    "toasts": {
+        "uploadFailed": "SCORM पैकेज अपलोड करने में विफल",
+        "selectZipFile": "कृपया एक .zip फ़ाइल चुनें",
+        "fileTooLarge": "SCORM पैकेज बहुत बड़ा है ({{size}})। अधिकतम अनुमत आकार {{max}} है।",
+        "uploading": "SCORM पैकेज अपलोड हो रहा है...",
+        "uploadSuccessDetected": "सफलतापूर्वक अपलोड हुआ! SCORM {{version}} पैकेज मिला।",
+        "uploadParseSuccess": "SCORM पैकेज सफलतापूर्वक अपलोड और विश्लेषित किया गया!",
+        "dropZipFile": "कृपया एक .zip फ़ाइल छोड़ें",
+        "reorderFailed": "स्लाइड बनाई गई लेकिन क्रम बदलना विफल रहा",
+        "waitForUpload": "कृपया SCORM पैकेज अपलोड पूरा होने की प्रतीक्षा करें",
+        "createSuccess": "SCORM स्लाइड सफलतापूर्वक बनाई गई!",
+        "createFailed": "SCORM स्लाइड बनाने में विफल"
+    },
+    "actions": {
+        "creatingSlide": "स्लाइड बनाई जा रही है...",
+        "createSlide": "SCORM स्लाइड बनाएं"
+    }
+}

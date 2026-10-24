@@ -1,0 +1,76 @@
+{
+    "dialog": {
+        "editHeading": "Edit leave policy",
+        "addHeading": "Add leave policy"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "createPolicy": "Create policy"
+    },
+    "info": {
+        "accrualExplanationPrefix": "The accrual type decides how the scheduled job credits the quota: ",
+        "accrualExplanationSuffix": " means each run adds the accrual amount to every eligible employee's balance. Pro-rata prorates a mid-period joiner's first period, so someone who joins halfway through a month is credited half of it rather than all of it."
+    },
+    "noLeaveTypes": "No leave types yet — create one on the Leave types tab first. A policy has to attach to a type.",
+    "fields": {
+        "leaveType": {
+            "label": "Leave type",
+            "fallback": "Leave"
+        },
+        "annualQuota": {
+            "label": "Annual quota (days)",
+            "placeholder": "12",
+            "description": "The whole year's entitlement."
+        },
+        "accrualType": {
+            "label": "Accrual type"
+        },
+        "accrualAmount": {
+            "label": "Accrual amount (days)",
+            "placeholder": "1",
+            "description": "Credited on each {{accrualLabel}} run."
+        },
+        "applicableAfterDays": {
+            "label": "Applicable after (days of service)",
+            "placeholder": "90",
+            "description": "Blank means it applies from the joining date."
+        },
+        "effectiveFrom": {
+            "label": "Effective from"
+        },
+        "effectiveTo": {
+            "label": "Effective to",
+            "description": "Blank leaves the policy open-ended."
+        },
+        "status": {
+            "label": "Status"
+        }
+    },
+    "checkbox": {
+        "proRata": {
+            "label": "Pro-rata for mid-period joiners",
+            "description": "Off means a joiner gets the full period's accrual on their first run, however few days of it they worked."
+        }
+    },
+    "toast": {
+        "updated": "Policy updated",
+        "created": "Policy created"
+    },
+    "errors": {
+        "saveFailed": "Could not save the leave policy."
+    },
+    "validation": {
+        "leaveTypeRequired": "Pick the leave type this policy governs",
+        "annualQuotaRequired": "Enter the annual quota in days",
+        "annualQuotaFormat": "Days only, e.g. 12 or 12.5",
+        "accrualTypeRequired": "Pick how the quota is credited",
+        "accrualAmountRequired": "Enter how many days each period credits",
+        "accrualAmountFormat": "Days only, e.g. 1 or 1.5",
+        "wholeDaysOnly": "Whole days only",
+        "effectiveFromRequired": "A policy needs a start date",
+        "statusRequired": "Pick a status",
+        "endBeforeStart": "The end date cannot be before the start date"
+    }
+}

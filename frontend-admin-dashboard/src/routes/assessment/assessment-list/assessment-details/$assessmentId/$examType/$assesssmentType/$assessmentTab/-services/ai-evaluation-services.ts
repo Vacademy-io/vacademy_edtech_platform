@@ -98,6 +98,10 @@ export interface EvaluationProgress {
     };
     completed_questions: QuestionProgress[];
     pending_questions: QuestionProgress[];
+    /** The checked copy THIS run rendered (marks drawn into the PDF), from the
+     *  run's own complete payload — null while in flight, or when the run produced
+     *  no copy. Not the attempt's latest evaluated_file_id. */
+    file_id?: string | null;
     layout_map_url?: string | null;
     rubric_version?: number | null;
     ai_service_job_id?: string | null;
@@ -106,20 +110,20 @@ export interface EvaluationProgress {
 /**
  * Trigger AI evaluation for one or more student attempts
  * @param attempt_ids - Array of student attempt IDs
- * @param preferred_model - Optional AI model to use (default: mistralai/devstral-2512:free)
+ * @param preferred_model - AI model the teacher explicitly picked. Omit it and no
+ *   `preferred_model` is sent: the platform's "evaluation" use-case default applies.
  * @returns Array of process IDs for tracking evaluation progress
  */
 export const triggerAIEvaluation = async (
     attempt_ids: string[],
-    preferred_model: string = 'mistralai/devstral-2512:free'
+    preferred_model?: string
 ): Promise<string[]> => {
+    const data: TriggerEvaluationRequest = { attempt_ids };
+    if (preferred_model) data.preferred_model = preferred_model;
     const response = await authenticatedAxiosInstance({
         method: 'POST',
         url: TRIGGER_EVALUATION_URL,
-        data: {
-            attempt_ids,
-            preferred_model,
-        },
+        data,
     });
 
     return response?.data || [];

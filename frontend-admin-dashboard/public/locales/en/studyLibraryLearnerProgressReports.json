@@ -1,0 +1,67 @@
+{
+    "loading": "Loading…",
+    "view": "View",
+    "unnamedLearner": "Unnamed {{learner}}",
+    "viewProgressBreakdownAriaLabel": "View progress breakdown for {{name}}",
+    "status": {
+        "completed": "Completed",
+        "onTrack": "On track",
+        "inProgress": "In progress",
+        "behind": "Behind",
+        "notStarted": "Not started"
+    },
+    "columns": {
+        "courseProgress": "{{course}} progress",
+        "status": "Status",
+        "chaptersDone": "Chapters done"
+    },
+    "emptyBatch": {
+        "selectBatch": "Select a {{batch}} to view {{learner}} progress.",
+        "multiHint": "Pick several {{batch}} to see their {{batch}} learners in one list."
+    },
+    "stats": {
+        "enrolled_one": "Enrolled {{learner}}",
+        "enrolled_other": "Enrolled {{learner}}s",
+        "avgProgressThisPage": "Avg progress (this page)",
+        "completedThisPage": "Completed (this page)",
+        "notStartedThisPage": "Not started (this page)"
+    },
+    "search": {
+        "placeholder": "Search {{learner}} by name",
+        "label": "Search",
+        "clear": "Clear",
+        "enrolledCount_one": "{{count}} enrolled {{learner}}",
+        "enrolledCount_other": "{{count}} enrolled {{learner}}s"
+    },
+    "error": {
+        "loadFailed": "Could not load enrolled {{learner}}s for this batch.",
+        "retry": "Retry"
+    },
+    "empty": {
+        "noMatch": "No {{learner}} matches “{{search}}”.",
+        "noneEnrolled": "No {{learner}} is enrolled in the selected {{batch}} yet.",
+        "tryDifferentName": "Try a different name.",
+        "progressAppearsHere": "Progress appears here once {{learner}}s are enrolled."
+    },
+    "drawer": {
+        "percentComplete": "{{percent}}% of {{course}} complete"
+    },
+    "csv": {
+        "fileStem": "{{learner}}-progress",
+        "exportCsv": "Export CSV",
+        "preparing": "Preparing…",
+        "exporting": "Exporting {{done}}/{{total}}…",
+        "exportSuccess": "CSV exported · {{count}} rows",
+        "exportTruncated": "CSV exported · first {{count}} only",
+        "exportFailed": "Failed to export CSV",
+        "summaryTitle": "{{learner}} progress",
+        "email": "Email",
+        "username": "Username",
+        "enrollmentNumber": "Enrollment number",
+        "courseProgress": "{{course}} progress (%)",
+        "chaptersDone": "Chapters done",
+        "chaptersTotal": "Chapters total",
+        "subjectTitle": "{{learner}} progress by subject",
+        "moduleProgress": "{{module}} progress (%)"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "heading": "Miniature",
+    "regenerate": {
+        "title": "Régénérer les options",
+        "button": "Régénérer"
+    },
+    "alternate": {
+        "selectTitle": "Sélectionner cette miniature"
+    },
+    "placeholder": {
+        "loading": "Chargement des miniatures…",
+        "empty": "Les miniatures apparaîtront ici une fois le plan de réalisation prêt."
+    },
+    "toast": {
+        "selectError": "Impossible de changer la miniature",
+        "regenerateSuccess": "Génération de nouvelles options de miniatures…",
+        "regenerateError": "Impossible de régénérer les miniatures"
+    }
+}

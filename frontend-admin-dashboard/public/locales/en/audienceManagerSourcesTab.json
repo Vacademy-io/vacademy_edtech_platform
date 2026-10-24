@@ -1,0 +1,26 @@
+{
+    "title": "Source performance",
+    "columns": {
+        "source": "Source",
+        "leads": "Leads",
+        "connected": "Connected",
+        "interested": "Interested",
+        "won": "Won",
+        "convRate": "Conv %",
+        "revenue": "Revenue",
+        "spend": "Spend",
+        "cpl": "CPL",
+        "roi": "ROI"
+    },
+    "csvTotalRow": "TOTAL",
+    "footerTotal": "Total",
+    "unknownSource": "Unknown",
+    "emptyMessage": "No leads in this range.",
+    "waveTwoCell": {
+        "comingSoon": "Coming with spend tracking"
+    },
+    "footnote": {
+        "connected": "Connected = leads with at least one connected call (per your telephony settings).",
+        "interested": "Interested = leads that entered an interested status in this range."
+    }
+}

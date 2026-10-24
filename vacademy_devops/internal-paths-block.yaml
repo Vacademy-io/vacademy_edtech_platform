@@ -1,0 +1,214 @@
+# internal-paths-block — 403 the /internal/ service-to-service routes at the
+# public edge (G16 / S13, docs/AI_EVALUATION_PUBLIC_API.md).
+#
+# DRAFT — DO NOT APPLY until every prerequisite below is closed.
+#
+# Why: /<svc>/internal/** is authenticated only by InternalAuthFilter (raw shared
+# secret in the "Signature" header) and today it is routed to the internet by the
+# /<svc> prefixes of vacademy-services-ingress. In-cluster callers use the
+# *_BASE_URL service names (configmap myconfigmapv1.0) and never come through here.
+#
+# Deliberately NOT part of the `vac` Helm release (same pattern as
+# analytics-api.yaml): nothing in CI applies this file, and enabling it must
+# never involve a `helm upgrade` of `vac` — prod's overlay renders
+# vacademy-secrets with blanks/"not-configured" and resets every image to
+# :latest. Apply/roll back by hand:
+#   kubectl apply  -f vacademy_devops/internal-paths-block.yaml
+#   kubectl delete -f vacademy_devops/internal-paths-block.yaml
+# nginx merges these Ingresses with the helm-managed one on the same host; the
+# live vacademy-services-ingress is never re-applied.
+#
+# How: denylist-source-range 0.0.0.0/0,::/0 denies EVERY address, so a spoofed
+# X-Forwarded-For / CF-Connecting-IP cannot get a request through (an allowlist
+# of 127.0.0.1 could, if the controller trusts forwarded headers). Annotations
+# are per-Ingress, and the live controller runs allow-snippet-annotations=false,
+# so a separate Ingress is the only way to scope it. If a controller ignored the
+# annotation, these paths would simply route as they do today (no outage).
+#
+# Prefix is segment-aware (/x/internal blocks /x/internal and /x/internal/...,
+# not /x/internals) and nginx picks the longest prefix, so these win over the
+# /<svc> prefixes. Paths = every @RequestMapping / FastAPI route with an
+# "internal" segment as of 2026-10-01. A generic "internal anywhere" regex would
+# need use-regex, which ingress-nginx then forces on EVERY path of this host —
+# add new mid-path internal routes here by hand instead.
+# /voice-bot-service/internal is deliberately absent: it is guarded by
+# X-Voice-Bot-Token (not InternalAuthFilter) and admin-core reaches it over the
+# public VOICE_BOT_BASE_URL when the Singapore pod is the active bot.
+#
+# Prerequisites (read-only checks, then caller moves):
+#   1. Workflow INTERNAL HTTP nodes sign a FULL, SpEL-evaluated url. On admin_core:
+#        SELECT id, config_json FROM node_template WHERE config_json::text ILIKE '%internal%';
+#        SELECT id, override_config FROM workflow_node_mapping WHERE override_config::text ILIKE '%internal%';
+#      Review each url expression by hand; any that resolves to a public host
+#      must become http://<svc>-service:<port>/...
+#   2. No service env points at the public host:
+#        kubectl get cm myconfigmapv1.0 -o yaml | grep BASE_URL
+#        kubectl set env deploy/<each> --list | grep -i -E 'url|base'
+#      (watch ASSESSMENT_SERVER_BASE_URL on admin-core: application-stage
+#      falls back to https://backend-stage.vacademy.io when it is unset).
+#   3. Controller is the expected one and fw-k3s blocks NodePorts (every app
+#      Service is type NodePort, so only the firewall stops a bypass):
+#        kubectl -n ingress-nginx get deploy ingress-nginx-controller -o jsonpath='{..image}'
+#        hcloud firewall describe fw-k3s
+#   4. Manual ops calls (/notification-service/internal/v1/migrate-templates,
+#      /internal/api/bounced-emails) move to `kubectl port-forward`.
+#   5. Optional: k8s voice bot off the edge — ADMIN_CORE_BASE=http://admin-core-service:8072
+#      in .github/workflows/docker-publish-voice-bot-service.yml.
+#
+# Verify after apply (expect 403, through Cloudflare AND straight to a node IP
+# with --resolve backend-stage.vacademy.io:443:<node-ip>):
+#   curl -s -o /dev/null -w '%{http_code}' https://backend-stage.vacademy.io/admin-core-service/internal/x
+#   ... same with -H 'X-Forwarded-For: 127.0.0.1' and -H 'CF-Connecting-IP: 127.0.0.1'
+# and expect 401/403 from Spring (still routed, no Signature) on
+#   https://backend-stage.vacademy.io/admin-core-service/internal/voice-bot/call-context
+# then place a live AI test call.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vacademy-internal-block
+  namespace: default
+  labels:
+    app: internal-paths-block
+  annotations:
+    # No cert-manager annotation on purpose: the cert for this host is owned
+    # by the helm-managed vacademy-services-ingress; we just reuse its secret.
+    nginx.ingress.kubernetes.io/denylist-source-range: "0.0.0.0/0,::/0"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - backend-stage.vacademy.io
+      secretName: vacademy-tls-secret
+  rules:
+    - host: backend-stage.vacademy.io
+      http:
+        paths:
+          - path: /auth-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8071
+          - path: /auth-service/v1/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8071
+          - path: /auth-service/v1/user/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8071
+          - path: /admin-core-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072
+          - path: /admin-core-service/institute/v1/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072
+          - path: /admin-core-service/llm-analytics/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072
+          - path: /assessment-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: assessment-service
+                port:
+                  number: 8074
+          - path: /community-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: community-service
+                port:
+                  number: 8073
+          - path: /media-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: media-service
+                port:
+                  number: 8075
+          - path: /notification-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8076
+          - path: /notification-service/push-notifications/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8076
+          - path: /ai-service/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8077
+          - path: /ai-service/credits/v1/internal
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8077
+---
+# Carve-out: keeps /admin-core-service/internal/voice-bot routed (longest prefix
+# beats /admin-core-service/internal above). The off-cluster Mumbai voice bot
+# (ADMIN_CORE_BASE=https://backend-stage.vacademy.io) calls call-context,
+# handoff, action and tts-cache here on every live AI call, signed with
+# clientName/Signature. This leaves those routes exactly as exposed as today;
+# delete this Ingress once the bot reaches admin-core another way (own host with
+# an IP allowlist / mTLS, or real HMAC). Annotations mirror
+# vacademy-services-ingress so the location behaves as it does now.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vacademy-internal-voice-bot
+  namespace: default
+  labels:
+    app: internal-paths-block
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-body-size: "320m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - backend-stage.vacademy.io
+      secretName: vacademy-tls-secret
+  rules:
+    - host: backend-stage.vacademy.io
+      http:
+        paths:
+          - path: /admin-core-service/internal/voice-bot
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072

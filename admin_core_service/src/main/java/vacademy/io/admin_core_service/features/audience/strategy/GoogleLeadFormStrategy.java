@@ -11,39 +11,44 @@ import vacademy.io.admin_core_service.features.audience.dto.PlatformFormField;
 import vacademy.io.admin_core_service.features.audience.dto.WebhookSubscriptionResult;
 import vacademy.io.admin_core_service.features.audience.entity.FormWebhookConnector;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 
 /**
  * Ad platform strategy for Google Lead Form Extensions.
  *
- * Authentication: no OAuth. Instead, each connector has a static {@code vendor_id}
- * (the google_key) that is embedded in the webhook URL:
+ * Authentication: no OAuth. Each connector has a server-generated random key (stored as
+ * {@code vendor_id}) that the admin pastes into BOTH Google Ads fields — it is in the
+ * webhook URL path and Google echoes it back as {@code google_key} in the body:
  *   POST /admin-core-service/api/v1/webhook/google/{googleKey}
+ * The webhook is accepted only when the URL key names an active connector AND the body's
+ * google_key equals it (see {@link #googleKeyMatches}).
  *
  * Google Ads sends the full lead payload in one POST, so no secondary API call needed.
  *
- * Payload format (Google Lead Form Extensions webhook):
+ * Payload format (https://developers.google.com/google-ads/webhook/docs/implementation):
  * {
+ *   "lead_id": "...",            unique across all forms — the dedup key
  *   "google_key": "...",
- *   "lead_id": "...",
- *   "campaign_id": "...",
- *   "adgroup_id": "...",
- *   "creative_id": "...",
  *   "api_version": "1.0",
+ *   "form_id": 40000000000,      8-byte integers, NOT strings
+ *   "campaign_id": 50000000000,
+ *   "adgroup_id": 20000000000,   video / discovery ads only
+ *   "creative_id": 30000000000,  video / discovery ads only
+ *   "asset_group_id": 0,         Performance Max only
+ *   "gcl_id": "...",
+ *   "lead_submit_time": "2024-09-26T12:30:00Z",
  *   "user_column_data": [
  *     {"column_id": "FULL_NAME", "string_value": "John Doe"},
  *     {"column_id": "EMAIL",     "string_value": "john@example.com"},
- *     {"column_id": "PHONE_NUMBER", "string_value": "+91..."},
- *     {"column_id": "CUSTOM_QUESTION_a1b2", "string_value": "Math"}
+ *     {"column_id": "PHONE_NUMBER", "string_value": "+91..."}
  *   ],
  *   "is_test": false
  * }
+ * Google never sends the campaign NAME — only its id.
  *
- * Setup instructions for admins:
- * 1. In Google Ads, go to Lead Form Extensions → Webhook integration
- * 2. Webhook URL: https://api.vacademy.io/admin-core-service/api/v1/webhook/google/{googleKey}
- * 3. Key: paste the same googleKey value
- * 4. Send test lead to verify
+ * Expected response: 200 {} on success; 4XX {"message"} is NOT retried, 5XX is retried.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,6 +56,10 @@ import java.util.*;
 public class GoogleLeadFormStrategy implements AdPlatformStrategy {
 
     private static final String VENDOR_CODE = "GOOGLE_LEAD_ADS";
+
+    /** Top-level payload ids kept on the lead as ad context, in Google's own key names. */
+    private static final List<String> AD_CONTEXT_KEYS = List.of(
+            "campaign_id", "form_id", "adgroup_id", "creative_id", "asset_group_id", "gcl_id");
 
     private final ObjectMapper objectMapper;
 
@@ -63,9 +72,21 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
 
     @Override
     public boolean verifyWebhookSignature(String signatureHeader, String rawBody) {
-        // Google Lead Form Extensions have no payload signature.
-        // Authentication is by URL path (googleKey), verified before this is called.
+        // Google Lead Form Extensions have no payload signature. Authentication is the
+        // connector key: URL lookup + googleKeyMatches(), both done by the caller.
         return true;
+    }
+
+    /**
+     * True when the payload's {@code google_key} equals the connector's key. Google
+     * echoes back the Key configured on the lead form, so this proves the sender knows
+     * the key and not only the URL. Constant-time compare; a missing key never matches.
+     */
+    public boolean googleKeyMatches(JsonNode root, String expectedKey) {
+        String sent = text(root, "google_key");
+        if (sent == null || expectedKey == null) return false;
+        return MessageDigest.isEqual(
+                sent.getBytes(StandardCharsets.UTF_8), expectedKey.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -84,7 +105,7 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
             JsonNode root = objectMapper.readTree(rawBody);
 
             boolean isTest = root.path("is_test").asBoolean(false);
-            String leadId = root.path("lead_id").asText(null);
+            String leadId = text(root, "lead_id");
 
             // Parse user_column_data into a flat map
             Map<String, String> rawFields = new LinkedHashMap<>();
@@ -97,9 +118,15 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
                 }
             }
 
-            // Also add campaign context fields
-            String campaignId = root.path("campaign_id").asText(null);
-            if (campaignId != null) rawFields.put("campaign_id", campaignId);
+            // Ad context: which campaign / form / ad group / creative produced the lead.
+            // Google sends the ids as JSON integers; text() reads them as strings.
+            Map<String, String> adContext = new LinkedHashMap<>();
+            for (String key : AD_CONTEXT_KEYS) {
+                String value = text(root, key);
+                // An unpopulated id can arrive as 0 rather than be omitted.
+                if (value != null && !"0".equals(value)) adContext.put(key, value);
+            }
+            rawFields.putAll(adContext);
 
             // Extract standard fields from raw (before mapping changes keys)
             String rawEmail = rawFields.get("email");
@@ -108,7 +135,11 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
 
             // Apply field mapping from connector config
             Map<String, String> mappedFields = applyFieldMapping(rawFields, connector.getFieldMappingJson());
+            // A DISCARD-unmapped mapping must not strip the ad context: routing rules key
+            // on campaign_id, and a custom field named e.g. "gcl_id" should still fill.
+            adContext.forEach(mappedFields::putIfAbsent);
 
+            String campaignId = adContext.get("campaign_id");
             NormalizedLeadData lead = NormalizedLeadData.builder()
                     .platformLeadId(leadId)
                     .fields(mappedFields)
@@ -118,6 +149,8 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
                     .sourceType("GOOGLE_ADS")
                     .targetAudienceId(connector.getAudienceId())
                     .testLead(isTest)
+                    .campaignId(campaignId)
+                    .utmParams(buildUtmParams(campaignId, adContext))
                     .build();
 
             return List.of(lead);
@@ -171,6 +204,33 @@ public class GoogleLeadFormStrategy implements AdPlatformStrategy {
             String decryptedCurrentToken) {
         // Static keys don't expire
         return Optional.empty();
+    }
+
+    // ── Attribution ──────────────────────────────────────────────────────────
+
+    /**
+     * UTM touch for a Google lead, so it shows up beside the institute's tagged links in
+     * the leads table and the campaign report. utm_campaign is the campaign ID — Google
+     * never sends the name. utm_content is the ad group (video/discovery) or, for
+     * Performance Max, the asset group. Empty when Google sent no campaign.
+     */
+    private Map<String, String> buildUtmParams(String campaignId, Map<String, String> adContext) {
+        if (campaignId == null) return Map.of();
+        Map<String, String> utm = new LinkedHashMap<>();
+        utm.put("utm_source", "google");
+        utm.put("utm_medium", "lead_form");
+        utm.put("utm_campaign", campaignId);
+        String content = adContext.getOrDefault("adgroup_id", adContext.get("asset_group_id"));
+        if (content != null) utm.put("utm_content", content);
+        return utm;
+    }
+
+    /** Field as text — numbers included — or null when missing, JSON null or blank. */
+    private static String text(JsonNode root, String field) {
+        JsonNode node = root.path(field);
+        if (node.isMissingNode() || node.isNull()) return null;
+        String value = node.asText();
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     // ── Field mapping ────────────────────────────────────────────────────────

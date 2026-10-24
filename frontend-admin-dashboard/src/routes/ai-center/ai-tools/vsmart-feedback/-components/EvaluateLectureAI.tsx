@@ -2,6 +2,7 @@ import { getInstituteId } from '@/constants/helper';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAICenter } from '@/routes/ai-center/-contexts/useAICenterContext';
 import {
     handleEvaluateLecture,
@@ -27,6 +28,7 @@ const ACCEPTED_EXTENSIONS = ['mp3', 'wav', 'flac', 'aac', 'm4a'];
 type Phase = 'idle' | 'uploading' | 'processing' | 'generating' | 'done';
 
 const EvaluateLectureAI = () => {
+    const { t } = useTranslation('aiCenterEvaluateLectureAI');
     const queryClient = useQueryClient();
     const instituteId = getInstituteId();
     const { setLoader, setKey } = useAICenter();
@@ -52,13 +54,13 @@ const EvaluateLectureAI = () => {
     useEffect(() => {
         if (!pendingTaskId || !Array.isArray(recentTasksData)) return;
         const match = recentTasksData.find(
-            (t: AITaskIndividualListInterface) => t.id === pendingTaskId
+            (task: AITaskIndividualListInterface) => task.id === pendingTaskId
         );
         if (!match) return;
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this review. Want to try again?");
+            setErrorMessage(t('errors.taskFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -90,7 +92,7 @@ const EvaluateLectureAI = () => {
             setLoader(false);
             setKey(null);
             setPhase('idle');
-            setErrorMessage("We couldn't review this recording. Try a different file?");
+            setErrorMessage(t('errors.generateFailed'));
         },
     });
 
@@ -103,7 +105,7 @@ const EvaluateLectureAI = () => {
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files. Try MP3, WAV, FLAC, AAC, or M4A.`);
+            setErrorMessage(t('errors.unsupportedFormat', { extension: ext }));
             return;
         }
         setErrorMessage(null);
@@ -119,7 +121,7 @@ const EvaluateLectureAI = () => {
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadIncomplete'));
                 resetFile();
                 return;
             }
@@ -133,7 +135,7 @@ const EvaluateLectureAI = () => {
             });
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong reading your recording. Try again?');
+            setErrorMessage(t('errors.readFailed'));
             resetFile();
         }
     };
@@ -155,23 +157,20 @@ const EvaluateLectureAI = () => {
     const isWorking = phase === 'uploading' || phase === 'processing' || phase === 'generating';
     const workingLabel =
         phase === 'uploading'
-            ? 'Uploading your recording…'
+            ? t('workingLabels.uploading')
             : phase === 'processing'
-              ? 'Listening to your lecture…'
+              ? t('workingLabels.processing')
               : phase === 'generating'
-                ? 'Reviewing pacing, engagement, and clarity — usually takes ~1 minute.'
+                ? t('workingLabels.generating')
                 : '';
 
     return (
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Lecture Coach
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Drop a recording of a lecture you taught. We&apos;ll give you a clear,
-                    constructive review.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             {!fileChosen ? (
@@ -194,11 +193,9 @@ const EvaluateLectureAI = () => {
                     </div>
                     <div className="flex flex-col gap-1">
                         <p className="text-base font-medium text-gray-900">
-                            Drop your recording here, or click to choose
+                            {t('dropzone.instruction')}
                         </p>
-                        <p className="text-xs text-neutral-500">
-                            MP3, WAV, FLAC, AAC, or M4A.
-                        </p>
+                        <p className="text-xs text-neutral-500">{t('dropzone.formats')}</p>
                     </div>
                 </div>
             ) : (
@@ -213,10 +210,10 @@ const EvaluateLectureAI = () => {
                                     {fileName}
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    {phase === 'uploading' && 'Uploading…'}
-                                    {phase === 'processing' && 'Listening…'}
-                                    {phase === 'generating' && 'Reviewing…'}
-                                    {phase === 'done' && 'Done'}
+                                    {phase === 'uploading' && t('fileStatus.uploading')}
+                                    {phase === 'processing' && t('fileStatus.listening')}
+                                    {phase === 'generating' && t('fileStatus.reviewing')}
+                                    {phase === 'done' && t('fileStatus.done')}
                                 </span>
                             </div>
                         </div>
@@ -225,7 +222,7 @@ const EvaluateLectureAI = () => {
                                 type="button"
                                 onClick={resetFile}
                                 className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                aria-label="Remove file"
+                                aria-label={t('fileStatus.removeFile')}
                             >
                                 <X size={18} />
                             </button>
@@ -237,9 +234,9 @@ const EvaluateLectureAI = () => {
                             readyTask={readyTask}
                             openPreview={openPreviewDialog}
                             setOpenPreview={setOpenPreviewDialog}
-                            heading="Vsmart Feedback"
-                            title="Here's your lecture review"
-                            subtitle="Open it to see what went well and where you can adjust."
+                            heading={t('productName')}
+                            title={t('draftingDone.title')}
+                            subtitle={t('draftingDone.subtitle')}
                             onDraftAnother={() => {
                                 setReadyTask(null);
                                 setPendingTaskId(null);
@@ -249,8 +246,8 @@ const EvaluateLectureAI = () => {
                         />
                     ) : phase === 'generating' || (pendingTaskId && !readyTask) ? (
                         <GeneratingState
-                            title="Reviewing your lecture"
-                            subtitle="Listening for pacing, engagement, and clarity. Usually ~1 minute."
+                            title={t('generating.title')}
+                            subtitle={t('generating.subtitle')}
                         />
                     ) : isWorking ? (
                         <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -277,14 +274,14 @@ const EvaluateLectureAI = () => {
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent reviews"
-                fallbackLabel="Lecture review"
-                emptyHint="Your lecture reviews will appear here. Drop a recording above to get one."
+                title={t('recentFiles.title')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
+                emptyHint={t('recentFiles.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
             />
 
             <AITasksList
-                heading="Vsmart Feedback"
+                heading={t('productName')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
             />

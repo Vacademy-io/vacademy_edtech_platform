@@ -1,10 +1,11 @@
 import { memo, useState } from 'react';
 import { NodeProps } from 'reactflow';
-import { Loader2, Maximize2, Film } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { CircleNotch as Loader2, ArrowsOut as Maximize2, FilmStrip as Film } from '@phosphor-icons/react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { AIContentPlayer } from '@/components/ai-video-player/AIContentPlayer';
 import { BaseNodeShell } from './BaseNodeShell';
-import { ACTIVE_SUB_STATUS } from '../-utils/stage-vocab';
+import { buildActiveSubStatus } from '../-utils/stage-vocab';
 import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
 
 const PLAYER_W = 460;
@@ -12,6 +13,7 @@ const PLAYER_H_LANDSCAPE = 258; // 16:9 of 460
 const PLAYER_H_PORTRAIT = 460 * (16 / 9); // 818 — far too tall, so we cap
 
 function FinalCutNodeInner({ data }: NodeProps<PipelineNodeData>) {
+    const { t } = useTranslation('videoApiStudioStageVocab');
     const slot = data.state.finalCut;
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
 
@@ -43,8 +45,8 @@ function FinalCutNodeInner({ data }: NodeProps<PipelineNodeData>) {
                         <p className="text-sm font-semibold text-foreground">
                             {slot.state === 'in_production' ? 'In production' : 'Pre-production'}
                         </p>
-                        <p className="text-[11px] text-muted-foreground">
-                            {ACTIVE_SUB_STATUS.finalCut}
+                        <p className="text-2xs text-muted-foreground">
+                            {buildActiveSubStatus(t).finalCut}
                         </p>
                     </div>
                 </div>
@@ -84,7 +86,7 @@ function FinalCutNodeInner({ data }: NodeProps<PipelineNodeData>) {
                 </div>
                 <button
                     onClick={() => setFullscreenOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-white px-2 py-1 text-[11px] font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-white px-2 py-1 text-2xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
                     type="button"
                 >
                     <Maximize2 className="size-3" />
@@ -93,7 +95,7 @@ function FinalCutNodeInner({ data }: NodeProps<PipelineNodeData>) {
             </div>
 
             <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
-                <DialogContent className="max-w-[95vw] p-0 sm:max-w-[1280px]">
+                <DialogContent className="w-dialog-xl p-0">
                     <DialogTitle className="sr-only">Final Cut preview</DialogTitle>
                     <div
                         className="bg-black"

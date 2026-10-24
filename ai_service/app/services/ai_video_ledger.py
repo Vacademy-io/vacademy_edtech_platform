@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import threading
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional
+from typing import Dict, Optional, Set, Tuple
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +83,14 @@ class AiVideoLedger:
         # tracker's USD totals so we can sanity-check parity.
         self._charged_credits = Decimal("0")
         self._refunded_credits = Decimal("0")
+        # Idempotency-key occurrence per (shot, segment) within THIS leg: a
+        # shot with several inline <aivideo> tags makes several separate
+        # charges, and only the n-th charge of a resumed leg may replay the
+        # n-th charge of the leg it resumes.
+        self._charge_seq: Dict[Tuple[int, Optional[int]], int] = {}
+        # Shots the user sent back from the contact sheet (assist): their
+        # re-render is a new, billable charge — scoped apart from the first.
+        self.regen_shots: Set[int] = set()
 
     # ------------------------------------------------------------------
     # Properties
@@ -164,6 +172,13 @@ class AiVideoLedger:
                 audio_on=audio_on,
             )
 
+            with self._lock:
+                _occ = self._charge_seq.get((shot_idx, segment_idx), 0)
+                self._charge_seq[(shot_idx, segment_idx)] = _occ + 1
+            idem_key = charge_idempotency_key(
+                db, self.video_id, self.institute_id, shot_idx, segment_idx,
+                occurrence=_occ, scope=("regen" if shot_idx in self.regen_shots else None),
+            )
             request = CreditDeductRequest(
                 institute_id=self.institute_id,
                 request_type=AI_VIDEO_REQUEST_TYPE,
@@ -172,8 +187,17 @@ class AiVideoLedger:
                 batch_id=self.video_id,
                 precomputed_credits=credits,
                 description=description,
+                idempotency_key=idem_key,
             )
             response = CreditService(db).deduct_credits(request)
+        if response.success and "idempotent" in str(getattr(response, "message", "") or "").lower():
+            # Replayed after a kill/resume: this shot was charged by an earlier
+            # leg. Report the charge (a later per-shot failure still refunds
+            # what was paid) without debiting again.
+            logger.info(
+                "[AiVideoLedger] Replay of an earlier charge for shot=%s seg=%s (video=%s, key=%s) — no new debit",
+                shot_idx, segment_idx, self.video_id, idem_key,
+            )
 
         if not response.success:
             logger.warning(
@@ -277,6 +301,53 @@ class AiVideoLedger:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+_FULL_VIDEO_REFUND_PREFIX = "Full refund for failed video generation"
+
+
+def charge_idempotency_key(
+    db, video_id: Optional[str], institute_id: Optional[str], shot_idx: int, segment_idx: Optional[int],
+    occurrence: int = 0, scope: Optional[str] = None,
+) -> Optional[str]:
+    """``{video_id}:aivideo:{shot}[:{scope}]:{seg}:c{k}:r{n}`` — the k-th
+    charge of a shot/segment in a leg, per refund generation. ``n`` counts
+    this shot's per-shot REFUND rows plus full-video refunds, so a shot
+    charged before a kill is not charged again on resume, while a shot
+    refunded after a failure (or a fully refunded video being retried) is
+    billable again. ``k`` keeps several charges of one shot in one leg (inline
+    ``<aivideo>`` tags) apart; ``scope`` ("regen") keeps a user-requested
+    re-render apart from the first render. ``seg`` is the segment index, or
+    ``x`` for a whole-shot charge. None when the count cannot be read (the
+    charge then goes through un-keyed, as before)."""
+    if not video_id:
+        return None
+    seg_key = str(segment_idx) if segment_idx is not None else "x"
+    if scope:
+        seg_key = f"{scope}:{seg_key}"
+    seg_key = f"{seg_key}:c{int(occurrence or 0)}"
+    seg_desc = f"/seg{segment_idx}" if segment_idx is not None else ""
+    try:
+        from sqlalchemy import text
+
+        n = db.execute(
+            text(
+                "SELECT count(*) FROM credit_transactions "
+                "WHERE batch_id = :v AND institute_id = :i AND transaction_type = 'REFUND' "
+                "AND (description LIKE :shot OR description LIKE :full)"
+            ),
+            {
+                "v": video_id,
+                "i": institute_id,
+                "shot": f"AI video shot {shot_idx}{seg_desc} refund%",
+                "full": _FULL_VIDEO_REFUND_PREFIX + "%",
+            },
+        ).scalar() or 0
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[AiVideoLedger] refund count failed for %s shot %s (%s); un-keyed charge",
+                       video_id, shot_idx, exc)
+        return None
+    return f"{video_id}:aivideo:{shot_idx}:{seg_key}:r{int(n)}"
+
 
 def _format_description(
     *,

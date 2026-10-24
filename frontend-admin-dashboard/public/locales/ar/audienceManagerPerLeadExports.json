@@ -1,0 +1,61 @@
+{
+    "button": {
+        "tat": "تصدير تقرير TAT",
+        "sla": "تصدير تقرير SLA",
+        "overdue": "تصدير المتابعات المتأخرة"
+    },
+    "exporting": "جارٍ التصدير…",
+    "teamNotSupported": "أزل عامل تصفية الفريق لتصدير صف لكل عميل.",
+    "columns": {
+        "name": "الاسم",
+        "phone": "الهاتف",
+        "email": "البريد الإلكتروني",
+        "source": "المصدر",
+        "counsellor": "المستشار",
+        "leadStatus": "حالة العميل",
+        "enquiredAt": "وقت الاستفسار",
+        "tatDueAt": "موعد TAT",
+        "firstResponseAt": "أول رد",
+        "responseMinutes": "زمن الرد (دقيقة)",
+        "tatStatus": "حالة TAT",
+        "followUpDueAt": "موعد المتابعة",
+        "slaStage": "مرحلة SLA",
+        "tatOverdue": "تجاوز TAT",
+        "followUpOverdue": "متابعة متأخرة",
+        "offClock": "خارج SLA (مفقود / محوَّل)",
+        "daysOverdue": "أيام التأخير",
+        "followUpNote": "ملاحظة المتابعة",
+        "studentResponse": "رد الطالب",
+        "nextAction": "الإجراء التالي",
+        "interestLevel": "مستوى الاهتمام"
+    },
+    "values": {
+        "yes": "نعم",
+        "no": "لا",
+        "met": "ضمن الوقت",
+        "breached": "متجاوز",
+        "breachedNoResponse": "متجاوز (لا رد بعد)",
+        "pending": "قيد الانتظار",
+        "responded": "تم الرد",
+        "closed": "مغلق",
+        "priorActivity": "تواصل سابق (عميل متكرر)"
+    },
+    "stages": {
+        "onTrack": "ضمن الوقت",
+        "tatDueSoon": "موعد TAT قريب",
+        "tatOverdue": "تجاوز TAT",
+        "followUpDueSoon": "المتابعة قريبة",
+        "followUpOverdue": "متابعة متأخرة",
+        "offClock": "خارج SLA (مفقود / محوَّل)"
+    },
+    "progress": "جارٍ تصدير {{done}} من {{total}} صف…",
+    "running": "جارٍ التصدير…",
+    "done_one": "تم تصدير {{count}} صف",
+    "done_other": "تم تصدير {{count}} صفوف",
+    "failed": "فشل التصدير — حاول مرة أخرى",
+    "alreadyRunning": "هذا التصدير قيد التشغيل بالفعل",
+    "truncated_one": "تم تصدير أول {{count}} صف (تم بلوغ الحد)",
+    "truncated_other": "تم تصدير أول {{count}} صفوف (تم بلوغ الحد)",
+    "partial_one": "توقف التصدير — تم حفظ {{count}} صف",
+    "partial_other": "توقف التصدير — تم حفظ {{count}} صفوف"
+}

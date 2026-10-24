@@ -1,0 +1,92 @@
+{
+    "description": "संस्थान को लंबी सेवा के लिए अपने कर्मचारियों को क्या देना है, और वर्ष के लिए सांविधिक बोनस। ये केवल बहीखातों के लिए प्रावधान हैं — जब तक आप इसे पेरोल में शामिल नहीं करते, तब तक इससे किसी को भुगतान नहीं होता।",
+    "tabs": {
+        "eosb": "सेवा समाप्ति लाभ (EOSB)",
+        "gratuity": "ग्रेच्युटी",
+        "bonus": "सांविधिक बोनस"
+    },
+    "asOf": {
+        "label": "जिस तारीख तक",
+        "downloadCsv": "CSV डाउनलोड करें",
+        "preparing": "तैयार हो रहा है…"
+    },
+    "gratuity": {
+        "downloadSuccess": "ग्रेच्युटी प्रावधान डाउनलोड हो गया",
+        "downloadError": "ग्रेच्युटी प्रावधान डाउनलोड नहीं हो सका।",
+        "computeError": "ग्रेच्युटी प्रावधान की गणना नहीं हो सकी।",
+        "emptyTitle": "प्रावधान के लिए कोई कर्मचारी नहीं",
+        "emptyDescription": "रोस्टर में किसी की भी इस तारीख तक की सेवा दर्ज नहीं है।",
+        "stats": {
+            "employees": "कर्मचारी",
+            "totalLiability": "कुल देयता",
+            "vested": "निहित (Vested)",
+            "monthlyRunRate": "मासिक रन-रेट"
+        },
+        "table": {
+            "employee": "कर्मचारी",
+            "years": "वर्ष",
+            "monthlyBasic": "मासिक मूल वेतन",
+            "liability": "देयता",
+            "runRate": "रन-रेट",
+            "vested": "निहित"
+        },
+        "vestedChip": "निहित",
+        "notYetChip": "अभी नहीं"
+    },
+    "eosb": {
+        "downloadSuccess": "EOSB प्रावधान डाउनलोड हो गया",
+        "downloadError": "EOSB प्रावधान डाउनलोड नहीं हो सका।",
+        "description": "सांविधिक देयता वह है जिसका दावा एक कर्मचारी आज कर सकता है; लेखा उपार्जन (accrual) वह है जो बहीखातों में पहले से दर्ज होना चाहिए। कर्मचारी के पात्र होने से पहले दोनों में अंतर होता है।",
+        "computeError": "EOSB प्रावधान की गणना नहीं हो सकी।",
+        "emptyTitle": "प्रावधान के लिए कोई कर्मचारी नहीं",
+        "emptyDescription": "रोस्टर में किसी की भी इस तारीख तक की सेवा दर्ज नहीं है।",
+        "stats": {
+            "employees": "कर्मचारी",
+            "statutoryLiability": "सांविधिक देयता",
+            "accountingAccrual": "लेखा उपार्जन",
+            "monthlyRunRate": "मासिक रन-रेट"
+        },
+        "table": {
+            "employee": "कर्मचारी",
+            "years": "वर्ष",
+            "monthlyBasic": "मासिक मूल वेतन",
+            "statutory": "सांविधिक",
+            "accrual": "उपार्जन",
+            "eligible": "पात्र"
+        },
+        "eligibleChip": "पात्र",
+        "notYetChip": "अभी नहीं"
+    },
+    "bonus": {
+        "financialYear": "वित्तीय वर्ष",
+        "rate": "दर (%)",
+        "rateHint": "अधिनियम 8.33% से 20% तक की अनुमति देता है।",
+        "invalidRateTitle": "8.33 और 20 के बीच की दर दर्ज करें",
+        "invalidRateDescription": "भुगतान बोनस अधिनियम इन्हें न्यूनतम और अधिकतम के रूप में निर्धारित करता है।",
+        "computeError": "बोनस की गणना नहीं हो सकी।",
+        "emptyTitle": "गणना के लिए कोई नहीं",
+        "emptyDescription": "इस वित्तीय वर्ष के दौरान रोस्टर में कोई कर्मचारी नहीं था।",
+        "stats": {
+            "eligibleEmployees": "पात्र कर्मचारी",
+            "totalBonus": "कुल बोनस",
+            "appliedRate": "लागू दर"
+        },
+        "payCardTitle": "यह बोनस भुगतान करें",
+        "payCardDescription": "प्रत्येक पात्र कर्मचारी के लिए एक BONUS-स्कोप्ड समायोजन बनाता है। उस माह का बोनस पेरोल रन उन्हें भुगतान और कर लगाता है।",
+        "payoutLabel": "भुगतान अवधि",
+        "materializing": "बनाया जा रहा है…",
+        "materialize": "बनाएँ",
+        "table": {
+            "employee": "कर्मचारी",
+            "monthlyBasic": "मासिक मूल वेतन",
+            "months": "महीने",
+            "wageBase": "वेतन आधार",
+            "bonus": "बोनस"
+        },
+        "materializeSuccess_one": "{{period}} के लिए {{count}} बोनस समायोजन बनाया गया",
+        "materializeSuccess_other": "{{period}} के लिए {{count}} बोनस समायोजन बनाए गए",
+        "alreadyExisted_one": " · {{count}} पहले से मौजूद था",
+        "alreadyExisted_other": " · {{count}} पहले से मौजूद थे",
+        "materializeError": "बोनस समायोजन नहीं बनाए जा सके।"
+    }
+}

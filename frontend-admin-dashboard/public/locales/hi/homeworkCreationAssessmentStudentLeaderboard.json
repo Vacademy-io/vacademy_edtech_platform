@@ -1,0 +1,12 @@
+{
+    "heading": "लीडरबोर्ड",
+    "table": {
+        "duration": "{{minutes}} मिनट {{seconds}} सेकंड",
+        "percentileLabel": "पर्सेंटाइल",
+        "marksLabel": "अंक"
+    },
+    "export": {
+        "pdfSuccess": "लीडरबोर्ड डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया",
+        "csvSuccess": "लीडरबोर्ड डेटा CSV के रूप में सफलतापूर्वक निर्यात किया गया"
+    }
+}

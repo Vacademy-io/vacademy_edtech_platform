@@ -1,0 +1,18 @@
+{
+    "header": {
+        "title": "बैच और {{subjectPlural}} चुनें"
+    },
+    "search": {
+        "placeholder": "बैच खोजें..."
+    },
+    "subjects": {
+        "selectLabel": "विषय चुनें",
+        "selectPlaceholder": "विषय चुनें",
+        "description": "आप इस बैच के लिए एक से अधिक विषय चुन सकते हैं",
+        "requiredError": "कम से कम एक विषय आवश्यक है"
+    },
+    "emptyState": {
+        "noMatchingBatches": "कोई मेल खाता बैच नहीं मिला",
+        "noBatchesAvailable": "कोई बैच उपलब्ध नहीं है"
+    }
+}

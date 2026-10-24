@@ -1,0 +1,74 @@
+{
+    "chapterHeader": {
+        "updating": "Mise à jour...",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "thumbnailAlt": "Miniature",
+    "importContent": {
+        "noBatchSelected": "Aucun groupe sélectionné — choisissez d'abord une session/un niveau.",
+        "sameBatch": "Le groupe source et le groupe cible sont identiques — choisissez un autre groupe.",
+        "targetHasContent": "Ce groupe a déjà son propre contenu. Le lier mélangerait le contenu lié et le contenu existant. Choisissez plutôt « Créer une copie séparée ».",
+        "summary": "{{subjects}} matière(s), {{modules}} module(s), {{chapters}} chapitre(s), {{slides}} diapositive(s)",
+        "modeLinked": "lié depuis la source",
+        "modeCopied": "copié",
+        "warningSuffix": "{{summary}}. {{count}} avertissement(s) de condition de diffusion.",
+        "successMessage": "Contenu {{mode}} ({{summary}}).",
+        "failed": "Échec de l'importation du contenu dans ce groupe.",
+        "importing": "Importation…",
+        "importButton": "Importer du contenu"
+    },
+    "dripConditions": {
+        "saveFailed": "Échec de l'enregistrement des conditions de diffusion. Veuillez réessayer.",
+        "reorderSubjectsFailed": "Échec de la réorganisation des matières. Les modifications ont été annulées.",
+        "reorderModulesFailed": "Échec de la réorganisation des modules. Les modifications ont été annulées.",
+        "reorderChaptersFailed": "Échec de la réorganisation des chapitres. Les modifications ont été annulées."
+    },
+    "untitledSlide": "Diapositive sans titre",
+    "courseStructureHeading": "Structure du cours",
+    "scheduleUnlock": "Programmer le déverrouillage",
+    "collapseAll": "Tout réduire",
+    "expandAll": "Tout développer",
+    "actions": {
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "unlockRule": "Règle de déverrouillage",
+        "offlineAvailability": "Disponibilité hors ligne"
+    },
+    "add": "Ajouter",
+    "noSlidesInChapter": "Aucun(e) {{term}} dans ce chapitre.",
+    "manageTeachers": "Gérer les {{teacher}}",
+    "viewAndManageTeachers": "Voir et gérer les {{teacher}} affecté(e)s à ce groupe.",
+    "selectBatchFor": {
+        "liveSessions": "Sélectionnez un groupe pour voir ses sessions en direct.",
+        "reports": "Sélectionnez un groupe pour voir ses rapports.",
+        "offlineDownloads": "Sélectionnez un groupe pour voir ses téléchargements hors ligne.",
+        "discussion": "Sélectionnez un groupe pour voir sa discussion."
+    },
+    "contentStructureHeading": "Structure du contenu",
+    "navigateFolders": "Parcourez le contenu de votre cours à l'aide des dossiers",
+    "numbering": {
+        "subject": "Matière {{number}}",
+        "module": "Module {{number}}",
+        "chapter": "Chapitre {{number}}",
+        "slide": "Diapositive {{number}}"
+    },
+    "restriction": {
+        "banner": "Modification restreinte : ce cours est {{status}}.",
+        "statusPublished": "publié",
+        "statusUnderReview": "en cours de relecture",
+        "statusRestricted": "restreint",
+        "publishedHint": "Rendez-vous dans Mes cours pour créer une copie modifiable.",
+        "reviewHint": "Vous ne pouvez pas modifier le contenu tant qu'il est en cours de relecture.",
+        "restrictedHint": "Vous ne pouvez pas modifier ce contenu."
+    },
+    "updatingStructure": "Mise à jour de la structure du cours...",
+    "editSubjectHeading": "Modifier la matière",
+    "editModuleHeading": "Modifier le module",
+    "editChapterHeading": "Modifier le chapitre",
+    "confirmDeletion": {
+        "title": "Confirmer la suppression",
+        "body": "Êtes-vous sûr de vouloir supprimer « {{name}} » ? Cette action est irréversible.",
+        "cancel": "Annuler"
+    },
+    "defaultNodeName": "Ce contenu"
+}

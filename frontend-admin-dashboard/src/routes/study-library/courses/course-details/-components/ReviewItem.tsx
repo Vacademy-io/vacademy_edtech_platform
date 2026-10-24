@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown, Trash, Check, X } from '@phosphor-icons/react';
 import { StarRatingComponent } from '@/components/common/star-rating-component';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -60,18 +62,19 @@ interface Rating {
     status: string;
 }
 
-function timeAgo(dateString: string) {
+function timeAgo(dateString: string, t: TFunction, locale: string) {
     const now = new Date();
     const date = new Date(dateString);
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-    return date.toLocaleDateString();
+    if (diff < 60) return t('timeAgo.secondsAgo', { count: diff });
+    if (diff < 3600) return t('timeAgo.minutesAgo', { count: Math.floor(diff / 60) });
+    if (diff < 86400) return t('timeAgo.hoursAgo', { count: Math.floor(diff / 3600) });
+    if (diff < 604800) return t('timeAgo.daysAgo', { count: Math.floor(diff / 86400) });
+    return date.toLocaleDateString(locale);
 }
 
 export function ReviewItem({ review, courseId, currentLevel, currentSession }: ReviewItemProps) {
+    const { t, i18n } = useTranslation('studyLibraryReviewItem');
     // All hooks at the top
     const [localLikes, setLocalLikes] = useState(review.likes);
     const [localDislikes, setLocalDislikes] = useState(review.dislikes);
@@ -218,13 +221,13 @@ export function ReviewItem({ review, courseId, currentLevel, currentSession }: R
             // Enhanced error logging
             if (error instanceof AxiosError) {
                 console.error('ReviewItem mutation error:', error?.response?.data);
-                toast.error(error?.response?.data?.ex || 'Failed to update rating', {
+                toast.error(error?.response?.data?.ex || t('toasts.updateFailed'), {
                     className: 'error-toast',
                     duration: 2000,
                 });
             } else {
                 console.error('ReviewItem unexpected error:', error);
-                toast.error('An unexpected error occurred', {
+                toast.error(t('toasts.unexpectedError'), {
                     className: 'error-toast',
                     duration: 2000,
                 });
@@ -301,7 +304,7 @@ export function ReviewItem({ review, courseId, currentLevel, currentSession }: R
                     <div className="flex flex-col">
                         <span className="font-semibold text-neutral-800">{review.user.name}</span>
                         <span className="mt-0.5 text-xs text-neutral-400">
-                            {timeAgo(review.createdAt)}
+                            {timeAgo(review.createdAt, t, i18n.language)}
                         </span>
                     </div>
                 </div>
@@ -322,7 +325,7 @@ export function ReviewItem({ review, courseId, currentLevel, currentSession }: R
                                 disabled={isUpdating}
                             >
                                 <Check size={18} />
-                                <span className="text-xs">Approve</span>
+                                <span className="text-xs">{t('actions.approve')}</span>
                             </Button>
                             <Button
                                 variant="ghost"
@@ -332,7 +335,7 @@ export function ReviewItem({ review, courseId, currentLevel, currentSession }: R
                                 disabled={isUpdating}
                             >
                                 <X size={18} />
-                                <span className="text-xs">Decline</span>
+                                <span className="text-xs">{t('actions.decline')}</span>
                             </Button>
                         </>
                     ) : (
@@ -367,25 +370,24 @@ export function ReviewItem({ review, courseId, currentLevel, currentSession }: R
                                             disabled={isUpdating}
                                         >
                                             <Trash size={18} />
-                                            <span className="text-xs">Delete</span>
+                                            <span className="text-xs">{t('actions.delete')}</span>
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>
-                                                Are you sure you want to delete this comment?
+                                                {t('deleteDialog.title')}
                                             </AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently
-                                                delete this comment from the course.
+                                                {t('deleteDialog.description')}
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={() => handleAction('delete')}
                                             >
-                                                Confirm
+                                                {t('deleteDialog.confirm')}
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>

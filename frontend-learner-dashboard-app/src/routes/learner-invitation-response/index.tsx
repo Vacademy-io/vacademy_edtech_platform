@@ -8,6 +8,7 @@ import { handleGetEnrollInviteData } from "@/components/common/enroll-by-invite/
 import { PaymentGatewayWrapper } from "@/components/common/enroll-by-invite/-components/payment-gateway-wrapper";
 import { getPaymentVendor } from "@/components/common/enroll-by-invite/-utils/payment-vendor-helper";
 import { LinkBreak, CreditCard, Warning, ClipboardText } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { InviteUnavailableMessage } from "@/components/common/enroll-by-invite/-components/InviteUnavailableMessage";
 import {
   resolveInviteAvailability,
@@ -27,6 +28,7 @@ const inviteParamsSchema = z.object({
 });
 
 function InviteNotFoundPage() {
+  const { t } = useTranslation("miscRoutesB");
   const router = useRouter();
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col justify-center items-center px-4">
@@ -37,17 +39,17 @@ function InviteNotFoundPage() {
           </div>
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-          Enroll Invite Not Found
+          {t("learnerInvitationResponse.notFound.title")}
         </h1>
         <p className="mt-4 text-base text-gray-500 max-w-sm mx-auto">
-          This enroll invite link is invalid or may have already expired. Please contact your institute for a new invite link.
+          {t("learnerInvitationResponse.notFound.description")}
         </p>
         <div className="mt-8">
           <button
             onClick={() => router.history.back()}
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
           >
-            Go Back
+            {t("learnerInvitationResponse.goBack")}
           </button>
         </div>
       </div>
@@ -56,6 +58,7 @@ function InviteNotFoundPage() {
 }
 
 function PaymentGatewayNotConfiguredPage() {
+  const { t } = useTranslation("miscRoutesB");
   const router = useRouter();
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col justify-center items-center px-4">
@@ -66,17 +69,17 @@ function PaymentGatewayNotConfiguredPage() {
           </div>
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-          Payments Not Set Up
+          {t("learnerInvitationResponse.gatewayNotConfigured.title")}
         </h1>
         <p className="mt-4 text-base text-gray-500 max-w-sm mx-auto">
-          The institute has not configured a payment gateway for this enrollment. Please contact your institute to complete the setup.
+          {t("learnerInvitationResponse.gatewayNotConfigured.description")}
         </p>
         <div className="mt-8">
           <button
             onClick={() => router.history.back()}
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
           >
-            Go Back
+            {t("learnerInvitationResponse.goBack")}
           </button>
         </div>
       </div>
@@ -85,6 +88,7 @@ function PaymentGatewayNotConfiguredPage() {
 }
 
 function NoEnrollmentPlansPage() {
+  const { t } = useTranslation("miscRoutesB");
   const router = useRouter();
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col justify-center items-center px-4">
@@ -95,17 +99,17 @@ function NoEnrollmentPlansPage() {
           </div>
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-          Enrollment Plans Not Set Up
+          {t("learnerInvitationResponse.noPlans.title")}
         </h1>
         <p className="mt-4 text-base text-gray-500 max-w-sm mx-auto">
-          The institute hasn&apos;t added any enrollment plans to this invite yet. Please contact your institute to complete the setup.
+          {t("learnerInvitationResponse.noPlans.description")}
         </p>
         <div className="mt-8">
           <button
             onClick={() => router.history.back()}
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
           >
-            Go Back
+            {t("learnerInvitationResponse.goBack")}
           </button>
         </div>
       </div>
@@ -114,6 +118,7 @@ function NoEnrollmentPlansPage() {
 }
 
 function UnexpectedErrorPage() {
+  const { t } = useTranslation("miscRoutesB");
   const router = useRouter();
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col justify-center items-center px-4">
@@ -124,17 +129,17 @@ function UnexpectedErrorPage() {
           </div>
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-          Unable to Load
+          {t("learnerInvitationResponse.unexpectedError.title")}
         </h1>
         <p className="mt-4 text-base text-gray-500 max-w-sm mx-auto">
-          Something went wrong while loading this enrollment page. Please try again or contact your institute if the issue continues.
+          {t("learnerInvitationResponse.unexpectedError.description")}
         </p>
         <div className="mt-8">
           <button
             onClick={() => router.history.back()}
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
           >
-            Go Back
+            {t("learnerInvitationResponse.goBack")}
           </button>
         </div>
       </div>
@@ -149,6 +154,7 @@ function InviteUnavailablePage({
   availability: InviteAvailability;
   messageHtml: string;
 }) {
+  const { t } = useTranslation("miscRoutesB");
   const router = useRouter();
   return (
     <div className="h-screen w-full bg-gray-50 flex flex-col justify-center items-center px-4">
@@ -159,7 +165,7 @@ function InviteUnavailablePage({
             onClick={() => router.history.back()}
             className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
           >
-            Go Back
+            {t("learnerInvitationResponse.goBack")}
           </button>
         </div>
       </div>

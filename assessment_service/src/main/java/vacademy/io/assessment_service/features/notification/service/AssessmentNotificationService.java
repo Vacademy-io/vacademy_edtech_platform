@@ -14,6 +14,7 @@ import vacademy.io.assessment_service.features.notification.dto.NotificationDTO;
 import vacademy.io.assessment_service.features.notification.dto.NotificationToUserDTO;
 import vacademy.io.assessment_service.features.notification.enums.NotificationSourceEnum;
 import vacademy.io.assessment_service.features.notification.enums.NotificationType;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
 import vacademy.io.common.auth.dto.UserWithRolesDTO;
 import vacademy.io.common.auth.enums.CompanyStatus;
 
@@ -127,6 +128,8 @@ public class AssessmentNotificationService {
     private List<NotificationToUserDTO> mapToNotificationUsers(List<AssessmentUserRegistration> userRegistrations,
                                                                Assessment assessment) {
         return userRegistrations.stream()
+                // API candidates (partner API) have no login and no email (spec 12 item 3).
+                .filter(user -> !ApiCandidatePolicy.isApi(user))
                 .map(user -> NotificationToUserDTO.builder()
                         .userId(user.getUserId())
                         .channelId(user.getUserEmail())

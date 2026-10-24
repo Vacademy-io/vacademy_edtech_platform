@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SpinnerGap } from "@phosphor-icons/react";
 import { LockSimple } from "@phosphor-icons/react";
 import { SiStripe } from "react-icons/si"; // design-lint-ignore: brand logo, no phosphor equivalent
@@ -34,6 +35,7 @@ export const DonationPaymentForm: React.FC<DonationPaymentFormProps> = ({
   onPayment,
   onSkip,
 }) => {
+  const { t } = useTranslation("layoutCommonB");
 
   return (
     <>
@@ -47,16 +49,16 @@ export const DonationPaymentForm: React.FC<DonationPaymentFormProps> = ({
       />
       <div className="mb-2">
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs text-gray-600">Card Details</label>
+          <label className="block text-xs text-gray-600">{t("donation.paymentForm.cardDetails")}</label>
         </div>
-        
+
         <div className={`border rounded p-3 text-sm w-full min-h-12 ${
           cardElementError ? 'border-red-500 bg-red-50' : 'border-gray-300'
         }`}>
           {!cardElementReady && (
             <div className="flex items-center justify-center h-full text-gray-500">
               <SpinnerGap className="w-4 h-4 animate-spin me-2" />
-              Loading payment form...
+              {t("donation.paymentForm.loadingPaymentForm")}
             </div>
           )}
           <div ref={cardElementRef} className="w-full h-full" />
@@ -80,12 +82,12 @@ export const DonationPaymentForm: React.FC<DonationPaymentFormProps> = ({
             {isApiLoading ? (
               <>
                 <SpinnerGap size={18} className="animate-spin" />
-                Processing...
+                {t("donation.paymentForm.processing")}
               </>
             ) : (
               <>
                 <LockSimple size={18} weight="bold" />
-                Donate Now
+                {t("donation.paymentForm.donateNow")}
               </>
             )}
           </MyButton>
@@ -97,15 +99,15 @@ export const DonationPaymentForm: React.FC<DonationPaymentFormProps> = ({
             onClick={onSkip}
             disabled={isApiLoading}
           >
-            {isApiLoading ? 'Processing...' : 'Skip'}
+            {isApiLoading ? t("donation.paymentForm.processing") : t("donation.paymentForm.skip")}
           </MyButton>
         </div>
         <div className="text-xs text-gray-500 text-center mt-2 flex items-center justify-center gap-1">
           <LockSimple size={14} className="inline-block me-1" />
-          Secure payment powered by
+          {t("donation.paymentForm.securePaymentPoweredBy")}
           <span className="font-semibold flex items-center gap-1 ms-1">
-            <SiStripe size={16} className="text-indigo-600" /> 
-            {paymentGatewayData?.vendor || 'Stripe'}
+            <SiStripe size={16} className="text-indigo-600" />
+            {paymentGatewayData?.vendor || t("donation.paymentForm.stripe")}
           </span>
         </div>
       </div>

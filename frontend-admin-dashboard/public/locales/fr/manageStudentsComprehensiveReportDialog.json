@@ -1,0 +1,195 @@
+{
+    "unavailable": {
+        "noDataForPeriod": "Aucune donnée disponible pour cette période.",
+        "reportNotAvailable": "Les données du rapport ne sont pas disponibles."
+    },
+    "common": {
+        "notAvailable": "N/D",
+        "stats": {
+            "present": "Présent",
+            "absent": "Absent",
+            "late": "En retard",
+            "unmarked": "Non marqué",
+            "notMarked": "Non marqué",
+            "attended": "Présent",
+            "missed": "Manqué"
+        },
+        "headings": {
+            "strengths": "Points forts",
+            "areasToImprove": "Axes d'amélioration",
+            "liveClasses": "Cours en direct",
+            "assignments": "Devoirs"
+        }
+    },
+    "overview": {
+        "studentDetailsHeading": "Détails de l'élève",
+        "stats": {
+            "batch": "Groupe",
+            "enrollmentNo": "N° d'inscription",
+            "status": "Statut",
+            "enrolled": "Inscrit",
+            "reportPeriod": "Période du rapport",
+            "generated": "Généré"
+        },
+        "loginActivityHeading": "Activité de connexion",
+        "loginStats": {
+            "totalLogins": "Connexions totales",
+            "lastLogin": "Dernière connexion",
+            "avgSession": "Session moyenne",
+            "totalActiveTime": "Temps actif total"
+        },
+        "avgSessionValue": "{{minutes}} min",
+        "totalActiveTimeValue": "{{hours}} h"
+    },
+    "attendance": {
+        "overallHeading": "Présence globale",
+        "attendanceRate": "Taux de présence",
+        "recentSessionsHeading": "Sessions récentes",
+        "sessionFallbackTitle": "Session"
+    },
+    "academics": {
+        "summary": {
+            "assessments": "Évaluations",
+            "avgScore": "Score moyen",
+            "best": "Meilleur",
+            "needsWork": "À améliorer"
+        },
+        "assessmentScoresHeading": "Scores des évaluations",
+        "chart": {
+            "marks": "Notes",
+            "total": "Total"
+        },
+        "allAssessmentsHeading": "Toutes les évaluations",
+        "assessmentFallbackName": "Évaluation"
+    },
+    "activity": {
+        "totalTime": "Temps total",
+        "avgConcentration": "Concentration moyenne",
+        "dailyActivityHeading": "Activité quotidienne",
+        "chart": {
+            "timeMinutes": "Temps (min)"
+        },
+        "contentEngagementHeading": "Engagement avec le contenu",
+        "minutesValue": "{{minutes}} min"
+    },
+    "progress": {
+        "courseCompletionHeading": "Achèvement du cours",
+        "overallProgress": "Progression globale",
+        "subjectProgressHeading": "Progression par matière"
+    },
+    "liveClasses": {
+        "summaryHeading": "Résumé des cours en direct",
+        "totalClasses": "Total des cours :",
+        "attendanceSuffix": "{{value}} de présence"
+    },
+    "certificates": {
+        "completion": "Achèvement"
+    },
+    "assignments": {
+        "summary": {
+            "submitted": "Soumis",
+            "graded": "Noté",
+            "late": "En retard"
+        },
+        "notGraded": "Non noté",
+        "lateBadge": "En retard",
+        "doubtsHeading": "Questions",
+        "doubtsStats": {
+            "raised": "Posées",
+            "resolved": "Résolues",
+            "avgResolution": "Résolution moyenne"
+        }
+    },
+    "insights": {
+        "summaryHeading": "Résumé",
+        "keyInsightsHeading": "Points clés",
+        "recommendationsHeading": "Recommandations"
+    },
+    "adminSections": {
+        "attendance": "Présence",
+        "academicPerformance": "Performance académique",
+        "marksBySubject": "Notes par matière",
+        "studyHabits": "Habitudes d'étude et engagement quotidien",
+        "courseProgress": "Progression du cours — {{percentage}} % terminé"
+    },
+    "adminReport": {
+        "title": "Rapport de progression de l'élève",
+        "periodGenerated": "{{period}} · Généré le {{date}}",
+        "statusGrade": "{{status}} · Note {{grade}}",
+        "studentLabels": {
+            "student": "Élève",
+            "class": "Classe",
+            "enrollmentNo": "N° d'inscription",
+            "rollNo": "N° de liste"
+        },
+        "atAGlanceHeading": "En un coup d'œil",
+        "summaryForParentsHeading": "Résumé pour les parents",
+        "weeklyTrend": "Tendance hebdomadaire",
+        "averagePrefix": "Moyenne",
+        "vsClassAverage": "contre {{percentage}} % de moyenne de classe",
+        "bestSubjectLabel": "Meilleur :",
+        "weakestSubjectLabel": "À améliorer :",
+        "subjectPerformanceVsClass": "Performance par matière comparée à la classe",
+        "marksAggregationNote": "Agrégé sur les évaluations, devoirs, quiz et questions d'entraînement.",
+        "needsWorkBadge": "À améliorer",
+        "studyHabitsStats": {
+            "activeDays": "Jours actifs",
+            "longestStreak": "Plus longue série",
+            "focusScore": "Score de concentration",
+            "mostActive": "Moment le plus actif"
+        },
+        "dailyStudyTimeDays_one": "Temps d'étude quotidien (minutes) · {{count}} jour",
+        "dailyStudyTimeDays_many": "Temps d'étude quotidien (minutes) · {{count}} de jours",
+        "dailyStudyTimeDays_other": "Temps d'étude quotidien (minutes) · {{count}} jours",
+        "dayLabel": "Jour {{count}}",
+        "contentExplored": "Contenu exploré :",
+        "videosWatched": "vidéos",
+        "documentsRead": "documents",
+        "quizzesAttempted": "quiz",
+        "liveClassesStats": {
+            "totalClasses": "Total des cours",
+            "attended": "Présent",
+            "missed": "Manqué",
+            "notMarked": "Non marqué",
+            "attendance": "Présence"
+        },
+        "assignmentsStats": {
+            "assigned": "Assignés",
+            "submitted": "Soumis",
+            "onTime": "À temps",
+            "late": "En retard",
+            "pending": "En attente",
+            "avgScore": "Score moyen"
+        },
+        "achievementsHeading": "Réussites",
+        "whatWeNoticedHeading": "Ce que nous avons remarqué",
+        "recommendedNextStepsHeading": "Prochaines étapes recommandées",
+        "footer": "{{instituteName}} · Généré par Vacademy le {{date}} · {{period}}"
+    },
+    "dialog": {
+        "headingWithName": "{{reportName}} — {{studentName}}",
+        "headingDefault": "Rapport complet — {{studentName}}",
+        "headingWithPeriod": "Rapport complet — {{studentName}} ({{periodLabel}})",
+        "studentFallbackName": "Élève",
+        "reportNotAvailable": "Les données du rapport ne sont pas disponibles.",
+        "tabs": {
+            "overview": "Aperçu",
+            "attendance": "Présence",
+            "academics": "Résultats",
+            "activity": "Activité",
+            "progress": "Progression",
+            "liveClasses": "Cours en direct",
+            "certificates": "Certificats",
+            "assignments": "Devoirs",
+            "insights": "Analyses IA"
+        },
+        "actions": {
+            "downloading": "Téléchargement…",
+            "downloadPdf": "Télécharger le PDF",
+            "close": "Fermer"
+        },
+        "toast": {
+            "downloadFailed": "Échec du téléchargement du PDF"
+        }
+    }
+}

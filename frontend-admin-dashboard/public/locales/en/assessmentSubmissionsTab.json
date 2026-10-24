@@ -1,0 +1,90 @@
+{
+    "tabs": {
+        "attempted": "Attempted",
+        "ongoing": "Ongoing",
+        "pending": "Pending",
+        "attemptedSubtitle": "Students who have submitted",
+        "pendingSubtitle": "Students who haven't submitted",
+        "ongoingSubtitle": "Students currently attempting"
+    },
+    "participantType": {
+        "internal": "Internal",
+        "external": "External"
+    },
+    "selectionMode": {
+        "batch": "Batch Selection",
+        "individual": "Individual Selection"
+    },
+    "filters": {
+        "evaluationStatus": {
+            "label": "Evaluation Status",
+            "options": {
+                "pending": "Pending",
+                "evaluating": "Evaluating",
+                "evaluated": "Evaluated"
+            }
+        },
+        "submissionStatus": {
+            "label": "Response",
+            "options": {
+                "submitted": "Submitted",
+                "notSubmitted": "Not Submitted"
+            }
+        }
+    },
+    "buttons": {
+        "offlineEntry": "Offline Entry",
+        "revaluate": "Reevaluate",
+        "aiEvaluations": "AI Evaluations",
+        "refresh": "Refresh",
+        "refreshTooltip": "Reload submissions and recalculate the summary",
+        "revaluateTooltip": "Re-run evaluation for the selected submissions",
+        "aiEvaluationsTooltip": "Open AI evaluation for this assessment",
+        "bulkAiCheck": "Upload & check copies",
+        "bulkAiCheckTooltip": "Upload many scanned PDFs; names are read and matched, checks run in the background",
+        "bulkAiBatches": "Bulk checks",
+        "checkSubmitted": "Check submitted copies",
+        "checkSubmittedTooltip": "AI-check every answer sheet the learners uploaded themselves, in the background"
+    },
+    "dialogs": {
+        "revaluate": {
+            "title": "Reevaluate Result"
+        }
+    },
+    "search": {
+        "placeholder": "Search students..."
+    },
+    "aiReport": {
+        "title": "Assessment AI Report",
+        "download": "AI Report",
+        "intro": "One AI-written analysis of this whole assessment, for the teacher who teaches this class next.",
+        "bulletWeakness": "Class weakness by section, topic and question — weakest first",
+        "bulletMisconceptions": "The mistakes many learners made for the same reason, with how to reteach each",
+        "bulletPlan": "A prioritised action plan and the full participant roster",
+        "checking": "Checking whether a report already exists…",
+        "costs_one": "Generating this report uses {{count}} AI credit. It is charged once — every later download is free.",
+        "costs_other": "Generating this report uses {{count}} AI credits. It is charged once — every later download is free.",
+        "balance_one": "Balance: {{count}} credit",
+        "balance_other": "Balance: {{count}} credits",
+        "insufficient": "Your institute does not have enough AI credits for this report. Top up to continue.",
+        "ready": "Report ready — generated {{date}}. Downloading it again is free.",
+        "stale": "Generated {{date}}, but results have changed since. You can download this version free, or refresh it for the credit cost below.",
+        "downloadFree": "Download (free)",
+        "generate_one": "Generate · {{count}} credit",
+        "generate_other": "Generate · {{count}} credits",
+        "refresh_one": "Refresh · {{count}} credit",
+        "refresh_other": "Refresh · {{count}} credits",
+        "generating": "Generating…",
+        "preparing": "Preparing…",
+        "cancel": "Cancel",
+        "failed": "Could not build the AI report. Please try again.",
+        "generateNoPrice": "Generate report",
+        "refreshNoPrice": "Refresh report",
+        "costsUnavailable": "Generating this report uses AI credits. The exact cost could not be loaded — it will be charged once, and every later download is free.",
+        "historyTitle": "Previously generated",
+        "historyDownload": "Download"
+    },
+    "selectAll": {
+        "failed": "Could not select every pending learner. Please try again."
+    }
+}

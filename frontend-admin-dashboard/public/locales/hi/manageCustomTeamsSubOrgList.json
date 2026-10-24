@@ -1,0 +1,46 @@
+{
+    "filters": {
+        "noPlanOption": "कोई योजना नहीं",
+        "searchAriaLabel": "खोजें",
+        "searchPlaceholder": "नाम, ईमेल या फ़ोन से खोजें",
+        "clearSearchAriaLabel": "खोज साफ़ करें",
+        "search": "खोजें",
+        "status": "स्थिति",
+        "statusSearchPlaceholder": "स्थिति खोजें…",
+        "city": "शहर",
+        "citySearchPlaceholder": "शहर खोजें…",
+        "state": "राज्य",
+        "stateSearchPlaceholder": "राज्य खोजें…",
+        "pincodeAriaLabel": "पिनकोड",
+        "pincodePlaceholder": "पिनकोड",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "actions": {
+        "export": "एक्सपोर्ट करें",
+        "create": "{{term}} बनाएं"
+    },
+    "toasts": {
+        "inviteLinkCopied": "आमंत्रण लिंक कॉपी हो गया",
+        "nothingToExport": "एक्सपोर्ट करने के लिए कुछ नहीं है।",
+        "exported_one": "{{count}} {{term}} एक्सपोर्ट किया गया।",
+        "exported_other": "{{count}} {{term}} एक्सपोर्ट किए गए।"
+    },
+    "summary": {
+        "filteredCount": "{{total}} में से {{filtered}} {{term}}"
+    },
+    "error": {
+        "title": "{{term}} लोड नहीं हो सके",
+        "forbidden": "आपकी भूमिका को इस डेटा तक पहुंच नहीं है। अपनी भूमिका के लिए डिस्प्ले सेटिंग्स जांचने हेतु किसी संस्थान एडमिन से कहें।",
+        "generic": "सूची लाते समय कुछ गड़बड़ हो गई। कृपया थोड़ी देर बाद पुनः प्रयास करें।"
+    },
+    "empty": {
+        "filtered": "आपके फ़िल्टर से कोई {{term}} मेल नहीं खाता।",
+        "none": "कोई {{term}} नहीं मिला।"
+    },
+    "table": {
+        "sortBy": "{{label}} के अनुसार क्रमबद्ध करें"
+    },
+    "planCounts": {
+        "all": "सभी"
+    }
+}

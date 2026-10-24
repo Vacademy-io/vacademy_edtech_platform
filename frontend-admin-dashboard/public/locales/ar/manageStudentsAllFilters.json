@@ -1,0 +1,36 @@
+{
+    "statuses": {
+        "title": "الحالة"
+    },
+    "gender": {
+        "title": "الجنس"
+    },
+    "sessionExpiry": {
+        "titleSuffix": "انتهاء الصلاحية",
+        "optionLabel": "تنتهي الصلاحية خلال {{days}} يومًا"
+    },
+    "paymentStatus": {
+        "title": "حالة الدفع",
+        "paid": "مدفوع",
+        "failed": "فشل",
+        "paymentFailed": "فشل الدفع"
+    },
+    "approvalStatus": {
+        "title": "حالة الموافقة",
+        "pendingForApproval": "بانتظار الموافقة",
+        "invited": "تمت الدعوة"
+    },
+    "cartStatus": {
+        "title": "حالة السلة",
+        "abandonedCart": "سلة مهجورة"
+    },
+    "role": {
+        "title": "الدور"
+    },
+    "subOrg": {
+        "title": "المؤسسة الفرعية"
+    },
+    "audience": {
+        "title": "الجمهور"
+    }
+}

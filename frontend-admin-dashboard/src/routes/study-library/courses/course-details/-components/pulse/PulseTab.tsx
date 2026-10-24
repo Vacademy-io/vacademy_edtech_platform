@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import RosterView from './RosterView';
 import ContentMapView from './ContentMapView';
@@ -6,20 +8,22 @@ import LiveFeedView from './LiveFeedView';
 
 type PulseView = 'ROSTER' | 'CONTENT_MAP' | 'FEED';
 
-const VIEWS: { value: PulseView; label: string }[] = [
-    { value: 'ROSTER', label: 'Roster' },
-    { value: 'CONTENT_MAP', label: 'Content Map' },
-    { value: 'FEED', label: 'Live Feed' },
+const buildViews = (t: TFunction): { value: PulseView; label: string }[] => [
+    { value: 'ROSTER', label: t('roster') },
+    { value: 'CONTENT_MAP', label: t('contentMap') },
+    { value: 'FEED', label: t('liveFeed') },
 ];
 
 export default function PulseTab({ packageSessionId }: { packageSessionId: string }) {
+    const { t } = useTranslation('studyLibraryPulseTab');
     const batchId = (packageSessionId ?? '').split(',')[0] ?? '';
     const [view, setView] = useState<PulseView>('ROSTER');
+    const VIEWS = buildViews(t);
 
     if (!batchId) {
         return (
             <div className="rounded-md bg-white p-6 text-center text-sm text-neutral-500 shadow-sm">
-                Select a batch to view its live pulse.
+                {t('selectBatch')}
             </div>
         );
     }

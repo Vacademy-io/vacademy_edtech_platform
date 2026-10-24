@@ -1,0 +1,131 @@
+{
+    "mediaTypes": {
+        "video": "فيديو",
+        "audio": "صوت",
+        "pdf": "مستند PDF",
+        "doc": "مستند Word",
+        "image": "صورة",
+        "note": "ملاحظة",
+        "other": "أخرى"
+    },
+    "fileTypes": {
+        "file": "ملف",
+        "url": "رابط",
+        "note": "ملاحظة"
+    },
+    "folders": {
+        "uncategorized": "غير مصنف",
+        "addToFolder": "إضافة إلى المجلد",
+        "fileCount_zero": "لا توجد ملفات ({{count}})",
+        "fileCount_one": "ملف واحد ({{count}})",
+        "fileCount_two": "ملفان ({{count}})",
+        "fileCount_few": "{{count}} ملفات",
+        "fileCount_many": "{{count}} ملفًا",
+        "fileCount_other": "{{count}} ملف"
+    },
+    "row": {
+        "viewNote": "عرض الملاحظة",
+        "download": "تنزيل",
+        "openLink": "فتح الرابط",
+        "manageAccess": "إدارة الوصول",
+        "delete": "حذف"
+    },
+    "toasts": {
+        "loadFilesFailed": "فشل تحميل ملفات الطالب",
+        "noStudentSelected": "لم يتم تحديد أي طالب",
+        "enterFileName": "الرجاء إدخال اسم الملف",
+        "selectFile": "الرجاء اختيار ملف",
+        "fileUploaded": "تم رفع الملف بنجاح",
+        "enterUrl": "الرجاء إدخال رابط",
+        "urlAdded": "تمت إضافة الرابط بنجاح",
+        "enterNoteContent": "الرجاء إدخال محتوى الملاحظة",
+        "noteCreated": "تم إنشاء الملاحظة بنجاح",
+        "addFileFailed": "فشلت إضافة الملف",
+        "fileDeleted": "تم حذف الملف بنجاح",
+        "deleteFileFailed": "فشل حذف الملف",
+        "filesRefreshed": "تم تحديث الملفات",
+        "loadAccessFailed": "فشل تحميل تفاصيل الوصول إلى الملف",
+        "viewAccessRevoked": "تم إلغاء إذن العرض",
+        "viewAccessGranted": "تم منح إذن العرض",
+        "updateViewAccessFailed": "فشل تحديث إذن العرض",
+        "editAccessRevoked": "تم إلغاء إذن التعديل",
+        "editAccessGranted": "تم منح إذن التعديل",
+        "updateEditAccessFailed": "فشل تحديث إذن التعديل",
+        "getFileUrlFailed": "فشل الحصول على رابط الملف",
+        "openFileFailed": "فشل فتح الملف"
+    },
+    "empty": {
+        "title": "لا توجد ملفات بعد",
+        "hint": "قم برفع ملف أو إضافة رابط أو إنشاء ملاحظة لهذا الطالب.",
+        "addFirstFile": "إضافة أول ملف"
+    },
+    "error": {
+        "title": "تعذر تحميل الملفات",
+        "hint": "حدث خطأ ما أثناء جلب ملفات الطالب."
+    },
+    "heroStats": {
+        "totalFiles": "إجمالي الملفات",
+        "folders": "المجلدات",
+        "recent": "الحديثة (7 أيام)"
+    },
+    "actionBar": {
+        "uploadFile": "رفع ملف",
+        "addLink": "إضافة رابط",
+        "addNote": "إضافة ملاحظة",
+        "refreshFiles": "تحديث الملفات"
+    },
+    "addDialog": {
+        "titleFor": "إضافة ملف لـ {{term}}",
+        "descriptionFor": "قم برفع ملف أو إضافة رابط أو إنشاء ملاحظة لهذا {{term}}",
+        "tabs": {
+            "file": "ملف",
+            "url": "رابط",
+            "note": "ملاحظة"
+        },
+        "selectFileLabel": "اختر ملفًا *",
+        "selected": "المحدد: {{name}} ({{size}} ميجابايت)",
+        "mediaTypeLabel": "نوع الوسائط *",
+        "urlLabel": "الرابط *",
+        "urlPlaceholder": "https://example.com/resource",
+        "urlHint": "أدخل رابطًا صالحًا لمورد خارجي",
+        "noteContentLabel": "محتوى الملاحظة *",
+        "notePlaceholder": "اكتب ملاحظتك هنا...",
+        "noteHint": "أنشئ ملاحظة بتنسيق غني لهذا الطالب",
+        "fileNameLabel": "اسم الملف *",
+        "fileNamePlaceholder": "مثال: فيديو تعليمي - أساسيات React",
+        "folderNameLabel": "اسم المجلد",
+        "folderNamePreselected": "محدد مسبقًا",
+        "folderNamePlaceholder": "مثال: الواجبات، الشهادات، الموارد",
+        "folderNameHintPreselected": "جارٍ إضافة الملف إلى المجلد المحدد",
+        "folderNameHintDefault": "اختياري: نظّم الملفات في مجلدات (غير حساس لحالة الأحرف)",
+        "grantEditAccessLabel": "منح الطالب إذن التعديل أيضًا",
+        "cancel": "إلغاء",
+        "uploading": "جارٍ الرفع...",
+        "adding": "جارٍ الإضافة...",
+        "addSubmit": "إضافة {{type}}"
+    },
+    "viewNoteDialog": {
+        "titleFallback": "عرض الملاحظة",
+        "description": "عرض محتوى الملاحظة لهذا الطالب",
+        "noContent": "لا يوجد محتوى متاح",
+        "close": "إغلاق"
+    },
+    "deleteDialog": {
+        "title": "حذف الملف",
+        "description": "هل أنت متأكد أنك تريد حذف هذا الملف؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+    },
+    "accessDialog": {
+        "titleFor": "إدارة وصول {{term}}",
+        "description": "تحكم في الوصول الذي يملكه الطالب لهذا الملف",
+        "viewAccessTitle": "إذن العرض",
+        "viewAccessHint": "يمكن لـ {{term}} عرض هذا الملف",
+        "editAccessTitle": "إذن التعديل",
+        "editAccessHint": "يمكن لـ {{term}} تعديل هذا الملف",
+        "grant": "منح",
+        "revoke": "إلغاء",
+        "helpText": "سيسمح إذن التعديل للطالب بتعديل الملف.",
+        "close": "إغلاق"
+    }
+}

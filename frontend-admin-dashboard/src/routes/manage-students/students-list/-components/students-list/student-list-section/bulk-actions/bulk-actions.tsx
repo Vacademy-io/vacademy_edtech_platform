@@ -1,5 +1,6 @@
 // components/bulk-actions.tsx
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { CaretUpDown, XCircle } from '@phosphor-icons/react';
 import { BulkActionsMenu } from './bulk-actions-menu';
@@ -29,6 +30,7 @@ export const BulkActions = ({
     leftSlot,
 }: BulkActionsProps) => {
     //   const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsBulkActions');
 
     if (selectedCount === 0) {
         return null;
@@ -40,7 +42,8 @@ export const BulkActions = ({
         <div className="flex w-full flex-wrap items-center justify-between gap-3 text-neutral-600">
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex gap-1">
-                    <span className="font-semibold text-primary-500">{selectedCount}</span> selected
+                    <span className="font-semibold text-primary-500">{selectedCount}</span>{' '}
+                    {t('selectedCount', { count: selectedCount })}
                 </div>
                 {leftSlot}
             </div>
@@ -53,7 +56,7 @@ export const BulkActions = ({
                     className="flex items-center"
                     onClick={onReset}
                 >
-                    Reset
+                    {t('reset')}
                     <XCircle />
                 </MyButton>
 
@@ -69,7 +72,7 @@ export const BulkActions = ({
                             layoutVariant="default"
                             className="flex w-full cursor-pointer items-center justify-between"
                         >
-                            <div>Bulk Actions</div>
+                            <div>{t('bulkActions')}</div>
                             <CaretUpDown />
                         </MyButton>
                     }

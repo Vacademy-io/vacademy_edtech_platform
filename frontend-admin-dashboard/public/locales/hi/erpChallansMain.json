@@ -1,0 +1,58 @@
+{
+    "description": "वेतन से काटे गए TDS के विरुद्ध जमा की गई राशियाँ। फॉर्म 24Q हर तिमाही में इन्हीं से मिलान करता है, इसलिए यहाँ दर्ज न होने वाला जमा वहाँ बेमेल के रूप में दिखेगा।",
+    "recordChallan": "चालान दर्ज करें",
+    "toast": {
+        "recorded": "चालान दर्ज हुआ",
+        "removed": "चालान हटाया गया"
+    },
+    "errors": {
+        "record": "चालान दर्ज नहीं किया जा सका।",
+        "remove": "चालान हटाया नहीं जा सका।",
+        "load": "चालान रजिस्टर लोड नहीं हो सका।"
+    },
+    "empty": {
+        "title": "कोई चालान दर्ज नहीं है",
+        "description": "{{financialYear}} {{quarter}} के लिए अभी तक कुछ भी जमा नहीं किया गया है।"
+    },
+    "table": {
+        "depositDate": "जमा तिथि",
+        "bsrCode": "BSR कोड",
+        "serial": "क्रमांक",
+        "amount": "राशि",
+        "interest": "ब्याज",
+        "fee": "शुल्क"
+    },
+    "removeChallanAria": "चालान हटाएं",
+    "totalDeposited": "कुल जमा · {{financialYear}} {{quarter}}",
+    "dialog": {
+        "heading": "TDS चालान दर्ज करें",
+        "cancel": "रद्द करें",
+        "save": "चालान सहेजें",
+        "saving": "सहेजा जा रहा है…"
+    },
+    "fields": {
+        "financialYear": "वित्तीय वर्ष",
+        "financialYearPlaceholder": "2025-26",
+        "quarter": "तिमाही",
+        "depositDate": "जमा तिथि",
+        "amountDeposited": "जमा की गई राशि",
+        "bsrCode": "BSR कोड",
+        "bsrCodePlaceholder": "बैंक शाखा कोड",
+        "challanSerial": "चालान क्रमांक",
+        "interest": "ब्याज",
+        "fee": "शुल्क",
+        "notes": "टिप्पणियाँ"
+    },
+    "deleteDialog": {
+        "title": "क्या यह चालान हटाना है?",
+        "description": "{{date}} को जमा की गई {{amount}} अब फॉर्म 24Q के मिलान में शामिल नहीं होगी।",
+        "unknownDate": "अज्ञात तिथि",
+        "keepIt": "रहने दें",
+        "remove": "हटाएं"
+    },
+    "validation": {
+        "financialYearFormat": "2025-26 प्रारूप में लिखें",
+        "depositDateRequired": "जमा तिथि आवश्यक है",
+        "amountPositive": "राशि शून्य से अधिक होनी चाहिए"
+    }
+}

@@ -1,0 +1,60 @@
+---
+title: "Connections and revoking"
+description: "See which AI apps are connected to your institute, who connected them, and how to cut access."
+icon: "plug-circle-xmark"
+---
+
+**Active connections** in **Settings → MCP Server** lists every AI app that is signed in to your institute right now. Admins can see and revoke all of them.
+
+## What each row shows
+
+| Field | Meaning |
+|---|---|
+| App name | The name the AI app gave itself when it registered, for example the name of the AI app, or the name of a [client ID](/mcp-server/settings/client-ids) you created. |
+| **Connected by** | The person who approved the connection. The app acts as this person. |
+| **Last used** | When the app last made a request. **Never used** means it signed in but has not used a tool yet. |
+| **Revoke** | Ends this connection. |
+
+One row is one person signed in with one app. If a person connects Claude and Cursor, you see two rows.
+
+<Frame caption="An Active connections row: the app name, Connected by, Last used, and Revoke.">
+  <img src="/mcp-server/images/screenshots/active-connections.svg" alt="Placeholder for a screenshot of one Active connections row" />
+</Frame>
+
+A connection leaves the list when it is revoked, or when it has not been used for 30 days and its sign-in expires. See [Tokens and expiry](/mcp-server/oauth/tokens-and-expiry).
+
+## Revoke a connection
+
+Click **Revoke** on the row. The connection ends at once: the app's next request is refused, and the person has to sign in again from their app.
+
+<Note>
+  Revoking ends one sign-in. It does not stop the person from connecting again. If they still hold an allowed role, they can reconnect. To keep someone out, also remove their role from [Who can connect](/mcp-server/settings/roles), or change their role in your team settings.
+</Note>
+
+## All the ways to cut access
+
+| You want to stop | Do this | When it applies |
+|---|---|---|
+| One person's app | **Revoke** their row | Their next request |
+| Everyone with a role | Remove the role from **Who can connect**, then save | Each app's next request |
+| One area or one change, for everyone | Set the area to **Off** or switch the change off in the main list **and** in every customized role under **Per-role access**, then save | Each app's next request |
+| Everything | Turn off **MCP server enabled**, then save | Each app's next request |
+
+Settings changes do not delete connections. When a role, area or the whole server is turned back on, apps that are still signed in work again. Revoke the connections too if you want everyone to sign in again.
+
+## What the person sees
+
+- A **revoked** connection: their app is no longer signed in. Most apps then ask them to sign in again.
+- A **switched-off** server or a **removed role**: the app's list of tools is empty, and using a tool returns a message such as *"The MCP server is not enabled for this institute"* or *"This user's role is not allowed to connect to the MCP server"*, with a pointer to the MCP settings.
+- An area set to **Off**: its tools disappear from the app's list.
+
+## When someone leaves your team
+
+1. Revoke every row where **Connected by** shows them.
+2. Remove or change their role in your team settings.
+
+Do the same when someone changes role: revoke their rows, and they reconnect with their new role.
+
+## Disconnecting from the app side
+
+A person can also remove the server from their AI app. Some apps tell the server to end the sign-in when they do that; others do not. To be sure a connection is gone, check **Active connections** and revoke it there.

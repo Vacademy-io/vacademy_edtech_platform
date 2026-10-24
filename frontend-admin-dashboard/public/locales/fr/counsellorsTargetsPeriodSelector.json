@@ -1,0 +1,10 @@
+{
+    "options": {
+        "week": "Cette semaine",
+        "month": "Ce mois-ci",
+        "custom": "Personnalisé"
+    },
+    "to": "à",
+    "rangeStart": "Début de la période cible",
+    "rangeEnd": "Fin de la période cible"
+}

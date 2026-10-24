@@ -12,7 +12,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { CreateCatalogueDialog } from './CreateCatalogueDialog';
 import {
@@ -23,12 +23,27 @@ import {
     Plus,
     LayoutTemplate,
     Clock,
+    Newspaper,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCataloguePermissions } from '../-hooks/use-catalogue-permissions';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { fetchBothInstituteAPIs } from '@/services/student-list-section/getInstituteDetails';
 import { getCatalogueSiteUrl } from '../-utils/learner-site-url';
+import { DotsThreeVertical } from '@phosphor-icons/react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { UtmLinkMenuItem } from '@/components/common/utm/utm-link-menu-item';
+import { UtmBuilderDialog } from '@/components/common/utm/utm-builder-dialog';
+import { useUtmBuilderEnabled } from '@/hooks/use-utm-builder-enabled';
+import { useBlogManagerStore } from '../-stores/blog-manager-store';
+import { BlogManagerDialog } from './blog/BlogManagerDialog';
+import { FolderLibraryDialog } from './folders/FolderLibraryDialog';
+import { useFolderLibraryStore } from '../-stores/folder-library-store';
+import { Folders } from '@phosphor-icons/react';
 
 // Deterministic gradient from tag name
 const GRADIENTS = [
@@ -63,10 +78,25 @@ const CardSkeleton = () => (
 export const CatalogueList = () => {
     const instituteId = getCurrentInstituteId();
     const navigate = useNavigate();
+    const openBlog = useBlogManagerStore((s) => s.open);
+    const openFolders = useFolderLibraryStore((s) => s.open);
+    // `?blog=list` / `?blog=<postId>` — deep link into the blog manager (MCP
+    // hands these out). Consumed once, then stripped so closing the dialog
+    // doesn't reopen it on the next render.
+    const { blog: blogSearch } = useSearch({ strict: false }) as { blog?: string };
+    useEffect(() => {
+        if (!blogSearch) return;
+        openBlog(blogSearch === 'list' ? null : blogSearch);
+        navigate({ to: '/manage-pages', search: {}, replace: true });
+    }, [blogSearch, openBlog, navigate]);
     const { toast } = useToast();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [deletingTag, setDeletingTag] = useState<string | null>(null);
     const [deleteConfirmTag, setDeleteConfirmTag] = useState<string | null>(null);
+    const [utmTagName, setUtmTagName] = useState<string | null>(null);
+    // One action in the ⋮ menu today, so hide the trigger entirely rather
+    // than opening an empty popover for institutes that never enabled it.
+    const { enabled: utmEnabled } = useUtmBuilderEnabled();
     const { canWrite, canDelete } = useCataloguePermissions();
     const { instituteDetails, setInstituteDetails } = useInstituteDetailsStore();
 
@@ -131,14 +161,34 @@ export const CatalogueList = () => {
                         Build and publish your institute&apos;s learner portals
                     </p>
                 </div>
-                <Button
-                    onClick={() => setIsCreateDialogOpen(true)}
-                    disabled={!canWrite}
-                    className="shrink-0 gap-1.5"
-                >
-                    <Plus className="size-4" />
-                    New Site
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => openBlog()}
+                        className="gap-1.5"
+                        title="Write and publish blog posts for your sites"
+                    >
+                        <Newspaper className="size-4" />
+                        Blog
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => openFolders()}
+                        className="gap-1.5"
+                        title="Organise product pages into folders students can browse"
+                    >
+                        <Folders className="size-4" />
+                        Folders
+                    </Button>
+                    <Button
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        disabled={!canWrite}
+                        className="gap-1.5"
+                    >
+                        <Plus className="size-4" />
+                        New Site
+                    </Button>
+                </div>
             </div>
 
             {/* Stats row */}
@@ -288,6 +338,26 @@ export const CatalogueList = () => {
                                             </a>
                                         </Button>
 
+                                        {utmEnabled && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="size-8 p-0 text-gray-400 hover:text-gray-700"
+                                                        title="More actions"
+                                                    >
+                                                        <DotsThreeVertical className="size-3.5" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <UtmLinkMenuItem
+                                                        onSelect={() => setUtmTagName(tag.tagName)}
+                                                    />
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+
                                         <Button
                                             size="sm"
                                             variant="outline"
@@ -323,6 +393,20 @@ export const CatalogueList = () => {
                 </div>
             )}
 
+            <UtmBuilderDialog
+                open={!!utmTagName}
+                onOpenChange={(open) => !open && setUtmTagName(null)}
+                baseUrl={
+                    utmTagName
+                        ? getCatalogueSiteUrl(utmTagName, instituteDetails?.learner_portal_base_url)
+                        : ''
+                }
+                sourceType="CATALOGUE"
+                entityName={utmTagName ?? undefined}
+            />
+
+            <BlogManagerDialog />
+            <FolderLibraryDialog />
             <CreateCatalogueDialog
                 open={isCreateDialogOpen}
                 onOpenChange={setIsCreateDialogOpen}

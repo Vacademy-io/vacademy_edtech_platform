@@ -1,0 +1,14 @@
+{
+    "confirm": {
+        "title": "Publish this slide?",
+        "description": "Learners will be able to see it.",
+        "cancel": "Cancel",
+        "publish": "Publish"
+    },
+    "notify": {
+        "title": "Notify students?",
+        "description": "Send an update about this slide.",
+        "skip": "Skip",
+        "notify": "Notify"
+    }
+}

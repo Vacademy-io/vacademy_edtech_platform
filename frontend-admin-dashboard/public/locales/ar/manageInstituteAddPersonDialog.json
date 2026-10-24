@@ -1,0 +1,35 @@
+{
+    "dialog": {
+        "titleAddPersonTo": "إضافة شخص إلى {{teamName}}",
+        "descriptionPicked": "امنح هذا المنصب تسمية مثل \"رئيس المبيعات\" واختر من يرفع له التقارير. يمكنك تغيير كليهما لاحقًا بالنقر على أيقونة القلم في البطاقة.",
+        "descriptionUnpicked": "اختر شخصًا من مؤسستك."
+    },
+    "search": {
+        "placeholder": "ابحث بالاسم أو البريد الإلكتروني…",
+        "emptyAllInTeam": "جميع أفراد المؤسسة موجودون بالفعل في هذا الفريق.",
+        "emptyNoMatch": "لا يوجد أحد يطابق هذا البحث."
+    },
+    "common": {
+        "unnamed": "بدون اسم",
+        "change": "تغيير",
+        "optionalSuffix": "(اختياري)",
+        "cancel": "إلغاء",
+        "adding": "جارٍ الإضافة…",
+        "addToTeam": "إضافة إلى الفريق"
+    },
+    "form": {
+        "positionLabel": "تسمية المنصب",
+        "positionLabelPlaceholder": "مثال: رئيس المبيعات، قائد المستشارين",
+        "positionLabelHelp": "تظهر تحت اسمهم في المخطط. يمكنك تعديلها في أي وقت بالنقر على أيقونة القلم في البطاقة.",
+        "reportsToLabel": "يرفع التقارير إلى",
+        "noManagerOption": "لا يوجد مدير — أعلى الفريق",
+        "reportsToHelp": "يمكنك أيضًا رسم سهم بين البطاقات في المخطط لتحديد ذلك لاحقًا."
+    },
+    "toast": {
+        "addedUnder": "تمت إضافة {{name}} تحت {{where}}",
+        "theirManager": "مديرهم",
+        "topOfTeam": "أعلى الفريق",
+        "defaultMember": "عضو",
+        "addFailed": "تعذّرت إضافة هذا الشخص"
+    }
+}

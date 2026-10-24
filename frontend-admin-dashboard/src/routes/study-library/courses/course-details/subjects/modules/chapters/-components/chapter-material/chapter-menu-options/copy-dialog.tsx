@@ -6,6 +6,7 @@ import {
 import { useCopyChapter } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/-services/copy-move-chapter';
 import { ChapterWithSlides } from '@/stores/study-library/use-modules-with-chapters-store';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface CopyTo {
@@ -15,6 +16,7 @@ interface CopyTo {
 }
 
 export const CopyToDialog = ({ openDialog, setOpenDialog, chapter }: CopyTo) => {
+    const { t } = useTranslation('studyLibraryCopyDialog');
     const copyChapterMutation = useCopyChapter();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,17 +40,17 @@ export const CopyToDialog = ({ openDialog, setOpenDialog, chapter }: CopyTo) => 
         if (failed.length === 0) {
             toast.success(
                 succeeded === 1
-                    ? 'Chapter copied successfully'
-                    : `Chapter copied to ${succeeded} locations`
+                    ? t('copiedSuccessfully')
+                    : t('copiedToLocations', { count: succeeded })
             );
             setOpenDialog(null);
             return;
         }
         if (succeeded === 0) {
-            toast.error('Failed to copy chapter');
+            toast.error(t('copyFailed'));
         } else {
             toast.warning(
-                `Copied to ${succeeded} of ${destinations.length} locations. Retry the rest below.`
+                t('partialCopySummary', { succeeded, total: destinations.length })
             );
         }
         // The source chapter is untouched, so retrying just these is safe.
@@ -57,15 +59,15 @@ export const CopyToDialog = ({ openDialog, setOpenDialog, chapter }: CopyTo) => 
 
     return (
         <MyDialog
-            heading="Copy to"
+            heading={t('copyTo')}
             dialogWidth="max-w-2xl"
             open={openDialog == 'copy'}
             onOpenChange={() => setOpenDialog(null)}
         >
             <CopyMoveDestinationPicker
                 leaf="module"
-                submitLabel="Copy"
-                busyLabel="Copying…"
+                submitLabel={t('copy')}
+                busyLabel={t('copying')}
                 isSubmitting={isSubmitting}
                 onSubmit={handleCopyChapter}
             />

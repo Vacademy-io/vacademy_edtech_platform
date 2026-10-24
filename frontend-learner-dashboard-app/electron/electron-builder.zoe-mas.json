@@ -1,6 +1,6 @@
 {
   "appId": "io.zoeedtech.app",
-  "productName": "ZOE Edtech",
+  "productName": "ZOE Online School",
   "directories": {
     "buildResources": "resources-zoe",
     "output": "dist-mas-zoe"
@@ -26,7 +26,13 @@
         "!**/*.map",
         "!**/test/**",
         "!**/tests/**",
-        "!**/.bin/**"
+        "!**/.bin/**",
+        "!app-builder-bin/**/*",
+        "!7zip-bin/**/*",
+        "!lzma-native/**/*",
+        "!iconv-corefoundation/**/*",
+        "!node-notifier/vendor/notifu/**/*",
+        "!node-notifier/vendor/snoreToast/**/*"
       ]
     }
   ],
@@ -59,12 +65,14 @@
     "entitlementsLoginHelper": "entitlements.mas.loginhelper.plist"
   },
   "extraMetadata": {
-    "version": "1.0"
+    "version": "1.0.1",
+    "electronFlavorAppId": "com.zoeedtech.app"
   },
-  "buildVersion": "4",
+  "buildVersion": "7",
   "mac": {
     "category": "public.app-category.education",
     "icon": "assets/zoe.icns",
     "minimumSystemVersion": "12.0"
-  }
+  },
+  "afterPack": "./verify-mas-package.js"
 }

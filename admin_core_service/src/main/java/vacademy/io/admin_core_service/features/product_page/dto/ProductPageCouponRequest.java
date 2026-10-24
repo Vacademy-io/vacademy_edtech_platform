@@ -21,6 +21,9 @@ public class ProductPageCouponRequest {
 
     private Integer maxUses;
 
+    /** Smallest basket this coupon may be used on. Null = no minimum. */
+    private Integer minItems;
+
     private LocalDateTime redeemStartDate;
 
     private LocalDateTime redeemEndDate;

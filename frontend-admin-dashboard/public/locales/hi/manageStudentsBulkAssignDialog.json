@@ -1,0 +1,31 @@
+{
+    "dialogTitle": "{{term}} नामांकित करें",
+    "stepper": {
+        "learners": "{{term}} चुनें",
+        "courses": "{{term}} चुनें",
+        "config": "नामांकन कॉन्फ़िगरेशन",
+        "suborg": "सब-ऑर्गनाइज़ेशन",
+        "preview": "पूर्वावलोकन और पुष्टि करें"
+    },
+    "footer": {
+        "back": "← वापस",
+        "cancel": "रद्द करें",
+        "linkingGuardians": "अभिभावक जोड़े जा रहे हैं…",
+        "loading": "लोड हो रहा है…",
+        "previewButton": "पूर्वावलोकन →",
+        "next": "अगला →",
+        "enrolling": "नामांकन हो रहा है…",
+        "confirmEnrollment": "✓ नामांकन की पुष्टि करें"
+    },
+    "toasts": {
+        "previewFailed": "पूर्वावलोकन बनाने में विफल। कृपया पुनः प्रयास करें।",
+        "enrollmentComplete": "नामांकन पूर्ण! ✅ {{successful}} नामांकित, ⏭ {{skipped}} छोड़े गए, ❌ {{failed}} विफल।",
+        "enrollmentFailed": "नामांकन विफल। कृपया पुनः प्रयास करें।",
+        "guardianLinkFailed": "{{name}} के लिए अभिभावक लिंक विफल: {{message}}"
+    },
+    "errors": {
+        "guardianLinkFallback": "अभिभावक को लिंक करने में विफल।",
+        "invalidGuardianLinkSelection": "अमान्य अभिभावक-लिंक चयन।",
+        "couldNotResolveCreatedUser": "{{name}} के लिए बनाए गए उपयोगकर्ता की पहचान नहीं हो सकी।"
+    }
+}

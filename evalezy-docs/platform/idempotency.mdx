@@ -1,0 +1,184 @@
+---
+title: "Idempotency and safe retries"
+description: "Retry any request without creating a second exam, a duplicate submission or a double charge, using the Idempotency-Key header and the API's natural keys."
+icon: "rotate"
+---
+
+Networks fail. A request can time out after Evalezy has already created the submission, and your retry must not create a second one or charge twice. The API gives you two tools for this:
+
+1. **The `Idempotency-Key` header** on `POST` requests: a retry with the same key returns the first answer instead of running again.
+2. **Natural keys** enforced by the API itself: your `external_ref` for exams, your `external_id` for candidates, and one live submission per candidate per exam.
+
+Use both. The header covers every `POST`; the natural keys protect you even when a retry is sent without it, for example after your own process restarts.
+
+## The Idempotency-Key header
+
+Send a unique value, such as a UUID, in the `Idempotency-Key` header. Reuse **the same value** for every retry of that request.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams/$EXAM_ID/submissions \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Idempotency-Key: 5d2c7a1e-8f3b-4e69-a0d4-1b9c6e2f7a83" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "candidate": { "external_id": "STU-2026-0412", "name": "Aarav Sharma", "roll_number": "12" },
+    "upload_id": "9e4b1f7a-2c6d-4a83-b5e0-7d1c3f8a6b29"
+  }'
+```
+
+```python Python
+import os
+import uuid
+import requests
+
+idem_key = str(uuid.uuid4())  # store it with your job so retries reuse it
+
+resp = requests.post(
+    f"https://api.evalezy.com/v1/exams/{exam_id}/submissions",
+    headers={
+        "X-API-Key": os.environ["EVALEZY_API_KEY"],
+        "Idempotency-Key": idem_key,
+    },
+    json={
+        "candidate": {"external_id": "STU-2026-0412", "name": "Aarav Sharma", "roll_number": "12"},
+        "upload_id": upload_id,
+    },
+    timeout=60,
+)
+replayed = resp.headers.get("Idempotent-Replayed") == "true"
+```
+
+```javascript Node
+import { randomUUID } from "node:crypto";
+
+const idemKey = randomUUID(); // store it with your job so retries reuse it
+
+const resp = await fetch(`https://api.evalezy.com/v1/exams/${examId}/submissions`, {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.EVALEZY_API_KEY,
+    "Idempotency-Key": idemKey,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    candidate: { external_id: "STU-2026-0412", name: "Aarav Sharma", roll_number: "12" },
+    upload_id: uploadId,
+  }),
+});
+const replayed = resp.headers.get("Idempotent-Replayed") === "true";
+```
+
+</CodeGroup>
+
+### Rules
+
+| Rule | Detail |
+|---|---|
+| **Optional** | Without the header the request simply runs. |
+| **Format** | 1 to 255 printable ASCII characters. Anything else is `422 validation_failed` on the field `Idempotency-Key`. A UUID v4 is ideal. |
+| **Scope** | **Per institute**, not per API key. A retry sent with a rotated key, or from a second key of the same institute, still replays. Never reuse the same value for two different requests anywhere in your institute. |
+| **Lifetime** | Kept for **48 hours**. After that the same value starts a new request. |
+| **Same request** | The method, the path and the JSON body together identify the request. Key order and whitespace in the body do not matter. |
+
+### What happens on a retry
+
+| Situation | Response |
+|---|---|
+| Same key, same request, first call finished | The stored response: same status code and body, plus the header `Idempotent-Replayed: true`. Nothing runs again and nothing is charged again. |
+| Same key, same request, first call still running | `409 request_in_progress` with `Retry-After: 2`. Wait and retry with the same key. |
+| Same key, **different** request | `422 idempotency_key_reused`. Generate a new key for the new request. |
+
+A replayed error carries a fresh `request_id` for the retry, not the original one.
+
+### Which outcomes are stored
+
+| Stored and replayed | Not stored: a retry runs again |
+|---|---|
+| Successful responses (`2xx`) | `5xx` errors |
+| Most `4xx` errors, such as `404` and `422` | `402 insufficient_credits` |
+| | `409` conflicts |
+| | `429` rate limits and quotas |
+
+This means a retry after a `500`, a `503` or a `429` really retries, and a retry after topping up credits goes through, while a retry of a successful create gives you back the same resource.
+
+<Warning>
+A stored `422` is replayed as long as the request is identical. Once you fix the body it is a different request, so send it with a **new** `Idempotency-Key`; the old key would answer `422 idempotency_key_reused`.
+</Warning>
+
+### Endpoints that accept the header
+
+Every `POST` that creates or changes something:
+
+| Endpoint | Natural key, if any |
+|---|---|
+| `POST /exams` | `external_ref` |
+| `POST /exams/{id}/questions` | |
+| `POST /exams/{id}/open` | |
+| `POST /candidates` | `external_id` (upsert) |
+| `POST /exams/{id}/candidates` | already-registered candidates are reported, not duplicated |
+| `POST /uploads` | |
+| `POST /exams/{id}/submissions` | one live submission per exam and candidate |
+| `POST /submissions/{id}/re-evaluate` | |
+| `POST /submissions/{id}/cancel` | cancelling twice is a no-op |
+| `POST /submissions/{id}/approve` | |
+| `POST /exams/{id}/finalize` | |
+| `POST /submissions/{id}/unfinalize` | |
+
+The read-only `POST` lookups (`/exams/search`, `/candidates/search`, `/credits/quote`) are safe to repeat and ignore the header. `PUT` and `PATCH` set values, so repeating them gives the same result. A repeated `DELETE` answers `404`, which you can treat as success.
+
+<Note>
+**Replays of `POST /uploads` never contain the upload URLs.** Presigned URLs are credentials, so they are not stored. A replayed response lists the same uploads with `upload_url_redacted: true` and no `upload_url`. If you lost the URLs, create new uploads with a new `Idempotency-Key`.
+</Note>
+
+## Natural keys
+
+These rules hold whether or not you send an `Idempotency-Key`.
+
+<AccordionGroup>
+  <Accordion title="Exams: external_ref" icon="file-lines">
+    Give every exam your own reference, for example `"external_ref": "CBSE-X-SCI-HY-2026-10A"`. A second `POST /exams` with the same `external_ref` is refused:
+
+    ```json
+    {
+      "error": {
+        "code": "exam_exists",
+        "message": "An exam with this external_ref already exists.",
+        "request_id": "req_4e1b7c9d2a5f4c8e9b0d3a6f1c2e7b95",
+        "details": { "exam_id": "c2a9e4f1-6b3d-4a7e-8c15-9d0f2b7e3a61" }
+      }
+    }
+    ```
+
+    Treat `exam_exists` as success and continue with `details.exam_id`. To look exams up by your references without creating anything, call `POST /exams/search` with up to 500 `external_refs`. Deleting an exam frees its `external_ref` for reuse.
+  </Accordion>
+  <Accordion title="Candidates: external_id" icon="user">
+    Candidates are keyed by your student id, `external_id`, within your institute. `POST /candidates` (and inline `candidate` objects on submissions) **upsert**: the first call creates the candidate, later calls update the fields you send and keep the ones you leave out. Sending the same candidate twice never creates two.
+  </Accordion>
+  <Accordion title="Submissions: one live submission per candidate per exam" icon="file-pen">
+    An exam holds at most one live submission per candidate. A second `POST /exams/{id}/submissions` for the same candidate is refused with `409 submission_exists`, and `details.submission_id` points to the existing one, so a blind retry can never grade a copy twice.
+
+    To deliberately replace a copy (for example after a rescan), send `"replace": true`. The old submission is marked replaced and its grading is cancelled. A finalized submission cannot be replaced until you unfinalize it (`409 submission_finalized`).
+  </Accordion>
+  <Accordion title="Uploads: used once" icon="file-arrow-up">
+    Each upload can be attached to one submission only. Reusing it answers `409 upload_already_used` with the submission that holds it.
+  </Accordion>
+</AccordionGroup>
+
+## A robust pattern
+
+<Steps>
+  <Step title="Derive keys from your own records">
+    Use your exam id as `external_ref` and your student id as `external_id`. Retries then line up on their own.
+  </Step>
+  <Step title="Generate one Idempotency-Key per job, store it, reuse it">
+    Persist the key next to the job in your database before the first attempt, so a restarted worker retries with the same value.
+  </Step>
+  <Step title="Retry only what is retryable">
+    `429`, `500`, `503` and `409 request_in_progress`, honouring `Retry-After`. See [Errors](/platform/errors#retry-or-fix).
+  </Step>
+  <Step title="Treat natural-key conflicts as success">
+    On `exam_exists` or `submission_exists`, read the id from `details` and carry on.
+  </Step>
+</Steps>

@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CreditCard, Heart } from "@phosphor-icons/react";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { SubscriptionPlanSection } from "./subscription-plan-sections";
 import { getAllUniqueFeatures } from "./registration-step";
@@ -50,6 +51,7 @@ const PaymentSelectionStep = ({
   onAmountChange,
   onValidationChange,
 }: PaymentSelectionStepProps) => {
+  const { t } = useTranslation("enrollmentA");
   const [customAmount, setCustomAmount] = useState<string>("");
   const [isDonation, setIsDonation] = useState(false);
   const hasInitialized = useRef(false);
@@ -189,10 +191,10 @@ const PaymentSelectionStep = ({
           </div>
           <div>
             <h2 className="text-title-lg font-semibold text-gray-900 leading-tight">
-              Make a Donation
+              {t("paymentSelection.donation.title")}
             </h2>
             <p className="text-caption text-muted-foreground mt-1">
-              Support our cause with your generous contribution
+              {t("paymentSelection.donation.subtitle")}
             </p>
           </div>
         </div>
@@ -203,7 +205,7 @@ const PaymentSelectionStep = ({
         {filteredAmounts.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-subtitle font-semibold text-gray-900">
-              Suggested Amounts
+              {t("paymentSelection.donation.suggestedAmounts")}
             </h3>
             <div className="flex flex-wrap gap-3">
               {filteredAmounts.map((amount, index) => (
@@ -231,7 +233,7 @@ const PaymentSelectionStep = ({
         {donationMetadata.allowCustomAmount && (
           <div className="space-y-3">
             <h3 className="text-subtitle font-semibold text-gray-900">
-              Custom Amount
+              {t("paymentSelection.donation.customAmount")}
             </h3>
             <div className="relative">
               <span className="absolute start-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">
@@ -244,15 +246,15 @@ const PaymentSelectionStep = ({
                 min={minAmount}
                 step="1"
                 className="w-full ps-8 pe-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                placeholder={`Minimum ${getCurrencySymbol(
-                  selectedPayment?.currency || "GBP"
-                )}${minAmount}`}
+                placeholder={t("paymentSelection.donation.minimumPlaceholder", {
+                  amount: `${getCurrencySymbol(selectedPayment?.currency || "GBP")}${minAmount}`,
+                })}
               />
             </div>
             <p className="text-caption text-muted-foreground">
-              Minimum donation amount:{" "}
-              {getCurrencySymbol(selectedPayment?.currency || "GBP")}
-              {minAmount}
+              {t("paymentSelection.donation.minimumAmount", {
+                amount: `${getCurrencySymbol(selectedPayment?.currency || "GBP")}${minAmount}`,
+              })}
             </p>
           </div>
         )}
@@ -260,10 +262,10 @@ const PaymentSelectionStep = ({
         {/* Selected Donation Summary */}
         {selectedPayment && (
           <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
+            <CardContent className="p-card">
               <div className="flex items-center justify-between">
                 <span className="text-gray-700 font-medium">
-                  Your Donation:
+                  {t("paymentSelection.donation.yourDonation")}
                 </span>
                 <span className="text-xl font-bold text-blue-600">
                   {getCurrencySymbol(selectedPayment.currency)}
@@ -288,10 +290,10 @@ const PaymentSelectionStep = ({
           </div>
           <div>
             <h2 className="text-title-lg font-semibold text-gray-900 leading-tight">
-              Select Payment Plan
+              {t("paymentSelection.regular.title")}
             </h2>
             <p className="text-caption text-muted-foreground mt-1">
-              Choose the payment option that best suits your needs
+              {t("paymentSelection.regular.subtitle")}
             </p>
           </div>
         </div>
@@ -324,7 +326,7 @@ const PaymentSelectionStep = ({
 
   return (
     <Card className="shadow-lg w-full">
-      <CardContent className="p-5 sm:p-6">
+      <CardContent className="p-5 sm:p-card-lg">
         {renderDonationSection()}
         {renderRegularPaymentOptions()}
       </CardContent>

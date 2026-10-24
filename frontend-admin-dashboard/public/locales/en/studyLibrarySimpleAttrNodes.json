@@ -1,0 +1,30 @@
+{
+    "audio": {
+        "noAudio": "No audio uploaded"
+    },
+    "pdf": {
+        "noPdf": "No PDF uploaded",
+        "openInNewTab": "Open PDF in new tab"
+    },
+    "fillBlanks": {
+        "title": "Fill in the Blanks"
+    },
+    "jupyter": {
+        "notConfigured": "No notebook configured",
+        "notConfiguredDetail": "Project name and content URL needed to display Jupyter notebook",
+        "heading": "Jupyter Notebook: {{name}}",
+        "previewTitle": "Jupyter Notebook Preview",
+        "repository": "Repository:",
+        "branch": "Branch:",
+        "location": "Location:"
+    },
+    "scratch": {
+        "notConfigured": "No Scratch project configured",
+        "notConfiguredDetail": "Project ID needed to display Scratch project",
+        "heading": "Scratch Project"
+    },
+    "toc": {
+        "title": "Table of Contents",
+        "subtitle": "Outline is auto-generated from document headings."
+    }
+}

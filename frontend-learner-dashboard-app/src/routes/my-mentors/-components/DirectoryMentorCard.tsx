@@ -1,4 +1,5 @@
 import { CalendarPlus, CheckCircle, Clock, UserPlus } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import { ModernCard, ModernCardContent } from "@/components/design-system/modern-card";
 import type { DirectoryMentor } from "../-services/my-mentors-service";
@@ -17,6 +18,7 @@ export function DirectoryMentorCard({
     mentor: DirectoryMentor;
     onRequest: () => void;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     const cta = mentorCta(mentor);
     const pending = cta === "REQUEST_PENDING";
     const alreadyMentor = cta === "ALREADY_MENTOR";
@@ -34,7 +36,7 @@ export function DirectoryMentorCard({
                         />
                         <div className="flex min-w-0 flex-col">
                             <span className="truncate text-body font-semibold text-neutral-700">
-                                {mentor.name || "Mentor"}
+                                {mentor.name || t("myMentors.common.mentor")}
                             </span>
                             {mentor.title && (
                                 <span className="truncate text-caption text-neutral-500">
@@ -48,10 +50,10 @@ export function DirectoryMentorCard({
                                     }`}
                                 >
                                     {full
-                                        ? "Fully booked right now"
-                                        : `${mentor.available_slots} ${
-                                              mentor.available_slots === 1 ? "place" : "places"
-                                          } left`}
+                                        ? t("myMentors.directoryCard.fullyBookedNow")
+                                        : t("myMentors.directoryCard.placesLeft", {
+                                              count: mentor.available_slots,
+                                          })}
                                 </span>
                             )}
                         </div>
@@ -85,11 +87,12 @@ export function DirectoryMentorCard({
                     <div className="mt-auto">
                         {alreadyMentor ? (
                             <span className="flex items-center gap-1.5 rounded-md bg-success-50 px-3 py-2 text-caption text-success-600">
-                                <CheckCircle size={16} weight="fill" /> Already your mentor
+                                <CheckCircle size={16} weight="fill" />{" "}
+                                {t("myMentors.directoryCard.alreadyYourMentor")}
                             </span>
                         ) : pending ? (
                             <span className="flex items-center gap-1.5 rounded-md bg-neutral-100 px-3 py-2 text-caption text-neutral-600">
-                                <Clock size={16} /> Request sent — waiting for approval
+                                <Clock size={16} /> {t("myMentors.directoryCard.requestPending")}
                             </span>
                         ) : (
                             <MyButton
@@ -102,11 +105,13 @@ export function DirectoryMentorCard({
                             >
                                 {full ? (
                                     <>
-                                        <CalendarPlus size={16} /> Fully booked
+                                        <CalendarPlus size={16} />{" "}
+                                        {t("myMentors.directoryCard.fullyBooked")}
                                     </>
                                 ) : (
                                     <>
-                                        <UserPlus size={16} /> Request as mentor
+                                        <UserPlus size={16} />{" "}
+                                        {t("myMentors.directoryCard.requestAsMentor")}
                                     </>
                                 )}
                             </MyButton>

@@ -1,0 +1,43 @@
+---
+title: "API reference"
+description: "Base URL, authentication and conventions."
+---
+
+## Base URL
+
+```
+https://api.vacademy.ai/catalog/v1
+```
+
+## Authentication
+
+Send your publishable key (`vak_pub_…`) in the `X-API-Key` header, or as `Authorization: Bearer <key>`. Reads need the `catalog:read` scope, `POST /leads` needs `leads:write`; dashboard keys have both. See [Keys and websites](/keys-and-websites).
+
+## Conventions
+
+- Responses are JSON with `snake_case` field names. `POST /leads` takes a JSON body.
+- Fields documented as nullable are always present, with `null` when there is no value.
+- Timestamps are ISO-8601 in UTC, e.g. `2026-09-22T09:05:02.499Z`.
+- Prices are numbers in major units (`251.0` is ₹251) with an ISO 4217 `currency`.
+- Ids are opaque strings (currently UUIDs). Learning paths use a short `code`.
+- `*_html` fields are sanitised HTML; `*_text` fields are plain text.
+- Every response has an `X-Request-Id` header. Errors share [one shape](/platform/errors).
+- Successful reads are cacheable for 60 seconds. See [Rate limits and caching](/platform/rate-limits-and-caching).
+
+## Endpoints
+
+| | |
+|---|---|
+| `GET /site` | Institute, course page address, languages, formats, currency |
+| `GET /courses` | Search, filter, sort and page courses |
+| `GET /courses/{id}` | One course, with `seo` and `structured_data` |
+| `GET /courses/{id}/outline` | Subject, module and chapter titles |
+| `GET /streams` | Streams and their categories |
+| `GET /learning-paths` | Learning paths |
+| `GET /learning-paths/{code}` | One path and its courses |
+| `GET /sitemap` | Every course page |
+| `POST /leads` | Send an enquiry |
+
+<Note>
+If the in-page playground answers `403 origin_not_allowed`, it is calling from your browser on this docs site, which is not one of your verified websites. Run the generated `curl` command instead.
+</Note>

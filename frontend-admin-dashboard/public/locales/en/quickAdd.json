@@ -1,0 +1,47 @@
+{
+    "filesStaged": "{{count}} file(s) staged",
+    "prompts": {
+        "youtubeUrl": "Enter YouTube URL",
+        "externalLinkUrl": "Enter external link URL",
+        "embedUrl": "Enter URL to embed"
+    },
+    "defaultTitles": {
+        "youtubeVideo": "YouTube Video",
+        "link": "Link",
+        "codeEditor": "Code Editor",
+        "jupyterNotebook": "Jupyter Notebook",
+        "presentation": "Presentation",
+        "untitledDocument": "Untitled Document",
+        "embeddedUrl": "Embedded URL"
+    },
+    "bubbles": {
+        "uploadFiles": "Upload files",
+        "emptyDoc": "Empty Doc",
+        "youtube": "YouTube",
+        "externalLink": "External link",
+        "embedUrl": "Embed URL",
+        "pdf": "PDF",
+        "doc": "Doc",
+        "ppt": "PPT",
+        "presentation": "Presentation",
+        "code": "Code",
+        "jupyter": "Jupyter",
+        "image": "Image",
+        "audio": "Audio",
+        "html": "HTML"
+    },
+    "noItemsToAdd": "No items to add",
+    "addedSlides": "Added {{count}} slide(s)",
+    "addFailed": "Failed to add slides",
+    "heading": "Quick Add Slides",
+    "close": "Close",
+    "publishAll": "Publish All {{term}}",
+    "stagedItems": "Staged items ({{count}})",
+    "emptyState": "Nothing staged yet. Use the quick actions above to add.",
+    "adding": "Adding...",
+    "done": "Done",
+    "failed": "Failed",
+    "failedWithReason": "Failed: {{reason}}",
+    "editTitle": "Edit title",
+    "remove": "Remove"
+}

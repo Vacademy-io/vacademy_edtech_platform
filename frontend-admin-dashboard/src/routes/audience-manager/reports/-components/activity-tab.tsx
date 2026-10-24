@@ -18,6 +18,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ChartBar, ListChecks } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -47,6 +48,7 @@ export function ActivityTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerActivityTab');
     const params: ActivityReportParams = {
         instituteId,
         fromDate,
@@ -80,16 +82,16 @@ export function ActivityTab({
         <div className="flex flex-col gap-6">
             {/* 1 — Daily activity strip */}
             <ReportSection
-                title="Daily activity"
+                title={t('dailyActivity.title')}
                 icon={<ChartBar size={18} />}
                 actions={
                     <span className="text-xs text-neutral-500">
-                        {fmtNumber(dailyTotal)} activities · institute timezone
+                        {t('dailyActivity.summary', { count: dailyTotal })}
                     </span>
                 }
             >
                 {daily.length === 0 ? (
-                    <EmptyHint message="No activity in this range." />
+                    <EmptyHint message={t('dailyActivity.empty')} />
                 ) : (
                     <DailyActivityStrip points={daily} />
                 )}
@@ -97,7 +99,7 @@ export function ActivityTab({
 
             {/* 2 — Per-counsellor table */}
             <ReportSection
-                title="Counsellor activity"
+                title={t('counsellorActivity.title')}
                 icon={<ListChecks size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
@@ -105,13 +107,13 @@ export function ActivityTab({
                         disabled={rows.length === 0}
                         getHeadersAndRows={() => ({
                             headers: [
-                                'Counsellor',
-                                'Notes',
-                                'Calls',
-                                'Status changes',
-                                'Follow-ups created',
-                                'Follow-ups closed',
-                                'Total',
+                                t('csv.headers.counsellor'),
+                                t('csv.headers.notes'),
+                                t('csv.headers.calls'),
+                                t('csv.headers.statusChanges'),
+                                t('csv.headers.followupsCreated'),
+                                t('csv.headers.followupsClosed'),
+                                t('csv.headers.total'),
                             ],
                             rows: rows.map((r) => [
                                 r.name ?? r.user_id,
@@ -127,7 +129,7 @@ export function ActivityTab({
                 }
             >
                 {rows.length === 0 ? (
-                    <EmptyHint message="No counsellor activity in this range." />
+                    <EmptyHint message={t('counsellorActivity.empty')} />
                 ) : (
                     <CounsellorActivityTable rows={rows} />
                 )}
@@ -141,6 +143,7 @@ export function ActivityTab({
 // day, height scaled to the busiest day, native-title tooltip per bar.
 
 function DailyActivityStrip({ points }: { points: ActivityDayPoint[] }) {
+    const { t } = useTranslation('audienceManagerActivityTab');
     const max = Math.max(1, ...points.map((p) => p.total));
     return (
         <div className="flex flex-col gap-2">
@@ -150,9 +153,10 @@ function DailyActivityStrip({ points }: { points: ActivityDayPoint[] }) {
                     return (
                         <div
                             key={p.date}
-                            title={`${p.date} — ${p.total.toLocaleString()} ${
-                                p.total === 1 ? 'activity' : 'activities'
-                            }`}
+                            title={t('dailyActivity.barTooltip', {
+                                date: p.date,
+                                count: p.total,
+                            })}
                             // A per-bar minimum width keeps long ranges legible (horizontal
                             // scroll kicks in past the container). Layout sizing, not a
                             // color/spacing/type token — set inline, isolated to this rule.
@@ -197,6 +201,7 @@ type SortKey =
     | 'total';
 
 function CounsellorActivityTable({ rows }: { rows: ActivityByCounsellorRow[] }) {
+    const { t } = useTranslation('audienceManagerActivityTab');
     const [sortKey, setSortKey] = useState<SortKey>('total');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -229,7 +234,7 @@ function CounsellorActivityTable({ rows }: { rows: ActivityByCounsellorRow[] }) 
                 <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                         <SortableHeader
-                            label="Counsellor"
+                            label={t('table.headers.counsellor')}
                             sortKey="name"
                             current={sortKey}
                             dir={sortDir}
@@ -237,42 +242,42 @@ function CounsellorActivityTable({ rows }: { rows: ActivityByCounsellorRow[] }) 
                             align="left"
                         />
                         <SortableHeader
-                            label="Notes"
+                            label={t('table.headers.notes')}
                             sortKey="notes"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Calls"
+                            label={t('table.headers.calls')}
                             sortKey="calls"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Status changes"
+                            label={t('table.headers.statusChanges')}
                             sortKey="status_changes"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Follow-ups created"
+                            label={t('table.headers.followupsCreated')}
                             sortKey="followups_created"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Follow-ups closed"
+                            label={t('table.headers.followupsClosed')}
                             sortKey="followups_closed"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Total"
+                            label={t('table.headers.total')}
                             sortKey="total"
                             current={sortKey}
                             dir={sortDir}
@@ -288,7 +293,9 @@ function CounsellorActivityTable({ rows }: { rows: ActivityByCounsellorRow[] }) 
                         >
                             <td className="py-2.5 pr-3 font-medium text-neutral-900">
                                 {r.name ?? (
-                                    <span className="text-neutral-400">Unknown counsellor</span>
+                                    <span className="text-neutral-400">
+                                        {t('counsellorActivity.unknownCounsellor')}
+                                    </span>
                                 )}
                             </td>
                             <td className="py-2.5 pr-3 text-right text-neutral-800">

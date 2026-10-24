@@ -1,0 +1,8 @@
+{
+    "courseStructure": "कोर्स संरचना",
+    "completedRatio": "{{completed}}/{{total}} पूर्ण",
+    "generatingCount_one": "{{count}} जनरेट हो रही है",
+    "generatingCount_other": "{{count}} जनरेट हो रही हैं",
+    "aiVideoDelay": "AI वीडियो कुछ मिनटों बाद उपलब्ध होगा",
+    "ratio": "{{completed}}/{{total}}"
+}

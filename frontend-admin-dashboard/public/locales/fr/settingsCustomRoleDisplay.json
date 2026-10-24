@@ -1,0 +1,183 @@
+{
+    "common": {
+        "loading": "Chargement...",
+        "resetToDefaults": "Réinitialiser par défaut",
+        "visible": "Visible",
+        "hidden": "Masqué",
+        "locked": "Verrouillé",
+        "default": "Par défaut",
+        "remove": "Supprimer",
+        "route": "Route",
+        "labelPlaceholder": "Libellé",
+        "tabName": "Nom de l'onglet",
+        "subTabs": "Sous-onglets",
+        "addSubTab": "Ajouter un sous-onglet",
+        "addCustomTab": "Ajouter un onglet personnalisé"
+    },
+    "sections": {
+        "coursesPermissions": "Cours et autorisations",
+        "layoutNavigation": "Mise en page et navigation",
+        "contentLearners": "Contenu et apprenants",
+        "dashboardAccess": "Tableau de bord et accès"
+    },
+    "coursePage": {
+        "title": "Paramètres de la page du cours",
+        "description": "Contrôlez la visibilité des éléments de la page du cours.",
+        "viewInviteLinks": "Voir les liens d'invitation",
+        "viewShortInviteLinks": "Voir les liens d'invitation courts",
+        "viewCourseConfiguration": "Voir la configuration du cours",
+        "viewCourseOverviewItem": "Voir l'élément d'aperçu du cours",
+        "viewContentNumbering": "Voir la numérotation du contenu",
+        "allowViewSlidesInReadOnly": "Autoriser la consultation des diapositives des cours publiés / en revue (lecture seule)",
+        "showAddSubject": "Afficher le bouton « Ajouter une matière » (Plan et structure du contenu)",
+        "showAddModule": "Afficher le bouton « Ajouter un module » (Plan et structure du contenu)",
+        "showAddChapter": "Afficher le bouton « Ajouter un chapitre » (Plan et structure du contenu)",
+        "showAddSlide": "Afficher le bouton « Ajouter une diapositive » (Plan et structure du contenu)",
+        "showLearnerProgressReport": "Afficher l'onglet « Progression de l'élève » dans les rapports (progression du cours par apprenant)",
+        "showAdvancedCourseIds": "Afficher le menu des identifiants avancés dans les détails du cours (cours / session de forfait / session / niveau)"
+    },
+    "coursePermission": {
+        "title": "Autorisations du cours",
+        "description": "Contrôlez ce que ce rôle peut faire sur un cours et ses diapositives.",
+        "directEditPublishedCourse": "Peut modifier directement (sans copie pour modification / approbation)",
+        "showCopyTo": "Peut copier la diapositive",
+        "showMoveTo": "Peut déplacer la diapositive",
+        "showDelete": "Peut supprimer la diapositive",
+        "canEditCourseStructure": "Peut modifier la matière / le module / le chapitre",
+        "canDeleteCourseStructure": "Peut supprimer la matière / le module / le chapitre",
+        "showBulkUpload": "Afficher le bouton de téléversement en masse (ZIP)",
+        "canDeleteCourse": "Peut supprimer le cours",
+        "requireCourseApproval": "Exiger l'approbation d'un administrateur avant de publier un nouveau cours (Soumettre pour relecture)"
+    },
+    "authoredCoursesCard": {
+        "title": "Carte des cours créés",
+        "description": "Contrôlez les actions affichées sur la carte du cours sous Explorer les cours → Cours créés.",
+        "showCopyToEdit": "Afficher le bouton « Copier pour modifier »"
+    },
+    "courseListCard": {
+        "title": "Carte de la liste des cours",
+        "description": "Contrôlez les détails affichés sur chaque carte de cours sous Explorer les cours.",
+        "showEnrolledStudentCount": "Afficher le nombre d'élèves inscrits"
+    },
+    "courseCreation": {
+        "title": "Création de cours",
+        "description": "Contrôlez qui peut créer des cours, les points d'entrée IA, et les paramètres par défaut du chapitre.",
+        "showCreateCourse": "Autoriser la création de cours (afficher le bouton « Ajouter un cours »)",
+        "showCreateCourseWithAI": "Afficher « Créer un cours avec l'IA »",
+        "requirePackageSelectionForNewChapter": "Exiger la sélection d'une session de forfait lors de l'ajout d'un nouveau chapitre",
+        "showAdvancedSettings": "Afficher les paramètres avancés",
+        "limitToSingleLevel": "Limiter le cours à un seul niveau"
+    },
+    "courseListTabs": {
+        "title": "Onglets de la liste des cours",
+        "description": "Configurez les onglets visibles, leur ordre et l'onglet par défaut. Course Approval est réservé aux administrateurs et reste masqué pour ce rôle."
+    },
+    "courseDetailsTabs": {
+        "title": "Onglets des détails du cours",
+        "description": "Choisissez les onglets visibles et définissez l'onglet par défaut.",
+        "offlineLockedMessage": "Désactivé car les téléchargements hors ligne sont désactivés pour l'établissement (Paramètres → Accès hors ligne)."
+    },
+    "uiOptions": {
+        "title": "Options d'interface",
+        "description": "Préférences d'interface globales",
+        "showSupportButton": "Afficher le bouton d'assistance",
+        "showSidebar": "Afficher la barre latérale",
+        "showAiCredits": "Afficher les crédits IA",
+        "showStatus": "Afficher le statut",
+        "showSettings": "Afficher les paramètres",
+        "showSettingsDescription": "Masque l'icône des paramètres dans la barre latérale. Les paramètres restent accessibles directement via /settings.",
+        "showAssistDock": "Afficher le volet latéral droit",
+        "showAssistDockDescription": "Guides, Formation, Assistance, Problèmes, Nouveautés, Explorer et Application d'administration. Masqué par défaut pour ce rôle."
+    },
+    "sidebarCategories": {
+        "title": "Catégories de la barre latérale",
+        "description": "Configurez la visibilité, l'ordre et la catégorie par défaut de la barre latérale.",
+        "aiToolsLabel": "Outils IA"
+    },
+    "sidebarTabs": {
+        "title": "Onglets de la barre latérale",
+        "description": "Ordonnez les onglets et activez ou désactivez leur visibilité. L'onglet Paramètres est toujours masqué pour les enseignants.",
+        "tabLms": "LMS",
+        "tabCrm": "CRM",
+        "tabAiTools": "Outils IA",
+        "defaultCustomTabLabel": "Onglet personnalisé",
+        "defaultCustomSubTabLabel": "Sous-onglet personnalisé"
+    },
+    "courseContentTypes": {
+        "title": "Types de contenu du cours",
+        "description": "Activez ou désactivez les types de contenu des diapositives. La vidéo dispose d'une option supplémentaire de question intégrée.",
+        "pdf": "PDF",
+        "ppt": "Présentation PPT",
+        "codeEditor": "Éditeur de code",
+        "document": "Document",
+        "question": "Question",
+        "quiz": "Quiz",
+        "assignment": "Devoir",
+        "jupyterNotebook": "Notebook Jupyter",
+        "scratch": "Scratch",
+        "audio": "Audio",
+        "scorm": "Package SCORM",
+        "assessment": "Évaluation",
+        "video": "Vidéo",
+        "showInVideoQuestion": "Question intégrée à la vidéo visible",
+        "showAddVideoQuestion": "Peut ajouter des questions aux diapositives vidéo",
+        "showConvertToSplitScreen": "Peut convertir la vidéo en écran partagé"
+    },
+    "studentSideView": {
+        "overviewTab": "Onglet Aperçu",
+        "coursesTab": "Onglet Cours",
+        "testTab": "Onglet Test",
+        "progressTab": "Onglet Progression",
+        "notificationTab": "Onglet Notifications",
+        "membershipTab": "Onglet Adhésion",
+        "paymentHistoryTab": "Onglet Historique des paiements",
+        "userTaggingTab": "Onglet Étiquetage des utilisateurs",
+        "badgesTab": "Onglet Badges",
+        "fileTab": "Onglet Fichiers",
+        "portalAccessTab": "Onglet Accès au portail",
+        "reportsTab": "Onglet Rapports",
+        "enrollDerollTab": "Onglet Inscription/Désinscription",
+        "enquiryTab": "Onglet Demandes de renseignements",
+        "applicationTab": "Onglet Candidature",
+        "leadTab": "Onglet Profil du prospect",
+        "fullHistoryTab": "Onglet Historique complet",
+        "workflowsTab": "Onglet Workflows",
+        "parentTab": "Onglet Tuteur",
+        "onboardingTab": "Onglet Intégration"
+    },
+    "learnerManagement": {
+        "title": "Gestion des apprenants",
+        "description": "Configurez les autorisations de gestion des apprenants et les contrôles d'accès.",
+        "allowPortalAccess": "Autoriser l'accès au portail de l'apprenant",
+        "allowViewPassword": "Autoriser la consultation du mot de passe de l'apprenant",
+        "allowEditCredentials": "Autoriser la modification du nom d'utilisateur et du mot de passe de l'apprenant",
+        "allowSendResetPasswordMail": "Autoriser l'envoi de l'e-mail de réinitialisation du mot de passe",
+        "showApprovalToggle": "Afficher le bouton des demandes d'approbation sur la liste des apprenants",
+        "allowDeletePayments": "Autoriser la suppression définitive des paiements et factures (irréversible)",
+        "canApplyDiscounts": "Autoriser l'application de remises lors de l'inscription d'apprenants, de l'affectation groupée ou de la création de factures"
+    },
+    "dashboardWidgets": {
+        "title": "Widgets du tableau de bord",
+        "description": "Ordonnez et activez ou désactivez les widgets visibles par les enseignants."
+    },
+    "permissions": {
+        "title": "Autorisations",
+        "description": "Configurez la visibilité et les droits de modification de l'établissement et du profil.",
+        "canViewInstituteDetails": "Peut consulter les informations de l'établissement",
+        "canEditInstituteDetails": "Peut modifier les informations de l'établissement",
+        "canViewProfileDetails": "Peut consulter les informations du profil",
+        "canEditProfileDetails": "Peut modifier les informations du profil"
+    },
+    "postLoginRedirect": {
+        "title": "Redirection après connexion",
+        "description": "Choisissez vers où rediriger les enseignants après la connexion."
+    },
+    "subOrg": {
+        "thisRoleFallback": "ce rôle"
+    },
+    "toast": {
+        "saveSuccess": "Paramètres d'affichage du rôle personnalisé enregistrés",
+        "saveFailed": "Échec de l'enregistrement : {{message}}",
+        "unknownError": "Erreur inconnue"
+    }
+}

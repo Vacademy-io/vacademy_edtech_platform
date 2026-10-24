@@ -33,6 +33,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import os
 import sqlite3
 import time
@@ -61,6 +62,36 @@ _CHUNK_BYTES = int(_BYTES_PER_SEC * CHUNK_MS / 1000)
 # Emit at ~2x real time — fast enough never to starve playout, slow enough that
 # DuckGate always has frames left to hold when the caller starts speaking.
 _EMIT_SLEEP = CHUNK_MS / 2000.0
+# A cache hit returns from run_tts only this long before its own audio ends.
+# Emitting at ~2x real time used to hand the NEXT sentence to the vendor while
+# the cached blob still had half its playout to go: that sentence's words were
+# stamped from "now", inside the cached sentence, and the played transcript —
+# the model's own context — came out interleaved (call d9aed777, 2026-09-25:
+# "…पहली, faculty क्या आप इससे अच्छे सहमत हों हैं? और बच्चे के concepts…").
+# 0.3 s ~ the vendor's first-audio time, so the live sentence still lands right
+# behind the cached one with no added gap.
+_NEXT_SENTENCE_LEAD_SECS = 0.3
+
+# A cached sentence counts as HEARD once this share of its audio has played:
+# its TTSTextFrame sits at that point in its audio, and the output transport
+# releases frames in order, so the text reaches the played transcript (and the
+# model's context) when the caller has heard that much. The same point a LIVE
+# Navana sentence's text is released at (providers._navana_seq_routing) and
+# NoRepeatGate's "mostly heard is heard" (bot.mostly_played).
+HEARD_SHARE = 0.6
+
+
+def ends_in_question(text: str) -> bool:
+    """A clip whose last sentence asks something. Its text keeps the old place —
+    behind the whole blob — because 60 % of a question is not the question: the
+    opening's "…क्या मैं जान सकती हूँ कि किससे बात कर रही हूँ?" starts at 66 % of
+    its text, so a "हाँ" that cut it at 61-79 % found the whole opening, '?'
+    included, in the played transcript and got "[That was their ANSWER … Do NOT
+    ask that question again]" for a question never heard (replay corpus,
+    2026-10-02: four calls in every run, the ANSWER cue 3-4 → 8 per run). A cut
+    question stays unheard and is asked again, as it always was."""
+    t = (text or "").rstrip().rstrip("\"'”’)」")
+    return t.endswith(("?", "？"))
 
 # Field separator for the key tuple. \x1f (ASCII unit separator) cannot occur in
 # TTS text, so no field can bleed into the next and collide two distinct inputs.
@@ -94,7 +125,21 @@ _TRAILING = "\"'’”)]》」»"
 #
 # rumik is listed here for now although we own its sender loop and could inject
 # in-order there; vendor_inflight is correct for it too, just more conservative.
-_ASYNC_ARRIVAL_ENGINES = frozenset({"sarvam", "smallest", "rumik"})
+_ASYNC_ARRIVAL_ENGINES = frozenset({"sarvam", "sarvam_v4", "smallest", "rumik", "navana"})
+
+
+def per_sentence_contexts(tts) -> bool:
+    """True when each sentence gets its OWN pipecat audio context.
+
+    This is what makes cached audio safe to serve mid-turn on an async-arrival
+    engine. With one context per turn (pipecat's default) every sentence shares
+    a single FIFO drained in APPEND order, so a cached sentence — available
+    instantly — lands ahead of vendor audio still in flight for an earlier
+    sentence, and the caller hears them out of order. With one context per
+    sentence they sit in separate slots on the serialization queue, drained in
+    CREATION order, and arrival time stops mattering.
+    """
+    return not getattr(tts, "_reuse_context_id_within_turn", True)
 
 
 def is_async_arrival(engine: str) -> bool:
@@ -147,6 +192,153 @@ def mode_allows(mode: str, is_fixed_line: bool) -> bool:
     if m == MODE_FIXED:
         return is_fixed_line
     return False
+
+
+def scope_force_complete_to_ended_contexts(tts) -> bool:
+    """pipecat force-completes EVERY pending sentence slot whenever an audio
+    context ends (its assumption: one context per turn, so the end of a
+    context is the end of the turn). With one context per SENTENCE that flush
+    fires at every sentence end — and when a cached sentence's context closes
+    promptly, the sentences queued behind it have their full text emitted at
+    once, and then again word by word as they actually play. Every sentence
+    after a cache hit landed twice in the played transcript and the model's
+    own context (call 859c20ee, 2026-09-12: "Would you be open to a short
+    demo…? Would you be open to a short demo…?").
+
+    While a force-complete runs, hide the slots whose audio context is still
+    queued (registered, not the one playing) — those sentences have not been
+    spoken yet and their own context end will flush them. Idempotent."""
+    seq = getattr(tts, "_aggregated_frame_sequencer", None)
+    if seq is None or getattr(seq, "_vacademy_scoped", False):
+        return False
+    orig = seq.force_complete
+
+    def _scoped(last_word_pts):
+        try:
+            playing = getattr(tts, "_playing_context_id", None)
+            avail = getattr(tts, "audio_context_available", None)
+            slots = list(seq._slots)
+            hidden = [s for s in slots if s.spoken and not s.complete
+                      and s.context_id != playing
+                      and avail is not None and avail(s.context_id)]
+        except Exception:
+            logger.exception("tts-cache: scoped force-complete fell back to pipecat's")
+            return orig(last_word_pts)
+        if not hidden:
+            return orig(last_word_pts)
+        seq._slots = [s for s in slots if s not in hidden]
+        try:
+            return orig(last_word_pts)
+        finally:
+            kept = set(map(id, seq._slots))
+            seq._slots = [s for s in slots if s in hidden or id(s) in kept]
+
+    seq.force_complete = _scoped
+    seq._vacademy_scoped = True
+    return True
+
+
+def owns_text_frame(tts) -> bool:
+    """Whether WE must emit the TTSTextFrame for a cached sentence.
+
+    Same principle as owns_turn_brackets: emit exactly what the wrapped engine
+    would have emitted, no more. But the two flags point opposite ways here.
+
+    When `push_text_frames` is set, pipecat appends its own TTSTextFrame after
+    run_tts returns (tts_service.py:1129), so ours would be a DUPLICATE — the
+    sentence would land in the played transcript and the assistant context
+    twice. sarvam, deepgram, google and navana all set it. (There the hit path
+    places a STATEMENT's text itself — at its heard point, not behind the whole
+    blob — and CachedTextHandoff drops pipecat's copy, call 34452119; a clip
+    that ends in a question keeps pipecat's copy, see ends_in_question.)
+
+    When it is CLEAR the service uses word timestamps instead, and pipecat builds
+    the text frames from the vendor's word-timing messages. A cache hit never
+    calls the vendor, so those messages never arrive and NOTHING emits the frame.
+    smallest is built this way (push_text_frames=not word_timestamps, and
+    word_timestamps defaults True), which is how a served sentence came to be
+    invisible to every "has the bot said this?" check on live call f425326e.
+
+    Defaults to False on an unknown service: a missing frame degrades the repeat
+    check, a duplicated one corrupts the transcript. Prefer the recoverable one.
+    """
+    return not getattr(tts, "_push_text_frames", True)
+
+
+def heard_chunk_count(n_chunks: int, share: float = HEARD_SHARE) -> int:
+    """How many of a cached blob's chunks go out before its TTSTextFrame: the
+    first chunk boundary at or past `share` of the audio. At least one (the
+    text never leads its audio), at most all of them."""
+    if n_chunks <= 0:
+        return 0
+    return max(1, min(n_chunks, math.ceil(n_chunks * share - 1e-9)))
+
+
+class CachedTextHandoff:
+    """A cached sentence's text at its HEARD point, exactly once.
+
+    Call 34452119 (2026-10-02, Navana, cache FULL): a reply sentence served
+    from the cache as one 13.2 s clip; the caller cut in at 63 % of it. On a
+    push_text_frames engine (navana, sarvam, google, deepgram) pipecat appends
+    the sentence's TTSTextFrame after run_tts returns, i.e. BEHIND the whole
+    blob, so the text reached the played transcript only if the clip played to
+    its END. At the cut NoRepeatGate un-recorded it as never played ("un-recording
+    never-played 'shiksha nation में हमारा focus…'") and the model's next reply
+    said all 13 s of it again. A LIVE Navana sentence would have counted: its
+    text is released at 60 % of its audio.
+
+    So the hit path yields the TTSTextFrame itself, HEARD_SHARE of the way into
+    the blob, and this drops the copy pipecat appends after run_tts returns —
+    never two copies in the played transcript or the assistant context.
+
+    The copy is identified by its context: `arm` is called as the cached
+    run_tts returns, and pipecat's append for that context is the next thing
+    the TTS task does (_push_tts_frames: run_tts, then the TTSTextFrame). Every
+    run_tts call `clear`s first, so an arm whose append never came (an
+    interruption landed in between) cannot outlive its own sentence and swallow
+    a later one's text on a shared turn context."""
+
+    def __init__(self):
+        self._pending: dict = {}           # context_id -> text placed by the hit path
+
+    def arm(self, context_id, text: str) -> None:
+        self._pending[context_id] = text
+
+    def clear(self) -> None:
+        self._pending.clear()
+
+    def take(self, context_id, frame) -> bool:
+        """True: this is pipecat's late copy of a sentence already placed — drop it."""
+        if context_id not in self._pending or getattr(frame, "_vacademy_cached_text", False):
+            return False
+        placed = self._pending.pop(context_id)
+        if " ".join((frame.text or "").split()) != " ".join((placed or "").split()):
+            # Still this sentence's frame (nothing else appends a TTSTextFrame to
+            # its context between run_tts and pipecat's append) — only the text
+            # differs, e.g. a text transform. Say so; one copy is still right.
+            logger.warning("tts-cache: late text frame {!r} differs from the placed {!r} — "
+                           "dropped anyway (one copy per sentence)",
+                           (frame.text or "")[:40], (placed or "")[:40])
+        return True
+
+    def install(self, tts) -> bool:
+        """Route the service's appends through take(). Instance attribute, so
+        pipecat's own self.append_to_audio_context(...) calls come through here;
+        every other frame passes to the service's method untouched."""
+        from pipecat.frames.frames import TTSTextFrame
+        orig = getattr(tts, "append_to_audio_context", None)
+        if orig is None:
+            return False
+
+        async def append_to_audio_context(context_id, frame):
+            if isinstance(frame, TTSTextFrame) and self.take(context_id, frame):
+                logger.debug("tts-cache: dropping the base class's late text frame for a "
+                             "cached sentence {!r}", (frame.text or "")[:40])
+                return
+            await orig(context_id, frame)
+
+        tts.append_to_audio_context = append_to_audio_context
+        return True
 
 
 def owns_turn_brackets(tts) -> tuple:
@@ -214,7 +406,7 @@ UNATTRIBUTED_NAME = "(before per-agent tracking)"
 
 def cache_key(*, engine: str, model: str, voice: str, pace, temperature,
               sample_rate: int, term_map_version: str, text: str,
-              salt: Optional[str] = None) -> str:
+              salt: Optional[str] = None, language: str | None = None) -> str:
     """sha256 over everything that changes the rendered audio.
 
     `text` must already be the exact string the vendor would receive (Rumik's
@@ -231,10 +423,35 @@ def cache_key(*, engine: str, model: str, voice: str, pace, temperature,
     parts = (salt, (engine or "").lower(), model or "", voice or "",
              _num(pace), _num(temperature), str(sample_rate),
              term_map_version or "", text)
+    if (engine or "").lower() == "navana":
+        # One Navana voice id speaks ten languages: the same text in Hindi and
+        # in Marathi is different audio, so the language is part of identity.
+        from .providers import navana_language
+        parts += ("language-v1", navana_language(language))
+    if (engine or "").lower() == "smallest":
+        from .speech_language import smallest_language_code
+        # A new namespace: pre-language blobs may contain the wrong speech.
+        parts += ("language-v1", smallest_language_code(language))
     return hashlib.sha256(_SEP.join(parts).encode("utf-8")).hexdigest()
 
 
 # ── the store ───────────────────────────────────────────────────────────────
+
+def plausible_duration(text: str, duration_ms: int, chars_per_sec: float = 12.0,
+                       slack: float = 5.0, floor_ms: int = 4000) -> bool:
+    """Could `text` really take `duration_ms` to say?
+
+    Call f225f71e (2026-09-10): the cache served a 187,810 ms blob for
+    "Got it." — a ~200 Hz vendor drone (the Smallest language-tag bug of the
+    day before) stored as speech — and the caller heard three minutes of hum
+    until they hung up; "Perfect." had a 50.6 s twin. A render longer than
+    FIVE times what its text could take at a slow 12 chars/s (with a 4 s floor
+    so normal short lines never trip it) is not speech, whatever the vendor
+    says. Checked when storing AND when serving, so an already-poisoned cache
+    heals itself on the next lookup."""
+    expected_ms = max(1000.0, len(text or "") / chars_per_sec * 1000.0)
+    return duration_ms <= max(floor_ms, slack * expected_ms)
+
 
 @dataclass
 class Entry:
@@ -263,6 +480,7 @@ class Candidate:
     agent_id: str = ""
     agent_name: str = ""
     institute_id: str = ""
+    language: str = ""
 
 
 _DDL = """
@@ -273,7 +491,14 @@ CREATE TABLE IF NOT EXISTS seen(
   text        TEXT, chars INTEGER,
   count       INTEGER NOT NULL DEFAULT 0,
   fixed       INTEGER NOT NULL DEFAULT 0,
-  first_seen  REAL, last_seen REAL
+  first_seen  REAL, last_seen REAL,
+  language    TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS render_failure(
+  key TEXT PRIMARY KEY,
+  attempts INTEGER NOT NULL,
+  next_retry_at REAL NOT NULL,
+  error TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS blob(
   key         TEXT PRIMARY KEY,
@@ -342,6 +567,9 @@ class SpeechCache:
                     db.execute("ALTER TABLE seen ADD COLUMN fixed INTEGER NOT NULL DEFAULT 0")
                 except sqlite3.OperationalError:
                     pass
+                columns = {r[1] for r in db.execute("PRAGMA table_info(seen)")}
+                if "language" not in columns:
+                    db.execute("ALTER TABLE seen ADD COLUMN language TEXT NOT NULL DEFAULT ''")
                 rows = db.execute(
                     "SELECT key, nbytes, duration_ms, text FROM blob").fetchall()
             idx: dict[str, Entry] = {}
@@ -398,6 +626,15 @@ class SpeechCache:
             return None
         if entry.text != text:
             logger.warning("tts-cache: text mismatch for key {}… — treating as miss", key[:12])
+            return None
+        if not plausible_duration(entry.text, entry.duration_ms):
+            logger.warning("tts-cache: {}ms blob for {!r} cannot be speech — discarding, "
+                           "treating as miss", entry.duration_ms, entry.text[:40])
+            self._index.pop(key, None)
+            try:
+                asyncio.get_running_loop().run_in_executor(None, self._discard_sync, key)
+            except Exception:
+                logger.debug("tts-cache: discard of implausible blob failed", exc_info=True)
             return None
         return entry
 
@@ -487,6 +724,13 @@ class SpeechCache:
                 logger.warning("tts-cache: refusing {}ms render for {!r}",
                                duration_ms, cand.text[:40])
                 return False
+            if not plausible_duration(cand.text, duration_ms):
+                # The other direction: a render far LONGER than its text could
+                # take is vendor garbage (a drone, a stuck stream), and caching
+                # it replays the failure on every future call.
+                logger.warning("tts-cache: refusing {}ms render for {!r} — longer than "
+                               "the text could possibly take", duration_ms, cand.text[:40])
+                return False
 
             os.makedirs(self.root, exist_ok=True)
             path = self.blob_path(cand.key)
@@ -500,7 +744,7 @@ class SpeechCache:
                 "key": cand.key, "engine": cand.engine, "model": cand.model,
                 "voice": cand.voice, "pace": cand.pace,
                 "temperature": cand.temperature, "sampleRate": SAMPLE_RATE,
-                "text": cand.text, "chars": cand.chars,
+                "text": cand.text, "chars": cand.chars, "language": cand.language,
                 "bytes": len(pcm), "durationMs": duration_ms,
                 "createdAt": time.time(),
             }
@@ -517,6 +761,7 @@ class SpeechCache:
                     " ON CONFLICT(key) DO UPDATE SET nbytes=excluded.nbytes,"
                     " duration_ms=excluded.duration_ms, text=excluded.text",
                     (cand.key, len(pcm), duration_ms, cand.text, now, now))
+                db.execute("DELETE FROM render_failure WHERE key = ?", (cand.key,))
             self._index[cand.key] = Entry(cand.key, path, len(pcm), duration_ms, cand.text)
             logger.info("tts-cache: stored {}ms ({} chars) {}/{} {!r}",
                         duration_ms, cand.chars, cand.engine, cand.voice, cand.text[:48])
@@ -527,22 +772,41 @@ class SpeechCache:
 
     # -- ledger -------------------------------------------------------------
 
-    def note_hit_for_agent(self, key: str, agent_id: str) -> None:
+    def note_hit_for_agent(self, key: str, agent_id: str, agent_name: str = "",
+                           institute_id: str = "") -> None:
         """Attribute a cache hit to an agent. Fire-and-forget: analytics must
         never be a reason a call goes wrong."""
         if not (key and agent_id):
             return
         try:
-            asyncio.get_running_loop().create_task(
-                asyncio.to_thread(self._bump_agent_hit, key, agent_id))
+            asyncio.get_running_loop().create_task(asyncio.to_thread(
+                self._bump_agent_hit, key, agent_id, agent_name, institute_id))
         except RuntimeError:
             pass
 
-    def _bump_agent_hit(self, key: str, agent_id: str) -> None:
+    def _bump_agent_hit(self, key: str, agent_id: str, agent_name: str = "",
+                        institute_id: str = "") -> None:
+        """UPSERT, not UPDATE.
+
+        A cache HIT never ladders — only the miss path adds a candidate — so the
+        provenance row may not exist when the first hit lands. It certainly does
+        not for anything laddered before per-agent tracking existed. A bare
+        UPDATE matched zero rows there and threw the hit away silently, which is
+        why every one of those entries read 0 hits no matter how often it was
+        served. A hit is itself proof this agent spoke the line, so it is enough
+        to create the row.
+        """
         try:
             with self._connect() as db:
-                db.execute("UPDATE seen_agent SET hits = hits + 1, last_hit_at = ?"
-                           " WHERE key = ? AND agent_id = ?", (time.time(), key, agent_id))
+                db.execute(
+                    "INSERT INTO seen_agent(key, agent_id, agent_name,"
+                    " institute_id, sightings, hits, last_hit_at)"
+                    " VALUES(?,?,?,?,0,1,?)"
+                    " ON CONFLICT(key, agent_id) DO UPDATE SET"
+                    " hits = hits + 1, last_hit_at = excluded.last_hit_at,"
+                    " agent_name = COALESCE(NULLIF(excluded.agent_name,''), agent_name),"
+                    " institute_id = COALESCE(NULLIF(excluded.institute_id,''), institute_id)",
+                    (key, agent_id, agent_name or "", institute_id or "", time.time()))
         except Exception:
             logger.debug("tts-cache: agent hit bookkeeping failed", exc_info=True)
 
@@ -562,12 +826,12 @@ class SpeechCache:
                 for c in rows:
                     db.execute(
                         "INSERT INTO seen(key, engine, model, voice, pace, temperature,"
-                        " text, chars, count, fixed, first_seen, last_seen)"
-                        " VALUES(?,?,?,?,?,?,?,?,1,?,?,?)"
+                        " text, chars, language, count, fixed, first_seen, last_seen)"
+                        " VALUES(?,?,?,?,?,?,?,?,?,1,?,?,?)"
                         " ON CONFLICT(key) DO UPDATE SET count = count + 1,"
                         " fixed = MAX(seen.fixed, excluded.fixed), last_seen = ?",
                         (c.key, c.engine, c.model, c.voice, c.pace, c.temperature,
-                         c.text, c.chars, 1 if c.fixed else 0, now, now, now))
+                         c.text, c.chars, c.language, 1 if c.fixed else 0, now, now, now))
                     if c.agent_id:
                         db.execute(
                             "INSERT INTO seen_agent(key, agent_id, agent_name,"
@@ -588,7 +852,11 @@ class SpeechCache:
 
         TTS_CACHE_MIN_SEEN exists for ONE reason: an LLM sentence might be a
         one-off — "Namaste Rohan ji" for a name that never recurs — and rendering
-        it would buy nothing. Waiting for a second sighting is how we find out.
+        it buys nothing. It now defaults to 1, because that hedge turned out to
+        cost more than it saved: rendering on the first sighting makes a sentence
+        free from its SECOND use instead of its third, so it wins whenever the
+        line recurs at all and loses one cheap off-call render when it does not.
+        Raise it if the ledger ever shows a fat never-recurring tail.
 
         That reasoning is simply false for a fixed line. The opening, the
         farewells, the handbacks and the fillers are authored, and every one of
@@ -603,17 +871,50 @@ class SpeechCache:
             with self._connect() as db:
                 rows = db.execute(
                     "SELECT s.key, s.text, s.chars, s.engine, s.model, s.voice,"
-                    " s.pace, s.temperature FROM seen s"
+                    " s.pace, s.temperature, s.language FROM seen s"
                     " LEFT JOIN blob b ON b.key = s.key"
+                    " LEFT JOIN render_failure f ON f.key = s.key"
                     " WHERE b.key IS NULL AND (s.fixed = 1 OR s.count >= ?)"
+                    " AND (f.key IS NULL OR (f.attempts < 3 AND f.next_retry_at <= ?))"
+                    # Legacy Smallest rows have no trustworthy language or key.
+                    # Live calls ladder fresh entries under the new namespace.
+                    " AND (s.engine != 'smallest' OR s.language IN ('en', 'hi'))"
                     " ORDER BY s.fixed DESC, s.count DESC, s.last_seen DESC LIMIT ?",
-                    (min_seen, limit)).fetchall()
+                    (min_seen, time.time(), limit)).fetchall()
             return [Candidate(key=r[0], text=r[1], chars=r[2], engine=r[3],
-                              model=r[4], voice=r[5], pace=r[6], temperature=r[7])
+                              model=r[4], voice=r[5], pace=r[6], temperature=r[7], language=r[8])
                     for r in rows]
         except Exception:
             logger.exception("tts-cache: due query failed")
             return []
+
+    def can_render(self, key: str) -> bool:
+        """Persistent retry budget, also respected by repeated warm-on-save requests."""
+        try:
+            with self._connect() as db:
+                row = db.execute("SELECT attempts, next_retry_at FROM render_failure WHERE key = ?",
+                                 (key,)).fetchone()
+            return row is None or (row[0] < 3 and row[1] <= time.time())
+        except Exception:
+            logger.exception("tts-cache: retry state unreadable — deferring render")
+            return False
+
+    def render_failed(self, key: str, error: str) -> None:
+        """Retry twice (after 5 and 30 minutes), then quarantine until forgotten.
+
+        A voice/model/language/text change creates a new key with a fresh budget.
+        No network or retry work ever runs on the live audio path.
+        """
+        try:
+            with self._connect() as db:
+                db.execute(
+                    "INSERT INTO render_failure(key, attempts, next_retry_at, error) VALUES(?,1,?,?)"
+                    " ON CONFLICT(key) DO UPDATE SET attempts = attempts + 1,"
+                    " next_retry_at = ?, error = excluded.error",
+                    (key, time.time() + 300, error[:300], time.time() + 1800))
+            logger.warning("tts-cache: render deferred for {}: {}", key[:12], error[:100])
+        except Exception:
+            logger.exception("tts-cache: could not persist render failure")
 
     def export_for_report(self, limit: int = 2000) -> list:
         """The ledger joined to its provenance, shaped for admin-core.
@@ -708,6 +1009,7 @@ class SpeechCache:
                     self._index.pop(k, None)
                     self._discard_sync(k)
                     db.execute("DELETE FROM seen WHERE key = ?", (k,))
+                    db.execute("DELETE FROM render_failure WHERE key = ?", (k,))
                 if agent_id:
                     db.execute("DELETE FROM seen_agent WHERE agent_id = ?", (agent_id,))
                 elif cache_key:
@@ -978,7 +1280,7 @@ def make_turn_watcher_processor(watcher: TtsTurnWatcher):
 
 
 def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
-                      temperature, term_map_version: str = "",
+                      temperature, term_map_version: str = "", language: str | None = None,
                       fixed_lines: Optional[set] = None,
                       agent_id: str = "", agent_name: str = "",
                       institute_id: str = "", cache_mode: str = MODE_OFF,
@@ -998,7 +1300,8 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
     so nothing a live call does can put audio in front of a future caller.
     """
     from pipecat.frames.frames import (TTSAudioRawFrame, TTSStartedFrame,
-                                       TTSStoppedFrame)
+                                       TTSStoppedFrame, TTSTextFrame,
+                                       AggregationType)
 
     from .providers import has_word_char
 
@@ -1007,6 +1310,11 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
     watcher = watcher or TtsTurnWatcher()
     fixed = {t for t in (fixed_lines or set()) if t}
     engine_l = (engine or "").strip().lower()
+    from .speech_language import smallest_language_code
+    render_language = smallest_language_code(language) if engine_l == "smallest" else ""
+    if engine_l == "navana":
+        from .providers import navana_language
+        render_language = navana_language(language)
     async_arrival = is_async_arrival(engine_l)
     original = tts.run_tts
     # Resolved ONCE per call, not per sentence: the allowlist cannot change
@@ -1030,6 +1338,48 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                     s.tts_cache_speech_enabled, s.tts_cache_llm_enabled)
         return None
 
+    # ONE CONTEXT PER SENTENCE, for enabled agents on an async-arrival engine.
+    #
+    # This is the fix for the ordering guard starving the cache. pipecat's
+    # create_context_id() reuses one context id for a whole turn by default, so
+    # every sentence of that turn shares a single FIFO drained in APPEND order.
+    # Cached audio is on disk and appends instantly; vendor audio appends when
+    # the websocket delivers it. Serve a cached sentence behind a vendor one and
+    # the caller hears them swapped — so TtsTurnWatcher refused to serve at all
+    # once anything in the turn had gone to the vendor. And because
+    # TTSStoppedFrame brackets the whole TURN on these engines, ONE miss early in
+    # a turn forced every later sentence to the vendor with its audio sitting
+    # ready. Measured on live call a2d883c4: 14 sentences, 955 characters,
+    # already rendered and already paid for, re-synthesised anyway.
+    #
+    # With a context per sentence they occupy separate slots on the
+    # serialization queue, which is drained in CREATION order — so position is
+    # fixed when run_tts is called and arrival time stops mattering.
+    #
+    # Set HERE, after the not-installed return, so it can only ever affect an
+    # agent whose cache is on. Every other agent keeps today's exact turn
+    # bracketing. The cost for the ones that opt in is that TTSStarted/Stopped —
+    # and so BotStartedSpeaking/BotStoppedSpeaking — fire per sentence rather
+    # than per turn; google already behaves that way in production, which is the
+    # evidence the pipeline handles the shape.
+    if async_arrival and getattr(tts, "_reuse_context_id_within_turn", False):
+        tts._reuse_context_id_within_turn = False
+        logger.info("tts-cache: per-sentence audio contexts enabled for {} — "
+                    "cached audio can now be served mid-turn", engine_l)
+    if per_sentence_contexts(tts):
+        scope_force_complete_to_ended_contexts(tts)
+
+    # HEARD BY AUDIO, NOT BY THE END OF THE CLIP (call 34452119). On a
+    # push_text_frames engine a cached sentence's text now sits HEARD_SHARE of
+    # the way into its blob and pipecat's late copy is dropped (CachedTextHandoff).
+    # Word-timestamp engines (smallest) own their text frame already — their
+    # words are spread over the blob — and are left exactly as they were.
+    handoff = None
+    if not owns_text_frame(tts):
+        _h = CachedTextHandoff()
+        if _h.install(tts):
+            handoff = _h
+
     def _bump(name: str, *args) -> None:
         if diag is None:
             return
@@ -1039,6 +1389,10 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
             pass
 
     async def run_tts(text: str, context_id: str = None):
+        if handoff is not None:
+            # The previous sentence's late copy has been appended (or never will
+            # be): pipecat calls run_tts strictly after it.
+            handoff.clear()
         norm = text
         try:
             if normalize is not None:
@@ -1082,14 +1436,19 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
         try:
             key = cache_key(engine=engine_l, model=model, voice=voice, pace=pace,
                             temperature=temperature, sample_rate=SAMPLE_RATE,
-                            term_map_version=term_map_version, text=norm)
+                            term_map_version=term_map_version, text=norm, language=render_language)
         except Exception:
             logger.exception("tts-cache: key derivation failed — bypassing cache")
 
         # Ordering (§ TtsTurnWatcher): on an async-arrival engine we may only
         # serve when the vendor owes us nothing, or the cached audio would be
         # heard before audio that was requested earlier.
-        may_serve = key and (not async_arrival or not watcher.vendor_inflight)
+        # The ordering guard is only needed while a turn shares one context. With
+        # a context per sentence pipecat fixes the order at creation time, so a
+        # cached sentence can be served even with vendor audio still in flight.
+        may_serve = key and (not async_arrival
+                             or per_sentence_contexts(tts)
+                             or not watcher.vendor_inflight)
 
         if not may_serve and s.tts_cache_debug:
             # The ordering guard, not the cache, refused this one. Worth its own
@@ -1106,7 +1465,8 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                 if blob:
                     _bump("note_tts_cache_hit", entry.duration_ms, len(norm))
                     cache.note_hit(key)
-                    cache.note_hit_for_agent(key, agent_id)
+                    cache.note_hit_for_agent(key, agent_id, agent_name,
+                                             institute_id)
                     logger.info("tts-cache: HIT {}ms {!r}", entry.duration_ms, norm[:48])
 
                     # Emit the turn brackets ONLY if the base class is not already
@@ -1122,6 +1482,27 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                     # engine's own contract is what keeps a cached sentence
                     # indistinguishable from a synthesized one downstream.
                     own_start, own_stop = owns_turn_brackets(tts)
+                    own_text = owns_text_frame(tts)
+                    # push_text_frames engines: the sentence's text goes out
+                    # HEARD_SHARE of the way into the blob, built as pipecat
+                    # builds its own (the text without the trailing space
+                    # _prepare_text_for_tts may add; the context's
+                    # append_to_context — a re-said opening is False), and
+                    # pipecat's copy after run_tts is dropped.
+                    placed = None
+                    if handoff is not None and not ends_in_question(text):
+                        placed = TTSTextFrame(
+                            text[:-1] if (getattr(tts, "_append_trailing_space", False)
+                                          and text.endswith(" ")) else text,
+                            aggregated_by=AggregationType.SENTENCE)
+                        placed.context_id = context_id
+                        placed.will_be_spoken = True
+                        _meta = (getattr(tts, "_tts_contexts", None) or {}).get(context_id)
+                        if _meta is not None:
+                            placed.append_to_context = _meta.append_to_context
+                        placed._vacademy_cached_text = True
+                    text_after = heard_chunk_count(
+                        -(-len(blob) // _CHUNK_BYTES)) if placed is not None else 0
                     if own_start:
                         # Only start the clock when the base class did not: on
                         # sarvam/google _push_tts_frames already called
@@ -1131,10 +1512,18 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                         await tts.start_ttfb_metrics()
                         yield TTSStartedFrame(context_id=context_id)
                     await tts.stop_ttfb_metrics()
-                    for i in range(0, len(blob), _CHUNK_BYTES):
+                    emit_t0 = time.monotonic()
+                    for n_out, i in enumerate(range(0, len(blob), _CHUNK_BYTES), 1):
                         yield TTSAudioRawFrame(blob[i:i + _CHUNK_BYTES],
                                                SAMPLE_RATE, CHANNELS,
                                                context_id=context_id)
+                        if n_out == text_after:
+                            # Between the chunks: the transport writes frames in
+                            # order, so this reaches the played transcript once
+                            # the caller has HEARD this much of the sentence. A
+                            # cut before it (DuckGate holds it, the interruption
+                            # drops it) leaves the sentence unheard and re-sayable.
+                            yield placed
                         # PACED, not dumped. A cached blob is available all at
                         # once, and emitting it in one burst would put the whole
                         # utterance past DuckGate and into the output queue
@@ -1151,8 +1540,200 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                         # transport paces the line regardless — and it keeps the
                         # amount of already-committed audio identical to today.
                         await asyncio.sleep(_EMIT_SLEEP)
-                    if own_stop:
+
+                    # THE frame that makes a cache hit count as speech.
+                    #
+                    # smallest/sarvam are built with word_timestamps=True, so
+                    # pipecat sets push_text_frames=False and builds TTSTextFrames
+                    # from the vendor's word-timing messages. A cache hit never
+                    # calls the vendor, so those messages never arrive and the
+                    # sentence produced ZERO TTSTextFrames. Everything downstream
+                    # reads speech from that frame, so a cached sentence was
+                    # invisible: PlayedTranscriptRecorder never logged it,
+                    # NoRepeatGate's "already said" test could never match it, and
+                    # the model was free to say it again and again. Live call
+                    # f425326e: one 8.2s line played THREE times (envelope
+                    # correlation 0.996 — the same blob, not a re-synthesis),
+                    # REPLY_LOOP, and 30 unsaid-reverts.
+                    #
+                    # AFTER the audio, not before, because that is where the base
+                    # class appends its own (tts_service.py:1129, after
+                    # tts_process_generator returns). The transport releases it at
+                    # playout position, so a sentence the caller was interrupted
+                    # over is still correctly treated as NOT heard — "'already
+                    # said' has to mean 'already HEARD'".
+                    # SENTENCE, because G1 only admits a complete sentence to the
+                    # cache in the first place, and it is pipecat's own default
+                    # aggregation mode — so the frame is indistinguishable from
+                    # one the engine produced.
+                    if own_text:
+                        add_words = getattr(tts, "add_word_timestamps", None)
+                        if add_words is not None and per_sentence_contexts(tts):
+                            # Feed the words the way the vendor's word-timing
+                            # messages would, spread over the blob. pipecat then
+                            # builds the TTSTextFrames at playout position AND
+                            # completes this sentence's sequencer slot. A bare
+                            # TTSTextFrame here left the slot open: the next
+                            # sentence's words matched no slot ("not recognised
+                            # by any slot, emitting as passthrough") and its
+                            # full text was then force-completed at the stop —
+                            # every sentence after a cache hit recorded twice
+                            # (call 859c20ee, 2026-09-12).
+                            words = text.split()
+                            per = (entry.duration_ms / 1000.0) / max(1, len(words))
+                            await add_words([(w, i * per) for i, w in enumerate(words)],
+                                            context_id)
+                        else:
+                            text_frame = TTSTextFrame(
+                                text, aggregated_by=AggregationType.SENTENCE)
+                            text_frame.context_id = context_id
+                            text_frame.will_be_spoken = True
+                            yield text_frame
+
+                    if own_stop and engine_l == "navana" and per_sentence_contexts(tts):
+                        # Navana's shape: push_text_frames on (pipecat appends
+                        # the TTSTextFrame AFTER run_tts returns) and
+                        # push_stop_frames off (the SDK's receive loop brackets
+                        # and our seq routing closes each live sentence). A stop
+                        # yielded here landed BEFORE the text frame — the
+                        # sentence vanished from the played transcript — and
+                        # nothing closed the context, so the next sentence
+                        # waited out pipecat's 3 s idle timeout (sim
+                        # navana_cached_live_cached: a 2.74 s hole). Mirror the
+                        # live path instead: after the blob's playout, stop,
+                        # then close — the sentence's text is already in the
+                        # queue ahead of the stop (placed at HEARD_SHARE of the
+                        # blob; the base class's late copy is dropped).
+                        # Until the blob has PLAYED (measured from the first
+                        # chunk, not from the end of the paced emission), and
+                        # with keep-alives: pipecat closes a context after 3 s
+                        # with no new frame, and with push_stop_frames off it
+                        # then pushes no stop at all — so a long cached sentence
+                        # (all queued in ~half its length) timed out, its stop
+                        # never went out and its text was never committed (sim
+                        # navana_cached_then_live: a 9.2 s sentence missing from
+                        # the played transcript).
+                        hold = max(0.0, entry.duration_ms / 1000.0
+                                   - (time.monotonic() - emit_t0) - 0.05)
+
+                        async def _finish_after_playout(cid=context_id, secs=hold):
+                            refresh = getattr(tts, "_refresh_audio_context", None)
+                            left = secs
+                            while left > 0:
+                                step = min(1.0, left)
+                                await asyncio.sleep(step)
+                                left -= step
+                                if refresh is not None and left > 0:
+                                    try:
+                                        refresh(cid)
+                                    except Exception:
+                                        pass
+                            try:
+                                if tts.audio_context_available(cid):
+                                    await tts.append_to_audio_context(
+                                        cid, TTSStoppedFrame(context_id=cid))
+                                    await tts.remove_audio_context(cid)
+                            except Exception:
+                                logger.exception("tts-cache: navana context close failed")
+                        asyncio.get_running_loop().create_task(_finish_after_playout())
+                    elif own_stop:
                         yield TTSStoppedFrame(context_id=context_id)
+                    elif per_sentence_contexts(tts) and own_text:
+                        # CLOSE OUR OWN CONTEXT. With one context per sentence the
+                        # base class never closes a cached one: a vendor context is
+                        # closed by the vendor's own "done" in the receive loop,
+                        # and on_turn_context_completed only closes
+                        # _turn_context_id — a fresh id created at turn start
+                        # that NO sentence uses once reuse is off. A cached
+                        # sentence's queue therefore sat open until
+                        # _handle_audio_context's 3 s idle timeout, and the next
+                        # sentence's audio waited behind it. Live call 994162b0
+                        # (2026-09-12): "Thank you." (0.4 s, cached) then 3.6 s of
+                        # silence before "So the reason I called…" — on EVERY
+                        # reply whose first sentence was short and cached. A long
+                        # cached sentence hid it (its own audio kept the queue
+                        # busy), which is why the hole only surfaced with the
+                        # short-first-sentence rule. Mirror the vendor path: the
+                        # stop bracket, then the None sentinel. The stop frame is
+                        # already in the queue when this line runs — the consumer
+                        # appends each yielded frame before resuming us — so the
+                        # order audio → text → stopped → None holds. ONLY when we
+                        # own the text frame: on a push_text_frames engine the base
+                        # class appends its TTSTextFrame after run_tts returns, i.e.
+                        # after our None, and it would never be dequeued.
+                        if getattr(tts, "_push_stop_frames", False):
+                            yield TTSStoppedFrame(context_id=context_id)
+                        remove = getattr(tts, "remove_audio_context", None)
+                        if remove is not None:
+                            # NOT immediately. pipecat stamps the NEXT context's
+                            # word timestamps from the moment its first audio
+                            # chunk is enqueued, and vendor audio outruns real
+                            # time — so closing now, while this blob is still
+                            # playing, put the following sentence's words up to
+                            # a blob-length EARLY in the played transcript and the
+                            # model's own context ("Would Great. Would tomorrow…",
+                            # and the sentence recorded twice; call 859c20ee,
+                            # 2026-09-12). Hold the sentinel for the blob's own
+                            # playout, which is what the vendor's 'done' amounts
+                            # to. An interruption in the meantime tears the
+                            # context down and the late remove is a logged no-op.
+                            hold = max(0.0, entry.duration_ms / 1000.0 - 0.05)
+
+                            async def _close_after_playout(cid=context_id, secs=hold):
+                                await asyncio.sleep(secs)
+                                try:
+                                    await remove(cid)
+                                except Exception:
+                                    logger.exception("tts-cache: late context close failed")
+                            asyncio.get_running_loop().create_task(_close_after_playout())
+                    elif per_sentence_contexts(tts) and engine_l in ("sarvam", "sarvam_v4"):
+                        # Sarvam's shape: pipecat pushes the start and the stop
+                        # (push_start_frame / push_stop_frames) and appends the
+                        # text after run_tts returns (push_text_frames) — but
+                        # nothing CLOSES a cached sentence's context: a live one
+                        # is closed by Sarvam's 'final' (providers.
+                        # _sarvam_sentence_routing) and on_turn_context_completed
+                        # only closes _turn_context_id. So the next sentence sat
+                        # behind pipecat's 3 s idle timeout (found while fixing
+                        # call c6847f91, 2026-10-14: a 0.6 s cached "ठीक है।"
+                        # then 3.1 s of nothing). Close it once the blob has
+                        # played — after the base class's late text copy (a
+                        # question keeps it), which lands as run_tts returns —
+                        # with keep-alives so a long blob is not timed out first.
+                        hold = max(0.0, entry.duration_ms / 1000.0
+                                   - (time.monotonic() - emit_t0) - 0.05)
+
+                        async def _close_sarvam_after_playout(cid=context_id, secs=hold):
+                            refresh = getattr(tts, "_refresh_audio_context", None)
+                            left = secs
+                            while left > 0:
+                                step = min(1.0, left)
+                                await asyncio.sleep(step)
+                                left -= step
+                                if refresh is not None and left > 0:
+                                    try:
+                                        refresh(cid)
+                                    except Exception:
+                                        pass
+                            try:
+                                if tts.audio_context_available(cid):
+                                    await tts.remove_audio_context(cid)
+                            except Exception:
+                                logger.exception("tts-cache: sarvam context close failed")
+                        asyncio.get_running_loop().create_task(_close_sarvam_after_playout())
+                    if async_arrival and per_sentence_contexts(tts):
+                        # Hold the next sentence back until this one has all but
+                        # played (see _NEXT_SENTENCE_LEAD_SECS). An interruption
+                        # cancels us here like anywhere else in run_tts.
+                        left = (entry.duration_ms / 1000.0 - (time.monotonic() - emit_t0)
+                                - _NEXT_SENTENCE_LEAD_SECS)
+                        if left > 0:
+                            await asyncio.sleep(left)
+                    if placed is not None:
+                        # Last, so only a run that placed its text (it was not
+                        # cancelled) arms the drop of pipecat's copy, which is
+                        # appended the moment we return.
+                        handoff.arm(context_id, placed.text)
                     return
 
         # Counted here rather than at entry, so the denominator is "sentences the
@@ -1177,7 +1758,7 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                 candidates.add(Candidate(
                     key=key, text=norm, chars=len(norm), engine=engine_l,
                     model=model or "", voice=voice or "", pace=pace,
-                    temperature=temperature, fixed=is_fixed,
+                    temperature=temperature, fixed=is_fixed, language=render_language,
                     agent_id=agent_id, agent_name=agent_name,
                     institute_id=institute_id))
 

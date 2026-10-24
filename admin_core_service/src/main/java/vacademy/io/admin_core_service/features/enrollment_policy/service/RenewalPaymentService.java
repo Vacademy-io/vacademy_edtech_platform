@@ -2,11 +2,14 @@ package vacademy.io.admin_core_service.features.enrollment_policy.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.enroll_invite.service.SubOrgService;
 import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
@@ -19,6 +22,7 @@ import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanS
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanSourceEnum;
+import vacademy.io.admin_core_service.features.user_subscription.util.PlanValidityResolver;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
 import vacademy.io.common.auth.dto.UserDTO;
@@ -40,12 +44,25 @@ public class RenewalPaymentService {
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final SubOrgService subOrgService;
     private final PaymentLogRepository paymentLogRepository;
+    private final vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogLineItemRepository paymentLogLineItemRepository;
     private final WorkflowTriggerService workflowTriggerService;
     private final AuthService authService;
     private final vacademy.io.admin_core_service.features.user_subscription.service.UserInstitutePaymentGatewayMappingService mandateService;
     private final vacademy.io.admin_core_service.features.invoice.service.InvoiceService invoiceService;
     private final vacademy.io.admin_core_service.features.notification_service.service.PaymentNotificatonService paymentNotificatonService;
     private final vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
+    private final vacademy.io.admin_core_service.features.plan_change.service.PlanChangeService planChangeService;
+    private final RenewalGracePolicy gracePolicy;
+    private final vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService paymentLogService;
+
+    /**
+     * Lazy because UserPlanService reaches back into this service's neighbourhood (renewal,
+     * plan change, enrolment all call one another) and eager injection closes a bean cycle at
+     * startup. Only used by the enrolment safety net in handleSuccessfulRenewal.
+     */
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService userPlanService;
 
     /** Same dunning ceiling as RenewalChargeService (policy override not yet snapshotted). */
     private static final int MAX_RENEWAL_ATTEMPTS = 3;
@@ -67,19 +84,63 @@ public class RenewalPaymentService {
         }
         UserPlan userPlan = paymentLog.getUserPlan();
         if (paymentStatus == PaymentStatusEnum.PAID) {
-            // Record the payment itself as settled. Renewals previously left the log
-            // in its pre-payment state, so a paid renewal showed as unpaid in payment
-            // history and any invoice would have hung off a non-PAID log.
+            // Razorpay delivers payment.captured AND order.paid for one capture, and prod
+            // runs 4 replicas, so this arrives more than once. Without a claim every
+            // delivery extended the plan by a full cycle: one Rs 1,200 payment bought two
+            // months, one Rs 7,200 payment two years (2026-09-19). The conditional UPDATE
+            // flips the log to PAID exactly once, in its own transaction, so only the
+            // winning delivery runs the ledger / extension / invoice side effects.
+            if (paymentLogService.claimPaidIfNotAlready(orderId) == 0) {
+                log.info("RENEWAL order {} already applied by another event or replica — skipping duplicate", orderId);
+                return;
+            }
             paymentLog.setPaymentStatus(PaymentStatusEnum.PAID.name());
             paymentLog.setStatus(PaymentLogStatusEnum.SUCCESS.name());
-            paymentLogRepository.save(paymentLog);
             recordRenewalOnLedger(paymentLog, userPlan, instituteId);
+            countDiscountedCycle(paymentLog, userPlan);
             handleSuccessfulRenewal(userPlan, instituteId);
             scheduleRenewalInvoicing(orderId, instituteId);
         } else if (paymentStatus == PaymentStatusEnum.FAILED) {
+            // Record the failure on the log itself, mirroring the PAID branch above.
+            // Without this the row keeps the PAYMENT_PENDING it was created with, so a
+            // declined renewal is indistinguishable from one still awaiting its webhook:
+            // it stays "pending" forever, inflates the pending figures in reporting, and
+            // gives nobody a signal that the member's autopay is failing. Every gateway
+            // funnels through here (Razorpay + Stripe webhooks, the eWay poller), so this
+            // was silently true of every failed renewal on every gateway.
+            // Monotonic: never regress a log that already settled. Razorpay can deliver
+            // payment.failed for an earlier attempt on an order whose later attempt was
+            // captured, and with 4 replicas the two are handled concurrently.
+            int marked = paymentLogRepository.updatePaymentStatusIfNotPaid(
+                    paymentLog.getId(), PaymentStatusEnum.FAILED.name(), PaymentStatusEnum.PAID.name());
+            if (marked == 0) {
+                log.info("RENEWAL order {} is already PAID — ignoring a late failure event", orderId);
+                return;
+            }
+            paymentLog.setPaymentStatus(PaymentStatusEnum.FAILED.name());
+            paymentLog.setStatus(PaymentLogStatusEnum.FAILED.name());
+            paymentLogRepository.save(paymentLog);
             handleFailedRenewal(userPlan, instituteId);
         } else {
             log.info("Payment status is PENDING for orderId: {}, waiting for final status", orderId);
+        }
+    }
+
+    /**
+     * A renewal that carried the plan's discount line uses up one of the discount's
+     * billing cycles (admin discounts may be limited to the first N charges). Counted
+     * here, after the exactly-once PAID claim, so a failed or replayed charge never
+     * spends a cycle.
+     */
+    private void countDiscountedCycle(PaymentLog paymentLog, UserPlan userPlan) {
+        if (userPlan == null || userPlan.getAppliedCouponDiscountId() == null) {
+            return;
+        }
+        if (paymentLogLineItemRepository.existsByPaymentLogIdAndSourceId(
+                paymentLog.getId(), userPlan.getAppliedCouponDiscountId())) {
+            int used = userPlan.getDiscountCyclesApplied() != null ? userPlan.getDiscountCyclesApplied() : 0;
+            userPlan.setDiscountCyclesApplied(used + 1);
+            userPlanRepository.save(userPlan);
         }
     }
 
@@ -252,6 +313,16 @@ public class RenewalPaymentService {
         log.info("Processing successful renewal for UserPlan: {}", userPlan.getId());
 
         try {
+            // A downgrade booked for the end of this cycle lands here, BEFORE the new end
+            // date is worked out — so the extension uses the new plan's validity, not the
+            // one the learner is leaving.
+            try {
+                planChangeService.applyScheduledChangeIfDue(userPlan);
+            } catch (Exception pce) {
+                log.error("Scheduled plan change could not be applied for plan {} — renewing on the "
+                        + "existing plan instead: {}", userPlan.getId(), pce.getMessage(), pce);
+            }
+
             // Extend UserPlan endDate based on subscription period
             Date newEndDate = calculateNewEndDate(userPlan);
             userPlan.setEndDate(newEndDate);
@@ -269,11 +340,18 @@ public class RenewalPaymentService {
             // the sweep attempting a charge against a dead mandate. If the renewal
             // checkout ALSO registered a fresh mandate ("enable auto-pay" option),
             // resume autopay: a live mandate for this plan flips the flag back on.
+            //
+            // getMandate, NOT getMandateOrLegacyToken: the legacy fallback SYNTHESISES an
+            // ACTIVE mandate from any saved card-on-file token (eWay), so asking it here read
+            // "this learner has a card" as "this learner authorised recurring billing" and
+            // silently switched autopay back on for anyone paying a single renewal by card.
+            // A stored card is not consent to be charged again — only an explicitly
+            // registered mandate is, and that is exactly what getMandate reports.
             boolean autopayOn = Boolean.TRUE.equals(userPlan.getAutoRenewalEnabled());
             if (!autopayOn) {
                 try {
                     String vendor = userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().getVendor() : null;
-                    var mandate = vendor != null ? mandateService.getMandateOrLegacyToken(
+                    var mandate = vendor != null ? mandateService.getMandate(
                             userPlan.getUserId(), instituteId, vendor, userPlan.getId()) : null;
                     if (mandate != null && vacademy.io.admin_core_service.features.user_subscription.dto.MandateInfo.STATUS_ACTIVE
                             .equalsIgnoreCase(mandate.getStatus())) {
@@ -311,6 +389,20 @@ public class RenewalPaymentService {
                 log.info("REACTIVATED mapping {} (expiry {})", mapping.getId(), newEndDate);
             }
 
+            // Nothing to extend and nothing to reactivate means this plan holds no access at
+            // all, yet money just landed on it. Extending zero rows used to "succeed" in
+            // silence: the plan read ACTIVE until 2027 while the learner sat in no batch, got
+            // no class links and appeared in no member list (Nitika Maheshwari, 2026-10-04,
+            // Rs 7,200). Enrol instead. ensureEnrollmentExists is idempotent, never throws,
+            // and runs the same INVITED -> ACTIVE shift the first-payment path runs, which
+            // also fires the enrollment workflow — so the learner gets the member message and
+            // the next class batch picks them up without anyone intervening by hand.
+            if (activeMappings.isEmpty() && inactiveMappings.isEmpty()) {
+                log.warn("Renewal paid on plan {} which holds no mapping at all — enrolling the "
+                        + "learner now instead of extending nothing", userPlan.getId());
+                userPlanService.ensureEnrollmentExists(userPlan);
+            }
+
             // Send success notification
             sendRenewalSuccessNotification(userPlan, instituteId, newEndDate);
 
@@ -343,7 +435,9 @@ public class RenewalPaymentService {
 
         try {
             int attempts = userPlan.getRenewalAttemptCount() != null ? userPlan.getRenewalAttemptCount() : 0;
-            boolean exhausted = attempts >= MAX_RENEWAL_ATTEMPTS;
+            // Same rule as the sweep: a configured grace period (end_date + N days) governs;
+            // otherwise the attempt ceiling. Keeps the two failure paths from disagreeing.
+            boolean exhausted = gracePolicy.isExhausted(userPlan, new Date(), attempts, MAX_RENEWAL_ATTEMPTS);
             if (exhausted) {
                 userPlan.setStatus(UserPlanStatusEnum.EXPIRED.name());
                 userPlan.setNextChargeAt(null);
@@ -403,7 +497,7 @@ public class RenewalPaymentService {
             ctx.put("enrollInviteId", userPlan.getEnrollInviteId());
             ctx.put("vendor", userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().getVendor() : null);
             if (userPlan.getPaymentPlan() != null) {
-                ctx.put("amount", userPlan.getPaymentPlan().getActualPrice());
+                ctx.put("amount", RegionalPriceLock.listPrice(userPlan));
             }
             // On final-failure the mappings were just flipped INACTIVE before this event,
             // so fall back to INACTIVE rows rather than emitting an empty batch list.
@@ -458,29 +552,11 @@ public class RenewalPaymentService {
     /**
      * Validity days for the plan, from the linked PaymentPlan (falling back to
      * the plan snapshot on user_plan.plan_json), defaulting to 30 only if
-     * nothing is resolvable.
+     * nothing is resolvable. Shared with the plan-change proration, which has to
+     * agree with the renewal on how long a plan lasts.
      */
     private int resolveValidityDays(UserPlan userPlan) {
-        if (userPlan.getPaymentPlan() != null && userPlan.getPaymentPlan().getValidityInDays() != null
-                && userPlan.getPaymentPlan().getValidityInDays() > 0) {
-            return userPlan.getPaymentPlan().getValidityInDays();
-        }
-        if (StringUtils.hasText(userPlan.getPlanJson())) {
-            try {
-                var node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(userPlan.getPlanJson());
-                var v = node.get("validityInDays");
-                if (v == null) {
-                    v = node.get("validity_in_days");
-                }
-                if (v != null && v.asInt() > 0) {
-                    return v.asInt();
-                }
-            } catch (Exception e) {
-                log.debug("Could not read validityInDays from plan_json for UserPlan: {}", userPlan.getId());
-            }
-        }
-        log.warn("No validity_in_days resolvable for UserPlan: {} — defaulting to 30 days", userPlan.getId());
-        return 30;
+        return PlanValidityResolver.resolveValidityDays(userPlan);
     }
 
     /**

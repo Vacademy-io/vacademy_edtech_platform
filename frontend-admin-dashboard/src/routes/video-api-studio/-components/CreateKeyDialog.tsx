@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -10,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Check, Key } from 'lucide-react';
+import { Copy, Check, Key } from '@phosphor-icons/react';
 import { GenerateKeyResponse } from '../-services/api-keys';
 
 interface CreateKeyDialogProps {
@@ -26,6 +27,7 @@ export function CreateKeyDialog({
     onGenerate,
     isGenerating,
 }: CreateKeyDialogProps) {
+    const { t } = useTranslation('videoApiStudioCreateKeyDialog');
     const [keyName, setKeyName] = useState('');
     const [generatedKey, setGeneratedKey] = useState<GenerateKeyResponse | null>(null);
     const [copied, setCopied] = useState(false);
@@ -59,12 +61,12 @@ export function CreateKeyDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Key className="h-5 w-5" />
-                        {generatedKey ? 'API Key Generated' : 'Create New API Key'}
+                        {generatedKey ? t('title.generated') : t('title.create')}
                     </DialogTitle>
                     <DialogDescription>
                         {generatedKey
-                            ? 'Copy your API key now. You won\'t be able to see it again!'
-                            : 'Give your API key a name to help you identify it later.'}
+                            ? t('description.generated')
+                            : t('description.create')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -72,10 +74,10 @@ export function CreateKeyDialog({
                     <>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="keyName">Key Name</Label>
+                                <Label htmlFor="keyName">{t('keyNameLabel')}</Label>
                                 <Input
                                     id="keyName"
-                                    placeholder="e.g., Production Key, Dev Key"
+                                    placeholder={t('keyNamePlaceholder')}
                                     value={keyName}
                                     onChange={(e) => setKeyName(e.target.value)}
                                     onKeyDown={(e) => {
@@ -88,13 +90,13 @@ export function CreateKeyDialog({
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={handleClose}>
-                                Cancel
+                                {t('cancelButton')}
                             </Button>
                             <Button
                                 onClick={handleGenerate}
                                 disabled={!keyName.trim() || isGenerating}
                             >
-                                {isGenerating ? 'Generating...' : 'Generate Key'}
+                                {isGenerating ? t('generatingButton') : t('generateButton')}
                             </Button>
                         </DialogFooter>
                     </>
@@ -103,15 +105,14 @@ export function CreateKeyDialog({
                         <div className="space-y-4 py-4">
                             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                                 <p className="text-sm text-amber-800 font-medium mb-2">
-                                    ⚠️ Save this key now!
+                                    {t('saveKeyWarningTitle')}
                                 </p>
                                 <p className="text-xs text-amber-700">
-                                    This is the only time you&apos;ll see the full key. Store it
-                                    securely.
+                                    {t('saveKeyWarningDescription')}
                                 </p>
                             </div>
                             <div className="space-y-2">
-                                <Label>Your API Key</Label>
+                                <Label>{t('yourApiKeyLabel')}</Label>
                                 <div className="flex items-center gap-2">
                                     <code className="flex-1 text-sm bg-muted px-3 py-2 rounded font-mono break-all">
                                         {generatedKey.key}
@@ -131,7 +132,7 @@ export function CreateKeyDialog({
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button onClick={handleClose}>Done</Button>
+                            <Button onClick={handleClose}>{t('doneButton')}</Button>
                         </DialogFooter>
                     </>
                 )}

@@ -1,0 +1,12 @@
+{
+    "assigned_one": "Assigned {{count}}",
+    "assigned_other": "Assigned {{count}}",
+    "alreadyAssigned_one": "{{count}} already assigned",
+    "alreadyAssigned_other": "{{count}} already assigned",
+    "skipped_one": "{{count}} skipped",
+    "skipped_other": "{{count}} skipped",
+    "leftOutManual_one": "{{count}} left out — mentor is at their limit",
+    "leftOutManual_other": "{{count}} left out — mentor is at their limit",
+    "leftOutBulk_one": "{{count}} left out — all mentors at their limit",
+    "leftOutBulk_other": "{{count}} left out — all mentors at their limit"
+}

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CaretDown, CaretUp, Check } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface StatusOption {
     value: string;
@@ -14,19 +16,25 @@ interface StatusDropdownProps {
     initialOptions?: StatusOption[];
 }
 
-const defaultOptions: StatusOption[] = [
-    { value: 'ACTIVE', label: 'Active' },
-    { value: 'INACTIVE', label: 'Inactive' },
-    { value: 'DRAFT', label: 'Draft' },
+// NOTE: `value` is the stable, internal status key that gets sent to the
+// backend / stored in form state — it must never change with locale. Only
+// `label` (the displayed text) is translated.
+const buildDefaultOptions = (t: TFunction): StatusOption[] => [
+    { value: 'ACTIVE', label: t('optionActive') },
+    { value: 'INACTIVE', label: t('optionInactive') },
+    { value: 'DRAFT', label: t('optionDraft') },
 ];
 
 const StatusDropdown: React.FC<StatusDropdownProps> = ({
     value = '',
     onChange,
     error,
-    placeholder = 'Select status',
-    initialOptions = defaultOptions,
+    placeholder,
+    initialOptions,
 }) => {
+    const { t } = useTranslation('audienceManagerStatusDropdown');
+    const resolvedPlaceholder = placeholder ?? t('placeholder');
+    const resolvedOptions = initialOptions ?? buildDefaultOptions(t);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -53,16 +61,16 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
 
     const displayLabel = (() => {
         if (value) {
-            const found = initialOptions.find(
+            const found = resolvedOptions.find(
                 (option) => option.value.toLowerCase() === value.toLowerCase()
             );
             return found?.label || value;
         }
-        return placeholder;
+        return resolvedPlaceholder;
     })();
 
     return (
-        <div className="relative min-w-[20px]" ref={dropdownRef}>
+        <div className="relative min-w-5" ref={dropdownRef}>
             <button
                 type="button"
                 onClick={() => {
@@ -75,9 +83,9 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
                 <span className="truncate text-left">{displayLabel}</span>
                 <div className="ml-2 shrink-0">
                     {isOpen ? (
-                        <CaretUp className="size-[18px] text-neutral-600" />
+                        <CaretUp className="size-4 text-neutral-600" />
                     ) : (
-                        <CaretDown className="size-[18px] text-neutral-600" />
+                        <CaretDown className="size-4 text-neutral-600" />
                     )}
                 </div>
             </button>
@@ -85,7 +93,7 @@ const StatusDropdown: React.FC<StatusDropdownProps> = ({
             {isOpen && (
                 <div className="absolute z-30 mt-2 w-full rounded-lg border border-neutral-200 bg-white shadow-lg">
                     <div className="max-h-60 overflow-y-auto py-1">
-                        {initialOptions.map((option) => (
+                        {resolvedOptions.map((option) => (
                             <button
                                 key={option.value}
                                 type="button"

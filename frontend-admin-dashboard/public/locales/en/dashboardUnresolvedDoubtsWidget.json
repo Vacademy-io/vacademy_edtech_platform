@@ -1,0 +1,11 @@
+{
+    "card": {
+        "heading": "Unresolved Doubts",
+        "requiresAction": "Requires Action"
+    },
+    "message": {
+        "unresolved_one": "You have <1>{{count}}</1> unresolved doubt from the last 7 days that need attention.",
+        "unresolved_other": "You have <1>{{count}}</1> unresolved doubts from the last 7 days that need attention.",
+        "allResolved": "All doubts have been resolved. Great work!"
+    }
+}

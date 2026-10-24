@@ -1,13 +1,13 @@
 fastapi==0.115.0
 python-multipart>=0.0.9
-uvicorn[standard]==0.30.6
+uvicorn[standard]>=0.31.1
 SQLAlchemy==2.0.35
 psycopg[binary]==3.2.12
 pydantic-settings==2.6.1
 python-dotenv==1.0.1
 httpx==0.27.2
 boto3==1.34.0
-sse-starlette==1.6.5
+sse-starlette>=3.0.0
 edge-tts
 moviepy==1.0.3
 playwright==1.49.1
@@ -37,11 +37,45 @@ pdfplumber>=0.10.0
 # for selective Mathpix re-OCR. Without this, mathpix.enrich_layout_for_math
 # crashes with "No module named 'fitz'" right after LAYOUT_OCR_DONE.
 pymupdf>=1.24.0
-# youtube-transcript-api — knowledge-base ingestion of YouTube sources
-# (services/kb/parsing.py). Reads the caption tracks YouTube already publishes,
-# so it is free and instant but only works for videos that HAVE captions.
-# NOTE: YouTube rate-limits/blocks caption requests from datacenter IPs, which
-# includes our Hetzner nodes. If that starts biting, route audio through the
-# in-house Whisper transcription (/transcription/v1/*) instead of proxying.
-youtube-transcript-api>=0.6.2
+# Pillow — already installed through matplotlib/moviepy/rembg; listed because course
+# knowledge composes iSpring SCORM slides from their positioned PNGs before OCR
+# (app/services/course_knowledge/extract/ispring.py).
+Pillow>=9.0
+# OMRChecker (vendored at app/vendor/omrchecker, MIT) reads assessment OMR sheets
+# in a spawned worker (app/services/omr). These are its own imports; numpy and
+# opencv above already satisfy it (it needs numpy>=1.25, which <2 allows).
+# screeninfo is imported but never used on a server (patched, see VENDORED.md).
+deepmerge>=1.1.0
+dotmap>=1.3.30
+jsonschema>=4.17.3
+matplotlib>=3.7.1
+pandas>=2.0.2
+rich>=13.4.2
+screeninfo>=0.8.1
+# youtube-transcript-api — YouTube captions for KB ingest, the AI tutor and course
+# knowledge, through the shared caption service (app/services/youtube_captions).
+# YouTube blocks caption requests from datacenter IPs (our Hetzner nodes), so the
+# service routes them through a rotating residential proxy (YT_CAPTIONS_PROXY,
+# WEBSHARE_PROXY_* env) with Supadata as a secondary provider. Pinned EXACTLY on
+# purpose: YouTube-side changes break this library, so upgrades must be deliberate
+# (watch its releases and issue #592; run scripts/yt_captions_probe.py after one).
+youtube-transcript-api==1.2.4
 nh3==0.2.*
+# Live AI Tutor: tolerant parsing of model-emitted plan JSON (SVG-in-JSON quoting slips)
+json-repair==0.*
+
+# MCP server (Model Context Protocol) — app/mcp/. Brings its own starlette/uvicorn
+# floors: uvicorn>=0.31.1 and sse-starlette>=3.0.0 (bumped above; sse_starlette is
+# not imported anywhere in app/, so the major bump is inert here). cryptography is
+# already present transitively via python-jose[cryptography]; pinned explicitly
+# because app/mcp/crypto.py imports Fernet directly.
+mcp==2.2.0
+cryptography>=42.0.0
+
+# In-process text embeddings (ONNX on CPU, no torch) for the curriculum
+# libraries — see app/services/embedding_service.py LOCAL_MODELS.
+fastembed>=0.7
+
+# IANA time zones for zoneinfo: the slim image has no /usr/share/zoneinfo, and the
+# CRM tools report in each institute's own time zone (app/services/crm_data.py).
+tzdata>=2024.1

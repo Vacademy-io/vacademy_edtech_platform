@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "titleRequired": "Le titre est requis",
+        "startDateRequired": "La date de début est requise",
+        "startTimeRequired": "L'heure de début est requise",
+        "durationGreaterThanZero": "La durée doit être supérieure à zéro",
+        "linkRequired": "Le lien est requis",
+        "invalidUrl": "URL invalide",
+        "fieldLabelRequired": "L'intitulé du champ est requis",
+        "fieldLabelTooLong": "L'intitulé du champ est trop long",
+        "timeZoneRequired": "Le fuseau horaire est requis",
+        "addAtLeastOneSession": "Ajoutez au moins une session",
+        "selectTime": "Sélectionner l'heure",
+        "assignAtLeastOneBatch": "Attribuez au moins un groupe à cette classe privée.",
+        "emailOrPhoneRequired": "Conservez l'e-mail ou le numéro de téléphone comme requis — une inscription a besoin de l'un des deux pour identifier l'apprenant."
+    }
+}

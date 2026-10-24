@@ -1,0 +1,12 @@
+{
+    "noProblemStatement": "(कोई समस्या विवरण नहीं)",
+    "languagesLabel": "भाषाएँ: {{languages}}",
+    "maxPointsLabel": "अधिकतम अंक: {{points}}",
+    "testsLabel": "परीक्षण: {{count}}",
+    "sampleTestCasesHeading": "नमूना परीक्षण मामले",
+    "sampleLabel": "नमूना {{number}}",
+    "inputLabel": "इनपुट",
+    "expectedLabel": "अपेक्षित",
+    "moreAccepted_one": "+{{count}} और स्वीकृत",
+    "moreAccepted_other": "+{{count}} और स्वीकृत"
+}

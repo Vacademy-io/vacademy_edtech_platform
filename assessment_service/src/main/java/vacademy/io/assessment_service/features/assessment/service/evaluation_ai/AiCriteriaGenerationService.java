@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import vacademy.io.assessment_service.features.assessment.client.AiServiceLlmClient;
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.CreateCriteriaTemplateRequest;
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.CriteriaRubricDto;
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.GenerateCriteriaRequest;
@@ -34,19 +35,28 @@ public class AiCriteriaGenerationService {
         private static final int RESPONSE_TIMEOUT_SECONDS = 60;
 
         private static final int MAX_RETRIES_PER_MODEL = 2;
+        /** ai_service model-registry use case; ai_service walks its default → fallback chain. */
+        static final String USE_CASE = "evaluation";
+        /** GLM reasons before answering, so the registry path gets more room than the direct one. */
+        private static final int REGISTRY_TIMEOUT_SECONDS = 120;
+        private static final String SYSTEM_PROMPT =
+                        "You are an expert educational assessment specialist. You create detailed, fair, and structured evaluation criteria (rubrics) for grading student answers.";
 
         private final WebClient webClient;
         private final WebClient aiServiceWebClient;
         private final ObjectMapper objectMapper;
         private final EvaluationCriteriaService evaluationCriteriaService;
+        private final AiServiceLlmClient aiServiceLlmClient;
 
         public AiCriteriaGenerationService(
                         @Value("${openrouter.api.key}") String apiKey,
                         @Value("${ai.service.base.url:http://ai-service:8077}") String aiServiceBaseUrl,
                         ObjectMapper objectMapper,
-                        EvaluationCriteriaService evaluationCriteriaService) {
+                        EvaluationCriteriaService evaluationCriteriaService,
+                        AiServiceLlmClient aiServiceLlmClient) {
                 this.objectMapper = objectMapper;
                 this.evaluationCriteriaService = evaluationCriteriaService;
+                this.aiServiceLlmClient = aiServiceLlmClient;
                 this.webClient = WebClient.builder()
                                 .baseUrl(API_URL)
                                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
@@ -66,13 +76,13 @@ public class AiCriteriaGenerationService {
                 String prompt = createCriteriaPrompt(request);
 
                 try {
-                        // Blocking call to get the result synchronously
-                        CriteriaRubricDto rubric = getModelPriority("evaluation")
-                                        .flatMap(models -> {
-                                            if (models.isEmpty()) {
-                                                return Mono.error(new RuntimeException("No AI models available for criteria generation."));
-                                            }
-                                            return tryModelsWithFallback(prompt, models, 0);
+                        // Blocking call to get the result synchronously. ai_service's model
+                        // registry first; the legacy direct chain only when it is unreachable.
+                        CriteriaRubricDto rubric = generateViaRegistry(prompt)
+                                        .onErrorResume(AiServiceLlmClient.UnavailableException.class, e -> {
+                                                log.warn("[AI-Criteria-Gen] ai_service model registry unavailable ({}); using the legacy direct chain",
+                                                                e.getMessage());
+                                                return generateViaLegacyChain(prompt);
                                         })
                                         .block();
 
@@ -90,10 +100,49 @@ public class AiCriteriaGenerationService {
 
                         return templateRequest;
 
+                } catch (AiServiceLlmClient.PolicyRefusalException e) {
+                        // Refused by policy (AI usage limit / plan): no model ran and the legacy
+                        // direct chain is not tried. Surface the limit's own message.
+                        log.info("[AI-Criteria-Gen] refused by policy ({}): {}", e.getCode(), e.getMessage());
+                        throw new VacademyException(e.getMessage());
                 } catch (Exception e) {
                         log.error("Failed to generate criteria with AI", e);
                         throw new VacademyException("Failed to generate criteria with AI: " + e.getMessage());
                 }
+        }
+
+        /**
+         * One completion through ai_service's {@code evaluation} use case. ai_service picks
+         * the model and fails over between models; the retries here cover an unparseable
+         * rubric or a transient ai_service error, never an unavailable endpoint.
+         */
+        private Mono<CriteriaRubricDto> generateViaRegistry(String prompt) {
+                List<Map<String, String>> messages = List.of(
+                                Map.of("role", "system", "content", SYSTEM_PROMPT),
+                                Map.of("role", "user", "content", prompt));
+                return Mono.defer(() -> aiServiceLlmClient.completeAsync(USE_CASE, messages, true, null, "low", null,
+                                                Duration.ofSeconds(REGISTRY_TIMEOUT_SECONDS)))
+                                .flatMap(completion -> parseResponse(aiServiceLlmClient.toChatCompletionBody(completion),
+                                                completion.model() != null ? completion.model() : USE_CASE))
+                                .retryWhen(Retry.fixedDelay(MAX_RETRIES_PER_MODEL, Duration.ofSeconds(2))
+                                                .filter(error -> !(error instanceof AiServiceLlmClient.UnavailableException)
+                                                                && !AiServiceLlmClient.isPolicyRefusal(error))
+                                                .doBeforeRetry(signal -> log.warn(
+                                                                "[AI-Criteria-Gen] Retry {}/{} via ai_service use case {}: {}",
+                                                                signal.totalRetries() + 1, MAX_RETRIES_PER_MODEL, USE_CASE,
+                                                                signal.failure().getMessage()))
+                                                .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
+        }
+
+        /** The pre-registry path: the use case's model list, each tried directly on OpenRouter. */
+        private Mono<CriteriaRubricDto> generateViaLegacyChain(String prompt) {
+                return getModelPriority(USE_CASE)
+                                .flatMap(models -> {
+                                        if (models.isEmpty()) {
+                                                return Mono.error(new RuntimeException("No AI models available for criteria generation."));
+                                        }
+                                        return tryModelsWithFallback(prompt, models, 0);
+                                });
         }
 
         private Mono<List<String>> getModelPriority(String useCase) {
@@ -168,8 +217,7 @@ public class AiCriteriaGenerationService {
                 Map<String, Object> payload = Map.of(
                                 "model", model,
                                 "messages", List.of(
-                                                Map.of("role", "system", "content",
-                                                                "You are an expert educational assessment specialist. You create detailed, fair, and structured evaluation criteria (rubrics) for grading student answers."),
+                                                Map.of("role", "system", "content", SYSTEM_PROMPT),
                                                 Map.of("role", "user", "content", prompt)),
                                 "response_format", Map.of("type", "json_object"));
 

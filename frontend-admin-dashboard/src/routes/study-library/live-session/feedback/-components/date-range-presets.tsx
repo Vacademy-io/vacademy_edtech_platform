@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 interface DateRangePresetsProps {
@@ -8,11 +9,11 @@ interface DateRangePresetsProps {
     onChange: (start: string, end: string) => void;
 }
 
-const PRESETS: Array<{ label: string; days: number }> = [
-    { label: 'Today', days: 1 },
-    { label: '7 Days', days: 7 },
-    { label: '15 Days', days: 15 },
-    { label: '30 Days', days: 30 },
+const PRESETS: Array<{ id: 'today' | 'week' | 'fortnight' | 'month'; days: number }> = [
+    { id: 'today', days: 1 },
+    { id: 'week', days: 7 },
+    { id: 'fortnight', days: 15 },
+    { id: 'month', days: 30 },
 ];
 
 const rangeForDays = (days: number) => ({
@@ -34,10 +35,12 @@ const pillOff = 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-5
  * DateRangeFilter's bold solid-orange selected pill.
  */
 export function DateRangePresets({ startDate, endDate, onChange }: DateRangePresetsProps) {
+    const { t } = useTranslation('studyLibraryDateRangePresets');
+
     const matchedPreset = useMemo(() => {
         for (const p of PRESETS) {
             const r = rangeForDays(p.days);
-            if (r.start === startDate && r.end === endDate) return p.label;
+            if (r.start === startDate && r.end === endDate) return p.id;
         }
         return null;
     }, [startDate, endDate]);
@@ -48,10 +51,10 @@ export function DateRangePresets({ startDate, endDate, onChange }: DateRangePres
         <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
                 {PRESETS.map((p) => {
-                    const active = !customOpen && matchedPreset === p.label;
+                    const active = !customOpen && matchedPreset === p.id;
                     return (
                         <button
-                            key={p.label}
+                            key={p.id}
                             type="button"
                             onClick={() => {
                                 const r = rangeForDays(p.days);
@@ -60,7 +63,7 @@ export function DateRangePresets({ startDate, endDate, onChange }: DateRangePres
                             }}
                             className={cn(pillBase, active ? pillOn : pillOff)}
                         >
-                            {p.label}
+                            {t(`presets.${p.id}`)}
                         </button>
                     );
                 })}
@@ -69,7 +72,7 @@ export function DateRangePresets({ startDate, endDate, onChange }: DateRangePres
                     onClick={() => setCustomOpen(true)}
                     className={cn(pillBase, customOpen ? pillOn : pillOff)}
                 >
-                    Custom
+                    {t('custom')}
                 </button>
 
                 <span className="ml-1 text-sm text-neutral-500">
@@ -80,7 +83,7 @@ export function DateRangePresets({ startDate, endDate, onChange }: DateRangePres
             {customOpen && (
                 <div className="flex flex-col gap-3 rounded-md border border-neutral-100 bg-neutral-50 p-3 sm:flex-row sm:items-end">
                     <label className="flex flex-1 flex-col gap-1">
-                        <span className="text-xs font-medium text-neutral-600">Start date</span>
+                        <span className="text-xs font-medium text-neutral-600">{t('startDate')}</span>
                         <input
                             type="date"
                             value={startDate}
@@ -90,7 +93,7 @@ export function DateRangePresets({ startDate, endDate, onChange }: DateRangePres
                         />
                     </label>
                     <label className="flex flex-1 flex-col gap-1">
-                        <span className="text-xs font-medium text-neutral-600">End date</span>
+                        <span className="text-xs font-medium text-neutral-600">{t('endDate')}</span>
                         <input
                             type="date"
                             value={endDate}

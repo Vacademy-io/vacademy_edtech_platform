@@ -1,0 +1,14 @@
+{
+    "settings": {
+        "title": "Paramètres des questions",
+        "questionType": "Type de question"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "question": {
+        "label": "Question"
+    },
+    "answer": "Réponse",
+    "defaults": {
+        "explanation": "Explication :"
+    }
+}

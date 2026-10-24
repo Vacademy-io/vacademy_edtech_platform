@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ export function ToolPanel({
   children,
   className,
 }: ToolPanelProps) {
+  const { t } = useTranslation("questionTest");
   return (
     <div
       className={cn(
@@ -41,7 +43,7 @@ export function ToolPanel({
         <button
           type="button"
           onClick={onClose}
-          aria-label={`Close ${title}`}
+          aria-label={t("toolPanel.closeAriaLabel", { title })}
           className="grid size-7 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
         >
           <X size={15} weight="bold" />

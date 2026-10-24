@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "تخصيص نموذج الدعوة",
+        "subtitle": "قم بتكوين الحقول التي سيملؤها الطلاب"
+    },
+    "quickAddButtons": {
+        "gender": "إضافة الجنس",
+        "state": "إضافة الولاية",
+        "city": "إضافة المدينة",
+        "schoolCollege": "إضافة المدرسة/الكلية"
+    },
+    "customFieldDialog": {
+        "triggerButton": "إضافة حقل مخصص",
+        "title": "إضافة حقل مخصص",
+        "typePrompt": "اختر نوع الحقل المخصص الذي تريد إضافته:",
+        "fieldTypeOptions": {
+            "textField": "حقل نصي",
+            "dropdown": "قائمة منسدلة"
+        },
+        "textFieldNameLabel": "اسم الحقل النصي",
+        "dropdownNameLabel": "اسم القائمة المنسدلة",
+        "dropdownOptionsLabel": "خيارات القائمة المنسدلة",
+        "addOptionButton": "إضافة",
+        "doneButton": "تم"
+    },
+    "placeholders": {
+        "typeHere": "اكتب هنا"
+    },
+    "previewDialog": {
+        "triggerButton": "معاينة نموذج التسجيل",
+        "title": "معاينة نموذج التسجيل"
+    }
+}

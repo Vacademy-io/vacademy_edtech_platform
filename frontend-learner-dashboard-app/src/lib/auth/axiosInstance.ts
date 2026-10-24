@@ -11,6 +11,11 @@ import { REFRESH_TOKEN_URL, VALIDATE_SESSION } from "@/constants/urls";
 import { maybeServeFromCache, maybeStoreInCache } from "@/lib/http/clientCache";
 import { getActiveLocale } from "@/lib/formatters";
 import { toast } from "sonner";
+import { getAiUsageLimitFromError } from "@/lib/ai-usage-limit";
+import {
+  notifyAiUsageWarning,
+  scheduleAiUsageLimitToast,
+} from "@/lib/ai-usage-limit-notify";
 
 let isHandlingSessionTermination = false;
 
@@ -296,6 +301,14 @@ authenticatedAxiosInstance.interceptors.request.use(
 // Response interceptor to handle global error responses
 authenticatedAxiosInstance.interceptors.response.use(
   (response) => {
+    // AI usage limits: a successful AI call near a soft limit carries
+    // X-AI-Usage-Warning — a gentle, de-duplicated heads-up. Read-only.
+    try {
+      const warning = response?.headers?.["x-ai-usage-warning"];
+      if (warning) notifyAiUsageWarning(warning);
+    } catch {
+      /* never let the warning affect the response */
+    }
     // Store successful GET responses in client cache per headers
     return maybeStoreInCache(response);
   },
@@ -377,6 +390,18 @@ authenticatedAxiosInstance.interceptors.response.use(
           ),
         );
       });
+    }
+
+    // AI usage limit (429 with error "AI_USAGE_LIMIT"): a friendly toast,
+    // unless the screen shows it inline (claimAiUsageLimit). Other 429s are
+    // untouched, and the error is always re-thrown to the caller as before.
+    if (status === 429) {
+      try {
+        const limit = getAiUsageLimitFromError(error);
+        if (limit) scheduleAiUsageLimitToast(error, limit);
+      } catch {
+        /* fall through: the caller still gets the original error */
+      }
     }
 
     // Handle session-terminated (460) — distinct from normal 401

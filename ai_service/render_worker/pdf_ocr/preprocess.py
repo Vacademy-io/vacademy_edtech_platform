@@ -11,6 +11,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 DEFAULT_DPI = 200
+# Largest tilt deskew() will correct; see the note inside it.
+MAX_DESKEW_DEGREES = 10.0
 
 
 def pdf_to_pages(pdf_path: Path, dpi: int = DEFAULT_DPI) -> Iterator[tuple[int, np.ndarray]]:
@@ -50,12 +52,23 @@ def deskew(img: np.ndarray) -> np.ndarray:
     if coords.size == 0:
         return img
     angle = cv2.minAreaRect(coords)[-1]
-    # cv2 angle convention: [-90, 0). Normalize to a small correction.
-    if angle < -45:
-        angle = -(90 + angle)
-    else:
-        angle = -angle
+    # cv2.minAreaRect's angle convention changed in OpenCV 4.5: it used to be
+    # [-90, 0) and is now (0, 90]. A straight page therefore reads as -90 on
+    # one version and +90 on the other. Fold both onto a small correction
+    # around zero first; the old code only knew the first convention, so on
+    # OpenCV 4.6 it turned every straight page by -90 degrees before OCR and
+    # the detector saw sideways text as a handful of page-sized boxes.
+    if angle > 45:
+        angle -= 90
+    elif angle < -45:
+        angle += 90
+    angle = -angle
     if abs(angle) < 0.5:
+        return img
+    # A scan is never skewed by more than a few degrees; anything larger is
+    # the ruled lines or a margin dominating the fit, not a real tilt.
+    if abs(angle) > MAX_DESKEW_DEGREES:
+        logger.info("deskew: ignoring implausible angle %.1f", angle)
         return img
 
     h, w = img.shape[:2]

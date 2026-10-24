@@ -1,0 +1,47 @@
+{
+    "noStudentSelected": {
+        "title": "Student details unavailable",
+        "hint": "No learner is selected or the institute could not be determined."
+    },
+    "emptyState": {
+        "title": "No {{term}} assigned",
+        "hint": "Assign a program to get started."
+    },
+    "actions": {
+        "assignToCourse": "+ Assign to {{term}}",
+        "removeFromCourse": "Remove from {{term}}",
+        "manageAccess": "Manage access",
+        "filter": "Filter",
+        "filterCount": "Filter ({{count}})",
+        "allLevels": "All"
+    },
+    "heroStats": {
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "past": "Past"
+    },
+    "sections": {
+        "inProgressTitle": "In Progress {{term}}",
+        "completedTitle": "Completed {{term}}",
+        "pastTitle": "Past {{term}}",
+        "noneInProgress": "No {{term}} in progress",
+        "noneCompleted": "No completed {{term}}",
+        "nonePast": "No past {{term}}",
+        "completedBadge": "Completed"
+    },
+    "course": {
+        "unnamed": "Unnamed Course",
+        "sessionLabel": "{{term}}: {{name}}"
+    },
+    "accessWindow": {
+        "unlimited": "Access: unlimited",
+        "expired": "Access expired {{date}}",
+        "daysLeft_one": "Access till {{date}} · {{count}} day left",
+        "daysLeft_other": "Access till {{date}} · {{count}} days left"
+    },
+    "pagination": {
+        "prev": "Prev",
+        "next": "Next"
+    },
+    "fallbackStudentName": "Student"
+}

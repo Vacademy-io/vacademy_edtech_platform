@@ -10,17 +10,7 @@ import {
 } from '@/components/ui/chart';
 import dayjs from 'dayjs';
 import { useTheme } from '@/providers/theme/theme-provider';
-
-const chartConfig = {
-    avg_daily_time_minutes: {
-        label: 'Time Spent',
-        color: 'hsl(var(--chart-1))',
-    },
-    avg_daily_time_minutes_batch: {
-        label: 'Time Spent By Batch',
-        color: 'hsl(var(--chart-6))',
-    },
-} satisfies ChartConfig;
+import { useTranslation } from 'react-i18next';
 
 export interface ChartDataType {
     activity_date: string;
@@ -28,11 +18,23 @@ export interface ChartDataType {
     avg_daily_time_minutes_batch: number;
 }
 export function LineChartComponent({ chartData }: { chartData: ChartDataType[] }) {
+    const { t } = useTranslation('studyLibraryLineChart');
     // Brand colour for the chart axis labels — driven by the existing
     // institute-level ThemeProvider so that white-label tenants automatically
     // get their own brand colour without touching this chart.
     const { getPrimaryColorCode } = useTheme();
     const brandColor = getPrimaryColorCode();
+
+    const chartConfig = {
+        avg_daily_time_minutes: {
+            label: t('timeSpent'),
+            color: 'hsl(var(--chart-1))',
+        },
+        avg_daily_time_minutes_batch: {
+            label: t('timeSpentByBatch'),
+            color: 'hsl(var(--chart-6))',
+        },
+    } satisfies ChartConfig;
     return (
         <Card className="w-full">
             <ChartContainer
@@ -62,7 +64,7 @@ export function LineChartComponent({ chartData }: { chartData: ChartDataType[] }
                         tickMargin={8}
                         tickFormatter={(value) => dayjs(value).format('DD MMMM').slice(0, 6)}
                         label={{
-                            value: 'Date',
+                            value: t('date'),
                             position: 'left',
                             dx: 55,
                             dy: 30,
@@ -77,7 +79,7 @@ export function LineChartComponent({ chartData }: { chartData: ChartDataType[] }
                         tickMargin={8}
                         width={40}
                         label={{
-                            value: 'Hours',
+                            value: t('hours'),
                             position: 'insideLeft',
                             angle: -90, // Rotates the text to be vertical
                             dx: -10, // Adjusts the horizontal position

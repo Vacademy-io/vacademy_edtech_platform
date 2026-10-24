@@ -1,0 +1,44 @@
+{
+    "kpi": {
+        "totalLeads": {
+            "label": "Total des leads",
+            "sub": "{{active}} actifs · {{lost}} perdus"
+        },
+        "conversionRate": {
+            "label": "Taux de conversion",
+            "sub": "{{converted}} sur {{total}} convertis"
+        },
+        "avgResponseTime": {
+            "label": "Temps de réponse moyen",
+            "sub_one": "{{count}} lead a répondu",
+            "sub_many": "{{count}} de leads ont répondu",
+            "sub_other": "{{count}} leads ont répondu"
+        },
+        "tatMet": {
+            "label": "Délai respecté",
+            "subCount": "{{count}} dans les délais",
+            "subDisabled": "Délai désactivé dans les paramètres"
+        }
+    },
+    "status": {
+        "title": "Répartition par statut",
+        "donutAriaLabel": "Graphique en anneau de répartition par statut",
+        "totalUnit": "leads"
+    },
+    "trend": {
+        "title": "Tendance quotidienne",
+        "submittedLegend": "Soumis",
+        "convertedLegend": "Convertis",
+        "noData": "Aucune donnée",
+        "ariaLabel": "Leads soumis et convertis par jour"
+    },
+    "breakdown": {
+        "bySource": "Par source",
+        "byTier": "Par palier"
+    },
+    "tier": {
+        "hot": "Chaud",
+        "warm": "Tiède",
+        "cold": "Froid"
+    }
+}

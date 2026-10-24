@@ -1,0 +1,15 @@
+{
+    "filters": {
+        "yearClass": "Année/Classe",
+        "tags": "Étiquettes"
+    },
+    "actions": {
+        "filter": "Filtrer",
+        "reset": "Réinitialiser",
+        "tryAgain": "Réessayer"
+    },
+    "emptyStates": {
+        "noQuestionPapers": "Aucun sujet d'examen disponible",
+        "noFavouriteQuestionPapers": "Aucun sujet d'examen n'a encore été marqué comme favori"
+    }
+}

@@ -1,0 +1,73 @@
+{
+    "pageTitle": "Applications - Admissions",
+    "navHeading": "Application Management",
+    "search": {
+        "placeholder": "Search by tracking ID, name..."
+    },
+    "filters": {
+        "classLabel": "Class",
+        "statusLabel": "Status"
+    },
+    "session": {
+        "placeholder": "Select Session",
+        "newGoTo": "New applications go to"
+    },
+    "buttons": {
+        "newApplication": "New Application",
+        "bulkImport": "Bulk Import",
+        "previous": "Previous",
+        "next": "Next"
+    },
+    "table": {
+        "loading": "Loading applications...",
+        "empty": {
+            "title": "No applications found",
+            "subtitle": "Try adjusting your filters"
+        },
+        "headers": {
+            "trackingId": "Tracking ID",
+            "studentName": "Student Name",
+            "class": "Class",
+            "parentName": "Parent Name",
+            "mobile": "Mobile",
+            "date": "Date",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "error": "Could not load applications. Please try again."
+    },
+    "status": {
+        "submitted": "Submitted",
+        "admitted": "Admitted",
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "admissionCompleted": "Completed"
+    },
+    "pagination": {
+        "showing_one": "Showing {{from}} to {{to}} of {{count}} entry",
+        "showing_other": "Showing {{from}} to {{to}} of {{count}} entries"
+    },
+    "modal": {
+        "title": "Choose Application Type",
+        "subtitle": "Select how you would like to create a new application",
+        "newApplication": {
+            "title": "New Application",
+            "description": "Start a fresh application form"
+        },
+        "fromEnquiry": {
+            "title": "From Enquiry",
+            "description": "Create application from existing enquiry"
+        }
+    },
+    "toast": {
+        "enquiryAlreadyConverted": "This enquiry has already been converted to an application."
+    },
+    "header": {
+        "title": "Applications",
+        "subtitle": "Review applications, collect the fee, then admit."
+    },
+    "quickViews": {
+        "all": "All applications"
+    }
+}

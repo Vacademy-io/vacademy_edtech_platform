@@ -1,0 +1,38 @@
+---
+title: "Going live"
+description: "A checklist before your site goes to production."
+---
+
+**Keys**
+
+- [ ] The key is in your host's production environment variables (`VACADEMY_CATALOG_KEY`), not in the repository.
+- [ ] One key per website, named after it, so it can be rotated alone.
+
+**Course links**
+
+- [ ] `GET /site` returns the right `course_base_url`. If not, the institute's admin sets it under **Settings → Integrations → Catalogue API & websites → Course page address**.
+- [ ] A course card opens the hosted course page, and enrolment works there end to end.
+- [ ] Links use `url` exactly as returned, query string included.
+- [ ] Cards handle `url: null`, `price: null`, `image_url: null` and `subtitle: null`.
+
+**Rendering and SEO**
+
+- [ ] Pages fetch on the server, with `next: { revalidate: 60 }` (or another cache). The site does not call the API once per visitor.
+- [ ] If you host course pages: canonical and sitemap point to **your** pages. If you link out: course URLs are **not** in your sitemap.
+- [ ] `structured_data` is in a `<script type="application/ld+json">`, escaped with `.replace(/</g, '\\u003c')`. Check a page with Google's Rich Results Test.
+
+**Browser calls** (only if browser JavaScript calls the API)
+
+- [ ] The production domain is **Verified** under **Your websites**. Add the bare domain to cover `www` and other subdomains.
+- [ ] Preview deployments (`*.vercel.app`) call the API from the server only.
+
+**Enquiries**
+
+- [ ] The form posts through your server with `X-Client-IP`.
+- [ ] `received` and `duplicate` both show a thank-you.
+- [ ] A test enquiry appears in **Audience Manager → Recent Leads**, in the expected campaign.
+
+**Errors**
+
+- [ ] A failing API call does not take the page down: show the cached data, or a short message, and log `request_id`.
+- [ ] `404 not_found` on a course page renders your 404 (`notFound()`): courses can be unpublished.

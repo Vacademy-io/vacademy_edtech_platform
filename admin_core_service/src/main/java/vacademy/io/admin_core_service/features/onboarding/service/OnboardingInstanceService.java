@@ -104,6 +104,23 @@ public class OnboardingInstanceService {
     }
 
     /**
+     * Instance counts per status for the dashboard cards (one grouped query, no enrichment),
+     * plus ALL. Same institute / flow filter as {@link #searchInstances}.
+     */
+    public Map<String, Long> statusCounts(String instituteId, String flowId) {
+        Map<String, Long> out = new java.util.LinkedHashMap<>();
+        long all = 0;
+        for (Object[] row : onboardingInstanceRepository.countByStatus(
+                instituteId, StringUtils.hasText(flowId) ? flowId : null)) {
+            long n = row[1] == null ? 0 : ((Number) row[1]).longValue();
+            if (row[0] != null) out.put(String.valueOf(row[0]), n);
+            all += n;
+        }
+        out.put("ALL", all);
+        return out;
+    }
+
+    /**
      * Powers the onboarding management dashboard: every instance for the institute (optionally
      * narrowed to one flow/status), enriched with the subject/flow/current-step names the raw
      * row can't carry itself. Names are batch-resolved for the current page only, not the whole

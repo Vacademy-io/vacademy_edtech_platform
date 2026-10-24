@@ -1,6 +1,7 @@
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { resolveSubjectName } from '@/services/subject-names';
 import React, { MutableRefObject, useEffect, useState, useRef } from 'react';
-import { useFieldArray, UseFormReturn } from 'react-hook-form';
+import { UseFormReturn } from 'react-hook-form';
 import {
     PencilSimpleLine,
     TrashSimple,
@@ -10,6 +11,8 @@ import {
     FolderOpen,
     ListNumbers,
     Shuffle,
+    Sparkle,
+    Spinner,
 } from '@phosphor-icons/react';
 import { BorderBeam } from '@/components/magicui/border-beam';
 import { NumberTicker } from '@/components/magicui/number-ticker';
@@ -54,11 +57,11 @@ import sectionDetailsSchema from '../../-utils/section-details-schema';
 import { useSavedAssessmentStore } from '../../-utils/global-states';
 import { Route } from '../..';
 import { useQuestionsForSection } from '../../-hooks/getQuestionsDataForSection';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
 import { useBasicInfoStore } from '../../-utils/zustand-global-states/step1-basic-info';
 import { calculateAveragePenalty } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-utils/helper';
 import Step2GenerateQuestionsFromAI from './-components/Step2GenerateQuestionsFromAI';
 import Step2CreateFromKnowledgeBase from './-components/Step2CreateFromKnowledgeBase';
+import Step2PickFromQuestionBank from './-components/Step2PickFromQuestionBank';
 import { CriteriaStatusBadge } from './-components/CriteriaStatusBadge';
 import { CriteriaPreviewDialog } from './-components/CriteriaPreviewDialog';
 import { AddEditCriteriaDialog } from './-components/AddEditCriteriaDialog';
@@ -71,10 +74,32 @@ import {
 } from '../../-services/criteria-services';
 import { MainViewQuillEditor } from '@/components/quill/MainViewQuillEditor';
 import TipTapEditor from '@/components/tiptap/TipTapEditor';
-import { Sparkle, Spinner } from 'phosphor-react';
 import { toast } from 'sonner';
 import { MyQuestion } from '@/types/assessments/question-paper-form';
 import QuestionSelectorDialog from '@/routes/assessment/question-papers/-components/QuestionSelectorDialog';
+import { AssessmentQuestionEditDialog } from './-components/AssessmentQuestionEditDialog';
+import { QuestionOptionsList } from '@/components/common/assessment/question-options-list';
+
+// The row's option list after an edit, from the editor's own shape: each type
+// keeps its choices in a differently named array, with the key as isSelected.
+const optionsOfSavedQuestion = (saved: MyQuestion) => {
+    const choices =
+        saved.questionType === 'MCQM'
+            ? saved.multipleChoiceOptions
+            : saved.questionType === 'TRUE_FALSE'
+              ? saved.trueFalseOptions
+              : saved.questionType === 'CMCQS'
+                ? saved.csingleChoiceOptions
+                : saved.questionType === 'CMCQM'
+                  ? saved.cmultipleChoiceOptions
+                  : saved.singleChoiceOptions;
+    return (choices ?? []).map((opt) => ({
+        id: opt.id,
+        name: opt.name ?? '',
+        isCorrect: Boolean(opt.isSelected),
+    }));
+};
+import { useTranslation } from 'react-i18next';
 
 type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 
@@ -83,12 +108,16 @@ export const Step2SectionInfo = ({
     index,
     currentStep,
     oldData,
+    onDelete,
 }: {
     form: UseFormReturn<SectionFormType>;
     index: number;
     currentStep: number;
     oldData: MutableRefObject<SectionFormType>;
+    /** Removes this section — the parent's field array owns the list. */
+    onDelete: (index: number) => void;
 }) => {
+    const { t } = useTranslation('assessmentStep2SectionInfo');
     const { assessmentId, examtype } = Route.useParams();
     const [enableSectionName, setEnableSectionName] = useState(false);
     const [isInputFocused, setIsInputFocused] = useState(false);
@@ -121,13 +150,13 @@ export const Step2SectionInfo = ({
         const questions = allSections[index]?.adaptive_marking_for_each_question || [];
 
         if (questions.length === 0) {
-            toast.error('No questions in this section');
+            toast.error(t('toasts.noQuestionsInSection'));
             return;
         }
 
         // Confirm with user
         const confirmed = window.confirm(
-            `Generate AI criteria for all ${questions.length} questions in this section?`
+            t('dialogs.confirmBulkGenerate', { count: questions.length })
         );
 
         if (!confirmed) return;
@@ -143,7 +172,7 @@ export const Step2SectionInfo = ({
         for (let i = 0; i < questions.length; i++) {
             // Check if user cancelled
             if (cancelBulkGeneration.current) {
-                toast.info('Generation cancelled by user');
+                toast.info(t('toasts.generationCancelled'));
                 break;
             }
 
@@ -154,12 +183,12 @@ export const Step2SectionInfo = ({
 
                 // Skip if criteria already exists
                 if ((question as any).evaluation_criteria_json) {
-                    toast.info(`Question ${i + 1} already has criteria`);
+                    toast.info(t('toasts.questionAlreadyHasCriteria', { number: i + 1 }));
                     continue;
                 }
 
                 if (question?.questionMark === '0') {
-                    toast.info(`Question ${i + 1} has 0 marks, skipping`);
+                    toast.info(t('toasts.questionZeroMarksSkip', { number: i + 1 }));
                     continue;
                 }
 
@@ -184,7 +213,12 @@ export const Step2SectionInfo = ({
                 // Small delay to avoid overwhelming the API
                 await new Promise((resolve) => setTimeout(resolve, 500));
             } catch (error) {
-                toast.error(`Failed to generate criteria for question ${i + 1}: ${error instanceof Error ? error.message : String(error)}`);
+                toast.error(
+                    t('toasts.failedGenerateCriteriaForQuestion', {
+                        number: i + 1,
+                        error: error instanceof Error ? error.message : String(error),
+                    })
+                );
                 failCount++;
             }
         }
@@ -198,10 +232,10 @@ export const Step2SectionInfo = ({
 
         // Show summary
         if (successCount > 0) {
-            toast.success(`Generated criteria for ${successCount} questions!`);
+            toast.success(t('toasts.generatedCriteriaSuccess', { count: successCount }));
         }
         if (failCount > 0) {
-            toast.error(`Failed to generate criteria for ${failCount} questions`);
+            toast.error(t('toasts.failedGenerateCriteriaCount', { count: failCount }));
         }
     };
 
@@ -268,13 +302,17 @@ export const Step2SectionInfo = ({
 
     // Get subject name from Step 1 context (Zustand store or saved assessment details)
     const basicInfoStore = useBasicInfoStore();
-    const defaultSubject =
+    // Step 1 stores the subject *id*; the question-paper form below is keyed by name, so
+    // resolve it here. Unresolvable ids (a subject whose course was deleted, or the "N/A"
+    // sentinel older saves wrote) yield '', which leaves the paper's own subject picker
+    // visible instead of pinning it to a bogus value.
+    const defaultSubject = resolveSubjectName(
+        instituteDetails?.subjects,
+        {},
         basicInfoStore.testCreation?.subject ||
-        getSubjectNameById(
-            instituteDetails?.subjects || [],
-            assessmentDetails?.[0]?.saved_data?.subject_selection ?? ''
-        ) ||
-        '';
+            assessmentDetails?.[0]?.saved_data?.subject_selection ||
+            ''
+    );
 
     const adaptiveMarking = useQuestionsForSection(
         assessmentId,
@@ -293,14 +331,9 @@ export const Step2SectionInfo = ({
     const { setValue, getValues, control, watch } = form;
     const allSections = getValues('section');
 
-    const { remove } = useFieldArray({
-        control,
-        name: 'section', // Matches the key in defaultValues
-    });
-
     const handleDeleteSection = (e: React.MouseEvent, index: number) => {
         e.stopPropagation();
-        remove(index);
+        onDelete(index);
     };
 
     // Safety check to ensure section name is never empty or undefined
@@ -316,7 +349,28 @@ export const Step2SectionInfo = ({
         }
     }, [getValues, setValue, index]);
 
+    /*
+     * The three effects below apply a section-level value (marks, penalty, per-question
+     * duration) to every question in the section. That bulk-apply is deliberate and is
+     * kept — but it must only happen when the ADMIN CHANGES the field.
+     *
+     * They also ran on mount, where they stamped the section defaults over per-question
+     * values that had just been hydrated from the server or inserted by an AI / upload /
+     * knowledge-base flow. Per-question marks were flattened to the section default, and
+     * the mount run of the first effect recomputed total_marks from a section list that
+     * was often still empty, zeroing a hydrated total.
+     *
+     * A ref per effect skips only that first run.
+     */
+    const marksApplyInitialised = useRef(false);
+    const penaltyApplyInitialised = useRef(false);
+    const durationApplyInitialised = useRef(false);
+
     useEffect(() => {
+        if (!marksApplyInitialised.current) {
+            marksApplyInitialised.current = true;
+            return;
+        }
         const marksPerQuestion = getValues(`section.${index}`).marks_per_question;
 
         // Loop through adaptive_marking_for_each_question and assign questionMark
@@ -336,6 +390,15 @@ export const Step2SectionInfo = ({
     }, [watch(`section.${index}.marks_per_question`)]);
 
     useEffect(() => {
+        if (!penaltyApplyInitialised.current) {
+            penaltyApplyInitialised.current = true;
+            return;
+        }
+        // Negative marking that is switched OFF must not be written onto every question:
+        // this effect fired regardless of `checked`, so clearing the toggle still left
+        // the last penalty value stamped across the section.
+        if (!getValues(`section.${index}`).negative_marking?.checked) return;
+
         const negative_marking = getValues(`section.${index}`).negative_marking.value;
 
         // Loop through adaptive_marking_for_each_question and assign questionMark
@@ -351,6 +414,10 @@ export const Step2SectionInfo = ({
     }, [watch(`section.${index}.negative_marking.value`)]);
 
     useEffect(() => {
+        if (!durationApplyInitialised.current) {
+            durationApplyInitialised.current = true;
+            return;
+        }
         const questionDurationHrs = getValues(`section.${index}`).question_duration?.hrs;
         const questionDurationMin = getValues(`section.${index}`).question_duration?.min;
 
@@ -550,21 +617,21 @@ export const Step2SectionInfo = ({
                                 0 && (
                                 <div className="ml-2 flex items-center gap-1.5">
                                     <span className="inline-flex items-center rounded-full bg-info-50 px-2.5 py-0.5 text-xs font-medium text-info-700">
-                                        MCQ Single:{' '}
+                                        {t('header.mcqSingle')}:{' '}
                                         {getQuestionTypeCounts(
                                             allSections[index]!
                                                 .adaptive_marking_for_each_question
                                         ).MCQS}
                                     </span>
                                     <span className="inline-flex items-center rounded-full bg-warning-50 px-2.5 py-0.5 text-xs font-medium text-warning-700">
-                                        MCQ Multi:{' '}
+                                        {t('header.mcqMulti')}:{' '}
                                         {getQuestionTypeCounts(
                                             allSections[index]!
                                                 .adaptive_marking_for_each_question
                                         ).MCQM}
                                     </span>
                                     <span className="inline-flex items-center rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-700">
-                                        Total:{' '}
+                                        {t('header.total')}:{' '}
                                         {getQuestionTypeCounts(
                                             allSections[index]!
                                                 .adaptive_marking_for_each_question
@@ -651,7 +718,7 @@ export const Step2SectionInfo = ({
                             type="button"
                             onClick={(e) => handleDeleteSection(e, index)}
                             className="flex size-8 items-center justify-center rounded-lg text-danger-500 transition-colors hover:bg-danger-50"
-                            aria-label="Delete section"
+                            aria-label={t('actions.deleteSection')}
                         >
                             <TrashSimple size={18} />
                         </button>
@@ -661,10 +728,10 @@ export const Step2SectionInfo = ({
             <AccordionContent className="flex flex-col gap-6 px-5 pb-5 pt-5">
                 <div className="flex flex-col gap-3" id="upload-question-paper">
                     <h3 className="text-sm font-semibold text-neutral-700">
-                        Upload Question Paper
+                        {t('uploadSection.title')}
                     </h3>
                     <p className="-mt-2 text-xs text-neutral-500">
-                        Choose how you want to populate this section with questions.
+                        {t('uploadSection.subtitle')}
                     </p>
                     {/* <AlertDialog
                         open={isUploadFromDeviceDialogOpen}
@@ -718,10 +785,10 @@ export const Step2SectionInfo = ({
                                 </div>
                                 <div className="flex-1">
                                     <div className="text-sm font-semibold text-neutral-800">
-                                        Create Manually
+                                        {t('uploadSection.manualCard.title')}
                                     </div>
                                     <div className="text-xs text-neutral-500">
-                                        Write questions one by one
+                                        {t('uploadSection.manualCard.subtitle')}
                                     </div>
                                 </div>
                             </button>
@@ -729,7 +796,7 @@ export const Step2SectionInfo = ({
                         <AlertDialogContent className="p-0">
                             <div className="flex items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Create Question Paper Manually
+                                    {t('uploadSection.manualDialog.title')}
                                 </h1>
                                 <AlertDialogCancel
                                     className="border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -763,24 +830,24 @@ export const Step2SectionInfo = ({
                                 </div>
                                 <div className="flex-1">
                                     <div className="text-sm font-semibold text-neutral-800">
-                                        Choose Saved Paper
+                                        {t('uploadSection.savedCard.title')}
                                     </div>
                                     <div className="text-xs text-neutral-500">
-                                        Reuse an existing paper
+                                        {t('uploadSection.savedCard.subtitle')}
                                     </div>
                                 </div>
                             </button>
                         </DialogTrigger>
-                        <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0 [&>button]:hidden">
+                        <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall w-dialog-xl flex-col items-start !gap-0 overflow-y-auto !p-0 [&>button]:hidden">
                             <DialogTitle className="sr-only">
-                                Choose Saved Question Paper From List
+                                {t('uploadSection.savedDialog.title')}
                             </DialogTitle>
                             <DialogDescription className="sr-only">
-                                Select a previously saved question paper to add to this section
+                                {t('uploadSection.savedDialog.description')}
                             </DialogDescription>
                             <div className="flex h-14 w-full items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Choose Saved Question Paper From List
+                                    {t('uploadSection.savedDialog.title')}
                                 </h1>
                                 <DialogClose
                                     className="mr-4 !border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -812,17 +879,16 @@ export const Step2SectionInfo = ({
                             }
                         }}
                         questions={selectorQuestions}
-                        paperId=""
                         onConfirm={handleSelectorConfirm}
                     />
                     <Step2CreateFromKnowledgeBase form={form} index={index} />
+                    <Step2PickFromQuestionBank form={form} index={index} />
                     <div className="relative overflow-hidden rounded-xl">
                         <Step2GenerateQuestionsFromAI form={form} index={index} />
                         <BorderBeam
                             size={120}
                             duration={10}
                             colorFrom="hsl(var(--primary-500))"
-                            colorTo="#9c40ff"
                         />
                     </div>
                     </div>
@@ -838,10 +904,10 @@ export const Step2SectionInfo = ({
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-semibold text-neutral-800">
-                                        Evaluation Criteria
+                                        {t('criteria.title')}
                                     </h3>
                                     <p className="text-xs text-neutral-500">
-                                        Let AI draft evaluation rubrics for every question.
+                                        {t('criteria.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -860,13 +926,16 @@ export const Step2SectionInfo = ({
                                     <>
                                         <Spinner className="animate-spin" />
                                         <span>
-                                            Stop ({bulkProgress.current}/{bulkProgress.total})
+                                            {t('criteria.stopProgress', {
+                                                current: bulkProgress.current,
+                                                total: bulkProgress.total,
+                                            })}
                                         </span>
                                     </>
                                 ) : (
                                     <>
                                         <Sparkle size={16} weight="fill" />
-                                        Generate All Criteria
+                                        {t('criteria.generateAll')}
                                     </>
                                 )}
                             </button>
@@ -874,14 +943,13 @@ export const Step2SectionInfo = ({
                                 size={100}
                                 duration={12}
                                 colorFrom="hsl(var(--primary-400))"
-                                colorTo="#9c40ff"
                             />
                         </div>
                     )}
 
                 <div className="flex flex-col gap-2" id="section-instructions">
                     <h3 className="text-sm font-semibold text-neutral-700">
-                        Section Description
+                        {t('sectionDescription.title')}
                     </h3>
                     <FormField
                         control={control}
@@ -893,7 +961,7 @@ export const Step2SectionInfo = ({
                                         onChange={field.onChange}
                                         onBlur={field.onBlur}
                                         value={field.value}
-                                        placeholder="Describe this section"
+                                        placeholder={t('sectionDescription.placeholder')}
                                         minHeight={120}
                                     />
                                 </FormControl>
@@ -905,7 +973,7 @@ export const Step2SectionInfo = ({
                 {watch(`testDuration.questionWiseDuration`) && examtype !== 'SURVEY' && (
                     <div className="flex w-96 items-center justify-between text-sm font-thin">
                         <h1 className="font-normal">
-                            Question Duration{' '}
+                            {t('duration.questionDuration')}{' '}
                             {getStepKey({
                                 assessmentDetails,
                                 currentStep,
@@ -946,7 +1014,7 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>hrs</span>
+                            <span>{t('duration.hrs')}</span>
                             <span>:</span>
                             <FormField
                                 control={control}
@@ -979,14 +1047,14 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>minutes</span>
+                            <span>{t('duration.minutes')}</span>
                         </div>
                     </div>
                 )}
                 {watch(`testDuration.sectionWiseDuration`) && examtype !== 'SURVEY' && (
                     <div className="flex w-96 items-center justify-between text-sm font-thin">
                         <h1 className="font-normal">
-                            Section Duration{' '}
+                            {t('duration.sectionDuration')}{' '}
                             {getStepKey({
                                 assessmentDetails,
                                 currentStep,
@@ -1027,7 +1095,7 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>hrs</span>
+                            <span>{t('duration.hrs')}</span>
                             <span>:</span>
                             <FormField
                                 control={control}
@@ -1060,7 +1128,7 @@ export const Step2SectionInfo = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>minutes</span>
+                            <span>{t('duration.minutes')}</span>
                         </div>
                     </div>
                 )}
@@ -1076,7 +1144,7 @@ export const Step2SectionInfo = ({
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-semibold text-neutral-800">
-                                        Marks Per Question
+                                        {t('markingScheme.marksPerQuestion.title')}
                                         {getStepKey({
                                             assessmentDetails,
                                             currentStep,
@@ -1086,7 +1154,7 @@ export const Step2SectionInfo = ({
                                         )}
                                     </h3>
                                     <p className="text-xs text-neutral-500">
-                                        Default marks awarded for correct answers
+                                        {t('markingScheme.marksPerQuestion.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -1130,7 +1198,7 @@ export const Step2SectionInfo = ({
                         <div className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 bg-white px-4 py-3">
                             <div className="flex flex-1 items-center gap-4">
                                 <h3 className="text-sm font-medium text-neutral-700">
-                                    Negative Marking
+                                    {t('markingScheme.negativeMarking')}
                                     {getStepKey({
                                         assessmentDetails,
                                         currentStep,
@@ -1205,7 +1273,7 @@ export const Step2SectionInfo = ({
                             render={({ field }) => (
                                 <FormItem className="flex items-center justify-between gap-4 space-y-0 rounded-lg border border-neutral-200 bg-white px-4 py-3">
                                     <FormLabel className="flex-1 text-sm font-medium text-neutral-700">
-                                        Partial Marking
+                                        {t('markingScheme.partialMarking')}
                                         {getStepKey({
                                             assessmentDetails,
                                             currentStep,
@@ -1300,7 +1368,7 @@ export const Step2SectionInfo = ({
                                         <Shuffle size={16} weight="bold" />
                                     </div>
                                     <FormLabel className="text-sm font-medium text-neutral-700">
-                                        Problem Randomization
+                                        {t('randomization.problemRandomization')}
                                     </FormLabel>
                                 </div>
                                 <FormControl>
@@ -1318,31 +1386,47 @@ export const Step2SectionInfo = ({
                         <div className="flex items-center justify-between border-b border-neutral-100 bg-neutral-50/60 px-4 py-3">
                             <h3 className="text-sm font-semibold text-neutral-800">
                                 {examtype === 'SURVEY'
-                                    ? 'Survey Questions'
-                                    : 'Adaptive Marking Rules'}
+                                    ? t('table.surveyQuestionsTitle')
+                                    : t('table.adaptiveMarkingRulesTitle')}
                             </h3>
                             <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-semibold text-primary-600">
-                                {allSections[index]?.adaptive_marking_for_each_question?.length}{' '}
-                                question
-                                {(allSections[index]?.adaptive_marking_for_each_question?.length ??
-                                    0) !== 1
-                                    ? 's'
-                                    : ''}
+                                {t('table.questionCount', {
+                                    count:
+                                        allSections[index]?.adaptive_marking_for_each_question
+                                            ?.length ?? 0,
+                                })}
                             </span>
                         </div>
                         <Table>
                             <TableHeader className="bg-neutral-50">
                                 <TableRow className="border-neutral-100 hover:bg-neutral-50">
-                                    <TableHead>Q.No.</TableHead>
+                                    <TableHead>{t('table.headers.qno')}</TableHead>
                                     <TableHead>
-                                        {examtype === 'SURVEY' ? 'Survey Question' : 'Question'}
+                                        {examtype === 'SURVEY'
+                                            ? t('table.headers.surveyQuestion')
+                                            : t('table.headers.question')}
                                     </TableHead>
-                                    <TableHead>Question Type</TableHead>
-                                    {examtype !== 'SURVEY' && <TableHead>Marks</TableHead>}
-                                    {examtype !== 'SURVEY' && <TableHead>Penalty</TableHead>}
+                                    <TableHead>{t('table.headers.questionType')}</TableHead>
+                                    {examtype !== 'SURVEY' && (
+                                        <TableHead>{t('table.headers.marks')}</TableHead>
+                                    )}
+                                    {examtype !== 'SURVEY' && (
+                                        <TableHead>{t('table.headers.penalty')}</TableHead>
+                                    )}
                                     {watch(`testDuration.questionWiseDuration`) &&
-                                        examtype !== 'SURVEY' && <TableHead>Time</TableHead>}
-                                    {examtype !== 'SURVEY' && <TableHead>Criteria</TableHead>}
+                                        examtype !== 'SURVEY' && (
+                                            <TableHead>{t('table.headers.time')}</TableHead>
+                                        )}
+                                    {examtype !== 'SURVEY' && (
+                                        <TableHead>{t('table.headers.criteria')}</TableHead>
+                                    )}
+                                    {assessmentId !== 'defaultId' && (
+                                        <TableHead>
+                                            <span className="sr-only">
+                                                {t('table.editQuestion')}
+                                            </span>
+                                        </TableHead>
+                                    )}
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="bg-white">
@@ -1358,6 +1442,12 @@ export const Step2SectionInfo = ({
                                                                 value={question.questionName || ''}
                                                                 editable={false}
                                                                 onChange={() => {}}
+                                                            />
+                                                            {/* The choices, key marked - a stem alone
+                                                                does not tell a teacher which option the
+                                                                AI will grade against. */}
+                                                            <QuestionOptionsList
+                                                                options={question.options}
                                                             />
                                                         </div>
                                                     </TableCell>
@@ -1509,6 +1599,38 @@ export const Step2SectionInfo = ({
                                                             />
                                                         </TableCell>
                                                     )}
+                                                    {assessmentId !== 'defaultId' && (
+                                                        <TableCell>
+                                                            {/* Saved assessments only: a new one has no
+                                                                question rows on the server to edit yet. */}
+                                                            {question.questionId && (
+                                                                <AssessmentQuestionEditDialog
+                                                                    assessmentId={assessmentId}
+                                                                    sectionId={form.getValues(
+                                                                        `section.${index}.sectionId`
+                                                                    )}
+                                                                    questionId={question.questionId}
+                                                                    examType={examtype}
+                                                                    onSaved={(saved) => {
+                                                                        setValue(
+                                                                            `section.${index}.adaptive_marking_for_each_question.${idx}.questionName`,
+                                                                            saved.questionName
+                                                                        );
+                                                                        setValue(
+                                                                            `section.${index}.adaptive_marking_for_each_question.${idx}.questionType`,
+                                                                            saved.questionType
+                                                                        );
+                                                                        setValue(
+                                                                            `section.${index}.adaptive_marking_for_each_question.${idx}.options`,
+                                                                            optionsOfSavedQuestion(
+                                                                                saved
+                                                                            )
+                                                                        );
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </TableCell>
+                                                    )}
                                                 </TableRow>
                                             );
                                         }
@@ -1523,7 +1645,7 @@ export const Step2SectionInfo = ({
                         <div className="flex items-center justify-end">
                             <div className="flex items-center gap-2 rounded-full border border-primary-200 bg-gradient-to-r from-primary-50 to-primary-100/50 px-4 py-1.5">
                                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-600">
-                                    Total Marks
+                                    {t('totalMarks.label')}
                                 </span>
                                 <NumberTicker
                                     value={Number(

@@ -1,0 +1,13 @@
+{
+    "emptyTitle": "No course content yet",
+    "emptyHint": "No {{term}} has been created for this batch.",
+    "subjectProgressHeading": "{{term}} progress",
+    "moduleCount_one": "{{count}} {{term}}",
+    "moduleCount_other": "{{count}} {{term}}s",
+    "moduleChapterBreakdownHeading": "{{term}} & chapter breakdown",
+    "selectSubjectPlaceholder": "Select {{term}}",
+    "noModulesForSubject": "No {{moduleTerm}}s for this {{subjectTerm}}.",
+    "moduleLabel": "{{term}}: {{name}}",
+    "noChaptersInModule": "No chapters in this {{term}}.",
+    "done": "Done"
+}

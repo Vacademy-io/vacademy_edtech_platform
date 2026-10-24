@@ -35,6 +35,9 @@ public class AiAgentDTO {
     private Double pace;
     /** Expressiveness 0.01–2.0; null = Sarvam model default (~0.6). */
     private Double temperature;
+    /** Voice modulation 1.0–2.5 (pitch-range expansion on the audio, any engine);
+     *  null = bot's global default (off). */
+    private Double voiceModulation;
     /** {@code rumik} | {@code sarvam}. Null on create = rumik; null on update keeps
      *  the stored engine, so an old client that does not send the field cannot
      *  silently reprice an agent. */

@@ -6,8 +6,6 @@ import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.html2pdf.HtmlConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,11 +22,13 @@ import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.requ
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.request.ReleaseRequestDto;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.request.RespondentFilter;
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.*;
+import vacademy.io.assessment_service.features.assessment.dto.batch_pending.NotAttemptedParticipants;
 import vacademy.io.assessment_service.features.assessment.dto.create_assessment.AssessmentRegistrationsDto;
 import vacademy.io.assessment_service.features.assessment.entity.*;
 import vacademy.io.assessment_service.features.assessment.enums.*;
 import vacademy.io.assessment_service.features.assessment.notification.AssessmentReportNotificationService;
 import vacademy.io.assessment_service.features.assessment.repository.*;
+import vacademy.io.assessment_service.features.assessment.sort.StableSort;
 import vacademy.io.assessment_service.features.assessment.service.HtmlBuilderService;
 import vacademy.io.assessment_service.features.assessment.service.QuestionBasedStrategyFactory;
 import vacademy.io.assessment_service.features.assessment.service.assessment_get.AssessmentService;
@@ -47,7 +47,6 @@ import vacademy.io.assessment_service.features.rich_text.entity.AssessmentRichTe
 import vacademy.io.assessment_service.features.rich_text.enums.TextType;
 import vacademy.io.assessment_service.features.rich_text.repository.AssessmentRichTextRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.core.standard_classes.ListService;
 import vacademy.io.common.core.utils.DateUtil;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.media.service.FileService;
@@ -59,11 +58,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
+
 import static vacademy.io.common.auth.enums.CompanyStatus.ACTIVE;
 
 @Slf4j
 @Component
 public class AssessmentParticipantsManager {
+    /** The one report per attempt (AI report when it exists, plus report-profile pages). Lazy: avoids a bean cycle. */
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    vacademy.io.assessment_service.features.assessment.service.aireport.AiReportPdfService aiReportPdfService;
+
     @Autowired
     AssessmentService assessmentService;
 
@@ -113,6 +119,9 @@ public class AssessmentParticipantsManager {
     AssessmentReportNotificationService assessmentReportNotificationService;
 
     @Autowired
+    vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService resultNotificationService;
+
+    @Autowired
     AssessmentNotificationService assessmentNotificationService;
 
     @Autowired
@@ -126,7 +135,10 @@ public class AssessmentParticipantsManager {
     private vacademy.io.assessment_service.features.client.AdminCoreServiceClient adminCoreServiceClient;
 
     @Autowired
-    private CacheManager cacheManager;
+    private vacademy.io.assessment_service.features.assessment.service.batch_pending.NotAttemptedLearnerService notAttemptedLearnerService;
+
+    @Autowired
+    private vacademy.io.assessment_service.features.assessment.service.ReleaseStateWriter releaseStateWriter;
 
     @Autowired
     private vacademy.io.assessment_service.features.assessment.service.ReportPdfRenderService reportPdfRenderService;
@@ -604,7 +616,7 @@ public class AssessmentParticipantsManager {
             AssessmentUserFilter filter, Pageable pageable) {
         Page<ParticipantsDetailsDto> registeredUserPage = null;
         if (isPendingAttempt(filter)) {
-            // TODO: Send request to admin core to get pending list for batch
+            registeredUserPage = findBatchLearnersWhoNeverAttempted(assessmentId, instituteId, filter, pageable);
         } else {
             // Handle Case for Attempted case i.e LIVE,PREVIEW,ENDED
             if (StringUtils.hasText(filter.getName())) {
@@ -623,6 +635,48 @@ public class AssessmentParticipantsManager {
         }
 
         return registeredUserPage;
+    }
+
+    /**
+     * Learners enrolled in this assessment's batches who never attempted it — the Pending
+     * tab for Batch Selection.
+     *
+     * <p>This cannot be a query in this database. A batch-enrolled learner gets NO
+     * {@code assessment_user_registration} row until they actually start the test, so the
+     * "never attempted" set does not exist here at all; only admin_core knows who is in
+     * the batch. So: take batch enrollment from admin_core, subtract everyone who has an
+     * attempt, sort and page the remainder.
+     *
+     * <p><b>Load.</b> The submissions page asks for this count on every mount, so the
+     * expensive part must not run per request:
+     * <ul>
+     *   <li>Enrollment comes from a cached client call, keyed on institute + batch set, so
+     *       repeat mounts, tab switches and paging share one admin_core round trip.</li>
+     *   <li>The exclusion is applied HERE, not pushed into admin_core's SQL as an array.
+     *       That predicate is unestimable and a generic plan re-evaluates it per row —
+     *       measured on prod, 22ms became 434-880ms, intermittently. Without it the
+     *       admin_core query is plan-stable at 22ms/28ms on the largest batch in prod.</li>
+     *   <li>An assessment with no batch registrations short-circuits before any HTTP or
+     *       DB work.</li>
+     * </ul>
+     *
+     * <p>Ordering matches the rest of the submissions list: learner name, then user id as
+     * a tie-breaker, so paging is stable (see {@code StableSort}).
+     */
+    /**
+     * Learners enrolled in this assessment's batches who never attempted it — the Pending
+     * tab for Batch Selection.
+     *
+     * <p>The resolution itself lives in {@link NotAttemptedLearnerService} because the CSV
+     * export asks the same question, and the two must never disagree about who is on the
+     * list. This method only pages the answer.
+     */
+    private Page<ParticipantsDetailsDto> findBatchLearnersWhoNeverAttempted(
+            String assessmentId, String instituteId, AssessmentUserFilter filter, Pageable pageable) {
+        return NotAttemptedParticipants.page(
+                NotAttemptedParticipants.toRows(
+                        notAttemptedLearnerService.findNotAttempted(assessmentId, instituteId, filter)),
+                pageable);
     }
 
     /**
@@ -725,19 +779,28 @@ public class AssessmentParticipantsManager {
                 .totalElements(registrationPage.getTotalElements()).build();
     }
 
-    // Sorting Object to Sort the values
+    // Fallback order for the participant/submission list when the client sends no
+    // sort (which is the default — the admin table only sets sort_columns once a
+    // header is clicked). Alphabetical by learner is what an evaluator working
+    // down the list expects; the DB collation is en_US.UTF-8, so this reads
+    // naturally rather than grouping by case.
+    private static final Sort DEFAULT_PARTICIPANT_SORT = Sort.by(Sort.Order.asc("studentName"));
+
+    // Unique-per-row tie-breakers. (registrationId, attemptId) is unique in every
+    // one of these queries — a registration with several attempts yields one row
+    // per attempt, so registrationId alone is not enough. Both are SELECT aliases
+    // in all six paged participant queries.
+    private static final String[] PARTICIPANT_TIE_BREAKERS = { "registrationId", "attemptId" };
+
+    // Sorting Object to Sort the values.
+    //
+    // Never returns Sort.unsorted(): these are native queries with no ORDER BY of
+    // their own, so an unsorted Pageable let Postgres hand back rows in heap
+    // order. Grading a submission rewrites its student_attempt row to a new heap
+    // slot, which reshuffled the list under the evaluator and — with LIMIT/OFFSET
+    // paging — could show one learner twice while skipping another entirely.
     private Sort createSortObject(Map<String, String> sortColumns) {
-        if (sortColumns == null)
-            return Sort.unsorted();
-
-        List<Sort.Order> orders = new ArrayList<>();
-
-        for (Map.Entry<String, String> entry : sortColumns.entrySet()) {
-            Sort.Direction direction = "DESC".equalsIgnoreCase(entry.getValue()) ? Sort.Direction.DESC
-                    : Sort.Direction.ASC;
-            orders.add(new Sort.Order(direction, entry.getKey()));
-        }
-        return Sort.by(orders);
+        return StableSort.withStableOrder(sortColumns, DEFAULT_PARTICIPANT_SORT, PARTICIPANT_TIE_BREAKERS);
     }
 
     // Sentinel used when no evaluation-status filter is applied. The native queries
@@ -1089,7 +1152,11 @@ public class AssessmentParticipantsManager {
 
         if (Objects.isNull(filter))
             throw new VacademyException("Invalid Request");
-        Sort sortingObject = ListService.createSortObject(filter.getSortColumns());
+        // Same unsorted-native-query problem as the participant list above, but the
+        // respondent queries select participantName (not studentName), so the
+        // default and tie-breakers have to use this query's own aliases.
+        Sort sortingObject = StableSort.withStableOrder(filter.getSortColumns(),
+                Sort.by(Sort.Order.asc("participantName")), "registrationId", "attemptId");
 
         Pageable pageable = PageRequest.of(pageNo, pageSize, sortingObject);
         Page<RespondentListDto> responses = null;
@@ -1152,7 +1219,9 @@ public class AssessmentParticipantsManager {
         if (!StringUtils.hasText(type))
             throw new VacademyException("Invalid Request Type");
 
-        Optional<Assessment> assessmentOptional = assessmentRepository.findById(assessmentId);
+        // Tenant check: the assessment must belong to the institute in the request.
+        Optional<Assessment> assessmentOptional = assessmentRepository.findByAssessmentIdAndInstituteId(assessmentId,
+                instituteId);
         if (assessmentOptional.isEmpty())
             throw new VacademyException("No Assessment Found");
 
@@ -1216,6 +1285,14 @@ public class AssessmentParticipantsManager {
      */
     private void createParticipantsReportAndSendEmail(List<StudentAttempt> attemptList, Assessment assessment,
             String instituteId) {
+        if (ApiCandidatePolicy.isApiExam(assessment)) {
+            // Exams created through the partner API (spec 12): Release Result is the
+            // state change only. API candidates have no login and no email, so no report
+            // PDF is rendered and nothing is sent; the ASSESSMENT_RESULT_RELEASED workflow
+            // is not fired for them either.
+            releaseStateWriter.release(attemptList);
+            return;
+        }
         if (assessment.getEvaluationType().equals("MANUAL")) {
             handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId);
             return;
@@ -1239,7 +1316,16 @@ public class AssessmentParticipantsManager {
         // duplicated HTML/PDF generation code (now shared via
         // ReportPdfRenderService), and a failed upload no longer silently
         // leaves report_pdf_file_id unset (ReportPdfUploadService throws).
+        //
+        // Emails now go out in batches as reports are made: holding every PDF until the end
+        // and sending one request with all of them breaks on large classes once each report
+        // is the AI report plus profile pages (~2 MB each, 2.7 MB as base64): 5 per request.
+        final int emailBatch = 5;
         Map<StudentAttempt, byte[]> reportMap = new HashMap<>();
+        // The result email / WhatsApp templates for this assessment, looked up once per release.
+        final vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Templates resultTemplates =
+                resultNotificationService.resolve(instituteId, assessment.getId());
+        final Map<String, Map<String, String>> variablesByAttempt = new HashMap<>();
         attemptList.forEach(attempt -> {
             try {
                 // Skip attempts that were never submitted (no meaningful report to generate)
@@ -1263,8 +1349,14 @@ public class AssessmentParticipantsManager {
                     log.warn("Failed to build comparison for attempt {}: {}", attempt.getId(), e.getMessage());
                 }
 
-                // Render HTML -> PDF via the shared render service (no duplicated logic)
-                byte[] participantPdfReport = reportPdfRenderService.render(studentReportOverallDetailDto, comparison, ctx);
+                // The student's one report: the AI report when it exists, else the normal report,
+                // wrapped in the assessment's report-profile pages (e.g. a scholarship letter).
+                final vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto cmp = comparison;
+                var rendered = aiReportPdfService.renderWithVariables(userId, assessment.getId(), attempt.getId(),
+                        instituteId, studentReportOverallDetailDto,
+                        () -> reportPdfRenderService.render(studentReportOverallDetailDto, cmp, ctx));
+                byte[] participantPdfReport = rendered.pdf();
+                variablesByAttempt.put(attempt.getId(), rendered.variables());
 
                 // Upload PDF to storage and cache the file ID. Throws on failure —
                 // caught below so one student's upload failure doesn't stop the batch.
@@ -1282,29 +1374,73 @@ public class AssessmentParticipantsManager {
 
                 // Send notification to the student
                 reportMap.put(attempt, participantPdfReport);
+                if (reportMap.size() >= emailBatch) {
+                    sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
+                    publishResultReleasedFor(reportMap);
+                    reportMap.clear();
+                }
             } catch (Exception e) {
                 log.error("Failed to generate report for attempt {}: {}", attempt.getId(), e.getMessage());
                 // Still release the attempt even if PDF generation fails
                 updateAttemptDataReleaseData(attempt);
             }
         });
-        sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
-        publishResultReleasedFor(reportMap);
+        if (!reportMap.isEmpty()) {
+            sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
+            publishResultReleasedFor(reportMap);
+        }
+    }
+
+    /** Email (always, from the bound or default template) and WhatsApp (when bound) for one batch. */
+    private void sendResultNotifications(Map<StudentAttempt, byte[]> reports, Map<String, Map<String, String>> variablesByAttempt,
+                                         String assessmentId, String instituteId,
+                                         vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Templates templates) {
+        if (!adminCoreServiceClient.isLearnerResultNotificationEnabled(instituteId)) {
+            log.info("[result-notification] learner notifications disabled for institute {} — skipping", instituteId);
+            return;
+        }
+        List<vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Item> items = new ArrayList<>();
+        reports.forEach((attempt, pdf) -> items.add(new vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Item(
+                attempt, pdf, variablesByAttempt.getOrDefault(attempt.getId(), Map.of()))));
+        try {
+            resultNotificationService.sendEmails(items, assessmentId, instituteId, templates);
+        } catch (Exception e) {
+            log.error("[result-notification] email batch failed for assessment {}", assessmentId, e);
+        }
+        try {
+            resultNotificationService.sendWhatsApps(items, assessmentId, instituteId, templates);
+        } catch (Exception e) {
+            log.error("[result-notification] WhatsApp batch failed for assessment {}", assessmentId, e);
+        }
     }
 
     private void handleParticipantsReportCreationForManualAssessment(List<StudentAttempt> attemptList,
             Assessment assessment, String instituteId) {
         Map<StudentAttempt, byte[]> reportMap = new HashMap<>();
         attemptList.forEach(attempt -> {
-
-            // Convert the PDF stream to a byte array
-            byte[] participantPdfReport = fileService.getFileFromFileId(attempt.getEvaluatedFileId());
+            // The checked copy is what a manual-result learner receives. An attempt
+            // may have none — the AI check failed and the teacher entered marks
+            // without uploading a checked PDF — and one such attempt must not
+            // abort the release (and the emails) of everyone after it in the list.
+            byte[] checkedCopy = null;
+            if (StringUtils.hasText(attempt.getEvaluatedFileId())) {
+                try {
+                    checkedCopy = fileService.getFileFromFileId(attempt.getEvaluatedFileId());
+                } catch (Exception e) {
+                    log.warn("Checked copy {} for attempt {} could not be fetched; releasing without it: {}",
+                            attempt.getEvaluatedFileId(), attempt.getId(), e.getMessage());
+                }
+            } else {
+                log.info("Attempt {} has no checked copy; releasing marks without an attachment", attempt.getId());
+            }
 
             // Update attempt status
             updateAttemptDataReleaseData(attempt);
 
-            // Send notification to the student
-            reportMap.put(attempt, participantPdfReport);
+            // Email + workflow only for learners who actually have a copy to receive.
+            if (checkedCopy != null) {
+                reportMap.put(attempt, checkedCopy);
+            }
         });
         sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
         publishResultReleasedFor(reportMap);
@@ -1316,17 +1452,9 @@ public class AssessmentParticipantsManager {
      * @param attempt The student attempt to update.
      */
     private void updateAttemptDataReleaseData(StudentAttempt attempt) {
-        attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
-        attempt.setReportLastReleaseDate(DateUtil.getCurrentUtcTime());
-        studentAttemptRepository.save(attempt);
-        // Bust the per-attempt comparison cache so freshly-released results
-        // don't get masked by a stale studentMarks=0 entry from before scoring.
-        try {
-            Cache cache = cacheManager.getCache("comparisonData");
-            if (cache != null) cache.clear();
-        } catch (Exception e) {
-            log.warn("Failed to evict comparisonData cache after release: {}", e.getMessage());
-        }
+        // Shared with the partner API's finalize (ReleaseStateWriter): status, release
+        // date, save, then one comparisonData cache clear -- per attempt here, as before.
+        releaseStateWriter.release(attempt);
     }
 
     /**
@@ -1385,9 +1513,20 @@ public class AssessmentParticipantsManager {
         if (Objects.isNull(request))
             throw new VacademyException("Invalid Request");
 
-        // Fetch attempts based on request
+        // Fetch attempts based on request. Only attempts on THIS assessment: the ids
+        // come from the client, and the assessment was the only thing tenant-checked.
         List<StudentAttempt> attemptList = StreamSupport
                 .stream(studentAttemptRepository.findAllById(request.getAttemptIds()).spliterator(), false)
+                .filter(attempt -> {
+                    boolean onAssessment = attempt.getRegistration() != null
+                            && attempt.getRegistration().getAssessment() != null
+                            && assessment.getId().equals(attempt.getRegistration().getAssessment().getId());
+                    if (!onAssessment) {
+                        log.warn("[release-result] skipping attempt {} not on assessment {}", attempt.getId(),
+                                assessment.getId());
+                    }
+                    return onAssessment;
+                })
                 .toList();
 
         createParticipantsReportAndSendEmail(attemptList, assessment, instituteId);

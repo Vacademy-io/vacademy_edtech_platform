@@ -1,0 +1,10 @@
+{
+    "free": "मुफ़्त",
+    "planStatus": "योजना स्थिति",
+    "planLabel": "{{plan}} योजना",
+    "awaitingAdmin": "व्यवस्थापक की प्रतीक्षा",
+    "noPlan": "कोई योजना नहीं",
+    "totalLearners": "कुल शिक्षार्थी",
+    "totalSeats": "कुल सीटें",
+    "adminOutstanding": "व्यवस्थापक बकाया"
+}

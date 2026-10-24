@@ -1,0 +1,36 @@
+{
+    "statuses": {
+        "title": "Status"
+    },
+    "gender": {
+        "title": "Gender"
+    },
+    "sessionExpiry": {
+        "titleSuffix": "Expiry",
+        "optionLabel": "Expiring in {{days}} days"
+    },
+    "paymentStatus": {
+        "title": "Payment Status",
+        "paid": "Paid",
+        "failed": "Failed",
+        "paymentFailed": "Payment Failed"
+    },
+    "approvalStatus": {
+        "title": "Approval Status",
+        "pendingForApproval": "Pending for Approval",
+        "invited": "Invited"
+    },
+    "cartStatus": {
+        "title": "Cart Status",
+        "abandonedCart": "Abandoned Cart"
+    },
+    "role": {
+        "title": "Role"
+    },
+    "subOrg": {
+        "title": "Sub-Org"
+    },
+    "audience": {
+        "title": "Audience"
+    }
+}

@@ -1,29 +1,32 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile, AdmissionTimelineEvent } from "@/types/parent-portal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, ArrowRight, Circle, CalendarDots, Flag } from "@phosphor-icons/react";
+import { formatDate } from "@/lib/formatters";
 
 interface Props { child: ChildProfile; timeline: AdmissionTimelineEvent[] }
 
 export function TrackerDemo({ child, timeline }: Props) {
+  const { t } = useTranslation("parent");
   const done = timeline.filter(e => e.status === "COMPLETED").length;
   const pct = Math.round((done / timeline.length) * 100);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto w-full space-y-5 pb-20 lg:pb-8">
-      <div><h2 className="text-lg sm:text-xl font-bold text-foreground">Admission Tracker</h2><p className="text-sm text-muted-foreground mt-0.5">Full journey for {child.full_name}</p></div>
+      <div><h2 className="text-lg sm:text-xl font-bold text-foreground">{t("admissionPortal.tracker.heading")}</h2><p className="text-sm text-muted-foreground mt-0.5">{t("admissionPortal.demo.fullJourneyFor", { name: child.full_name })}</p></div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="shadow-sm overflow-hidden"><CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><Flag size={16} className="text-primary" /><p className="text-sm font-semibold">Overall Progress</p></div><Badge variant="outline" className="text-xs">{done} / {timeline.length} steps</Badge></div>
-          <div className="relative h-2 rounded-full bg-muted overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} className="absolute inset-y-0 start-0 bg-gradient-to-r from-primary to-emerald-500 rounded-full" /></div>
-          <p className="text-xs text-muted-foreground mt-1.5 text-end">{pct}% complete</p>
+        <Card className="shadow-sm overflow-hidden"><CardContent className="p-card">
+          <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><Flag size={16} className="text-primary" /><p className="text-sm font-semibold">{t("admissionPortal.tracker.overallProgress")}</p></div><Badge variant="outline" className="text-xs">{t("admissionPortal.tracker.stepsCount", { completed: done, total: timeline.length })}</Badge></div>
+          <div className="relative h-2 rounded-full bg-muted overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} className="absolute inset-y-0 start-0 bg-gradient-to-r from-primary to-success-500 rounded-full" /></div>
+          <p className="text-xs text-muted-foreground mt-1.5 text-end">{t("admissionPortal.tracker.percentComplete", { percent: pct })}</p>
         </CardContent></Card>
       </motion.div>
 
       <Card className="shadow-sm">
-        <CardHeader className="pb-4"><CardTitle className="text-base flex items-center gap-2"><CalendarDots size={16} />Journey Timeline</CardTitle></CardHeader>
+        <CardHeader className="pb-4"><CardTitle className="text-base flex items-center gap-2"><CalendarDots size={16} />{t("admissionPortal.demo.journeyTimeline")}</CardTitle></CardHeader>
         <CardContent>
           <div className="relative">{timeline.map((e, i) => {
             const comp = e.status === "COMPLETED", cur = e.status === "CURRENT", up = e.status === "UPCOMING", skip = e.status === "SKIPPED", last = i === timeline.length - 1;
@@ -38,9 +41,9 @@ export function TrackerDemo({ child, timeline }: Props) {
                 <div className={`flex-1 pb-6 min-w-0 ${up ? "opacity-50" : ""} ${skip ? "opacity-40" : ""}`}>
                   <div className="flex items-start justify-between gap-2">
                     <div><p className={`text-sm font-semibold ${cur ? "text-primary" : comp ? "text-foreground" : "text-muted-foreground"}`}>{e.title}</p>{e.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{e.description}</p>}</div>
-                    {cur && <Badge className="bg-primary/10 text-primary text-caption shrink-0 animate-pulse">Current</Badge>}
+                    {cur && <Badge className="bg-primary/10 text-primary text-caption shrink-0 animate-pulse">{t("admissionPortal.demo.current")}</Badge>}
                   </div>
-                  {e.timestamp && <p className="text-caption text-muted-foreground/60 mt-1">{new Date(e.timestamp).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</p>}
+                  {e.timestamp && <p className="text-caption text-muted-foreground/60 mt-1">{formatDate(e.timestamp, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</p>}
                 </div>
               </motion.div>
             );

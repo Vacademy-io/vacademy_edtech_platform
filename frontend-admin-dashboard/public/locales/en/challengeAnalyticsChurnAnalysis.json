@@ -1,0 +1,33 @@
+{
+    "title": "Attrition & Churn Analysis",
+    "noData": "No data available for churn analysis",
+    "subtitle": "Identify drop-off points and optimize engagement",
+    "churnRate": "Churn Rate",
+    "retention": "Retention",
+    "funnelHeading": "User Drop-off Funnel",
+    "funnelInsufficientData": "Insufficient data for funnel visualization",
+    "usersTooltip_one": "{{count}} user",
+    "usersTooltip_other": "{{count}} users",
+    "critical": "Critical",
+    "urgent": "Urgent",
+    "warning": "Warning",
+    "noCriticalIssues": "No critical issues detected! Engagement is healthy.",
+    "recommendationsHeading": "Recommendations",
+    "alerts": {
+        "noOutgoingMessages": "Day {{dayNumber}} has no outgoing messages",
+        "lowResponseRate": "Day {{dayNumber}} has {{rate}}% response rate",
+        "suddenDrop": "{{dropPercentage}}% drop from Day {{previousDay}} to Day {{dayNumber}}"
+    },
+    "actions": {
+        "scheduleContentImmediately": "Schedule content immediately",
+        "reviewAndOptimizeContent": "Review and optimize content",
+        "investigateContentChange": "Investigate content change"
+    },
+    "recommendations": {
+        "scheduleAutomatedMessages": "Schedule automated messages for days with no content",
+        "reviewContentStrategy": "Review content strategy - significant engagement drops detected",
+        "addIncentives": "Consider adding incentives or engagement hooks mid-challenge",
+        "abTestFormats": "A/B test different message formats to improve response rates",
+        "healthyEngagement": "Great job! Engagement levels are healthy. Consider targeting power users for referrals."
+    }
+}

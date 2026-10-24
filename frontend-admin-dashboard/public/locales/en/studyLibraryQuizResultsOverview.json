@@ -1,0 +1,58 @@
+{
+    "filter": {
+        "all": "All quizzes",
+        "attempted": "Attempted",
+        "notStarted": "Not started",
+        "needsAttention": "Needs attention"
+    },
+    "sort": {
+        "courseOrder": "Course order",
+        "lowestAvgScore": "Lowest average score",
+        "highestAvgScore": "Highest average score",
+        "lowestParticipation": "Lowest participation",
+        "mostRecentActivity": "Most recent activity"
+    },
+    "header": {
+        "quiz": "Quiz",
+        "questions": "Questions",
+        "attempted": "Attempted",
+        "avgScore": "Average score",
+        "passed": "Passed",
+        "lastActivity": "Last activity"
+    },
+    "untitledQuiz": "Untitled quiz",
+    "marks_one": "{{count}} mark",
+    "marks_other": "{{count}} marks",
+    "noAttemptsYet": "No attempts yet",
+    "passLabel": "pass {{percent}}%",
+    "noPassMark": "No pass mark",
+    "error": {
+        "title": "Could not load quiz results",
+        "subtitle": "The request failed. Check your connection and try again."
+    },
+    "retry": "Retry",
+    "stat": {
+        "quizzes": "Quizzes",
+        "quizzesHintNotStarted_one": "{{count}} not started yet",
+        "quizzesHintNotStarted_other": "{{count}} not started yet",
+        "quizzesHintAllAttempts": "All have attempts",
+        "learnersStarted": "Learners started",
+        "learnersStartedHint": "At least one quiz done",
+        "avgScore": "Average score",
+        "avgScoreHint": "Across all attempts",
+        "needsAttention": "Needs attention",
+        "needsAttentionHint": "Quizzes averaging under 50%"
+    },
+    "search": {
+        "placeholder": "Search quizzes or chapters"
+    },
+    "filterGroupAriaLabel": "Filter quizzes",
+    "refreshAriaLabel": "Refresh quiz results",
+    "empty": {
+        "noneTitle": "No quizzes in this course yet",
+        "filteredTitle": "No quizzes match these filters",
+        "noneSubtitle": "Add a quiz slide to a chapter and its results will show up here as soon as learners attempt it.",
+        "filteredSubtitle": "Try a different search term or clear the filters."
+    },
+    "clearFilters": "Clear filters"
+}

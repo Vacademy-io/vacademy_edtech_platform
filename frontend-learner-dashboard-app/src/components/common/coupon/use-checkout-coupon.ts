@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     validateCouponGeneric,
     couponErrorMessage,
     CouponValidateRequest,
     CouponValidateResponse,
 } from "@/services/coupon";
+import { useCatalogueLocale } from "@/routes/$tagName/-utils/catalogue-locale";
 
 export interface CheckoutCouponState {
     code: string;
@@ -46,6 +48,11 @@ export const useCheckoutCoupon = ({
     onApplied,
     onCleared,
 }: UseCheckoutCouponOpts) => {
+    const { t } = useTranslation("layoutCommonB");
+    // On a public site with languages `t` reads the site's language
+    // (CatalogueLocaleProvider), and the server's errors that name the course
+    // are put through it; anywhere else they stay the English copy.
+    const { enabled: siteLanguages } = useCatalogueLocale();
     const [state, setState] = useState<CheckoutCouponState>(initialState);
 
     const setCode = useCallback((code: string) => {
@@ -65,7 +72,7 @@ export const useCheckoutCoupon = ({
             const raw = typeof override === "string" ? override : state.code;
             const code = raw.trim().toUpperCase();
             if (!code) {
-                setState((prev) => ({ ...prev, error: "Enter a coupon code first." }));
+                setState((prev) => ({ ...prev, error: t("couponInput.errors.enterCodeFirst") }));
                 return;
             }
             setState((prev) => ({ ...prev, isApplying: true, error: null }));
@@ -76,7 +83,7 @@ export const useCheckoutCoupon = ({
                     setState((prev) => ({
                         ...prev,
                         isApplying: false,
-                        error: couponErrorMessage(resp.message),
+                        error: couponErrorMessage(resp.message, siteLanguages ? t : undefined),
                     }));
                     return;
                 }
@@ -98,11 +105,11 @@ export const useCheckoutCoupon = ({
                         (e as { response?: { data?: { message?: string } } })?.response?.data
                             ?.message ??
                         (e as Error)?.message ??
-                        "Could not apply coupon. Please try again.",
+                        t("couponInput.errors.applyFailed"),
                 }));
             }
         },
-        [buildRequest, onApplied, state.code]
+        [buildRequest, onApplied, state.code, siteLanguages, t]
     );
 
     const clear = useCallback(() => {

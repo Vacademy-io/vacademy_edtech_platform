@@ -1,0 +1,140 @@
+{
+    "header": {
+        "title": "Deduplication",
+        "description": "Control what happens when a new lead submission matches one that already exists. Off by default — turning this on does not affect leads already captured."
+    },
+    "loading": "Loading deduplication settings…",
+    "enabled": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "fields": {
+        "matchBy": {
+            "label": "Match leads by",
+            "hint": "Which identifier counts as a duplicate.",
+            "placeholder": "Select field",
+            "options": {
+                "email": "Email address",
+                "phone": "Phone number"
+            }
+        },
+        "scope": {
+            "label": "Applies to",
+            "hint": "Check only the lead list being submitted to, a specific set of lead lists, or every lead list in the institute.",
+            "placeholder": "Select scope",
+            "options": {
+                "campaign": "This lead list only",
+                "selected": "Specific lead lists",
+                "institute": "All lead lists in this institute"
+            }
+        },
+        "audienceLists": {
+            "label": "Lead lists",
+            "hint": "Duplicates are checked across only the lead lists picked here. Selecting all of them switches this to institute-wide automatically.",
+            "placeholder": "Select lead lists",
+            "placeholderLoading": "Loading lead lists…"
+        },
+        "action": {
+            "label": "When a duplicate is found",
+            "hint": "Block the submission, or let it through and apply the repeat-lead rules below.",
+            "placeholder": "Select action",
+            "options": {
+                "reject": "Reject the submission",
+                "allowReassign": "Allow it through and reassign"
+            }
+        }
+    },
+    "repeatLead": {
+        "title": "Repeat lead handling",
+        "counsellorMode": {
+            "label": "Assign a counsellor?",
+            "placeholder": "Select",
+            "options": {
+                "none": "Don't assign one",
+                "sameAsPrevious": "Keep their previous counsellor",
+                "specific": "Always assign a specific counsellor",
+                "roundRobin": "Use round-robin, same as new leads"
+            }
+        },
+        "counsellorPicker": {
+            "label": "Counsellor"
+        },
+        "statusMode": {
+            "label": "Lead status",
+            "placeholder": "Select",
+            "options": {
+                "keepExisting": "Keep their current status",
+                "resetToNew": "Reset to New",
+                "resetClosedToNew": "Reset to New only if converted or discarded"
+            }
+        },
+        "alsoMatchEmail": {
+            "label": "Also match on email",
+            "hint": "An enquiry with a new phone number still counts as a repeat when its email matches an existing lead (e.g. a Google form prefilled with another number)."
+        },
+        "samePersonByPhone": {
+            "label": "Treat the same phone as the same person",
+            "hint": "A repeat enquiry with a new email joins the existing lead and keeps its counsellor, instead of becoming a second lead."
+        },
+        "blockOwnedManualAdd": {
+            "label": "Stop counsellors adding another counsellor's lead",
+            "hint": "When a counsellor adds a lead by hand and the phone already belongs to another counsellor's lead, show who owns it and don't add it. Admins can still add."
+        },
+        "blockOpenLeadManualAdd": {
+            "label": "Stop counsellors adding a lead that is still open",
+            "hint": "When a counsellor adds a lead by hand and it already exists and is still being worked (not converted or discarded), show a message and don't add it, whoever owns it. A discarded or converted lead can be added again. Admins can still add."
+        },
+        "reattempt": {
+            "title": "Reattempt (an existing lead enquires again)",
+            "hint": "What a repeat enquiry leaves behind. Each switch works on its own.",
+            "markDuplicate": {
+                "label": "Mark the repeat as Duplicate",
+                "hint": "The new enquiry is flagged as a duplicate of the lead it repeats, so it can be told apart and filtered."
+            },
+            "duplicateOpenOnly": {
+                "label": "Only while the earlier lead is open",
+                "hint": "A repeat is a duplicate only when the earlier lead is neither converted nor discarded. A repeat of a converted or discarded lead comes in as a new lead."
+            },
+            "journeyEntry": {
+                "label": "Add a Reattempt entry to the lead journey",
+                "hint": "The original lead's journey shows when and through which source the person enquired again."
+            },
+            "notifyOwner": {
+                "label": "Notify the lead's counsellor",
+                "hint": "The counsellor who owns the lead gets a Reattempt bell notification (not when they added it themselves)."
+            },
+            "followUp": {
+                "label": "Open a priority follow-up",
+                "hint": "A follow-up due now is opened for the lead's counsellor, and the lead is listed first on the Follow-ups page until it is closed."
+            },
+            "showBadge": {
+                "label": "Show a Duplicate badge in lead tables",
+                "hint": "Duplicate enquiries show a Duplicate badge next to the lead name."
+            },
+            "duplicatesTabOnly": {
+                "label": "Show duplicates only in Duplicate Leads",
+                "hint": "Duplicate enquiries are listed only on the Duplicate Leads tab. All Leads and the other lead lists show the lead once, with a Duplicate badge. Turn off to keep the lists as they are."
+            },
+            "tier": {
+                "label": "Set {{tier}} to",
+                "hint": "The lead's {{tier}} changes to this when the person enquires again.",
+                "keep": "Don't change"
+            }
+        }
+    },
+    "counsellorPicker": {
+        "clearAriaLabel": "Clear selected counsellor",
+        "searchPlaceholder": "Type to search counsellors…",
+        "searching": "Searching…"
+    },
+    "toasts": {
+        "saved": "Deduplication settings saved",
+        "saveFailed": "Failed to save deduplication settings",
+        "pickLeadList": "Pick at least one lead list, or choose a different scope",
+        "pickCounsellor": "Pick a counsellor, or choose a different repeat-lead counsellor option"
+    },
+    "footer": {
+        "save": "Save deduplication settings",
+        "saving": "Saving…"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "Vsmart अपलोड"
+    },
+    "fields": {
+        "prompt": {
+            "label": "अपना प्रॉम्प्ट दर्ज करें",
+            "placeholder": "अपना प्रॉम्प्ट यहाँ दर्ज करें..."
+        }
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "regenerate": "फिर से जनरेट करें"
+    }
+}

@@ -50,6 +50,10 @@ public class ReportPdfRenderService {
     @Autowired
     private StudentReportHtmlV2Builder studentReportHtmlV2Builder;
 
+    /** Report option: an assessment's profile can hide every per-question item. */
+    @Autowired
+    private vacademy.io.assessment_service.features.assessment.service.aireport.ReportProfileService reportProfileService;
+
     @Autowired
     private StudentReportAnalyticsService studentReportAnalyticsService;
 
@@ -146,6 +150,8 @@ public class ReportPdfRenderService {
                 .fullLeaderboard(ctx.getFullLeaderboard())
                 .sections(ctx.getSections())
                 .analytics(analytics)
+                .hideQuestionWise(ctx.getAssessmentId() != null && ctx.getInstituteId() != null
+                        && reportProfileService.hideQuestionWise(ctx.getAssessmentId(), ctx.getInstituteId()))
                 .build());
     }
 

@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "overview": "Aperçu",
+        "courses": "Cours",
+        "learningProgress": "Progression",
+        "testRecord": "Tests",
+        "paymentHistory": "Historique des paiements",
+        "enrollDeroll": "Inscription / Désinscription",
+        "membership": "Adhésion",
+        "lead": "Profil du prospect",
+        "enquiry": "Demande de renseignements",
+        "application": "Candidature",
+        "notifications": "Communication",
+        "portalAccess": "Accès au portail",
+        "userTagging": "Étiquetage utilisateur",
+        "badges": "Badges",
+        "files": "Fichiers",
+        "parent": "Tuteur",
+        "onboarding": "Intégration",
+        "subOrg": "Sous-organisation",
+        "reports": "Rapports",
+        "fullHistory": "Historique complet",
+        "workflows": "Workflows"
+    }
+}

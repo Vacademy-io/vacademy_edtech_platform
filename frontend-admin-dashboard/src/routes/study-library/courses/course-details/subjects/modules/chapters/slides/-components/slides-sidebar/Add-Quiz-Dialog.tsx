@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { UploadQuestionPaperFormType } from '@/routes/assessment/question-papers/-components/QuestionPaperUpload';
 import { uploadQuestionPaperFormSchema } from '@/routes/assessment/question-papers/-utils/upload-question-paper-form-schema';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { toast } from 'sonner';
 import {
@@ -64,6 +65,7 @@ function getExtraField<T = unknown>(q: unknown, key: keyof ExtraQuestionFields):
 }
 
 const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) => {
+    const { t } = useTranslation('studyLibraryAddQuizDialog');
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { setActiveItem, setItems, items } = useContentStore();
 
@@ -116,13 +118,13 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
         questions: UploadQuestionPaperFormType['questions']
     ): Promise<string | null> => {
         if (!questions || questions.length === 0) {
-            toast.error('No questions provided for quiz creation.');
+            toast.error(t('errors.noQuestions'));
             return null;
         }
 
         const quizSlides = items.filter((slide) => slide.source_type === 'QUIZ');
         const quizIndex = quizSlides.length + 1;
-        const autoTitle = `Quiz ${quizIndex}`;
+        const autoTitle = t('quizTitle', { number: quizIndex });
 
         // Check for duplicate titles
         const existingTitles = quizSlides.map((slide) => slide.title.toLowerCase().trim());
@@ -132,10 +134,10 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
         if (existingTitles.includes(proposedTitle)) {
             // Find the next available number
             let counter = quizIndex + 1;
-            let newTitle = `Quiz ${counter}`;
+            let newTitle = t('quizTitle', { number: counter });
             while (existingTitles.includes(newTitle.toLowerCase().trim())) {
                 counter++;
-                newTitle = `Quiz ${counter}`;
+                newTitle = t('quizTitle', { number: counter });
             }
 
 
@@ -449,13 +451,13 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
                     slideOrderPayload: reorderedSlides,
                 });
 
-                toast.success('Quiz added successfully!');
+                toast.success(t('toasts.quizAdded'));
                 quizQuestionForm.reset();
                 return response;
             }
         } catch (error) {
             console.error('Error creating quiz slide:', error);
-            toast.error('Failed to add quiz');
+            toast.error(t('errors.addFailed'));
         }
 
         return null;
@@ -509,14 +511,14 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
         const questions = quizQuestionForm.getValues('questions');
 
         if (!questions || questions.length === 0) {
-            toast.error('Please add at least one question before creating the quiz.');
+            toast.error(t('errors.addAtLeastOneQuestion'));
             return null;
         }
 
         // Validate that all questions have required fields
         const invalidQuestions = questions.filter((q) => !q.questionName || !q.questionName.trim());
         if (invalidQuestions.length > 0) {
-            toast.error('All questions must have a question name.');
+            toast.error(t('errors.questionNameRequired'));
             return null;
         }
 
@@ -524,7 +526,7 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
         const slideId = await createSlide(questions);
 
         if (!slideId) {
-            toast.error('Quiz slide creation failed.');
+            toast.error(t('errors.slideCreationFailed'));
             return null;
         }
 
@@ -537,7 +539,9 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
                 id: slideId,
                 source_id: slideId,
                 source_type: 'QUIZ',
-                title: `Quiz ${items.filter((slide) => slide.source_type === 'QUIZ').length + 1}`,
+                title: t('quizTitle', {
+                    number: items.filter((slide) => slide.source_type === 'QUIZ').length + 1,
+                }),
                 image_file_id: '',
                 description: 'Quiz',
                 status: 'DRAFT',
@@ -548,7 +552,9 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
                 assignment_slide: null,
                 quiz_slide: {
                     id: crypto.randomUUID(),
-                    title: `Quiz ${items.filter((slide) => slide.source_type === 'QUIZ').length + 1}`,
+                    title: t('quizTitle', {
+                        number: items.filter((slide) => slide.source_type === 'QUIZ').length + 1,
+                    }),
                     description: { id: '', content: '', type: 'TEXT' },
                     questions: questions.map((q, index) => {
                         // Use only the fields from q, and access extra fields via (q as any) below
@@ -663,7 +669,7 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
             setActiveItem(tempSlide);
 
             openState?.(false);
-            toast.success('Quiz created successfully!');
+            toast.success(t('toasts.quizCreated'));
 
             // Refetch data in the background to get the complete backend data
             setTimeout(async () => {
@@ -682,9 +688,7 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
         } catch (error) {
             console.error('[AddQuizDialog] Error updating store immediately:', error);
             // Fallback to the original approach
-            toast.warning(
-                'Quiz created, but there was an issue updating the preview. Please refresh the page.'
-            );
+            toast.warning(t('toasts.previewUpdateIssue'));
             return slideId;
         }
     };
@@ -702,28 +706,28 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
     return (
         <>
             <div className="flex flex-col gap-4">
-                <div className="text-subtitle font-semibold">Quick Access</div>
+                <div className="text-subtitle font-semibold">{t('sections.quickAccess')}</div>
                 <QuestionType
                     icon={<MCQS />}
-                    text="MCQ (Single correct)"
+                    text={t('questionTypes.mcqSingle')}
                     type={QuestionTypeList.MCQS}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<MCQM />}
-                    text="MCQ (Multiple correct)"
+                    text={t('questionTypes.mcqMultiple')}
                     type={QuestionTypeList.MCQM}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<Numerical />}
-                    text="Numerical"
+                    text={t('questionTypes.numerical')}
                     type={QuestionTypeList.NUMERIC}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<TrueFalse />}
-                    text="True False"
+                    text={t('questionTypes.trueFalse')}
                     type={QuestionTypeList.TRUE_FALSE}
                     handleAddQuestion={handleAddQuestion}
                 />
@@ -732,16 +736,16 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
             <Separator className="my-6" />
 
             <div className="flex flex-col gap-4">
-                <div className="text-subtitle font-semibold">Writing Skills</div>
+                <div className="text-subtitle font-semibold">{t('sections.writingSkills')}</div>
                 <QuestionType
                     icon={<LongAnswer />}
-                    text="Long Answer"
+                    text={t('questionTypes.longAnswer')}
                     type={QuestionTypeList.LONG_ANSWER}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<SingleWord />}
-                    text="Single Word"
+                    text={t('questionTypes.singleWord')}
                     type={QuestionTypeList.ONE_WORD}
                     handleAddQuestion={handleAddQuestion}
                 />
@@ -750,22 +754,22 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
             <Separator className="my-6" />
 
             <div className="flex flex-col gap-4">
-                <div className="text-subtitle font-semibold">Reading Skills</div>
+                <div className="text-subtitle font-semibold">{t('sections.readingSkills')}</div>
                 <QuestionType
                     icon={<CMCQS />}
-                    text="Comprehension MCQ (Single correct)"
+                    text={t('questionTypes.comprehensionMcqSingle')}
                     type={QuestionTypeList.CMCQS}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<CMCQM />}
-                    text="Comprehension MCQ (Multiple correct)"
+                    text={t('questionTypes.comprehensionMcqMultiple')}
                     type={QuestionTypeList.CMCQM}
                     handleAddQuestion={handleAddQuestion}
                 />
                 <QuestionType
                     icon={<Numerical />}
-                    text="Comprehension Numeric"
+                    text={t('questionTypes.comprehensionNumeric')}
                     type={QuestionTypeList.CNUMERIC}
                     handleAddQuestion={handleAddQuestion}
                 />
@@ -782,7 +786,7 @@ const AddQuizDialog = ({ openState }: { openState?: (open: boolean) => void }) =
                 formData={formData}
                 setFormData={setFormData}
                 isAddQuestionTypeRef={isAddQuestionTypeRef}
-                variantTitle="Quiz Question"
+                variantTitle={t('quizQuestionVariantTitle')}
                 onCreate={handleCreateQuizSlide}
             />
         </>

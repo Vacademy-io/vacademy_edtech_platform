@@ -65,6 +65,22 @@ export interface RecipientResult {
     success: boolean;
     status: 'SENT' | 'FAILED' | 'SKIPPED_OPT_OUT' | 'QUEUED';
     error?: string;
+    /**
+     * Provider message id (WhatsApp wamid) for an accepted send. Feed it to getDeliveryStatus to
+     * find out what actually happened — `status: 'SENT'` above only means the provider took it.
+     */
+    messageId?: string;
+}
+
+export interface DeliveryStatus {
+    messageId: string;
+    /** PENDING = no verdict from the provider yet. It is a "still waiting", never a failure. */
+    status: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+    errorCode?: string;
+    errorMessage?: string;
+    reportedAt?: string;
+    /** True once the outcome can no longer change, so a poller knows to stop. */
+    settled: boolean;
 }
 
 export interface UnifiedSendResponse {
@@ -89,6 +105,25 @@ export async function sendNotification(
     const response = await authenticatedAxiosInstance.post<UnifiedSendResponse>(
         UNIFIED_SEND_BASE,
         request
+    );
+    return response.data;
+}
+
+/**
+ * Ask what the provider actually did with messages already sent.
+ *
+ * Sending returns as soon as WhatsApp accepts the message, and acceptance is not delivery: a message
+ * accepted at 06:51:47 is regularly rejected at 06:51:48 (131042 payment issue, 131049 marketing
+ * cap, 131026 undeliverable). Anything that shows the user an outcome should send, then poll this.
+ */
+export async function getDeliveryStatus(messageIds: string[]): Promise<DeliveryStatus[]> {
+    if (messageIds.length === 0) return [];
+    // Comma-joined, not an array param: axios serialises arrays as `messageIds[]=`, and the raw
+    // brackets make the ingress reject the request with a 400 before it reaches the service.
+    // Spring splits a comma-separated value into List<String> on its own.
+    const response = await authenticatedAxiosInstance.get<DeliveryStatus[]>(
+        `${UNIFIED_SEND_BASE}/delivery-status`,
+        { params: { messageIds: messageIds.join(',') } }
     );
     return response.data;
 }

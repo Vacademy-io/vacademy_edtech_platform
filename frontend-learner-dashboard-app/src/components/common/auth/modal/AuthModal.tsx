@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { createPortal } from "react-dom";
 import { ModularDynamicLoginContainer } from "@/components/common/auth/login/components/modular/ModularDynamicLoginContainer";
 import { ModularDynamicSignupContainer } from "@/components/common/auth/signup/components/ModularDynamicSignupContainer";
@@ -9,6 +9,7 @@ import { useModularLoginFlow } from "@/components/common/auth/login/hooks/modula
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { resolveInstituteIdFromLocalOrSubdomain } from "@/services/institute-resolver";
 import { useTranslation } from "react-i18next";
+import { DashboardLoader } from "@/components/core/dashboard-loader";
 
 interface AuthModalProps {
     type?: string;
@@ -48,7 +49,27 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
     const domainRouting = useDomainRouting();
     
     // Use the signup flow hook to get institute details and signup settings
-    const { state: signupState, handleInstituteSelect, getSignupSettings } = useSignupFlow(false, type, courseId);
+    const { state: signupState, handleInstituteSelect: selectInstitute, getSignupSettings } = useSignupFlow(false, type, courseId);
+
+    // The signup container falls back to "every provider on" when it has no
+    // settings yet, so between opening the modal and the institute details
+    // landing it briefly offered Google, GitHub and (on iOS, via the 4.8
+    // pairing rule) Sign in with Apple to portals that allow none of them.
+    // Hold the container until the prefetch has settled — success or failure —
+    // so the first thing drawn is the institute's real provider list.
+    const [signupPrefetchSettled, setSignupPrefetchSettled] = useState(false);
+    const handleInstituteSelect = useCallback(
+        (id: string) => {
+            setSignupPrefetchSettled(false);
+            return Promise.resolve(selectInstitute(id)).finally(() =>
+                setSignupPrefetchSettled(true)
+            );
+        },
+        [selectInstitute]
+    );
+    const signupSettingsReady =
+        !!signupState.signupSettings ||
+        (signupPrefetchSettled && !signupState.isFetchingInstituteDetails);
     
     // Use the login flow hook to get login settings - prioritize domain routing, then storage
     const effectiveInstituteId = domainRouting.instituteId || instituteIdFromStorage || "";
@@ -504,9 +525,15 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
                                          ) : currentMode === 'signup' ? (
                          (() => {
                              const context = getCurrentRouteContext();
+                             const signupInstituteId = context.instituteId || signupState.selectedInstitute?.id;
+                             // No institute at all → let the container show its own
+                             // "institute required" message instead of spinning forever.
+                             if (signupInstituteId && !signupSettingsReady) {
+                                 return <DashboardLoader height="12rem" />;
+                             }
                              return (
                                                                  <ModularDynamicSignupContainer 
-                                    instituteId={context.instituteId || signupState.selectedInstitute?.id}
+                                    instituteId={signupInstituteId}
                                     settings={getSignupSettings()}
                                     instituteDetails={signupState.selectedInstitute ? { setting: signupState.selectedInstitute.setting } : undefined}
                                     onSignupSuccess={handleSignupSuccess}

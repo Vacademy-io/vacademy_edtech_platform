@@ -1,0 +1,12 @@
+{
+    "buttons": {
+        "saving": "جارٍ الحفظ...",
+        "createPlan": "إنشاء الخطة",
+        "next": "التالي",
+        "createPaymentPlan": "إنشاء خطة دفع",
+        "back": "رجوع",
+        "hidePreview": "إخفاء المعاينة",
+        "previewPlans": "معاينة الخطط",
+        "cancel": "إلغاء"
+    }
+}

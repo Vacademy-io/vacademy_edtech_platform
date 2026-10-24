@@ -1,0 +1,24 @@
+{
+    "errors": {
+        "downloadFailed": "Échec du téléchargement du certificat pour {{name}}",
+        "noCertificatesAvailable": "Aucun certificat disponible au téléchargement"
+    },
+    "summary": {
+        "title": "Résumé de la génération des certificats",
+        "generatedOn": "Généré le : {{timestamp}}",
+        "totalStudents": "Total des étudiants : {{count}}",
+        "successful": "Réussis : {{count}}",
+        "errorsLabel": "Erreurs : {{count}}",
+        "successfulCertificatesHeading": "Certificats réussis :",
+        "errorsHeading": "Erreurs :"
+    },
+    "fileSize": {
+        "zeroBytes": "0 octet",
+        "units": {
+            "bytes": "octets",
+            "kb": "Ko",
+            "mb": "Mo",
+            "gb": "Go"
+        }
+    }
+}

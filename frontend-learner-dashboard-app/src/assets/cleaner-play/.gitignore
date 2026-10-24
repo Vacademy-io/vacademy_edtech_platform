@@ -1,0 +1,3 @@
+# Raw generated model output (JPEG, ~600KB each) is never committed — only the
+# optimised, alpha-keyed .webp produced by scripts/generate-theme-icons.mjs.
+raw/

@@ -63,6 +63,40 @@ public class TimelineEventService {
                                 title, description, metadata, studentUserId, TimelineCategory.ACTIVITY);
         }
 
+        /**
+         * Insert-or-update the single CALL_MADE (ACTIVITY) event for one telephony call.
+         * The event is first written when the call ends — so every call counts as a lead
+         * response at the time it happened, even one with no recording (no answer, busy,
+         * failed upload) — and is updated in place when the recording lands later.
+         * REQUIRES_NEW: the call-ended path invokes this from an afterCommit callback, where a
+         * REQUIRED transaction would join the already-committed one and never commit.
+         */
+        @Transactional(propagation = Propagation.REQUIRES_NEW)
+        public void upsertCallEvent(String typeId, String callLogId,
+                        String actorId, String actorName,
+                        String title, String description, Object metadata,
+                        String studentUserId) {
+                TimelineEvent existing = timelineEventRepository.findCallEvent(typeId, callLogId).orElse(null);
+                if (existing == null) {
+                        saveEvent("LEAD", typeId, "CALL_MADE", "USER", actorId, actorName,
+                                        title, description, metadata, studentUserId, TimelineCategory.ACTIVITY);
+                        return;
+                }
+                if (metadata != null) {
+                        try {
+                                existing.setMetadataJson(objectMapper.writeValueAsString(metadata));
+                        } catch (JsonProcessingException e) {
+                                logger.error("Failed to serialize call event metadata", e);
+                        }
+                }
+                existing.setTitle(title);
+                existing.setDescription(description);
+                if (existing.getActorId() == null) existing.setActorId(actorId);
+                if (existing.getActorName() == null) existing.setActorName(actorName);
+                if (existing.getStudentUserId() == null) existing.setStudentUserId(studentUserId);
+                timelineEventRepository.save(existing);
+        }
+
         // ── Write: JOURNEY events ─────────────────────────────────────────────
 
         /**
@@ -77,6 +111,7 @@ public class TimelineEventService {
                         String studentUserId) {
                 saveEvent(type, typeId, actionType.name(), actorType, actorId, actorName,
                                 title, description, metadata, studentUserId, TimelineCategory.JOURNEY);
+
         }
 
         // ── Write: manual event from frontend ────────────────────────────────

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import dayjs from 'dayjs';
+import i18next from 'i18next';
 import { getBase64FromUrl } from '@/components/common/export-offline/utils/utils';
 
 /**
@@ -166,7 +167,7 @@ export function stampAllPages(
     logo: LoadedLogo | null,
     theme: Theme,
     subtitle: string,
-    cornerLabel = 'LEARNING REPORT'
+    cornerLabel = i18next.t('studyLibraryReportPdfKit:cornerLabel.default')
 ) {
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -231,7 +232,12 @@ export function stampAllPages(
         doc.setFontSize(7.5);
         doc.setTextColor(...MUTED);
         doc.text(name, M, pageH - 7);
-        doc.text(`Page ${p} of ${pageCount}`, pageW - M, pageH - 7, { align: 'right' });
+        doc.text(
+            i18next.t('studyLibraryReportPdfKit:footer.pageOf', { p, pageCount }),
+            pageW - M,
+            pageH - 7,
+            { align: 'right' }
+        );
     }
 }
 

@@ -1,0 +1,79 @@
+{
+    "dialog": {
+        "title": "वर्कफ़्लो कॉन्फ़िगर करें",
+        "description": "<bold>“{{audienceName}}”</bold> के लिए एक स्वचालित संदेश सेट करें। अधिक जटिल फ़्लो (देरी, शर्तें, कई चरण) के लिए, पूर्ण वर्कफ़्लो बिल्डर का उपयोग करें।"
+    },
+    "kind": {
+        "label": "वर्कफ़्लो प्रकार",
+        "confirmation": {
+            "title": "पुष्टिकरण",
+            "description": "जब कोई लीड फ़ॉर्म सबमिट करता है तो तुरंत भेजा जाता है।"
+        },
+        "followup": {
+            "title": "फॉलो-अप",
+            "description": "लीड द्वारा फ़ॉर्म सबमिट करने के N दिन बाद भेजा जाता है।"
+        }
+    },
+    "fields": {
+        "followupDays": {
+            "label": "सबमिशन के कितने दिन बाद फॉलो-अप भेजें?",
+            "helper": "वर्कफ़्लो हर दिन सुबह 9:00 बजे IST पर चलता है और उन लीड्स को संदेश भेजता है जिनकी सबमिशन तिथि ठीक इतने दिन पहले की है। कई दिनों पर भेजने के लिए (जैसे दिन 3 और दिन 7), प्रत्येक के लिए अलग वर्कफ़्लो बनाएं।"
+        },
+        "name": {
+            "label": "वर्कफ़्लो का नाम",
+            "placeholder": "जैसे नए लीड्स के लिए स्वागत पुष्टिकरण"
+        },
+        "description": {
+            "label": "विवरण",
+            "optional": "(वैकल्पिक)",
+            "placeholder": "यह वर्कफ़्लो क्या करता है?"
+        },
+        "channel": {
+            "label": "इसके ज़रिए भेजें",
+            "email": "केवल ईमेल",
+            "whatsapp": "केवल WhatsApp",
+            "both": "ईमेल + WhatsApp",
+            "helper": "लीड्स तक ईमेल, WhatsApp, या दोनों से पहुंचें।"
+        },
+        "template": {
+            "label": "ईमेल टेम्पलेट",
+            "loading": "टेम्पलेट लोड हो रहे हैं...",
+            "placeholder": "-- एक टेम्पलेट चुनें --",
+            "noneFound": "कोई ईमेल टेम्पलेट नहीं मिला। पहले कम्युनिकेशन सेक्शन में एक बनाएं।",
+            "untitledFallback": "बिना शीर्षक"
+        },
+        "whatsappTemplate": {
+            "label": "WhatsApp टेमप्लेट",
+            "placeholder": "-- एक WhatsApp टेमप्लेट चुनें --",
+            "noneFound": "कोई स्वीकृत WhatsApp टेमप्लेट नहीं मिला। ये Meta से सिंक होते हैं — संचार → WhatsApp टेमप्लेट्स खोलकर सिंक करें, या पहले Meta में टेमप्लेट स्वीकृत कराएं।",
+            "helper": "इसके वेरिएबल्स हर लीड के फ़ील्ड्स से अपने आप भर जाते हैं।"
+        }
+    },
+    "nameSuggestion": {
+        "confirmation": "{{audienceName}} — पुष्टिकरण",
+        "followup_one": "{{audienceName}} — सबमिशन के {{count}} दिन बाद फॉलो-अप",
+        "followup_other": "{{audienceName}} — सबमिशन के {{count}} दिनों बाद फॉलो-अप"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "submit": "वर्कफ़्लो बनाएं",
+        "submitting": "बनाया जा रहा है..."
+    },
+    "toast": {
+        "success": "वर्कफ़्लो बनाया गया",
+        "errorFallback": "वर्कफ़्लो बनाने में विफल"
+    },
+    "dto": {
+        "confirmation": {
+            "descriptionFallback": "जब कोई लीड \"{{audienceName}}\" सबमिट करे तो पुष्टिकरण संदेश भेजें",
+            "triggerNodeName": "ट्रिगर: ऑडियंस फ़ॉर्म सबमिट हुआ"
+        },
+        "followup": {
+            "descriptionFallback_one": "\"{{audienceName}}\" सबमिट करने वाले लीड्स को ठीक {{count}} दिन पहले फॉलो-अप संदेश भेजें",
+            "descriptionFallback_other": "\"{{audienceName}}\" सबमिट करने वाले लीड्स को ठीक {{count}} दिनों पहले फॉलो-अप संदेश भेजें",
+            "queryNodeName": "हाल की लीड्स प्राप्त करें"
+        },
+        "sendNodeName": "भेजें: {{templateName}}",
+        "sendWhatsappNodeName": "WhatsApp: {{templateName}}"
+    }
+}

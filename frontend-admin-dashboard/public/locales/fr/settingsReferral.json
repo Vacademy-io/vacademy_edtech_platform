@@ -1,0 +1,16 @@
+{
+    "loading": "Chargement des programmes de parrainage...",
+    "toasts": {
+        "programUpdated": "Programme de parrainage mis à jour avec succès !",
+        "programCreated": "Programme de parrainage créé avec succès !"
+    },
+    "errors": {
+        "loadPrograms": "Échec du chargement des programmes de parrainage. Veuillez réessayer.",
+        "saveProgram": "Échec de l'enregistrement du programme de parrainage. Veuillez réessayer.",
+        "deleteProgram": "Échec de la suppression du programme de parrainage. Veuillez réessayer.",
+        "duplicateProgram": "Échec de la duplication du programme de parrainage. Veuillez réessayer."
+    },
+    "program": {
+        "duplicateLabel": "{{label}} (Copie)"
+    }
+}

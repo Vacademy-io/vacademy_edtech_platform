@@ -1,0 +1,46 @@
+{
+    "title": "Center Performance Report",
+    "emptyState": "No center data available for the selected period",
+    "kpi": {
+        "activeCenters": "Active Centers",
+        "totalEnrolled": "Total Enrolled",
+        "totalInteractions": "Total Interactions",
+        "totalOptOuts": "Total Opt-Outs"
+    },
+    "distribution": {
+        "title": "Center Distribution",
+        "subtitle": "Users by center — visual overview",
+        "barChartHeading": "Users by Center",
+        "pieChartHeading": "User Distribution",
+        "tooltipEnrolled": "Enrolled",
+        "tooltipInteractions": "Interactions",
+        "tooltipOptOuts": "Opt-Outs",
+        "usersLabel": "Users"
+    },
+    "table": {
+        "title": "Center Performance Details",
+        "subtitlePrefix": "Enrollment, interactions & opt-outs per center.",
+        "shareWord": "Share",
+        "subtitleSuffix": "= each center's % of total enrolled.",
+        "exportCsv": "Export CSV",
+        "center": "Center",
+        "enrolled": "Enrolled",
+        "shareOfEnrolled": "Share of enrolled",
+        "shareHint": "Each center's share of all enrolled leads = this center's enrolled ÷ total enrolled.",
+        "interactions": "Interactions",
+        "avgPerUser": "Avg/User",
+        "optOuts": "Opt-Outs",
+        "optOutPercent": "Opt-Out %",
+        "status": "Status",
+        "total": "Total"
+    },
+    "csv": {
+        "center": "Center",
+        "enrolledUsers": "Enrolled Users",
+        "totalInteractions": "Total Interactions",
+        "avgPerUser": "Avg/User",
+        "optOuts": "Opt-Outs",
+        "optOutPercent": "Opt-Out %",
+        "status": "Status"
+    }
+}

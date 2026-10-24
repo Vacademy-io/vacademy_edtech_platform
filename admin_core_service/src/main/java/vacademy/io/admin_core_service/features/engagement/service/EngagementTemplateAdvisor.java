@@ -33,7 +33,11 @@ public class EngagementTemplateAdvisor {
     private final LLMService llmService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${engagement.brain.model:anthropic/claude-sonnet-4.5}")
+    /**
+     * Optional override. Blank (the default) lets the 'engagement' row in ai_model_defaults
+     * decide, which the super-admin portal edits.
+     */
+    @Value("${engagement.brain.model:}")
     private String brainModel;
 
     /** One proposed template. variableNames and sampleValues are parallel arrays (same length/order). */
@@ -65,9 +69,12 @@ public class EngagementTemplateAdvisor {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
-                    .model(brainModel)
+                    .model(brainModel == null || brainModel.isBlank() ? null : brainModel.trim())
                     .history(new ArrayList<>(history))
                     .build();
+            session.getContext().put(LLMService.CTX_USE_CASE, "engagement");
+            // Engagement brain work is not token-charged without a pricing decision.
+            session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {

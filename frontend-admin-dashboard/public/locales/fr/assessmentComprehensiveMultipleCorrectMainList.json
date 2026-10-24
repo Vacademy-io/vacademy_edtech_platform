@@ -1,0 +1,12 @@
+{
+    "popover": {
+        "title": "Paramètres des questions",
+        "questionTypeLabel": "Type de question"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "questionLabel": "Question",
+    "answerLabel": "Réponse :",
+    "removeOptionTitle": "Supprimer l'option",
+    "addOptionButton": "Ajouter une option",
+    "explanationLabel": "Explication :"
+}

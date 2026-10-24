@@ -1,5 +1,6 @@
 // utils/csv-utils.ts
 import Papa from 'papaparse';
+import type { TFunction } from 'i18next';
 import {
     SchemaFields,
     ValidationError,
@@ -94,6 +95,7 @@ export const convertExcelDateToDesiredFormat = (
 export const validateCsvData = (
     file: File,
     headers: Header[],
+    t: TFunction,
     csvFormat?: CSVFormatFormType
 ): Promise<ParseResult> => {
     return new Promise((resolve, reject) => {
@@ -146,13 +148,13 @@ export const validateCsvData = (
 
                         // Check if required field is missing
                         if (!isOptional && (!value || value.trim() === '')) {
+                            const displayField = fieldName.replace(/_/g, ' ');
                             allErrors.push({
                                 path: [rowIndex, fieldName],
-                                message: `${fieldName.replace(/_/g, ' ')} is required`,
-                                resolution: `Please provide a value for ${fieldName.replace(
-                                    /_/g,
-                                    ' '
-                                )}`,
+                                message: t('validation.required', { field: displayField }),
+                                resolution: t('validation.requiredResolution', {
+                                    field: displayField,
+                                }),
                                 currentVal: 'N/A',
                                 format: '',
                             });
@@ -167,10 +169,10 @@ export const validateCsvData = (
                         if (fieldName.toUpperCase() === 'USERNAME' && value && /\s/.test(value)) {
                             allErrors.push({
                                 path: [rowIndex, fieldName],
-                                message: 'Username cannot contain spaces',
-                                resolution: 'Remove the spaces from the username',
+                                message: t('validation.usernameNoSpaces'),
+                                resolution: t('validation.usernameNoSpacesResolution'),
                                 currentVal: value,
-                                format: 'No spaces allowed',
+                                format: t('validation.usernameNoSpacesFormat'),
                             });
                         }
 
@@ -183,13 +185,12 @@ export const validateCsvData = (
                                 if (validOptions && !validOptions.includes(upperCaseValue)) {
                                     allErrors.push({
                                         path: [rowIndex, fieldName],
-                                        message: `Invalid value for ${fieldName.replace(
-                                            /_/g,
-                                            ' '
-                                        )}`,
-                                        resolution: `Value must be one of: ${validOptions.join(
-                                            ', '
-                                        )}`,
+                                        message: t('validation.invalidValue', {
+                                            field: fieldName.replace(/_/g, ' '),
+                                        }),
+                                        resolution: t('validation.invalidValueResolution', {
+                                            options: validOptions.join(', '),
+                                        }),
                                         currentVal: value,
                                         format: validOptions.join(', '),
                                     });
@@ -205,13 +206,12 @@ export const validateCsvData = (
                                 if (!header.options.includes(value)) {
                                     allErrors.push({
                                         path: [rowIndex, fieldName],
-                                        message: `Invalid value for ${fieldName.replace(
-                                            /_/g,
-                                            ' '
-                                        )}`,
-                                        resolution: `Value must be one of: ${header.options.join(
-                                            ', '
-                                        )}`,
+                                        message: t('validation.invalidValue', {
+                                            field: fieldName.replace(/_/g, ' '),
+                                        }),
+                                        resolution: t('validation.invalidValueResolution', {
+                                            options: header.options.join(', '),
+                                        }),
                                         currentVal: value,
                                         format: header.options.join(', '),
                                     });
@@ -237,11 +237,12 @@ export const validateCsvData = (
                                 if (!isValidDateFormat(formattedDate, header.format)) {
                                     allErrors.push({
                                         path: [rowIndex, fieldName],
-                                        message: `Invalid date format for ${fieldName.replace(
-                                            /_/g,
-                                            ' '
-                                        )}`,
-                                        resolution: `Date must be in format: ${header.format}`,
+                                        message: t('validation.invalidDateFormat', {
+                                            field: fieldName.replace(/_/g, ' '),
+                                        }),
+                                        resolution: t('validation.invalidDateFormatResolution', {
+                                            format: header.format,
+                                        }),
                                         currentVal: value,
                                         format: header.format,
                                     });
@@ -259,11 +260,10 @@ export const validateCsvData = (
                                             path: [rowIndex, fieldName],
                                             message:
                                                 header.regex_error_message ||
-                                                `Invalid format for ${fieldName.replace(
-                                                    /_/g,
-                                                    ' '
-                                                )}`,
-                                            resolution: `Please check the format`,
+                                                t('validation.invalidFormat', {
+                                                    field: fieldName.replace(/_/g, ' '),
+                                                }),
+                                            resolution: t('validation.checkFormat'),
                                             currentVal: value,
                                             format: header.regex,
                                         });

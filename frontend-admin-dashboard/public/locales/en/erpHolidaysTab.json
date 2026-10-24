@@ -1,0 +1,51 @@
+{
+    "description": "Days the institute is closed. Attendance marks these HOLIDAY on its own, so a day missing from this calendar counts as a working day nobody turned up for.",
+    "actions": {
+        "addSeveral": "Add several",
+        "addHoliday": "Add holiday",
+        "addYearsHolidays": "Add the year's holidays",
+        "edit": "Edit {{name}}",
+        "remove": "Remove {{name}}",
+        "editFallback": "holiday",
+        "keepIt": "Keep it",
+        "removeConfirm": "Remove"
+    },
+    "count_one": "{{count}} holiday in {{year}}",
+    "count_other": "{{count}} holidays in {{year}}",
+    "errors": {
+        "loadFailed": "Couldn't load the holiday calendar.",
+        "removeFailed": "Could not remove the holiday."
+    },
+    "empty": {
+        "title": "No holidays set for {{year}}",
+        "description": "Publish the year's calendar here — attendance and payroll both read it."
+    },
+    "months": {
+        "unknown": "Month {{month}}",
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+    },
+    "holiday": {
+        "defaultName": "Holiday",
+        "optional": "Optional"
+    },
+    "toast": {
+        "removed": "Holiday removed"
+    },
+    "deleteDialog": {
+        "title": "Remove this holiday?",
+        "description": "{{name}} on {{date}} becomes an ordinary working day. Attendance already recorded for it is not changed.",
+        "defaultName": "This holiday",
+        "unknownDate": "an unknown date"
+    }
+}

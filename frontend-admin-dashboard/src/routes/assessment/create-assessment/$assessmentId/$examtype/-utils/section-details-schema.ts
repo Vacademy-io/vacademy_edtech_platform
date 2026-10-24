@@ -52,6 +52,17 @@ const sectionDetailsSchema = z.object({
                     questionMark: z.string(),
                     questionPenalty: z.string(),
                     correctOptionIdsCnt: z.number().optional(),
+                    // Read-only view of the choices under the question row, the
+                    // key marked, so a teacher can check an MCQ without opening it.
+                    options: z
+                        .array(
+                            z.object({
+                                id: z.string().optional(),
+                                name: z.string(),
+                                isCorrect: z.boolean().optional(),
+                            })
+                        )
+                        .optional(),
                     questionDuration: z.object({
                         hrs: z.string(),
                         min: z.string(),

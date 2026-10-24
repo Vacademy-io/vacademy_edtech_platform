@@ -1,0 +1,8 @@
+{
+    "untitledTerm": "{{term}} sans titre",
+    "pageDescription": "Les paiements, apprenants et l'équipe de votre {{term}}. Le registre est en lecture seule — l'administrateur de l'établissement parent gère les échéances et les remises.",
+    "switchTerm": "Changer de {{term}}",
+    "selectTermPlaceholder": "Sélectionner {{term}}",
+    "noAccessTitle": "Aucun accès à ce {{term}}.",
+    "noAccessBody": "Demandez à l'administrateur de l'établissement de vous accorder l'accès administrateur {{term}}."
+}

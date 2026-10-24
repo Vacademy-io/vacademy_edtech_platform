@@ -1,0 +1,89 @@
+{
+    "rail": {
+        "title": "Folders",
+        "newFolder": "New folder",
+        "dropHint": "Drop the test on a folder to move it there",
+        "all": "All assessments",
+        "unfiled": "Not in a folder",
+        "empty": "No folders yet. Create one, then drag tests into it or use ⋮ → Move to folder.",
+        "count_one": "{{count}} test",
+        "count_other": "{{count}} tests",
+        "hidden": "Hidden from students",
+        "reorder": "Drag to reorder {{name}}",
+        "loading": "Loading folders…",
+        "tip": "Open a folder to see its tests. To move a test, drag its card onto a folder or use ⋮ → Move to folder.",
+        "emptyReadOnly": "No folders yet."
+    },
+    "menu": {
+        "moveToFolder": "Move to folder",
+        "folderActions": "Actions for {{name}}",
+        "edit": "Edit",
+        "copyLink": "Copy link",
+        "delete": "Delete folder"
+    },
+    "form": {
+        "name": "Folder name",
+        "namePlaceholder": "e.g. English",
+        "description": "Description (optional)",
+        "descriptionPlaceholder": "One line on what is inside",
+        "image": "Folder image (optional)",
+        "imagePlaceholder": "Upload or paste an image address",
+        "visible": "Visible to students",
+        "visibleHint": "A hidden folder stays here for you. Students see its tests under Others.",
+        "nameRequired": "Enter a folder name",
+        "createTitle": "New folder",
+        "editTitle": "Edit folder",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "save": "Save",
+        "create": "Create folder"
+    },
+    "move": {
+        "title": "Move to folder",
+        "afterPublishTitle": "Add to a folder",
+        "afterPublishHint": "Pick a folder for “{{name}}” so students find it there. You can change it later from ⋮ → Move to folder.",
+        "hint": "Choose the folder for “{{name}}”.",
+        "back": "Back",
+        "skip": "Skip",
+        "createAndAdd": "Create and add",
+        "add": "Add to folder",
+        "move": "Move",
+        "current": "Current",
+        "noFolder": "No folder",
+        "noFolderHint": "Take it out of its folder",
+        "createNew": "Create new folder"
+    },
+    "toast": {
+        "updated": "Folder saved",
+        "created": "Folder “{{name}}” created",
+        "createdAndMoved": "Folder “{{name}}” created and the test added",
+        "moved": "Moved to {{name}}",
+        "removed": "Removed from folder",
+        "error": "Something went wrong. Please try again.",
+        "linkCopied": "Folder link copied. To show it in the sidebar, add a sub-tab with this link in Settings → Display Settings.",
+        "deleted": "Folder deleted. Its tests are now not in any folder."
+    },
+    "delete": {
+        "title": "Delete folder?",
+        "body_one": "“{{name}}” will be deleted. Its {{count}} test is kept and moves to Not in a folder.",
+        "body_other": "“{{name}}” will be deleted. Its {{count}} tests are kept and move to Not in a folder.",
+        "confirm": "Delete folder"
+    },
+    "banner": {
+        "hiddenFromStudents": "Hidden from students",
+        "emptyHint": "No tests here yet. Open All assessments and drag a test onto this folder, or use ⋮ → Move to folder.",
+        "emptyReadOnly": "No tests in this folder yet."
+    },
+    "view": {
+        "label": "How to show assessments",
+        "folders": "Folders",
+        "list": "All tests",
+        "listHint": "Every assessment in one list. Each card shows its folder."
+    },
+    "grid": {
+        "unfiledTitle": "Not in a folder",
+        "unfiledHint": "Drag a test onto a folder above to move it, or use ⋮ → Move to folder.",
+        "unfiledHintReadOnly": "Tests that are not in any folder.",
+        "allFolders": "All folders"
+    }
+}

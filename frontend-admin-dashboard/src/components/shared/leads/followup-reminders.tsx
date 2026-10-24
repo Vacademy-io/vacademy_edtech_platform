@@ -11,7 +11,7 @@
  *      that pops automatically when a follow-up is due (≤15 min away) or
  *      overdue. Closing it without acting snoozes the shown items locally for
  *      15 minutes (it comes back — that's the point); per-item actions are
- *      Mark done (close API), Snooze 1h/3h/tomorrow (reschedule API) and a
+ *      Mark done (shared close popover — closing note required), Snooze 1h/3h/tomorrow (reschedule API) and a
  *      jump to the Follow-ups page.
  *   2. The navbar bell — `useDueFollowupReminders` feeds a "Follow-up
  *      reminders" section + the badge count so the bell agrees with the modal.
@@ -43,11 +43,9 @@ import {
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
-import {
-    CLOSE_LEAD_FOLLOWUP,
-    MY_PENDING_LEAD_FOLLOWUPS,
-    UPDATE_LEAD_FOLLOWUP,
-} from '@/constants/urls';
+import { MY_PENDING_LEAD_FOLLOWUPS, UPDATE_LEAD_FOLLOWUP } from '@/constants/urls';
+import { CompleteFollowUpPopover } from './complete-followup-popover';
+import { useFollowUpFeatures } from './follow-up-fields';
 import { getUserId } from '@/utils/userDetails';
 import { cn, parseHtmlToString } from '@/lib/utils';
 
@@ -63,6 +61,7 @@ export interface PendingFollowup {
     status: string;
     is_closed: boolean;
     content: string | null;
+    created_at?: string | null;
     lead_name: string | null;
     lead_mobile: string | null;
     lead_user_id: string | null;
@@ -194,6 +193,17 @@ const MAX_SHOWN = 6;
 
 // ── Global centered dialog ─────────────────────────────────────────────
 
+/**
+ * " · Created 12 Oct, 4:10 PM" — only with the institute's follow-up history
+ * switch on. Reads the switch here, not in the dialog: the dialog is mounted on
+ * every page from __root, this only once a reminder row is on screen.
+ */
+function CreatedOn({ raw }: { raw: string }) {
+    const { showHistory } = useFollowUpFeatures();
+    if (!showHistory) return null;
+    return <> · Created {format(new Date(raw), 'd MMM, h:mm a')}</>;
+}
+
 export function FollowUpReminderDialog() {
     const { visible } = useDueFollowupReminders();
     const [open, setOpen] = useState(false);
@@ -211,21 +221,6 @@ export function FollowUpReminderDialog() {
 
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: ['my-pending-followups'] });
-
-    const doneMutation = useMutation({
-        mutationFn: (f: PendingFollowup) =>
-            authenticatedAxiosInstance.put(CLOSE_LEAD_FOLLOWUP(f.id), {
-                closer_reason: 'Completed from reminder',
-            }),
-        onSuccess: (_, f) => {
-            toast.success(`Follow-up with ${f.lead_name ?? 'lead'} marked done`);
-            queryClient.invalidateQueries({
-                queryKey: ['lead-followups', f.audience_response_id],
-            });
-            void invalidate();
-        },
-        onError: () => toast.error('Failed to close follow-up'),
-    });
 
     const snoozeMutation = useMutation({
         mutationFn: ({ f, until }: { f: PendingFollowup; until: Date }) =>
@@ -325,19 +320,28 @@ export function FollowUpReminderDialog() {
                                 )}
                                 {f.schedule_time && (
                                     <p className="text-xs text-neutral-400">
-                                        Scheduled {format(new Date(f.schedule_time), 'd MMM, h:mm a')}
+                                        Scheduled{' '}
+                                        {format(new Date(f.schedule_time), 'd MMM, h:mm a')}
+                                        {f.created_at && <CreatedOn raw={f.created_at} />}
                                     </p>
                                 )}
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                    <Button
-                                        size="sm"
-                                        className="h-7 gap-1 bg-success-600 px-2.5 text-xs text-white hover:bg-success-700"
-                                        disabled={doneMutation.isPending}
-                                        onClick={() => doneMutation.mutate(f)}
-                                    >
-                                        <CheckCircle size={13} weight="bold" />
-                                        Mark done
-                                    </Button>
+                                    <CompleteFollowUpPopover
+                                        audienceResponseId={f.audience_response_id}
+                                        userId={f.lead_user_id ?? ''}
+                                        followupId={f.id}
+                                        invalidateKeys={[['my-pending-followups']]}
+                                        align="start"
+                                        trigger={
+                                            <Button
+                                                size="sm"
+                                                className="h-7 gap-1 bg-success-600 px-2.5 text-xs text-white hover:bg-success-700"
+                                            >
+                                                <CheckCircle size={13} weight="bold" />
+                                                Mark done
+                                            </Button>
+                                        }
+                                    />
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button

@@ -28,6 +28,7 @@ import vacademy.io.auth_service.feature.notification.service.NotificationService
 import vacademy.io.common.auth.dto.RefreshTokenRequestDTO;
 import vacademy.io.common.auth.entity.*;
 import vacademy.io.common.auth.enums.UserRoleStatus;
+import vacademy.io.common.auth.service.UserRoleService;
 import vacademy.io.common.auth.repository.RoleRepository;
 import vacademy.io.common.auth.repository.UserPermissionRepository;
 import vacademy.io.common.auth.repository.UserRepository;
@@ -52,6 +53,19 @@ import static vacademy.io.auth_service.feature.auth.constants.AuthConstants.ADMI
 
 @Component
 public class AuthManager {
+
+    /**
+     * Every WhatsApp OTP template on the platform stores the same settings: one
+     * body parameter carrying the code, and the copy-code button carrying it
+     * again. That is not a coincidence — it is the fixed shape of a Meta
+     * AUTHENTICATION template, so a caller naming its own template needs no
+     * per-institute copy of it.
+     */
+    private static final String AUTHENTICATION_TEMPLATE_SETTING_JSON = "{\"language_code\":\"en\","
+            + "\"parameters\":{\"body\":[{\"source\":\"otp\",\"type\":\"text\"}],"
+            + "\"button\":[{\"source\":\"otp\",\"type\":\"text\"}]}}";
+
+    private static final String DEFAULT_OTP_LANGUAGE_CODE = "en";
 
     @Autowired
     UserRepository userRepository;
@@ -211,18 +225,24 @@ public class AuthManager {
             User user = userOptional.get();
 
             List<UserRole> allUserRoles = userRoleRepository.findByUser(user);
-            Optional<UserRole> nonStudentRole = allUserRoles.stream()
-                    .filter(ur -> List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name())
-                            .contains(ur.getStatus()))
+            List<UserRole> eligibleStaffRoles = allUserRoles.stream()
+                    .filter(UserRoleService::grantsAccess)
                     .filter(ur -> ur.getRole() != null && ur.getRole().getName() != null
                             && !AuthConstants.STUDENT_ROLE.equals(ur.getRole().getName()))
-                    .findFirst();
+                    .toList();
+            // Prefer the institute being signed into, so its invite is the one accepted.
+            String requestedInstituteId = authRequestDTO.getInstituteId();
+            Optional<UserRole> nonStudentRole = eligibleStaffRoles.stream()
+                    .filter(ur -> requestedInstituteId != null
+                            && requestedInstituteId.equals(ur.getInstituteId()))
+                    .findFirst()
+                    .or(() -> eligibleStaffRoles.stream().findFirst());
 
-            // mark as accepted invitation based on Institute for the first eligible
-            // non-student role
+            // Accept the pending invitation in that institute. Only INVITED rows move: the
+            // old blanket update also re-activated roles an admin had disabled or deleted,
+            // so "Disable access" was undone by the member's next sign-in.
             if (nonStudentRole.isPresent()) {
-                userRoleRepository.updateUserRoleStatusByInstituteIdAndUserId(
-                        UserRoleStatus.ACTIVE.name(),
+                userRoleRepository.activateInvitedRolesByInstituteIdAndUserId(
                         nonStudentRole.get().getInstituteId(),
                         List.of(user.getId()));
             } else {
@@ -250,6 +270,14 @@ public class AuthManager {
                 .map(refreshTokenService::verifyExpiration).map(RefreshToken::getUserInfo).map(userInfo -> {
 
                     List<UserRole> userRoles = userRoleRepository.findByUser(userInfo);
+                    // Access revoked everywhere (disabled / removed from every team and
+                    // enrolment): stop renewing, so an already signed-in session ends too.
+                    // Users with no role rows at all keep the old behaviour — that is not a
+                    // revocation, and some live sessions (e.g. role-less accounts) depend on it.
+                    if (!userRoles.isEmpty() && userRoles.stream().noneMatch(UserRoleService::grantsAccess)) {
+                        throw new ExpiredTokenException(
+                                "Your access has been removed. Please contact your institute.");
+                    }
                     List<String> userPermissions = userPermissionRepository.findByUserId(userInfo.getId()).stream()
                             .map(UserPermission::getPermissionId).toList();
                     // Generate new access token
@@ -483,7 +511,8 @@ public class AuthManager {
                 .settingJson(templateConfig.getSettingJson())
                 .build();
 
-        notificationService.sendWhatsAppOtp(whatsAppOTPRequest);
+        assertWhatsAppOtpSent(notificationService.sendWhatsAppOtp(whatsAppOTPRequest),
+                authRequestDTO.getPhoneNumber());
         return "WhatsApp OTP sent to " + authRequestDTO.getPhoneNumber();
     }
 
@@ -559,32 +588,95 @@ public class AuthManager {
      * verification, etc.)
      * Reuses existing notification service flow.
      */
+
+    /**
+     * Reports a WhatsApp OTP send that the provider refused.
+     *
+     * The notification service answers a Meta rejection with
+     * {@code {"success": false, "message": ...}} and HTTP 200 — it does not
+     * throw. Both callers used to discard that and tell the caller "OTP sent",
+     * so a bad template, an unregistered sender or a blocked number all looked
+     * identical to success and the only symptom was a code that never arrived.
+     */
+    private void assertWhatsAppOtpSent(String responseBody, String phoneNumber) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return; // Nothing to read — leave the old optimistic behaviour.
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(responseBody);
+            if (node.has("success") && !node.path("success").asBoolean(true)) {
+                String reason = node.path("message").asText("WhatsApp provider refused the message");
+                log.error("WhatsApp OTP not sent to {}: {}", phoneNumber, reason);
+                throw new VacademyException("Could not send the WhatsApp code: " + reason);
+            }
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            // Unreadable body is not proof of failure; don't block a send over it.
+            log.warn("Could not read the WhatsApp OTP response: {}", e.getMessage());
+        }
+    }
+
     public String requestGenericWhatsAppOtp(AuthRequestDto authRequestDTO) {
         if (authRequestDTO.getPhoneNumber() == null || authRequestDTO.getInstituteId() == null) {
             throw new VacademyException("Phone number and Institute ID are required");
         }
 
-        // Fetch template config (same as login flow)
-        NotificationTemplateConfigDTO templateConfig = notificationService
-                .getTemplateConfig("OTP_REQUEST", authRequestDTO.getInstituteId(), "WHATSAPP");
-
-        // Caller-supplied override (e.g. a live session's configured OTP
-        // template) wins over the institute default.
-        String templateName = authRequestDTO.getTemplateName() != null
+        String requestedTemplate = authRequestDTO.getTemplateName() != null
                 && !authRequestDTO.getTemplateName().isBlank()
                         ? authRequestDTO.getTemplateName().trim()
-                        : templateConfig.getTemplateName();
+                        : null;
+
+        String templateName;
+        String languageCode;
+        String settingJson;
+
+        // Try the institute's OTP config first, exactly as before. A caller that
+        // names its own template (a live session's, say) still takes its
+        // languageCode and settingJson from here — those describe the template's
+        // PARAMETERS, and substituting a generic set would send a body-only
+        // template a copy-code button it does not have, which Meta rejects.
+        NotificationTemplateConfigDTO templateConfig = null;
+        try {
+            templateConfig = notificationService
+                    .getTemplateConfig("OTP_REQUEST", authRequestDTO.getInstituteId(), "WHATSAPP");
+        } catch (Exception e) {
+            // Only a caller that brought its own template can proceed without one.
+            if (requestedTemplate == null) {
+                throw e;
+            }
+            log.warn("No OTP_REQUEST config for institute {}; using the named template '{}' with "
+                    + "standard authentication-template settings", authRequestDTO.getInstituteId(),
+                    requestedTemplate);
+        }
+
+        if (templateConfig != null) {
+            templateName = requestedTemplate != null ? requestedTemplate : templateConfig.getTemplateName();
+            languageCode = templateConfig.getLanguageCode();
+            settingJson = templateConfig.getSettingJson();
+        } else {
+            // No institute config at all — fall back to the fixed shape of a Meta
+            // AUTHENTICATION template, which is what an OTP template always is.
+            templateName = requestedTemplate;
+            languageCode = authRequestDTO.getLanguageCode() != null
+                    && !authRequestDTO.getLanguageCode().isBlank()
+                            ? authRequestDTO.getLanguageCode().trim()
+                            : DEFAULT_OTP_LANGUAGE_CODE;
+            settingJson = AUTHENTICATION_TEMPLATE_SETTING_JSON;
+        }
 
         // Send WhatsApp OTP via notification service (same as login flow)
         WhatsAppOTPRequest whatsAppOTPRequest = WhatsAppOTPRequest.builder()
                 .phoneNumber(authRequestDTO.getPhoneNumber())
                 .instituteId(authRequestDTO.getInstituteId())
                 .templateName(templateName)
-                .languageCode(templateConfig.getLanguageCode())
-                .settingJson(templateConfig.getSettingJson())
+                .languageCode(languageCode)
+                .settingJson(settingJson)
                 .build();
 
-        notificationService.sendWhatsAppOtp(whatsAppOTPRequest);
+        assertWhatsAppOtpSent(notificationService.sendWhatsAppOtp(whatsAppOTPRequest),
+                authRequestDTO.getPhoneNumber());
         return "WhatsApp OTP sent to " + authRequestDTO.getPhoneNumber();
     }
 

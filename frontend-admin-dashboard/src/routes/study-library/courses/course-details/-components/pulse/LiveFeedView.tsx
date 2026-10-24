@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
@@ -6,12 +8,12 @@ import { pulseFeedQueryOptions } from '../../-services/pulse-services';
 import type { PulseFeedEvent } from '../../-types/pulse-types';
 import { LiveStatusLine, PulseMessage, slideIconFor } from './pulse-shared';
 
-const VERB: Record<string, string> = {
-    SUBMITTED_ASSIGNMENT: 'submitted',
-    SUBMITTED_ASSESSMENT: 'submitted',
-    CODE_SUBMISSION: 'ran',
-    ANSWERED_QUESTION: 'answered',
-    ANSWERED_QUIZ: 'answered',
+const VERB_KEYS: Record<string, string> = {
+    SUBMITTED_ASSIGNMENT: 'verbs.submitted',
+    SUBMITTED_ASSESSMENT: 'verbs.submitted',
+    CODE_SUBMISSION: 'verbs.ran',
+    ANSWERED_QUESTION: 'verbs.answered',
+    ANSWERED_QUIZ: 'verbs.answered',
 };
 
 /** Tone from the event's detail text (verdict / answer status). */
@@ -22,22 +24,23 @@ function toneFor(event: PulseFeedEvent): string {
     return 'text-neutral-400';
 }
 
-function formatClock(epochMs: number): string {
-    return new Date(epochMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function formatClock(epochMs: number, language: string): string {
+    return new Date(epochMs).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
 }
 
-function EventRow({ event }: { event: PulseFeedEvent }) {
+function EventRow({ event, t }: { event: PulseFeedEvent; t: TFunction }) {
+    const { i18n } = useTranslation('studyLibraryLiveFeedView');
     const Icon = slideIconFor(event.slideType);
-    const verb = VERB[event.eventType] ?? 'updated';
+    const verb = t(VERB_KEYS[event.eventType] ?? 'verbs.updated');
     return (
         <div className="flex items-baseline gap-3 border-b border-neutral-100 px-4 py-2.5 last:border-b-0">
             <time className="w-12 shrink-0 text-xs tabular-nums text-neutral-400">
-                {formatClock(event.occurredAtEpoch)}
+                {formatClock(event.occurredAtEpoch, i18n.language)}
             </time>
             <Icon size={15} className="shrink-0 translate-y-0.5 text-neutral-400" />
             <p className="min-w-0 flex-1 text-sm text-neutral-700">
-                <span className="font-semibold">{event.fullName ?? 'A learner'}</span> {verb}{' '}
-                <span className="text-neutral-500">{event.slideTitle ?? 'a slide'}</span>
+                <span className="font-semibold">{event.fullName ?? t('aLearner')}</span> {verb}{' '}
+                <span className="text-neutral-500">{event.slideTitle ?? t('aSlide')}</span>
                 {event.detail && (
                     <span className={cn('font-medium', toneFor(event))}> · {event.detail}</span>
                 )}
@@ -47,6 +50,7 @@ function EventRow({ event }: { event: PulseFeedEvent }) {
 }
 
 export default function LiveFeedView({ batchId, active }: { batchId: string; active: boolean }) {
+    const { t } = useTranslation('studyLibraryLiveFeedView');
     const { data, isLoading, isError, refetch, dataUpdatedAt, isFetching } = useQuery(
         pulseFeedQueryOptions(batchId, active)
     );
@@ -68,10 +72,10 @@ export default function LiveFeedView({ batchId, active }: { batchId: string; act
             <div className="rounded-lg border border-neutral-200 bg-white shadow-sm">
                 <PulseMessage
                     tone="danger"
-                    title="Couldn't load the live feed."
+                    title={t('loadError')}
                     action={
                         <MyButton buttonType="secondary" scale="medium" onClick={() => refetch()}>
-                            Retry
+                            {t('retry')}
                         </MyButton>
                     }
                 />
@@ -86,18 +90,20 @@ export default function LiveFeedView({ batchId, active }: { batchId: string; act
             <div className="flex items-center justify-between">
                 <LiveStatusLine secondsSinceFetch={secondsSinceFetch} isFetching={isFetching} />
                 <p className="text-xs text-neutral-400">
-                    last {data?.windowMinutes ?? 15} min · newest first
+                    {t('windowSummary', { count: data?.windowMinutes ?? 15 })}
                 </p>
             </div>
 
             <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
                 {events.length === 0 ? (
                     <PulseMessage
-                        title="Nothing has happened in this batch yet"
-                        subtitle="Submissions, attempts and code runs show up here as they land."
+                        title={t('emptyTitle')}
+                        subtitle={t('emptySubtitle')}
                     />
                 ) : (
-                    events.map((e, i) => <EventRow key={`${e.userId}-${e.occurredAtEpoch}-${i}`} event={e} />)
+                    events.map((e, i) => (
+                        <EventRow key={`${e.userId}-${e.occurredAtEpoch}-${i}`} event={e} t={t} />
+                    ))
                 )}
             </div>
         </div>

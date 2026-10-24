@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { QuestionNavigator } from "./question-navigator";
 
@@ -20,12 +21,13 @@ export function Sidebar({
   onClose: () => void;
   evaluationType: string;
 }) {
+  const { t } = useTranslation("questionTest");
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="bottom"
         hideCloseButton
-        aria-label="Question palette"
+        aria-label={t("sidebar.paletteAriaLabel")}
         className="flex h-screen-85 flex-col rounded-t-2xl border-neutral-200 p-0"
       >
         <div className="grid flex-none place-items-center py-2">

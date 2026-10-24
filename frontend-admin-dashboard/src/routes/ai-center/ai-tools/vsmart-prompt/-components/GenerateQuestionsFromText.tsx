@@ -7,6 +7,7 @@ import {
 import { useForm, UseFormReturn, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { useAICenter } from '../../../-contexts/useAICenterContext';
 import AITasksList from '@/routes/ai-center/-components/AITasksList';
 import { languageSupport } from '@/constants/dummy-data';
@@ -28,6 +29,24 @@ import { ToolCostConfirmDialog } from '@/components/common/ai-credits/ToolCostCo
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
 
 const QUESTION_TYPES = ['MCQ', 'True/False', 'Numeric', 'Short answer', 'Mixed'];
+
+// QUESTION_TYPES holds the literal values submitted to the API (and compared
+// against the form's current value); this maps each one to its translation
+// key so the *displayed* label can be localized without touching the value.
+const QUESTION_TYPE_LABEL_KEYS: Record<string, string> = {
+    MCQ: 'mcq',
+    'True/False': 'trueFalse',
+    Numeric: 'numeric',
+    'Short answer': 'shortAnswer',
+    Mixed: 'mixed',
+};
+
+// languageSupport (shared constant) holds raw enum values like 'ENGLISH' /
+// 'HINDI'; map them to translation keys for display only.
+const LANGUAGE_LABEL_KEYS: Record<string, string> = {
+    ENGLISH: 'english',
+    HINDI: 'hindi',
+};
 
 // Above this estimated credit cost (or if the balance would go low), we surface a
 // confirmation step before spending. Preview-only in Phase 1 (nothing is deducted).
@@ -55,6 +74,7 @@ export const GenerateQuestionsFromText = ({
     currentSectionIndex?: number;
     initialTopic?: string;
 }) => {
+    const { t } = useTranslation('aiCenterGenerateQuestionsFromText');
     const queryClient = useQueryClient();
     const { setLoader, setKey } = useAICenter();
     const [enableTasksDialog, setEnableTasksDialog] = useState(false);
@@ -121,7 +141,7 @@ export const GenerateQuestionsFromText = ({
             console.error(error);
             setLoader(false);
             setKey(null);
-            setErrorMessage("We couldn't draft questions from this. Want to try again?");
+            setErrorMessage(t('errors.generateFailed'));
         },
     });
 
@@ -161,13 +181,13 @@ export const GenerateQuestionsFromText = ({
     useEffect(() => {
         if (!pendingTaskId || !Array.isArray(recentTasksData)) return;
         const match = recentTasksData.find(
-            (t: AITaskIndividualListInterface) => t.id === pendingTaskId
+            (task: AITaskIndividualListInterface) => task.id === pendingTaskId
         );
         if (!match) return;
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this draft. Want to try again?");
+            setErrorMessage(t('errors.taskFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -187,28 +207,25 @@ export const GenerateQuestionsFromText = ({
         <div className="flex w-full flex-col gap-10 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Questions from a Topic
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Tell us the topic and what students should learn. We&apos;ll draft a set
-                    of questions you can edit before sending.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-8">
-                <Section step={1} title="What&apos;s the topic?">
+                <Section step={1} title={t('sections.topic')}>
                     <div className="flex flex-col gap-4">
                         <Controller
                             control={form.control}
                             name="topics"
                             render={({ field, fieldState }) => (
                                 <Field
-                                    label="Topic name"
-                                    error={fieldState.error ? 'Please give the topic a name.' : null}
+                                    label={t('fields.topicName.label')}
+                                    error={fieldState.error ? t('fields.topicName.error') : null}
                                 >
                                     <input
                                         {...field}
-                                        placeholder="e.g. Photosynthesis"
+                                        placeholder={t('fields.topicName.placeholder')}
                                         disabled={isWorking}
                                         className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
                                     />
@@ -220,16 +237,14 @@ export const GenerateQuestionsFromText = ({
                             name="text"
                             render={({ field, fieldState }) => (
                                 <Field
-                                    label="What should students learn?"
+                                    label={t('fields.learningGoal.label')}
                                     error={
-                                        fieldState.error
-                                            ? 'Please describe what the questions should cover.'
-                                            : null
+                                        fieldState.error ? t('fields.learningGoal.error') : null
                                     }
                                 >
                                     <textarea
                                         {...field}
-                                        placeholder="e.g. test understanding of the process of photosynthesis, the factors that affect it, and its importance in ecosystems"
+                                        placeholder={t('fields.learningGoal.placeholder')}
                                         rows={4}
                                         disabled={isWorking}
                                         className="w-full resize-y rounded-xl border border-neutral-200 bg-white p-3 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
@@ -240,19 +255,19 @@ export const GenerateQuestionsFromText = ({
                     </div>
                 </Section>
 
-                <Section step={2} title="Who&apos;s it for, and how many?">
+                <Section step={2} title={t('sections.audience')}>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <Controller
                             control={form.control}
                             name="class_level"
                             render={({ field, fieldState }) => (
                                 <Field
-                                    label="Class"
-                                    error={fieldState.error ? 'Please enter a class' : null}
+                                    label={t('fields.classLevel.label')}
+                                    error={fieldState.error ? t('fields.classLevel.error') : null}
                                 >
                                     <input
                                         {...field}
-                                        placeholder="e.g. 8th standard"
+                                        placeholder={t('fields.classLevel.placeholder')}
                                         disabled={isWorking}
                                         className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
                                     />
@@ -264,9 +279,9 @@ export const GenerateQuestionsFromText = ({
                             name="num"
                             render={({ field, fieldState }) => (
                                 <Field
-                                    label="Number of questions"
+                                    label={t('fields.numQuestions.label')}
                                     error={
-                                        fieldState.error ? 'How many questions would you like?' : null
+                                        fieldState.error ? t('fields.numQuestions.error') : null
                                     }
                                 >
                                     <input
@@ -276,7 +291,7 @@ export const GenerateQuestionsFromText = ({
                                             field.onChange(cleaned === '' ? 0 : Number(cleaned));
                                         }}
                                         inputMode="numeric"
-                                        placeholder="10"
+                                        placeholder={t('fields.numQuestions.placeholder')}
                                         disabled={isWorking}
                                         className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
                                     />
@@ -287,7 +302,7 @@ export const GenerateQuestionsFromText = ({
                             control={form.control}
                             name="question_type"
                             render={({ field }) => (
-                                <Field label="Question type">
+                                <Field label={t('fields.questionType.label')}>
                                     <div className="flex flex-wrap gap-1.5">
                                         {QUESTION_TYPES.map((q) => (
                                             <button
@@ -301,7 +316,7 @@ export const GenerateQuestionsFromText = ({
                                                         : 'border-neutral-200 bg-white text-neutral-600 hover:border-primary-200'
                                                 } disabled:opacity-50`}
                                             >
-                                                {q}
+                                                {t(`questionTypes.${QUESTION_TYPE_LABEL_KEYS[q] ?? q}`)}
                                             </button>
                                         ))}
                                     </div>
@@ -312,7 +327,7 @@ export const GenerateQuestionsFromText = ({
                             control={form.control}
                             name="question_language"
                             render={({ field }) => (
-                                <Field label="Language">
+                                <Field label={t('fields.language.label')}>
                                     <select
                                         {...field}
                                         disabled={isWorking}
@@ -320,7 +335,9 @@ export const GenerateQuestionsFromText = ({
                                     >
                                         {languageSupport.map((lang) => (
                                             <option key={lang} value={lang}>
-                                                {lang.charAt(0) + lang.slice(1).toLowerCase()}
+                                                {LANGUAGE_LABEL_KEYS[lang]
+                                                    ? t(`languages.${LANGUAGE_LABEL_KEYS[lang]}`)
+                                                    : lang.charAt(0) + lang.slice(1).toLowerCase()}
                                             </option>
                                         ))}
                                     </select>
@@ -338,8 +355,8 @@ export const GenerateQuestionsFromText = ({
 
                 {isWorking ? (
                     <GeneratingState
-                        title="Drafting your questions"
-                        subtitle="Crafting questions on your topic. Usually ~30 seconds."
+                        title={t('progress.title')}
+                        subtitle={t('progress.subtitle')}
                     />
                 ) : readyTask ? (
                     <div className="relative overflow-hidden rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-blue-50 p-6">
@@ -351,16 +368,15 @@ export const GenerateQuestionsFromText = ({
                                 <div className="flex flex-col gap-1">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <p className="text-base font-semibold text-gray-900">
-                                            Here&apos;s what we drafted for you
+                                            {t('result.heading')}
                                         </p>
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-600 ring-1 ring-inset ring-primary-200">
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-0.5 text-2xs font-medium text-primary-600 ring-1 ring-inset ring-primary-200">
                                             <Sparkle size={10} weight="fill" />
-                                            AI-generated
+                                            {t('result.aiGeneratedBadge')}
                                         </span>
                                     </div>
                                     <p className="text-sm text-neutral-600">
-                                        Review and tweak the questions before saving or
-                                        exporting. The teacher always has the final word.
+                                        {t('result.description')}
                                     </p>
                                 </div>
                             </div>
@@ -369,7 +385,7 @@ export const GenerateQuestionsFromText = ({
                                     task={readyTask}
                                     openQuestionsPreview={openPreviewDialog}
                                     setOpenQuestionsPreview={setOpenPreviewDialog}
-                                    heading="Vsmart Topics"
+                                    heading={t('taskListHeading')}
                                     pollGenerateQuestionsFromText={
                                         pollGenerateQuestionsFromText
                                     }
@@ -395,7 +411,7 @@ export const GenerateQuestionsFromText = ({
                                     }}
                                     className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:border-primary-200 hover:bg-primary-50"
                                 >
-                                    Draft another
+                                    {t('result.draftAnother')}
                                 </button>
                             </div>
                         </div>
@@ -406,12 +422,13 @@ export const GenerateQuestionsFromText = ({
                             type="submit"
                             className="inline-flex w-fit items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-600"
                         >
-                            Draft my questions
+                            {t('actions.draftQuestions')}
                             <ArrowRight size={16} weight="bold" />
                         </button>
                         <ToolCostBadge
                             credits={costPreview.credits}
                             sufficient={costPreview.sufficient}
+                            coverage={costPreview.coverage}
                             loading={costPreview.isLoading}
                         />
                     </div>
@@ -425,7 +442,8 @@ export const GenerateQuestionsFromText = ({
                 currentBalance={costPreview.currentBalance}
                 balanceAfter={costPreview.balanceAfter}
                 sufficient={costPreview.sufficient}
-                confirmLabel="Draft my questions"
+                coverage={costPreview.coverage}
+                confirmLabel={t('actions.draftQuestions')}
                 onConfirm={() => {
                     if (pendingValues) runGenerate(pendingValues);
                 }}
@@ -433,9 +451,9 @@ export const GenerateQuestionsFromText = ({
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent drafts"
-                fallbackLabel="Topic-based draft"
-                emptyHint="Your topic-based drafts will appear here. Fill in the topic above and draft your first one."
+                title={t('recentDrafts.title')}
+                fallbackLabel={t('recentDrafts.fallbackLabel')}
+                emptyHint={t('recentDrafts.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
                 overrideIcon={
                     <PencilSimple size={18} weight="fill" className="text-primary-500" />
@@ -443,7 +461,7 @@ export const GenerateQuestionsFromText = ({
             />
 
             <AITasksList
-                heading="Vsmart Topics"
+                heading={t('taskListHeading')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
                 sectionsForm={parentForm}

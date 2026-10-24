@@ -1,0 +1,23 @@
+{
+    "title": "Curriculum library",
+    "description": "NCERT textbooks are shown to every institute by default. Use this only to limit them to certain boards or classes, or to hide them.",
+    "enabled": "On",
+    "disabled": "Off",
+    "boards": "Boards",
+    "classes": "Classes",
+    "classChip": "Class {{number}}",
+    "presets": {
+        "primary": "1–5",
+        "middle": "6–8",
+        "secondary": "9–10",
+        "senior": "11–12"
+    },
+    "pickAtLeastOne": "Nothing selected — every board and class will show.",
+    "hint": "Leave this off to show every textbook. Turn it on to show only the chosen boards and classes; turning it on with nothing selected shows everything. No credits are involved.",
+    "save": "Save",
+    "saving": "Saving…",
+    "toast": {
+        "saved": "Curriculum library settings saved.",
+        "saveFailed": "Could not save the curriculum library settings."
+    }
+}

@@ -1,8 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Globe, CreditCard, Heart, DollarSign, Layers } from 'lucide-react';
+import { Globe, CreditCard, Heart, CurrencyDollar, Stack } from '@phosphor-icons/react';
 import { PaymentPlans, PaymentPlanType } from '@/types/payment';
 import { isFreePlanDisabled, getFreePlanRestrictionMessage, FreePlanInfo } from '../utils/utils';
 
@@ -21,6 +22,7 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
     onPlanNameChange,
     onPlanTypeChange,
 }) => {
+    const { t } = useTranslation('settingsPlanTypeSelection');
     const isFreeDisabled = isFreePlanDisabled(existingFreePlans);
     const restrictionMessage = getFreePlanRestrictionMessage(existingFreePlans);
 
@@ -29,19 +31,17 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
             {/* Plan Name Input */}
             <div>
                 <Label htmlFor="planName" className="text-sm font-medium">
-                    Plan Name *
+                    {t('planName.label')}
                 </Label>
                 <Input
                     id="planName"
                     value={planName}
                     onChange={(e) => onPlanNameChange(e.target.value)}
-                    placeholder="Enter plan name"
+                    placeholder={t('planName.placeholder')}
                     className="mt-1"
                     required
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                    A unique name to identify this payment plan
-                </p>
+                <p className="mt-1 text-xs text-gray-500">{t('planName.hint')}</p>
             </div>
 
             <RadioGroup
@@ -50,7 +50,9 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                 className="space-y-8"
             >
                 <div>
-                    <div className="mb-2 text-lg font-semibold text-primary-500">Free Options</div>
+                    <div className="mb-2 text-lg font-semibold text-primary-500">
+                        {t('sections.freeOptions')}
+                    </div>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Free Plan */}
                         <label
@@ -81,24 +83,24 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                                                     : 'cursor-pointer text-gray-900'
                                             }`}
                                         >
-                                            Free Plan
+                                            {t('free.title')}
                                         </Label>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        Free plan with no payment required
+                                        {t('free.description')}
                                     </p>
                                     <div className="mt-2 text-xs text-gray-500">
-                                        ✓ Free access
-                                        <br />
-                                        ✓ No payment required
-                                        <br />✓ Ideal for promotional purposes
+                                        ✓ {t('free.features.access')}
+                                        <br />✓ {t('free.features.noPayment')}
+                                        <br />✓ {t('free.features.promotional')}
                                     </div>
 
                                     {/* Show restriction message if any */}
                                     {restrictionMessage && (
                                         <div className="mt-3 rounded-md bg-amber-50 p-2">
                                             <p className="text-xs text-amber-800">
-                                                <strong>Restriction:</strong> {restrictionMessage}
+                                                <strong>{t('free.restriction')}</strong>{' '}
+                                                {restrictionMessage}
                                             </p>
                                         </div>
                                     )}
@@ -124,18 +126,16 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                                             htmlFor="donation"
                                             className="cursor-pointer font-medium text-gray-900"
                                         >
-                                            Optional Donation
+                                            {t('donation.title')}
                                         </Label>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        Allow students to make voluntary donations with suggested
-                                        amounts
+                                        {t('donation.description')}
                                     </p>
                                     <div className="mt-2 text-xs text-gray-500">
-                                        ✓ Free course access
-                                        <br />
-                                        ✓ Suggested donation amounts
-                                        <br />✓ Support your institute
+                                        ✓ {t('donation.features.access')}
+                                        <br />✓ {t('donation.features.suggestedAmounts')}
+                                        <br />✓ {t('donation.features.support')}
                                     </div>
                                 </div>
                             </div>
@@ -144,7 +144,9 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                 </div>
 
                 <div>
-                    <div className="mb-2 text-lg font-semibold text-primary-500">Paid Options</div>
+                    <div className="mb-2 text-lg font-semibold text-primary-500">
+                        {t('sections.paidOptions')}
+                    </div>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Subscription */}
                         <label
@@ -164,17 +166,16 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                                             htmlFor="subscription"
                                             className="cursor-pointer font-medium text-gray-900"
                                         >
-                                            Subscription
+                                            {t('subscription.title')}
                                         </Label>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        Recurring payments with flexible intervals
+                                        {t('subscription.description')}
                                     </p>
                                     <div className="mt-2 text-xs text-gray-500">
-                                        ✓ Auto-renewal options
-                                        <br />
-                                        ✓ Multiple billing periods
-                                        <br />✓ Recurring revenue
+                                        ✓ {t('subscription.features.autoRenewal')}
+                                        <br />✓ {t('subscription.features.billingPeriods')}
+                                        <br />✓ {t('subscription.features.revenue')}
                                     </div>
                                 </div>
                             </div>
@@ -192,22 +193,21 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                                 />
                                 <div className="flex-1">
                                     <div className="mb-2 flex items-center space-x-2">
-                                        <DollarSign className="size-5 text-green-600" />
+                                        <CurrencyDollar className="size-5 text-green-600" />
                                         <Label
                                             htmlFor="upfront"
                                             className="cursor-pointer font-medium text-gray-900"
                                         >
-                                            One-Time Payment
+                                            {t('upfront.title')}
                                         </Label>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        Single upfront payment with optional installment plans
+                                        {t('upfront.description')}
                                     </p>
                                     <div className="mt-2 text-xs text-gray-500">
-                                        ✓ Lifetime access
-                                        <br />
-                                        ✓ Installment options
-                                        <br />✓ No recurring charges
+                                        ✓ {t('upfront.features.lifetime')}
+                                        <br />✓ {t('upfront.features.installments')}
+                                        <br />✓ {t('upfront.features.noRecurring')}
                                     </div>
                                 </div>
                             </div>
@@ -226,22 +226,21 @@ export const PlanTypeSelection: React.FC<PlanTypeSelectionProps> = ({
                                 />
                                 <div className="flex-1">
                                     <div className="mb-2 flex items-center space-x-2">
-                                        <Layers className="size-5 text-purple-600" />
+                                        <Stack className="size-5 text-purple-600" />
                                         <Label
                                             htmlFor="cpo"
                                             className="cursor-pointer font-medium text-gray-900"
                                         >
-                                            Custom Payment Option
+                                            {t('cpo.title')}
                                         </Label>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        Installment-based fee plans with multiple fee types linked to specific batches
+                                        {t('cpo.description')}
                                     </p>
                                     <div className="mt-2 text-xs text-gray-500">
-                                        ✓ Multiple fee types (tuition, exam, hostel…)
-                                        <br />
-                                        ✓ Custom installment schedules
-                                        <br />✓ Linked to specific batches
+                                        ✓ {t('cpo.features.feeTypes')}
+                                        <br />✓ {t('cpo.features.schedules')}
+                                        <br />✓ {t('cpo.features.batches')}
                                     </div>
                                 </div>
                             </div>

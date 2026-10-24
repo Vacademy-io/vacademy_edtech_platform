@@ -1,0 +1,47 @@
+{
+    "cards": {
+        "total": "कुल"
+    },
+    "status": {
+        "willEnroll": "नामांकित होंगे",
+        "willSkip": "छोड़े जाएंगे",
+        "willFail": "विफल होंगे"
+    },
+    "reenrolledBanner_one": "{{term}} को फिर से नामांकित किया जाएगा (पहले समाप्त/निरस्त की गई पहुंच).",
+    "reenrolledBanner_other": "{{term}} को फिर से नामांकित किया जाएगा (पहले समाप्त/निरस्त की गई पहुंच).",
+    "subOrg": {
+        "heading": "उप-संगठन असाइनमेंट",
+        "noLink": "कोई संगठन लिंक नहीं",
+        "newSuffix": "{{name}} (नया)",
+        "notSelected": "चयनित नहीं",
+        "role": {
+            "adminOnly": "केवल एडमिन",
+            "admin": "एडमिन + {{term}}",
+            "staff": "स्टाफ — {{term}}"
+        }
+    },
+    "emptyState": "कोई भी {{term}} नए सिरे से नामांकित नहीं होगा। अपने चयन की समीक्षा करें या डुप्लिकेट हैंडलिंग विकल्प बदलें।",
+    "table": {
+        "headers": {
+            "action": "कार्रवाई",
+            "status": "स्थिति",
+            "note": "टिप्पणी"
+        },
+        "emptyValue": "—",
+        "actionTaken": {
+            "created": "नामांकित",
+            "reEnrolled": "पुनः नामांकित"
+        },
+        "cpo": {
+            "badge": "CPO",
+            "installments_one": " · {{count}} किस्त",
+            "installments_other": " · {{count}} किस्तें",
+            "totalAmount": " · कुल ₹{{amount}}",
+            "recordingNow": "अभी ₹{{amount}} दर्ज किया जा रहा है",
+            "noInitialPayment": "कोई प्रारंभिक भुगतान दर्ज नहीं",
+            "schedule_one": "{{count}} किस्त, देय {{first}}",
+            "schedule_other": "{{count}} किस्तें, {{first}} → {{last}}"
+        }
+    },
+    "noPlanConfigured": "इस इनवाइट की कीमत अभी तय नहीं है — मुफ़्त एनरोलमेंट के लिए Auto (Default) चुनें, या पहले Payment Settings में कीमत सेट करें।"
+}

@@ -11,6 +11,8 @@ import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
+import vacademy.io.admin_core_service.features.notification.dto.MessageOrigin;
+import vacademy.io.admin_core_service.features.workflow.service.WorkflowEngineService;
 import vacademy.io.admin_core_service.features.notification.dto.WhatsappRequest;
 import vacademy.io.admin_core_service.features.notification.util.PhoneCountryUtil;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
@@ -204,6 +206,10 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
             Map<String, Object> nodeLevelTemplateVars = null;
             String nodeLevelLanguageCode = null;
             String nodeLevelRecipientField = null; // which item field holds the phone (e.g. "parentMobile", "Phone Number")
+            // The builder stores the template's expected params here (e.g. {"1":"name"}). It is the
+            // only description of the template's shape available when the institute's WhatsApp
+            // template lives solely in notification_service's whatsapp_templates table.
+            Map<String, String> nodeLevelTemplateParams = null;
             int chunkSize = DEFAULT_CHUNK_SIZE;
             long throttleMs = DEFAULT_THROTTLE_MS;
             long chunkTimeoutMs = DEFAULT_CHUNK_TIMEOUT_MS;
@@ -220,6 +226,16 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                 }
                 if (configRoot.has("recipientField") && !configRoot.get("recipientField").asText("").isBlank()) {
                     nodeLevelRecipientField = configRoot.get("recipientField").asText();
+                }
+                if (configRoot.has("_templateParams") && configRoot.get("_templateParams").isObject()) {
+                    Map<String, Object> raw = objectMapper.convertValue(configRoot.get("_templateParams"), Map.class);
+                    if (raw != null && !raw.isEmpty()) {
+                        nodeLevelTemplateParams = new LinkedHashMap<>();
+                        for (Map.Entry<String, Object> e : raw.entrySet()) {
+                            nodeLevelTemplateParams.put(e.getKey(),
+                                    e.getValue() == null ? "" : String.valueOf(e.getValue()));
+                        }
+                    }
                 }
                 if (configRoot.has("chunkSize") && configRoot.get("chunkSize").isInt()) {
                     int cs = configRoot.get("chunkSize").asInt();
@@ -316,11 +332,13 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
 
                 for (Map<String, Object> messageData : messagesToSend) {
                     // Recipient extraction — mirrors SendEmailNodeHandler.extractEmailAddress:
-                    // 1. Node-level recipientField (explicit choice, supports parent numbers and
-                    //    audience custom-field names like "Phone Number")
+                    // 1. Node-level recipientField (explicit choice: a SpEL expression, or a field
+                    //    name — supports parent numbers and audience custom fields like
+                    //    "Phone Number", which live on the context, not on a user item)
                     // 2. Known key aliases (camelCase, snake_case, COMBOT 'to', parent/guardian)
                     // 3. Last-resort scan for a phone-shaped value on the item
-                    String mobileNumber = extractMobileNumber(messageData, nodeLevelRecipientField);
+                    String mobileNumber = extractMobileNumber(messageData, nodeLevelRecipientField,
+                            itemContext, items.size() == 1);
                     
                     String templateName = (String) messageData.get("templateName");
                     String languageCode = (String) messageData.get("languageCode");
@@ -508,14 +526,57 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                             if (template != null) {
                                 finalParamMap = buildValidatedParams(template, templateVars, userId,
                                         messageData, itemContext);
+                            } else if (nodeLevelTemplateParams != null) {
+                                // No admin-core row (the template was authored in notification-service's
+                                // whatsapp_templates), but the builder recorded the template's expected
+                                // params on the node. That is a good enough spec to run the same
+                                // required-key auto-fill, which is what stops an unmapped placeholder
+                                // from reaching Meta empty.
+                                log.info(
+                                        "Admin-core Template row not found for institute {} name {} — validating against the node's _templateParams {} instead.",
+                                        instituteId, templateName, nodeLevelTemplateParams.keySet());
+                                finalParamMap = buildParamsFromSpec(nodeLevelTemplateParams, templateVars,
+                                        messageData, itemContext);
                             } else {
                                 log.warn(
-                                        "Admin-core Template row not found for institute {} name {} — proceeding without param validation (notification-service will resolve from whatsapp_templates).",
+                                        "Admin-core Template row not found for institute {} name {} and the node carries no _templateParams — proceeding without param validation (notification-service will resolve from whatsapp_templates).",
                                         instituteId, templateName);
                                 finalParamMap = templateVars != null ? templateVars : new HashMap<>();
                             }
                         }
                         
+                        // 4b. Fail closed on an empty placeholder. Meta rejects a template message whose
+                        // body parameter has no text with "(#131008) Required parameter is missing", so
+                        // dispatching one is a guaranteed failure that the node would nevertheless have
+                        // reported as a success (the unified-send call returns 200 and the per-recipient
+                        // provider result is never inspected). Skipping here turns an invisible
+                        // non-delivery into a visible SKIPPED row naming the offending parameter.
+                        List<String> blankParams = finalParamMap.entrySet().stream()
+                                .filter(e -> !StringUtils.hasText(e.getValue()))
+                                .map(Map.Entry::getKey)
+                                .sorted()
+                                .toList();
+                        if (!blankParams.isEmpty() && !isCombotFormat) {
+                            log.warn("Skipping user {}: template '{}' parameter(s) {} resolved to empty — Meta would reject this with 131008.",
+                                    userId, templateName, blankParams);
+                            results.add("SKIPPED: User " + userId + " - Empty template parameter(s) " + blankParams + ".");
+                            skippedCount++;
+                            failedMessages.add(WhatsAppExecutionDetails.FailedMessage.builder()
+                                    .index(index)
+                                    .mobileNumber(sanitizedMobile)
+                                    .templateName(templateName)
+                                    .languageCode(languageCode)
+                                    .templateVars(new HashMap<>(finalParamMap))
+                                    .itemData(item)
+                                    .errorMessage("Template parameter(s) " + blankParams
+                                            + " resolved to an empty value. Map them to a field that exists on this item"
+                                            + " (or set them literally) — WhatsApp rejects empty parameters.")
+                                    .errorType("VALIDATION_ERROR")
+                                    .failureReason("SKIPPED")
+                                    .build());
+                            continue;
+                        }
+
                         Map<String, Map<String, String>> singleUser = Map.of(sanitizedMobile, finalParamMap);
 
                         // 5. Add to Batch
@@ -611,7 +672,8 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                     // userDetails into chunks, throttle between chunks, and bound each
                     // chunk send with a timeout so a hung provider call can't block the
                     // workflow thread forever.
-                    dispatchBatchesChunked(finalBatchList, instituteId, chunkSize, throttleMs, chunkTimeoutMs);
+                    dispatchBatchesChunked(finalBatchList, instituteId, chunkSize, throttleMs, chunkTimeoutMs,
+                            workflowOrigin(context));
                     log.info("Successfully dispatched {} WhatsApp batches for {} total users (chunkSize={}, throttleMs={}, chunkTimeoutMs={}).",
                             finalBatchList.size(), processedCount, chunkSize, throttleMs, chunkTimeoutMs);
                     results.add("SUCCESS: Dispatched " + finalBatchList.size() + " batches for " + processedCount
@@ -770,12 +832,14 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
         // Validate and build final parameters
         if (dynamicParams != null && !dynamicParams.isEmpty()) {
             for (String requiredKey : dynamicParams.keySet()) {
-                if (configuredVars.containsKey(requiredKey)) {
-                    String value = configuredVars.get(requiredKey);
-                    finalParamMap.put(requiredKey, value != null ? value : "");
+                String value = configuredVars.get(requiredKey);
+                if (StringUtils.hasText(value)) {
+                    finalParamMap.put(requiredKey, value);
                     continue;
                 }
-                // Auto-fill: item field (with case-style variants) → context → customFields
+                // Auto-fill: item field (with case-style variants) → context → customFields.
+                // Reached both when the key was never mapped and when its mapping resolved to
+                // an empty string (a templateVar pointing at a field the item does not have).
                 String autoResolved = autoResolveParam(requiredKey, item, itemContext);
                 if (autoResolved != null) {
                     finalParamMap.put(requiredKey, autoResolved);
@@ -788,6 +852,48 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
             log.warn("No dynamic_parameters JSON found for template: {}. Proceeding without validation.",
                     template.getName());
             finalParamMap.putAll(configuredVars); // Send all vars if no dynamic params defined
+        }
+        return finalParamMap;
+    }
+
+    /**
+     * Same required-key fill as {@link #buildValidatedParams}, driven by the node's recorded
+     * {@code _templateParams} instead of an admin-core Template row — for institutes whose
+     * WhatsApp templates exist only in notification-service's {@code whatsapp_templates}.
+     *
+     * <p>Unlike buildValidatedParams this does not throw when a key resolves to nothing: it
+     * leaves the value empty and lets the caller's blank-parameter guard record a precise
+     * SKIPPED row. The node's params are the builder's snapshot of the template rather than
+     * the live definition, so a stale entry should not abort the whole send.</p>
+     */
+    private Map<String, String> buildParamsFromSpec(Map<String, String> templateParamSpec,
+                                                    Map<String, String> templateVarsFromAutomation,
+                                                    Map<String, Object> item,
+                                                    Map<String, Object> itemContext) {
+        Map<String, String> configuredVars = templateVarsFromAutomation != null
+                ? templateVarsFromAutomation
+                : Map.of();
+        Map<String, String> finalParamMap = new LinkedHashMap<>();
+        for (String requiredKey : templateParamSpec.keySet()) {
+            String value = configuredVars.get(requiredKey);
+            if (StringUtils.hasText(value)) {
+                finalParamMap.put(requiredKey, value);
+                continue;
+            }
+            // The spec's value is the placeholder's human name (e.g. "name"), which is often the
+            // field name on the item — try the key ("1") and then that name before giving up.
+            String autoResolved = autoResolveParam(requiredKey, item, itemContext);
+            if (autoResolved == null) {
+                String paramName = templateParamSpec.get(requiredKey);
+                if (StringUtils.hasText(paramName)) {
+                    autoResolved = autoResolveParam(paramName.trim(), item, itemContext);
+                }
+            }
+            finalParamMap.put(requiredKey, autoResolved != null ? autoResolved : "");
+        }
+        // Anything explicitly mapped but not in the spec still travels (headers, extra params).
+        for (Map.Entry<String, String> e : configuredVars.entrySet()) {
+            finalParamMap.putIfAbsent(e.getKey(), e.getValue() != null ? e.getValue() : "");
         }
         return finalParamMap;
     }
@@ -909,19 +1015,61 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
     /**
      * Extract the recipient phone from a message map. Mirrors
      * SendEmailNodeHandler.extractEmailAddress:
-     * 1. explicit node-level recipientField (also supports audience custom-field
-     *    names like "Phone Number");
+     * 1. explicit node-level recipientField — a SpEL expression (starts with '#',
+     *    e.g. {@code #ctx['customFields']['Phone Number']}) or a plain field name,
+     *    resolved against the item and, for single-item sends only, the workflow
+     *    context and its customFields;
      * 2. known key aliases — camelCase, snake_case, COMBOT 'to', parent/guardian
      *    variants (UserDTO serializes snake_case via the shared ObjectMapper, so
      *    both forms must be checked — mirrors IteratorProcessorStrategy);
      * 3. last-resort scan over all values for a phone-shaped string (covers
      *    audience custom fields named "Phone Number", "WhatsApp Number", etc.).
+     *
+     * <p><b>Why the item alone is not enough.</b> When a node iterates the resolved
+     * platform user ({@code on = "{#ctx['user']}"}), the item carries that user's
+     * STORED mobile_number, which for an audience lead is frequently not the number
+     * they just typed into the form — that value lives only in
+     * {@code #ctx['customFields']['Phone Number']}. Before this, recipientField did a
+     * bare {@code messageData.get(name)}, so naming a custom field silently missed and
+     * fell through to the stored number: the message went to the wrong phone with no
+     * warning. Observed live on workflow 85cb8ef5 (sent to the account's old number
+     * instead of the submitted one).</p>
+     *
+     * <p><b>Why the context fallback is gated on a single item.</b> The context is shared
+     * across every iteration, so an unconditional fallback would route a whole batch to
+     * one person's number whenever an item happened to lack the field. Cross-recipient
+     * mis-sends are worse than a skip, so for multi-item sends a plain recipientField
+     * must resolve on the item itself; use a SpEL expression for anything else.</p>
      */
-    private static String extractMobileNumber(Map<String, Object> messageData, String recipientField) {
+    private String extractMobileNumber(Map<String, Object> messageData, String recipientField,
+                                       Map<String, Object> itemContext, boolean singleItemSend) {
         if (StringUtils.hasText(recipientField)) {
-            Object v = messageData.get(recipientField);
-            if (v != null && StringUtils.hasText(String.valueOf(v))) {
-                return String.valueOf(v);
+            String field = recipientField.trim();
+            if (field.startsWith("#")) {
+                // Explicit expression — evaluated exactly like a templateVar, with #ctx and #item
+                // bound. Never guesses, so it is safe regardless of batch size.
+                try {
+                    Object out = spelEvaluator.evaluate(field, itemContext, Map.of("item", messageData));
+                    if (out != null && StringUtils.hasText(String.valueOf(out))) {
+                        return String.valueOf(out);
+                    }
+                    log.warn("recipientField SpEL '{}' resolved to nothing for this item", field);
+                } catch (Exception e) {
+                    log.warn("recipientField SpEL '{}' failed to resolve: {}", field, e.getMessage());
+                }
+            } else {
+                Object v = lookupFieldVariants(messageData, field);
+                if (v != null && StringUtils.hasText(String.valueOf(v))) {
+                    return String.valueOf(v);
+                }
+                if (singleItemSend) {
+                    String resolved = autoResolveParam(field, messageData, itemContext);
+                    if (resolved != null && StringUtils.hasText(resolved)) {
+                        return resolved;
+                    }
+                }
+                log.warn("recipientField '{}' did not resolve on this item (keys: {}) — falling back to the item's own phone fields",
+                        field, messageData.keySet());
             }
         }
         String fromKnownKeys = firstNonBlank(messageData,
@@ -964,7 +1112,7 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
      * A single-chunk batch reuses the original request object unchanged.
      */
     private void dispatchBatchesChunked(List<WhatsappRequest> batches, String instituteId,
-            int chunkSize, long throttleMs, long chunkTimeoutMs) {
+            int chunkSize, long throttleMs, long chunkTimeoutMs, MessageOrigin origin) {
         boolean firstSend = true;
         for (WhatsappRequest batch : batches) {
             List<Map<String, Map<String, String>>> users = batch.getUserDetails();
@@ -983,12 +1131,23 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                 }
                 int chunkUserCount = end - i;
                 runWithTimeout(
-                        () -> notificationService.sendWhatsappViaUnified(List.of(chunkRequest), instituteId),
+                        () -> notificationService.sendWhatsappViaUnified(List.of(chunkRequest), instituteId, origin),
                         chunkTimeoutMs,
                         "WhatsApp chunk (template=" + batch.getTemplateName() + ", users=" + chunkUserCount + ")");
                 firstSend = false;
             }
         }
+    }
+
+    /**
+     * The workflow this node runs in, so notification-service can show "sent by workflow X" on
+     * each message. Null when the run carries no workflow id.
+     */
+    static MessageOrigin workflowOrigin(Map<String, Object> context) {
+        Object workflowId = context != null ? context.get("workflowId") : null;
+        if (workflowId == null) return null;
+        Object workflowName = context.get(WorkflowEngineService.WORKFLOW_NAME_KEY);
+        return MessageOrigin.workflow(workflowId.toString(), workflowName != null ? workflowName.toString() : null);
     }
 
     private static WhatsappRequest buildChunkRequest(WhatsappRequest batch,

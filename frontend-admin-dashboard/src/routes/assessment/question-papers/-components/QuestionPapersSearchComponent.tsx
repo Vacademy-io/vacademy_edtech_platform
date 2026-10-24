@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { MagnifyingGlass, XCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionPapersSearchComponentProps {
     onSearch: (searchValue: string) => void;
@@ -14,6 +15,7 @@ export const QuestionPapersSearchComponent = ({
     setSearchText,
     clearSearch,
 }: QuestionPapersSearchComponentProps) => {
+    const { t } = useTranslation('assessmentQuestionPapersSearchComponent');
     const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             onSearch(searchText);
@@ -28,7 +30,7 @@ export const QuestionPapersSearchComponent = ({
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 onKeyDown={handleSearch}
-                placeholder="Search Question Paper"
+                placeholder={t('searchQuestionPaperPlaceholder')}
                 className="pl-8 pr-12"
             />
             {searchText && (

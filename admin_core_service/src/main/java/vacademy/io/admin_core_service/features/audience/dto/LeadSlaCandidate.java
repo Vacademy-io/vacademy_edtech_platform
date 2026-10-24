@@ -24,6 +24,12 @@ public interface LeadSlaCandidate {
     String getTatReminderStage();
     Integer getTatReminderCount();
     String getTatReminderAssigneeId();
-    /** Most recent timeline_event by the resolved counselor on this lead; null if never acted. */
+    /** Most recent response event on this lead; null if never responded (still on the TAT clock). */
     Timestamp getLastCounselorActionAt();
+    /** Admin-set TAT deadline, or null when automatic. */
+    Timestamp getTatDueOverrideAt();
+    /** Effective TAT deadline: the override, else lead_sla_due_at (working-hours aware). */
+    Timestamp getTatDueAt();
+    /** Follow-up SLA deadline from the last response (working-hours aware); null if never responded. */
+    Timestamp getFollowUpDueAt();
 }

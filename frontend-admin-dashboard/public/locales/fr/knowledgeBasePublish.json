@@ -1,0 +1,33 @@
+{
+    "heading": "Publier dans la bibliothèque",
+    "description": "Décrivez une base de connaissances et publiez-la pour que chaque établissement puisse la débloquer et l'utiliser. La publication la rend en lecture seule pour eux — seul cet établissement peut continuer à modifier le contenu.",
+    "notDescribedYet": "Pas encore décrite",
+    "withdrawNotice": "Retirer une bibliothèque la retire du catalogue mais ne révoque jamais l'accès d'un établissement qui l'a déjà payée.",
+    "status": {
+        "draft": "Brouillon",
+        "published": "Publiée",
+        "withdrawn": "Retirée"
+    },
+    "actions": {
+        "knowledgeBase": "Base de connaissances",
+        "backToKnowledgeBase": "Retour à la base de connaissances",
+        "edit": "Modifier",
+        "describe": "Décrire",
+        "publish": "Publier",
+        "withdraw": "Retirer"
+    },
+    "emptyState": {
+        "title": "Aucune base de connaissances dans cet établissement pour l'instant",
+        "description": "Créez-en une et ajoutez d'abord son contenu, puis revenez pour la décrire."
+    },
+    "forbidden": {
+        "title": "Cet établissement ne peut pas publier dans la bibliothèque",
+        "description": "Les bibliothèques sont publiées depuis un seul établissement Vacademy interne."
+    },
+    "toast": {
+        "published": "En ligne dans la bibliothèque",
+        "withdrawn": "Retirée. Les établissements qui l'avaient déjà débloquée conservent leur accès.",
+        "returnedToDraft": "Remise en brouillon",
+        "statusChangeFailed": "Impossible de changer le statut"
+    }
+}

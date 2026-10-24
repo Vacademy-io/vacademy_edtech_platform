@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { VideoCamera, Plus, Info, LinkSimple, CircleNotch } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { Trans, useTranslation } from 'react-i18next';
 
 import {
     Card,
@@ -21,6 +22,7 @@ import { ZoomAccountList } from './ZoomAccountList';
  * REST endpoints, not the institute_setting JSON blob).
  */
 export function ZoomIntegrationCard() {
+    const { t } = useTranslation('settingsZoomIntegrationCard');
     const [accounts, setAccounts] = useState<ZoomAccountSummary[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function ZoomIntegrationCard() {
             setAccounts(fresh);
         } catch (e) {
             console.error(e);
-            setError('Failed to load Zoom accounts.');
+            setError(t('errors.loadAccounts'));
         } finally {
             setLoading(false);
         }
@@ -50,10 +52,10 @@ export function ZoomIntegrationCard() {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('zoom_connected')) {
-            toast.success('Zoom connected successfully.');
+            toast.success(t('toasts.connected'));
             void refresh();
         } else if (params.get('zoom_error')) {
-            toast.error(`Zoom connection failed (${params.get('zoom_error')}). Please try again.`);
+            toast.error(t('errors.connectionFailed', { reason: params.get('zoom_error') }));
         }
         if (params.has('zoom_connected') || params.has('zoom_error')) {
             params.delete('zoom_connected');
@@ -70,7 +72,7 @@ export function ZoomIntegrationCard() {
             window.location.href = oauth_url; // leave the SPA for Zoom's consent screen
         } catch (e) {
             console.error(e);
-            toast.error('Could not start the Zoom connection. Please try again.');
+            toast.error(t('errors.connectionStartFailed'));
             setConnecting(false);
         }
     };
@@ -92,12 +94,8 @@ export function ZoomIntegrationCard() {
                     <VideoCamera size={18} />
                 </div>
                 <div className="flex-1">
-                    <CardTitle className="text-base">Zoom Integration</CardTitle>
-                    <CardDescription>
-                        Connect one or more Zoom accounts so admins can create Zoom meetings
-                        directly from the live-class wizard, with learners joining seamlessly via
-                        the embedded Meeting SDK.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('title')}</CardTitle>
+                    <CardDescription>{t('description')}</CardDescription>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                     <Button
@@ -111,7 +109,7 @@ export function ZoomIntegrationCard() {
                         ) : (
                             <LinkSimple size={14} className="mr-1" />
                         )}
-                        Connect with Zoom
+                        {t('connectButton')}
                     </Button>
                     <Button
                         size="sm"
@@ -120,7 +118,7 @@ export function ZoomIntegrationCard() {
                         disabled={loading}
                     >
                         <Plus size={14} className="mr-1" />
-                        Add manually
+                        {t('addManuallyButton')}
                     </Button>
                 </div>
             </CardHeader>
@@ -141,7 +139,7 @@ export function ZoomIntegrationCard() {
                                 void refresh();
                             }}
                         >
-                            Retry
+                            {t('retry')}
                         </button>
                     </div>
                 ) : (
@@ -173,11 +171,10 @@ function RetentionNotice() {
         <div className="mt-4 flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50/60 p-3 text-xs text-blue-800">
             <Info size={14} className="mt-0.5 shrink-0" />
             <div className="leading-relaxed">
-                Zoom cloud recordings expire by default after <strong>30 days</strong> (then 30 days
-                in trash before permanent deletion). To preserve recordings beyond that window,
-                use "Sync to Vacademy S3" on each recording from the session view — coming in a
-                future release. For now, the default Zoom retention applies; you can extend it
-                from your Zoom account settings.
+                <Trans
+                    i18nKey="settingsZoomIntegrationCard:retentionNotice.text"
+                    components={{ strong: <strong /> }}
+                />
             </div>
         </div>
     );

@@ -1,0 +1,34 @@
+{
+    "header": {
+        "title": "Bienvenue — configurons votre établissement",
+        "subtitle": "Terminez ces étapes et votre tableau de bord se remplira automatiquement."
+    },
+    "progress": "{{completed}} / {{total}}",
+    "items": {
+        "profile": {
+            "label": "Complétez le profil de votre établissement",
+            "description": "Ajoutez l'identité visuelle, les coordonnées et les informations de base.",
+            "cta": "Modifier le profil"
+        },
+        "level": {
+            "label": "Créez votre premier niveau",
+            "description": "Configurez les niveaux enseignés par votre établissement.",
+            "cta": "Ajouter un niveau"
+        },
+        "course": {
+            "label": "Créez votre premier cours",
+            "description": "Ajoutez un cours afin de pouvoir y inscrire des apprenants.",
+            "cta": "Ajouter un cours"
+        },
+        "batch": {
+            "label": "Créez votre premier groupe",
+            "description": "Regroupez des apprenants dans un groupe associé à une session.",
+            "cta": "Ajouter un groupe"
+        },
+        "learner": {
+            "label": "Invitez votre premier apprenant",
+            "description": "Envoyez une invitation ou inscrivez un étudiant manuellement.",
+            "cta": "Ajouter un apprenant"
+        }
+    }
+}

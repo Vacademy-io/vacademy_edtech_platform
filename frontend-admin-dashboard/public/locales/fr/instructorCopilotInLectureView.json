@@ -1,0 +1,19 @@
+{
+    "backButton": "Retour aux modes de cours",
+    "heading": "Pendant le cours",
+    "subtitle": "Outils en direct et enregistrement",
+    "actions": {
+        "record": {
+            "title": "Enregistrer un cours en direct",
+            "description": "Enregistrez votre session et obtenez instantanément des notes générées par l'IA."
+        },
+        "upload": {
+            "title": "Importer un cours",
+            "description": "Importez un enregistrement audio existant pour le traiter."
+        },
+        "volt": {
+            "title": "Lancer une présentation interactive en direct",
+            "description": "Engagez les élèves avec des diapositives et des quiz en temps réel."
+        }
+    }
+}

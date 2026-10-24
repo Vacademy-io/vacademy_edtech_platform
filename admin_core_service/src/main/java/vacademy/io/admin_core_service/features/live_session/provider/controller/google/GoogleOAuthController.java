@@ -56,11 +56,16 @@ public class GoogleOAuthController {
     @Value("${google.oauth.frontend.callback.url:https://dash.vacademy.io/settings}")
     private String frontendCallbackUrl;
 
-    /** Step 1 — return the Google consent URL the admin's browser should open. */
+    /**
+     * Step 1 — return the Google consent URL the admin's browser should open.
+     * {@code driveAccess=true} additionally asks for Drive read access to Meet recordings
+     * (used by "Save to library"); off by default because that scope is restricted.
+     */
     @PostMapping("/initiate")
     public ResponseEntity<Map<String, String>> initiate(
             @RequestAttribute("user") CustomUserDetails user,
-            @RequestParam String instituteId) {
+            @RequestParam String instituteId,
+            @RequestParam(defaultValue = "false") boolean driveAccess) {
         instituteAccessValidator.validateUserAccess(user, instituteId);
         requireAdminRole(user);
 
@@ -72,7 +77,7 @@ public class GoogleOAuthController {
                 .build());
 
         return ResponseEntity.ok(Map.of(
-                "oauth_url", googleOAuthService.buildAuthorizeUrl(state.getId()),
+                "oauth_url", googleOAuthService.buildAuthorizeUrl(state.getId(), driveAccess),
                 "session_key", state.getId()));
     }
 

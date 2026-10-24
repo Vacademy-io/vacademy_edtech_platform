@@ -21,6 +21,8 @@ public class LearnerBadgeDTO {
     private String badgeDescription;
     private String reason;
     private String status;
+    /** MANUAL = staff-awarded; AUTO = synced from the learner app's client-computed unlocks. */
+    private String source;
     private String awardedByUserId;
     private Timestamp awardedAt;
 
@@ -35,6 +37,7 @@ public class LearnerBadgeDTO {
         dto.setBadgeDescription(b.getBadgeDescription());
         dto.setReason(b.getReason());
         dto.setStatus(b.getStatus() != null ? b.getStatus().name() : null);
+        dto.setSource(b.getSource());
         dto.setAwardedByUserId(b.getAwardedByUserId());
         dto.setAwardedAt(b.getAwardedAt());
         return dto;

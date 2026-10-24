@@ -1,0 +1,127 @@
+{
+    "navHeading": "Suivis",
+    "heading": {
+        "team": "Suivis",
+        "mine": "Mes suivis",
+        "blurb": "Gérez et suivez tous vos suivis de conseil au même endroit."
+    },
+    "subline": {
+        "teamAllCaughtUp": "L'équipe est à jour",
+        "selfAllCaughtUp": "Vous êtes à jour",
+        "tasksDueToday_admin_one": "L'équipe a {{count, number}} tâche à faire aujourd'hui",
+        "tasksDueToday_admin_many": "L'équipe a {{count, number}} tâche à faire aujourd'hui",
+        "tasksDueToday_admin_other": "L'équipe a {{count, number}} tâches à faire aujourd'hui",
+        "tasksDueToday_user_one": "Vous avez {{count, number}} tâche à faire aujourd'hui",
+        "tasksDueToday_user_many": "Vous avez {{count, number}} tâche à faire aujourd'hui",
+        "tasksDueToday_user_other": "Vous avez {{count, number}} tâches à faire aujourd'hui",
+        "overdueSuffix_one": " · {{count, number}} en retard",
+        "overdueSuffix_many": " · {{count, number}} en retard",
+        "overdueSuffix_other": " · {{count, number}} en retard"
+    },
+    "tabs": {
+        "list": "Liste",
+        "calendar": "Calendrier"
+    },
+    "showing": {
+        "prefix": "Affichage de",
+        "suffix_one": "suivi",
+        "suffix_many": "suivi",
+        "suffix_other": "suivis",
+        "suffix_overdue_one": "suivi en retard",
+        "suffix_overdue_many": "suivi en retard",
+        "suffix_overdue_other": "suivis en retard",
+        "suffix_today_one": "suivi à faire aujourd'hui",
+        "suffix_today_many": "suivi à faire aujourd'hui",
+        "suffix_today_other": "suivis à faire aujourd'hui",
+        "suffix_upcoming_one": "suivi à venir",
+        "suffix_upcoming_many": "suivi à venir",
+        "suffix_upcoming_other": "suivis à venir",
+        "suffix_completed_one": "suivis terminés",
+        "suffix_completed_other": "suivis terminés"
+    },
+    "table": {
+        "actionHeader": "Action"
+    },
+    "callReasons": {
+        "noSubmissionId": "Ce lead n'a pas d'identifiant de soumission",
+        "noPhone": "Ce lead n'a aucun numéro de téléphone enregistré",
+        "callInProgress": "Un autre appel est en cours de démarrage…"
+    },
+    "errors": {
+        "loadFailedTitle": "Impossible de charger les suivis",
+        "loadFailedDescription": "Une erreur s'est produite lors du chargement des suivis. Réessayez."
+    },
+    "empty": {
+        "title": {
+            "teamAllCaughtUp": "Aucun suivi en attente pour toute l'équipe",
+            "selfAllCaughtUp": "Tout est à jour",
+            "noOverdue": "Aucun suivi en retard",
+            "nothingToday": "Rien à faire aujourd'hui",
+            "noUpcoming": "Aucun suivi à venir dans les 7 prochains jours",
+            "default": "Aucun suivi",
+            "noMatches": "Aucun suivi ne correspond à votre recherche"
+        },
+        "description": {
+            "overdueNudge_one": "Vous avez {{count, number}} tâche en retard — basculez sur « En attente » ci-dessus.",
+            "overdueNudge_many": "Vous avez {{count, number}} tâche en retard — basculez sur « En attente » ci-dessus.",
+            "overdueNudge_other": "Vous avez {{count, number}} tâches en retard — basculez sur « En attente » ci-dessus.",
+            "upcomingNudge": "Basculez sur « À venir » ci-dessus pour voir ce qui arrive ensuite.",
+            "teamAllCaughtUp": "L'équipe est à jour sur tous les suivis de cette vue.",
+            "selfAllCaughtUp": "Vous n'avez aucun suivi en attente dans cette vue.",
+            "noMatches": "Rien ne correspond à « {{query}} ». Effacez la recherche pour voir toute la file."
+        }
+    },
+    "search": {
+        "placeholder": "Rechercher nom, téléphone ou e-mail…"
+    },
+    "export": {
+        "action": "Exporter",
+        "running": "Export en cours…",
+        "failed": "Impossible d'exporter les relances. Réessayez.",
+        "columns": {
+            "name": "Nom du lead",
+            "email": "E-mail",
+            "phone": "Téléphone",
+            "source": "Source",
+            "status": "Statut",
+            "dueAt": "Échéance",
+            "leadOwner": "Responsable du lead",
+            "interestLevel": "Niveau d'intérêt",
+            "followUpNote": "Note de suivi",
+            "studentResponse": "Réponse de l'étudiant",
+            "followUpMode": "Mode de suivi",
+            "nextAction": "Action suivante"
+        },
+        "progress": "Export des suivis… {{done}} sur {{total}}",
+        "done_one": "{{count}} suivi exporté",
+        "done_other": "{{count, number}} suivis exportés",
+        "alreadyRunning": "Un export est déjà en cours — le fichier sera téléchargé à la fin.",
+        "truncated_other": "Les {{count, number}} premiers suivis ont été exportés. Affinez le filtre pour obtenir le reste.",
+        "partial_other": "L'export s'est interrompu. Les {{count, number}} suivis déjà récupérés ont été téléchargés — relancez pour le reste.",
+        "truncated_one": "Les {{count, number}} premiers suivis ont été exportés. Affinez le filtre pour obtenir le reste.",
+        "partial_one": "L'export s'est interrompu. Les {{count, number}} suivis déjà récupérés ont été téléchargés — relancez pour le reste.",
+        "done_many": "{{count, number}} suivis exportés",
+        "truncated_many": "Les {{count, number}} premiers suivis ont été exportés. Affinez le filtre pour obtenir le reste.",
+        "partial_many": "L'export s'est interrompu. Les {{count, number}} suivis déjà récupérés ont été téléchargés — relancez pour le reste."
+    },
+    "filters": {
+        "campaignType": "Tous : {{term}}",
+        "audience": "Tous : {{term}}",
+        "audienceUntitled": "Audience sans titre",
+        "interestLevel": "Tous les niveaux d’intérêt"
+    },
+    "completedRange": {
+        "preset_one": "Aujourd'hui",
+        "preset_other": "{{count}} derniers jours",
+        "custom": "Plage personnalisée",
+        "from": "Date de début",
+        "to": "Date de fin",
+        "preset_many": "{{count}} derniers jours",
+        "allTime": "Toute la période"
+    },
+    "dueRange": {
+        "from": "Échéance du",
+        "to": "Échéance au",
+        "clear": "Effacer les dates d'échéance"
+    }
+}

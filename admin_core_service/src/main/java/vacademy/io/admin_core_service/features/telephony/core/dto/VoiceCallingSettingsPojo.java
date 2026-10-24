@@ -77,6 +77,22 @@ public class VoiceCallingSettingsPojo {
         private Double aiCallOutPerMinuteCredits;
         /** Override: credits/min for inbound AI-conversation minutes (ai_call_in). */
         private Double aiCallInPerMinuteCredits;
+        /**
+         * Billing granularity in SECONDS — the pulse every call is rounded up to.
+         *
+         * <p>null or &lt;= 0 means the platform default ({@code telephony.billing.pulse-seconds},
+         * 30 = half-minute pulses). Set it per institute only to depart from that — 60 puts one
+         * back on per-minute rounding. The pulse matters because most AI calls are short: under
+         * per-minute rounding a 5-second call pays a full minute, and on a list where people
+         * answer and hang up immediately that is the majority of the spend.
+         *
+         * <p>The per-meter rates below stay expressed as credits per MINUTE whatever the pulse
+         * is, so a pulse change alone never silently reprices anyone: one pulse costs
+         * {@code perMinute * pulseSeconds / 60}. A 30s pulse at 4 credits/min bills 2 credits
+         * per half minute.
+         */
+        private Integer billingPulseSeconds;
+
         /** Concurrent channels this institute has purchased (hard dial cap). */
         private Integer purchasedChannels;
         /** The plan we sold them (free-text, for visibility in settings). */

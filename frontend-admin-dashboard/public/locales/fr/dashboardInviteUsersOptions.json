@@ -1,0 +1,45 @@
+{
+  "menu": {
+    "editUser": "Modifier",
+    "resendInvite": "Renvoyer l'invitation",
+    "cancelInvite": "Annuler l'invitation"
+  },
+  "editUser": {
+    "title": "Modifier",
+    "nameLabel": "Nom complet",
+    "namePlaceholder": "Nom complet (prénom et nom)",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "Saisir l'e-mail",
+    "roleTypeLabel": "Type de rôle",
+    "submit": "Modifier l'utilisateur",
+    "validation": {
+      "nameRequired": "Le nom complet est requis",
+      "emailRequired": "L'e-mail est requis",
+      "emailInvalid": "Format d'e-mail invalide",
+      "roleRequired": "Au moins un type de rôle est requis"
+    },
+    "toast": {
+      "success": "L'invitation de cet utilisateur a été mise à jour avec succès !"
+    }
+  },
+  "resendInvite": {
+    "title": "Renvoyer l'invitation",
+    "attention": "Attention",
+    "confirmPrefix": "Voulez-vous vraiment renvoyer l'invitation à",
+    "confirmSuffix": " ?",
+    "confirmButton": "Oui",
+    "toast": {
+      "success": "L'invitation de cet utilisateur a été renvoyée avec succès !"
+    }
+  },
+  "cancelInvite": {
+    "title": "Annuler l'invitation",
+    "attention": "Attention",
+    "confirmPrefix": "Voulez-vous vraiment annuler l'invitation de",
+    "confirmSuffix": " ?",
+    "confirmButton": "Oui",
+    "toast": {
+      "success": "L'invitation de cet utilisateur a été annulée avec succès !"
+    }
+  }
+}

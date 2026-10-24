@@ -23,6 +23,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowsClockwise,
     CaretDown,
@@ -127,6 +128,7 @@ export default function CallingTab(props: {
     counsellorUserId?: string;
 }) {
     const { instituteId, fromDate, toDate, teamId, counsellorUserId } = props;
+    const { t } = useTranslation('audienceManagerCallingTab');
     const params: CallingReportParams = { instituteId, fromDate, toDate, teamId, counsellorUserId };
 
     // Don't burn retries on endpoints that aren't deployed yet.
@@ -166,7 +168,7 @@ export default function CallingTab(props: {
     }, [days]);
 
     if (!instituteId) {
-        return <EmptyBlock message="Pick an institute to view calling reports." />;
+        return <EmptyBlock message={t('empty.pickInstitute')} />;
     }
 
     // Both endpoints ship in the same backend release — one notice for the tab.
@@ -181,7 +183,13 @@ export default function CallingTab(props: {
 
     const exportDailyCsv = () => {
         const csv = buildCsv(
-            ['Date', 'Dials', 'Connected', 'Connect rate (%)', 'Talk time (seconds)'],
+            [
+                t('csv.daily.date'),
+                t('csv.daily.dials'),
+                t('csv.daily.connected'),
+                t('csv.daily.connectRate'),
+                t('csv.daily.talkTime'),
+            ],
             days.map((d) => [
                 d.date,
                 d.dials,
@@ -197,12 +205,12 @@ export default function CallingTab(props: {
         const outcomeKeys = orderedOutcomeKeys(byCounsellor);
         const csv = buildCsv(
             [
-                'Counsellor',
-                'Dials',
-                'Connected',
-                'Connect rate (%)',
-                'Talk time (seconds)',
-                'Avg call (seconds)',
+                t('csv.counsellor.counsellor'),
+                t('csv.counsellor.dials'),
+                t('csv.counsellor.connected'),
+                t('csv.counsellor.connectRate'),
+                t('csv.counsellor.talkTime'),
+                t('csv.counsellor.avgCall'),
                 ...outcomeKeys.map(humanizeCallStatus),
             ],
             byCounsellor.map((r) => [
@@ -237,11 +245,11 @@ export default function CallingTab(props: {
             {/* 1 — KPI row */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiStat
-                    label="Total Dials"
+                    label={t('kpi.totalDials.label')}
                     value={fmtNumber(totals.dials)}
                     sub={
                         days.length > 0
-                            ? `across ${days.length} day${days.length === 1 ? '' : 's'}`
+                            ? t('kpi.totalDials.sub', { count: days.length })
                             : undefined
                     }
                     icon={<Phone size={20} weight="bold" />}
@@ -249,25 +257,32 @@ export default function CallingTab(props: {
                     loading={dailyLoading}
                 />
                 <KpiStat
-                    label="Connected"
+                    label={t('kpi.connected.label')}
                     value={fmtNumber(totals.connected)}
-                    sub={totals.dials > 0 ? `of ${fmtNumber(totals.dials)} dials` : undefined}
+                    sub={
+                        totals.dials > 0
+                            ? t('kpi.connected.sub', {
+                                  count: totals.dials,
+                                  dials: fmtNumber(totals.dials),
+                              })
+                            : undefined
+                    }
                     icon={<PhoneCall size={20} weight="bold" />}
                     tone="success"
                     loading={dailyLoading}
                 />
                 <KpiStat
-                    label="Connect Rate"
+                    label={t('kpi.connectRate.label')}
                     value={fmtPct(totals.connectRate)}
-                    sub="connected ÷ dials"
+                    sub={t('kpi.connectRate.sub')}
                     icon={<Percent size={20} weight="bold" />}
                     tone="info"
                     loading={dailyLoading}
                 />
                 <KpiStat
-                    label="Talk Time"
+                    label={t('kpi.talkTime.label')}
                     value={fmtTalkHm(totals.talkSeconds)}
-                    sub="hours : minutes"
+                    sub={t('kpi.talkTime.sub')}
                     icon={<Timer size={20} weight="bold" />}
                     tone="warning"
                     loading={dailyLoading}
@@ -280,16 +295,18 @@ export default function CallingTab(props: {
                     <div className="flex items-center gap-2">
                         <ChartLineUp size={18} className="text-neutral-500" />
                         <h2 className="text-base font-semibold text-neutral-900">
-                            Daily call activity
+                            {t('dailyChart.heading')}
                         </h2>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-4 text-xs text-neutral-600">
                             <span className="flex items-center gap-1">
-                                <span className="size-2 rounded-full bg-blue-500" /> Dials
+                                <span className="size-2 rounded-full bg-blue-500" />{' '}
+                                {t('dailyChart.legendDials')}
                             </span>
                             <span className="flex items-center gap-1">
-                                <span className="size-2 rounded-full bg-green-600" /> Connected
+                                <span className="size-2 rounded-full bg-green-600" />{' '}
+                                {t('dailyChart.legendConnected')}
                             </span>
                         </div>
                         <MyButton
@@ -300,7 +317,7 @@ export default function CallingTab(props: {
                         >
                             <span className="flex items-center gap-2">
                                 <DownloadSimple size={14} />
-                                Export CSV
+                                {t('dailyChart.exportCsv')}
                             </span>
                         </MyButton>
                     </div>
@@ -310,7 +327,7 @@ export default function CallingTab(props: {
                 ) : dailyQuery.isError ? (
                     <ErrorNotice onRetry={() => dailyQuery.refetch()} />
                 ) : days.length === 0 ? (
-                    <EmptyBlock message="No calls in this range." />
+                    <EmptyBlock message={t('empty.noCallsInRange')} />
                 ) : (
                     <DailyCallsChart points={days} />
                 )}
@@ -322,7 +339,7 @@ export default function CallingTab(props: {
                     <div className="flex items-center gap-2">
                         <Users size={18} className="text-neutral-500" />
                         <h2 className="text-base font-semibold text-neutral-900">
-                            Counsellor call performance
+                            {t('counsellorTable.heading')}
                         </h2>
                         {byCounsellor.length > 0 && (
                             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
@@ -338,7 +355,7 @@ export default function CallingTab(props: {
                     >
                         <span className="flex items-center gap-2">
                             <DownloadSimple size={14} />
-                            Export CSV
+                            {t('counsellorTable.exportCsv')}
                         </span>
                     </MyButton>
                 </div>
@@ -347,7 +364,7 @@ export default function CallingTab(props: {
                 ) : dailyQuery.isError ? (
                     <ErrorNotice onRetry={() => dailyQuery.refetch()} />
                 ) : byCounsellor.length === 0 ? (
-                    <EmptyBlock message="No counsellor call activity in this range." />
+                    <EmptyBlock message={t('empty.noCounsellorActivity')} />
                 ) : (
                     <CounsellorCallsTable rows={byCounsellor} />
                 )}
@@ -359,19 +376,17 @@ export default function CallingTab(props: {
                     <div className="flex items-center gap-2">
                         <GridFour size={18} className="text-neutral-500" />
                         <h2 className="text-base font-semibold text-neutral-900">
-                            Calling hours heatmap
+                            {t('heatmap.heading')}
                         </h2>
                     </div>
-                    <span className="text-xs text-neutral-500">
-                        Day × hour, in your institute&apos;s report timezone
-                    </span>
+                    <span className="text-xs text-neutral-500">{t('heatmap.timezoneNote')}</span>
                 </div>
                 {heatmapQuery.isLoading ? (
                     <LoadingBlock />
                 ) : heatmapQuery.isError ? (
                     <ErrorNotice onRetry={() => heatmapQuery.refetch()} />
                 ) : (heatmapQuery.data?.cells.length ?? 0) === 0 ? (
-                    <EmptyBlock message="No calls in this range." />
+                    <EmptyBlock message={t('empty.noCallsInRange')} />
                 ) : (
                     <CallsHeatmap cells={heatmapQuery.data?.cells ?? []} />
                 )}
@@ -384,29 +399,28 @@ export default function CallingTab(props: {
 
 /** The reports endpoints aren't on this backend yet (immediate post-merge reality). */
 function DeployPendingNotice() {
+    const { t } = useTranslation('audienceManagerCallingTab');
     return (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-10 text-center">
             <Wrench size={28} className="text-neutral-400" />
-            <p className="text-sm font-medium text-neutral-700">
-                Calling reports aren&apos;t available on this server yet
-            </p>
+            <p className="text-sm font-medium text-neutral-700">{t('deployPending.title')}</p>
             <p className="max-w-md text-xs text-neutral-500">
-                The reporting endpoints haven&apos;t been deployed to this environment. Check back
-                after the next backend release.
+                {t('deployPending.description')}
             </p>
         </div>
     );
 }
 
 function ErrorNotice({ onRetry }: { onRetry: () => void }) {
+    const { t } = useTranslation('audienceManagerCallingTab');
     return (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
             <WarningCircle size={24} className="text-danger-500" />
-            <p className="text-sm text-neutral-600">Couldn&apos;t load this report.</p>
+            <p className="text-sm text-neutral-600">{t('error.loadFailed')}</p>
             <MyButton buttonType="secondary" scale="small" onClick={onRetry}>
                 <span className="flex items-center gap-2">
                     <ArrowsClockwise size={14} />
-                    Retry
+                    {t('error.retry')}
                 </span>
             </MyButton>
         </div>
@@ -472,6 +486,7 @@ function KpiStat({ label, value, sub, icon, tone, loading }: KpiStatProps) {
 // Same hand-rolled SVG idiom as the Overview tab's TrendChart — no chart libs.
 
 function DailyCallsChart({ points }: { points: CallsDailyPoint[] }) {
+    const { t } = useTranslation('audienceManagerCallingTab');
     const W = 700;
     const H = 180;
     const PAD = 32;
@@ -494,7 +509,7 @@ function DailyCallsChart({ points }: { points: CallsDailyPoint[] }) {
                 className="h-44 w-full"
                 preserveAspectRatio="none"
                 role="img"
-                aria-label="Daily dials and connected calls"
+                aria-label={t('dailyChart.ariaLabel')}
             >
                 {/* gridlines */}
                 <line
@@ -586,6 +601,7 @@ type SortKey =
     | 'avg_call_seconds';
 
 function CounsellorCallsTable({ rows }: { rows: CallsByCounsellorRow[] }) {
+    const { t } = useTranslation('audienceManagerCallingTab');
     const [sortKey, setSortKey] = useState<SortKey>('dials');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -622,7 +638,7 @@ function CounsellorCallsTable({ rows }: { rows: CallsByCounsellorRow[] }) {
                 <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                         <SortableHeader
-                            label="Counsellor"
+                            label={t('counsellorTable.headers.counsellor')}
                             sortKey="name"
                             current={sortKey}
                             dir={sortDir}
@@ -630,41 +646,43 @@ function CounsellorCallsTable({ rows }: { rows: CallsByCounsellorRow[] }) {
                             align="left"
                         />
                         <SortableHeader
-                            label="Dials"
+                            label={t('counsellorTable.headers.dials')}
                             sortKey="dials"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Connected"
+                            label={t('counsellorTable.headers.connected')}
                             sortKey="connected"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Connect %"
+                            label={t('counsellorTable.headers.connectRate')}
                             sortKey="connect_rate"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Talk time"
+                            label={t('counsellorTable.headers.talkTime')}
                             sortKey="talk_seconds"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Avg call"
+                            label={t('counsellorTable.headers.avgCall')}
                             sortKey="avg_call_seconds"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
-                        <th className="py-2 pr-3 text-left">Outcomes</th>
+                        <th className="py-2 pe-3 text-start">
+                            {t('counsellorTable.headers.outcomes')}
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -768,7 +786,7 @@ function SortableHeader({
 // ── Hourly heatmap (7×24 CSS grid, no chart library) ───────────────────
 
 /** dow 1 = Monday … 7 = Sunday (backend contract). */
-const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const DOW_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
 /** Intensity buckets relative to the busiest cell — static classes so Tailwind keeps them. */
@@ -792,6 +810,8 @@ const HEAT_LEGEND_CLASSES = [
 ] as const;
 
 function CallsHeatmap({ cells }: { cells: CallsHeatmapCell[] }) {
+    const { t } = useTranslation('audienceManagerCallingTab');
+    const dowLabels = DOW_KEYS.map((k) => t(`heatmap.days.${k}`));
     const byKey = useMemo(() => {
         const m = new Map<string, CallsHeatmapCell>();
         for (const c of cells) m.set(`${c.dow}-${c.hour}`, c);
@@ -817,7 +837,7 @@ function CallsHeatmap({ cells }: { cells: CallsHeatmapCell[] }) {
                             {h % 3 === 0 ? h : ''}
                         </span>
                     ))}
-                    {DOW_LABELS.map((label, i) => {
+                    {dowLabels.map((label, i) => {
                         const dow = i + 1; // 1 = Mon … 7 = Sun
                         return (
                             <Fragment key={dow}>
@@ -836,8 +856,16 @@ function CallsHeatmap({ cells }: { cells: CallsHeatmapCell[] }) {
                                             key={h}
                                             title={
                                                 dials > 0
-                                                    ? `${label} ${hourLabel} — ${dials} dial${dials === 1 ? '' : 's'} · ${pct}% connected`
-                                                    : `${label} ${hourLabel} — no dials`
+                                                    ? t('heatmap.tooltip.withDials', {
+                                                          day: label,
+                                                          hour: hourLabel,
+                                                          count: dials,
+                                                          pct,
+                                                      })
+                                                    : t('heatmap.tooltip.noDials', {
+                                                          day: label,
+                                                          hour: hourLabel,
+                                                      })
                                             }
                                             className={cn('h-5 rounded-sm', heatClass(dials, max))}
                                         />
@@ -850,11 +878,11 @@ function CallsHeatmap({ cells }: { cells: CallsHeatmapCell[] }) {
             </div>
             {/* Intensity legend */}
             <div className="flex items-center justify-end gap-1 text-xs text-neutral-500">
-                <span className="mr-1">Fewer</span>
+                <span className="me-1">{t('heatmap.legendFewer')}</span>
                 {HEAT_LEGEND_CLASSES.map((c) => (
                     <span key={c} className={cn('size-3 rounded-sm', c)} />
                 ))}
-                <span className="ml-1">More</span>
+                <span className="ms-1">{t('heatmap.legendMore')}</span>
             </div>
         </div>
     );

@@ -1,0 +1,169 @@
+{
+    "previewNote": "Select this block in the Website view to see the popup exactly as visitors will. Visitors never see the dashed strip.",
+    "sections": {
+        "template": "Template",
+        "content": "Content",
+        "offer": "Offer",
+        "button": "Button",
+        "behaviour": "When to show",
+        "colours": "Colours",
+        "customHtml": "Custom HTML"
+    },
+    "templates": {
+        "spotlight": {
+            "label": "Spotlight",
+            "description": "Big offer on a gradient, centred"
+        },
+        "split": {
+            "label": "Split",
+            "description": "Image on one side, details on the other"
+        },
+        "poster": {
+            "label": "Poster",
+            "description": "Full image with text on top"
+        },
+        "ticket": {
+            "label": "Coupon ticket",
+            "description": "Tear-off ticket built around the code"
+        },
+        "corner": {
+            "label": "Corner card",
+            "description": "Slides in at the corner, page stays usable"
+        },
+        "bar": {
+            "label": "Sticky bar",
+            "description": "Slim strip along the bottom of the screen"
+        },
+        "custom": {
+            "label": "Custom HTML",
+            "description": "Your own design — HTML and CSS in one box"
+        }
+    },
+    "fields": {
+        "badge": "Badge",
+        "highlight": "Big offer text",
+        "heading": "Heading",
+        "body": "Description",
+        "image": "Image (optional)",
+        "dismissText": "\"No thanks\" link",
+        "footnote": "Small print",
+        "couponCode": "Coupon code",
+        "showCountdown": "Show countdown",
+        "buttonText": "Button text",
+        "onClick": "On click",
+        "formToOpen": "Form to open",
+        "formTitle": "Form title",
+        "whatsappPhone": "WhatsApp number",
+        "whatsappMessage": "Pre-filled message",
+        "link": "Link",
+        "trigger": "Open the popup",
+        "delaySeconds": "Delay after page load",
+        "scrollPercent": "After scrolling",
+        "frequency": "How often",
+        "devices": "Show on",
+        "closeOnBackdrop": "Close when clicking outside",
+        "accentColor": "Accent colour",
+        "backgroundColor": "Card background",
+        "textColor": "Text colour",
+        "customHtml": "HTML + CSS (one box)",
+        "customWidth": "Popup width",
+        "endDate": "Offer ends at",
+        "startDate": "Start showing from"
+    },
+    "placeholders": {
+        "badge": "Limited time",
+        "highlight": "50% OFF",
+        "heading": "Flash sale on all courses",
+        "body": "A line or two about the offer",
+        "imageAlt": "Describe the image (for screen readers)",
+        "dismissText": "No thanks",
+        "footnote": "*Terms and conditions apply",
+        "couponCode": "SAVE50",
+        "buttonText": "Grab the offer",
+        "formTitle": "Popup title",
+        "whatsappPhone": "919876543210",
+        "whatsappMessage": "Hi, I want to know about the offer"
+    },
+    "hints": {
+        "highlight": "Shown large — a discount, a price or a short word.",
+        "barNoImage": "The sticky bar does not show an image.",
+        "couponCode": "Visitors get a one-tap Copy button. Leave empty to hide.",
+        "countdownNeedsEnd": "Set \"Offer ends at\" to show the countdown.",
+        "noButton": "No button text = no button.",
+        "pickForm": "Pick a form, or the button does nothing.",
+        "whatsappPhone": "Country code + number, digits only.",
+        "exit": "Opens when the mouse heads for the browser tabs. On phones (no mouse) it opens after 20 seconds instead.",
+        "frequency": "Counted per visitor, on their browser. Clicking the button counts as done — they are not asked again.",
+        "startAfterEnd": "The start is after the end — the popup will never show.",
+        "ended": "This offer has ended — visitors no longer see the popup.",
+        "colours": "Leave empty to use the site’s brand colour.",
+        "customHtml": "Paste HTML with its <style> in the same box — the popup splits them. Scripts, forms and iframes are removed. Site colours: hsl(var(--primary-500)). The ✕ close button is always added.",
+        "customLimit": "{{count}} / {{limit}} characters",
+        "customTooLong": "Too long — anything past the limit is cut off on the site.",
+        "endDate": "The countdown runs to this time, and the popup stops showing after it.",
+        "startDate": "Leave empty to start right away.",
+        "endDateCustom": "Used by data-vacademy=\"countdown\" in your HTML, and the popup stops showing after it."
+    },
+    "actions": {
+        "link": "Open link",
+        "openForm": "Open form popup",
+        "whatsapp": "WhatsApp chat"
+    },
+    "triggers": {
+        "delay": "After a delay",
+        "scroll": "On scroll",
+        "exit": "On exit intent"
+    },
+    "delay": {
+        "instant": "Instantly",
+        "seconds_one": "{{count}} sec",
+        "seconds_other": "{{count}} sec"
+    },
+    "frequency": {
+        "always": "Every page load",
+        "session": "Once per visit",
+        "daily": "Once a day",
+        "weekly": "Once a week",
+        "once": "Only once, ever"
+    },
+    "devices": {
+        "all": "All devices",
+        "desktop": "Desktop only",
+        "mobile": "Mobile only"
+    },
+    "resetColours": "Use brand colours",
+    "width": {
+        "sm": "Narrow",
+        "md": "Medium",
+        "lg": "Wide"
+    },
+    "starters": {
+        "title": "Start from a design",
+        "offer": "Offer card",
+        "banner": "Image banner",
+        "simple": "Simple",
+        "hint": "Built from your current text and colours — then edit freely.",
+        "replaceConfirm": "This replaces the HTML in the box. Continue?",
+        "replace": "Replace",
+        "cancel": "Cancel"
+    },
+    "starterText": {
+        "useCode": "Use code",
+        "copy": "Copy",
+        "endsIn": "Ends in"
+    },
+    "hooks": {
+        "title": "Hooks — make buttons do things",
+        "intro": "Add these attributes to any button or link in your HTML.",
+        "close": "Close the popup",
+        "copy": "Copy a coupon code",
+        "countdown": "Live countdown to \"Offer ends at\"",
+        "route": "Open a page of this site",
+        "form": "Open a form (campaign)",
+        "link": "Open an outside link",
+        "whatsapp": "WhatsApp chat",
+        "formPicker": "Form for the snippet",
+        "copied": "Copied",
+        "copyAction": "Copy"
+    }
+}

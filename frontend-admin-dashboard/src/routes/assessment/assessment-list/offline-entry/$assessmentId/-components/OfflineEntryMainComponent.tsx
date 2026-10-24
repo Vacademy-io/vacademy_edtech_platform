@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import {
@@ -49,6 +50,7 @@ const ATTACHMENT_FIELD: Record<AttachmentSlot, keyof OfflineAttachmentsRequest> 
 type Step = 'SELECT_STUDENT' | 'ENTER_RESPONSES' | 'COMPLETED';
 
 export const OfflineEntryMainComponent = () => {
+    const { t } = useTranslation('assessmentOfflineEntryMainComponent');
     const { assessmentId } = Route.useParams();
     const navigate = useNavigate();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
@@ -62,7 +64,7 @@ export const OfflineEntryMainComponent = () => {
         })
     );
 
-    const assessmentName = assessmentDetails?.[0]?.saved_data?.name ?? 'Assessment';
+    const assessmentName = assessmentDetails?.[0]?.saved_data?.name ?? t('defaults.assessmentName');
     const assessmentVisibility = assessmentDetails?.[0]?.saved_data?.assessment_visibility ?? 'PRIVATE';
 
     const sections: Section[] = useMemo(
@@ -88,7 +90,8 @@ export const OfflineEntryMainComponent = () => {
     );
 
     useEffect(() => {
-        setNavHeading('Offline Data Entry');
+        setNavHeading(t('navHeading'));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const packageSessionIds = useMemo(
@@ -185,7 +188,8 @@ export const OfflineEntryMainComponent = () => {
                 source: instituteId,
                 sourceId: 'ASSESSMENT_OFFLINE_ENTRY',
             });
-            if (!fileId) throw new Error(`Could not upload "${file.name}"`);
+            if (!fileId)
+                throw new Error(t('errors.uploadFailed', { fileName: file.name }));
             payload[ATTACHMENT_FIELD[slot]] = fileId;
         }
 
@@ -262,7 +266,7 @@ export const OfflineEntryMainComponent = () => {
                 );
             }
 
-            toast.success('Offline responses submitted successfully');
+            toast.success(t('toasts.submitSuccess'));
             setStep('COMPLETED');
         } catch (error) {
             // Surface the real reason — an upload failure names the file that
@@ -276,7 +280,7 @@ export const OfflineEntryMainComponent = () => {
                 backendMessage ??
                 (error instanceof Error && error.message
                     ? error.message
-                    : 'Failed to submit offline responses');
+                    : t('errors.submitFailed'));
             setSubmitError(message);
             toast.error(message);
         } finally {
@@ -293,7 +297,7 @@ export const OfflineEntryMainComponent = () => {
                     <div>
                         <h1 className="text-xl font-bold">{assessmentName}</h1>
                         <p className="text-sm text-gray-500">
-                            Offline Data Entry — Select a student to begin
+                            {t('selectStudent.subtitle')}
                         </p>
                     </div>
                     <MyButton
@@ -302,7 +306,7 @@ export const OfflineEntryMainComponent = () => {
                         type="button"
                         onClick={() => setShowBulkImport(true)}
                     >
-                        <FileZip className="size-4" /> Bulk Import
+                        <FileZip className="size-4" /> {t('selectStudent.bulkImport')}
                     </MyButton>
                 </div>
                 <Separator />
@@ -335,9 +339,11 @@ export const OfflineEntryMainComponent = () => {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl text-green-600">
                     &#10003;
                 </div>
-                <h2 className="text-xl font-bold">Submission Complete</h2>
+                <h2 className="text-xl font-bold">{t('completed.title')}</h2>
                 <p className="text-sm text-gray-500">
-                    Offline responses for {selectedStudent?.name} have been submitted and scored.
+                    {t('completed.summaryPrefix')}
+                    {selectedStudent?.name}
+                    {t('completed.summarySuffix')}
                 </p>
                 <div className="flex gap-3">
                     <button
@@ -350,13 +356,13 @@ export const OfflineEntryMainComponent = () => {
                         }}
                         className="rounded-md border px-4 py-2 text-sm"
                     >
-                        Enter Another Student
+                        {t('completed.enterAnotherStudent')}
                     </button>
                     <button
                         onClick={() => navigate({ to: '/assessment/assessment-list' })}
                         className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white"
                     >
-                        Back to Assessments
+                        {t('completed.backToAssessments')}
                     </button>
                 </div>
             </div>
@@ -373,7 +379,7 @@ export const OfflineEntryMainComponent = () => {
                         onClick={handleBackToSelection}
                         className="flex items-center gap-1 text-sm text-primary-500 hover:underline"
                     >
-                        &larr; Back
+                        &larr; {t('responses.back')}
                     </button>
                     <Separator orientation="vertical" className="h-5" />
                     <span className="text-sm font-semibold">{selectedStudent?.name}</span>
@@ -388,7 +394,7 @@ export const OfflineEntryMainComponent = () => {
                                     : 'text-gray-500 hover:bg-gray-50'
                             }`}
                         >
-                            Table
+                            {t('responses.viewMode.table')}
                         </button>
                         <button
                             onClick={() => setViewMode('preview')}
@@ -398,7 +404,7 @@ export const OfflineEntryMainComponent = () => {
                                     : 'text-gray-500 hover:bg-gray-50'
                             }`}
                         >
-                            Preview
+                            {t('responses.viewMode.preview')}
                         </button>
                     </div>
                 </div>
@@ -427,7 +433,7 @@ export const OfflineEntryMainComponent = () => {
                                         : 'border text-gray-500 hover:bg-gray-50'
                                 }`}
                             >
-                                Auto
+                                {t('responses.scoringMode.auto')}
                             </button>
                             <button
                                 onClick={() => setScoringMode('DIRECT_MARKS')}
@@ -437,7 +443,7 @@ export const OfflineEntryMainComponent = () => {
                                         : 'border text-gray-500 hover:bg-gray-50'
                                 }`}
                             >
-                                Direct Marks
+                                {t('responses.scoringMode.directMarks')}
                             </button>
                         </div>
 
@@ -454,7 +460,7 @@ export const OfflineEntryMainComponent = () => {
                             onClick={() => setShowSubmitDialog(true)}
                             className="mt-6 w-full rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
                         >
-                            Submit All Responses
+                            {t('responses.submitAll')}
                         </button>
                     </div>
 
@@ -476,7 +482,9 @@ export const OfflineEntryMainComponent = () => {
                                 onSubmit={() => setShowSubmitDialog(true)}
                             />
                         ) : (
-                            <p className="text-sm text-gray-500">No questions in this section.</p>
+                            <p className="text-sm text-gray-500">
+                                {t('responses.noQuestionsInSection')}
+                            </p>
                         )}
                     </div>
                 </div>

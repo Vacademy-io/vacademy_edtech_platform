@@ -17,9 +17,14 @@ import {
     Buildings,
     Users,
     Path,
+    Robot,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 import type { StudentSideViewTabId } from '@/types/display-settings';
+
+/** i18next namespace for this file's translated section labels. */
+const NAV_GROUPS_NS = 'manageStudentsNavGroups';
 
 /**
  * Section → group registry, per Vacademy design handoff
@@ -122,4 +127,29 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     // Records — "What's the audit trail?"
     { id: 'reports', label: 'Reports', icon: FileText, group: 'Records' },
     { id: 'fullHistory', label: 'Full History', icon: ClockCounterClockwise, group: 'Records' },
+    // Automations that ran FOR this person (with a Retry per run). Sits in
+    // Records because it answers the same audit-trail question as Full
+    // History — what happened to this learner, and did it work?
+    { id: 'workflows', label: 'Workflows', icon: Robot, group: 'Records' },
 ] as const;
+
+/**
+ * Translated view of {@link SECTION_REGISTRY} for UI rendering.
+ *
+ * `SECTION_REGISTRY` itself stays a static, English-labelled constant so
+ * call sites that only need the `id`/`icon`/`group` fields for matching or
+ * routing (e.g. filtering visible tab IDs) don't need a `t` in scope at all.
+ * Consumers that actually render `label` text (currently just
+ * `GroupedNavRail`) should call this instead, passing their own `t` from
+ * `useTranslation('manageStudentsNavGroups')`.
+ *
+ * Only `label` is swapped for the translated string — `id`, `icon`, and
+ * `group` (used for active-tab matching, module gating, and grouping) are
+ * copied through untouched.
+ */
+export function buildSectionRegistry(t: TFunction): readonly SectionMeta[] {
+    return SECTION_REGISTRY.map((section) => ({
+        ...section,
+        label: t(`sections.${section.id}`, { ns: NAV_GROUPS_NS, defaultValue: section.label }),
+    }));
+}

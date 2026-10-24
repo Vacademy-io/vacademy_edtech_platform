@@ -1,0 +1,26 @@
+{
+    "columns": {
+        "fullName": "पूरा नाम",
+        "username": "उपयोगकर्ता नाम",
+        "enrollmentNumber": "नामांकन संख्या",
+        "mobileNumber": "मोबाइल नंबर",
+        "email": "ईमेल",
+        "status": "स्थिति",
+        "error": "त्रुटि"
+    },
+    "summary": {
+        "successCount_one": "{{count}} सफल परिणाम",
+        "successCount_other": "{{count}} सफल परिणाम",
+        "failedCount_one": "{{count}} विफल परिणाम",
+        "failedCount_other": "{{count}} विफल परिणाम",
+        "warningMessage": "कुछ प्रविष्टियाँ सफलतापूर्वक अपलोड नहीं हो सकीं। कृपया विवरण के लिए {{column}} कॉलम देखें।"
+    },
+    "error": {
+        "none": "कोई त्रुटि नहीं",
+        "detailsLabel": "त्रुटि विवरण:"
+    },
+    "actions": {
+        "view": "देखें",
+        "downloadResponse": "प्रतिक्रिया डाउनलोड करें"
+    }
+}

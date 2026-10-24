@@ -1,0 +1,41 @@
+{
+    "modes": {
+        "strict": {
+            "label": "Only this material",
+            "help": "Slides the material does not cover are flagged instead of being written from general knowledge."
+        },
+        "blended": {
+            "label": "Fill the gaps",
+            "help": "Where the material is thin, the AI adds its own explanation to keep the course complete."
+        }
+    },
+    "fidelities": {
+        "replicate": {
+            "label": "Follow the book",
+            "help": "Keeps the material's own section headings, numbering and order, and preserves stated chapter identity (number, title, authors, objectives)."
+        },
+        "adapt": {
+            "label": "Adapt for teaching",
+            "help": "The AI may re-title and re-order sections to make the course flow better."
+        }
+    },
+    "coverages": {
+        "full": {
+            "label": "Every section",
+            "help": "Every selected section becomes at least one slide, so nothing in the material is skipped. Makes longer courses."
+        },
+        "highlights": {
+            "label": "Highlights",
+            "help": "Closely-related sections may be condensed into fewer slides."
+        }
+    },
+    "buildFrom": "Build from",
+    "myOwnMaterial": "My own material",
+    "dontUseMyMaterial": "Don't use my material",
+    "topicsSelected_one": "{{selected}} of {{count}} topic",
+    "topicsSelected_other": "{{selected}} of {{count}} topics",
+    "structure": "Structure",
+    "coverage": "Coverage",
+    "noTopicsYet": "This knowledge base has no topics yet, so the whole of it will be used.",
+    "everySlideFromPages": "Every slide will be written from the pages about its own topic, and will show which page it came from."
+}

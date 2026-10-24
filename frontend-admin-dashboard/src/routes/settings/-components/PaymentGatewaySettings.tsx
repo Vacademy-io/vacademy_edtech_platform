@@ -14,6 +14,7 @@ import {
     WarningCircle,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import {
     Card,
@@ -62,6 +63,12 @@ import { resolveGatewayBranding } from '../-constants/payment-gateway-branding';
 // `payment_gateway_specific_data`. The `secret` flag controls whether the
 // field is rendered as a password input and whether masked values coming back
 // from the server are treated as "leave unchanged" on submit.
+//
+// NOTE ON I18N: `label`, `description`, `placeholder`, `helper` and the
+// `setupSteps` entries below hold i18next KEY PATHS (relative to the
+// `settingsPaymentGateway` namespace) rather than literal English text — this
+// is module-scope config, not a component, so it can't call `t()` reactively.
+// Every call site resolves them with `t(...)` at render time.
 
 interface VendorFieldSchema {
     key: string;
@@ -97,120 +104,119 @@ const WEBHOOK_BASE = `${BACKEND_BASE_URL}/admin-core-service/payments/webhook/ca
 const VENDOR_SCHEMAS: VendorSchema[] = [
     {
         vendor: 'STRIPE',
-        label: 'Stripe',
-        description: 'Global card payments and subscriptions.',
+        label: 'vendors.stripe.label',
+        description: 'vendors.stripe.description',
         docsUrl: 'https://dashboard.stripe.com/apikeys',
         fields: [
             {
                 key: 'apiKey',
-                label: 'Secret Key',
-                placeholder: 'sk_live_…',
+                label: 'vendors.stripe.fields.apiKey.label',
+                placeholder: 'vendors.stripe.fields.apiKey.placeholder',
                 secret: true,
                 required: true,
-                helper: 'Stripe Secret API Key. Never shown again after saving.',
+                helper: 'vendors.stripe.fields.apiKey.helper',
             },
             {
                 key: 'publishableKey',
-                label: 'Publishable Key',
-                placeholder: 'pk_live_…',
+                label: 'vendors.stripe.fields.publishableKey.label',
+                placeholder: 'vendors.stripe.fields.publishableKey.placeholder',
                 secret: true,
                 required: true,
-                helper: 'Used by the learner checkout in the browser.',
+                helper: 'vendors.stripe.fields.publishableKey.helper',
             },
             {
                 key: 'webhookSecret',
-                label: 'Webhook Signing Secret',
-                placeholder: 'whsec_…',
+                label: 'vendors.stripe.fields.webhookSecret.label',
+                placeholder: 'vendors.stripe.fields.webhookSecret.placeholder',
                 secret: true,
-                helper: 'Optional. Used to verify incoming webhook callbacks.',
+                helper: 'vendors.stripe.fields.webhookSecret.helper',
             },
         ],
         webhookUrl: () => `${WEBHOOK_BASE}/stripe`,
     },
     {
         vendor: 'RAZORPAY',
-        label: 'Razorpay',
-        description: 'Card / UPI / netbanking for Indian businesses.',
+        label: 'vendors.razorpay.label',
+        description: 'vendors.razorpay.description',
         docsUrl: 'https://dashboard.razorpay.com/app/keys',
         fields: [
             {
                 key: 'keyId',
-                label: 'Key ID',
-                placeholder: 'rzp_live_…',
+                label: 'vendors.razorpay.fields.keyId.label',
+                placeholder: 'vendors.razorpay.fields.keyId.placeholder',
                 required: true,
-                helper: 'Razorpay Key ID (public; visible in checkout).',
+                helper: 'vendors.razorpay.fields.keyId.helper',
             },
             {
                 key: 'keySecret',
-                label: 'Key Secret',
-                placeholder: 'Your Razorpay key secret',
+                label: 'vendors.razorpay.fields.keySecret.label',
+                placeholder: 'vendors.razorpay.fields.keySecret.placeholder',
                 secret: true,
                 required: true,
             },
             {
                 key: 'webhookSecret',
-                label: 'Webhook Secret',
-                placeholder: 'Webhook signing secret',
+                label: 'vendors.razorpay.fields.webhookSecret.label',
+                placeholder: 'vendors.razorpay.fields.webhookSecret.placeholder',
                 secret: true,
-                helper:
-                    'Set this on the Razorpay Webhooks page. Without it, payment status callbacks are rejected with 404 and async confirmation never reaches the platform.',
+                helper: 'vendors.razorpay.fields.webhookSecret.helper',
             },
         ],
         webhookUrl: () => `${WEBHOOK_BASE}/razorpay`,
     },
     {
         vendor: 'PHONEPE',
-        label: 'PhonePe',
-        description: 'PhonePe PG for Indian merchants (UPI, cards, wallets). V2 (OAuth) Standard Checkout. Settles in INR only.',
+        label: 'vendors.phonepe.label',
+        description: 'vendors.phonepe.description',
         docsUrl: 'https://business.phonepe.com/',
         setupSteps: [
-            'Sign in to the PhonePe Business dashboard (business.phonepe.com) with your PhonePe for Business merchant login.',
-            'Go to Developer Settings → API Keys. New (V2) merchants see a Client ID, Client Secret and Client Version — copy all three into the fields below.',
-            'Legacy merchants only: if you were instead given a Salt Key + Salt Index, put your Merchant ID in “Client ID”, your Salt Key (as KEY###INDEX) in “Client Secret”, and LEAVE “Client Version” blank.',
-            'Set “API Base URL”: V2 LIVE = https://api.phonepe.com/apis/pg, V2 UAT/Sandbox = https://api-preprod.phonepe.com/apis/pg-sandbox (legacy V1 = https://api.phonepe.com/apis/hermes).',
-            'Under Developer Settings → Webhooks, add the Webhook URL shown below and set a username + password. Enter the same username/password below to secure incoming callbacks.',
+            'vendors.phonepe.setupSteps.step1',
+            'vendors.phonepe.setupSteps.step2',
+            'vendors.phonepe.setupSteps.step3',
+            'vendors.phonepe.setupSteps.step4',
+            'vendors.phonepe.setupSteps.step5',
         ],
         fields: [
             {
                 key: 'clientId',
-                label: 'Client ID',
-                placeholder: 'V2 Client ID (or legacy Merchant ID)',
+                label: 'vendors.phonepe.fields.clientId.label',
+                placeholder: 'vendors.phonepe.fields.clientId.placeholder',
                 required: true,
-                helper: 'V2: Client ID from Developer Settings → API Keys. Legacy V1 merchants: your Merchant ID (MID).',
+                helper: 'vendors.phonepe.fields.clientId.helper',
             },
             {
                 key: 'clientSecret',
-                label: 'Client Secret',
-                placeholder: 'V2 Client Secret (or legacy Salt Key###index)',
+                label: 'vendors.phonepe.fields.clientSecret.label',
+                placeholder: 'vendors.phonepe.fields.clientSecret.placeholder',
                 secret: true,
                 required: true,
-                helper: 'V2: your Client Secret. Legacy V1 merchants: your Salt Key, pasted as KEY###INDEX (index usually 1). Kept secret.',
+                helper: 'vendors.phonepe.fields.clientSecret.helper',
             },
             {
                 key: 'clientVersion',
-                label: 'Client Version',
-                placeholder: 'e.g. 1',
-                helper: 'V2 only — the Client Version from the dashboard (usually 1). LEAVE BLANK if you are a legacy merchant using a Salt Key.',
+                label: 'vendors.phonepe.fields.clientVersion.label',
+                placeholder: 'vendors.phonepe.fields.clientVersion.placeholder',
+                helper: 'vendors.phonepe.fields.clientVersion.helper',
             },
             {
                 key: 'baseUrl',
-                label: 'API Base URL',
-                placeholder: 'https://api.phonepe.com/apis/pg',
+                label: 'vendors.phonepe.fields.baseUrl.label',
+                placeholder: 'vendors.phonepe.fields.baseUrl.placeholder',
                 required: true,
-                helper: 'V2 LIVE: https://api.phonepe.com/apis/pg • V2 UAT: https://api-preprod.phonepe.com/apis/pg-sandbox • Legacy V1: https://api.phonepe.com/apis/hermes',
+                helper: 'vendors.phonepe.fields.baseUrl.helper',
             },
             {
                 key: 'webhookUsername',
-                label: 'Webhook Username (optional)',
-                placeholder: 'Same username you set on PhonePe → Webhooks',
-                helper: 'Enables signature verification of incoming callbacks. Must match the username configured on the PhonePe dashboard.',
+                label: 'vendors.phonepe.fields.webhookUsername.label',
+                placeholder: 'vendors.phonepe.fields.webhookUsername.placeholder',
+                helper: 'vendors.phonepe.fields.webhookUsername.helper',
             },
             {
                 key: 'webhookPassword',
-                label: 'Webhook Password (optional)',
-                placeholder: 'Same password you set on PhonePe → Webhooks',
+                label: 'vendors.phonepe.fields.webhookPassword.label',
+                placeholder: 'vendors.phonepe.fields.webhookPassword.placeholder',
                 secret: true,
-                helper: 'Must match the password configured on the PhonePe dashboard. Leave both webhook fields blank to skip verification.',
+                helper: 'vendors.phonepe.fields.webhookPassword.helper',
             },
         ],
         webhookUrl: (instituteId) =>
@@ -218,25 +224,25 @@ const VENDOR_SCHEMAS: VendorSchema[] = [
     },
     {
         vendor: 'CASHFREE',
-        label: 'Cashfree',
-        description: 'Cashfree Payments for India.',
+        label: 'vendors.cashfree.label',
+        description: 'vendors.cashfree.description',
         fields: [
             {
                 key: 'clientId',
-                label: 'App ID',
-                placeholder: 'TEST… or live app id',
+                label: 'vendors.cashfree.fields.clientId.label',
+                placeholder: 'vendors.cashfree.fields.clientId.placeholder',
                 required: true,
             },
             {
                 key: 'clientSecret',
-                label: 'Secret Key',
+                label: 'vendors.cashfree.fields.clientSecret.label',
                 secret: true,
                 required: true,
             },
             {
                 key: 'baseUrl',
-                label: 'API Base URL',
-                placeholder: 'https://api.cashfree.com/pg',
+                label: 'vendors.cashfree.fields.baseUrl.label',
+                placeholder: 'vendors.cashfree.fields.baseUrl.placeholder',
                 required: true,
             },
         ],
@@ -245,35 +251,35 @@ const VENDOR_SCHEMAS: VendorSchema[] = [
     },
     {
         vendor: 'EWAY',
-        label: 'Eway',
-        description: 'Eway Payments (AU / NZ).',
+        label: 'vendors.eway.label',
+        description: 'vendors.eway.description',
         fields: [
             {
                 key: 'apiKey',
-                label: 'API Key',
+                label: 'vendors.eway.fields.apiKey.label',
                 secret: true,
                 required: true,
             },
             {
                 key: 'password',
-                label: 'Password',
+                label: 'vendors.eway.fields.password.label',
                 secret: true,
                 required: true,
             },
             {
                 key: 'publicKey',
-                label: 'Public API Key',
-                helper: 'Used by the learner checkout in the browser.',
+                label: 'vendors.eway.fields.publicKey.label',
+                helper: 'vendors.eway.fields.publicKey.helper',
             },
             {
                 key: 'encryptionKey',
-                label: 'Encryption Key',
+                label: 'vendors.eway.fields.encryptionKey.label',
                 secret: true,
             },
             {
                 key: 'baseUrl',
-                label: 'API Base URL',
-                placeholder: 'https://api.ewaypayments.com',
+                label: 'vendors.eway.fields.baseUrl.label',
+                placeholder: 'vendors.eway.fields.baseUrl.placeholder',
                 required: true,
             },
         ],
@@ -289,18 +295,20 @@ const findSchema = (vendor: string): VendorSchema | undefined =>
 // same badge for a vendor (single source of truth in `payment-gateway-branding`).
 const vendorBadgeClass = (vendor: string): string => resolveGatewayBranding(vendor).badgeClass;
 
-const StatusBadge = ({ status }: { status: string }) =>
-    status === 'ACTIVE' ? (
+const StatusBadge = ({ status }: { status: string }) => {
+    const { t } = useTranslation('settingsPaymentGateway');
+    return status === 'ACTIVE' ? (
         <Badge className="gap-1 border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
             <CheckCircle className="size-3" />
-            Active
+            {t('status.active')}
         </Badge>
     ) : (
         <Badge variant="secondary" className="gap-1">
             <WarningCircle className="size-3" />
-            Inactive
+            {t('status.inactive')}
         </Badge>
     );
+};
 
 // ─── Add/Edit Dialog ─────────────────────────────────────────────────────────
 
@@ -321,6 +329,7 @@ const GatewayDialog = ({
     onClose,
     onSaved,
 }: GatewayDialogProps) => {
+    const { t } = useTranslation('settingsPaymentGateway');
     const instituteId = getInstituteId();
     const [vendor, setVendor] = useState<PaymentVendor | ''>('');
     const [values, setValues] = useState<Record<string, string>>({});
@@ -370,11 +379,11 @@ const GatewayDialog = ({
 
     const handleSave = async () => {
         if (!instituteId) {
-            toast.error('No institute selected');
+            toast.error(t('toast.noInstituteSelected'));
             return;
         }
         if (!schema) {
-            toast.error('Select a payment gateway vendor');
+            toast.error(t('toast.selectVendor'));
             return;
         }
 
@@ -389,9 +398,9 @@ const GatewayDialog = ({
                 if (f.secret && v === SECRET_MASK_PREFIX) return true;
                 return false;
             })
-            .map((f) => f.label);
+            .map((f) => t(f.label));
         if (missing.length > 0) {
-            toast.error(`Missing required fields: ${missing.join(', ')}`);
+            toast.error(t('toast.missingRequiredFields', { fields: missing.join(', ') }));
             return;
         }
 
@@ -413,17 +422,17 @@ const GatewayDialog = ({
                     vendor: schema.vendor,
                     payment_gateway_specific_data: data,
                 });
-                toast.success(`${schema.label} configured`);
+                toast.success(t('toast.gatewayConfigured', { vendor: t(schema.label) }));
             } else if (initial) {
                 await updatePaymentGateway(instituteId, initial.id, {
                     payment_gateway_specific_data: data,
                 });
-                toast.success(`${schema.label} updated`);
+                toast.success(t('toast.gatewayUpdated', { vendor: t(schema.label) }));
             }
             onSaved();
             onClose();
         } catch (err: unknown) {
-            const fallback = 'Failed to save gateway configuration';
+            const fallback = t('toast.saveFailed');
             const errorMessage =
                 (err as { response?: { data?: { message?: string } | string } })
                     ?.response?.data;
@@ -442,12 +451,16 @@ const GatewayDialog = ({
             <DialogContent className="max-h-screen w-full overflow-y-auto sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {mode === 'create' ? 'Add payment gateway' : `Edit ${schema?.label ?? ''}`}
+                        {mode === 'create'
+                            ? t('dialog.createTitle')
+                            : t('dialog.editTitle', {
+                                  vendor: schema?.label ? t(schema.label) : '',
+                              })}
                     </DialogTitle>
                     <DialogDescription>
                         {mode === 'create'
-                            ? 'Select a vendor and paste the API credentials from their dashboard.'
-                            : 'Update credentials. Leave masked fields untouched to keep the existing secret.'}
+                            ? t('dialog.createDescription')
+                            : t('dialog.editDescription')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -455,23 +468,23 @@ const GatewayDialog = ({
                     {/* Vendor picker */}
                     {mode === 'create' ? (
                         <div className="space-y-1.5">
-                            <Label className="text-xs text-slate-500">Vendor</Label>
+                            <Label className="text-xs text-slate-500">{t('dialog.vendorLabel')}</Label>
                             <Select
                                 value={vendor}
                                 onValueChange={(v) => handleVendorChange(v as PaymentVendor)}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Choose a payment gateway" />
+                                    <SelectValue placeholder={t('dialog.vendorPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {availableSchemas.length === 0 ? (
                                         <div className="px-3 py-2 text-sm text-slate-500">
-                                            All supported gateways are already configured.
+                                            {t('dialog.allConfigured')}
                                         </div>
                                     ) : (
                                         availableSchemas.map((s) => (
                                             <SelectItem key={s.vendor} value={s.vendor}>
-                                                {s.label}
+                                                {t(s.label)}
                                             </SelectItem>
                                         ))
                                     )}
@@ -481,9 +494,11 @@ const GatewayDialog = ({
                     ) : (
                         <div className="flex items-center gap-2">
                             <Badge variant="outline" className={vendorBadgeClass(vendor || '')}>
-                                {schema?.label}
+                                {schema && t(schema.label)}
                             </Badge>
-                            <span className="text-xs text-slate-500">{schema?.description}</span>
+                            <span className="text-xs text-slate-500">
+                                {schema && t(schema.description)}
+                            </span>
                         </div>
                     )}
 
@@ -492,16 +507,16 @@ const GatewayDialog = ({
                         <Alert className="border-blue-100 bg-blue-50">
                             <Info className="size-4 text-blue-600" />
                             <AlertDescription className="text-sm text-blue-700">
-                                Find these values in the{' '}
+                                {t('dialog.findValuesPrefix')}{' '}
                                 <a
                                     href={schema.docsUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="underline hover:no-underline"
                                 >
-                                    {schema.label} dashboard
+                                    {t('dialog.dashboardLinkText', { vendor: t(schema.label) })}
                                 </a>
-                                .
+                                {t('dialog.findValuesSuffix')}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -510,12 +525,12 @@ const GatewayDialog = ({
                     {schema?.setupSteps && schema.setupSteps.length > 0 && (
                         <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
                             <Label className="text-caption font-medium text-slate-600">
-                                Where to find these values
+                                {t('dialog.whereToFind')}
                             </Label>
                             <ol className="ml-4 list-decimal space-y-1.5 text-caption leading-relaxed text-slate-600">
                                 {schema.setupSteps.map((step, i) => (
                                     <li key={i} className="pl-1">
-                                        {step}
+                                        {t(step)}
                                     </li>
                                 ))}
                             </ol>
@@ -527,17 +542,17 @@ const GatewayDialog = ({
                         <div className="space-y-1.5 rounded-md border border-slate-200 bg-slate-50 p-3">
                             <div className="flex items-center justify-between gap-2">
                                 <Label className="text-caption font-medium text-slate-600">
-                                    Webhook URL — paste into the {schema.label} dashboard
+                                    {t('dialog.webhookUrlLabel', { vendor: t(schema.label) })}
                                 </Label>
                                 <button
                                     type="button"
                                     onClick={() => {
                                         const url = schema.webhookUrl!(instituteId);
                                         navigator.clipboard.writeText(url);
-                                        toast.success('Webhook URL copied');
+                                        toast.success(t('toast.webhookUrlCopied'));
                                     }}
                                     className="rounded p-1 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
-                                    title="Copy URL"
+                                    title={t('dialog.copyUrl')}
                                 >
                                     <Copy className="size-4" />
                                 </button>
@@ -556,7 +571,7 @@ const GatewayDialog = ({
                         return (
                             <div key={f.key} className="space-y-1">
                                 <Label className="text-xs text-slate-500">
-                                    {f.label}
+                                    {t(f.label)}
                                     {f.required && <span className="ml-0.5 text-red-500">*</span>}
                                 </Label>
                                 <div className="relative">
@@ -564,7 +579,7 @@ const GatewayDialog = ({
                                         type={isSecret && !show ? 'password' : 'text'}
                                         value={value}
                                         onChange={(e) => updateField(f.key, e.target.value)}
-                                        placeholder={f.placeholder}
+                                        placeholder={f.placeholder ? t(f.placeholder) : undefined}
                                         className={isSecret ? 'pr-10' : undefined}
                                         // Gateway keys and the webhook username/password
                                         // are the PROVIDER's credentials — `off` alone
@@ -581,7 +596,7 @@ const GatewayDialog = ({
                                                 }))
                                             }
                                             className="absolute inset-y-0 right-0 flex items-center pr-2 text-slate-400 hover:text-slate-600"
-                                            title={show ? 'Hide' : 'Show'}
+                                            title={show ? t('dialog.hide') : t('dialog.show')}
                                         >
                                             {show ? (
                                                 <EyeSlash className="size-4" />
@@ -592,12 +607,11 @@ const GatewayDialog = ({
                                     )}
                                 </div>
                                 {f.helper && (
-                                    <p className="text-caption text-slate-400">{f.helper}</p>
+                                    <p className="text-caption text-slate-400">{t(f.helper)}</p>
                                 )}
                                 {mode === 'edit' && isSecret && isMaskedSecret(value) && (
                                     <p className="text-caption text-amber-600">
-                                        Showing masked value. Type a new secret to replace it, or
-                                        leave as-is to keep the current one.
+                                        {t('dialog.maskedValueNote')}
                                     </p>
                                 )}
                             </div>
@@ -613,7 +627,7 @@ const GatewayDialog = ({
                         onClick={onClose}
                         disable={saving}
                     >
-                        Cancel
+                        {t('dialog.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -625,12 +639,12 @@ const GatewayDialog = ({
                         {saving ? (
                             <>
                                 <CircleNotch className="mr-2 size-4 animate-spin" />
-                                Saving…
+                                {t('dialog.saving')}
                             </>
                         ) : mode === 'create' ? (
-                            'Add Gateway'
+                            t('dialog.addGatewayButton')
                         ) : (
-                            'Save changes'
+                            t('dialog.saveChanges')
                         )}
                     </MyButton>
                 </DialogFooter>
@@ -648,6 +662,7 @@ interface MappingCardProps {
 }
 
 const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
+    const { t } = useTranslation('settingsPaymentGateway');
     const schema = findSchema(mapping.vendor);
     const fields = schema?.fields ?? [];
 
@@ -656,11 +671,11 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
             <div className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                     <Badge variant="outline" className={vendorBadgeClass(mapping.vendor)}>
-                        {schema?.label ?? mapping.vendor}
+                        {schema ? t(schema.label) : mapping.vendor}
                     </Badge>
                     <StatusBadge status={mapping.status} />
                     <span className="hidden truncate text-xs text-slate-500 sm:inline">
-                        {schema?.description}
+                        {schema && t(schema.description)}
                     </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -668,7 +683,7 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
                         type="button"
                         onClick={onEdit}
                         className="rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                        title="Edit credentials"
+                        title={t('mappingCard.editCredentials')}
                     >
                         <PencilSimple className="size-4" />
                     </button>
@@ -676,7 +691,7 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
                         type="button"
                         onClick={onDelete}
                         className="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                        title="Deactivate gateway"
+                        title={t('mappingCard.deactivateGateway')}
                     >
                         <Trash className="size-4" />
                     </button>
@@ -687,21 +702,21 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
                     {fields.length === 0 ? (
                         <p className="text-xs italic text-slate-400">
-                            Unknown vendor — no schema available.
+                            {t('mappingCard.unknownVendor')}
                         </p>
                     ) : (
                         fields.map((f) => {
                             const raw = mapping.payment_gateway_specific_data?.[f.key];
                             const display =
                                 raw == null || raw === ''
-                                    ? <span className="italic text-slate-400">Not set</span>
+                                    ? <span className="italic text-slate-400">{t('mappingCard.notSet')}</span>
                                     : <span className="font-mono">{String(raw)}</span>;
                             return (
                                 <div
                                     key={f.key}
                                     className="flex items-center justify-between gap-2 text-xs"
                                 >
-                                    <span className="shrink-0 text-slate-500">{f.label}</span>
+                                    <span className="shrink-0 text-slate-500">{t(f.label)}</span>
                                     <span className="truncate text-right text-slate-700">
                                         {display}
                                     </span>
@@ -715,7 +730,7 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
                     <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
                         <div className="min-w-0 flex-1">
                             <p className="text-caption font-medium text-slate-500">
-                                Webhook URL
+                                {t('mappingCard.webhookUrlLabel')}
                             </p>
                             <code className="block truncate text-caption font-mono text-slate-700">
                                 {schema.webhookUrl(mapping.institute_id)}
@@ -727,10 +742,10 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
                                 navigator.clipboard.writeText(
                                     schema.webhookUrl!(mapping.institute_id)
                                 );
-                                toast.success('Webhook URL copied');
+                                toast.success(t('toast.webhookUrlCopied'));
                             }}
                             className="shrink-0 rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                            title="Copy webhook URL"
+                            title={t('mappingCard.copyWebhookUrl')}
                         >
                             <Copy className="size-4" />
                         </button>
@@ -745,6 +760,7 @@ const MappingCard = ({ mapping, onEdit, onDelete }: MappingCardProps) => {
 
 export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
     void _props;
+    const { t } = useTranslation('settingsPaymentGateway');
     const instituteId = getInstituteId();
     const [mappings, setMappings] = useState<PaymentGatewayMapping[]>([]);
     const [loading, setLoading] = useState(false);
@@ -762,7 +778,7 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
             setMappings(data);
         } catch (err) {
             console.error('[PaymentGateways] Failed to load', err);
-            toast.error('Failed to load payment gateways');
+            toast.error(t('toast.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -798,12 +814,14 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
         setDeleting(true);
         try {
             await deactivatePaymentGateway(instituteId, confirmDelete.id);
-            toast.success(`${findSchema(confirmDelete.vendor)?.label ?? confirmDelete.vendor} deactivated`);
+            const vendorLabel = findSchema(confirmDelete.vendor)?.label;
+            const vendorName = vendorLabel ? t(vendorLabel) : confirmDelete.vendor;
+            toast.success(t('toast.gatewayDeactivated', { vendor: vendorName }));
             setConfirmDelete(undefined);
             fetchMappings();
         } catch (err) {
             console.error('[PaymentGateways] Failed to deactivate', err);
-            toast.error('Failed to deactivate gateway');
+            toast.error(t('toast.deactivateFailed'));
         } finally {
             setDeleting(false);
         }
@@ -818,12 +836,9 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                         <div className="space-y-1">
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <CreditCard className="size-5 text-blue-600" />
-                                Payment Gateways
+                                {t('header.title')}
                             </CardTitle>
-                            <CardDescription>
-                                Configure the vendors (Stripe, Razorpay, PhonePe, Cashfree, Eway)
-                                that learners can pay with. Keys are stored per institute.
-                            </CardDescription>
+                            <CardDescription>{t('header.description')}</CardDescription>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                             <button
@@ -831,7 +846,7 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                                 onClick={fetchMappings}
                                 disabled={loading}
                                 className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                                title="Refresh"
+                                title={t('header.refresh')}
                             >
                                 <ArrowsClockwise className={`size-4 ${loading ? 'animate-spin' : ''}`} />
                             </button>
@@ -842,7 +857,7 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                                 onClick={openCreate}
                             >
                                 <Plus className="mr-1 size-4" />
-                                Add Gateway
+                                {t('header.addGateway')}
                             </MyButton>
                         </div>
                     </div>
@@ -852,27 +867,26 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
             {/* List */}
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Configured gateways</CardTitle>
+                    <CardTitle className="text-base">{t('list.title')}</CardTitle>
                     <CardDescription>
-                        Secret values are masked. Click <strong>edit</strong> to rotate keys, or
-                        leave masked fields as-is to keep the current secret.
+                        {t('list.descriptionPre')} <strong>{t('list.descriptionEdit')}</strong>{' '}
+                        {t('list.descriptionPost')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {loading && mappings.length === 0 ? (
                         <div className="flex items-center justify-center py-10 text-slate-400">
                             <CircleNotch className="mr-2 size-4 animate-spin" />
-                            Loading…
+                            {t('list.loading')}
                         </div>
                     ) : mappings.length === 0 ? (
                         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/50 px-4 py-10 text-center">
                             <CreditCard className="size-8 text-slate-300" />
                             <p className="text-sm font-medium text-slate-600">
-                                No payment gateways configured yet
+                                {t('list.emptyTitle')}
                             </p>
                             <p className="max-w-md text-xs text-slate-500">
-                                Add Stripe, Razorpay, PhonePe, Cashfree, or Eway credentials so
-                                learners can pay through your portals.
+                                {t('list.emptyDescription')}
                             </p>
                             <MyButton
                                 buttonType="primary"
@@ -881,7 +895,7 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                                 onClick={openCreate}
                             >
                                 <Plus className="mr-1 size-4" />
-                                Add your first gateway
+                                {t('list.addFirstGateway')}
                             </MyButton>
                         </div>
                     ) : (
@@ -914,10 +928,16 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
             >
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Deactivate gateway?</DialogTitle>
+                        <DialogTitle>{t('deleteDialog.title')}</DialogTitle>
                         <DialogDescription>
                             {confirmDelete &&
-                                `${findSchema(confirmDelete.vendor)?.label ?? confirmDelete.vendor} will be marked inactive and learners won't be able to pay through it. You can add it again later.`}
+                                t('deleteDialog.description', {
+                                    vendor:
+                                        (() => {
+                                            const vendorLabel = findSchema(confirmDelete.vendor)?.label;
+                                            return vendorLabel ? t(vendorLabel) : confirmDelete.vendor;
+                                        })(),
+                                })}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
@@ -928,7 +948,7 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                             onClick={() => setConfirmDelete(undefined)}
                             disable={deleting}
                         >
-                            Cancel
+                            {t('deleteDialog.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -940,10 +960,10 @@ export default function PaymentGatewaySettings(_props: { isTab?: boolean }) {
                             {deleting ? (
                                 <>
                                     <CircleNotch className="mr-2 size-4 animate-spin" />
-                                    Deactivating…
+                                    {t('deleteDialog.deactivating')}
                                 </>
                             ) : (
-                                'Deactivate'
+                                t('deleteDialog.deactivate')
                             )}
                         </MyButton>
                     </DialogFooter>

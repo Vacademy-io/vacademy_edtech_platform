@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { reportApiError } from "@/lib/report-api-error";
 import { MyButton } from "@/components/design-system/button";
 import { MyDialog } from "@/components/design-system/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 import {
     requestMentor,
     type DirectoryMentor,
@@ -30,6 +33,8 @@ export function RequestMentorDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation("miscRoutesA");
+    const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin);
     const [message, setMessage] = useState("");
     const queryClient = useQueryClient();
 
@@ -45,7 +50,7 @@ export function RequestMentorDialog({
                 message: message.trim() || undefined,
             }),
         onSuccess: () => {
-            toast.success("Request sent — your admin will confirm it shortly");
+            toast.success(t("myMentors.requestDialog.toast.sent", { admin }));
             queryClient.invalidateQueries({ queryKey: ["GET_MENTOR_DIRECTORY"] });
             queryClient.invalidateQueries({ queryKey: ["GET_MY_MENTOR_REQUESTS"] });
             onOpenChange(false);
@@ -58,13 +63,19 @@ export function RequestMentorDialog({
                 feature: "mentorship",
                 tags: { "mentorship.action": "request-mentor" },
                 extra: { mentorId: mentor?.id ?? "any" },
-                fallbackMessage: "Couldn't send your request. Please try again.",
+                fallbackMessage: t("myMentors.requestDialog.toast.sendFailed"),
             }),
     });
 
     return (
         <MyDialog
-            heading={mentor ? `Request ${mentor.name || "this mentor"}` : "Request a mentor"}
+            heading={
+                mentor
+                    ? t("myMentors.requestDialog.headingNamed", {
+                          mentor: mentor.name || t("myMentors.common.thisMentor"),
+                      })
+                    : t("myMentors.requestDialog.headingAny")
+            }
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-md"
@@ -76,7 +87,7 @@ export function RequestMentorDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t("myMentors.common.cancel")}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -85,7 +96,9 @@ export function RequestMentorDialog({
                         onClick={() => submit.mutate()}
                         disable={submit.isPending || !instituteId}
                     >
-                        {submit.isPending ? "Sending…" : "Send request"}
+                        {submit.isPending
+                            ? t("myMentors.requestDialog.sending")
+                            : t("myMentors.requestDialog.sendRequest")}
                     </MyButton>
                 </div>
             }
@@ -100,7 +113,7 @@ export function RequestMentorDialog({
                         />
                         <div className="flex min-w-0 flex-col">
                             <span className="truncate text-body font-medium text-neutral-700">
-                                {mentor.name || "Mentor"}
+                                {mentor.name || t("myMentors.common.mentor")}
                             </span>
                             {mentor.title && (
                                 <span className="truncate text-caption text-neutral-500">
@@ -111,7 +124,7 @@ export function RequestMentorDialog({
                     </div>
                 ) : (
                     <p className="text-body text-neutral-600">
-                        Your admin will match you with a mentor who fits what you need.
+                        {t("myMentors.requestDialog.anyMentorHelp", { admin })}
                     </p>
                 )}
 
@@ -120,18 +133,18 @@ export function RequestMentorDialog({
                         htmlFor="mentor-request-message"
                         className="text-caption font-medium text-neutral-600"
                     >
-                        What do you want help with?
+                        {t("myMentors.requestDialog.messageLabel")}
                     </label>
                     <Textarea
                         id="mentor-request-message"
                         value={message}
                         maxLength={MAX_MESSAGE}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder="e.g. I'm stuck on rotational motion and need a study plan before my next test"
+                        placeholder={t("myMentors.requestDialog.messagePlaceholder")}
                         className="min-h-24 resize-none"
                     />
                     <span className="flex items-center justify-between text-caption text-neutral-400">
-                        <span>Optional, but it helps your admin pair you well.</span>
+                        <span>{t("myMentors.requestDialog.messageHelper", { admin })}</span>
                         <span>
                             {message.length}/{MAX_MESSAGE}
                         </span>

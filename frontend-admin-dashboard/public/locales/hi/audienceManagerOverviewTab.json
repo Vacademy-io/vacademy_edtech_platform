@@ -1,0 +1,43 @@
+{
+    "kpi": {
+        "totalLeads": {
+            "label": "कुल लीड्स",
+            "sub": "{{active}} सक्रिय · {{lost}} खोई हुई"
+        },
+        "conversionRate": {
+            "label": "रूपांतरण दर",
+            "sub": "{{total}} में से {{converted}} रूपांतरित"
+        },
+        "avgResponseTime": {
+            "label": "औसत प्रतिक्रिया समय",
+            "sub_one": "{{count}} लीड ने जवाब दिया",
+            "sub_other": "{{count}} लीड्स ने जवाब दिया"
+        },
+        "tatMet": {
+            "label": "TAT पूरा हुआ",
+            "subCount": "{{count}} TAT के भीतर",
+            "subDisabled": "सेटिंग्स में TAT अक्षम है"
+        }
+    },
+    "status": {
+        "title": "स्थिति वितरण",
+        "donutAriaLabel": "स्थिति वितरण डोनट चार्ट",
+        "totalUnit": "लीड्स"
+    },
+    "trend": {
+        "title": "दैनिक रुझान",
+        "submittedLegend": "सबमिट किया गया",
+        "convertedLegend": "रूपांतरित",
+        "noData": "कोई डेटा नहीं",
+        "ariaLabel": "दैनिक सबमिट और रूपांतरित लीड्स"
+    },
+    "breakdown": {
+        "bySource": "स्रोत के अनुसार",
+        "byTier": "टियर के अनुसार"
+    },
+    "tier": {
+        "hot": "हॉट",
+        "warm": "वॉर्म",
+        "cold": "कोल्ड"
+    }
+}

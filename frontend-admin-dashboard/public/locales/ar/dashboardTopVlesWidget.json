@@ -1,0 +1,12 @@
+{
+    "heading": "أفضل {{plural}}",
+    "subtitle": "حسب المقاعد المستخدمة",
+    "viewAll": "عرض الكل",
+    "unnamedName": "بلا اسم",
+    "planStatus": {
+        "active": "نشطة",
+        "pending": "قيد الانتظار",
+        "expired": "منتهية",
+        "none": "بلا خطة"
+    }
+}

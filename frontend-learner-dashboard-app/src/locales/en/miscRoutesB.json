@@ -1,0 +1,735 @@
+{
+  "accountDeletion": {
+    "pageTitle": "Delete your account",
+    "pageTitleWithApp": "Delete your {{appName}} account",
+    "pageDescription": "This page explains how to request deletion of your account and the data associated with it.",
+    "pageDescriptionWithApp": "This page explains how to request deletion of your {{appName}} account and the data associated with it.",
+    "sections": {
+      "howToRequest": {
+        "title": "How to request deletion",
+        "fromApp": {
+          "subtitle": "From inside the app",
+          "text": "Sign in, open the profile menu in the top navigation bar, and choose Delete Account. Confirm when prompted. Your account is closed immediately and you are signed out on every device."
+        },
+        "byEmail": {
+          "subtitle": "By email, if you cannot sign in",
+          "text": "Email {{email}} from the email address registered on your account, with the subject \"Account deletion request\". Tell us the name of your institute so we can locate your record. We acknowledge every request within 7 days."
+        }
+      },
+      "dataDeleted": {
+        "title": "Data that is deleted",
+        "within30Days": {
+          "subtitle": "Deleted within 30 days of your request",
+          "text": "Your profile information (name, email address, phone number and profile photo), the doubts and messages you posted, your enrolment records, your learning progress, and your assessment attempts and scores."
+        }
+      },
+      "dataKept": {
+        "title": "Data that is kept, and for how long",
+        "paymentRecords": {
+          "subtitle": "Payment and invoice records",
+          "text": "Where you have made a payment, we are required to retain the invoice and transaction record under Indian tax and accounting law. These are kept for 8 years from the end of the relevant financial year and are not deleted on request."
+        },
+        "anonymisedStats": {
+          "subtitle": "Anonymised usage statistics",
+          "text": "Aggregate statistics that can no longer be linked back to you (for example, how many learners completed a course) are retained. These contain no personal information."
+        }
+      },
+      "timeline": {
+        "title": "Timeline",
+        "whatHappens": {
+          "subtitle": "What happens when",
+          "text": "Access ends immediately once the request is made. Personal data is erased within 30 days. Records we are legally required to keep are retained for the periods described above and for no longer than necessary."
+        }
+      }
+    },
+    "contact": {
+      "title": "Contact",
+      "text": "Deletion requests and questions about them are handled by"
+    }
+  },
+  "admissionPayment": {
+    "notFound": {
+      "title": "Payment Option Not Found",
+      "description": "This payment link appears to be invalid or the payment option is no longer available. Please contact the institute for assistance."
+    },
+    "success": {
+      "title": "Payment Submitted!",
+      "description": "Thank you. Your payment is being processed and your admission status will be updated shortly."
+    },
+    "header": {
+      "title": "Admission Fee Payment"
+    },
+    "amountDue": "Amount Due",
+    "email": {
+      "label": "Email Address",
+      "placeholder": "Enter your email"
+    },
+    "pay": {
+      "processing": "Processing…",
+      "cta": "Pay Now"
+    },
+    "secured": "Secured by Razorpay · Your payment is encrypted and safe",
+    "toast": {
+      "noPlan": "No payment plan configured. Please contact the institute.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Please enter a valid email address.",
+      "paymentDetailsError": "Could not retrieve payment details from the server. Please try again.",
+      "initiateFailed": "Failed to initiate payment",
+      "paymentSubmitted": "Payment submitted! Your admission status will update shortly."
+    },
+    "checkout": {
+      "defaultTitle": "Admission Fee",
+      "description": "Payment for school admission"
+    }
+  },
+  "aiSettings": {
+    "page": {
+      "title": "AI Settings",
+      "description": "Manage your AI API keys and monitor token usage",
+      "tabs": {
+        "apiKeys": "API Keys",
+        "usage": "Token Usage"
+      }
+    },
+    "chatbot": {
+      "title": "Chatbot",
+      "description": "Control what the AI chatbot shows in its header",
+      "shortcut": {
+        "label": "Show AI settings shortcut in chatbot",
+        "hint": "Adds the gear icon to the chatbot header on this device. Hidden by default; your institute can also turn it on for everyone from admin settings.",
+        "toast": {
+          "enabled": "AI settings shortcut is now visible in the chatbot",
+          "disabled": "AI settings shortcut is now hidden from the chatbot"
+        }
+      }
+    },
+    "apiKeys": {
+      "title": "API Key Management",
+      "description": "Manage your OpenRouter and Gemini API keys for personalized AI interactions",
+      "activeKeys": "Active keys: {{keys}}",
+      "openrouter": {
+        "label": "OpenRouter API Key",
+        "placeholderExisting": "••••••••••••••••••••",
+        "placeholderNew": "Enter your OpenRouter API key",
+        "existingHint": "You have an OpenRouter key configured. Enter a new key to replace it."
+      },
+      "gemini": {
+        "label": "Gemini API Key",
+        "placeholderExisting": "••••••••••••••••••••",
+        "placeholderNew": "Enter your Gemini API key",
+        "existingHint": "You have a Gemini key configured. Enter a new key to replace it."
+      },
+      "defaultModel": {
+        "label": "Default AI Model",
+        "loading": "Loading models...",
+        "placeholder": "Select a model",
+        "hint": "The default model used when \"Auto\" is selected during generation"
+      },
+      "securityWarning": "Your API keys are securely encrypted and stored. They are never visible after saving and cannot be retrieved - only replaced or deleted.",
+      "actions": {
+        "save": "Save Keys",
+        "saving": "Saving...",
+        "deleteAll": "Delete All Keys"
+      },
+      "deleteConfirm": "Are you sure you want to permanently delete your API keys? This action cannot be undone.",
+      "toast": {
+        "atLeastOneKey": "Please provide at least one API key",
+        "saveSuccess": "API keys saved successfully",
+        "saveError": "Failed to save API keys",
+        "deleteSuccess": "API keys deleted successfully",
+        "deleteError": "Failed to delete API keys"
+      }
+    },
+    "tokenUsage": {
+      "title": "Token Usage & Costs",
+      "description": "View your AI token usage and associated costs",
+      "dateRange": {
+        "start": "Start Date",
+        "end": "End Date"
+      },
+      "stats": {
+        "totalRequests": "Total Requests",
+        "totalTokens": "Total Tokens",
+        "totalCost": "Total Cost"
+      },
+      "recentActivity": "Recent Activity",
+      "table": {
+        "date": "Date",
+        "provider": "Provider",
+        "model": "Model",
+        "tokens": "Tokens",
+        "cost": "Cost"
+      },
+      "empty": "No usage records found for the selected date range."
+    }
+  },
+  "authTransfer": {
+    "signingIn": "Signing you in..."
+  },
+  "deleteUser": {
+    "checkingPermissions": "Checking permissions...",
+    "dialog": {
+      "title": "Delete Account",
+      "description": "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete Permanently"
+    },
+    "toast": {
+      "success": "Your account deleted successfully",
+      "error": "Failed to update user role status"
+    }
+  },
+  "enquiryResponse": {
+    "success": {
+      "title": "Enquiry Submitted Successfully!",
+      "description": "Thank you for your response. Your enquiry has been submitted successfully.",
+      "emailNotice": "A confirmation email will be sent to you shortly.",
+      "campaignLabel": "Campaign:"
+    },
+    "form": {
+      "heading": "Please fill in your details",
+      "description": "This information will be used to contact you about the enquiry.",
+      "objectiveLabel": "Objective:",
+      "notAvailable": "N/A",
+      "validation": {
+        "mobileLabel": "Mobile number",
+        "relationRequired": "Relation with child is required",
+        "classRequired": "Class is required"
+      },
+      "student": {
+        "sectionTitle": "Student Details",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "Enter student's full name",
+        "dob": "Date of Birth",
+        "dobPlaceholder": "Select date of birth",
+        "gender": {
+          "label": "Gender",
+          "male": "Male",
+          "female": "Female",
+          "other": "Other"
+        },
+        "class": "Class"
+      },
+      "parent": {
+        "sectionTitle": "Parent Details",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "Enter parent's full name",
+        "email": "Email",
+        "emailPlaceholder": "example@email.com",
+        "mobile": "Mobile Number",
+        "mobilePlaceholder": "123 456 7890",
+        "relation": {
+          "label": "Relation with Child",
+          "father": "Father",
+          "mother": "Mother",
+          "guardian": "Guardian"
+        },
+        "address": "Address",
+        "addressPlaceholder": "Enter address",
+        "city": "City",
+        "cityPlaceholder": "Enter city",
+        "region": "State/Region",
+        "regionPlaceholder": "Enter state or region",
+        "pinCode": "Pin Code",
+        "pinCodePlaceholder": "Enter pin code"
+      },
+      "additionalInfo": "Additional Information",
+      "selectParentFirst": "Select {{name}} first",
+      "submit": "Submit Response",
+      "submitting": "Submitting..."
+    },
+    "toast": {
+      "studentNameRequired": "Student name is required",
+      "parentEmailRequired": "Parent email is required",
+      "parentMobileRequired": "Parent mobile number is required",
+      "submitFailed": "Failed to submit enquiry. Please try again."
+    }
+  },
+  "kycComplete": {
+    "title": "Verification Submitted",
+    "description": "You can close this tab and return to your registration. The status there updates automatically."
+  },
+  "learnerInvitationResponse": {
+    "notFound": {
+      "title": "Enroll Invite Not Found",
+      "description": "This enroll invite link is invalid or may have already expired. Please contact your institute for a new invite link."
+    },
+    "gatewayNotConfigured": {
+      "title": "Payments Not Set Up",
+      "description": "The institute has not configured a payment gateway for this enrollment. Please contact your institute to complete the setup."
+    },
+    "noPlans": {
+      "title": "Enrollment Plans Not Set Up",
+      "description": "The institute hasn't added any enrollment plans to this invite yet. Please contact your institute to complete the setup."
+    },
+    "unexpectedError": {
+      "title": "Unable to Load",
+      "description": "Something went wrong while loading this enrollment page. Please try again or contact your institute if the issue continues."
+    },
+    "goBack": "Go Back"
+  },
+  "learningCentreAttendance": {
+    "navHeading": "My Attendance",
+    "pageTitle": "My Attendance",
+    "metaDescription": "Track your attendance for {{liveClasses}} and {{sessions}}",
+    "stats": {
+      "overallPercent": "Overall %",
+      "dayStreak": "Day Streak",
+      "daysPresent": "Days Present",
+      "daysAbsent": "Days Absent"
+    },
+    "filters": {
+      "allBatches": "All {{batches}}",
+      "clear": "Clear Filters",
+      "dateRange": {
+        "from": "From {{date}}",
+        "range": "{{from}} to {{to}}",
+        "placeholder": "Select date range",
+        "quickSelect": "Quick Select",
+        "pastDay": "Past Day",
+        "pastWeek": "Past Week",
+        "pastMonth": "Past Month",
+        "pastSixMonths": "Past 6 Months",
+        "pastYear": "Past Year"
+      }
+    },
+    "table": {
+      "liveClassTitle": "{{liveClass}} Title",
+      "dateTime": "Date & Time",
+      "classType": "{{liveClass}} Type",
+      "attendance": "Attendance"
+    },
+    "accessLevel": {
+      "private": "Private",
+      "public": "Public"
+    },
+    "status": {
+      "unmarked": "Unmarked"
+    },
+    "empty": {
+      "title": "No {{liveClasses}} found",
+      "description": "No {{liveClasses}} match the selected filters. Try a different date range.",
+      "clearFilters": "Clear filters"
+    },
+    "error": "Could not load attendance data."
+  },
+  "logout": {
+    "loggingOut": "Loging out ...."
+  },
+  "payInvoice": {
+    "notFound": {
+      "title": "Invoice Not Found",
+      "description": "This invoice link is invalid or the invoice is no longer available. Please contact your institute for a new payment link."
+    },
+    "initiated": {
+      "title": "Payment Initiated!",
+      "description": "Redirecting to payment confirmation…"
+    },
+    "header": {
+      "title": "Invoice Payment"
+    },
+    "defaultLogoAlt": "Institute logo",
+    "table": {
+      "description": "Description",
+      "qty": "Qty",
+      "unit": "Unit",
+      "amount": "Amount",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "tax": "Tax",
+      "total": "Total"
+    },
+    "due": {
+      "label": "Due: {{date}}",
+      "overdue": "(Overdue)"
+    },
+    "pay": {
+      "processing": "Processing…",
+      "alreadyPaid": "Already Paid",
+      "cta": "Pay {{amount}}"
+    },
+    "secured": "Secured payment · Your information is encrypted and safe",
+    "toast": {
+      "formLoading": "The payment form is still loading. Please try again.",
+      "cardVerificationFailed": "Card verification failed",
+      "enterCardDetails": "Enter your card details to continue.",
+      "paymentDeclined": "The payment was declined. Please check your card details and try again.",
+      "initiateFailed": "Failed to initiate payment. Please try again."
+    },
+    "checkout": {
+      "defaultTitle": "Invoice Payment",
+      "description": "Invoice {{invoiceNumber}}"
+    }
+  },
+  "paymentResult": {
+    "invalidLink": {
+      "title": "Invalid Payment Link",
+      "description": "No order ID was provided. Please complete your payment from the enrollment page."
+    },
+    "success": {
+      "title": "Payment Successful!",
+      "invoiceDescription": "Your invoice has been paid. A confirmation email will be sent to you shortly.",
+      "enrollmentDescription": "Your enrollment has been confirmed. Redirecting you to your {{courses}}...",
+      "takingToLiveClass": "Taking you to your {{liveClass}}…",
+      "continueNow": "Continue now",
+      "goToCourses": "Go to My {{courses}}"
+    },
+    "failed": {
+      "title": "Payment Failed or Cancelled",
+      "description": "Your payment could not be completed. Please try again or contact support if the issue persists.",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "pending": {
+      "title": "Processing Payment...",
+      "description": "Please wait while we confirm your payment status. This usually takes a few seconds."
+    }
+  },
+  "privacyPolicy": {
+    "backToLogin": "Back to Login",
+    "header": {
+      "title": "Privacy Policy",
+      "description": "Your privacy is important to us. This policy explains how {{appName}} collects, uses, and protects your personal information.",
+      "lastUpdated": "Last updated: {{date}}"
+    },
+    "identity": {
+      "title": "Who this policy covers",
+      "intro": "This Privacy Policy applies to the {{appName}} mobile applications for Android and iOS and to the {{appName}} web portal (together, the \"Service\"). It is the privacy policy linked from the {{appName}} listings on Google Play and the Apple App Store and from inside the app.",
+      "introWeb": "This Privacy Policy applies to the {{appName}} web portal (the \"Service\") and to any {{appName}} mobile application published by {{publisher}}.",
+      "appNameLabel": "App name",
+      "appIdsLabel": "Application identifiers",
+      "webOnly": "None — web portal only",
+      "publisherLabel": "Developer / publisher",
+      "publisherAddressLabel": "Registered address",
+      "operatedForLabel": "Service operated for",
+      "portalLabel": "Web portal",
+      "contactLabel": "Privacy contact",
+      "controller": "{{appName}} is developed and published by {{publisher}}, which is responsible for the personal information collected through the Service. Where the Service is provided on behalf of an educational institution or organisation, that institution decides which learners are enrolled and what content they receive, and can see learner progress within the Service."
+    },
+    "introduction": {
+      "title": "Introduction",
+      "text": "Welcome to {{appName}}. We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy describes how we collect, use, disclose, and safeguard your information when you use our educational platform and services. Please read this policy carefully to understand our practices regarding your personal data."
+    },
+    "sections": {
+      "informationWeCollect": {
+        "title": "Information We Collect",
+        "personalInformation": {
+          "subtitle": "Personal Information",
+          "text": "We collect information you provide directly to us, such as when you create an account, enroll in courses, or contact us. This may include your name, email address, phone number, educational background, and payment information."
+        },
+        "learningData": {
+          "subtitle": "Learning Data",
+          "text": "We collect information about your learning activities, including course progress, assessment scores, time spent on materials, and interaction patterns to personalize your learning experience."
+        },
+        "technicalInformation": {
+          "subtitle": "Technical Information",
+          "text": "We automatically collect certain technical information about your device and how you interact with our platform, including IP address, browser type, operating system, and usage analytics."
+        },
+        "devicePermissions": {
+          "subtitle": "Device permissions",
+          "text": "The {{appName}} app asks for your permission before using your camera or microphone, and only does so for live classes and video features you choose to join. It may ask to access your photo library so you can upload assignments or a profile picture, and to send you notifications about your courses. Notifications are delivered through Firebase Cloud Messaging, which involves a device token being stored with your account. The app does not access your contacts or your precise location."
+        }
+      },
+      "howWeUse": {
+        "title": "How We Use Your Information",
+        "educationalServices": {
+          "subtitle": "Educational Services",
+          "text": "We use your information to provide, maintain, and improve our educational services, including delivering course content, tracking progress, and providing certifications."
+        },
+        "personalization": {
+          "subtitle": "Personalization",
+          "text": "We analyze your learning patterns to recommend relevant courses, customize content delivery, and optimize your learning experience."
+        },
+        "communication": {
+          "subtitle": "Communication",
+          "text": "We may use your contact information to send you important updates about your courses, platform changes, and educational opportunities that may interest you."
+        }
+      },
+      "informationSharing": {
+        "title": "Information Sharing and Disclosure",
+        "educationalPartners": {
+          "subtitle": "Educational Partners",
+          "text": "If you use {{appName}} through a school, coaching institute, employer or other organisation, we share your enrolment details, learning progress and assessment results with that organisation so it can deliver and evaluate your learning. We may also share achievements with institutions or employers as authorised by you or as required for certification purposes."
+        },
+        "serviceProviders": {
+          "subtitle": "Service Providers",
+          "text": "We may share information with trusted third-party service providers who assist us in operating our platform, conducting business, or serving our users."
+        },
+        "legalRequirements": {
+          "subtitle": "Legal Requirements",
+          "text": "We may disclose your information when required by law, regulation, legal process, or governmental request, or to protect the rights, property, or safety of {{publisher}}, {{appName}}, our users, or others."
+        },
+        "thirdPartyServices": {
+          "subtitle": "Third-party services",
+          "text": "{{appName}} relies on a small number of third-party providers that process data on our behalf: Firebase (Google) for push notifications; Google Sign-In and Sign in with Apple when you choose to log in with those accounts; payment gateways such as Razorpay, Stripe, Cashfree, PhonePe or PayPal when you purchase a course (your card or bank details are entered directly with the gateway and are never stored by us); and video hosting and live-class providers such as YouTube, Vimeo, Zoom or BigBlueButton when you watch or attend a class. Each provider handles your data under its own privacy policy."
+        }
+      },
+      "dataSecurity": {
+        "title": "Data Security",
+        "securityMeasures": {
+          "subtitle": "Security Measures",
+          "text": "We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction."
+        },
+        "encryption": {
+          "subtitle": "Encryption",
+          "text": "We use industry-standard encryption protocols to protect sensitive data during transmission and storage, including SSL/TLS encryption for all data transfers."
+        },
+        "accessControls": {
+          "subtitle": "Access Controls",
+          "text": "We maintain strict access controls and regularly audit our systems to ensure that only authorized personnel can access your personal information."
+        }
+      },
+      "yourRights": {
+        "title": "Your Rights and Choices",
+        "accessAndCorrection": {
+          "subtitle": "Access and Correction",
+          "text": "You have the right to access, update, or correct your personal information at any time through your account settings or by contacting us directly."
+        },
+        "dataPortability": {
+          "subtitle": "Data Portability",
+          "text": "You may request a copy of your personal information in a structured, commonly used, and machine-readable format for transfer to another service."
+        },
+        "deletion": {
+          "subtitle": "Deletion",
+          "text": "You may request deletion of your personal information at any time, subject to certain exceptions where we may need to retain information for legal or legitimate business purposes. See \"Data retention and deletion\" below for how to delete your account."
+        }
+      },
+      "dataRetention": {
+        "title": "Data retention and deletion",
+        "retentionPeriod": {
+          "subtitle": "How long we keep your data",
+          "text": "We keep your account information and learning records for as long as your {{appName}} account is active, so that your progress, certificates and purchases remain available to you. Payment records are kept for as long as tax and accounting laws require."
+        },
+        "accountDeletion": {
+          "subtitle": "Deleting your account",
+          "text": "You can delete your {{appName}} account and the personal data associated with it from within the app (Profile → Delete account) or by emailing {{email}} from the address registered to your account. Once a deletion request is verified, your personal data is deleted or anonymised within 30 days, except for records we are legally required to retain."
+        }
+      },
+      "childrensPrivacy": {
+        "title": "Children's privacy",
+        "learnersUnder18": {
+          "subtitle": "Learners under 18",
+          "text": "{{appName}} is an educational service and may be used by learners under 18. Accounts for such learners are created by, or with the consent of, a parent, guardian or the educational institution that enrols them. We collect only the information needed to deliver the learning service and do not knowingly use children's data for advertising. A parent or guardian can review or delete a child's information by contacting us."
+        }
+      },
+      "internationalTransfers": {
+        "title": "International Data Transfers",
+        "globalOperations": {
+          "subtitle": "Global Operations",
+          "text": "{{publisher}} is based in India and hosts the Service on servers that may be located outside your country of residence, including countries that may have different data protection laws."
+        },
+        "safeguards": {
+          "subtitle": "Safeguards",
+          "text": "When we transfer your information internationally, we implement appropriate safeguards to ensure your information receives adequate protection, including standard contractual clauses and adequacy decisions."
+        }
+      },
+      "changes": {
+        "title": "Changes to this policy",
+        "notification": {
+          "subtitle": "How we notify you",
+          "text": "We may update this Privacy Policy from time to time. The date at the top of this page shows when it was last revised, and the current version is always available from the {{appName}} app and its store listings. Where a change materially affects how we use your personal information, we will notify you in the app or by email before it takes effect."
+        }
+      }
+    },
+    "contact": {
+      "title": "Contact Us",
+      "intro": "If you have any questions about this Privacy Policy or our data practices, please contact us:",
+      "emailLabel": "Email",
+      "addressLabel": "Address"
+    },
+    "footer": "This privacy policy is effective as of {{date}} and will remain in effect except with respect to any changes in its provisions in the future."
+  },
+  "quickAccess": {
+    "loadingToast": "Opening your account",
+    "footer": "Need help? Message us and we'll sort it out."
+  },
+  "sessionTerminated": {
+    "title": "Session Terminated",
+    "description": "Your session was ended because your account was accessed from another device. For security, only a limited number of simultaneous sessions are allowed.",
+    "device": {
+      "thisDevice": "This device",
+      "newDevice": "New device",
+      "disconnected": "disconnected"
+    },
+    "securityNotice": "If this wasn't you, please log in and change your password immediately.",
+    "action": {
+      "loginAgain": "Log In Again",
+      "hint": "You will need to enter your credentials to start a new session"
+    },
+    "footer": {
+      "trouble": "Having trouble?",
+      "contactAdmin": "Contact your institute {{admin}} for help."
+    }
+  },
+  "subscriptions": {
+    "unableToLoad": {
+      "title": "Unable to Load Subscriptions",
+      "description": "Could not determine the institute for this page. Please open the exact link you received, or contact support."
+    },
+    "loadingToast": "Loading your subscriptions",
+    "footer": "Need help? Message us and we'll sort it out.",
+    "manage": {
+      "heading": "Your membership",
+      "description": "You can stop your membership anytime. Your {{liveClasses}} carry on until the date you've already paid for.",
+      "loading": "Loading your subscriptions...",
+      "error": "Subscriptions are unavailable right now. Please try again later.",
+      "empty": "No subscriptions found for this account.",
+      "planFallback": "Subscription",
+      "trialBadge": "Trial",
+      "nextPayment": "Next payment on {{date}}",
+      "renewsAutomatically": "Renews automatically",
+      "stopMembership": "Stop membership",
+      "stopping": "Stopping...",
+      "membershipStoppedLabel": "Membership stopped.",
+      "membershipStoppedWithDate": "You can still join {{liveClasses}} until {{date}}. After that your membership ends. You won't be charged again.",
+      "membershipStoppedNoDate": "You can still join {{liveClasses}} until the end of the time you've paid for. You won't be charged again.",
+      "paymentFailedLabel": "Payment didn't go through.",
+      "paymentFailedWithDate": "You can still join {{liveClasses}} until {{date}}. Pay below to keep your membership.",
+      "paymentFailedNoDate": "Pay below to keep your membership.",
+      "restartMembership": "Start your membership again — same plan, same {{liveClasses}}. You don't need to sign up again.",
+      "renewPrompt": "Want to keep going after {{period}}? Pay now and your {{liveClasses}} carry on.",
+      "currentPeriodFallback": "your current period",
+      "endOfPaidPeriodFallback": "the end of the time you've paid for",
+      "autopayCheckbox": "Also enable auto-pay for future renewals — one approval pays now and sets up automatic deduction, no more manual payments.",
+      "startingPayment": "Starting payment...",
+      "payToContinue": "Pay {{amount}} to continue",
+      "completeEnrollmentPrompt": "Your sign-up for this membership was never completed, so there is nothing to renew yet. Finish enrolling and your {{liveClasses}} start right away.",
+      "completeEnrollmentCta": "Complete your enrollment",
+      "toast": {
+        "startFailedTitle": "Couldn't start the payment",
+        "genericRetry": "Please try again in a moment.",
+        "orderCreationFailed": "Could not create the payment order",
+        "membershipStoppedTitle": "Membership stopped",
+        "stoppedWithDate": "You can still join {{liveClasses}} until {{date}}. You won't be charged again.",
+        "stoppedNoDate": "You won't be charged again.",
+        "stopFailedTitle": "Couldn't stop your membership",
+        "paymentReceivedTitle": "Payment received!",
+        "paymentReceivedDescription": "Your membership is being reactivated — this takes a few seconds.",
+        "paymentNotCompletedTitle": "Payment not completed"
+      },
+      "cancelDialog": {
+        "title": "Stop your membership?",
+        "description": "You can still join {{liveClasses}} until <bold>{{date}}</bold>. After that your membership ends and you won't be charged again. You can start it again anytime.",
+        "keepMembership": "Keep membership"
+      },
+      "changePlan": "Change plan",
+      "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+      "planChangeCancelScheduled": "Cancel this change",
+      "cardDialog": {
+        "title": "Add a card to continue",
+        "description": "We don't have a card saved for this membership yet. Enter one to pay now — we'll save it securely so future renewals are one tap.",
+        "loadingForm": "Loading secure card form..."
+      },
+      "autopayDefaultNotice": "Future renewals will be charged automatically to this card. You can stop auto-pay any time from this page.",
+      "renew": {
+        "title": "Renew your membership",
+        "greeting": "Hi {{name}},",
+        "intro": "Thank you for learning with us. We'd love to have you back.",
+        "duration_month_one": "1 month",
+        "duration_month_other": "{{count}} months",
+        "duration_day_one": "1 day",
+        "duration_day_other": "{{count}} days",
+        "priceCaption": "{{currency}} for {{period}}",
+        "endsOn": "Your membership ends on {{date}}.",
+        "endedOn": "Your membership ended on {{date}}.",
+        "endsNoDate": "Your membership is ending.",
+        "endedNoDate": "Your membership has ended.",
+        "cta": "Pay {{amount}} and renew now",
+        "secureNote": "Secure card payment. We'll email your receipt straight away.",
+        "support": "Questions about your renewal? Email <mail>{{email}}</mail> and we'll sort it out."
+      }
+    },
+    "paymentReturn": {
+      "confirmingTitle": "Confirming your payment…",
+      "confirmingBody": "Please don't close this page — we're checking with the payment provider.",
+      "paidTitle": "Payment received!",
+      "paidBody": "Your membership has been renewed. It may take a few seconds to show everywhere.",
+      "failedTitle": "Payment not completed",
+      "failedBody": "Nothing has been charged. You can try again from your membership page.",
+      "cancelled": "You cancelled the payment. Nothing has been charged.",
+      "missingReference": "We couldn't tell which payment this was. Please try again from your membership page.",
+      "backToMembership": "Back to my membership"
+    }
+  },
+  "termsAndConditions": {
+    "backToLogin": "Back to Login",
+    "header": {
+      "title": "Terms and Conditions",
+      "description": "Please read these terms and conditions carefully before using the Vacademy educational platform.",
+      "effectiveDate": "Effective Date: January 2024"
+    },
+    "welcome": {
+      "title": "Welcome to Vacademy",
+      "intro1": "These Terms and Conditions (\"Terms\", \"Terms and Conditions\") govern your relationship with the Vacademy educational platform operated by Vacademy Educational Services (\"us\", \"we\", or \"our\").",
+      "intro2": "Your access to and use of the service is conditioned on your acceptance of and compliance with these Terms. These Terms apply to all visitors, users, and others who access or use the service."
+    },
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "agreement": {
+          "subtitle": "Agreement to Terms",
+          "text": "By accessing and using Vacademy's educational platform, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
+        },
+        "modifications": {
+          "subtitle": "Modifications",
+          "text": "Vacademy reserves the right to change these terms and conditions at any time. Users will be notified of significant changes, and continued use of the platform constitutes acceptance of modified terms."
+        }
+      },
+      "userAccounts": {
+        "title": "User Accounts and Registration",
+        "creation": {
+          "subtitle": "Account Creation",
+          "text": "To access certain features of our platform, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete."
+        },
+        "security": {
+          "subtitle": "Account Security",
+          "text": "You are responsible for safeguarding the password and for all activities that occur under your account. You agree to immediately notify Vacademy of any unauthorized use of your account or any other breach of security."
+        }
+      },
+      "educationalServices": {
+        "title": "Educational Services and Content",
+        "courseAccess": {
+          "subtitle": "Course Access",
+          "text": "Upon enrollment and payment, you will receive access to course materials for the duration specified in your enrollment agreement. Access may be limited by time, device, or other restrictions as specified in the course description."
+        },
+        "learningMaterials": {
+          "subtitle": "Learning Materials",
+          "text": "All course materials, including videos, documents, assessments, and other content, are provided for educational purposes only. You may not redistribute, reproduce, or share these materials without explicit permission."
+        }
+      },
+      "paymentTerms": {
+        "title": "Payment Terms and Refunds",
+        "processing": {
+          "subtitle": "Payment Processing",
+          "text": "All payments are processed securely through our approved payment processors. You agree to provide accurate payment information and authorize us to charge the specified amounts for your selected courses or services."
+        },
+        "refunds": {
+          "subtitle": "Refund Policy",
+          "text": "Refunds are available within 30 days of course enrollment, provided that less than 25% of the course content has been accessed. Refund requests must be submitted through our official channels and may take 5-10 business days to process."
+        }
+      },
+      "userConduct": {
+        "title": "User Conduct and Prohibited Activities",
+        "acceptableUse": {
+          "subtitle": "Acceptable Use",
+          "text": "You agree to use the platform only for lawful educational purposes and in a manner that does not infringe upon the rights of others or restrict or inhibit their use and enjoyment of the platform."
+        },
+        "prohibited": {
+          "subtitle": "Prohibited Activities",
+          "text": "You may not: share account credentials, attempt to gain unauthorized access to the platform, upload malicious software, engage in academic dishonesty, harass other users, or use the platform for any commercial purpose without authorization."
+        }
+      }
+    },
+    "contact": {
+      "title": "Contact Information",
+      "intro": "If you have any questions about these Terms and Conditions, please contact us:",
+      "legalLabel": "Legal Department",
+      "legalEmail": "legal@vacademy.com",
+      "supportLabel": "General Support",
+      "supportEmail": "support@vacademy.com"
+    },
+    "footer": {
+      "effective": "These terms and conditions are effective as of January 2024.",
+      "acknowledgement": "By using Vacademy, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions."
+    }
+  }
+}

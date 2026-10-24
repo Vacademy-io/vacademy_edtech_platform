@@ -119,6 +119,12 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
                SET tier = CASE WHEN (m.window_open_until IS NULL OR m.window_open_until < :now)
                                THEN 0 ELSE m.tier END,
                    next_action_at = CASE WHEN (m.window_open_until IS NULL OR m.window_open_until < :now)
+                                              AND NOT EXISTS (
+                                                  SELECT 1 FROM engagement_engine e
+                                                  WHERE e.id = m.engine_id AND e.status = 'ACTIVE'
+                                                    AND e.auto_send_killed = false
+                                                    AND e.channels -> 'WHATSAPP' ->> 'enabled' = 'true'
+                                                    AND e.channels -> 'WHATSAPP' ->> 'autoReply' = 'true')
                                THEN :now ELSE m.next_action_at END,
                    -- Meta resets the 24h free-form window on EVERY inbound message, so the window is
                    -- ALWAYS extended (GREATEST = monotonic). Only the scheduling pull-forward (tier /
@@ -209,6 +215,79 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
      * (the normal sweep bumps last_decided_at on a co-enrolled member, which would otherwise promote
      * a different, unstamped member to candidates[0] and double-answer the same message).
      */
+    /**
+     * A decision outcome, written without the columns other writers own: status (opt-out, nightly
+     * reconcile), the reply window, tier and the reply stamp. A full-row save from the snapshot read
+     * before the LLM call put back whatever changed while the model was thinking. next_action_at:
+     * the decision value while the lease taken for it is still in place; if a reply pulled the
+     * member forward meanwhile, the earlier time wins.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET last_decided_at = :decidedAt, wake_fingerprint = :fingerprint,
+                   consecutive_no_ops = :noOps, consecutive_failures = 0,
+                   next_action_at = CASE WHEN next_action_at = :heldLease THEN :nextActionAt
+                                         ELSE LEAST(next_action_at, :nextActionAt) END,
+                   updated_at = :decidedAt
+             WHERE id = :id
+            """, nativeQuery = true)
+    int recordDecision(@Param("id") String id, @Param("decidedAt") Instant decidedAt,
+                       @Param("fingerprint") String fingerprint, @Param("noOps") short noOps,
+                       @Param("heldLease") Instant heldLease, @Param("nextActionAt") Instant nextActionAt);
+
+    /** Failure backoff after a decision threw: only the retry clock and the failure count. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET consecutive_failures = :failures, next_action_at = :retryAt, updated_at = now()
+             WHERE id = :id
+            """, nativeQuery = true)
+    int recordDecisionFailure(@Param("id") String id, @Param("failures") short failures,
+                              @Param("retryAt") Instant retryAt);
+
+    /**
+     * Hold a member for the auto-reply LLM window: push next_action_at to at least the hold end, so
+     * the sweep cannot claim them meanwhile. Fails (0 rows) when a lease is already running, i.e.
+     * next_action_at falls inside (now, holdUntil]: a proactive decision holds them right now.
+     * The auto-reply engine is not pulled due on a reply (promoteByPhones), so a member that is not
+     * leased has a later next_action_at, which GREATEST keeps.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET next_action_at = GREATEST(next_action_at, :holdUntil), updated_at = :now
+             WHERE id = :id AND status = 'ACTIVE'
+               AND NOT (next_action_at > :now AND next_action_at <= :holdUntil)
+            """, nativeQuery = true)
+    int holdForReply(@Param("id") String id, @Param("now") Instant now, @Param("holdUntil") Instant holdUntil);
+
+    /**
+     * Opt a person out of every engine of the institute that reaches this phone (learner or
+     * lead): they asked us to stop. OPTED_OUT survives reconciliation (the enrol upsert only
+     * revives EXITED), so no engine messages them again.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member m
+               SET status = 'OPTED_OUT', updated_at = :now
+             WHERE m.institute_id = :instituteId AND m.status IN ('ACTIVE', 'PAUSED')
+               AND (
+                    m.user_id IN (
+                        SELECT s.user_id FROM student s
+                        WHERE RIGHT(regexp_replace(COALESCE(s.mobile_number,''),'[^0-9]','','g'),10) = :phone10)
+                 OR m.audience_response_id IN (
+                        SELECT ar.id FROM audience_response ar
+                        WHERE RIGHT(regexp_replace(COALESCE(ar.parent_mobile,''),'[^0-9]','','g'),10) = :phone10)
+               )
+            """, nativeQuery = true)
+    int optOutByPhone(@Param("instituteId") String instituteId, @Param("phone10") String phone10,
+                      @Param("now") Instant now);
+
     @Modifying
     @Transactional
     @Query(value = """

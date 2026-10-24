@@ -13,6 +13,9 @@ import { Preferences } from "@capacitor/preferences";
 import { useEffect, useState } from "react";
 import type { ListPlanningLogsRequest, IntervalType } from "../-types/types";
 import { getPackageSessionName } from "../-utils/getPackageSessionName";
+import { useTranslation } from "react-i18next";
+import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface FiltersDialogProps {
   filters: ListPlanningLogsRequest;
@@ -25,8 +28,11 @@ export default function FiltersDialog({
   onChange,
   hideIntervalTypeFilter = false,
 }: FiltersDialogProps) {
+  const { t } = useTranslation("planning");
   const [open, setOpen] = useState(false);
   const [localBatches, setLocalBatches] = useState<any[]>([]);
+  const courses = getTerminologyPlural(ContentTerms.Course, SystemTerms.Course);
+  const batches = getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch);
 
   // Fetch enrolled batches
   useEffect(() => {
@@ -74,10 +80,10 @@ export default function FiltersDialog({
   }, []);
 
   const intervalTypeOptions: { id: IntervalType; label: string }[] = [
-    { id: "weekly", label: "Day of week" },
-    { id: "monthly", label: "Weekly" },
-    { id: "yearly_month", label: "Monthly" },
-    { id: "yearly_quarter", label: "Quarterly" },
+    { id: "weekly", label: t("intervalTypeOptions.dayOfWeek") },
+    { id: "monthly", label: t("intervalTypeOptions.weekly") },
+    { id: "yearly_month", label: t("intervalTypeOptions.monthly") },
+    { id: "yearly_quarter", label: t("intervalTypeOptions.quarterly") },
   ];
 
   const toggleIntervalType = (intervalType: IntervalType) => {
@@ -118,7 +124,7 @@ export default function FiltersDialog({
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           <Funnel className="me-2 size-4" />
-          Filters
+          {t("common.filters")}
           {hasActiveFilters && (
             <span className="ms-2 flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
               {(filters.interval_types?.length || 0) +
@@ -129,8 +135,8 @@ export default function FiltersDialog({
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Filter Options</DialogTitle>
-          <DialogDescription>Customize what you want to see</DialogDescription>
+          <DialogTitle>{t("filtersDialog.title")}</DialogTitle>
+          <DialogDescription>{t("filtersDialog.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -138,7 +144,7 @@ export default function FiltersDialog({
           {!hideIntervalTypeFilter && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Period</h3>
+                <h3 className="text-sm font-semibold">{t("filtersDialog.period")}</h3>
                 {filters.interval_types &&
                   filters.interval_types.length > 0 && (
                     <Button
@@ -148,7 +154,7 @@ export default function FiltersDialog({
                         onChange({ ...filters, interval_types: undefined })
                       }
                     >
-                      Clear
+                      {t("common.clear")}
                     </Button>
                   )}
               </div>
@@ -177,7 +183,9 @@ export default function FiltersDialog({
           {localBatches.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Courses/Batches</h3>
+                <h3 className="text-sm font-semibold">
+                  {t("filtersDialog.coursesAndBatches", { courses, batches })}
+                </h3>
                 {filters.entity_ids && filters.entity_ids.length > 0 && (
                   <Button
                     variant="ghost"
@@ -186,7 +194,7 @@ export default function FiltersDialog({
                       onChange({ ...filters, entity_ids: undefined })
                     }
                   >
-                    Clear
+                    {t("common.clear")}
                   </Button>
                 )}
               </div>
@@ -213,7 +221,7 @@ export default function FiltersDialog({
           {hasActiveFilters && (
             <div className="flex justify-end border-t pt-4">
               <Button variant="outline" onClick={clearFilters}>
-                Clear All Filters
+                {t("filtersDialog.clearAllFilters")}
               </Button>
             </div>
           )}

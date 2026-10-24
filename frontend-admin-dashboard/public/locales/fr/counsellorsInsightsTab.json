@@ -1,0 +1,44 @@
+{
+    "workSummary": {
+        "title": "Résumé du travail",
+        "lastDaysSuffix_one": "· le dernier {{count}} jour",
+        "lastDaysSuffix_many": "· les {{count}} derniers jours",
+        "lastDaysSuffix_other": "· les {{count}} derniers jours",
+        "statusesMovedTo": "Statuts vers lesquels déplacés"
+    },
+    "metric": {
+        "statusChanges": "Changements de statut",
+        "callsMade": "Appels passés",
+        "connected": "Connectés",
+        "reach": "Taux de réussite"
+    },
+    "coaching": {
+        "loading": "Chargement des informations de coaching…",
+        "loadError": "Impossible de charger les informations. Si Call Intelligence n'est pas déployé sur ce backend, elles ne seront pas encore disponibles.",
+        "noAnalyzedCalls": "Aucun appel analysé par l'IA pour ce conseiller pour le moment.",
+        "enableHint": "Activez CRM Intelligence et analysez quelques appels pour voir le coaching sur la qualité des appels.",
+        "metric": {
+            "callsAnalyzed": "Appels analysés",
+            "avgCallerRating": "Note moyenne appelant",
+            "avgOutcomeRating": "Note moyenne résultat",
+            "focusAreas": "Axes de progrès"
+        },
+        "skillBreakdown": {
+            "title": "Répartition des compétences",
+            "weakestFirst": "· du plus faible au plus fort"
+        },
+        "whatToImprove": "Ce qu'il faut améliorer",
+        "tipCallCount_one": "{{count}} appel",
+        "tipCallCount_many": "{{count}} appels",
+        "tipCallCount_other": "{{count}} appels",
+        "objections": {
+            "title": "Objections les plus fréquentes",
+            "handled": "traitées {{handled}}/{{total}}"
+        },
+        "recentCalls": {
+            "title": "Appels analysés récemment",
+            "callerRating": "Appelant {{rating}}",
+            "outcomeRating": "Résultat {{rating}}"
+        }
+    }
+}

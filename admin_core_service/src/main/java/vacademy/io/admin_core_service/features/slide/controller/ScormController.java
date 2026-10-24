@@ -11,8 +11,10 @@ import vacademy.io.admin_core_service.features.slide.entity.ScormSlide;
 import vacademy.io.admin_core_service.features.slide.service.ScormService;
 import vacademy.io.admin_core_service.features.slide.service.SlideService;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin-core-service/scorm/v1")
@@ -32,6 +34,20 @@ public class ScormController {
                                                                                                                     // required?
         ScormSlide slide = scormService.uploadScormPackage(file);
         return ResponseEntity.ok(mapToDTO(slide));
+    }
+
+    /**
+     * One-off: move existing SCORM slides onto the current player. Dry run by
+     * default; call repeatedly with dryRun=false until legacyRemainingBefore
+     * reaches 0.
+     */
+    @PostMapping("/upgrade-legacy-players")
+    public ResponseEntity<Map<String, Object>> upgradeLegacyPlayers(
+            @RequestAttribute("user") CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "true") boolean dryRun,
+            @RequestParam(defaultValue = "50") int limit) {
+        SuperAdminAuthUtil.requireSuperAdmin(userDetails);
+        return ResponseEntity.ok(scormService.upgradeLegacyPlayers(dryRun, Math.min(limit, 200)));
     }
 
     @PostMapping("/add-or-update")

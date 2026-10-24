@@ -33,6 +33,16 @@ public class StudentV2DTO {
     private Date updatedAt;
     private String faceFileId;
     private Date expiryDate;
+
+    /**
+     * TRIAL or PAID, from user_plan.is_trial, which follows the money: every path that
+     * collects a plan's price clears the flag. Null when the learner has no plan at all,
+     * which is not the same thing as paying, so the badge stays off rather than guessing.
+     */
+    private String membershipType;
+
+    /** The learner's join date (ssigm.enrolled_date). */
+    private String enrolledDate;
     private String parentsToMotherMobileNumber;
     private String parentsToMotherEmail;
     private String billingContactName;

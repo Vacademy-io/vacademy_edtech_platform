@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Plus, Tag, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import {
     Command,
@@ -29,13 +30,14 @@ export function SubjectTagInput({
     value,
     onChange,
     suggestions = [],
-    placeholder = 'Add a subject/topic tag',
+    placeholder,
     className,
 }: SubjectTagInputProps) {
+    const { t } = useTranslation('assessmentSubjectTagInput');
     const [inputValue, setInputValue] = useState('');
     const [open, setOpen] = useState(false);
 
-    const selectedLower = useMemo(() => new Set(value.map((t) => t.toLowerCase())), [value]);
+    const selectedLower = useMemo(() => new Set(value.map((tg) => tg.toLowerCase())), [value]);
 
     const filteredSuggestions = useMemo(() => {
         const query = inputValue.trim().toLowerCase();
@@ -47,6 +49,7 @@ export function SubjectTagInput({
 
     const trimmed = inputValue.trim();
     const canCreate = trimmed.length > 0 && !selectedLower.has(trimmed.toLowerCase());
+    const resolvedPlaceholder = placeholder ?? t('placeholder');
 
     const addTag = (tag: string) => {
         const clean = tag.trim();
@@ -74,7 +77,7 @@ export function SubjectTagInput({
                                 type="button"
                                 onClick={() => removeTag(index)}
                                 className="ml-1 rounded-full p-0.5 text-primary-500 hover:bg-primary-200"
-                                aria-label={`Remove ${tag}`}
+                                aria-label={t('removeTag', { tag })}
                             >
                                 <X className="size-3" />
                             </button>
@@ -99,7 +102,7 @@ export function SubjectTagInput({
                                 addTag(trimmed);
                             }
                         }}
-                        placeholder={placeholder}
+                        placeholder={resolvedPlaceholder}
                     />
                 </PopoverTrigger>
                 <PopoverContent
@@ -110,7 +113,7 @@ export function SubjectTagInput({
                     <Command shouldFilter={false}>
                         <CommandList>
                             {filteredSuggestions.length === 0 && !canCreate && (
-                                <CommandEmpty>No tags found.</CommandEmpty>
+                                <CommandEmpty>{t('noTagsFound')}</CommandEmpty>
                             )}
                             {canCreate && (
                                 <CommandGroup>
@@ -119,12 +122,12 @@ export function SubjectTagInput({
                                         onSelect={() => addTag(trimmed)}
                                     >
                                         <Plus className="mr-2 size-4 text-primary-500" />
-                                        Create &ldquo;{trimmed}&rdquo;
+                                        {t('createTag', { value: trimmed })}
                                     </CommandItem>
                                 </CommandGroup>
                             )}
                             {filteredSuggestions.length > 0 && (
-                                <CommandGroup heading="Existing tags">
+                                <CommandGroup heading={t('existingTags')}>
                                     {filteredSuggestions.map((suggestion) => (
                                         <CommandItem
                                             key={suggestion}

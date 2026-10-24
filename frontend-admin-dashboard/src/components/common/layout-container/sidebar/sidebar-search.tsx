@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     CommandDialog,
     CommandInput,
@@ -20,7 +21,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
 import { CATEGORY_COLORS } from './sidebar-colors';
-import { SidebarItemsType } from '@/types/layout-container/layout-container-types';
+import { SidebarItemsType, SidebarCategory } from '@/types/layout-container/layout-container-types';
 import type { DisplaySettingsData } from '@/types/display-settings';
 import { LockKey, GearSix } from '@phosphor-icons/react';
 import { recordRecentTab } from './recent-tabs-store';
@@ -31,6 +32,9 @@ import {
     SETTINGS_DOMAIN_ORDER,
     type SettingsTabEntry,
 } from '@/routes/settings/-utils/utils';
+import { filterSearchableItems } from '@/lib/capabilities/nav-access';
+import { useEntitlement } from '@/lib/capabilities/use-entitlement';
+import { filterSettingsTabs } from '@/routes/settings/-utils/settings-entitlements';
 
 interface SidebarSearchProps {
     open: boolean;
@@ -50,6 +54,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
     sidebarCategories,
 }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation('sidebarSearch');
 
     // ⌘K keyboard shortcut
     useEffect(() => {
@@ -63,54 +68,43 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
         return () => document.removeEventListener('keydown', down);
     }, [open, onOpenChange]);
 
-    // Build a quick lookup for hidden categories so we can skip them entirely.
-    const hiddenCategoryIds = React.useMemo(() => {
-        const set = new Set<'CRM' | 'LMS' | 'AI'>();
-        (sidebarCategories || []).forEach((c) => {
-            if (c.visible === false) set.add(c.id as 'CRM' | 'LMS' | 'AI');
-        });
-        return set;
-    }, [sidebarCategories]);
-
-    // Group items by category
+    // Group items by category. Only what the user can open is offered: settings
+    // (own rail icon), other institutes' items, hidden categories and anything
+    // LOCKED are dropped — a locked entry here used to navigate straight past
+    // its lock.
     const groupedItems = React.useMemo(() => {
-        const groups: Record<'CRM' | 'LMS' | 'AI', SidebarItemsType[]> = {
+        const groups: Record<SidebarCategory, SidebarItemsType[]> = {
             CRM: [],
             LMS: [],
             AI: [],
+            ERP: [],
         };
 
-        sidebarItems.forEach((item) => {
-            // Skip settings — it has its own rail icon
-            if (item.id === 'settings') return;
-
-            // Filter by institute
-            if (item.showForInstitute && item.showForInstitute !== instituteId) return;
-
-            const category = (item.category || 'CRM') as 'CRM' | 'LMS' | 'AI';
-            // Drop entries that belong to a category the role has hidden — surfacing
-            // them in search would let users click through to features the sidebar
-            // is hiding for them.
-            if (hiddenCategoryIds.has(category)) return;
-            if (groups[category]) {
-                groups[category].push(item);
+        filterSearchableItems(sidebarItems, { instituteId, sidebarCategories }).forEach(
+            (item) => {
+                const category = (item.category || 'CRM') as SidebarCategory;
+                if (groups[category]) {
+                    groups[category].push(item);
+                }
             }
-        });
+        );
 
         return groups;
-    }, [sidebarItems, instituteId, hiddenCategoryIds]);
+    }, [sidebarItems, instituteId, sidebarCategories]);
 
     // Every settings screen, grouped by its top-level domain — indexed
     // directly from the same registry the /settings page itself renders from,
     // so search can never drift out of sync with what's actually there.
+    // MANAGED: only the plan's screens (settings-entitlements.ts).
+    const entitlement = useEntitlement();
     const settingsByDomain = React.useMemo(() => {
         const map = new Map<string, SettingsTabEntry[]>();
-        getAvailableSettingsTabs().forEach((entry) => {
+        filterSettingsTabs(getAvailableSettingsTabs(), entitlement).forEach((entry) => {
             if (!map.has(entry.domain)) map.set(entry.domain, []);
             map.get(entry.domain)!.push(entry);
         });
         return map;
-    }, []);
+    }, [entitlement]);
 
     const handleSelect = useCallback(
         (to: string | undefined, title: string, category?: string, itemId?: string) => {
@@ -120,7 +114,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
                 id: itemId || to,
                 label: title,
                 route: to,
-                category: (category as 'CRM' | 'LMS' | 'AI') || 'CRM',
+                category: (category as SidebarCategory) || 'CRM',
             });
             // Sidebar links may carry a query ("/settings?selectedTab=…"); the
             // router only honours it when it's passed as `search`.
@@ -148,14 +142,16 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
         [navigate, onOpenChange]
     );
 
+    // Same names the rail shows.
     const categoryLabels: Record<string, string> = {
-        CRM: 'CRM',
-        LMS: 'Learning',
-        AI: 'AI Tools',
+        CRM: t('categoryCrm'),
+        LMS: t('categoryLms'),
+        AI: t('categoryAiTools'),
+        ERP: t('categoryErp'),
     };
 
     const renderItem = (item: SidebarItemsType) => {
-        const colors = CATEGORY_COLORS[(item.category || 'CRM') as 'CRM' | 'LMS' | 'AI'];
+        const colors = CATEGORY_COLORS[(item.category || 'CRM') as SidebarCategory];
         const Icon = item.icon;
         const results: React.ReactNode[] = [];
 
@@ -175,7 +171,9 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
                     )}
                     <span className="flex-1 truncate">{item.title}</span>
                     {item.locked && (
-                        <span className="text-[10px] font-medium text-neutral-400">Locked</span>
+                        <span className="text-2xs font-medium text-neutral-400">
+                            {t('locked')}
+                        </span>
                     )}
                 </CommandItem>
             );
@@ -199,7 +197,8 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
                         }
                         className="gap-3 px-3 py-2"
                     >
-                        <div className="w-[18px] shrink-0" /> {/* Indent for sub-items */}
+                        {/* Indent for sub-items — w-4 matches the 16px sibling icons */}
+                        <div className="w-4 shrink-0" />
                         {sub.locked ? (
                             <LockKey size={16} weight="duotone" className="text-neutral-400" />
                         ) : (
@@ -211,7 +210,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
                             />
                         )}
                         <span className="flex-1 truncate text-neutral-600">{sub.subItem}</span>
-                        <span className="text-[10px] text-neutral-400">{item.title}</span>
+                        <span className="text-2xs text-neutral-400">{item.title}</span>
                     </CommandItem>
                 );
             });
@@ -222,20 +221,20 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
 
     return (
         <CommandDialog open={open} onOpenChange={onOpenChange}>
-            <CommandInput placeholder="Search tabs, features..." />
+            <CommandInput placeholder={t('searchPlaceholder')} />
             <CommandList>
                 <CommandEmpty>
                     <div className="flex flex-col items-center gap-1 py-4">
-                        <span className="text-sm text-neutral-500">No results found</span>
+                        <span className="text-sm text-neutral-500">{t('noResultsFound')}</span>
                         <span className="text-xs text-neutral-400">
-                            Try a different search term
+                            {t('tryDifferentSearchTerm')}
                         </span>
                     </div>
                 </CommandEmpty>
 
                 {Object.entries(groupedItems).map(([category, items], idx) => {
                     if (items.length === 0) return null;
-                    const colors = CATEGORY_COLORS[category as 'CRM' | 'LMS' | 'AI'];
+                    const colors = CATEGORY_COLORS[category as SidebarCategory];
 
                     return (
                         <React.Fragment key={category}>
@@ -264,7 +263,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
                                 <CommandGroup
                                     heading={
                                         <span className="font-semibold text-neutral-500">
-                                            Settings · {domain}
+                                            {t('settingsDomainHeading', { domain })}
                                         </span>
                                     }
                                 >

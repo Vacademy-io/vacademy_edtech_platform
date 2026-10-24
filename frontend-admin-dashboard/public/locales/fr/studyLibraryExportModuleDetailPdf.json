@@ -1,0 +1,12 @@
+{
+    "detailsReportTitle": "Rapport de détails du {{term}}",
+    "learner": "Apprenant",
+    "termColonName": "{{term}} : {{name}}",
+    "studySlide": "Diapositive d'étude",
+    "type": "Type",
+    "concentration": "Concentration",
+    "batchConcentrationAvg": "Concentration {{batchTerm}} (moyenne)",
+    "timeSpent": "Temps passé",
+    "lastActive": "Dernière activité",
+    "notAvailable": "N/D"
+}

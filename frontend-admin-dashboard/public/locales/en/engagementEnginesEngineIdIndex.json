@@ -1,0 +1,88 @@
+{
+    "navHeading": "Engine",
+    "backToAll": "All engines",
+    "loadError": "Could not load this engine.",
+    "viewTaskInbox": "View task inbox",
+    "detail": {
+        "activeMember_one": "active member",
+        "activeMember_other": "active members",
+        "resolveAudience": "Resolve audience",
+        "resolving": "Resolving…"
+    },
+    "statusActions": {
+        "DRY_RUN": "Start dry run",
+        "ACTIVE": "Activate",
+        "PAUSED": "Pause",
+        "ARCHIVED": "Archive"
+    },
+    "templatesPendingBanner": "This engine sends on WhatsApp — approve at least one template below before it can go live.",
+    "brief": {
+        "title": "The brief",
+        "amend": "Amend",
+        "empty": "No brief set.",
+        "version": "version {{version}}"
+    },
+    "config": {
+        "title": "Configuration",
+        "channels": "Channels",
+        "noChannels": "None",
+        "language": "Language",
+        "cadenceLabel": "Cadence",
+        "cadence": "every {{hours}}h",
+        "quietHours": "Quiet hours",
+        "dataPoints": "Data points"
+    },
+    "amendDialog": {
+        "heading": "Amend the brief",
+        "description": "The brief grows by amendment — this is appended, the original is never rewritten. It applies at each person's next natural check-in.",
+        "placeholder": "e.g. Also mention the new weekend batch starting next month.",
+        "cancel": "Cancel",
+        "submit": "Add amendment",
+        "saving": "Saving…"
+    },
+    "autonomy": {
+        "title": "Autonomy",
+        "allowAutoSend": "Allow auto-send",
+        "keepAsCopilot": "Keep as copilot",
+        "autoSendChannels": "Auto-send channels",
+        "noAutoSend": "No auto-send channels — this engine only drafts tasks for you to send.",
+        "holdout": "Holdout",
+        "holdoutValue": "{{pct}}% (enrolled, never messaged)",
+        "badge": {
+            "off": "Autonomy off (copilot)",
+            "ramping": "Ramping · {{approved}}/{{target}} approved",
+            "sendingAutonomously": "Sending autonomously",
+            "dryRun": "Dry run (simulated)",
+            "onEngineStatus": "Autonomy on · engine {{status}}"
+        },
+        "statusFor": "{{channel}} status",
+        "rampingHintChannel_one": "Still copilot on {{channel}}. Send {{count}} more approved {{channel}} draft and this channel starts sending on its own.",
+        "rampingHintChannel_other": "Still copilot on {{channel}}. Send {{count}} more approved {{channel}} drafts and this channel starts sending on its own."
+    },
+    "archiveDialog": {
+        "title": "Archive this engine?",
+        "description": "It stops deciding and sending for good. Tasks already in the inbox and past messages stay.",
+        "cancel": "Keep it",
+        "confirm": "Archive"
+    },
+    "kpi": {
+        "members": "Active members",
+        "holdout": "{{pct}}% held out (never messaged)",
+        "noHoldout": "No holdout",
+        "approved": "Approved sends",
+        "graduateAfter": "A channel auto-sends after {{n}} approved sends",
+        "cadence": "Check-in cadence",
+        "quiet": "Quiet hours {{window}}",
+        "nextRun": "Next check-in",
+        "notScheduled": "Not scheduled",
+        "lastRun": "Last run {{when}}"
+    },
+    "status": {
+        "title": "Status & audience",
+        "sources": "Sources",
+        "people": "people",
+        "change": "Change status",
+        "noTransitions": "Archived engines can’t change status.",
+        "footnote": "Pause stops the engine deciding and sending. “Keep as copilot” only stops auto-sending."
+    }
+}

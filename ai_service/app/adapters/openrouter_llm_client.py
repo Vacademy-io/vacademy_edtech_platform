@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, AsyncGenerator, Tuple
+import asyncio
+import logging
+from typing import Any, Dict, List, Optional, AsyncGenerator, Tuple
 
 import httpx
 import json
 import os
 
 from ..config import get_settings
+from ..constants.model_defaults import GLM_DEFAULT
 from ..ports.llm_client import OutlineLLMClient
 from ..core.exceptions import PaymentRequiredError
+from ..services.llm_router import post_chat
+
+logger = logging.getLogger(__name__)
 
 
 class OpenRouterOutlineLLMClient(OutlineLLMClient):
@@ -19,7 +25,9 @@ class OpenRouterOutlineLLMClient(OutlineLLMClient):
     via environment variables. You can adapt this to any provider by adjusting the
     request payload format and headers.
     
-    Supports free tier model fallback chain for cost-effective generation.
+    A call without a model runs the `use_case` row of ai_model_defaults
+    (default 'chat'; GLM + its fallback), resolved through model_selection —
+    not the registry's nondeterministic recommended_models[0].
     """
     
     def __init__(
@@ -28,40 +36,54 @@ class OpenRouterOutlineLLMClient(OutlineLLMClient):
         api_key: Optional[str] = None,
         default_model: Optional[str] = None,
         timeout_seconds: float = 1200.0,  # 20 minutes for long content generation
+        use_case: str = "chat",
     ) -> None:
         settings = get_settings()
         self._base_url = base_url or getattr(settings, "llm_base_url", "")
         self._api_key = api_key or getattr(settings, "openrouter_api_key", "")
-        self._internal_api_base = os.getenv("AI_SERVICE_BASE_URL", "http://localhost:8077/ai-service")
-        self._default_model = default_model or getattr(
-            settings, "llm_default_model", "xiaomi/mimo-v2-flash:free"
-        )
-        self._model_chain = []  # Fetched dynamically
+        # Explicit ctor model only; otherwise the use-case row decides per call.
+        self._explicit_default_model = default_model
+        self._default_model = default_model or getattr(settings, "llm_default_model", None) or GLM_DEFAULT
+        self._use_case = use_case
         self._timeout_seconds = timeout_seconds
 
-    async def _fetch_models_from_registry(self) -> list[str]:
-        """Fetch model priority dynamically from the models v2 API for the 'outline' use case."""
-        models = []
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.get(f"{self._internal_api_base}/models/v2/use-case/outline")
-                if res.status_code == 200:
-                    data = res.json()
-                    for m in data.get("recommended_models", []):
-                        if m.get("model_id"):
-                            models.append(m["model_id"])
-                    if not models and data.get("free_tier_model", {}).get("model_id"):
-                        models.append(data["free_tier_model"]["model_id"])
-        except Exception as e:
-            # Silently fallback to an empty list, let the caller throw
-            pass
-        return models
+    async def _models_for(
+        self,
+        model: Optional[str],
+        use_case: Optional[str],
+        fallback_models: Optional[List[str]],
+    ) -> List[str]:
+        """Ordered models to try. An explicit model is honoured as-is (plus
+        any fallback chain the caller passed); a model-less call resolves the
+        use case (row default + fallback, NON_GLM tail) — never a registry
+        'recommended' list."""
+        if model:
+            chain = [model]
+        elif self._explicit_default_model and not use_case:
+            chain = [self._explicit_default_model]
+        else:
+            try:
+                from ..services.model_selection import resolve_model_sync
+                primary, fallbacks = await asyncio.to_thread(
+                    resolve_model_sync, use_case or self._use_case
+                )
+                chain = [primary, *fallbacks]
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("use-case model lookup failed (%s); using %s", exc, self._default_model)
+                chain = [self._default_model]
+        for candidate in fallback_models or []:
+            if candidate and candidate not in chain:
+                chain.append(candidate)
+        return chain
 
     async def generate_outline(
         self, 
         prompt: str, 
         model: str | None, 
-        api_key: str | None = None
+        api_key: str | None = None,
+        *,
+        use_case: str | None = None,
+        fallback_models: List[str] | None = None,
     ) -> str | Tuple[str, Dict[str, int]]:
         """
         Generate outline using regular (non-streaming) API call with free model fallback.
@@ -75,13 +97,19 @@ class OpenRouterOutlineLLMClient(OutlineLLMClient):
             If return_usage=True: Tuple of (content, usage_dict)
             Otherwise: Just the content string (backward compatible)
         """
-        return await self._generate_outline_with_usage(prompt, model, api_key, return_usage=False)
+        return await self._generate_outline_with_usage(
+            prompt, model, api_key, return_usage=False,
+            use_case=use_case, fallback_models=fallback_models,
+        )
     
     async def generate_outline_with_usage(
         self, 
         prompt: str, 
         model: str | None, 
-        api_key: str | None = None
+        api_key: str | None = None,
+        *,
+        use_case: str | None = None,
+        fallback_models: List[str] | None = None,
     ) -> Tuple[str, Dict[str, int]]:
         """
         Generate outline and return both content and token usage.
@@ -97,14 +125,19 @@ class OpenRouterOutlineLLMClient(OutlineLLMClient):
             - completion_tokens: int
             - total_tokens: int
         """
-        return await self._generate_outline_with_usage(prompt, model, api_key, return_usage=True)
+        return await self._generate_outline_with_usage(
+            prompt, model, api_key, return_usage=True,
+            use_case=use_case, fallback_models=fallback_models,
+        )
     
     async def _generate_outline_with_usage(
         self, 
         prompt: str, 
         model: str | None, 
         api_key: str | None = None,
-        return_usage: bool = False
+        return_usage: bool = False,
+        use_case: str | None = None,
+        fallback_models: List[str] | None = None,
     ) -> str | Tuple[str, Dict[str, int]]:
         """
         Internal method to generate outline with optional usage tracking.
@@ -113,32 +146,15 @@ class OpenRouterOutlineLLMClient(OutlineLLMClient):
         effective_api_key = api_key or self._api_key
         
         # Determine which models to try
-        if model:
-            models_to_try = [model]
-        else:
-            if not self._model_chain:
-                # Fetch dynamically if not already cached
-                self._model_chain = await self._fetch_models_from_registry()
-            
-            if self._model_chain:
-                models_to_try = self._model_chain
-            else:
-                models_to_try = [self._default_model]
+        models_to_try = await self._models_for(model, use_case, fallback_models)
         
         last_error = None
         for model_to_use in models_to_try:
             try:
                 payload = self._build_payload(prompt=prompt, model=model_to_use, stream=False)
-                headers = self._build_headers(api_key=effective_api_key)
-
-                async with httpx.AsyncClient(timeout=self._timeout_seconds) as client:
-                    response = await client.post(
-                        url=self._base_url,
-                        headers=headers,
-                        json=payload,
-                    )
-                    response.raise_for_status()
-                    data: Dict[str, Any] = response.json()
+                response = await self._post_routed(payload, effective_api_key)
+                response.raise_for_status()
+                data: Dict[str, Any] = response.json()
 
                 # Extract content
                 try:
@@ -210,6 +226,12 @@ class OpenRouterOutlineLLMClient(OutlineLLMClient):
         # For now, use non-streaming API for simplicity
         result = await self.generate_outline(prompt, model, api_key=api_key)
         yield result
+
+    async def _post_routed(self, payload: Dict[str, Any], api_key: str | None) -> httpx.Response:
+        """POST through the model's gateway (llm_router); a routed gateway that
+        is down or refuses is retried once on OpenRouter."""
+        async with httpx.AsyncClient(timeout=self._timeout_seconds) as client:
+            return await post_chat(client, payload, api_key or self._api_key)
 
     def _build_payload(self, prompt: str, model: str, stream: bool = False) -> Dict[str, Any]:
         payload = {

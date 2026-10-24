@@ -25,6 +25,9 @@ import java.util.Map;
  * - date_based, completion_based, sequential rules contain no ids and are left alone.
  * - prerequisite rule ids that fall outside the clone scope are dropped and a
  *   human-readable warning is appended to the result.
+ *
+ * Course knowledge: deliberately not wired to ContentIndexMarker. Drip rules
+ * change only access, and course knowledge resolves access at query time.
  */
 @Component
 @RequiredArgsConstructor

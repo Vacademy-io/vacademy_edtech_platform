@@ -1,0 +1,32 @@
+{
+    "dialog": {
+        "defaultReportTitle": "Evaluation Report"
+    },
+    "header": {
+        "defaultTitle": "Lecture Evaluation",
+        "export": "Export"
+    },
+    "info": {
+        "lectureTitle": "Lecture Title:",
+        "duration": "Duration:",
+        "evaluationDate": "Evaluation Date:",
+        "notAvailable": "N/A"
+    },
+    "score": {
+        "totalScore": "Total Score",
+        "criterionScore": "(Score: {{score}})"
+    },
+    "performance": {
+        "needsImprovement": "Needs Improvement",
+        "average": "Average",
+        "good": "Good",
+        "excellent": "Excellent"
+    },
+    "criteria": {
+        "heading": "Evaluation Criteria",
+        "scopeOfImprovement": "Scope of Improvement:"
+    },
+    "summary": {
+        "heading": "Summary"
+    }
+}

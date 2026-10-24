@@ -1,0 +1,41 @@
+{
+    "validation": {
+        "chapterNameRequired": "اسم الفصل مطلوب",
+        "descriptionMaxLength": "يجب ألا يتجاوز الوصف {{max}} حرفًا"
+    },
+    "toast": {
+        "invalidImageFile": "يرجى اختيار ملف صورة صالح",
+        "thumbnailUploadSuccess": "تم رفع الصورة المصغّرة بنجاح",
+        "thumbnailUploadFailed": "فشل رفع الصورة المصغّرة",
+        "selectPackageRequired": "يرجى اختيار باقة واحدة على الأقل لتحديد الظهور",
+        "packageSessionNotFound": "لم يتم العثور على جلسة الباقة",
+        "chapterAddSuccess": "تمت إضافة الفصل بنجاح",
+        "noChapterToUpdate": "لا يوجد فصل لتحديثه",
+        "chapterUpdateSuccess": "تم تحديث الفصل بنجاح",
+        "chapterActionFailedCreate": "فشل إنشاء الفصل. يرجى المحاولة مرة أخرى.",
+        "chapterActionFailedEdit": "فشل تعديل الفصل. يرجى المحاولة مرة أخرى."
+    },
+    "loadingVisibilityData": "جارٍ تحميل بيانات الظهور الكاملة...",
+    "nameLabel": "اسم {{term}}",
+    "descriptionLabel": "الوصف (اختياري)",
+    "descriptionPlaceholder": "أدخل وصف {{term}}",
+    "descriptionCharCount": "يظهر على بطاقة {{term}} — {{current}}/{{max}} حرفًا",
+    "thumbnailLabel": "الصورة المصغّرة لـ {{term}}",
+    "optional": "(اختياري)",
+    "thumbnailHelpText": "قم برفع صورة مصغّرة لهذا الفصل. سيتم اقتصاصها بنسبة 16:9 للحفاظ على التناسق (يُفضّل 16:9).",
+    "thumbnailPreviewAlt": "معاينة الصورة المصغّرة",
+    "uploading": "جارٍ الرفع...",
+    "selectThumbnail": "اختر صورة مصغّرة",
+    "visibilityHeading": "ظهور {{term}}",
+    "visibilityHelpText": "اختر المستويات التي تريد منحها إمكانية الوصول إلى هذا الفصل. سيتمكن المستوى المختار فقط من مشاهدة المحتوى. يمكنك تحديث الظهور في أي وقت.",
+    "academicSession": "الفصل الدراسي:",
+    "defaultSuffix": " (افتراضي)",
+    "selectAllAriaLabel": "تحديد الكل",
+    "loadingCompleteData": "يرجى الانتظار أثناء تحميل البيانات الكاملة...",
+    "adding": "جارٍ الإضافة...",
+    "updating": "جارٍ التحديث...",
+    "addButton": "إضافة {{term}}",
+    "editButton": "تعديل {{term}}",
+    "cropDialogTitle": "اقتصاص الصورة المصغّرة للفصل",
+    "saveThumbnail": "حفظ الصورة المصغّرة"
+}

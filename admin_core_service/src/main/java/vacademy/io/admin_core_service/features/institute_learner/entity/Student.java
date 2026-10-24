@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.institute_learner.entity;
 
 import jakarta.persistence.Column;
+import vacademy.io.common.core.utils.TextSanitizer;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -200,6 +201,17 @@ public class Student {
     @PrePersist
     @PreUpdate
     private void normalizeEmails() {
+        // Mirror of User#normalizeIdentifiers in auth_service: strip invisible
+        // characters (ZWSP, BOM, NBSP) that a pasted email or name carries. They
+        // are invisible in the UI but break every exact-match lookup and make
+        // outbound mail bounce. See TextSanitizer.
+        this.email = TextSanitizer.cleanIdentifier(this.email);
+        this.username = TextSanitizer.cleanIdentifier(this.username);
+        this.fullName = TextSanitizer.clean(this.fullName);
+        this.parentsToMotherEmail = TextSanitizer.cleanIdentifier(this.parentsToMotherEmail);
+        this.parentsEmail = TextSanitizer.cleanIdentifier(this.parentsEmail);
+        this.guardianEmail = TextSanitizer.cleanIdentifier(this.guardianEmail);
+        this.billingContactEmail = TextSanitizer.cleanIdentifier(this.billingContactEmail);
         if (this.email != null) {
             this.email = this.email.toLowerCase();
         }

@@ -12,17 +12,22 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { handleInviteUsers } from '@/routes/dashboard/-services/dashboard-services';
 import { mapRoleToCustomName } from '@/utils/roleUtils';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-export const inviteUsersSchema = z.object({
-    name: z.string().min(1, 'Full name is required'),
-    email: z.string().min(1, 'Email is required').email('Invalid email format'),
-    roleType: z.array(z.string()).min(1, 'At least one role type is required'),
-});
-export type inviteUsersFormValues = z.infer<typeof inviteUsersSchema>;
+export const buildInviteUsersSchema = (t: TFunction) =>
+    z.object({
+        name: z.string().min(1, t('validation.nameRequired')),
+        email: z.string().min(1, t('validation.emailRequired')).email(t('validation.invalidEmail')),
+        roleType: z.array(z.string()).min(1, t('validation.roleTypeRequired')),
+    });
+export type inviteUsersFormValues = z.infer<ReturnType<typeof buildInviteUsersSchema>>;
 
 const Step4InviteUsers = ({ refetchData }: { refetchData: () => void }) => {
+    const { t } = useTranslation('homeworkCreationStep4InviteUsers');
     const [open, setOpen] = useState(false);
     const instituteId = getInstituteId();
+    const inviteUsersSchema = buildInviteUsersSchema(t);
     const form = useForm<inviteUsersFormValues>({
         resolver: zodResolver(inviteUsersSchema),
         defaultValues: {
@@ -69,12 +74,12 @@ const Step4InviteUsers = ({ refetchData }: { refetchData: () => void }) => {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger>
                 <MyButton buttonType="secondary" scale="large" layoutVariant="default">
-                    Invite Users
+                    {t('trigger.inviteUsers')}
                 </MyButton>
             </DialogTrigger>
-            <DialogContent className="flex w-[420px] flex-col p-0">
+            <DialogContent className="flex w-[420px] flex-col p-0">{/* design-lint-ignore: compact invite-form dialog intentionally smaller than the named w-dialog-md/lg/xl tokens (all >=672px) */}
                 <h1 className="rounded-t-md bg-primary-50 p-4 font-semibold text-primary-500">
-                    Invite User
+                    {t('dialog.title')}
                 </h1>
                 <FormProvider {...form}>
                     <form className="flex flex-col items-start justify-center gap-4 px-4">
@@ -86,13 +91,13 @@ const Step4InviteUsers = ({ refetchData }: { refetchData: () => void }) => {
                                     <FormControl>
                                         <MyInput
                                             inputType="text"
-                                            inputPlaceholder="Full name (First and Last)"
+                                            inputPlaceholder={t('dialog.fullNamePlaceholder')}
                                             input={value}
                                             onChangeFunction={onChange}
                                             required={true}
                                             error={form.formState.errors.name?.message}
                                             size="large"
-                                            label="Full Name"
+                                            label={t('dialog.fullNameLabel')}
                                             {...field}
                                             className="w-96"
                                         />
@@ -108,13 +113,13 @@ const Step4InviteUsers = ({ refetchData }: { refetchData: () => void }) => {
                                     <FormControl>
                                         <MyInput
                                             inputType="email"
-                                            inputPlaceholder="Enter Email"
+                                            inputPlaceholder={t('dialog.emailPlaceholder')}
                                             input={value}
                                             onChangeFunction={onChange}
                                             required={true}
                                             error={form.formState.errors.email?.message}
                                             size="large"
-                                            label="Email"
+                                            label={t('dialog.emailLabel')}
                                             {...field}
                                             className="w-96"
                                         />
@@ -124,7 +129,7 @@ const Step4InviteUsers = ({ refetchData }: { refetchData: () => void }) => {
                         />
                         <MultiSelectDropdown
                             form={form}
-                            label="Role Type"
+                            label={t('dialog.roleTypeLabel')}
                             name="roleType"
                             options={RoleType.map((option, index) => ({
                                 value: option.name,
@@ -145,7 +150,7 @@ const Step4InviteUsers = ({ refetchData }: { refetchData: () => void }) => {
                                 disable={!isValid}
                                 onClick={form.handleSubmit(onSubmit)}
                             >
-                                Invite User
+                                {t('dialog.submitButton')}
                             </MyButton>
                         </div>
                     </form>

@@ -1,0 +1,31 @@
+{
+    "title": "Rapports",
+    "description": "Comment le Centre de rapports regroupe et comptabilise l'activité. Les modifications s'appliquent à tous les onglets de rapport (Sources, Appels, Entonnoir, Suivis, Conseillers).",
+    "loading": "Chargement des paramètres de rapport…",
+    "timezone": {
+        "label": "Fuseau horaire des rapports",
+        "hint": "Tout le regroupement des rapports quotidiens et horaires utilise ce fuseau horaire.",
+        "placeholder": "Sélectionner un fuseau horaire"
+    },
+    "connectedStatuses": {
+        "label": "Statuts d'appel connectés",
+        "hint": "Résultats d'appel comptabilisés comme un appel connecté dans les rapports de taux de connexion et de sources. Par défaut : Terminé.",
+        "placeholder": "Sélectionner les statuts d'appel"
+    },
+    "interestedStatuses": {
+        "label": "Statuts intéressés",
+        "hint": "Statuts de prospect comptabilisés comme « intéressé » dans les rapports de sources et d'entonnoir. Par défaut : Intéressé.",
+        "placeholder": "Sélectionner les statuts de prospect",
+        "placeholderLoading": "Chargement des statuts…"
+    },
+    "save": {
+        "button": "Enregistrer les paramètres de rapport",
+        "saving": "Enregistrement…"
+    },
+    "toasts": {
+        "saved": "Paramètres de rapport enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres de rapport",
+        "connectedRequired": "Sélectionnez au moins un statut d'appel connecté",
+        "interestedRequired": "Sélectionnez au moins un statut intéressé"
+    }
+}

@@ -1,109 +1,50 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Info } from '@phosphor-icons/react';
 
 interface Props {
     nodeType: string;
 }
 
-const NODE_HELP: Record<string, { description: string; example: string; required: string[] }> = {
-    TRIGGER: {
-        description: 'Starts the workflow when a specific event occurs in the system.',
-        example: 'Trigger when a new learner enrolls in a batch.',
-        required: ['Event type'],
-    },
-    QUERY: {
-        description: 'Fetches data from the database using a pre-built query.',
-        example: 'Get all learners in a specific batch with their email addresses.',
-        required: ['Query key'],
-    },
-    TRANSFORM: {
-        description: 'Modifies or reshapes data in the workflow context.',
-        example: 'Extract only email and name fields from a list of learners.',
-        required: ['Transform expression'],
-    },
-    FILTER: {
-        description: 'Filters a list of items based on a condition.',
-        example: 'Keep only learners whose age is above 18.',
-        required: ['Source list', 'Condition'],
-    },
-    AGGREGATE: {
-        description: 'Computes statistics (count, sum, average, min, max) over a list.',
-        example: 'Calculate average test score across all students.',
-        required: ['Source list', 'Operations'],
-    },
-    CONDITION: {
-        description: 'Splits the workflow into two paths based on a true/false condition.',
-        example: 'If payment is overdue, send reminder; otherwise, skip.',
-        required: ['Condition expression'],
-    },
-    LOOP: {
-        description: 'Repeats downstream actions for each item in a list.',
-        example: 'Send a personalized email to each learner in a batch.',
-        required: ['Source list', 'Item variable name'],
-    },
-    MERGE: {
-        description: 'Waits for multiple parallel paths to complete before continuing.',
-        example: 'After sending both email and WhatsApp, proceed to update records.',
-        required: [],
-    },
-    DELAY: {
-        description: 'Pauses the workflow for a specified duration.',
-        example: 'Wait 24 hours before sending a follow-up message.',
-        required: ['Delay value', 'Unit'],
-    },
-    SEND_EMAIL: {
-        description: 'Sends emails to one or more recipients using a template.',
-        example: 'Send welcome email to newly enrolled learners.',
-        required: ['Recipients', 'Template'],
-    },
-    SEND_WHATSAPP: {
-        description: 'Sends WhatsApp messages to one or more recipients.',
-        example: 'Send course credentials via WhatsApp.',
-        required: ['Recipients', 'Template'],
-    },
-    SEND_PUSH_NOTIFICATION: {
-        description: 'Sends a push notification to mobile/web app users.',
-        example: 'Notify students about a new assignment.',
-        required: ['Title', 'Body', 'Recipient tokens'],
-    },
-    HTTP_REQUEST: {
-        description: 'Makes an HTTP call to an internal or external API.',
-        example: 'Call the certificate generation API after course completion.',
-        required: ['URL', 'Method'],
-    },
-    SCHEDULE_TASK: {
-        description: 'Schedules a workflow to run at a future time.',
-        example: 'Schedule a reminder 3 days before installment due date.',
-        required: ['Delay duration'],
-    },
-    UPDATE_RECORD: {
-        description: 'Updates a database record directly (limited to allowed tables).',
-        example: 'Mark enrollment status as ACTIVE after payment confirmed.',
-        required: ['Table', 'WHERE clause', 'SET clause'],
-    },
-    SET_LEAD_STATUS: {
-        description: 'Moves the lead to a CRM status (via LeadStatusService — dual-store safe). Wire it after CALL_AI/CONDITION to react to a call disposition.',
-        example: 'Callback disposition → Set Lead Status = Call Back.',
-        required: ['Lead Status'],
-    },
-};
+const NODE_TYPES = [
+    'TRIGGER', 'QUERY', 'TRANSFORM', 'FILTER', 'AGGREGATE', 'CONDITION', 'LOOP',
+    'MERGE', 'DELAY', 'SEND_EMAIL', 'SEND_WHATSAPP', 'SEND_PUSH_NOTIFICATION',
+    'HTTP_REQUEST', 'SCHEDULE_TASK', 'UPDATE_RECORD', 'SET_LEAD_STATUS',
+] as const;
+
+const buildNodeHelp = (
+    t: TFunction
+): Record<string, { description: string; example: string; required: string[] }> =>
+    Object.fromEntries(
+        NODE_TYPES.map((type) => [
+            type,
+            {
+                description: t(`nodes.${type}.description`),
+                example: t(`nodes.${type}.example`),
+                required: t(`nodes.${type}.required`, { returnObjects: true }) as string[],
+            },
+        ])
+    );
 
 export function NodeHelpTooltip({ nodeType }: Props) {
+    const { t } = useTranslation('workflowNodeHelpTooltip');
+    const NODE_HELP = buildNodeHelp(t);
     const help = NODE_HELP[nodeType];
     if (!help) return null;
 
     return (
         <div className="group relative inline-flex">
             <Info size={14} className="text-muted-foreground cursor-help" />
-            <div className="invisible group-hover:visible absolute left-6 top-0 z-50 w-64 bg-white border rounded-lg shadow-lg p-3 text-xs">
+            <div className="invisible group-hover:visible absolute start-6 top-0 z-50 w-64 bg-white border rounded-lg shadow-lg p-3 text-xs">
                 <div className="font-medium mb-1">{nodeType.replace(/_/g, ' ')}</div>
                 <p className="text-muted-foreground mb-2">{help.description}</p>
                 <div className="bg-blue-50 rounded p-1.5 mb-2 text-blue-700">
-                    <span className="font-medium">Example: </span>
+                    <span className="font-medium">{t('exampleLabel')}</span>
                     {help.example}
                 </div>
                 {help.required.length > 0 && (
                     <div>
-                        <span className="text-muted-foreground">Required: </span>
+                        <span className="text-muted-foreground">{t('requiredLabel')}</span>
                         {help.required.join(', ')}
                     </div>
                 )}

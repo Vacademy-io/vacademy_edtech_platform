@@ -1,0 +1,89 @@
+{
+    "dialogTitle": "API Integration - {{campaignName}}",
+    "dialogDescription": "Use these details to integrate with automation tools like Zapier, Make, or custom applications.",
+    "tabs": {
+        "curl": "cURL Command",
+        "docs": "Documentation"
+    },
+    "copyButton": {
+        "copy": "Copy",
+        "copied": "Copied",
+        "copyMarkdown": "Copy Markdown"
+    },
+    "toasts": {
+        "copiedToClipboard": "Copied to clipboard!",
+        "copyFailed": "Failed to copy"
+    },
+    "curlTab": {
+        "replaceHintPrefix": "Replace the placeholder values (e.g.,",
+        "replaceHintSuffix": ") with actual data before making the request."
+    },
+    "common": {
+        "yes": "Yes",
+        "no": "No"
+    },
+    "docsPanel": {
+        "heading": "API Integration Guide",
+        "endpointHeading": "Endpoint",
+        "headersHeading": "Headers",
+        "headersTable": {
+            "header": "Header",
+            "value": "Value"
+        },
+        "customFieldsHeading": "Custom Fields",
+        "customFieldsTable": {
+            "fieldId": "Field ID",
+            "name": "Name",
+            "type": "Type",
+            "required": "Required"
+        },
+        "integrationExamplesHeading": "Integration Examples",
+        "zapierHeading": "Zapier Integration",
+        "zapierSteps": {
+            "createZap": "Create a new Zap",
+            "chooseTrigger": "Choose your trigger app",
+            "addWebhooks": "Add Webhooks by Zapier as action",
+            "selectPostMethod": "Select \"POST\" method",
+            "pasteUrl": "Paste the endpoint URL",
+            "mapFields": "Map your fields to the request body"
+        }
+    },
+    "markdown": {
+        "guideHeading": "API Integration Guide",
+        "endpointHeading": "Endpoint",
+        "headersHeading": "Headers",
+        "headersTable": {
+            "header": "Header",
+            "value": "Value"
+        },
+        "requestBodyHeading": "Request Body Structure",
+        "customFieldsHeading": "Custom Fields Reference",
+        "customFieldsTable": {
+            "fieldId": "Field ID",
+            "fieldName": "Field Name",
+            "type": "Type",
+            "required": "Required"
+        },
+        "responseHeading": "Response",
+        "successLabel": "Success",
+        "errorLabel": "Error",
+        "integrationExamplesHeading": "Integration Examples",
+        "zapierHeading": "Zapier Integration",
+        "zapierSteps": {
+            "createZap": "Create a new Zap",
+            "chooseTrigger": "Choose your trigger app (e.g., Google Forms, Typeform)",
+            "addWebhooks": "Add Webhooks by Zapier as action",
+            "selectPostMethod": "Select \"POST\" method",
+            "pasteUrl": "Paste the endpoint URL",
+            "setContentType": "Set Content-Type to application/json",
+            "mapFields": "Map your trigger fields to the request body"
+        },
+        "makeHeading": "Make (Integromat)",
+        "makeSteps": {
+            "createScenario": "Create a new scenario",
+            "addTrigger": "Add your trigger module",
+            "addHttpModule": "Add HTTP > Make a request module",
+            "configure": "Configure with the endpoint and payload structure above"
+        }
+    }
+}

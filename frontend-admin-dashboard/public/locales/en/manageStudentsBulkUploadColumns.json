@@ -1,0 +1,22 @@
+{
+    "columns": {
+        "status": "STATUS",
+        "uploadStatus": "Upload Status",
+        "uploadError": "Upload Error"
+    },
+    "placeholders": {
+        "selectGender": "Select gender",
+        "selectOption": "Select an option"
+    },
+    "hints": {
+        "mobileNumberExample": "(Eg. +91-1234567890)"
+    },
+    "errors": {
+        "viewErrors_one": "Error ({{count}})",
+        "viewErrors_other": "Errors ({{count}})"
+    },
+    "uploadResult": {
+        "success": "Success",
+        "failed": "Failed"
+    }
+}

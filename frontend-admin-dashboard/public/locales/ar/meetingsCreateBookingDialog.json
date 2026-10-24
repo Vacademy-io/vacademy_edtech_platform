@@ -1,0 +1,43 @@
+{
+    "schema": {
+        "titleRequired": "العنوان مطلوب",
+        "dateRequired": "التاريخ مطلوب",
+        "startTimeRequired": "وقت البدء مطلوب",
+        "durationRequired": "المدة مطلوبة",
+        "emailInvalid": "أدخل بريدًا إلكترونيًا صالحًا"
+    },
+    "durationOption_zero": "{{count}} دقيقة",
+    "durationOption_one": "دقيقة واحدة",
+    "durationOption_two": "دقيقتان",
+    "durationOption_few": "{{count}} دقائق",
+    "durationOption_many": "{{count}} دقيقة",
+    "durationOption_other": "{{count}} دقيقة",
+    "toast": {
+        "missingInstitute": "سياق المؤسسة مفقود",
+        "scheduled": "تمت جدولة الاجتماع",
+        "scheduleFailed": "فشلت جدولة الاجتماع. حاول مرة أخرى."
+    },
+    "heading": "اجتماع جديد",
+    "titleLabel": "العنوان",
+    "titlePlaceholder": "عنوان الاجتماع",
+    "dateLabel": "التاريخ",
+    "startTimeLabel": "وقت البدء",
+    "durationLabel": "المدة",
+    "participantsLabel": "المشاركون",
+    "inviteeFromLead": "المدعو (من العميل المحتمل)",
+    "inviteeExternal": "مدعو خارجي (اختياري)",
+    "prefilledFromLead": "تمت التعبئة مسبقًا من العميل المحتمل — عدّل فقط إذا كانت التفاصيل غير صحيحة.",
+    "inviteeNameLabel": "اسم المدعو",
+    "inviteeNamePlaceholder": "الاسم الكامل",
+    "inviteeEmailLabel": "البريد الإلكتروني للمدعو",
+    "inviteeEmailPlaceholder": "name@example.com",
+    "inviteePhoneLabel": "هاتف المدعو",
+    "inviteePhonePlaceholder": "رقم الهاتف",
+    "allocateMeetTitle": "تخصيص رابط Google Meet",
+    "allocateMeetDescription": "إرفاق رابط Meet بهذا الاجتماع تلقائيًا",
+    "actions": {
+        "cancel": "إلغاء",
+        "scheduling": "جارٍ الجدولة...",
+        "scheduleMeeting": "جدولة الاجتماع"
+    }
+}

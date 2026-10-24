@@ -15,6 +15,9 @@ details/assessment/{id} endpoint. The FE-provided student id is used as user_id.
 Model is resolved from the DB registry (use case "evaluation") — fixing the
 retired google/gemini-2.5-flash-preview-09-2025 id media hardcoded. Billing is
 attributed to the institute (media passed null).
+
+Not reachable over HTTP: its only caller, the logged-out /evaluator-ai free
+tool, was retired (2026-10-01) and its router is no longer mounted.
 """
 from __future__ import annotations
 

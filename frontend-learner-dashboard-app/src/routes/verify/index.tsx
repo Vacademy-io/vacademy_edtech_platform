@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Barcode, MagnifyingGlass } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import { MyInput } from "@/components/design-system/input";
 import {
@@ -35,6 +36,7 @@ type PageState =
   | { kind: "done"; result: VerificationResult };
 
 function CertificateScanVerificationPage() {
+  const { t } = useTranslation("miscRoutesA");
   const [query, setQuery] = useState("");
   const [state, setState] = useState<PageState>({ kind: "idle" });
 
@@ -50,7 +52,7 @@ function CertificateScanVerificationPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 py-10 dark:bg-neutral-900">
-      <div className="flex w-full max-w-xl flex-col gap-6">
+      <div className="flex w-full max-w-xl flex-col gap-section">
         <form
           onSubmit={onSubmit}
           className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm dark:bg-neutral-800"
@@ -58,19 +60,18 @@ function CertificateScanVerificationPage() {
           <div className="flex flex-col items-center gap-2 pb-5">
             <Barcode weight="fill" className="size-10 text-primary-500" />
             <h1 className="text-h3 font-semibold text-neutral-700 dark:text-neutral-100">
-              Check a certificate
+              {t("verify.scan.title")}
             </h1>
             <p className="text-center text-caption text-neutral-500">
-              Scan the code on the certificate with any scanner app and paste
-              what it gives you, or type the verification code printed beside it.
+              {t("verify.scan.description")}
             </p>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-stack">
             <MyInput
               inputType="text"
-              label="Scanned code or verification link"
-              inputPlaceholder="e.g. EDU2026001*A1B2C3D4E5"
+              label={t("verify.scan.inputLabel")}
+              inputPlaceholder={t("verify.scan.inputPlaceholder")}
               input={query}
               onChangeFunction={(e) => setQuery(e.target.value)}
               className="w-full font-mono"
@@ -85,28 +86,25 @@ function CertificateScanVerificationPage() {
               className="w-full"
             >
               <MagnifyingGlass className="mr-2 size-4" />
-              {state.kind === "checking" ? "Checking…" : "Verify"}
+              {state.kind === "checking" ? t("verify.scan.checking") : t("verify.scan.verify")}
             </MyButton>
           </div>
 
           {/* Said plainly, because someone who types only the number and gets
               nothing back will otherwise read it as "this certificate is fake". */}
           <p className="mt-4 border-t border-neutral-100 pt-4 text-caption text-neutral-400 dark:border-neutral-700">
-            The certificate number on its own is not enough to verify — it has to
-            be the scanned code or the verification code printed with it. This
-            is what stops anyone guessing their way through an institute&apos;s
-            certificates.
+            {t("verify.scan.numberNotEnough")}
           </p>
         </form>
 
         {state.kind === "checking" && <VerifyingCard />}
         {result?.status === "valid" && (
-          <VerifiedByCertificate data={result.data} verifiedVia="code you entered" />
+          <VerifiedByCertificate data={result.data} verifiedVia={t("verify.verifiedVia.codeEntered")} />
         )}
         {result?.status === "invalid" && (
           <InvalidCard>
             <p className="text-center text-body text-neutral-500">
-              We have no record matching what you entered.
+              {t("verify.scan.noRecordMatch")}
             </p>
           </InvalidCard>
         )}

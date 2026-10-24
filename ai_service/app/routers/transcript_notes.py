@@ -12,7 +12,7 @@ import logging
 import re
 from typing import Optional
 
-import httpx
+from ..services.llm_router import chat_with_chain
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -82,7 +82,10 @@ class GenerateNotesResponse(BaseModel):
 # Cloud restrictions, and the direct-Gemini fallback was retired (that key
 # was free-tier with a zero image quota; text now runs through OpenRouter
 # only, using Google's model via the billed OpenRouter account).
-_OPENROUTER_MODEL = "google/gemini-2.5-flash"
+#
+# The model comes from the 'transcript_notes' use case (ai_model_defaults, set
+# in the super-admin portal; GLM by default) and fails over through its chain.
+_USE_CASE = "transcript_notes"
 
 # Placeholder the LLM emits on a line after each visual-concept H2 section
 # (see the prompt rule #10). Format: `<!--IMG: search query-->`. Captured
@@ -184,40 +187,23 @@ def _build_prompt(transcript: str, title_hint: Optional[str], target_language: s
     )
 
 
-async def _call_openrouter(prompt: str, api_key: str, base_url: str) -> str:
-    """Call OpenRouter's OpenAI-compatible chat completions endpoint and return the
-    raw markdown content. Raises httpx.HTTPStatusError on non-2xx, RuntimeError on
-    empty payload, httpx.RequestError on transport failure."""
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        resp = await client.post(
-            base_url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": _OPENROUTER_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.3,
-                "max_tokens": 8192,
-            },
-        )
-    if resp.status_code != 200:
-        # Bubble up the OpenRouter error body so the orchestrator above can
-        # surface an actionable message to the user.
-        raise httpx.HTTPStatusError(
-            f"OpenRouter {resp.status_code}: {resp.text[:500]}",
-            request=resp.request,
-            response=resp,
-        )
-    data = resp.json()
-    choices = data.get("choices") or []
-    if not choices:
-        raise RuntimeError(f"OpenRouter returned no choices: {str(data)[:300]}")
-    content = (choices[0].get("message") or {}).get("content") or ""
-    if not content.strip():
-        raise RuntimeError(f"OpenRouter returned empty content: {str(data)[:300]}")
-    return content
+async def _call_openrouter(prompt: str, api_key: str, db: Optional[Session] = None) -> tuple[str, str]:
+    """One notes generation through the 'transcript_notes' model chain (GLM
+    gets reasoning low and max_tokens headroom on both gateway legs). Returns
+    (markdown, registry model id that answered). Raises ChainExhausted when
+    every model failed or returned nothing."""
+    result = await chat_with_chain(
+        {
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+            "max_tokens": 8192,
+        },
+        _USE_CASE,
+        db=db,
+        api_key=api_key,
+        timeout=120.0,
+    )
+    return result.content, result.model
 
 
 def _enrich_with_images(markdown: str) -> str:
@@ -344,8 +330,6 @@ async def generate_notes(
 
     settings = get_settings()
     openrouter_key: Optional[str] = getattr(settings, "openrouter_api_key", None)
-    openrouter_url: str = getattr(settings, "llm_base_url",
-                                  "https://openrouter.ai/api/v1/chat/completions")
 
     if not openrouter_key:
         raise HTTPException(
@@ -386,9 +370,8 @@ async def generate_notes(
     # not us (the direct-Gemini fallback was retired).
     if openrouter_key:
         try:
-            markdown = await _call_openrouter(prompt, openrouter_key, openrouter_url)
-            used_model = _OPENROUTER_MODEL
-        except Exception as e:
+            markdown, used_model = await _call_openrouter(prompt, openrouter_key, db)
+        except Exception as e:  # ChainExhausted carries every model's reason
             logger.warning("[transcript-notes] openrouter failed: %s", e)
             failures.append(f"OpenRouter: {e}")
     else:
@@ -413,7 +396,7 @@ async def generate_notes(
         tool_key="notes",
         tool_params=notes_params,
         request_type=RequestType.NOTES,
-        model=used_model or _OPENROUTER_MODEL,
+        model=used_model,
         institute_id=institute_id,
         user_id=actor_user_id,
         user_role=actor_role if actor_user_id else None,
@@ -422,5 +405,5 @@ async def generate_notes(
 
     return GenerateNotesResponse(
         markdown=enriched_markdown,
-        model=used_model or _OPENROUTER_MODEL,
+        model=used_model,
     )

@@ -1,0 +1,33 @@
+{
+    "button": {
+        "uploadCsv": "Upload CSV",
+        "downloadTemplate": "Download Template",
+        "preview": "Preview",
+        "showUploadedFile": "Show Uploaded File",
+        "upload": "Upload"
+    },
+    "dialog": {
+        "title": "Upload CSV"
+    },
+    "dropzone": {
+        "instructions": "Drag and drop a CSV file here, or click to select one",
+        "fileSizeKb": "{{size}} KB"
+    },
+    "errors": {
+        "csvOnly": "Please upload only CSV files",
+        "headersUnavailable": "Headers configuration not available",
+        "parseCsv": "Error parsing CSV",
+        "fixValidationErrors": "Please fix validation errors before uploading!",
+        "fixErrors": "Please fix the errors",
+        "uploadFailed": "Failed to upload CSV"
+    },
+    "toast": {
+        "uploadCompleted": "Upload completed! {{success}} successful, {{failed}} failed"
+    },
+    "notification": {
+        "heading": "Notification Preference",
+        "dontNotify": "Don't Notify",
+        "notify": "Notify {{term}}",
+        "description": "Would you like to send notification emails to the {{term}} about their enrollment?"
+    }
+}

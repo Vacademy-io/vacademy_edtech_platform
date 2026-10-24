@@ -1,0 +1,27 @@
+{
+    "card": {
+        "title": "फ़ॉर्म प्रतिक्रिया"
+    },
+    "row": {
+        "notProvided": "उपलब्ध नहीं",
+        "viewAttachment": "अटैचमेंट देखें"
+    },
+    "callButton": {
+        "title": "इस लीड को कॉल करें",
+        "ariaLabel": "लीड को कॉल करें",
+        "connecting": "कनेक्ट हो रहा है…",
+        "callNow": "अभी कॉल करें"
+    },
+    "aiCallButton": {
+        "title": "इस लीड को AI वॉइस एजेंट से कॉल करें",
+        "ariaLabel": "लीड को AI कॉल करें",
+        "calling": "कॉल हो रहा है…",
+        "aiCall": "AI कॉल",
+        "optionsHeading": "AI कॉल विकल्प",
+        "placeAiCall": "AI कॉल करें"
+    },
+    "errors": {
+        "noResponseForCall": "कोई कैंपेन प्रतिक्रिया लिंक नहीं है — यहाँ से कॉल नहीं किया जा सकता।",
+        "noResponseForAiCall": "कोई कैंपेन प्रतिक्रिया लिंक नहीं है — यहाँ से AI कॉल नहीं किया जा सकता।"
+    }
+}

@@ -105,7 +105,14 @@ export const fetchPastSessionsForMultipleBatches = async (
   });
 
   const totalPages = Math.max(...results.map((r) => r.total_pages), 0);
-  const totalElements = results.reduce((sum, r) => sum + r.total_elements, 0);
+  // A session shared by batches — or an unassigned public class, which every
+  // batch returns — is counted once per batch by the backend; take back the
+  // repeats seen on this page so the count isn't inflated per batch.
+  const duplicates = allSessions.length - uniqueSessions.length;
+  const totalElements = Math.max(
+    results.reduce((sum, r) => sum + r.total_elements, 0) - duplicates,
+    uniqueSessions.length
+  );
 
   return { sessions: uniqueSessions, displayFlags, totalPages, totalElements };
 };

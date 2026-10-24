@@ -1,0 +1,39 @@
+{
+    "loading": "Loading...",
+    "header": {
+        "title": "Naming Settings",
+        "description": "Customize the naming conventions used throughout your institute",
+        "singularHint": "Please enter singular form of the term"
+    },
+    "actions": {
+        "resetAll": "Reset All",
+        "saving": "Saving...",
+        "saveChanges": "Save Changes"
+    },
+    "unsavedChangesBanner": "You have unsaved changes. Don't forget to save your updates.",
+    "sections": {
+        "contentStructure": {
+            "title": "Content & Structure",
+            "description": "Customize terms related to course content and structure"
+        },
+        "userRoles": {
+            "title": "User Roles",
+            "description": "Customize terms for different user roles in your institute"
+        },
+        "other": {
+            "title": "Other",
+            "description": "Customize terms for other features"
+        }
+    },
+    "row": {
+        "singular": "Singular",
+        "plural": "Plural",
+        "reset": "Reset"
+    },
+    "toasts": {
+        "syncFailed": "Failed to sync settings with server.",
+        "settingsSaved": "Settings saved",
+        "saveFailed": "Failed to save settings. Please try again."
+    },
+    "footerNote": "<0>Note:</0> Changes will be applied across your entire institute once saved. All users will see the updated terminology in their interface."
+}

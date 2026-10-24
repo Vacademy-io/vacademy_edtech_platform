@@ -1,0 +1,21 @@
+{
+    "next": "अगला",
+    "addQuestion": "प्रश्न जोड़ें",
+    "quickAccess": "त्वरित पहुंच",
+    "optionBased": "विकल्प आधारित",
+    "mathBased": "गणित आधारित",
+    "writingSkills": "लेखन कौशल",
+    "readingSkills": "पठन कौशल",
+    "invalidTimestamp": "अमान्य टाइमस्टैंप। कृपया MM:SS प्रारूप या सेकंड में एक मान्य समय दर्ज करें, और वर्तमान टाइमस्टैंप वीडियो की लंबाई से कम होना चाहिए",
+    "questionTypes": {
+        "mcqSingle": "बहुविकल्पीय प्रश्न (एकल सही)",
+        "mcqMultiple": "बहुविकल्पीय प्रश्न (बहु सही)",
+        "numerical": "संख्यात्मक",
+        "trueFalse": "सही गलत",
+        "longAnswer": "दीर्घ उत्तर",
+        "singleWord": "एकल शब्द",
+        "comprehensionMcqSingle": "अवबोधन बहुविकल्पीय प्रश्न (एकल सही)",
+        "comprehensionMcqMultiple": "अवबोधन बहुविकल्पीय प्रश्न (बहु सही)",
+        "comprehensionNumeric": "अवबोधन संख्यात्मक"
+    }
+}

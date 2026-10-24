@@ -1,0 +1,158 @@
+{
+    "header": {
+        "title": "تكامل يوتيوب",
+        "subtitle": "قم برفع الجلسات المباشرة المسجَّلة تلقائيًا إلى قناتك على يوتيوب. اربط الحساب مرة واحدة؛ وستصل كل تسجيلات هذه المؤسسة إلى قناتك."
+    },
+    "toasts": {
+        "channelConnected": "تم ربط قناة يوتيوب",
+        "connectFailed": "فشل الربط: {{reason}}",
+        "unknownReason": "غير معروف",
+        "featureEnabled": "تم تفعيل تكامل يوتيوب",
+        "featureDisabled": "تم إيقاف تكامل يوتيوب",
+        "toggleFailed": "فشل تحديث المفتاح",
+        "oauthStartFailed": "فشل بدء تفويض يوتيوب — راجع وحدة التحكم.",
+        "disconnected": "تم فصل يوتيوب",
+        "disconnectFailed": "فشل قطع الاتصال",
+        "defaultsSaved": "تم حفظ إعدادات الرفع الافتراضية",
+        "defaultsSaveFailed": "فشل حفظ الإعدادات الافتراضية",
+        "requeued": "تمت إعادة الإدراج في قائمة الانتظار للرفع",
+        "retryFailed": "فشلت إعادة المحاولة"
+    },
+    "featureGate": {
+        "title": "تفعيل تكامل يوتيوب",
+        "description": "فعّل هذا الخيار إذا كانت هذه المؤسسة ترغب في نشر تسجيلات الجلسات المباشرة على يوتيوب. عند الإيقاف، لن يتم رفع أي تسجيل ولن يظهر زر \"الرفع إلى يوتيوب\" في أي جلسة.",
+        "hint": "بعد التفعيل، ستتمكن من ربط قناة يوتيوب، وضبط إعدادات الرفع الافتراضية (الخصوصية، قالب العنوان، الفئة)، ومشاهدة سجل الرفع لكل تسجيل."
+    },
+    "connection": {
+        "title": "قناة يوتيوب",
+        "description": "سجّل الدخول بحساب Google المالك للقناة التي تريد النشر عليها. مطلوب: صلاحية التعديل على تلك القناة.",
+        "loading": "جارٍ التحميل…",
+        "unnamedChannel": "(قناة بلا اسم)",
+        "reconnect": "إعادة الربط",
+        "disconnect": "فصل الاتصال",
+        "invalidTitle": "الاتصال غير صالح",
+        "invalidDefaultReason": "رفضت Google رمز التحديث. يعني هذا عادةً أن الوصول قد أُلغي من إعدادات حساب Google.",
+        "reconnectYoutube": "إعادة ربط يوتيوب",
+        "redirecting": "جارٍ إعادة التوجيه…",
+        "notConnected": "لا توجد قناة مرتبطة بعد. بمجرد الربط، سيُرفع كل تسجيل من BBB تلقائيًا إلى تلك القناة.",
+        "connectYoutube": "ربط يوتيوب"
+    },
+    "status": {
+        "active": "متصلة",
+        "invalid": "بحاجة إلى إعادة ربط",
+        "notConnected": "غير متصلة"
+    },
+    "defaults": {
+        "title": "إعدادات الرفع الافتراضية",
+        "description": "تُطبَّق على كل تسجيل يُرفع تلقائيًا. يمكن للرفع اليدوي تجاوز إعداد الخصوصية لكل تسجيل على حدة.",
+        "loading": "جارٍ التحميل…",
+        "reset": "إعادة تعيين",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "autoUpload": {
+            "title": "الرفع التلقائي عند جاهزية التسجيل",
+            "description": "عند الإيقاف، لن تُرفع التسجيلات تلقائيًا. يظل بإمكان أي شخص بدء الرفع يدويًا من عرض الجلسة المباشرة."
+        },
+        "privacyLabel": "الخصوصية",
+        "categoryLabel": "الفئة",
+        "licenseLabel": "الترخيص",
+        "licenseStandard": "ترخيص يوتيوب القياسي",
+        "licenseCreativeCommons": "المشاع الإبداعي",
+        "defaultLanguageLabel": "اللغة الافتراضية",
+        "defaultLanguagePlaceholder": "en, hi, ar…",
+        "embeddable": {
+            "title": "السماح بالتضمين",
+            "description": "مطلوب لتشغيل هذه الفيديوهات داخل Vacademy. أوقف هذا الخيار فقط للمحتوى المقيَّد التنزيل."
+        },
+        "publicStats": {
+            "title": "إظهار الإحصاءات العامة",
+            "description": "ما إذا كان عدد المشاهدات / الإعجابات ظاهرًا على صفحة الفيديو."
+        },
+        "madeForKids": {
+            "title": "مُعدّ للأطفال",
+            "description": "يتطلب يوتيوب هذا الإقرار. يجب أن يكون هذا الخيار مُوقفًا لمعظم محاضرات المتعلمين البالغين."
+        },
+        "notifySubscribers": {
+            "title": "إشعار مشتركي القناة",
+            "description": "عند التفعيل، يرسل يوتيوب إشعارًا للمشتركين مع كل تسجيل يُرفع. عادةً ما يكون مُوقفًا للتسجيلات الروتينية."
+        },
+        "titleTemplateLabel": "قالب العنوان",
+        "titleTemplateTokens": "الرموز: {session_title}, {subject}, {date}",
+        "titleTemplatePlaceholder": "{session_title} | {date}",
+        "descriptionTemplateLabel": "قالب الوصف",
+        "descriptionTemplateTokensHint": "نفس رموز العنوان",
+        "descriptionTemplatePlaceholder": "تسجيل جلسة {session_title} بتاريخ {date}. © مؤسستك.",
+        "tagsLabel": "الوسوم (مفصولة بفواصل)",
+        "tagsPlaceholder": "محاضرة، الصف الثاني عشر، jee",
+        "playlistLabel": "معرّف قائمة التشغيل الافتراضية (اختياري)",
+        "playlistPlaceholder": "PLxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "playlistHint": "ستُضاف الفيديوهات المرفوعة تلقائيًا إلى قائمة التشغيل هذه."
+    },
+    "privacyOptions": {
+        "unlisted": {
+            "label": "غير مدرجة",
+            "help": "يمكن لأي شخص لديه الرابط المشاهدة. يُنصح بها للاستخدام في التضمين فقط."
+        },
+        "private": {
+            "label": "خاصة",
+            "help": "أنت فقط من يمكنه المشاهدة. استخدمها للمراجعة قبل النشر."
+        },
+        "public": {
+            "label": "عامة",
+            "help": "قابلة للبحث على يوتيوب وعلى قناتك."
+        }
+    },
+    "categoryOptions": {
+        "education": "تعليم",
+        "scienceAndTechnology": "علوم وتقنية",
+        "peopleAndBlogs": "أشخاص ومدونات",
+        "newsAndPolitics": "أخبار وسياسة",
+        "entertainment": "ترفيه",
+        "gaming": "ألعاب",
+        "howToAndStyle": "إرشادات وأسلوب حياة"
+    },
+    "history": {
+        "title": "سجل الرفع",
+        "description": "أحدث 50 عملية رفع لهذه المؤسسة. يمكن إعادة محاولة العمليات الفاشلة؛ وتُعاد محاولة أخطاء الحصة النسبية تلقائيًا بعد إعادة ضبط النافذة اليومية.",
+        "notConnected": "اربط قناة يوتيوب لبدء رفع التسجيلات.",
+        "loading": "جارٍ التحميل…",
+        "empty": "لا توجد عمليات رفع بعد. ستظهر التسجيلات هنا فور انتهاء معالجتها.",
+        "columns": {
+            "when": "الوقت",
+            "title": "العنوان",
+            "status": "الحالة",
+            "trigger": "المُشغِّل",
+            "video": "الفيديو"
+        },
+        "pendingFile": "(قيد الانتظار — الملف {{fileId}})",
+        "triggerAuto": "تلقائي",
+        "triggerManual": "يدوي",
+        "open": "فتح",
+        "retry": "إعادة المحاولة"
+    },
+    "jobStatus": {
+        "queued": "في قائمة الانتظار",
+        "queuedWithAttempt": "في قائمة الانتظار (المحاولة {{attempt}}/{{maxAttempts}})",
+        "uploading": "جارٍ الرفع…",
+        "done": "تم الرفع",
+        "failed": "فشل",
+        "cancelled": "أُلغي"
+    },
+    "time": {
+        "justNow": "الآن",
+        "minutesAgo_zero": "منذ {{count}} دقيقة",
+        "minutesAgo_one": "منذ {{count}} دقيقة",
+        "minutesAgo_two": "منذ {{count}} دقيقتين",
+        "minutesAgo_few": "منذ {{count}} دقائق",
+        "minutesAgo_many": "منذ {{count}} دقيقة",
+        "minutesAgo_other": "منذ {{count}} دقيقة",
+        "hoursAgo_zero": "منذ {{count}} ساعة",
+        "hoursAgo_one": "منذ {{count}} ساعة",
+        "hoursAgo_two": "منذ {{count}} ساعتين",
+        "hoursAgo_few": "منذ {{count}} ساعات",
+        "hoursAgo_many": "منذ {{count}} ساعة",
+        "hoursAgo_other": "منذ {{count}} ساعة",
+        "unknown": "—"
+    },
+    "channelThumbnailAlt": "القناة"
+}

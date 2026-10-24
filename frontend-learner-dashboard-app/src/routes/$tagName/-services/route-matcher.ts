@@ -1,4 +1,6 @@
 import { CourseCatalogueData, Page } from "../-types/course-catalogue-types";
+import { getCachedRootCatalogueTag } from "@/services/domain-routing";
+import { isReservedAppRoute } from "@/services/reserved-app-routes";
 
 /**
  * Route matcher utility for handling dynamic page routing
@@ -23,6 +25,73 @@ export class RouteMatcher {
       .replace(/\/$/, "") // Remove trailing slash
       .replace(/^homepage$/, "home") // Map homepage to home
       .trim();
+  }
+
+  /**
+   * True when `tagName` is the catalogue mounted at this host's ROOT — see
+   * `institute_domain_routing.root_catalogue_tag`. A root-mounted catalogue
+   * answers on "/" and "/<page>" with no tag segment, so every URL the site
+   * builds for itself has to drop the "/<tag>" prefix. Any other catalogue on
+   * the same host (a second tag) keeps classic routing untouched.
+   */
+  static isRootMounted(tagName: string | undefined | null): boolean {
+    const root = getCachedRootCatalogueTag();
+    if (!root || !tagName) return false;
+    return this.normalizeRoute(root) === this.normalizeRoute(tagName);
+  }
+
+  /** "/<tag>" for a classic catalogue, "" for the root-mounted one. */
+  static basePath(tagName: string): string {
+    if (!tagName || this.isRootMounted(tagName)) return "";
+    return `/${tagName}`;
+  }
+
+  /**
+   * The ONE place that turns (tag, page-route) into a path. Home collapses to
+   * the base ("/" when root-mounted); everything else is "<base>/<route>".
+   */
+  static pagePath(tagName: string, route?: string | null): string {
+    const base = this.basePath(tagName);
+    // Trim slashes but keep the author's casing: the page component matches
+    // `page.route === pageSlug` exactly, so lowercasing here would turn a
+    // route like "Toddler-Reset" into a link to a page that reports not found.
+    const clean = (route || "").trim().replace(/^\/+/, "").replace(/\/+$/, "");
+    if (this.normalizeRoute(clean) === "home" || clean === "") return base || "/";
+    // Root-mounted, but the page is named like one of the app's own routes
+    // ("privacy-policy", "courses", "login"...): "/<page>" would open the
+    // app's page, not the catalogue's. Keep the tagged address, which the
+    // root-mounted host still serves (see isReservedRootPage).
+    if (!base && tagName && this.isReservedRootPage(tagName, clean)) {
+      return `/${tagName}/${clean}`;
+    }
+    return `${base}/${clean}`;
+  }
+
+  /**
+   * A page of the root-mounted catalogue that cannot live at "/<page>"
+   * because the learner app answers that path itself. Such a page is
+   * addressed as "/<tag>/<page>" instead, and the "/<tag>/..." →
+   * "/<page>" canonical redirect must leave it alone.
+   */
+  static isReservedRootPage(tagName: string, pageSlug: string): boolean {
+    return this.isRootMounted(tagName) && isReservedAppRoute(pageSlug);
+  }
+
+  /**
+   * Path segments AFTER the catalogue base: ["about"] for both "/new/about"
+   * and, when `new` is root-mounted, "/about". Callers that need "which page
+   * am I on" read this instead of counting segments themselves.
+   */
+  static segmentsAfterBase(pathname: string, tagName: string): string[] {
+    const segs = pathname.split("/").filter(Boolean);
+    if (this.isRootMounted(tagName)) {
+      // A legacy "/<tag>/..." URL on a root-mounted host still means the same page.
+      return segs[0] && this.normalizeRoute(segs[0]) === this.normalizeRoute(tagName)
+        ? segs.slice(1)
+        : segs;
+    }
+    const idx = segs.indexOf(tagName);
+    return idx >= 0 ? segs.slice(idx + 1) : segs.slice(1);
   }
 
   /**
@@ -85,16 +154,9 @@ export class RouteMatcher {
       return routeId;
     }
 
-    // Build the route with tagName prefix
-    const normalizedId = this.normalizeRoute(routeId);
-    
-    // Special case for home/homepage - just return /$tagName
-    if (normalizedId === "home") {
-      return `/${tagName}`;
-    }
-
-    // For other pages, return /$tagName/$routeId
-    return `/${tagName}/${normalizedId}`;
+    // "/<tag>/<route>" — or "/<route>" when this catalogue is mounted at the
+    // host's root. pagePath() owns that rule so no caller re-derives it.
+    return this.pagePath(tagName, routeId);
   }
 
   /**
@@ -126,12 +188,7 @@ export class RouteMatcher {
       const matchedPage = this.findMatchingPage(item.route, catalogueData.pages);
 
       if (matchedPage) {
-        // Route should be /$tagName or /$tagName/routeId
-        const normalizedRoute = this.normalizeRoute(item.route);
-        const finalRoute =
-          normalizedRoute === "home" || normalizedRoute === ""
-            ? `/${tagName}`
-            : `/${tagName}/${normalizedRoute}`;
+        const finalRoute = this.pagePath(tagName, item.route);
 
         return {
           label: item.label,

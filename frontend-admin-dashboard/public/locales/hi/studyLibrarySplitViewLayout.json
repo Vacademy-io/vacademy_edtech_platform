@@ -1,0 +1,14 @@
+{
+    "back": "वापस",
+    "courseDetails": "कोर्स विवरण",
+    "details": "विवरण",
+    "percent": "{{value}}%",
+    "createCourse": "कोर्स बनाएं",
+    "createDraftCourse": "ड्राफ्ट कोर्स बनाएं",
+    "generatePageContent": "पेज सामग्री बनाएं",
+    "generate": "बनाएं",
+    "generatingContent": "सामग्री बनाई जा रही है...",
+    "pagesProgress": "{{total}} में से {{completed}} पेज",
+    "chapters": "अध्याय",
+    "content": "सामग्री"
+}

@@ -1,0 +1,43 @@
+{
+    "common": {
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "tagCount_one": "{{count}} tag",
+        "tagCount_other": "{{count}} tags"
+    },
+    "header": {
+        "logoAlt": "Logo",
+        "untitled": "Untitled",
+        "exit": "Exit",
+        "save": "Save"
+    },
+    "sidebar": {
+        "questionsLabel": "Questions",
+        "questionIncompleteAriaLabel": "Question isn't complete",
+        "questionIncompleteTooltip": "Question isn't complete"
+    },
+    "actions": {
+        "addQuestion": "Add question"
+    },
+    "dialogs": {
+        "addQuestion": {
+            "title": "Add Question"
+        }
+    },
+    "emptyState": {
+        "title": "No questions yet",
+        "description": "Add your first question to start building this paper."
+    },
+    "tags": {
+        "title": "Subject / topic tags",
+        "description": "Used to group questions in reports and question search.",
+        "applyToAll": "Apply to all questions"
+    },
+    "toasts": {
+        "addTagFirst": "Add at least one tag to this question first",
+        "tagsApplied": "Applied {{tags}} to all {{questions}}",
+        "updateSuccess": "Question Paper updated successfully",
+        "incompleteQuestions": "some of your questions are incomplete or needs attentions!",
+        "numericAnswerMissing": "Question {{number}} needs a correct answer before you save"
+    }
+}

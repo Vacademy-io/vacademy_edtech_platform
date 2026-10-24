@@ -8,10 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import vacademy.io.admin_core_service.features.course_settings.service.PackageSettingService;
-import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
-import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
-import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionRepository;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -20,11 +16,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Pushes learner profile edits (name/email) AND portal password changes to every
@@ -34,23 +26,16 @@ import java.util.Set;
  * profile/password edit never fails because an LMS is unreachable, and a learner
  * missing on the LMS is the LMS's 4xx to log, not ours to surface.
  *
- * <p>Connection discovery mirrors what the enrolment workflow reads: each
- * enrolled package's {@code LMS_SETTING} (double-data envelope), falling back
- * to the institute-level setting only when no course-level config exists.
- * Only WordPress-shaped connections (apiUrl + apiKey + apiSecret) are synced —
- * Moodle has no crm/v1 plugin.</p>
+ * <p>Which sites those are is {@link LearnerLmsConnectionResolver}'s answer, shared
+ * with the post-password-change hand-off so a learner is never sent to a site this
+ * class did not push their new password to.</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LearnerLmsUserSyncService {
 
-    private static final String LMS_SETTING_KEY = "LMS_SETTING";
-    private static final List<String> ACTIVE_STATUSES = List.of("ACTIVE");
-
-    private final StudentSessionRepository studentSessionRepository;
-    private final PackageSettingService packageSettingService;
-    private final InstituteSettingService instituteSettingService;
+    private final LearnerLmsConnectionResolver learnerLmsConnectionResolver;
     private final ObjectMapper objectMapper;
 
     @Async
@@ -115,40 +100,9 @@ public class LearnerLmsUserSyncService {
         }
     }
 
-    /**
-     * Distinct WordPress connections across the learner's active courses, deduped by
-     * (normalized apiUrl, apiKey) so one site is called once. Reads each enrolled
-     * package's LMS_SETTING (double-data envelope), falling back to the institute-level
-     * setting only when no course-level config exists.
-     */
+    /** Delegates to the shared resolver so discovery and the push agree on one rule set. */
     private Map<String, JsonNode> resolveWordpressConnections(String userId) {
-        List<StudentSessionInstituteGroupMapping> mappings = studentSessionRepository
-                .findAllByUserIdAndStatusIn(userId, ACTIVE_STATUSES);
-        if (mappings.isEmpty()) {
-            return Map.of();
-        }
-
-        Set<String> packageIds = new LinkedHashSet<>();
-        Set<String> instituteIds = new LinkedHashSet<>();
-        for (StudentSessionInstituteGroupMapping m : mappings) {
-            if (m.getPackageSession() != null && m.getPackageSession().getPackageEntity() != null) {
-                packageIds.add(m.getPackageSession().getPackageEntity().getId());
-            }
-            if (m.getInstitute() != null && StringUtils.hasText(m.getInstitute().getId())) {
-                instituteIds.add(m.getInstitute().getId());
-            }
-        }
-
-        Map<String, JsonNode> connections = new LinkedHashMap<>();
-        for (String packageId : packageIds) {
-            collectWordpressConnections(readPackageLmsSetting(packageId), connections);
-        }
-        if (connections.isEmpty()) {
-            for (String instituteId : instituteIds) {
-                collectWordpressConnections(readInstituteLmsSetting(instituteId), connections);
-            }
-        }
-        return connections;
+        return learnerLmsConnectionResolver.resolveWordpressConnections(userId);
     }
 
     private ObjectNode buildEditUserPayload(String oldEmail, String newEmail, String newFullName) {
@@ -209,69 +163,6 @@ public class LearnerLmsUserSyncService {
         int wpJson = url.indexOf("/wp-json");
         String base = wpJson >= 0 ? url.substring(0, wpJson + "/wp-json".length()) : url + "/wp-json";
         return base + "/crm/v1/edit-user";
-    }
-
-    /** Adds every WordPress-shaped connection in a setting node (top-level fields or connections[]). */
-    private void collectWordpressConnections(JsonNode inner, Map<String, JsonNode> out) {
-        if (inner == null || !inner.isObject()) {
-            return;
-        }
-        if (isWordpressConnection(inner)) {
-            out.putIfAbsent(connectionKey(inner), inner);
-        }
-        JsonNode list = inner.path("connections");
-        if (list.isArray()) {
-            for (JsonNode conn : list) {
-                if (isWordpressConnection(conn)) {
-                    out.putIfAbsent(connectionKey(conn), conn);
-                }
-            }
-        }
-    }
-
-    private boolean isWordpressConnection(JsonNode node) {
-        return StringUtils.hasText(node.path("apiUrl").asText(""))
-                && StringUtils.hasText(node.path("apiKey").asText(""))
-                && StringUtils.hasText(node.path("apiSecret").asText(""));
-    }
-
-    private String connectionKey(JsonNode node) {
-        String url = node.path("apiUrl").asText("").trim().toLowerCase();
-        if (url.endsWith("/")) {
-            url = url.substring(0, url.length() - 1);
-        }
-        return url + "|" + node.path("apiKey").asText("").trim().toLowerCase();
-    }
-
-    /** Unwraps the package's LMS_SETTING double-data envelope to its inner config node. */
-    private JsonNode readPackageLmsSetting(String packageId) {
-        try {
-            Object data = packageSettingService.getSettingData(packageId, LMS_SETTING_KEY);
-            return unwrap(data);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private JsonNode readInstituteLmsSetting(String instituteId) {
-        try {
-            Object data = instituteSettingService.getSettingByInstituteIdAndKey(instituteId, LMS_SETTING_KEY);
-            return unwrap(data);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private JsonNode unwrap(Object data) {
-        if (data == null) {
-            return null;
-        }
-        JsonNode node = objectMapper.convertValue(data, JsonNode.class);
-        JsonNode inner = node.path("data");
-        if (inner.isObject()) {
-            return inner;
-        }
-        return node.isObject() ? node : null;
     }
 
     private static String truncate(String s) {

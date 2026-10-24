@@ -1,0 +1,34 @@
+{
+    "paymentSubmitted": "Payment Submitted",
+    "paymentRecordedFor": "Payment recorded for",
+    "receiptWillBeGenerated": "The receipt will be generated and sent automatically.",
+    "amountPaidNow": "Amount Paid Now",
+    "downloadReceipt": "Download Receipt",
+    "payForAnotherStudent": "Pay for Another Student",
+    "receipt": {
+        "receiptNo": "Receipt No",
+        "date": "Date",
+        "studentLabel": "Student:",
+        "modeLabel": "Mode:",
+        "txnIdLabel": "Txn ID:"
+    },
+    "table": {
+        "feeType": "Fee Type",
+        "dueDate": "Due Date",
+        "expected": "Expected",
+        "adjustment": "Adjustment",
+        "paid": "Paid",
+        "outstanding": "Outstanding",
+        "status": "Status"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Penalty"
+    },
+    "totals": {
+        "totalExpected": "Total Expected",
+        "totalPaid": "Total Paid",
+        "totalConcession": "Total Concession",
+        "totalPenalty": "Total Penalty"
+    }
+}

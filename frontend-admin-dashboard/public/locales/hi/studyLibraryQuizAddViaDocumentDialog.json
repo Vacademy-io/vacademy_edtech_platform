@@ -1,0 +1,24 @@
+{
+    "title": "दस्तावेज़ अपलोड करें",
+    "errors": {
+        "noFileSelected": "कृपया पहले एक फ़ाइल चुनें।",
+        "noQuestionsFound": "कोई प्रश्न नहीं मिला। सुनिश्चित करें कि आपका दस्तावेज़ ऊपर दिखाए गए आवश्यक प्रारूप का उपयोग करता है।",
+        "parseFailed": "दस्तावेज़ को पार्स करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "requiredFormat": {
+        "heading": "आवश्यक दस्तावेज़ प्रारूप",
+        "sectionHeader": "सेक्शन हेडर",
+        "questionSample": "(1.) प्रश्न पाठ…",
+        "optionSample": "(a.) विकल्प पाठ…",
+        "correctAnswer": "सही उत्तर",
+        "explanation": "स्पष्टीकरण"
+    },
+    "dropZone": {
+        "clickToSelect": "फ़ाइल चुनने के लिए क्लिक करें",
+        "supportedFormats": ".docx और .html फ़ाइलें समर्थित हैं"
+    },
+    "parsingProgress": "दस्तावेज़ पार्स किया जा रहा है… {{progress}}%",
+    "cancel": "रद्द करें",
+    "processing": "प्रोसेस हो रहा है…",
+    "parseAndPreview": "पार्स करें और पूर्वावलोकन करें"
+}

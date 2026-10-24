@@ -1,0 +1,8 @@
+{
+    "retry": "फिर से कोशिश करें",
+    "issueSummary": {
+        "title_one": "एक चीज़ ठीक करनी है",
+        "title_other": "{{count}} चीज़ें ठीक करनी हैं",
+        "worthChecking": "जांच लें"
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "instituteLogoAlt": "लोगो",
+    "noResponseDialog": {
+        "title": "प्रश्न लोड करने में विफल",
+        "message": "हम आपके लिए प्रश्न जनरेट नहीं कर सके। कृपया फिर से प्रयास करें।",
+        "retryNow": "अभी पुनः प्रयास करें"
+    },
+    "toast": {
+        "noDataExists": "कोई डेटा मौजूद नहीं है!",
+        "incompleteQuestions": "आपके कुछ प्रश्न अधूरे हैं या उन पर ध्यान देने की आवश्यकता है!",
+        "sectionsAdded": "पेपर के अनुसार {{sections}} सेक्शन में {{questions}} प्रश्न जोड़े गए",
+        "savedToQuestionBank": "पेपर प्रश्न बैंक में जोड़ दिया गया"
+    },
+    "trigger": {
+        "retrying": "पुनः प्रयास हो रहा है...",
+        "retry": "पुनः प्रयास करें",
+        "loading": "लोड हो रहा है…",
+        "viewQuestions": "प्रश्न देखें"
+    },
+    "header": {
+        "saving": "सहेजा जा रहा है...",
+        "saveChanges": "बदलाव सहेजें",
+        "close": "बंद करें",
+        "moreTagsBadge_one": "+{{count}}",
+        "moreTagsBadge_other": "+{{count}}",
+        "extractionSummary": "पेपर से {{questions}} प्रश्न पढ़े · {{keyed}} के उत्तर · {{explained}} के हल",
+        "extractionUnkeyed_one": "{{count}} का उत्तर नहीं मिला — उपयोग से पहले चिह्नित करें",
+        "extractionUnkeyed_other": "{{count}} के उत्तर नहीं मिले — उपयोग से पहले चिह्नित करें",
+        "extractionCredits": "{{count}} क्रेडिट",
+        "extractionCheck": "Q {{numbers}} जाँचें",
+        "extractionSectionsSplit": "{{count}} सेक्शन ({{names}}) — अलग-अलग सेक्शन बनेंगे",
+        "extractionSectionsSingle": "{{count}} सेक्शन ({{names}}) — सभी प्रश्न एक ही सेक्शन में",
+        "extractionMarking": "अंकन +{{marks}} / −{{negative}}",
+        "sectionChoiceLabel": "पेपर के सेक्शन कैसे जोड़ें",
+        "sectionChoiceSplit": "पेपर की तरह {{count}} सेक्शन बनाएँ",
+        "sectionChoiceSingle": "सभी प्रश्न इसी सेक्शन में डालें",
+        "addToQuestionBank": "प्रश्न बैंक में जोड़ें",
+        "addingToQuestionBank": "जोड़ा जा रहा है…",
+        "addedToQuestionBank": "प्रश्न बैंक में जुड़ गया",
+        "extractionDuration": "समय {{hrs}} घं {{min}} मि"
+    },
+    "questionCard": {
+        "duplicate": "डुप्लिकेट करें",
+        "delete": "हटाएं"
+    },
+    "content": {
+        "noQuestionsExist": "कोई प्रश्न मौजूद नहीं है।"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Appliquer des remises au plan",
+        "subtitle": "Définissez des remises pour chaque intervalle de plan ou palier de prix"
+    },
+    "table": {
+        "headers": {
+            "subscriptionInterval": "Intervalle d'abonnement",
+            "planType": "Type de plan",
+            "originalPrice": "Prix d'origine",
+            "discountType": "Type de remise",
+            "discountAmount": "Montant de la remise",
+            "finalPrice": "Prix final"
+        },
+        "intervalPlanFallback": "Plan {{value}} {{unit}}",
+        "oneTimePayment": "Paiement unique",
+        "savePrefix": "Économisez"
+    },
+    "discountOptions": {
+        "none": "Aucune remise",
+        "percentage": "% de remise",
+        "fixed": "Remise fixe"
+    },
+    "placeholders": {
+        "percentage": "10",
+        "fixed": "50"
+    },
+    "emptyState": "Aucune information tarifaire disponible pour ce type de plan."
+}

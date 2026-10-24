@@ -1,0 +1,43 @@
+{
+    "header": {
+        "navTitle": "रिपोर्ट सेंटर",
+        "title": "रिपोर्ट सेंटर",
+        "subtitle": "पाइपलाइन स्वास्थ्य, स्रोत, कॉलिंग गतिविधि, फ़नल गति और फ़ॉलो-अप की स्वच्छता — सब एक ही जगह।",
+        "refresh": "रीफ़्रेश करें"
+    },
+    "filters": {
+        "presetLabel": "{{days}} दिन",
+        "from": "से",
+        "to": "तक",
+        "apply": "लागू करें",
+        "reset": "रीसेट करें",
+        "noInstitute": "रिपोर्ट देखने के लिए एक इंस्टिट्यूट चुनें।"
+    },
+    "tabs": {
+        "overview": "अवलोकन",
+        "sources": "स्रोत",
+        "funnel": "फ़नल",
+        "dispositions": "डिस्पोज़िशन",
+        "calling": "कॉलिंग",
+        "leadCalls": "लीड कॉल्स",
+        "callIntelligence": "सीआरएम इंटेलिजेंस",
+        "activity": "गतिविधि",
+        "followups": "फ़ॉलो-अप",
+        "counsellors": "काउंसलर",
+        "manager": "मैनेजर",
+        "revenue": "राजस्व",
+        "cohort": "कोहॉर्ट",
+        "forecast": "पूर्वानुमान",
+        "custom": "बिल्डर",
+        "utm": "अभियान (UTM)"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "काउंसलर के अनुसार फ़िल्टर करें",
+        "allCounsellors": "सभी काउंसलर"
+    },
+    "campaignPicker": {
+        "ariaLabel": "कैंपेन के अनुसार फ़िल्टर करें",
+        "allCampaigns": "सभी कैंपेन",
+        "untitledCampaign": "अनाम कैंपेन"
+    }
+}

@@ -10,7 +10,7 @@ import logging
 import os
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, Optional, List
+from typing import Any, Awaitable, Callable, Dict, Optional, List
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header, status
@@ -218,6 +218,44 @@ def _ensure_video_access(video_id: str, institute_id: str, db: Session):
     return record
 
 
+# Selections the video estimator prices — keyword arguments of
+# estimate_video_generation. The pre-flight (check_video_tier_credits) requires
+# the estimator's expected credits for exactly these, so the start check and
+# the preview the user saw agree.
+_ESTIMATE_SELECTION_KEYS = (
+    "model", "target_duration", "target_audience", "orientation", "voice_gender",
+    "tts_provider", "voice_id", "language", "generate_avatar",
+    "background_music_enabled", "sound_effects_enabled", "content_type",
+    "visual_style", "captions_enabled", "html_quality", "dialogue_scenes_enabled",
+    "dialogue_mode", "dialogue_clip_model",
+)
+
+
+def _video_estimate_params(
+    selections: Optional[Dict[str, Any]],
+    *,
+    host: Optional[Dict[str, Any]] = None,
+    lesson: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Estimator kwargs from a request dump or persisted user_selections."""
+    sel = selections if isinstance(selections, dict) else {}
+    params: Dict[str, Any] = {k: sel[k] for k in _ESTIMATE_SELECTION_KEYS if sel.get(k) is not None}
+    if isinstance(host, dict):
+        params["host"] = host
+    if isinstance(lesson, dict):
+        params["lesson"] = lesson
+    return params
+
+
+def _persisted_estimate_params(extra_metadata: Any) -> Dict[str, Any]:
+    """Estimator kwargs for a resume/retry/decision leg, from the video record.
+    The host snapshot is a HostPlan (not the request's HostConfig), so the
+    host line is left out; the lesson plan carries the teacher."""
+    meta = extra_metadata if isinstance(extra_metadata, dict) else {}
+    lesson_plan = (meta.get("lesson") or {}).get("plan") if isinstance(meta.get("lesson"), dict) else None
+    return _video_estimate_params(meta.get("user_selections"), lesson=lesson_plan)
+
+
 @router.post(
     "/preview-cost",
     response_model=VideoCostPreviewResponse,
@@ -255,6 +293,7 @@ def preview_video_cost(
         review_mode=payload.review_mode,
         attachments_count=payload.attachments_count,
         host=(payload.host.model_dump() if getattr(payload, "host", None) else None),
+        lesson=(payload.lesson.model_dump() if getattr(payload, "lesson", None) else None),
         ai_video_enabled=bool(getattr(payload, "ai_video_enabled", False)),
         ai_video_audio_enabled=bool(getattr(payload, "ai_video_audio_enabled", False)),
         dialogue_scenes_enabled=bool(getattr(payload, "dialogue_scenes_enabled", False)),
@@ -307,6 +346,250 @@ async def external_route_preview(
     return plan.model_dump()
 
 
+def build_generate_kwargs(
+    p: VideoGenerationRequest,
+    ts: str,
+    inst_id: str,
+    user_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """The ``generate_till_stage`` kwargs of a fresh run of request ``p``
+    (everything but ``db_session``). Shared by POST /generate, the LMS router
+    and — via the stored run request — the auto-resumer, so the three can
+    never drift apart."""
+    return dict(
+        video_id=p.video_id,
+        prompt=p.prompt,
+        target_stage=ts,
+        language=p.language,
+        captions_enabled=p.captions_enabled,
+        html_quality=p.html_quality,
+        target_audience=p.target_audience,
+        target_duration=p.target_duration,
+        voice_gender=p.voice_gender,
+        tts_provider=p.tts_provider,
+        voice_id=p.voice_id,
+        content_type=p.content_type,
+        model=p.model or "",  # Empty = let service pick based on quality_tier
+        quality_tier=p.quality_tier,
+        institute_id=inst_id,
+        user_id=user_id,
+        reference_files=[rf.model_dump() for rf in p.reference_files] if p.reference_files else None,
+        orientation=p.orientation,
+        visual_style=p.visual_style,
+        sound_effects_enabled=p.sound_effects_enabled,
+        input_video_ids=p.input_video_ids,
+        input_video_audio=p.input_video_audio,
+        mute_tts_on_source_clips=p.mute_tts_on_source_clips,
+        background_music_enabled=p.background_music_enabled,
+        background_music_volume=p.background_music_volume,
+        sub_shots_enabled=p.sub_shots_enabled,
+        dialogue_scenes_enabled=p.dialogue_scenes_enabled,
+        dialogue_mode=p.dialogue_mode,
+        dialogue_clip_model=p.dialogue_clip_model,
+        cast_id=p.cast_id,
+        routing_overrides=p.routing_overrides,
+        host=p.host,
+        lesson=getattr(p, "lesson", None),
+        brand_kit_id=getattr(p, "brand_kit_id", None),
+        # Per-video overrides (palette/intro/outro/watermark/system_prompt)
+        # that layer on top of the resolved kit.
+        brand_overrides=getattr(p, "brand_overrides", None),
+        visual_preferences=getattr(p, "visual_preferences", None),
+        # AI video (Phase 3b): the service / pipeline gates tier eligibility.
+        ai_video_enabled=bool(getattr(p, "ai_video_enabled", False)),
+        ai_video_audio_enabled=bool(getattr(p, "ai_video_audio_enabled", False)),
+        ai_video_model=getattr(p, "ai_video_model", None),
+        # Per-stage model overrides (DB-backed routing).
+        model_overrides=getattr(p, "model_overrides", None),
+        # Assist mode (conversational, human-in-the-loop); default off.
+        assist_mode=bool(getattr(p, "assist_mode", False)),
+        assist_gates=getattr(p, "assist_gates", None),
+        assist_granularity=getattr(p, "assist_granularity", "per_decision"),
+    )
+
+
+async def run_video_generation(
+    q: asyncio.Queue,
+    vid: str,
+    p: Optional[VideoGenerationRequest],
+    ts: str,
+    inst_id: str,
+    *,
+    user_id: Optional[str] = None,
+    on_event: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
+    on_finished: Optional[Callable[[Optional[BaseException]], Awaitable[None]]] = None,
+    run_request_kind: str = "external",
+    generate_kwargs: Optional[Dict[str, Any]] = None,
+    resume: bool = False,
+    resume_from_stage: Optional[str] = None,
+    resume_mode: Optional[str] = None,
+    lease: Optional[Dict[str, Any]] = None,
+) -> None:
+    """The background generation run shared by POST /generate here, the LMS
+    router (routers/lms_video.py) and the auto-resumer. Owns its own DB
+    session so it keeps running after the HTTP request / SSE connection
+    closes; refunds every credit charged when the run raises; always clears
+    the task registries.
+
+    A fresh run builds its kwargs from ``p`` (build_generate_kwargs) and
+    records them as the run request. A resumed run passes ``generate_kwargs``
+    (services/video_run_request.rehydrate) with ``resume=True``.
+
+    `on_event(event)` sees each pipeline event before it is queued;
+    `on_finished(exc_or_None)` runs once at the end (not on cancel). Both are
+    best-effort: a failing hook is logged and never changes the run.
+    """
+    failure: Optional[BaseException] = None
+    cancelled = False
+    try:
+        if generate_kwargs is not None:
+            kwargs = dict(generate_kwargs)
+        else:
+            kwargs = build_generate_kwargs(p, ts, inst_id, user_id)
+        kwargs["video_id"] = vid
+        kwargs["target_stage"] = ts
+        if not resume:
+            from ..services.video_run_request import capture as _capture_run_request
+            kwargs["run_request"] = _capture_run_request(run_request_kind, ts, kwargs)
+        with make_bg_db_session() as bg_session:
+            bg_svc = VideoGenerationService(
+                # Session-less repo: every get/update opens its own
+                # short-lived, pre-pinged session and closes it. Sharing
+                # the long-lived `bg_session` here caused reads to leave a
+                # transaction open across the multi-minute render, which
+                # Postgres then killed (idle-in-transaction timeout).
+                repository=AiVideoRepository(),
+                s3_service=S3Service()
+            )
+            extra: Dict[str, Any] = {"resume": bool(resume)}
+            if resume_from_stage:
+                extra["resume_from_stage"] = resume_from_stage
+            if resume_mode:
+                extra["resume_mode"] = resume_mode
+            if lease is not None:
+                extra["lease"] = lease
+                extra["lease_origin"] = lease.get("origin") or "user"
+            async for event in bg_svc.generate_till_stage(db_session=bg_session, **kwargs, **extra):
+                if on_event is not None:
+                    try:
+                        await on_event(event)
+                    except Exception as hook_err:  # a hook must never break the run
+                        logger.warning(f"[BG-Gen] on_event hook failed for {vid}: {hook_err}")
+                await q.put(json.dumps(event))
+    except asyncio.CancelledError:
+        # `task.cancel()` from POST /cancel/{video_id} fired, or the process
+        # is shutting down. Cancel endpoint already handled CANCELLED status +
+        # refund + SSE event; a shutdown is an interruption (the lease is
+        # marked interrupted, a new pod resumes) — never refund here.
+        logger.info(f"[BG-Gen] Background task cancelled for {vid}")
+        cancelled = True
+        raise
+    except Exception as exc:
+        failure = exc
+        logger.error(
+            f"[BG-Gen] Background task error for {vid}: "
+            f"{type(exc).__name__}: {exc}",
+            exc_info=True,
+        )
+        # Refund all credits charged for this failed video
+        try:
+            with make_db_session() as refund_session:
+                from ..services.token_usage_service import TokenUsageService
+                TokenUsageService(refund_session).refund_video_credits(vid, inst_id)
+        except Exception as refund_err:
+            logger.error(f"[BG-Gen] Failed to refund credits for {vid}: {refund_err}")
+        await q.put(json.dumps({
+            "type": "error",
+            "message": str(exc),
+            "video_id": vid,
+        }))
+    finally:
+        # Sentinel – tells the SSE generator the stream is done
+        try:
+            await q.put(None)
+        except Exception:
+            pass
+        _generation_tasks.pop(vid, None)
+        _generation_queues.pop(vid, None)
+        # Belt-and-suspenders: clear the cooperative-stop registry
+        # in case the pipeline didn't (e.g. unexpected exception path).
+        cancellation_registry.clear(vid)
+        # Remove from institute concurrency tracker
+        _institute_active_tasks.get(inst_id, set()).discard(vid)
+        logger.info(f"[BG-Gen] Background task finished for {vid}")
+        # Completion hook (LMS notifications). Not on cancel: the cancel
+        # endpoint already settled the run, and a cancelled task must not
+        # await anything further.
+        if on_finished is not None and not cancelled:
+            try:
+                await on_finished(failure)
+            except Exception as hook_err:
+                logger.warning(f"[BG-Gen] on_finished hook failed for {vid}: {hook_err}")
+
+
+def start_video_generation(
+    payload: Optional[VideoGenerationRequest],
+    video_id: str,
+    target_stage: str,
+    institute_id: str,
+    *,
+    queue: Optional[asyncio.Queue] = None,
+    user_id: Optional[str] = None,
+    on_event: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
+    on_finished: Optional[Callable[[Optional[BaseException]], Awaitable[None]]] = None,
+    track_concurrency: bool = True,
+    run_request_kind: str = "external",
+    generate_kwargs: Optional[Dict[str, Any]] = None,
+    resume: bool = False,
+    resume_from_stage: Optional[str] = None,
+    resume_mode: Optional[str] = None,
+    lease: Optional[Dict[str, Any]] = None,
+) -> asyncio.Queue:
+    """Start `run_video_generation` as a registered background task (so
+    /cancel and an SSE re-connect can find it) and return its event queue."""
+    q = queue if queue is not None else asyncio.Queue()
+    _generation_queues[video_id] = q
+    task = asyncio.create_task(
+        run_video_generation(
+            q, video_id, payload, target_stage, institute_id,
+            user_id=user_id, on_event=on_event, on_finished=on_finished,
+            run_request_kind=run_request_kind, generate_kwargs=generate_kwargs,
+            resume=resume, resume_from_stage=resume_from_stage, resume_mode=resume_mode,
+            lease=lease,
+        )
+    )
+    _generation_tasks[video_id] = task
+    if track_concurrency:
+        _institute_active_tasks[institute_id].add(video_id)
+    logger.info(f"[BG-Gen] Started background task for {video_id}")
+    return q
+
+
+def acquire_user_lease(video_id: str) -> Optional[Dict[str, Any]]:
+    """Run lease for a user-triggered leg on an EXISTING video (/resume,
+    /retry, /decision, /generate with a known video_id). Returns the lease to
+    hand to generate_till_stage; raises 409 when another pod has a live leg
+    of this video. A database error degrades to no lease (old behaviour)."""
+    from ..services import ai_video_run_lease as _run_lease
+
+    repo = AiVideoRepository()
+    try:
+        rec = repo.get_by_video_id(video_id)
+        if rec is None:
+            return None  # new video: generate_till_stage takes the lease after creating the row
+        prev = (rec.extra_metadata or {}).get("run_lease")
+        lease = _run_lease.new_lease(origin="user", prev=prev)
+        if repo.acquire_lease(video_id, lease, _run_lease.LEASE_STALE_S):
+            return lease
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[Lease] acquire for {video_id} failed ({exc}); continuing without a lease")
+        return None
+    raise HTTPException(
+        status_code=409,
+        detail=f"Video {video_id} is already being generated by another worker — poll /urls/{video_id}.",
+    )
+
+
 @router.post(
     "/generate",
     summary="Generate AI video (External)",
@@ -342,21 +625,27 @@ async def generate_video_external(
     _check_rate_limit(institute_id)
     _check_concurrency_limit(institute_id)
 
-    # Tier-aware pre-flight (2026-05 audit, supersedes the standalone Veo
-    # check). The generic `require_credits("video", ...)` dep above is a
-    # zero-balance floor (resolves to ~0.05 credits via the fallback formula)
-    # and was never gating realistic cost. This block reads `payload.quality_tier`
-    # + `payload.ai_video_enabled` after parsing and rejects HTTP 402 when
-    # balance can't cover the tier baseline + Veo cap (if enabled).
-    # See `CreditService.check_video_tier_credits` for the per-tier floors;
-    # they're derived from the breakdown in docs/AI_CREDITS_PRICING.md.
+    # Pre-flight (2026-10-13, supersedes the standalone Veo check). The
+    # generic `require_credits("video", ...)` dep above is a zero-balance
+    # floor (resolves to ~0.05 credits via the fallback formula) and was
+    # never gating realistic cost. This block requires the estimator's
+    # expected credits for the request's selections (what /preview-cost
+    # shows) + the Veo hold, and rejects HTTP 402 when the balance can't
+    # cover it. Mid-run charges may then take the balance negative so the
+    # video finishes. See `CreditService.check_video_tier_credits`.
     with make_db_session() as _preflight_db:
         from ..services.credit_service import CreditService
+        _payload_dump = payload.model_dump()
         _tier_check = CreditService(_preflight_db).check_video_tier_credits(
             institute_id=institute_id,
             quality_tier=getattr(payload, "quality_tier", "standard") or "standard",
             ai_video_enabled=bool(getattr(payload, "ai_video_enabled", False)),
-            partial_run_factor=1.0,  # fresh run — full budget required
+            partial_run_factor=1.0,  # fresh run — full estimate required
+            estimate_params=_video_estimate_params(
+                _payload_dump,
+                host=_payload_dump.get("host"),
+                lesson=_payload_dump.get("lesson"),
+            ),
         )
         if not _tier_check.has_sufficient_credits:
             raise HTTPException(
@@ -382,128 +671,12 @@ async def generate_video_external(
         # ------------------------------------------------------------------
         # Start a new background task.  It owns its own DB session so it
         # keeps running after this HTTP request / SSE connection is closed.
+        # A client-supplied video_id that another pod is still generating
+        # gets 409 (poll /urls) instead of a second, competing run.
         # ------------------------------------------------------------------
-        _generation_queues[video_id] = queue
-
-        async def _run_generation(q: asyncio.Queue, vid: str, p: VideoGenerationRequest,
-                                   ts: str, inst_id: str) -> None:
-            try:
-                with make_bg_db_session() as bg_session:
-                    bg_svc = VideoGenerationService(
-                        # Session-less repo: every get/update opens its own
-                        # short-lived, pre-pinged session and closes it. Sharing
-                        # the long-lived `bg_session` here caused reads to leave a
-                        # transaction open across the multi-minute render, which
-                        # Postgres then killed (idle-in-transaction timeout).
-                        repository=AiVideoRepository(),
-                        s3_service=S3Service()
-                    )
-                    async for event in bg_svc.generate_till_stage(
-                        video_id=vid,
-                        prompt=p.prompt,
-                        target_stage=ts,
-                        language=p.language,
-                        captions_enabled=p.captions_enabled,
-                        html_quality=p.html_quality,
-                        resume=False,
-                        target_audience=p.target_audience,
-                        target_duration=p.target_duration,
-                        voice_gender=p.voice_gender,
-                        tts_provider=p.tts_provider,
-                        voice_id=p.voice_id,
-                        content_type=p.content_type,
-                        db_session=bg_session,
-                        model=p.model or "",  # Empty = let service pick based on quality_tier
-                        quality_tier=p.quality_tier,
-                        institute_id=inst_id,
-                        user_id=None,
-                        reference_files=[rf.model_dump() for rf in p.reference_files] if p.reference_files else None,
-                        orientation=p.orientation,
-                        visual_style=p.visual_style,
-                        sound_effects_enabled=p.sound_effects_enabled,
-                        input_video_ids=p.input_video_ids,
-                        input_video_audio=p.input_video_audio,
-                        mute_tts_on_source_clips=p.mute_tts_on_source_clips,
-                        background_music_enabled=p.background_music_enabled,
-                        background_music_volume=p.background_music_volume,
-                        sub_shots_enabled=p.sub_shots_enabled,
-                        dialogue_scenes_enabled=p.dialogue_scenes_enabled,
-                        dialogue_mode=p.dialogue_mode,
-                        dialogue_clip_model=p.dialogue_clip_model,
-                        cast_id=p.cast_id,
-                        routing_overrides=p.routing_overrides,
-                        host=p.host,
-                        brand_kit_id=getattr(p, "brand_kit_id", None),
-                        # Per-video overrides (palette/intro/outro/watermark/system_prompt)
-                        # that layer on top of the resolved kit. One-shot — not persisted
-                        # by the FE across videos.
-                        brand_overrides=getattr(p, "brand_overrides", None),
-                        visual_preferences=getattr(p, "visual_preferences", None),
-                        # AI video (Phase 3b): forward from request body. The
-                        # service / pipeline gates tier eligibility internally.
-                        ai_video_enabled=bool(getattr(p, "ai_video_enabled", False)),
-                        ai_video_audio_enabled=bool(getattr(p, "ai_video_audio_enabled", False)),
-                        ai_video_model=getattr(p, "ai_video_model", None),
-                        # Per-stage model overrides (DB-backed routing). When set,
-                        # the service resolves a per-stage map via
-                        # `AIModelsService.get_stage_model_map(...)`. The legacy
-                        # `model` field collapses to `model_overrides.default` if
-                        # `model_overrides` is omitted.
-                        model_overrides=getattr(p, "model_overrides", None),
-                        # Assist mode (conversational, human-in-the-loop). The
-                        # service pauses at enabled SCRIPT-boundary gates and
-                        # emits `decision_required`; default off = Auto mode.
-                        assist_mode=bool(getattr(p, "assist_mode", False)),
-                        assist_gates=getattr(p, "assist_gates", None),
-                        assist_granularity=getattr(p, "assist_granularity", "per_decision"),
-                    ):
-                        await q.put(json.dumps(event))
-            except asyncio.CancelledError:
-                # `task.cancel()` from POST /cancel/{video_id} fired. Cancel
-                # endpoint already handled CANCELLED status + refund + SSE
-                # event; we just unwind quietly. Re-raise so asyncio cleanup
-                # works correctly.
-                logger.info(f"[BG-Gen] Background task cancelled for {vid}")
-                raise
-            except Exception as exc:
-                logger.error(
-                    f"[BG-Gen] Background task error for {vid}: "
-                    f"{type(exc).__name__}: {exc}",
-                    exc_info=True,
-                )
-                # Refund all credits charged for this failed video
-                try:
-                    with make_db_session() as refund_session:
-                        from ..services.token_usage_service import TokenUsageService
-                        TokenUsageService(refund_session).refund_video_credits(vid, inst_id)
-                except Exception as refund_err:
-                    logger.error(f"[BG-Gen] Failed to refund credits for {vid}: {refund_err}")
-                await q.put(json.dumps({
-                    "type": "error",
-                    "message": str(exc),
-                    "video_id": vid,
-                }))
-            finally:
-                # Sentinel – tells the SSE generator the stream is done
-                try:
-                    await q.put(None)
-                except Exception:
-                    pass
-                _generation_tasks.pop(vid, None)
-                _generation_queues.pop(vid, None)
-                # Belt-and-suspenders: clear the cooperative-stop registry
-                # in case the pipeline didn't (e.g. unexpected exception path).
-                cancellation_registry.clear(vid)
-                # Remove from institute concurrency tracker
-                _institute_active_tasks.get(inst_id, set()).discard(vid)
-                logger.info(f"[BG-Gen] Background task finished for {vid}")
-
-        task = asyncio.create_task(
-            _run_generation(queue, video_id, payload, target_stage, institute_id)
-        )
-        _generation_tasks[video_id] = task
-        _institute_active_tasks[institute_id].add(video_id)
-        logger.info(f"[BG-Gen] Started background task for {video_id}")
+        _lease = acquire_user_lease(video_id) if payload.video_id else None
+        queue = start_video_generation(payload, video_id, target_stage, institute_id, queue=queue,
+                                       lease=_lease)
 
     # ------------------------------------------------------------------
     # SSE generator – drains the queue.
@@ -544,37 +717,19 @@ async def generate_video_external(
 # Cancel a running generation
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/cancel/{video_id}",
-    summary="Cancel a running generation",
-)
-async def cancel_generation_external(
+async def cancel_video_generation(
     video_id: str,
-    institute_id: str = Depends(get_institute_from_api_key),
+    institute_id: str,
+    *,
+    ensure_access: Callable[[str, str, Session], Any] = _ensure_video_access,
 ) -> Dict[str, Any]:
-    """
-    Stop an in-flight generation pipeline cooperatively, transition the video
-    to ``CANCELLED``, and refund all credits charged so far for it.
-
-    Behavior:
-      1. Sets the per-video ``threading.Event`` so the pipeline thread breaks
-         out of its current stage / shot loop at the next safe checkpoint.
-      2. Cancels the asyncio task as a backstop so the SSE stream closes
-         cleanly even if no one is listening to the flag.
-      3. Marks the DB row ``CANCELLED`` immediately (don't wait for the
-         pipeline to unwind — the user's "stopped" status should be visible
-         right away).
-      4. Refunds every credit deduction recorded under ``batch_id=video_id``.
-      5. Pushes a final ``cancelled`` event onto any open SSE queue.
-
-    Returns 404 when no in-flight task matches ``video_id`` (already finished,
-    failed, or never existed). Idempotent for repeated calls within the brief
-    window before cleanup completes.
-    """
+    """Cooperative stop + CANCELLED + refund for one video — the body of
+    POST /cancel/{video_id}, shared with the LMS router (which passes its own,
+    stricter tenant check as `ensure_access`). See the endpoint for the steps."""
     # Look up the video — 404 if it doesn't exist or belongs to another
     # institute (tenant guard via extra_metadata.institute_id).
     with make_db_session() as session:
-        video = _ensure_video_access(video_id, institute_id, session)
+        video = ensure_access(video_id, institute_id, session)
         already_done = video.status in ("COMPLETED", "FAILED", "CANCELLED")
 
     if already_done:
@@ -621,6 +776,18 @@ async def cancel_generation_external(
     except Exception as e:
         logger.error(f"[Cancel] Failed to refund credits for {video_id}: {e}")
 
+    # 4b. Release the run lease (compare-and-set on the leg that holds it) so
+    #     nothing resumes a cancelled run. The owning leg — on whichever pod —
+    #     still sees CANCELLED on its next heartbeat and stops.
+    try:
+        _lease_now = (getattr(video, "extra_metadata", None) or {}).get("run_lease") or {}
+        if _lease_now.get("leg_id"):
+            AiVideoRepository().release_lease(
+                video_id, _lease_now["leg_id"], "released", interrupt_reason="cancelled",
+            )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[Cancel] Failed to release the run lease for {video_id}: {e}")
+
     # 5. Notify any still-listening SSE clients.
     queue = _generation_queues.get(video_id)
     if queue is not None:
@@ -641,6 +808,36 @@ async def cancel_generation_external(
         f"(signaled={signaled}, task_was_running={task is not None})"
     )
     return {"status": "CANCELLED", "video_id": video_id, "stopped": True}
+
+
+@router.post(
+    "/cancel/{video_id}",
+    summary="Cancel a running generation",
+)
+async def cancel_generation_external(
+    video_id: str,
+    institute_id: str = Depends(get_institute_from_api_key),
+) -> Dict[str, Any]:
+    """
+    Stop an in-flight generation pipeline cooperatively, transition the video
+    to ``CANCELLED``, and refund all credits charged so far for it.
+
+    Behavior:
+      1. Sets the per-video ``threading.Event`` so the pipeline thread breaks
+         out of its current stage / shot loop at the next safe checkpoint.
+      2. Cancels the asyncio task as a backstop so the SSE stream closes
+         cleanly even if no one is listening to the flag.
+      3. Marks the DB row ``CANCELLED`` immediately (don't wait for the
+         pipeline to unwind — the user's "stopped" status should be visible
+         right away).
+      4. Refunds every credit deduction recorded under ``batch_id=video_id``.
+      5. Pushes a final ``cancelled`` event onto any open SSE queue.
+
+    Returns 404 when no in-flight task matches ``video_id`` (already finished,
+    failed, or never existed). Idempotent for repeated calls within the brief
+    window before cleanup completes.
+    """
+    return await cancel_video_generation(video_id, institute_id)
 
 
 # ---------------------------------------------------------------------------
@@ -701,6 +898,7 @@ async def resume_video_external(
         quality_tier=_qt,
         ai_video_enabled=_ai_video,
         partial_run_factor=0.7,
+        estimate_params=_persisted_estimate_params(_vr_meta),
     )
     if not _tier_check.has_sufficient_credits:
         raise HTTPException(
@@ -730,6 +928,7 @@ async def resume_video_external(
             queue = existing_queue
             logger.info(f"[Resume] Re-connecting to existing task for {video_id}")
     else:
+        _lease = acquire_user_lease(video_id)
         _generation_queues[video_id] = queue
 
         async def _run_resume(q: asyncio.Queue, vid: str, ts: str, inst_id: str,
@@ -800,6 +999,7 @@ async def resume_video_external(
                         # the legacy `model` field (which the service collapses
                         # into ModelOverrides(default=model)).
                         model_overrides=_meta.get("model_overrides"),
+                        lease=_lease,
                     ):
                         await q.put(json.dumps(event))
             except Exception as exc:
@@ -952,6 +1152,7 @@ async def decision_video_external(
         quality_tier=_qt,
         ai_video_enabled=_ai_video,
         partial_run_factor=0.7,
+        estimate_params=_persisted_estimate_params(_meta),
     )
     if not _tier_check.has_sufficient_credits:
         raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=_tier_check.message)
@@ -1255,6 +1456,7 @@ async def decision_video_external(
             queue = existing_queue
             logger.info(f"[Decision] re-connecting to existing task for {video_id}")
     else:
+        _lease = acquire_user_lease(video_id)
         _generation_queues[video_id] = queue
 
         async def _run_decision_resume(q: asyncio.Queue, vid: str, inst_id: str) -> None:
@@ -1304,6 +1506,7 @@ async def decision_video_external(
                         ai_video_audio_enabled=bool(m.get("ai_video_audio_enabled", False)),
                         ai_video_model=m.get("ai_video_model"),
                         model_overrides=m.get("model_overrides"),
+                        lease=_lease,
                     ):
                         await q.put(json.dumps(event))
             except Exception as exc:
@@ -1577,6 +1780,7 @@ async def retry_video_external(
         quality_tier=_qt,
         ai_video_enabled=_ai_video,
         partial_run_factor=0.4,
+        estimate_params=_persisted_estimate_params(_vr_meta),
     )
     if not _tier_check.has_sufficient_credits:
         raise HTTPException(
@@ -1584,6 +1788,7 @@ async def retry_video_external(
             detail=_tier_check.message,
         )
 
+    _lease = acquire_user_lease(video_id)
     queue: asyncio.Queue = asyncio.Queue()
     _generation_queues[video_id] = queue
 
@@ -1645,6 +1850,7 @@ async def retry_video_external(
                         ai_video_model=_meta.get("ai_video_model"),
                     # Retry parity: rehydrate per-stage overrides from saved meta
                     model_overrides=_meta.get("model_overrides"),
+                    lease=_lease,
                 ):
                     await q.put(json.dumps(event))
         except Exception as exc:
@@ -2758,24 +2964,17 @@ async def silence_shot_external(
 # with. `xiaomi/mimo-v2-flash:free` (the constructor's hard-coded
 # default in VideoGenerationPipeline) is deprecated and 404s, so we
 # always pass a resolved model down to the pipeline here.
-_TIER_FLASH_MODEL = "google/gemini-3-flash-preview"
-_FLASH_TIERS = {"free", "standard", "premium"}
-
-
 def _resolve_html_model(db: Session, quality_tier: str) -> str:
     """Pick the HTML LLM for an inserted shot.
 
-    Mirrors VideoGenerationService's tier-aware routing:
-      - free/standard/premium → flash (`google/gemini-3-flash-preview`)
-      - ultra/super_ultra     → the AI-Models-Service default for "video"
-
-    Falls back to `_TIER_FLASH_MODEL` end-to-end when no DB default is
-    configured. Never returns None — the pipeline constructor's default
-    (`xiaomi/mimo-v2-flash:free`) is deprecated and 404s, so we always
-    pass an explicit model down.
+    Every tier uses the AI-Models-Service default for "video" (owner
+    decision 2026-10-13: no premium-model tier), falling back to
+    GLM_DEFAULT when the registry can't answer. Never returns None — the
+    pipeline constructor's default (`xiaomi/mimo-v2-flash:free`) is
+    deprecated and 404s, so we always pass an explicit model down.
+    `quality_tier` is kept for call-site compatibility.
     """
-    if quality_tier in _FLASH_TIERS:
-        return _TIER_FLASH_MODEL
+    from ..constants.model_defaults import GLM_DEFAULT
     try:
         from ..services.ai_models_service import AIModelsService
         resp = AIModelsService(db).get_models_for_use_case("video")
@@ -2788,7 +2987,7 @@ def _resolve_html_model(db: Session, quality_tier: str) -> str:
                 return str(model_id)
     except Exception:
         pass
-    return _TIER_FLASH_MODEL
+    return GLM_DEFAULT
 
 
 class InsertShotRequest(BaseModel):
@@ -2903,23 +3102,28 @@ async def insert_shot_external(
 # Video Render (offloaded to dedicated Hetzner render server)
 # ---------------------------------------------------------------------------
 
-@router.post("/render/{video_id}")
-async def request_video_render(
+def submit_video_render(
     video_id: str,
-    body: Optional[RenderOptionsBody] = None,
-    service: VideoGenerationService = Depends(get_video_service),
-    institute_id: str = Depends(get_institute_from_api_key),
-    db: Session = Depends(db_dependency),
-):
-    """
-    Trigger MP4 rendering for a completed video (HTML stage must be done).
+    institute_id: str,
+    db: Session,
+    service: VideoGenerationService,
+    options: Optional[RenderOptionsBody] = None,
+    *,
+    ensure_access: Optional[Callable[[str, str, Session], Any]] = None,
+) -> Dict[str, Any]:
+    """Submit an MP4 render job for a video whose HTML + audio stages are done.
 
-    Submits a render job to the dedicated render server. The frontend can
-    poll /urls/{video_id} to check when `video_url` becomes available.
+    Shared by POST /external/video/v1/render/{video_id} (API key) and the LMS
+    router's POST /lms-video/v1/render/{video_id} (staff JWT). `ensure_access`
+    is the caller's tenant guard (default: the external `_ensure_video_access`);
+    it runs after the render-server check, as the external route always did.
 
-    Accepts an optional JSON body with render settings (resolution, fps,
-    caption options). If omitted, uses defaults (1080p, 22fps, captions on).
+    Raises HTTPException 503 (render server not configured), 404 (no video /
+    not this institute's), 400 (timeline or audio missing), 502 (render
+    server refused the job). Returns {"job_id", "status": "queued", "video_id"}.
+    Renders are not billed.
     """
+    body = options
     from ..config import get_settings
     from ..services.render_service import RenderService
 
@@ -2931,7 +3135,7 @@ async def request_video_render(
         )
 
     # Validate video exists, belongs to this institute, and has required stages
-    _ensure_video_access(video_id, institute_id, db)
+    (ensure_access or _ensure_video_access)(video_id, institute_id, db)
     status = service.get_video_status(video_id)
     if not status:
         raise HTTPException(status_code=404, detail=f"Video {video_id} not found")
@@ -3141,43 +3345,52 @@ async def request_video_render(
     return {"job_id": job_id, "status": "queued", "video_id": video_id}
 
 
-@router.get("/render/status/{job_id}")
-async def get_render_status(
-    job_id: str,
-    video_id: Optional[str] = None,
+@router.post("/render/{video_id}")
+async def request_video_render(
+    video_id: str,
+    body: Optional[RenderOptionsBody] = None,
+    service: VideoGenerationService = Depends(get_video_service),
     institute_id: str = Depends(get_institute_from_api_key),
     db: Session = Depends(db_dependency),
 ):
     """
-    Check the status and progress of a render job — DB-only read.
+    Trigger MP4 rendering for a completed video (HTML stage must be done).
 
-    Returns the cached render_status the render worker pushed to
-    /render-callback. Does NOT contact the render server, so a slow or
-    unreachable render server cannot make the FE-visible status endpoint
-    time out.
+    Submits a render job to the dedicated render server. The frontend can
+    poll /urls/{video_id} to check when `video_url` becomes available.
 
-    Watchdog runs off `render_status.last_seen_at`: if no callback has
-    arrived in `timeout_seconds` (clamp(planned * 5 + 180, 900, 5400)),
-    the response is rewritten to status=failed with credits refunded, and
-    the stale render_job_id is cleared.
+    Accepts an optional JSON body with render settings (resolution, fps,
+    caption options). If omitted, uses defaults (1080p, 22fps, captions on).
+    """
+    return submit_video_render(video_id, institute_id, db, service, body)
 
-    Returns:
-        - status: queued | running | completed | failed
-        - progress: 0-100
-        - video_url: S3 URL when completed
-        - error: error message when failed
+
+def render_state_with_watchdog(
+    video_id: str,
+    institute_id: str,
+    video_record: Any,
+    db: Session,
+    *,
+    job_id: Optional[str] = None,
+    refund: bool = True,
+) -> "tuple[Dict[str, Any], bool]":
+    """The cached render status of a video, with the stale-job watchdog applied.
+
+    Reads `extra_metadata.render_status` (pushed by the render worker to
+    /render-callback) — never the render server. Watchdog: when a queued /
+    running render has had no callback for `timeout_seconds`
+    (clamp(planned * 5 + 180, 900, 5400), env-overridable), the render is
+    marked failed in the DB, render_job_id / render_started_at are cleared
+    and — with `refund` — the video's credits are refunded (the external
+    API's long-standing behaviour).
+
+    Returns ({status, progress, video_url, error, last_seen_at}, fired) where
+    `fired` is True when this call tripped the watchdog. A video with no
+    render_status reads status="queued", progress=0 (external contract).
     """
     from datetime import datetime, timezone
 
-    if not video_id:
-        raise HTTPException(
-            status_code=400,
-            detail="video_id query param is required (push-based status is keyed off the video record).",
-        )
-
     repo = AiVideoRepository(session=db)
-    video_record = _ensure_video_access(video_id, institute_id, db)
-
     meta = dict(video_record.extra_metadata or {})
     rs = dict(meta.get("render_status") or {})
     cur_status = rs.get("status", "queued")
@@ -3185,6 +3398,13 @@ async def get_render_status(
     video_url = rs.get("video_url")
     error = rs.get("error")
     last_seen = rs.get("last_seen_at") or meta.get("render_started_at")
+    state = {
+        "status": cur_status,
+        "progress": progress,
+        "video_url": video_url,
+        "error": error,
+        "last_seen_at": last_seen,
+    }
 
     # Watchdog — fires on stale last_seen_at, not synchronous render polling.
     # If the render worker stops pushing (crashed / network partition), we
@@ -3211,7 +3431,8 @@ async def get_render_status(
                     logger.error(
                         f"[render-watchdog] Job {job_id} for video {video_id} "
                         f"silent for {age_seconds:.0f}s (> {timeout_seconds}s) "
-                        f"with status={cur_status} — marking failed and refunding credits"
+                        f"with status={cur_status} — marking failed"
+                        + (" and refunding credits" if refund else "")
                     )
                     new_meta = dict(meta)
                     new_meta.pop("render_job_id", None)
@@ -3224,39 +3445,91 @@ async def get_render_status(
                     new_rs["status"] = "failed"
                     new_rs["error"] = (
                         f"Render timed out after {age_seconds:.0f}s of silence "
-                        f"(threshold {timeout_seconds}s). Credits refunded; "
-                        f"please retry."
+                        f"(threshold {timeout_seconds}s). "
+                        + ("Credits refunded; please retry." if refund else "Please retry.")
                     )
                     new_meta["render_status"] = new_rs
                     repo.update_metadata(video_id, new_meta)
-                    try:
-                        from ..services.token_usage_service import TokenUsageService
-                        TokenUsageService(db).refund_video_credits(video_id, institute_id)
-                    except Exception as _refund_err:
-                        logger.warning(
-                            f"[render-watchdog] Refund failed for {video_id}: {_refund_err}"
-                        )
-                    return {
-                        "job_id": job_id,
-                        "video_id": video_id,
-                        "status": "failed",
-                        "progress": progress,
-                        "video_url": None,
-                        "error": new_rs["error"],
-                        "watchdog": True,
-                    }
+                    if refund:
+                        try:
+                            from ..services.token_usage_service import TokenUsageService
+                            TokenUsageService(db).refund_video_credits(video_id, institute_id)
+                        except Exception as _refund_err:
+                            logger.warning(
+                                f"[render-watchdog] Refund failed for {video_id}: {_refund_err}"
+                            )
+                    return (
+                        {
+                            "status": "failed",
+                            "progress": progress,
+                            "video_url": None,
+                            "error": new_rs["error"],
+                            "last_seen_at": last_seen,
+                        },
+                        True,
+                    )
             except (ValueError, TypeError) as _ts_err:
                 logger.debug(f"[render-watchdog] last_seen parse error: {_ts_err}")
         except Exception as _wd_err:
             logger.warning(f"[render-watchdog] errored (non-fatal): {_wd_err}")
 
+    return state, False
+
+
+@router.get("/render/status/{job_id}")
+async def get_render_status(
+    job_id: str,
+    video_id: Optional[str] = None,
+    institute_id: str = Depends(get_institute_from_api_key),
+    db: Session = Depends(db_dependency),
+):
+    """
+    Check the status and progress of a render job — DB-only read.
+
+    Returns the cached render_status the render worker pushed to
+    /render-callback. Does NOT contact the render server, so a slow or
+    unreachable render server cannot make the FE-visible status endpoint
+    time out.
+
+    Watchdog runs off `render_status.last_seen_at`: if no callback has
+    arrived in `timeout_seconds` (clamp(planned * 5 + 180, 900, 5400)),
+    the response is rewritten to status=failed with credits refunded, and
+    the stale render_job_id is cleared.
+
+    Returns:
+        - status: queued | running | completed | failed
+        - progress: 0-100
+        - video_url: S3 URL when completed
+        - error: error message when failed
+    """
+    if not video_id:
+        raise HTTPException(
+            status_code=400,
+            detail="video_id query param is required (push-based status is keyed off the video record).",
+        )
+
+    video_record = _ensure_video_access(video_id, institute_id, db)
+    state, fired = render_state_with_watchdog(
+        video_id, institute_id, video_record, db, job_id=job_id
+    )
+    if fired:
+        return {
+            "job_id": job_id,
+            "video_id": video_id,
+            "status": "failed",
+            "progress": state["progress"],
+            "video_url": None,
+            "error": state["error"],
+            "watchdog": True,
+        }
+
     return {
         "job_id": job_id,
         "video_id": video_id,
-        "status": cur_status,
-        "progress": progress,
-        "video_url": video_url,
-        "error": error,
+        "status": state["status"],
+        "progress": state["progress"],
+        "video_url": state["video_url"],
+        "error": state["error"],
     }
 
 

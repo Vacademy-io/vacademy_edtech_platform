@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "Access Control",
+        "description": "Control who can manage, view results, and evaluate this assessment.",
+        "update": "Update",
+        "save": "Save",
+        "publish": "Publish"
+    },
+    "sections": {
+        "creationAccess": "Assessment Creation Access",
+        "creationAccessSurvey": "Survey Creation Access",
+        "liveNotification": "Live Assessment Notification",
+        "liveNotificationSurvey": "Live Survey Notification",
+        "submissionReportAccess": "Assessment Submission & Report Access",
+        "submissionReportAccessSurvey": "Survey Submission & Report Access",
+        "evaluationProcess": "Evaluation Process"
+    },
+    "toasts": {
+        "updateSuccess": "Your assessment has been updated successfully!",
+        "saveSuccess": "Your assessment has been saved successfully!",
+        "updatePublishSuccess": "Your assessment has been updated and published successfully!",
+        "publishSuccess": "Your assessment has been published successfully!",
+        "cancelInviteSuccess": "Invitation for this user has been cancelled successfully!"
+    },
+    "errors": {
+        "saveFailed": "Failed to save access control.",
+        "publishFailed": "Failed to publish assessment."
+    },
+    "card": {
+        "addButton": "Add",
+        "addUserTitle": "Add User",
+        "roleTypeLabel": "Role Type",
+        "selectAll": "Select All",
+        "cancelInvitation": "Cancel Invitation",
+        "attention": "Attention",
+        "confirmCancel": {
+            "prefix": "Are you sure you want to cancel invitation for",
+            "suffix": "?"
+        },
+        "yes": "Yes",
+        "done": "Done"
+    }
+}

@@ -10,6 +10,8 @@ import {
 import { getRandomTaskName } from '@/routes/ai-center/-utils/helper';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import AITasksList from '@/routes/ai-center/-components/AITasksList';
 import { AITaskIndividualListInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
 import {
@@ -37,10 +39,10 @@ export interface QuestionWithAnswerChatInterface {
 const ACCEPTED_FORMATS = '.pdf,.doc,.docx,.ppt,.pptx,.html';
 const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'html'];
 
-const SUGGESTED_PROMPTS = [
-    'What is the main idea of this document?',
-    'Summarize the key points.',
-    'Generate 5 questions on the main concepts.',
+const buildSuggestedPrompts = (t: TFunction): string[] => [
+    t('chat.suggestions.mainIdea'),
+    t('chat.suggestions.summarize'),
+    t('chat.suggestions.generateQuestions'),
 ];
 
 type Phase = 'idle' | 'uploading' | 'processing' | 'ready';
@@ -56,10 +58,13 @@ const PlayWithPDF = ({
     input_id?: string;
     parent_id?: string;
 }) => {
+    const { t } = useTranslation('aiCenterPlayWithPDF');
     const instituteId = getInstituteId();
     const { setLoader, setKey } = useAICenter();
     const { uploadFile } = useFileUpload();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const suggestedPrompts = useMemo(() => buildSuggestedPrompts(t), [t]);
 
     const [phase, setPhase] = useState<Phase>(input_id ? 'ready' : 'idle');
     const [fileName, setFileName] = useState('');
@@ -104,7 +109,7 @@ const PlayWithPDF = ({
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files. Try PDF, Word, or PowerPoint.`);
+            setErrorMessage(t('errors.unsupportedFormat', { ext }));
             return;
         }
         setErrorMessage(null);
@@ -120,7 +125,7 @@ const PlayWithPDF = ({
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadIncomplete'));
                 resetFile();
                 return;
             }
@@ -131,12 +136,12 @@ const PlayWithPDF = ({
                 setPhase('ready');
                 setLoader(false);
             } else {
-                setErrorMessage("We couldn't read this file. Try a different one?");
+                setErrorMessage(t('errors.readFailed'));
                 resetFile();
             }
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong reading your file. Try again?');
+            setErrorMessage(t('errors.genericFailure'));
             resetFile();
         }
     };
@@ -210,7 +215,7 @@ const PlayWithPDF = ({
                 setKey(null);
                 clearPolling();
                 setPendingResponse(false);
-                setErrorMessage('No response yet. Try asking again?');
+                setErrorMessage(t('errors.noResponse'));
                 return;
             }
             scheduleNextPoll();
@@ -262,10 +267,10 @@ const PlayWithPDF = ({
         <>
             <div
                 className={`flex flex-col items-center overflow-y-auto bg-neutral-50 px-4 py-6 ${
-                    fullHeight ? 'flex-1' : 'min-h-[300px] max-h-[55vh]'
+                    fullHeight ? 'flex-1' : 'min-h-72 max-h-[55vh]' // design-lint-ignore: viewport-relative chat body height, no token exists
                 }`}
             >
-                <div className="flex w-full max-w-[760px] flex-col gap-5">
+                <div className="flex w-full max-w-3xl flex-col gap-5">
                     {questionsWithAnswers.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 py-8 text-center">
                             <div className="flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-500">
@@ -273,14 +278,14 @@ const PlayWithPDF = ({
                             </div>
                             <div className="flex flex-col gap-1">
                                 <p className="text-sm font-medium text-gray-900">
-                                    Ask anything about this document
+                                    {t('chat.emptyTitle')}
                                 </p>
                                 <p className="text-xs text-neutral-500">
-                                    Use the suggestions below, or type your own question.
+                                    {t('chat.emptySubtitle')}
                                 </p>
                             </div>
                             <div className="flex flex-col gap-2">
-                                {SUGGESTED_PROMPTS.map((p) => (
+                                {suggestedPrompts.map((p) => (
                                     <button
                                         key={p}
                                         type="button"
@@ -297,13 +302,13 @@ const PlayWithPDF = ({
                         questionsWithAnswers.map((qa) => (
                             <div key={qa.id} className="flex flex-col gap-2">
                                 <div className="flex justify-end">
-                                    <p className="max-w-[80%] rounded-2xl bg-primary-500 px-4 py-2 text-sm text-white">
+                                    <p className="max-w-[80%] rounded-2xl bg-primary-500 px-4 py-2 text-sm text-white"> {/* design-lint-ignore: percentage bubble width has no spacing token */}
                                         {qa.question}
                                     </p>
                                 </div>
                                 <div className="flex justify-start">
                                     <div
-                                        className="max-w-[85%] rounded-2xl bg-white px-4 py-2 text-sm text-gray-900 ring-1 ring-neutral-200"
+                                        className="max-w-[85%] rounded-2xl bg-white px-4 py-2 text-sm text-gray-900 ring-1 ring-neutral-200" // design-lint-ignore: percentage bubble width has no spacing token
                                         dangerouslySetInnerHTML={{ __html: qa.response || '' }}
                                     />
                                 </div>
@@ -316,7 +321,7 @@ const PlayWithPDF = ({
                                 <div className="size-2 animate-pulse rounded-full bg-primary-400" />
                                 <div className="size-2 animate-pulse rounded-full bg-primary-400 [animation-delay:150ms]" />
                                 <div className="size-2 animate-pulse rounded-full bg-primary-400 [animation-delay:300ms]" />
-                                <span className="ml-1 text-xs">Reading the document…</span>
+                                <span className="ms-1 text-xs">{t('chat.pending')}</span>
                             </div>
                         </div>
                     )}
@@ -330,12 +335,12 @@ const PlayWithPDF = ({
                         e.preventDefault();
                         submitQuestion();
                     }}
-                    className="mx-auto flex w-full max-w-[760px] items-center gap-2 rounded-2xl border border-neutral-200 bg-white p-1.5 focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-100"
+                    className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-neutral-200 bg-white p-1.5 focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-100"
                 >
                     <input
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
-                        placeholder="Ask anything about this document…"
+                        placeholder={t('chat.inputPlaceholder')}
                         disabled={pendingResponse}
                         className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-neutral-400 disabled:bg-transparent"
                     />
@@ -344,7 +349,7 @@ const PlayWithPDF = ({
                         disabled={pendingResponse || !question.trim()}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-primary-500 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400 disabled:hover:bg-neutral-200"
                     >
-                        Send
+                        {t('chat.send')}
                         <ArrowRight size={14} weight="bold" />
                     </button>
                 </form>
@@ -357,7 +362,9 @@ const PlayWithPDF = ({
             <Dialog open={listDialogOpen} onOpenChange={setListDialogOpen}>
                 <DialogContent className="!m-0 flex !h-full !w-full !max-w-full flex-col !rounded-none !p-0">
                     <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-5 py-3">
-                        <h2 className="text-sm font-semibold text-gray-900">Chat history</h2>
+                        <h2 className="text-sm font-semibold text-gray-900">
+                            {t('chat.historyTitle')}
+                        </h2>
                     </div>
                     {renderChatBody(true)}
                 </DialogContent>
@@ -372,12 +379,9 @@ const PlayWithPDF = ({
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Chat with a Document
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Drop a PDF, then ask anything about it — summaries, questions, or
-                    explanations.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             {!fileChosen && !uploadedFilePDFId ? (
@@ -400,11 +404,9 @@ const PlayWithPDF = ({
                     </div>
                     <div className="flex flex-col gap-1">
                         <p className="text-base font-medium text-gray-900">
-                            Drop your document here, or click to choose
+                            {t('upload.dropTitle')}
                         </p>
-                        <p className="text-xs text-neutral-500">
-                            PDF, Word, or PowerPoint — anything you want to chat with.
-                        </p>
+                        <p className="text-xs text-neutral-500">{t('upload.dropSubtitle')}</p>
                     </div>
                 </div>
             ) : (
@@ -416,12 +418,12 @@ const PlayWithPDF = ({
                             </div>
                             <div className="flex min-w-0 flex-col">
                                 <span className="truncate text-sm font-medium text-gray-900">
-                                    {fileName || 'Chatting with document'}
+                                    {fileName || t('upload.fallbackFileName')}
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    {phase === 'uploading' && 'Uploading…'}
-                                    {phase === 'processing' && 'Reading…'}
-                                    {phase === 'ready' && 'Ready to chat'}
+                                    {phase === 'uploading' && t('upload.statusUploading')}
+                                    {phase === 'processing' && t('upload.statusProcessing')}
+                                    {phase === 'ready' && t('upload.statusReady')}
                                 </span>
                             </div>
                         </div>
@@ -430,7 +432,7 @@ const PlayWithPDF = ({
                                 type="button"
                                 onClick={resetFile}
                                 className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                aria-label="Start over with a new document"
+                                aria-label={t('upload.resetAriaLabel')}
                             >
                                 <X size={18} />
                             </button>
@@ -442,8 +444,8 @@ const PlayWithPDF = ({
                             <div className="size-4 shrink-0 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
                             <p className="text-sm text-blue-900">
                                 {phase === 'uploading'
-                                    ? 'Reading your file…'
-                                    : 'Getting your document ready to chat…'}
+                                    ? t('upload.workingUploading')
+                                    : t('upload.workingProcessing')}
                             </p>
                         </div>
                     ) : (
@@ -470,9 +472,9 @@ const PlayWithPDF = ({
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent chats"
-                fallbackLabel="Document chat"
-                emptyHint="Your chat sessions will appear here. Drop a document above to start one."
+                title={t('recentFiles.title')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
+                emptyHint={t('recentFiles.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
                 overrideIcon={
                     <ChatCircleDots size={18} weight="fill" className="text-primary-500" />
@@ -480,7 +482,7 @@ const PlayWithPDF = ({
             />
 
             <AITasksList
-                heading="Vsmart Chat"
+                heading={t('tasksList.heading')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
             />

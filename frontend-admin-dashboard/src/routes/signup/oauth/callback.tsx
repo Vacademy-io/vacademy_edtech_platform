@@ -3,8 +3,10 @@ import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { handleOAuthCallback } from '@/hooks/signup/oauth-signup';
+import { useTranslation } from 'react-i18next';
 
 function OAuthCallbackPage() {
+    const { t } = useTranslation('signupOauthCallback');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -12,7 +14,7 @@ function OAuthCallbackPage() {
             const result = await handleOAuthCallback();
 
             if (result.success) {
-                toast.success('Authentication successful');
+                toast.success(t('authSuccess'));
 
                 if (result.signupData) {
                     navigate({
@@ -27,12 +29,13 @@ function OAuthCallbackPage() {
                     navigate({ to: '/dashboard' });
                 }
             } else {
-                toast.error('OAuth authentication failed');
+                toast.error(t('authFailed'));
                 navigate({ to: '/signup' });
             }
         };
 
         processOAuth();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigate]);
 
     return (

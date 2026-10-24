@@ -22,6 +22,7 @@ import { z } from 'zod';
 import sectionDetailsSchema from './section-details-schema';
 import { convertCustomFields } from '../-services/assessment-services';
 import testAccessSchema from './add-participants-schema';
+import { withMissingBuiltInFieldsOnTop } from './step3-registration-fields';
 import { CourseWithSessionsType } from '@/stores/study-library/use-study-library-store';
 import { BatchData } from '@/types/assessments/batch-details';
 import { BASE_URL_LEARNER_DASHBOARD } from '@/constants/urls';
@@ -323,6 +324,70 @@ export function calculateTotalMarks(questions: AdaptiveMarkingQuestion[]) {
     return String(totalMarks);
 }
 
+/**
+ * What "result / evaluation type" a brand-new assessment starts with.
+ *
+ * Only a Manual Upload Exam is checked by a teacher; every other type carries
+ * objective questions and must grade itself. This used to fall through to a
+ * silent schema default of MANUAL when the admin never touched the radio, which
+ * turned a Mock with ten MCQs into "Upload Answer" for every learner.
+ */
+export const defaultResultTypeFor = (examType: string | undefined) =>
+    examType === 'MANUAL_UPLOAD_EXAM' ? 'MANUAL' : 'AUTO_AFTER_SUBMISSION';
+
+/** Always-available types: their live window runs to 9999, so they never "end". */
+export const isOpenEndedExamType = (examType: string | undefined) =>
+    examType === 'MOCK' || examType === 'PRACTICE';
+
+/**
+ * A stored result type made sense of for this assessment type. "Auto after
+ * assessment end" on a mock/practice test meant results never released (the
+ * end never comes); the backend now treats it as after-submission, and the
+ * form shows the same so the radio is never blank on edit.
+ */
+export const normalizeResultTypeFor = (examType: string | undefined, resultType: string) =>
+    isOpenEndedExamType(examType) && resultType === 'AUTO_AFTER_ASSESSMENT_END'
+        ? 'AUTO_AFTER_SUBMISSION'
+        : resultType;
+
+/**
+ * Whether Step 1 shows the "Result / evaluation type" settings at all.
+ *
+ * A survey has no marks and no result to release, so asking an admin to choose
+ * a release policy for one is noise — and picking MANUAL there would flip
+ * evaluation_type to MANUAL, which puts the learner player into PDF-upload mode
+ * (see defaultResultTypeFor). Surveys keep the AUTO_AFTER_SUBMISSION default and
+ * the section is hidden.
+ *
+ * Deliberately keyed off the type rather than the `result_type` step key: MOCK
+ * and PRACTICE do not declare that key either, yet they DO need a result type —
+ * that omission is what once turned a Mock full of MCQs into "Upload Answer".
+ */
+export const showsResultReleaseSettings = (examType: string | undefined) => examType !== 'SURVEY';
+
+/**
+ * The result type to load into Step 1 when editing an existing assessment.
+ *
+ * When the result section is hidden for this type there is no radio to correct,
+ * so an inherited value becomes permanent. That matters on surveys: 147 of them
+ * carry `result_type = MANUAL` (an old accidental default), and Step 1 maps
+ * `resultType === 'MANUAL'` to `evaluation_type = MANUAL` on save — which flips
+ * the learner player into PDF-upload mode. Editing anything else on such a
+ * survey would silently have broken it. A hidden section always resolves to the
+ * type's own default instead of whatever happens to be stored.
+ */
+export const resultTypeForEdit = (
+    examType: string | undefined,
+    storedResultType: string | undefined
+) =>
+    showsResultReleaseSettings(examType)
+        ? normalizeResultTypeFor(examType, storedResultType || defaultResultTypeFor(examType))
+        : defaultResultTypeFor(examType);
+
+/** The submission a Manual Upload Exam collects; nothing for self-grading types. */
+export const defaultSubmissionTypeFor = (examType: string | undefined) =>
+    examType === 'MANUAL_UPLOAD_EXAM' ? 'PDF' : '';
+
 export const syncStep1DataWithStore = (form: UseFormReturn<BasicSectionFormType>) => {
     const setBasicInfo = useBasicInfoStore.getState().setBasicInfo;
     const { getValues } = form;
@@ -335,6 +400,9 @@ export const syncStep1DataWithStore = (form: UseFormReturn<BasicSectionFormType>
         durationDistribution: getValues('durationDistribution'),
         evaluationType: getValues('evaluationType'),
         resultType: getValues('resultType'),
+        aiEvaluationEnabled: getValues('aiEvaluationEnabled'),
+        omrMode: getValues('omrMode'),
+        proctoring: getValues('proctoring'),
         switchSections: getValues('switchSections'),
         raiseReattemptRequest: getValues('raiseReattemptRequest'),
         raiseTimeIncreaseRequest: getValues('raiseTimeIncreaseRequest'),
@@ -408,16 +476,32 @@ export const syncStep4DataWithStore = (form: UseFormReturn<AccessControlFormValu
     setAccessControlData(testAccessData);
 };
 
+/**
+ * {hrs, min} -> total minutes.
+ *
+ * Both fields are seeded as '' by createDefaultSection, and `parseInt('')` is NaN —
+ * which propagates through the addition and then serialises to `null`, so a section the
+ * admin gave a duration to could still be sent with no duration at all. Treating a blank
+ * or unparseable part as 0 is what the neighbouring total_marks / cutoff_marks fields
+ * already do.
+ */
+const toMinutes = (duration: { hrs?: string; min?: string } | undefined): number => {
+    const hrs = parseInt(duration?.hrs ?? '', 10);
+    const min = parseInt(duration?.min ?? '', 10);
+    return (Number.isNaN(hrs) ? 0 : hrs) * 60 + (Number.isNaN(min) ? 0 : min);
+};
+
 export const convertStep2Data = (data: z.infer<typeof sectionDetailsSchema>) => {
     return data.section.map((section, index) => ({
         section_description_html: section.section_description || '',
         section_name: section.sectionName,
         section_id: section.sectionId || '',
-        section_duration:
-            parseInt(section.section_duration.hrs) * 60 + parseInt(section.section_duration.min),
+        section_duration: toMinutes(section.section_duration),
         section_order: index + 1,
-        total_marks: parseInt(section.total_marks) || 0,
-        cutoff_marks: section.cutoff_marks.checked ? parseInt(section.cutoff_marks.value) || 0 : 0,
+        total_marks: parseFloat(section.total_marks) || 0,
+        cutoff_marks: section.cutoff_marks.checked
+            ? parseFloat(section.cutoff_marks.value) || 0
+            : 0,
         problem_randomization: section.problem_randomization,
         question_and_marking: section.adaptive_marking_for_each_question.map(
             (question, qIndex) => ({
@@ -443,9 +527,9 @@ export const convertStep2Data = (data: z.infer<typeof sectionDetailsSchema>) => 
                         }),
                     },
                 }),
-                question_duration_in_min:
-                    parseInt(section.question_duration.hrs) * 60 +
-                        parseInt(section.question_duration.min) || 0,
+                // Same NaN trap as section_duration above: the trailing `|| 0` caught the
+                // NaN but turned "30 minutes with the hours box left blank" into 0.
+                question_duration_in_min: toMinutes(section.question_duration),
                 question_order: qIndex + 1,
                 // Add evaluation criteria fields - send null if not applied
                 evaluation_criteria_json: (question as any).evaluation_criteria_json || null,
@@ -664,49 +748,8 @@ export function convertToCustomFieldsData(data: RegistrationFormField[] | undefi
 }
 
 export function getCustomFieldsWhileEditStep3(assessmentDetails: Steps) {
-    const defaultFields = [
-        {
-            id: '0',
-            type: 'textfield',
-            name: 'Full Name',
-            oldKey: true,
-            isRequired: true,
-            key: 'full_name',
-            order: 0,
-        },
-        {
-            id: '1',
-            type: 'textfield',
-            name: 'Email',
-            oldKey: true,
-            isRequired: true,
-            key: 'email',
-            order: 1,
-        },
-        {
-            id: '2',
-            type: 'textfield',
-            name: 'Phone Number',
-            oldKey: true,
-            isRequired: true,
-            key: 'phone_number',
-            order: 2,
-        },
-    ];
-
     const registrationFields = assessmentDetails[2]?.saved_data?.registration_form_fields ?? [];
-
-    // Extract field names from registrationFields
-    const existingFieldNames = new Set(registrationFields.map((field) => field.field_name));
-
-    // Check if all three fields exist
-    const hasAllDefaults = ['Full Name', 'Email', 'Phone Number'].every((field) =>
-        existingFieldNames.has(field)
-    );
-
-    return hasAllDefaults
-        ? convertToCustomFieldsData(registrationFields)
-        : [...defaultFields, ...convertToCustomFieldsData(registrationFields)];
+    return withMissingBuiltInFieldsOnTop(convertToCustomFieldsData(registrationFields));
 }
 
 export const convertToCustomFieldSchema = (field: CustomFieldStep3): ConvertedCustomField => {
@@ -903,4 +946,97 @@ export const convertDataToStep3 = (
 
     convertedData.notify_parent = parentNotifications;
     return convertedData;
+};
+
+/** react-hook-form nests errors like the form values; list every leaf with its path. */
+export function flattenFormErrors(
+    errors: unknown,
+    prefix = ''
+): { path: string; message: string }[] {
+    if (!errors || typeof errors !== 'object') return [];
+    const out: { path: string; message: string }[] = [];
+    for (const [key, value] of Object.entries(errors as Record<string, unknown>)) {
+        if (!value || typeof value !== 'object') continue;
+        const path = prefix ? `${prefix}.${key}` : key;
+        const message = (value as { message?: unknown }).message;
+        if (typeof message === 'string' && message) {
+            out.push({ path, message });
+        } else if (!('ref' in (value as object))) {
+            out.push(...flattenFormErrors(value, path));
+        }
+    }
+    return out;
+}
+
+/** Years at or past this mean "never closes", not a schedule. */
+const NO_EXPIRY_YEAR = 9000;
+
+export function convertDateFormat(dateStr: string) {
+    if (dateStr === '') return '';
+
+    // Backend sends timestamps as UTC but sometimes omits the trailing 'Z'.
+    // `new Date("2026-07-11T12:37:00")` without a zone marker is parsed as
+    // *local* time by browsers, silently shifting the instant. Force UTC
+    // interpretation when no zone marker is present.
+    const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/i.test(dateStr);
+    const normalized = hasTimezone ? dateStr : `${dateStr.replace(' ', 'T')}Z`;
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return '';
+    // Mock/practice tests are stored as "open until 9999-12-31 UTC". East of
+    // Greenwich that instant is the year 10000, which no datetime-local input
+    // can hold - the value parsed as Invalid Date and the hidden end-date rule
+    // silently blocked every Update of a mock or practice test in India.
+    if (date.getFullYear() >= NO_EXPIRY_YEAR) return '';
+
+    // Emit LOCAL wall-clock components for the datetime-local input, which
+    // interprets its value as local time. Using toISOString() here would leak
+    // UTC digits into the form, shifting the shown time by the TZ offset and
+    // corrupting the stored instant on re-save.
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/**
+ * Whether Step 1's "Next" may be enabled.
+ *
+ * Kept out of the component so the rule can be tested: it is hand-rolled rather
+ * than derived from the zod schema (which treats the live-window dates as
+ * optional), and it once demanded a field that the same step never rendered.
+ * `AssessmentBasicDetail.getStepsForSurvey` declares both boundation dates
+ * OPTIONAL — a survey may carry a live window but does not need one — so the
+ * requirement is keyed off "REQUIRED", not off the field merely being rendered.
+ * Keying it off presence left "Next" permanently disabled on a new survey.
+ *
+ * Rule of thumb for anything added here: only require what Step 1 actually
+ * renders for that assessment type.
+ */
+export const isBasicInfoStepComplete = ({
+    examType,
+    isNewAssessment,
+    requiresLiveDateRange,
+    assessmentName,
+    liveDateRangeStartDate,
+    liveDateRangeEndDate,
+    reattemptCount,
+    errorCount,
+}: {
+    examType: string | undefined;
+    isNewAssessment: boolean;
+    requiresLiveDateRange: boolean;
+    assessmentName: string | undefined;
+    liveDateRangeStartDate: string | undefined;
+    liveDateRangeEndDate: string | undefined;
+    reattemptCount: string | number | undefined;
+    errorCount: number;
+}): boolean => {
+    if (!assessmentName || errorCount > 0) return false;
+
+    const needsFullSchedule = (examType === 'EXAM' || examType === 'SURVEY') && isNewAssessment;
+    if (!needsFullSchedule) return true;
+
+    if (requiresLiveDateRange && !(liveDateRangeStartDate && liveDateRangeEndDate)) {
+        return false;
+    }
+
+    return !!Number(reattemptCount);
 };

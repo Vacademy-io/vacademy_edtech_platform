@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -15,23 +17,25 @@ import { useCreateMeetingBooking } from '../-hooks/use-meetings';
 import { browserTimezone, toIsoWithOffset } from '../-utils/meetings-utils';
 import { PickedUser, UserSearchCombobox } from './user-search-combobox';
 
-const DURATION_OPTIONS = [15, 30, 45, 60].map((minutes) => ({
-    _id: minutes,
-    value: String(minutes),
-    label: `${minutes} minutes`,
-}));
+const buildDurationOptions = (t: TFunction) =>
+    [15, 30, 45, 60].map((minutes) => ({
+        _id: minutes,
+        value: String(minutes),
+        label: t('durationOption', { count: minutes }),
+    }));
 
-const createBookingSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    date: z.string().min(1, 'Date is required'),
-    startTime: z.string().min(1, 'Start time is required'),
-    durationMinutes: z.string().min(1, 'Duration is required'),
-    inviteeName: z.string().optional(),
-    inviteeEmail: z.string().email('Enter a valid email').optional().or(z.literal('')),
-    inviteePhone: z.string().optional(),
-});
+const buildCreateBookingSchema = (t: TFunction) =>
+    z.object({
+        title: z.string().min(1, t('schema.titleRequired')),
+        date: z.string().min(1, t('schema.dateRequired')),
+        startTime: z.string().min(1, t('schema.startTimeRequired')),
+        durationMinutes: z.string().min(1, t('schema.durationRequired')),
+        inviteeName: z.string().optional(),
+        inviteeEmail: z.string().email(t('schema.emailInvalid')).optional().or(z.literal('')),
+        inviteePhone: z.string().optional(),
+    });
 
-type CreateBookingFormValues = z.infer<typeof createBookingSchema>;
+type CreateBookingFormValues = z.infer<ReturnType<typeof buildCreateBookingSchema>>;
 
 /** Lead context used to pre-populate and link an on-behalf booking to a CRM lead. */
 export interface CreateBookingPrefill {
@@ -51,10 +55,14 @@ interface CreateBookingDialogProps {
 }
 
 export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBookingDialogProps) => {
+    const { t } = useTranslation('meetingsCreateBookingDialog');
     const instituteId = getInstituteId();
     const createBooking = useCreateMeetingBooking();
     const [participants, setParticipants] = useState<PickedUser[]>([]);
     const [allocateGoogleMeet, setAllocateGoogleMeet] = useState(true);
+
+    const durationOptions = useMemo(() => buildDurationOptions(t), [t]);
+    const createBookingSchema = useMemo(() => buildCreateBookingSchema(t), [t]);
 
     const defaultValues: CreateBookingFormValues = {
         title: '',
@@ -95,7 +103,7 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
 
     const onSubmit = (values: CreateBookingFormValues) => {
         if (!instituteId) {
-            toast.error('Missing institute context');
+            toast.error(t('toast.missingInstitute'));
             return;
         }
         const startDateTime = new Date(`${values.date}T${values.startTime}`);
@@ -117,11 +125,11 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
             },
             {
                 onSuccess: () => {
-                    toast.success('Meeting scheduled');
+                    toast.success(t('toast.scheduled'));
                     resetAndClose();
                 },
                 onError: () => {
-                    toast.error('Failed to schedule the meeting. Try again.');
+                    toast.error(t('toast.scheduleFailed'));
                 },
             }
         );
@@ -129,7 +137,7 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
 
     return (
         <MyDialog
-            heading="New Meeting"
+            heading={t('heading')}
             open={open}
             onOpenChange={(next) => {
                 // Esc / X / overlay dismissal must not leak form state into the
@@ -154,10 +162,10 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                             <FormItem>
                                 <FormControl>
                                     <MyInput
-                                        label="Title"
+                                        label={t('titleLabel')}
                                         required
                                         inputType="text"
-                                        inputPlaceholder="Meeting title"
+                                        inputPlaceholder={t('titlePlaceholder')}
                                         className="w-full sm:w-full"
                                         input={field.value}
                                         onChangeFunction={field.onChange}
@@ -176,7 +184,7 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                                 <FormItem className="flex-1">
                                     <FormControl>
                                         <MyInput
-                                            label="Date"
+                                            label={t('dateLabel')}
                                             required
                                             inputType="date"
                                             className="w-full sm:w-full"
@@ -195,7 +203,7 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                                 <FormItem className="flex-1">
                                     <FormControl>
                                         <MyInput
-                                            label="Start time"
+                                            label={t('startTimeLabel')}
                                             required
                                             inputType="time"
                                             className="w-full sm:w-full"
@@ -210,16 +218,16 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                     </div>
 
                     <SelectField
-                        label="Duration"
+                        label={t('durationLabel')}
                         name="durationMinutes"
-                        options={DURATION_OPTIONS}
+                        options={durationOptions}
                         control={form.control}
                         required
                         className="w-full sm:w-full"
                     />
 
                     <div className="flex flex-col gap-1">
-                        <Label className="text-subtitle font-regular">Participants</Label>
+                        <Label className="text-subtitle font-regular">{t('participantsLabel')}</Label>
                         <UserSearchCombobox
                             instituteId={instituteId}
                             value={participants}
@@ -230,11 +238,11 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
 
                     <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 p-3">
                         <p className="text-body font-semibold text-neutral-600">
-                            {prefill ? 'Invitee (from lead)' : 'External invitee (optional)'}
+                            {prefill ? t('inviteeFromLead') : t('inviteeExternal')}
                         </p>
                         {prefill && (
                             <p className="-mt-3 text-caption text-neutral-500">
-                                Prefilled from the lead — edit only if the details are wrong.
+                                {t('prefilledFromLead')}
                             </p>
                         )}
                         <FormField
@@ -244,9 +252,9 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                                 <FormItem>
                                     <FormControl>
                                         <MyInput
-                                            label="Invitee name"
+                                            label={t('inviteeNameLabel')}
                                             inputType="text"
-                                            inputPlaceholder="Full name"
+                                            inputPlaceholder={t('inviteeNamePlaceholder')}
                                             className="w-full sm:w-full"
                                             input={field.value ?? ''}
                                             onChangeFunction={field.onChange}
@@ -264,9 +272,9 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                                     <FormItem className="flex-1">
                                         <FormControl>
                                             <MyInput
-                                                label="Invitee email"
+                                                label={t('inviteeEmailLabel')}
                                                 inputType="email"
-                                                inputPlaceholder="name@example.com"
+                                                inputPlaceholder={t('inviteeEmailPlaceholder')}
                                                 className="w-full sm:w-full"
                                                 input={field.value ?? ''}
                                                 onChangeFunction={field.onChange}
@@ -283,9 +291,9 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                                     <FormItem className="flex-1">
                                         <FormControl>
                                             <MyInput
-                                                label="Invitee phone"
+                                                label={t('inviteePhoneLabel')}
                                                 inputType="tel"
-                                                inputPlaceholder="Phone number"
+                                                inputPlaceholder={t('inviteePhonePlaceholder')}
                                                 className="w-full sm:w-full"
                                                 input={field.value ?? ''}
                                                 onChangeFunction={field.onChange}
@@ -301,10 +309,10 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                     <div className="flex items-center justify-between rounded-lg border border-neutral-200 p-3">
                         <div>
                             <p className="text-body font-semibold text-neutral-600">
-                                Allocate Google Meet link
+                                {t('allocateMeetTitle')}
                             </p>
                             <p className="text-caption text-neutral-500">
-                                Automatically attach a Meet link to this meeting
+                                {t('allocateMeetDescription')}
                             </p>
                         </div>
                         <Switch checked={allocateGoogleMeet} onCheckedChange={setAllocateGoogleMeet} />
@@ -318,7 +326,7 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                             onClick={resetAndClose}
                             disable={createBooking.isPending}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             type="submit"
@@ -326,7 +334,9 @@ export const CreateBookingDialog = ({ open, onOpenChange, prefill }: CreateBooki
                             scale="medium"
                             disable={createBooking.isPending}
                         >
-                            {createBooking.isPending ? 'Scheduling...' : 'Schedule Meeting'}
+                            {createBooking.isPending
+                                ? t('actions.scheduling')
+                                : t('actions.scheduleMeeting')}
                         </MyButton>
                     </div>
                 </form>

@@ -1,12 +1,18 @@
 import { Dispatch, SetStateAction } from 'react';
+import { toast } from 'sonner';
+import i18n from '@/i18n';
 import {
+    AssessmentSlidePayload,
     AudioSlidePayload,
     DocumentSlidePayload,
+    HtmlVideoSlidePayload,
+    ScormSlidePayload,
     Slide,
     VideoSlidePayload,
     VideoQuestion,
     QuizSlidePayload,
 } from '../../-hooks/use-slides';
+import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { UseMutateAsyncFunction } from '@tanstack/react-query';
 import { createQuizSlidePayload } from '../quiz/utils/api-helpers';
 import {
@@ -20,6 +26,17 @@ type SlideResponse = {
     title: string;
     description: string;
     status: string;
+};
+
+// Show the new title in the header and sidebar right away; the slides refetch the
+// mutation triggers then replaces this with the saved copy. A static import on
+// purpose: the `require(...)` used by the older branches below is not bundled by
+// Vite, throws in the browser and is swallowed by its empty catch.
+const applyTitleLocally = (activeItem: Slide, heading: string) => {
+    const { items, setItems, setActiveItem } = useContentStore.getState();
+    // setItems re-points activeItem at the list copy, so set the active slide last.
+    setItems(items.map((item) => (item.id === activeItem.id ? { ...item, title: heading } : item)));
+    setActiveItem({ ...activeItem, title: heading });
 };
 
 export const updateHeading = async (
@@ -37,7 +54,20 @@ export const updateHeading = async (
     addUpdateQuizSlide?: UseMutateAsyncFunction<SlideResponse, Error, QuizSlidePayload, unknown>,
     updateAssignmentOrder?: UseMutateAsyncFunction<SlideResponse, Error, any, unknown>,
     updateQuestionOrder?: UseMutateAsyncFunction<SlideResponse, Error, any, unknown>,
-    addUpdateAudioSlide?: UseMutateAsyncFunction<SlideResponse, Error, AudioSlidePayload, unknown>
+    addUpdateAudioSlide?: UseMutateAsyncFunction<SlideResponse, Error, AudioSlidePayload, unknown>,
+    addUpdateScormSlide?: UseMutateAsyncFunction<SlideResponse, Error, ScormSlidePayload, unknown>,
+    addUpdateAssessmentSlide?: UseMutateAsyncFunction<
+        SlideResponse,
+        Error,
+        AssessmentSlidePayload,
+        unknown
+    >,
+    addUpdateHtmlVideoSlide?: UseMutateAsyncFunction<
+        SlideResponse,
+        Error,
+        HtmlVideoSlidePayload,
+        unknown
+    >
 ) => {
     const status = activeItem?.status == 'DRAFT' ? 'DRAFT' : 'UNSYNC';
     if (activeItem) {
@@ -78,6 +108,7 @@ export const updateHeading = async (
                 new_slide: false,
                 notify: false,
             });
+            setIsEditing(false);
             return;
         } else if (activeItem.source_type === 'DOCUMENT') {
             // Handle PRESENTATION title update
@@ -258,6 +289,77 @@ export const updateHeading = async (
                     );
                 }
             } catch (e) {}
+        } else if (activeItem.source_type === 'SCORM' && addUpdateScormSlide) {
+            if (!activeItem.scorm_slide) {
+                toast.error(i18n.t('slideEditor:scorm.missingData'));
+                setIsEditing(false);
+                return;
+            }
+            // SCORM, assessment and AI-video slides have no separate draft copy, so a
+            // rename keeps the current status rather than flipping it to UNSYNC/DRAFT.
+            await addUpdateScormSlide({
+                id: activeItem.id,
+                title: heading,
+                description: activeItem.description || null,
+                image_file_id: activeItem.image_file_id || '',
+                status: (activeItem.status || status) as 'DRAFT' | 'PUBLISHED',
+                slide_order: null,
+                notify: false,
+                new_slide: false,
+                scorm_slide: {
+                    id: activeItem.scorm_slide.id,
+                },
+            });
+            applyTitleLocally(activeItem, heading);
+        } else if (activeItem.source_type === 'ASSESSMENT' && addUpdateAssessmentSlide) {
+            if (!activeItem.assessment_slide) {
+                toast.error(i18n.t('slideEditor:assessment.missingData'));
+                setIsEditing(false);
+                return;
+            }
+            await addUpdateAssessmentSlide({
+                id: activeItem.id,
+                source_id: activeItem.assessment_slide.id,
+                source_type: 'ASSESSMENT',
+                title: heading,
+                description: activeItem.description || '',
+                image_file_id: activeItem.image_file_id || '',
+                status: (activeItem.status || status) as 'DRAFT' | 'PUBLISHED',
+                slide_order: null,
+                notify: false,
+                new_slide: false,
+                // allow_reattempt / show_result left out on purpose: the backend only
+                // overwrites them when sent, so a rename can't reset them.
+                assessment_slide: {
+                    id: activeItem.assessment_slide.id,
+                    assessment_id: activeItem.assessment_slide.assessment_id,
+                },
+            });
+            applyTitleLocally(activeItem, heading);
+        } else if (activeItem.source_type === 'HTML_VIDEO' && addUpdateHtmlVideoSlide) {
+            const htmlVideoSlideId =
+                (activeItem as Slide & { html_video_slide?: { id?: string } }).html_video_slide
+                    ?.id || activeItem.source_id;
+            await addUpdateHtmlVideoSlide({
+                id: activeItem.id,
+                title: heading,
+                description: activeItem.description || null,
+                image_file_id: activeItem.image_file_id || null,
+                status: activeItem.status || status,
+                slide_order: null,
+                notify: false,
+                new_slide: false,
+                html_video_slide: {
+                    id: htmlVideoSlideId,
+                },
+            });
+            applyTitleLocally(activeItem, heading);
+        } else {
+            // Falling through used to close the editor without saving, so the new
+            // title showed until the next refresh and then silently reverted.
+            toast.error(i18n.t('slideEditor:slide.renameUnsupported'));
+            // Put the saved title back in the header.
+            applyTitleLocally(activeItem, activeItem.title);
         }
     }
     setIsEditing(false);

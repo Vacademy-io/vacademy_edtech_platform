@@ -1,0 +1,20 @@
+{
+    "title": "Activité récente des apprenants",
+    "subtitle": "Derniers messages WhatsApp et réponses par e-mail de votre audience",
+    "emptyState": "Aucune activité entrante des apprenants pour l'instant.",
+    "loadingMore": "Chargement…",
+    "loadMore": "Charger plus",
+    "noMoreActivity": "Plus d'activité",
+    "time": {
+        "now": "à l'instant",
+        "minutes_one": "{{count}} min",
+        "minutes_many": "{{count}} min",
+        "minutes_other": "{{count}} min",
+        "hours_one": "{{count}} h",
+        "hours_many": "{{count}} h",
+        "hours_other": "{{count}} h",
+        "days_one": "{{count}} j",
+        "days_many": "{{count}} j",
+        "days_other": "{{count}} j"
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "validation": {
+        "titleRequired": "العنوان مطلوب",
+        "scormFileRequired": "ملف SCORM المضغوط مطلوب"
+    },
+    "dropzone": {
+        "title": "استورد حزمة SCORM الخاصة بك",
+        "hint": "اسحب أو انقر للتحميل",
+        "formats": "يدعم SCORM 1.2 و SCORM 2004 (.zip)",
+        "selected": "المحدد: {{fileName}}"
+    },
+    "errors": {
+        "imsManifestHintPrefix": "تأكد من أن",
+        "imsManifestHintSuffix": "موجود في جذر الملف المضغوط، وليس داخل مجلد فرعي — أعد ضغط محتويات الحزمة مباشرة، وليس المجلد الذي يحتويها، ثم حاول مرة أخرى."
+    },
+    "fields": {
+        "title": "العنوان",
+        "titlePlaceholder": "أدخل عنوان شريحة SCORM",
+        "description": "الوصف (اختياري)",
+        "descriptionPlaceholder": "أدخل وصفًا لوحدة SCORM هذه..."
+    },
+    "details": {
+        "title": "تفاصيل الحزمة",
+        "versionLabel": "الإصدار:",
+        "versionValue": "SCORM {{version}}",
+        "launchFileLabel": "ملف التشغيل:"
+    },
+    "toasts": {
+        "uploadFailed": "فشل تحميل حزمة SCORM",
+        "selectZipFile": "الرجاء تحديد ملف .zip",
+        "fileTooLarge": "حزمة SCORM كبيرة جدًا ({{size}}). الحد الأقصى المسموح به هو {{max}}.",
+        "uploading": "جارٍ تحميل حزمة SCORM...",
+        "uploadSuccessDetected": "تم التحميل بنجاح! تم اكتشاف حزمة SCORM {{version}}.",
+        "uploadParseSuccess": "تم تحميل وتحليل حزمة SCORM بنجاح!",
+        "dropZipFile": "الرجاء إسقاط ملف .zip",
+        "reorderFailed": "تم إنشاء الشريحة لكن إعادة الترتيب فشلت",
+        "waitForUpload": "الرجاء انتظار اكتمال تحميل حزمة SCORM",
+        "createSuccess": "تم إنشاء شريحة SCORM بنجاح!",
+        "createFailed": "فشل إنشاء شريحة SCORM"
+    },
+    "actions": {
+        "creatingSlide": "جارٍ إنشاء الشريحة...",
+        "createSlide": "إنشاء شريحة SCORM"
+    }
+}

@@ -9,8 +9,16 @@ import {
     PROVIDER_MEETING_AVAILABILITY_FOR_SESSION,
     // GET_LIVE_SESSIONS,
 } from '@/constants/urls';
+import i18next from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { LiveSessionStep1RequestDTO, LiveSessionStep2RequestDTO } from '../../-constants/helper';
+
+// This module has no React context of its own (its exports are called from
+// callers' event handlers, not rendered), so read the current locale off the
+// shared i18next instance instead of useTranslation — same pattern as
+// Payment/utils/utils.ts.
+const t = (key: string, options?: Record<string, unknown>): string =>
+    i18next.t(`studyLibraryLiveSessionScheduleUtils:${key}`, options) as string;
 
 export interface BulkLiveSessionRequest {
     sessions: LiveSessionStep1RequestDTO[];
@@ -29,6 +37,11 @@ export interface BulkLiveSessionRowResult {
     title?: string;
     error?: string;
     step2_applied: boolean;
+    /**
+     * Non-fatal problems with a row that still succeeded — currently
+     * instructor identifiers from the CSV that matched nobody in the institute.
+     */
+    warnings?: string[];
 }
 
 export interface BulkLiveSessionResponse {
@@ -114,7 +127,7 @@ export const createLiveSessionsChunked = async (
                     await sleep(retryBackoffMs); // one quick retry
                     continue;
                 }
-                const message = err instanceof Error ? err.message : 'Request failed';
+                const message = err instanceof Error ? err.message : t('requestFailed');
                 return chunkSessions.map((s, i) => ({
                     index: start + i,
                     success: false,
@@ -198,6 +211,10 @@ export interface LiveSession {
     allow_rewind?: boolean | null;
     allow_play_pause?: boolean | null;
     timezone?: string; // Changed from time_zone to timezone to match API response
+    /** Streaming platform of this occurrence — see HostJoinTarget. */
+    link_type?: string | null;
+    /** Minutes before start that the waiting room opens; gates "Start as Host". */
+    waiting_room_time?: number | null;
     default_class_link?: string | null;
     defaultClassName?: string | null;
     learner_button_config?: {
@@ -208,6 +225,12 @@ export interface LiveSession {
         visible: boolean;
     } | null;
     package_session_details?: PackageSessionDetail[] | null;
+    instructors?: Array<{
+        user_id: string;
+        full_name?: string | null;
+        email?: string | null;
+        profile_pic_file_id?: string | null;
+    }> | null;
 }
 
 export const createLiveSessionStep1 = async (data: LiveSessionStep1RequestDTO) => {

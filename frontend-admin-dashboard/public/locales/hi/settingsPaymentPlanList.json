@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "भुगतान विकल्प"
+    },
+    "emptyState": {
+        "title": "अभी तक कोई भुगतान विकल्प नहीं बनाया गया",
+        "subtitle": "भुगतान स्वीकार करना शुरू करने के लिए अपना पहला भुगतान विकल्प बनाएं"
+    },
+    "badge": {
+        "default": "डिफ़ॉल्ट"
+    },
+    "actions": {
+        "viewDetails": "विवरण देखें",
+        "hide": "छिपाएं",
+        "makeDefault": "डिफ़ॉल्ट बनाएं"
+    },
+    "currency": "मुद्रा: {{currency}}",
+    "priceDetails": {
+        "noConfig": "कोई कॉन्फ़िगरेशन उपलब्ध नहीं है",
+        "percentOff": "{{amount}}% छूट",
+        "amountOff": "{{symbol}}{{amount}} की छूट",
+        "fullPriceLabel": "पूरी कीमत:",
+        "fullPriceValue": "पूरी कीमत: {{symbol}}{{price}}",
+        "suggestedAmounts": "सुझाई गई राशियाँ: {{symbol}}{{amount}}",
+        "minimumAmount": "न्यूनतम राशि: {{symbol}}{{amount}}",
+        "feeTypeCount_one": "{{count}} शुल्क प्रकार",
+        "feeTypeCount_other": "{{count}} शुल्क प्रकार",
+        "total": "कुल: ₹{{total}}",
+        "batchLinked_one": "{{count}} बैच जुड़ा हुआ",
+        "batchLinked_other": "{{count}} बैच जुड़े हुए",
+        "clickViewDetails": "शुल्क विवरण देखने के लिए \"विवरण देखें\" पर क्लिक करें"
+    },
+    "cpo": {
+        "feeTypesTitle": "शुल्क प्रकार",
+        "loadingDetails": "किस्त विवरण लोड हो रहा है…",
+        "noFeeTypes": "कोई शुल्क प्रकार नहीं मिला।",
+        "installmentCount_one": "{{count}} किस्त",
+        "installmentCount_other": "{{count}} किस्तें",
+        "refundable": "वापसी योग्य",
+        "penalty": "जुर्माना {{percent}}%",
+        "columnNumber": "#",
+        "columnAmount": "राशि",
+        "totalLabel": "कुल",
+        "oneTimePayment": "₹{{amount}} का एकमुश्त भुगतान"
+    }
+}

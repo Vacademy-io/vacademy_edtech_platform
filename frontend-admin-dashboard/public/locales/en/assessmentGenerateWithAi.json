@@ -1,0 +1,15 @@
+{
+    "heading": "Generate a question paper with AI",
+    "description": "Choose the material the paper should be set from. You will then pick the syllabus, the question mix and marks, and the test details.",
+    "curriculum": {
+        "heading": "From the curriculum library",
+        "hint": "Board → class → subject. NCERT textbooks, chapter by chapter."
+    },
+    "own": {
+        "heading": "From your own knowledge base",
+        "sources_one": "{{count}} document",
+        "sources_other": "{{count}} documents",
+        "use": "Use this"
+    },
+    "empty": "No material yet. Add a knowledge base or open the Library first."
+}

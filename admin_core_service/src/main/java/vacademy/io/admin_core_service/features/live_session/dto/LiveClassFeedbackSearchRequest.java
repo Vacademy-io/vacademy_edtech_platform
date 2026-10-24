@@ -31,6 +31,10 @@ public class LiveClassFeedbackSearchRequest {
     // Optional free-text search across learner name and live-class title.
     private String searchQuery;
 
+    // Only feedback whose primary star rating is strictly below this value
+    // (e.g. 3 -> 0.5..2.5). Null = no rating filter.
+    private Double ratingBelow;
+
     private Integer page = 0;
     private Integer size = 20;
 }

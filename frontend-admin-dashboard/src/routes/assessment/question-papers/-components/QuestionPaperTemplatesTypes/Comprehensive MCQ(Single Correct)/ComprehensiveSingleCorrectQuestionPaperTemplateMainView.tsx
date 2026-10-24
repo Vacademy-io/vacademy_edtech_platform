@@ -5,6 +5,7 @@ import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-t
 import { formatStructure } from '../../../-utils/helper';
 import { Badge } from '@/components/ui/badge';
 import { AnswerOptionsEditor, QuestionSectionHeader } from '../QuestionEditorParts';
+import { useTranslation } from 'react-i18next';
 
 export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
     form,
@@ -14,9 +15,10 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
     examType,
     enableOptionModalCompose = false,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveSingleCorrectMainQP');
     const { control, getValues } = form;
-    const answersType = getValues('answersType') || 'Answer';
-    const explanationsType = getValues('explanationsType') || 'Explanation';
+    const answersType = getValues('answersType') || t('answer.typeFallback');
+    const explanationsType = getValues('explanationsType') || t('explanation.typeFallback');
     const optionsType = getValues('optionsType') || '';
     const questionsType = getValues('questionsType') || '';
     const allQuestions = getValues('questions') || [];
@@ -27,9 +29,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <p className="text-body text-neutral-500">
-                    Please add a question to show question details
-                </p>
+                <p className="text-body text-neutral-500">{t('emptyState')}</p>
             </div>
         );
     }
@@ -38,8 +38,8 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
         <div className={className}>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
-                    title="Comprehension text"
-                    hint="The passage every question in this set refers to."
+                    title={t('comprehension.title')}
+                    hint={t('comprehension.hint')}
                 />
                 <FormField
                     control={control}
@@ -52,7 +52,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={100}
-                                    placeholder="Comprehension text"
+                                    placeholder={t('comprehension.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -62,15 +62,15 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
-                    title={`Question${
+                    title={
                         showQuestionNumber
-                            ? ` ${
-                                  questionsType
+                            ? t('question.titleNumbered', {
+                                  number: questionsType
                                       ? formatStructure(questionsType, currentQuestionIndex + 1)
-                                      : currentQuestionIndex + 1
-                              }`
-                            : ''
-                    }`}
+                                      : currentQuestionIndex + 1,
+                              })
+                            : t('question.title')
+                    }
                     action={level ? <Badge variant="outline">{level}</Badge> : undefined}
                 />
                 <FormField
@@ -84,7 +84,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={100}
-                                    placeholder="Write the question"
+                                    placeholder={t('question.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -112,10 +112,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                 enableOptionModalCompose={enableOptionModalCompose}
             />
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
-                <QuestionSectionHeader
-                    title={explanationsType}
-                    hint="Shown to learners with their result."
-                />
+                <QuestionSectionHeader title={explanationsType} hint={t('explanation.hint')} />
                 <FormField
                     control={control}
                     name={`questions.${currentQuestionIndex}.explanation`}
@@ -127,7 +124,7 @@ export const ComprehensiveSingleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={80}
-                                    placeholder="Explanation"
+                                    placeholder={t('explanation.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />

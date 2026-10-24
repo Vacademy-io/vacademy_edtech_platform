@@ -1,0 +1,217 @@
+---
+title: "Pagination and syncing"
+description: "Cursor-based lists ordered by last change, the updated_since filter, and a sync loop that never misses or double-processes a submission."
+icon: "arrows-rotate"
+---
+
+Every list endpoint works the same way: rows come back **ordered by when they last changed** (oldest change first), in pages, with an opaque cursor to the next page. The same ordering lets you keep your system in sync by asking only for what changed since your last poll.
+
+## Page shape
+
+```json
+{
+  "data": [ { "id": "6f1c2d9e-3b7a-4c58-9e21-0a4b7d3c8f15", "status": "graded", "updated_at": "2026-10-02T09:14:03.482917Z" } ],
+  "next_cursor": "MTc1OTM5NjA0My40ODI5MTcwMDB8NmYxYzJkOWUtM2I3YS00YzU4LTllMjEtMGE0YjdkM2M4ZjE1",
+  "has_more": true
+}
+```
+
+<ResponseField name="data" type="array">
+  The rows of this page, ordered by `updated_at`, then by `id`.
+</ResponseField>
+<ResponseField name="next_cursor" type="string | null">
+  Pass this as `cursor` to get the next page. `null` on the last page.
+</ResponseField>
+<ResponseField name="has_more" type="boolean">
+  `true` when another page follows.
+</ResponseField>
+
+## Query parameters
+
+<ParamField query="limit" type="integer" default="50">
+  Rows per page, from 1 to 200. `GET /exams/{id}/results` is the exception: 1 to 50, default 20. A value out of range is `422 validation_failed`.
+</ParamField>
+<ParamField query="cursor" type="string">
+  The `next_cursor` of the previous page, exactly as received. It is opaque: do not build or edit it. Anything else is `400 invalid_cursor`.
+</ParamField>
+<ParamField query="updated_since" type="string">
+  Only rows whose `updated_at` is strictly **after** this time. An ISO 8601 UTC timestamp, for example `2026-10-01T09:00:00Z`. Fractional seconds are accepted, so you can pass back an `updated_at` value as is. A value that does not parse is `422 validation_failed`.
+</ParamField>
+
+Keep the same filters (`updated_since`, `status` and so on) on every page of one pass and add `cursor`. Cursors do not expire, but they are tied to the ordering, not to a snapshot: rows that change while you are paging move to the end and are served again later.
+
+## Paginated endpoints
+
+| Endpoint | `limit` | Extra filters | Notes |
+|---|---|---|---|
+| `GET /exams` | 1-200, default 50 | `status`: `draft`, `open`, `finalized` or `deleted` | Deleted exams are left out unless you ask for `status=deleted`. Only exams created through the API are listed. |
+| `GET /exams/{id}/candidates` | 1-200, default 50 | | Candidates registered on the exam, each with `submission_id` and `submission_status`. Ordered by when the registration last changed. |
+| `GET /exams/{id}/submissions` | 1-200, default 50 | `status`, `needs_review`, `finalized`, `candidate_id`, `include=result` | Live submissions only. With `include=result` every row carries its full result and `limit` is capped at 50. |
+| `GET /submissions` | 1-200, default 50 | `status`, `needs_review`, `finalized` | **The feed across all exams.** `updated_since` is required. Also returns replaced and deleted submissions, so you learn about them. |
+| `GET /exams/{id}/results` | 1-50, default 20 | `finalized`, `include` | One full result per live submission, in the shape of `GET /submissions/{id}/result`. JSON only: `format=csv` is `422 feature_not_available`. |
+
+Filter values:
+
+- `status` takes one or more submission statuses, comma-separated: `queued`, `processing`, `reading`, `grading`, `graded`, `partially_graded`, `failed`, `cancelled`.
+- `needs_review` and `finalized` take `true` or `false`.
+- `include` on results takes `annotations` and `model_answer`; `extracted_answer` is included by default and `-extracted_answer` leaves it out.
+
+## Reading a whole list
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+
+def list_all(path, **params):
+    params.setdefault("limit", 200)
+    while True:
+        page = requests.get(f"{API}{path}", headers=HEADERS, params=params, timeout=60)
+        page.raise_for_status()
+        body = page.json()
+        yield from body["data"]
+        if not body["has_more"]:
+            return
+        params["cursor"] = body["next_cursor"]
+
+# Every graded result of a CBSE Class X Science paper, 50 at a time
+for result in list_all(f"/exams/{exam_id}/results", limit=50):
+    save_marks(result)
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const HEADERS = { "X-API-Key": process.env.EVALEZY_API_KEY };
+
+export async function* listAll(path, params = {}) {
+  const query = new URLSearchParams({ limit: "200", ...params });
+  for (;;) {
+    const resp = await fetch(`${API}${path}?${query}`, { headers: HEADERS });
+    if (!resp.ok) throw new Error(`Evalezy ${resp.status}`);
+    const body = await resp.json();
+    yield* body.data;
+    if (!body.has_more) return;
+    query.set("cursor", body.next_cursor);
+  }
+}
+
+// Every graded result of a CBSE Class X Science paper, 50 at a time
+for await (const result of listAll(`/exams/${examId}/results`, { limit: "50" })) {
+  await saveMarks(result);
+}
+```
+
+</CodeGroup>
+
+## Keeping in sync
+
+Evalezy does not send webhooks yet (see the [Roadmap](/platform/roadmap)). Instead, poll the **submission feed**, `GET /submissions?updated_since=…`. A submission's `updated_at` moves whenever anything you can see about it changes: queued to grading to graded, a failure, a cancellation, a teacher's override in the dashboard, approval, finalize or unfinalize, replacement or deletion. Grading progress shows up in the feed within a few seconds.
+
+Because rows are ordered by `updated_at` and a changed row always moves to the end, a loop that remembers how far it got never misses a change.
+
+<Steps>
+  <Step title="Keep a watermark">
+    Store the `updated_at` of the last row you processed. Start with a time before your first submission, for example the start of the exam day.
+  </Step>
+  <Step title="Each poll, read everything changed since the watermark">
+    Call `GET /submissions?updated_since=<watermark minus 2 minutes>&limit=200` and follow `next_cursor` until `has_more` is `false`. The small overlap catches rows that were committed a moment late.
+  </Step>
+  <Step title="Process idempotently">
+    Upsert each submission by `id`, and skip a row whose `updated_at` is not newer than the one you already stored. The overlap means you will see some rows twice; this check makes that harmless.
+  </Step>
+  <Step title="Advance the watermark and sleep">
+    Set the watermark to the newest `updated_at` you processed, then wait 30 to 60 seconds before the next poll.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```python Python
+import datetime as dt
+import os
+import time
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+OVERLAP = dt.timedelta(minutes=2)
+
+def parse(ts):
+    return dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+def sync_once(watermark):
+    since = (parse(watermark) - OVERLAP).isoformat().replace("+00:00", "Z")
+    params = {"updated_since": since, "limit": 200}
+    while True:
+        resp = requests.get(f"{API}/submissions", headers=HEADERS, params=params, timeout=60)
+        resp.raise_for_status()
+        page = resp.json()
+        for sub in page["data"]:
+            if is_newer(sub["id"], sub["updated_at"]):   # your store: skip what you already have
+                handle(sub)                              # state: live / replaced / deleted
+            if parse(sub["updated_at"]) > parse(watermark):
+                watermark = sub["updated_at"]
+        if not page["has_more"]:
+            return watermark
+        params["cursor"] = page["next_cursor"]
+
+watermark = load_watermark() or "2026-10-01T00:00:00Z"
+while True:
+    watermark = sync_once(watermark)
+    save_watermark(watermark)
+    time.sleep(60)
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const HEADERS = { "X-API-Key": process.env.EVALEZY_API_KEY };
+const OVERLAP_MS = 2 * 60 * 1000;
+
+async function syncOnce(watermark) {
+  const since = new Date(Date.parse(watermark) - OVERLAP_MS).toISOString();
+  const query = new URLSearchParams({ updated_since: since, limit: "200" });
+  for (;;) {
+    const resp = await fetch(`${API}/submissions?${query}`, { headers: HEADERS });
+    if (!resp.ok) throw new Error(`Evalezy ${resp.status}`);
+    const page = await resp.json();
+    for (const sub of page.data) {
+      if (await isNewer(sub.id, sub.updated_at)) await handle(sub); // state: live / replaced / deleted
+      if (Date.parse(sub.updated_at) > Date.parse(watermark)) watermark = sub.updated_at;
+    }
+    if (!page.has_more) return watermark;
+    query.set("cursor", page.next_cursor);
+  }
+}
+
+let watermark = (await loadWatermark()) ?? "2026-10-01T00:00:00Z";
+for (;;) {
+  watermark = await syncOnce(watermark);
+  await saveWatermark(watermark);
+  await new Promise((r) => setTimeout(r, 60_000));
+}
+```
+
+</CodeGroup>
+
+### What to do with each row
+
+The feed returns the same submission object as `GET /submissions/{id}`. The fields that drive a sync:
+
+| Field | Use it to |
+|---|---|
+| `state` | `live` is the current copy. `replaced` means a newer submission replaced it (see `replaced_by`); `deleted` means it was deleted. Drop or archive both on your side. |
+| `status` | `graded` or `partially_graded`: fetch the marks with `GET /submissions/{id}/result`. `failed`: read `error.code`. |
+| `needs_review` | Route the copy to a teacher before you finalize. |
+| `finalized` | `true` once results are final. Publish marks to students only after this. |
+
+<Tip>
+Sync the feed **without** a `status` filter. If you only ask for `status=graded`, you will not notice a graded copy that a teacher later changes, a replacement, or a deletion until something else touches it.
+</Tip>
+
+<Note>
+Polling the feed once a minute uses a tiny fraction of your [read limit](/platform/rate-limits). Prefer one feed loop for the whole institute over polling each submission.
+</Note>

@@ -1,13 +1,14 @@
+import type { TFunction } from 'i18next';
 import { SubmissionStudentData } from '@/types/assessments/assessment-overview';
 import {
-    assessmentStatusStudentAttemptedColumnsExternal,
-    assessmentStatusStudentAttemptedColumnsInternal,
-    assessmentStatusStudentOngoingColumnsExternal,
-    assessmentStatusStudentOngoingColumnsInternal,
-    assessmentStatusStudentPendingColumnsExternal,
-    assessmentStatusStudentPendingColumnsInternal,
-    studentExternalQuestionWise,
-    studentInternalOrCloseQuestionWise,
+    buildAssessmentStatusStudentAttemptedColumnsExternal,
+    buildAssessmentStatusStudentAttemptedColumnsInternal,
+    buildAssessmentStatusStudentOngoingColumnsExternal,
+    buildAssessmentStatusStudentOngoingColumnsInternal,
+    buildAssessmentStatusStudentPendingColumnsExternal,
+    buildAssessmentStatusStudentPendingColumnsInternal,
+    buildStudentExternalQuestionWise,
+    buildStudentInternalOrCloseQuestionWise,
 } from './student-columns';
 import { AdaptiveMarking } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-hooks/getQuestionsDataForSection';
 import { Section } from '@/types/assessments/assessment-steps';
@@ -42,6 +43,14 @@ import {
     StudentResponseQuestionwiseInterface,
 } from '@/types/assessments/student-questionwise-status';
 
+/** This file's own i18n namespace — passed explicitly via `{ ns: NAMESPACE }`
+ *  so callers whose bound `t` defaults to a different namespace (e.g. the
+ *  tab/table components that consume these helpers) still resolve these
+ *  keys correctly. Callers must include this namespace in their own
+ *  `useTranslation([...])` array (or bind a separate `t` to it) so it's
+ *  loaded before this runs. */
+const NAMESPACE = 'homeworkCreationAssessmentDetailsHelper';
+
 export const convertMarksRankData = (leaderboard: StudentLeaderboardEntry[]) => {
     const rankMap = new Map();
 
@@ -65,7 +74,8 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
     type: string,
     selectedTab: string,
     batches_for_sessions: BatchDetailsInterface[],
-    totalMarks: number
+    totalMarks: number,
+    t: TFunction
 ) => {
     switch (type) {
         case 'PUBLIC': {
@@ -85,7 +95,7 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                             .time,
                         end_time: extractDateTime(convertToLocalDateTime(student.end_time || ''))
                             .time,
-                        duration: (student.duration / 60).toFixed(2) + ' min',
+                        duration: `${(student.duration / 60).toFixed(2)} ${t('units.minutesShort', { ns: NAMESPACE })}`,
                         score: `${student.score ? student.score.toFixed(2) : 0} / ${totalMarks}`,
                     };
                 } else if (selectedTab === 'Ongoing') {
@@ -128,7 +138,7 @@ export const getAssessmentSubmissionsFilteredDataStudentData = (
                             .time,
                         end_time: extractDateTime(convertToLocalDateTime(student.end_time || ''))
                             .time,
-                        duration: (student.duration / 60).toFixed(2) + ' min',
+                        duration: `${(student.duration / 60).toFixed(2)} ${t('units.minutesShort', { ns: NAMESPACE })}`,
                         score: `${student.score ? student.score.toFixed(2) : 0} / ${totalMarks}`,
                     };
                 } else if (selectedTab === 'Ongoing') {
@@ -159,7 +169,8 @@ export const getQuestionWiseFilteredDataStudentData = (
     studentsListData: StudentResponseQuestionwiseInterface[],
     assesssmentType: string,
     selectedTab: string,
-    batches_for_sessions: BatchDetailsInterface[]
+    batches_for_sessions: BatchDetailsInterface[],
+    t: TFunction
 ) => {
     switch (assesssmentType) {
         case 'PUBLIC': {
@@ -173,13 +184,13 @@ export const getQuestionWiseFilteredDataStudentData = (
                             student.source_id
                         ),
                         registration_id: student.registration_id,
-                        response_time_in_seconds: student.response_time_in_seconds + ' sec',
+                        response_time_in_seconds: `${student.response_time_in_seconds} ${t('units.secondsShort', { ns: NAMESPACE })}`,
                     };
                 }
                 return {
                     id: student.user_id,
                     full_name: student.participant_name,
-                    response_time_in_seconds: student.response_time_in_seconds + ' sec',
+                    response_time_in_seconds: `${student.response_time_in_seconds} ${t('units.secondsShort', { ns: NAMESPACE })}`,
                 };
             });
         }
@@ -191,7 +202,7 @@ export const getQuestionWiseFilteredDataStudentData = (
                     full_name: student.participant_name,
                     package_session_id: getBatchNameById(batches_for_sessions, student.source_id),
                     registration_id: student.registration_id,
-                    response_time_in_seconds: student.response_time_in_seconds + ' sec',
+                    response_time_in_seconds: `${student.response_time_in_seconds} ${t('units.secondsShort', { ns: NAMESPACE })}`,
                 };
             });
         }
@@ -233,30 +244,34 @@ export const getAssessmentStep3ParticipantsListIndividualStudents = (
     });
 };
 
-export const getAllColumnsForTable = (type: string, selectedParticipantsTab: string) => {
+export const getAllColumnsForTable = (
+    type: string,
+    selectedParticipantsTab: string,
+    t: TFunction
+) => {
     if (type === 'PUBLIC') {
         if (selectedParticipantsTab === 'internal')
             return {
-                Attempted: assessmentStatusStudentAttemptedColumnsInternal,
-                Pending: assessmentStatusStudentPendingColumnsInternal,
-                Ongoing: assessmentStatusStudentOngoingColumnsInternal,
+                Attempted: buildAssessmentStatusStudentAttemptedColumnsInternal(t),
+                Pending: buildAssessmentStatusStudentPendingColumnsInternal(t),
+                Ongoing: buildAssessmentStatusStudentOngoingColumnsInternal(t),
             };
         return {
-            Attempted: assessmentStatusStudentAttemptedColumnsExternal,
-            Pending: assessmentStatusStudentPendingColumnsExternal,
-            Ongoing: assessmentStatusStudentOngoingColumnsExternal,
+            Attempted: buildAssessmentStatusStudentAttemptedColumnsExternal(t),
+            Pending: buildAssessmentStatusStudentPendingColumnsExternal(t),
+            Ongoing: buildAssessmentStatusStudentOngoingColumnsExternal(t),
         };
     }
     if (selectedParticipantsTab === 'internal')
         return {
-            Attempted: assessmentStatusStudentAttemptedColumnsInternal,
-            Pending: assessmentStatusStudentPendingColumnsInternal,
-            Ongoing: assessmentStatusStudentOngoingColumnsInternal,
+            Attempted: buildAssessmentStatusStudentAttemptedColumnsInternal(t),
+            Pending: buildAssessmentStatusStudentPendingColumnsInternal(t),
+            Ongoing: buildAssessmentStatusStudentOngoingColumnsInternal(t),
         };
     return {
-        Attempted: assessmentStatusStudentAttemptedColumnsExternal,
-        Pending: assessmentStatusStudentPendingColumnsExternal,
-        Ongoing: assessmentStatusStudentOngoingColumnsExternal,
+        Attempted: buildAssessmentStatusStudentAttemptedColumnsExternal(t),
+        Pending: buildAssessmentStatusStudentPendingColumnsExternal(t),
+        Ongoing: buildAssessmentStatusStudentOngoingColumnsExternal(t),
     };
 };
 
@@ -289,19 +304,20 @@ export const getAllColumnsForTableWidth = (type: string, selectedParticipantsTab
 
 export const getAllColumnsForTableQuestionWise = (
     assesssmentType: string,
-    selectedParticipantsTab: string
+    selectedParticipantsTab: string,
+    t: TFunction
 ) => {
     if (assesssmentType === 'PUBLIC') {
         if (selectedParticipantsTab === 'internal')
             return {
-                studentInternalOrCloseQuestionWise,
+                studentInternalOrCloseQuestionWise: buildStudentInternalOrCloseQuestionWise(t),
             };
         return {
-            studentExternalQuestionWise,
+            studentExternalQuestionWise: buildStudentExternalQuestionWise(t),
         };
     }
     return {
-        studentInternalOrCloseQuestionWise,
+        studentInternalOrCloseQuestionWise: buildStudentInternalOrCloseQuestionWise(t),
     };
 };
 

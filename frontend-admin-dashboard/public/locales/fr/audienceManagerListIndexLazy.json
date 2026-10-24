@@ -1,0 +1,7 @@
+{
+    "navHeading": "Gérer {{term}}",
+    "performanceOverview": {
+        "title": "Aperçu des performances",
+        "description": "D'où viennent les conversions et le nombre d'appels que votre équipe passe par jour"
+    }
+}

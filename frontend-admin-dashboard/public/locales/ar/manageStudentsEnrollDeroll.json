@@ -1,0 +1,59 @@
+{
+    "hero": {
+        "eyebrow": "العضوية النشطة",
+        "noActiveMembership": "لا توجد عضوية نشطة",
+        "statusExpiry": "{{status}} · تنتهي في {{date}}",
+        "noExpiry": "بلا تاريخ انتهاء",
+        "status": {
+            "active": "نشطة",
+            "pending": "قيد الانتظار"
+        }
+    },
+    "newEnrollment": {
+        "heading": "الالتحاق بشيء جديد",
+        "purchaseMembership": "شراء عضوية",
+        "rentBook": "استئجار كتاب",
+        "buyBook": "شراء كتاب"
+    },
+    "cancelMembership": {
+        "heading": "إلغاء العضوية",
+        "dateLabel": "نشطة منذ",
+        "actionLabel": "إلغاء",
+        "dialogLabel": "إلغاء العضوية",
+        "empty": {
+            "title": "لا توجد عضوية نشطة",
+            "hint": "لا يوجد لدى هذا المتعلم اشتراك حالي."
+        }
+    },
+    "returnBook": {
+        "heading": "إرجاع كتاب مستأجر",
+        "dateLabel": "تم الاستئجار في",
+        "actionLabel": "إرجاع",
+        "dialogLabel": "إرجاع كتاب مستأجر",
+        "empty": {
+            "title": "لا توجد كتب مستأجرة",
+            "hint": "لم يستأجر هذا المتعلم أي كتب."
+        }
+    },
+    "planRow": {
+        "activeBadge": "نشطة",
+        "defaultPlanName": "خطة نشطة"
+    },
+    "compliance": {
+        "heading": "الامتثال",
+        "note": "هذا الإجراء محمي بالتدقيق. يتم تسجيل جميع تغييرات التسجيل مع الطوابع الزمنية وتفاصيل المسؤول لأغراض تتبع الامتثال."
+    },
+    "dialog": {
+        "aboutToProceed": "أنت على وشك المتابعة مع",
+        "forStudent": "لـ",
+        "terminationNote": "الإنهاء فوري وسيتم إلغاء الوصول.",
+        "cancel": "إلغاء",
+        "confirmAction": "تأكيد الإجراء",
+        "processing": "جارٍ المعالجة…"
+    },
+    "toasts": {
+        "actionSuccess": "تم تنفيذ الإجراء بنجاح",
+        "cancelFailed": "فشل إلغاء الخطة",
+        "noStudentSelected": "لم يتم اختيار طالب"
+    }
+}

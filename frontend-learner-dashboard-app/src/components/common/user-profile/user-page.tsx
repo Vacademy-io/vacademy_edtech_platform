@@ -562,15 +562,15 @@ export default function ProfilePage() {
             <div className="lg:col-span-8 xl:col-span-9 space-y-4 md:space-y-6">
               {/* Academic Journey Card */}
               {showAcademicSection && (
-                <div className="bg-card rounded-xl border shadow p-6 md:p-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-primary-500 rounded-full"></span>
                     Academic Journey
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-section">
                     {showCourse && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {getTerminology(
                             ContentTerms.Course,
                             SystemTerms.Course
@@ -582,8 +582,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showSession && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {getTerminology(
                             ContentTerms.Session,
                             SystemTerms.Session
@@ -595,8 +595,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showLevel && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           {getTerminology(ContentTerms.Level, SystemTerms.Level)}
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -605,8 +605,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showEnrollment && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Enrollment No.
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -615,8 +615,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showCollege && (
-                      <div className="sm:col-span-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="sm:col-span-2 space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           College/School Name
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -630,15 +630,15 @@ export default function ProfilePage() {
 
               {/* Contact & Location Card */}
               {showContactSection && (
-                <div className="bg-card rounded-xl border shadow p-6 md:p-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-secondary-500 rounded-full"></span>
                     Contact & Location
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-section">
                     {showMobile && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Mobile Number
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -647,8 +647,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showEmail && (
-                      <div className="sm:col-span-2 xl:col-span-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="sm:col-span-2 xl:col-span-1 space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Email Address
                         </p>
                         <p className="text-base font-medium text-foreground break-words">
@@ -688,8 +688,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showCity && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           City/Village
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -698,8 +698,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showRegion && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           State
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -708,8 +708,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showPincode && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Pincode
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -728,8 +728,8 @@ export default function ProfilePage() {
                   autopay surface is exactly the paid-subscription content Apple
                   flags under Guideline 3.1.1 (App Review 2026-07-19, io.shikshanation.learner). */}
               {studentData?.institute_id && hasAutopaySubscription && !shouldHidePaidPurchaseUI() && (
-                <div className="bg-card rounded-xl border shadow p-6 md:p-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-primary-500 rounded-full"></span>
                     Subscriptions &amp; Autopay
                   </h3>
@@ -741,15 +741,15 @@ export default function ProfilePage() {
 
               {/* Guardian Info Card — hidden entirely when every guardian field is toggled off or empty */}
               {showGuardianSection && (
-                <div className="bg-card rounded-xl border shadow p-6 md:p-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-tertiary-500 rounded-full"></span>
                     Guardian Details
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-section">
                     {showFather && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Father/Male Guardian
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -758,8 +758,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showMother && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Mother/Female Guardian
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -768,8 +768,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showParentsEmail && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Guardian's Email
                         </p>
                         <p className="text-base font-medium text-foreground break-words">
@@ -778,8 +778,8 @@ export default function ProfilePage() {
                       </div>
                     )}
                     {showParentsMobile && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Guardian's Mobile
                         </p>
                         <p className="text-base font-medium text-foreground">
@@ -793,8 +793,8 @@ export default function ProfilePage() {
 
               {/* Terms & Conditions Card — only shown when TnC is enabled for the institute */}
               {(tncAccepted || tncFileUrl) && (
-                <div className="bg-card rounded-xl border shadow p-6 md:p-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-teal-500 rounded-full"></span>
                     <FileText className="size-5 text-teal-600" />
                     Terms &amp; Conditions
@@ -816,8 +816,8 @@ export default function ProfilePage() {
                     </div>
 
                     {tncAccepted && tncAcceptedDate && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Signed On
                         </p>
                         <p className="text-base font-medium text-foreground">

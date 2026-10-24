@@ -1,0 +1,104 @@
+{
+    "heading": {
+        "title": "Certificate numbering",
+        "description": "Numbers come from a counter for this institute, so they are sequential and never repeat. Choose the shape below, and where the count starts."
+    },
+    "presets": {
+        "label": "Start from a common format",
+        "options": {
+            "standard": "EDU2026001",
+            "dashed": "EDU-2026-0001",
+            "slash": "EDU/26/001",
+            "compact": "EDU0001"
+        }
+    },
+    "format": {
+        "label": "Format",
+        "hint": "Anything outside { } is printed as-is. Click a value below to add it."
+    },
+    "prefix": {
+        "label": "Prefix",
+        "hintBefore": "Blank uses ",
+        "hintAfter": ", from your institute name."
+    },
+    "padding": {
+        "label": "Number width",
+        "hint": "Digits in a bare <1>{SEQ}</1>. Past this width numbers get longer rather than starting over."
+    },
+    "suffix": {
+        "label": "Suffix (optional)",
+        "hint": "Only printed where your format has <1>{SUFFIX}</1>."
+    },
+    "tokens": {
+        "label": "Add a value",
+        "seq": {
+            "label": "Number",
+            "hint": "The counter — 001, 002, 003. Required."
+        },
+        "seqPadded": {
+            "label": "Number (4 digits)",
+            "hint": "0001, 0002 — set the width yourself"
+        },
+        "prefix": {
+            "label": "Prefix",
+            "hint": "The prefix set beside this field"
+        },
+        "year": {
+            "label": "Year",
+            "hint": "2026"
+        },
+        "yearShort": {
+            "label": "Year (2-digit)",
+            "hint": "26"
+        },
+        "suffix": {
+            "label": "Suffix",
+            "hint": "The suffix set beside this field"
+        },
+        "courseCode": {
+            "label": "Course code",
+            "hint": "Blank for courses with no code"
+        }
+    },
+    "seriesStart": {
+        "title": "Where the series starts",
+        "issuedInfo": "This institute has issued up to #{{issued}}. The next certificate takes #{{next}}.",
+        "noneIssued": "No certificate has been issued from this counter yet.",
+        "startField": {
+            "label": "Start numbering from",
+            "placeholder": "Leave blank to continue",
+            "hint": "Set this if your certificates continue from paper records or another system — enter 1500 and the next one issued is #1500."
+        },
+        "resetField": {
+            "label": "Restart the count each year",
+            "on": "Back to the start every 1 January",
+            "off": "One unbroken series across years",
+            "hint": "Off keeps counting: #1500 in {{year}} is followed by #1501 next year."
+        }
+    },
+    "warnings": {
+        "startFromIgnored": {
+            "title": "#{{start}} has already been issued, so this start number is ignored.",
+            "body": "Numbering continues from #{{next}}. Numbers are never reused — #{{start}} is on a certificate somebody already holds. Choose a number above #{{issued}} to move the series forward."
+        },
+        "noYearToken": {
+            "title": "This format has no year in it, but the count restarts each year.",
+            "body": "January's first certificate would repeat a number already issued. Add <1>{YYYY}</1> to the format, or turn the yearly restart off."
+        },
+        "noSequence": {
+            "title": "This format has no counter, so every certificate would get the same number.",
+            "body": "Add <1>{SEQ}</1> where the number should go — typing digits yourself prints those exact digits every time. Until you do, the counter is added at the end so numbers stay unique."
+        }
+    },
+    "info": {
+        "resetRestart": "The count restarts each January, so it will begin at #{{start}} again next year. Turn the yearly restart off for one continuous series.",
+        "footer": "Changing the format affects certificates issued from now on. The counter itself only ever moves forward — numbers already issued are never reused, which is why a start number below #{{min}} has no effect."
+    },
+    "preview": {
+        "title": "The next three certificates",
+        "startingAt": "starting at #{{next}}",
+        "emptySample": "—",
+        "usingDefaultBefore": "Using the default format, ",
+        "usingDefaultAfter": "."
+    }
+}

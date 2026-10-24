@@ -1,0 +1,14 @@
+{
+    "chatHeading": "المحادثة",
+    "chatWith": "محادثة مع {{name}}",
+    "started": "بدأت {{time}}",
+    "loadingTranscript": "جارٍ تحميل النص الكامل للمحادثة…",
+    "loadFailed": "تعذّر تحميل نص هذه المحادثة. يرجى المحاولة مرة أخرى.",
+    "noMessages": "لا توجد رسائل في هذه المحادثة.",
+    "practiceQuiz": "اختبار تدريبي",
+    "quizResult": "نتيجة الاختبار",
+    "usedTool": "تم استخدام أداة: {{tool}}",
+    "aiUsedTool": "استخدم الذكاء الاصطناعي أداة",
+    "toolResultNamed": "نتيجة {{tool}}",
+    "toolResult": "نتيجة الأداة"
+}

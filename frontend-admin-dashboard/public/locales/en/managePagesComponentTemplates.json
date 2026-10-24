@@ -1,0 +1,312 @@
+{
+    "header": {
+        "title": "My Platform",
+        "navHome": "Home",
+        "navCourses": "Courses",
+        "authLogin": "Login"
+    },
+    "heroSection": {
+        "eyebrow": "New batch enrolling now",
+        "title": "Welcome to Our Platform",
+        "subheading": "Your path to mastery starts here",
+        "description": "<p>Start your learning journey today with expert-led courses designed for real-world success.</p>",
+        "tagOnline": "Online",
+        "tagSelfPaced": "Self-paced",
+        "tagCertified": "Certified",
+        "exploreCoursesButton": "Explore Courses",
+        "talkToUsButton": "Talk to Us",
+        "statLearnersLabel": "Learners",
+        "statRatingLabel": "Average rating",
+        "heroImageAlt": "Hero image"
+    },
+    "courseCatalog": {
+        "title": "Our Courses",
+        "filterLevelLabel": "Level"
+    },
+    "footer": {
+        "leftTitle": "My Platform",
+        "leftText": "Welcome to our platform.",
+        "rightTitle": "Links"
+    },
+    "mediaShowcase": {
+        "headerText": "Success Stories",
+        "description": "Hear directly from our learners."
+    },
+    "statsHighlights": {
+        "headerText": "Our Achievements",
+        "description": "Numbers that speak about our growth.",
+        "statStudentsLabel": "Students"
+    },
+    "testimonialSection": {
+        "headerText": "What Our Students Say",
+        "description": "Real feedback from our learners."
+    },
+    "bookCatalogue": {
+        "title": "Book Collection"
+    },
+    "buyRentSection": {
+        "heading": "Choose Your Path",
+        "buyButtonLabel": "Buy",
+        "rentButtonLabel": "Rent"
+    },
+    "policyRenderer": {
+        "shippingTitle": "Policy",
+        "shippingContent": "<p>Content here</p>"
+    },
+    "faqSection": {
+        "headerText": "Frequently Asked Questions",
+        "subheading": "Everything you need to know.",
+        "faq1Question": "What courses do you offer?",
+        "faq1Answer": "We offer a wide range of courses across multiple disciplines.",
+        "faq2Question": "How do I enroll?",
+        "faq2Answer": "Simply sign up, browse our catalogue, and click enroll on any course.",
+        "faq3Question": "Is there a free trial?",
+        "faq3Answer": "Yes! Many of our courses offer a free preview."
+    },
+    "videoEmbed": {
+        "title": "Watch Our Story"
+    },
+    "ctaBanner": {
+        "heading": "Ready to Get Started?",
+        "subheading": "Join thousands of learners and start your journey today.",
+        "buttonText": "Start Learning"
+    },
+    "pricingTable": {
+        "headerText": "Choose Your Plan",
+        "subheading": "Simple, transparent pricing for everyone.",
+        "basicName": "Basic",
+        "basicPrice": "Free",
+        "basicDescription": "Perfect for getting started",
+        "basicFeature1": "5 Courses",
+        "basicFeature2": "Community access",
+        "basicFeature3": "Email support",
+        "basicButtonText": "Get Started",
+        "proName": "Pro",
+        "proPeriod": "/month",
+        "proDescription": "For serious learners",
+        "proFeature1": "Unlimited Courses",
+        "proFeature2": "Priority support",
+        "proFeature3": "Certificates",
+        "proFeature4": "Live sessions",
+        "proButtonText": "Get Pro"
+    },
+    "leadForm": {
+        "title": "Register your interest",
+        "subtitle": "Fill in your details and we'll get back to you.",
+        "submitLabel": "Submit",
+        "successMessage": "Thank you! We've received your details."
+    },
+    "contactForm": {
+        "heading": "Get In Touch",
+        "subheading": "We'd love to hear from you. Send us a message!",
+        "nameLabel": "Full Name",
+        "emailLabel": "Email Address",
+        "phoneLabel": "Phone Number",
+        "messageLabel": "Message",
+        "submitLabel": "Send Message",
+        "successMessage": "Thank you! We'll be in touch soon."
+    },
+    "teamSection": {
+        "headerText": "Meet Our Team",
+        "subheading": "The passionate people behind our platform.",
+        "member1Name": "Team Member",
+        "member1Role": "Co-Founder & CEO",
+        "member1Bio": "Passionate about education and technology.",
+        "member2Name": "Team Member",
+        "member2Role": "Head of Learning",
+        "member2Bio": "Dedicated to creating the best learning experience."
+    },
+    "announcementFeed": {
+        "headerText": "Latest Updates",
+        "subheading": "Stay up to date with our latest news.",
+        "item1Title": "New Course Launch",
+        "item1Summary": "We are excited to announce our new advanced course series.",
+        "item1Tag": "News",
+        "item2Title": "Platform Update",
+        "item2Summary": "We have improved our platform for a better learning experience.",
+        "item2Tag": "Update"
+    },
+    "imageGallery": {
+        "headerText": "Gallery",
+        "image1Alt": "Gallery image 1",
+        "image2Alt": "Gallery image 2",
+        "image3Alt": "Gallery image 3"
+    },
+    "tabsAccordion": {
+        "tab1Title": "Tab 1",
+        "tab1Content": "<p>Content for tab 1</p>",
+        "tab2Title": "Tab 2",
+        "tab2Content": "<p>Content for tab 2</p>",
+        "tab3Title": "Tab 3",
+        "tab3Content": "<p>Content for tab 3</p>"
+    },
+    "logoCloud": {
+        "headerText": "Trusted By"
+    },
+    "trustChip": {
+        "text": "Trusted by 10,000+ learners"
+    },
+    "sectionHeading": {
+        "eyebrow": "Why choose us",
+        "title": "Learning that actually sticks",
+        "highlight": "actually sticks",
+        "lead": "Programs designed around outcomes — not just content."
+    },
+    "mapEmbed": {
+        "title": "Our Location"
+    },
+    "countdownTimer": {
+        "heading": "Event Starts In",
+        "expiredMessage": "The event has started!"
+    },
+    "textBlock": {
+        "content": "<h2>Your Heading Here</h2><p>Write your content here. This is a rich text block — you can add headings, paragraphs, lists, links, and more.</p>"
+    },
+    "detailBlocks": {
+        "block1Tag": "Flagship Program",
+        "block1Title": "Flagship Program",
+        "block1Description": "One or two sentences on who this is for and what it covers.",
+        "block1Item1Title": "What is covered",
+        "block1Item1Description": "A concrete detail about the syllabus, materials or teaching.",
+        "block1Item2Title": "How it is taught",
+        "block1Item2Description": "Live classes, recordings, doubt sessions — whatever is true here.",
+        "block1Item3Title": "Practice and testing",
+        "block1Item3Description": "Test series, previous papers, analytics.",
+        "block1Spec1Label": "Eligibility",
+        "block1Spec1Value": "Who can join",
+        "block1Spec2Label": "Mode",
+        "block1Spec2Value": "Classroom + online",
+        "block1Spec3Label": "Duration",
+        "block1Spec3Value": "12 months",
+        "block1Spec4Label": "Level",
+        "block1Spec4Value": "Beginner to advanced",
+        "block1Note": "Optional note — concessions, instalments, or anything that needs calling out.",
+        "block2Tag": "Category",
+        "block2Title": "Second Program",
+        "block2Description": "Duplicate this block for every programme you offer.",
+        "block2Item1Title": "Detail one",
+        "block2Item1Description": "Replace with a real detail.",
+        "block2Item2Title": "Detail two",
+        "block2Item2Description": "Replace with a real detail.",
+        "block2Spec1Label": "Eligibility",
+        "block2Spec1Value": "Who can join",
+        "block2Spec2Label": "Mode",
+        "block2Spec2Value": "Online"
+    },
+    "featureGrid": {
+        "headerText": "Why Choose Us",
+        "subheading": "Everything you need to succeed",
+        "feature1Title": "Expert Instructors",
+        "feature1Description": "Learn from industry professionals with years of experience.",
+        "feature1Chip1": "IIT/NIT faculty",
+        "feature2Title": "Rich Content",
+        "feature2Description": "Access comprehensive course materials and resources.",
+        "feature3Title": "Certified Courses",
+        "feature3Description": "Earn recognized certificates upon completion.",
+        "feature4Badge": "Training Division",
+        "feature4Title": "CGP Career Avenues",
+        "feature4Description": "Comprehensive coaching across every engineering branch.",
+        "feature4Bullet1": "GATE — CS, ECE, EEE, ME, CE, CH",
+        "feature4Bullet2": "Post-GATE ISRO/BARC/DRDO batches",
+        "feature4Bullet3": "Kerala PSC & campus placement"
+    },
+    "imageBlock": {
+        "alt": "Image"
+    },
+    "buttonBlock": {
+        "text": "Get Started"
+    },
+    "newsletterSignup": {
+        "heading": "Stay Updated",
+        "subheading": "Subscribe to our newsletter for the latest updates.",
+        "placeholder": "Enter your email",
+        "buttonText": "Subscribe",
+        "successMessage": "Thank you for subscribing!"
+    },
+    "stepsProcess": {
+        "headerText": "How It Works",
+        "subheading": "Get started in just a few steps",
+        "step1Title": "Sign Up",
+        "step1Description": "Create your free account in seconds.",
+        "step2Title": "Choose a Course",
+        "step2Description": "Browse our catalog and pick what interests you.",
+        "step3Title": "Start Learning",
+        "step3Description": "Access your course materials and begin."
+    },
+    "marquee": {
+        "item1Text": "Top-rated courses",
+        "item2Text": "10,000+ learners enrolled",
+        "item3Text": "Expert-led curriculum",
+        "item4Text": "Learn at your own pace",
+        "item5Text": "Industry-relevant skills"
+    },
+    "productPageOffer": {
+        "title": "Our Programs",
+        "subtitle": "Pick a program and enrol in minutes.",
+        "viewAllLabel": "See all",
+        "ctaLabel": "Enrol now",
+        "cartCtaLabel": "Add to Cart",
+        "checkoutCtaLabel": "Proceed to checkout",
+        "viewCourseLabel": "View course"
+    },
+    "documentViewer": {
+        "heading": "Browse our catalogue",
+        "subheading": "Flip through every page right here.",
+        "buttonText": "Open the catalogue"
+    },
+    "blog": {
+        "heading": "From the blog",
+        "subheading": "Study tips, exam updates and stories from our classrooms.",
+        "readMoreLabel": "Read more",
+        "backLabel": "All posts",
+        "emptyMessage": "No posts yet — check back soon."
+    },
+    "jobOpenings": {
+        "headerText": "Current openings",
+        "subheading": "Join our team. Open a role to read the full description and apply.",
+        "viewButtonLabel": "View job description",
+        "applyButtonLabel": "Apply now",
+        "backLabel": "All openings",
+        "emptyMessage": "No open positions right now — check back soon.",
+        "job1Title": "Teacher",
+        "job1Summary": "Teach your subject to small batches, in class and online.",
+        "job1Location": "Your city",
+        "job1JobType": "Full-time",
+        "job1Compensation": "As per experience",
+        "job1DetailLabel": "Subject",
+        "job1DetailValue": "Your subject",
+        "job1Description": "<h2>About the role</h2><p>Describe what this person will do day to day and who they will work with.</p><h3>Responsibilities</h3><ul><li>Plan and teach lessons</li><li>Track and support student progress</li></ul><h3>Requirements</h3><ul><li>A degree in the subject</li><li>Teaching experience preferred</li></ul>",
+        "job2Title": "Academic Counsellor",
+        "job2Summary": "Guide students and parents to the right course.",
+        "job2Location": "Your city",
+        "job2JobType": "Full-time",
+        "job2Description": "<h2>About the role</h2><p>Describe the role, the team and what a good first month looks like.</p><h3>Requirements</h3><ul><li>Clear communication</li><li>Experience in education or counselling</li></ul>"
+    },
+    "folderBrowser": {
+        "title": "Browse our courses",
+        "subtitle": "Pick your class and subject to see the courses."
+    },
+    "learningPath": {
+        "addAllLabel": "Add whole path to cart",
+        "emptyText": "New learning paths will appear here.",
+        "enrolLabel": "Enrol in this path",
+        "subtitle": "Courses in the order we recommend taking them.",
+        "title": "Learning paths",
+        "viewPathLabel": "View path"
+    },
+    "accessPassGrid": {
+        "title": "Memberships",
+        "subtitle": "One purchase, several courses.",
+        "buyLabel": "Get the pass"
+    },
+    "promoPopup": {
+        "badge": "Limited time",
+        "heading": "Flash sale on all courses",
+        "highlight": "50% OFF",
+        "body": "Enroll today and save on every course. This offer is only here for a short time.",
+        "couponCode": "SAVE50",
+        "buttonText": "Grab the offer",
+        "dismissText": "No thanks, maybe later",
+        "footnote": "*Terms and conditions apply"
+    }
+}

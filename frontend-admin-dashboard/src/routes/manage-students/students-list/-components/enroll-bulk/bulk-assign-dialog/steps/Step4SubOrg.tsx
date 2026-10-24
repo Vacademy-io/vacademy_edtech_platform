@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Buildings, BookOpen, Envelope, Warning, UserCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import {
     PackageSessionSubOrg,
     SelectedPackageSession,
@@ -42,12 +43,10 @@ interface RowProps {
 
 /** Read-only contact card for the picked organisation's admins. */
 const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
+
     if (!subOrg.admins?.length) {
-        return (
-            <p className="text-xs text-neutral-400">
-                This organisation has no admin on record yet.
-            </p>
-        );
+        return <p className="text-xs text-neutral-400">{t('adminList.noAdmins')}</p>;
     }
 
     return (
@@ -59,7 +58,7 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
                 >
                     <UserCircle size={14} weight="duotone" className="shrink-0 text-primary-500" />
                     <span className="font-medium text-neutral-700">
-                        {admin.name || 'Unnamed admin'}
+                        {admin.name || t('adminList.unnamedAdmin')}
                     </span>
                     {admin.email ? (
                         <span className="inline-flex items-center gap-1 text-neutral-500">
@@ -67,7 +66,7 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
                             {admin.email}
                         </span>
                     ) : (
-                        <span className="text-neutral-300">no email on record</span>
+                        <span className="text-neutral-300">{t('adminList.noEmailOnRecord')}</span>
                     )}
                     {admin.role && (
                         <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-caption font-medium text-neutral-600">
@@ -81,6 +80,7 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
 };
 
 const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
 
     const { data: subOrgs = [], isLoading } = useSubOrgsForPackageSession({
@@ -133,58 +133,59 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
 
             <div className="flex flex-col gap-4">
                 <div>
-                    <Label className="mb-1 text-xs text-neutral-500">Sub-Organisation *</Label>
+                    <Label className="mb-1 text-xs text-neutral-500">{t('picker.label')}</Label>
                     {isLoading ? (
                         <Skeleton className="h-9 w-full" />
                     ) : (
                         <Select value={pickerValue} onValueChange={handlePick}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select an organisation" />
+                                <SelectValue placeholder={t('picker.placeholder')} />
                             </SelectTrigger>
                             <SelectContent className="z-popover-above-modal">
                                 {subOrgs.map((subOrg) => (
                                     <SelectItem key={subOrg.sub_org_id} value={subOrg.sub_org_id}>
                                         {subOrg.name || subOrg.sub_org_id}
                                         {subOrg.member_count
-                                            ? ` · ${subOrg.member_count} member${subOrg.member_count === 1 ? '' : 's'}`
+                                            ? t('picker.memberCount', {
+                                                  count: subOrg.member_count,
+                                              })
                                             : ''}
                                     </SelectItem>
                                 ))}
                                 <SelectItem value={CREATE_NEW}>
-                                    + Create new organisation
+                                    {t('picker.createNewOption')}
                                 </SelectItem>
-                                <SelectItem value={SKIP}>
-                                    Don’t link an organisation
-                                </SelectItem>
+                                <SelectItem value={SKIP}>{t('picker.skipOption')}</SelectItem>
                             </SelectContent>
                         </Select>
                     )}
                     {!isLoading && subOrgs.length === 0 && (
                         <p className="mt-1 text-xs text-neutral-400">
-                            No organisation is enrolled in this batch yet — create the first one.
+                            {t('picker.emptyState')}
                         </p>
                     )}
                 </div>
 
                 {isSkipped && (
                     <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-xs text-neutral-600">
-                        Enrolled as an ordinary {learnerTerm.toLowerCase()} with no organisation
-                        link. Runs the standard enrollment automation, not the sub-org member one.
+                        {t('skippedNotice', { learnerTerm: learnerTerm.toLowerCase() })}
                     </div>
                 )}
 
                 {selectedSubOrg && (
                     <div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2.5">
                         <p className="mb-1.5 text-xs font-semibold text-neutral-600">
-                            Organisation admins
+                            {t('adminInfo.heading')}
                         </p>
                         <AdminList subOrg={selectedSubOrg} />
                         {selectedSubOrg.email && (
                             <p className="mt-2 text-caption text-neutral-400">
-                                Organisation contact: {selectedSubOrg.email}
-                                {selectedSubOrg.mobile_number
-                                    ? ` · ${selectedSubOrg.mobile_number}`
-                                    : ''}
+                                {t('adminInfo.contactLine', {
+                                    email: selectedSubOrg.email,
+                                    mobile: selectedSubOrg.mobile_number
+                                        ? ` · ${selectedSubOrg.mobile_number}`
+                                        : '',
+                                })}
                             </p>
                         )}
                     </div>
@@ -193,15 +194,15 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                 {isCreatingNew && (
                     <div className="flex flex-col gap-3 rounded-md border border-primary-100 bg-primary-50/40 px-3 py-3">
                         <p className="text-xs font-semibold text-primary-700">
-                            New organisation details
+                            {t('newOrgForm.heading')}
                         </p>
                         <div>
                             <Label className="mb-1 text-xs text-neutral-500">
-                                Organisation Name *
+                                {t('newOrgForm.nameLabel')}
                             </Label>
                             <Input
                                 type="text"
-                                placeholder="e.g. Green Valley Clinic"
+                                placeholder={t('newOrgForm.namePlaceholder')}
                                 value={ps.newSubOrg?.name ?? ''}
                                 onChange={(e) =>
                                     onUpdate({
@@ -212,10 +213,12 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                         </div>
                         <div className="flex flex-col gap-3 sm:flex-row">
                             <div className="flex-1">
-                                <Label className="mb-1 text-xs text-neutral-500">Email</Label>
+                                <Label className="mb-1 text-xs text-neutral-500">
+                                    {t('newOrgForm.emailLabel')}
+                                </Label>
                                 <Input
                                     type="email"
-                                    placeholder="contact@organisation.com"
+                                    placeholder={t('newOrgForm.emailPlaceholder')}
                                     value={ps.newSubOrg?.email ?? ''}
                                     onChange={(e) =>
                                         onUpdate({
@@ -229,10 +232,12 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                                 />
                             </div>
                             <div className="flex-1">
-                                <Label className="mb-1 text-xs text-neutral-500">Phone</Label>
+                                <Label className="mb-1 text-xs text-neutral-500">
+                                    {t('newOrgForm.phoneLabel')}
+                                </Label>
                                 <Input
                                     type="tel"
-                                    placeholder="Contact number"
+                                    placeholder={t('newOrgForm.phonePlaceholder')}
                                     value={ps.newSubOrg?.mobileNumber ?? ''}
                                     onChange={(e) =>
                                         onUpdate({
@@ -251,7 +256,7 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
 
                 <div className={isSkipped ? 'hidden' : undefined}>
                     <Label className="mb-1 text-xs text-neutral-500">
-                        Role inside the organisation
+                        {t('role.label')}
                     </Label>
                     <Select
                         value={role}
@@ -261,17 +266,23 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="z-popover-above-modal">
-                            <SelectItem value="STAFF">Staff — {learnerTerm} (default)</SelectItem>
-                            <SelectItem value="ADMIN">Admin + {learnerTerm}</SelectItem>
-                            <SelectItem value="ADMIN_ONLY">Admin only</SelectItem>
+                            <SelectItem value="STAFF">
+                                {t('role.staffOption', { learnerTerm })}
+                            </SelectItem>
+                            <SelectItem value="ADMIN">
+                                {t('role.adminOption', { learnerTerm })}
+                            </SelectItem>
+                            <SelectItem value="ADMIN_ONLY">
+                                {t('role.adminOnlyOption')}
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                     <p className="mt-1 text-xs text-neutral-400">
                         {role === 'ADMIN_ONLY'
-                            ? 'Manages the organisation’s roster without course access. Member-enrollment automations do not run for admin-only members.'
+                            ? t('role.adminOnlyDescription')
                             : role === 'ADMIN'
-                              ? 'Gets course access AND manages the organisation’s roster — they will show as an organisation admin.'
-                              : 'Course access only. No admin rights over the organisation.'}
+                              ? t('role.adminDescription')
+                              : t('role.staffDescription')}
                     </p>
                 </div>
             </div>
@@ -292,6 +303,7 @@ export const Step4SubOrg = ({
     selectedPackageSessions,
     onSelectedPackageSessionsChange,
 }: Props) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
     const learnersTerm = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
 
@@ -310,7 +322,7 @@ export const Step4SubOrg = ({
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Buildings size={36} weight="duotone" className="text-neutral-300" />
                 <p className="text-sm font-medium text-neutral-500">
-                    No organisation-linked {batchTerm.toLowerCase()} selected
+                    {t('emptyState.heading', { batchTerm: batchTerm.toLowerCase() })}
                 </p>
             </div>
         );
@@ -321,12 +333,11 @@ export const Step4SubOrg = ({
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
                 <Warning size={15} weight="fill" className="mt-0.5 shrink-0" />
                 <span>
-                    {orgAssociated.length === 1
-                        ? 'This batch is sold to organisations'
-                        : 'These batches are sold to organisations'}
-                    . Pick the organisation each selected {learnersTerm.toLowerCase().replace(/s$/, '')} joins
-                    and the role they hold inside it. The same choice applies to every{' '}
-                    {learnersTerm.toLowerCase()} in this run.
+                    {t('warningBanner.message', {
+                        count: orgAssociated.length,
+                        learnerSingular: learnersTerm.toLowerCase().replace(/s$/, ''),
+                        learnerPlural: learnersTerm.toLowerCase(),
+                    })}
                 </span>
             </div>
 

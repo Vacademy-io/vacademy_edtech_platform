@@ -459,19 +459,61 @@ export const fetchMenteeCalls = async (
 /**
  * Enrolled-student search for the mentee picker — reuses the learner-list
  * filter-search endpoint (ACTIVE students, scoped to the institute).
+ *
+ * `packageSessionIds` narrows to specific batches. An empty array is sent as
+ * omitted rather than as `[]`, because the backend treats an empty list the same
+ * as "no filter" on some paths and as "match nothing" on others.
  */
 export const searchStudents = async (params: {
     instituteId: string;
     name: string;
+    packageSessionIds?: string[];
     pageNo?: number;
     pageSize?: number;
-}): Promise<{ content: StudentRow[]; total_pages: number; total_elements: number }> => {
-    const { instituteId, name, pageNo = 0, pageSize = 15 } = params;
+}): Promise<PageResponse<StudentRow>> => {
+    const { instituteId, name, packageSessionIds, pageNo = 0, pageSize = 15 } = params;
     const res = await authenticatedAxiosInstance.post(
         `${GET_STUDENTS}?pageNo=${pageNo}&pageSize=${pageSize}`,
-        { name, statuses: ['ACTIVE'], institute_ids: [instituteId] }
+        {
+            name,
+            statuses: ['ACTIVE'],
+            institute_ids: [instituteId],
+            ...(packageSessionIds?.length ? { package_session_ids: packageSessionIds } : {}),
+        }
     );
-    return res.data as { content: StudentRow[]; total_pages: number; total_elements: number };
+    return normalizePage<StudentRow>(res.data);
+};
+
+/**
+ * Every student matching the picker's current filter, for "select all".
+ *
+ * Swept page by page rather than asked for in one huge page: the learner list
+ * endpoint builds a heavy per-row projection, and a 1,000-row page of it is a
+ * request that times out under load. `limit` stops the sweep so a mis-click on an
+ * unfiltered institute can't pull the whole roster into a single assignment.
+ */
+export const fetchAllMatchingStudents = async (params: {
+    instituteId: string;
+    name: string;
+    packageSessionIds?: string[];
+    limit: number;
+    pageSize?: number;
+}): Promise<StudentRow[]> => {
+    const { instituteId, name, packageSessionIds, limit, pageSize = 200 } = params;
+    const collected: StudentRow[] = [];
+    for (let pageNo = 0; collected.length < limit; pageNo++) {
+        const page = await searchStudents({
+            instituteId,
+            name,
+            packageSessionIds,
+            pageNo,
+            pageSize,
+        });
+        collected.push(...page.content);
+        const noMorePages = page.last === true || pageNo + 1 >= page.total_pages;
+        if (page.content.length === 0 || noMorePages) break;
+    }
+    return collected.slice(0, limit);
 };
 
 /**

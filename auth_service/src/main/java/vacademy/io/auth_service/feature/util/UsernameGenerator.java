@@ -13,7 +13,18 @@ public class UsernameGenerator {
      * If fullName is null or empty, generates an 8-character random string.
      */
     public static String generateUsername(String fullName) {
-        if (fullName == null || fullName.trim().isEmpty()) {
+        // Keep only characters that are legal in a username. Without this, a name
+        // pasted with invisible characters produces a username made of them — prod
+        // holds several accounts called "‌‌‌‌xxxx", which are
+        // unloggable-in because the value can never be retyped or matched. trim()
+        // does not remove these: they are not whitespace to Character.isWhitespace.
+        // \p{L}\p{N} keeps letters and digits in any script (so international names
+        // still produce a readable prefix) while dropping \p{Cf} format characters,
+        // punctuation and whitespace.
+        String cleanName = fullName == null ? ""
+                : fullName.replaceAll("[^\\p{L}\\p{N}]", "");
+
+        if (cleanName.isEmpty()) {
             return UUID.randomUUID()
                     .toString()
                     .replaceAll("-", "")
@@ -21,7 +32,7 @@ public class UsernameGenerator {
                     .toLowerCase();
         }
 
-        String prefix = fullName.trim().replaceAll("\\s+", "");
+        String prefix = cleanName;
         prefix = prefix.length() >= 4
                 ? prefix.substring(0, 4)
                 : String.format("%-4s", prefix).replace(' ', 'x');  // pad with 'x' if less than 4
@@ -44,6 +55,13 @@ public class UsernameGenerator {
             password.append(ALPHANUMERIC.charAt(index));
         }
         return password.toString();
+    }
+
+    /**
+     * Lowercase random suffix used to make a taken username unique.
+     */
+    public static String randomSuffix(int count) {
+        return getRandomAlphaNumeric(count).toLowerCase();
     }
 
     /**

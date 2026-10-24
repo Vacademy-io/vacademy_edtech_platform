@@ -2,6 +2,7 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Sparkles, ArrowLeft, Image, Video, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MyButton } from '@/components/design-system/button';
@@ -18,6 +19,7 @@ export const Route = createFileRoute('/study-library/ai-copilot/course-outline/g
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryProcessing');
     const navigate = useNavigate();
     const [backToLibraryDialogOpen, setBackToLibraryDialogOpen] = useState(false);
     const [elapsedTime, setElapsedTime] = useState(0);
@@ -80,8 +82,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Processing Course Assets</title>
-                <meta name="description" content="AI is crafting your course content." />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
 
             <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-purple-50 flex items-center justify-center">
@@ -123,7 +125,7 @@ function RouteComponent() {
                             transition={{ duration: 0.6, delay: 0.2 }}
                             className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4"
                         >
-                            Creating Your Course Assets
+                            {t('heading')}
                         </motion.h1>
 
                         <motion.div
@@ -132,15 +134,15 @@ function RouteComponent() {
                             transition={{ duration: 0.6, delay: 0.4 }}
                             className="text-xl md:text-2xl text-neutral-600 mb-6 space-y-3"
                         >
-                            <p className="font-semibold">We're generating actual images and videos for your course!</p>
+                            <p className="font-semibold">{t('generatingSubtitle')}</p>
                             <div className="flex items-center justify-center gap-6 mt-4">
                                 <div className="flex items-center gap-2 text-indigo-600">
                                     <Image className="h-5 w-5" />
-                                    <span className="text-lg">Images</span>
+                                    <span className="text-lg">{t('images')}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-purple-600">
                                     <Video className="h-5 w-5" />
-                                    <span className="text-lg">Videos</span>
+                                    <span className="text-lg">{t('videos')}</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -153,9 +155,9 @@ function RouteComponent() {
                         >
                             <div className="flex items-center justify-center gap-2 text-indigo-600">
                                 <Loader2 className="h-6 w-6 animate-spin" />
-                                <span className="text-sm font-medium">Processing your course assets...</span>
+                                <span className="text-sm font-medium">{t('processingStatus')}</span>
                             </div>
-                            
+
                             {/* Estimated Time Display */}
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -165,7 +167,11 @@ function RouteComponent() {
                             >
                                 <Clock className="h-4 w-4 text-indigo-600" />
                                 <span className="text-sm font-medium text-indigo-900">
-                                    Estimated time remaining: {minutesRemaining > 0 ? `${minutesRemaining} min ` : ''}{secondsRemaining}s
+                                    {t('estimatedTimeRemaining')}{' '}
+                                    {minutesRemaining > 0
+                                        ? t('minutesShort', { count: minutesRemaining }) + ' '
+                                        : ''}
+                                    {t('secondsShort', { count: secondsRemaining })}
                                 </span>
                             </motion.div>
                         </motion.div>
@@ -176,7 +182,7 @@ function RouteComponent() {
                             transition={{ duration: 0.6, delay: 0.8 }}
                             className="text-base text-neutral-500 mb-8"
                         >
-                            <p>This process typically takes 2-5 minutes. You can wait here or come back later.</p>
+                            <p>{t('processDurationNote')}</p>
                         </motion.div>
                     </motion.div>
 
@@ -218,7 +224,7 @@ function RouteComponent() {
                             className="flex items-center gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
-                            Back to course library
+                            {t('backToCourseLibrary')}
                         </MyButton>
                     </motion.div>
                 </div>
@@ -231,9 +237,9 @@ function RouteComponent() {
             >
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Go Back to Course Library?</DialogTitle>
+                        <DialogTitle>{t('dialog.title')}</DialogTitle>
                         <DialogDescription className="text-neutral-600">
-                            Are you sure you want to go back to course library? You can either discard your current course or save it to drafts.
+                            {t('dialog.description')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-neutral-200">
@@ -242,21 +248,21 @@ function RouteComponent() {
                             onClick={() => setBackToLibraryDialogOpen(false)}
                             className="min-w-[100px]"
                         >
-                            Cancel
+                            {t('dialog.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
                             onClick={handleDiscardCourse}
                             className="min-w-[120px] border-red-300 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-400"
                         >
-                            Discard Course
+                            {t('dialog.discardCourse')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleSaveToDrafts}
                             className="min-w-[130px]"
                         >
-                            Save to Drafts
+                            {t('dialog.saveToDrafts')}
                         </MyButton>
                     </div>
                 </DialogContent>

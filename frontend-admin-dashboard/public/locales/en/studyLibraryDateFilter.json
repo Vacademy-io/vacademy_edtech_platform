@@ -1,0 +1,18 @@
+{
+    "label": {
+        "date": "Date"
+    },
+    "options": {
+        "today": "Today",
+        "thisWeek": "This Week",
+        "thisMonth": "This Month",
+        "thisYear": "This Year",
+        "custom": "Custom"
+    },
+    "customRange": {
+        "pickARange": "Pick a range",
+        "clear": "Clear",
+        "cancel": "Cancel",
+        "apply": "Apply"
+    }
+}

@@ -1,0 +1,360 @@
+{
+    "design": {
+        "heading": "التصميم"
+    },
+    "sections": {
+        "spacing": "التباعد",
+        "layoutWidth": "التخطيط والعرض",
+        "background": "الخلفية",
+        "borderShadow": "الحدود والظل",
+        "premiumEffects": "التأثيرات المميزة",
+        "decorations": "الزخارف",
+        "effects": "التأثيرات",
+        "typography": "الطباعة",
+        "animation": "الحركة",
+        "visibility": "الظهور"
+    },
+    "presetRow": {
+        "custom": "مخصص ({{value}})"
+    },
+    "spacing": {
+        "paddingTop": "الحشو من الأعلى",
+        "paddingBottom": "الحشو من الأسفل",
+        "paddingLeft": "الحشو من اليسار",
+        "paddingRight": "الحشو من اليمين",
+        "marginTop": "الهامش من الأعلى",
+        "marginBottom": "الهامش من الأسفل"
+    },
+    "layoutWidth": {
+        "description": "غلاف القسم: تمتد الخلفية على عرض الصفحة بالكامل بينما يبقى المحتوى في عمود مُمركز. اترك كل شيء متوقفًا للحصول على التخطيط الكلاسيكي بكتلة واحدة.",
+        "contentWidth": {
+            "label": "عرض المحتوى",
+            "options": {
+                "off": "متوقف",
+                "text": "نص",
+                "narrow": "ضيق",
+                "default": "افتراضي",
+                "wide": "واسع",
+                "full": "كامل"
+            }
+        },
+        "customMaxWidth": {
+            "label": "أقصى عرض مخصص",
+            "placeholder": "مثال: 820px (يتجاوز الإعداد المسبق)"
+        },
+        "overlapTop": {
+            "label": "تراكب فوق القسم السابق",
+            "options": {
+                "none": "بلا"
+            }
+        },
+        "overlapHint": "يتم تسطيح التراكبات تلقائيًا على الجوال.",
+        "zIndex": {
+            "label": "ترتيب التكديس (z-index)",
+            "options": {
+                "auto": "تلقائي"
+            }
+        },
+        "minHeight": {
+            "label": "الحد الأدنى للارتفاع",
+            "options": {
+                "off": "متوقف",
+                "fullScreen": "ملء الشاشة"
+            }
+        },
+        "verticalAlign": {
+            "label": "المحاذاة الرأسية (ضمن الحد الأدنى للارتفاع)",
+            "options": {
+                "top": "أعلى",
+                "center": "وسط",
+                "bottom": "أسفل"
+            }
+        },
+        "sticky": {
+            "label": "تثبيت أثناء التمرير (لاصق)",
+            "options": {
+                "off": "متوقف",
+                "top80": "أعلى 80",
+                "top96": "أعلى 96",
+                "top120": "أعلى 120"
+            },
+            "hint": "يُثبّت هذه الكتلة داخل تخطيط عمودي — اضبط المحاذاة الرأسية للتخطيط على «تمدد» حتى يكون لديها مجال للتحرك."
+        }
+    },
+    "background": {
+        "color": {
+            "label": "لون الخلفية"
+        },
+        "image": {
+            "label": "صورة الخلفية",
+            "placeholder": "رابط الصورة أو رفع ملف"
+        },
+        "size": {
+            "label": "حجم الخلفية",
+            "options": {
+                "cover": "تغطية",
+                "contain": "احتواء",
+                "auto": "تلقائي"
+            }
+        },
+        "overlayColor": {
+            "label": "لون التراكب"
+        },
+        "gradient": {
+            "label": "التدرج اللوني",
+            "enabled": "مفعّل",
+            "off": "متوقف",
+            "type": {
+                "label": "النوع",
+                "options": {
+                    "linear": "خطي",
+                    "radial": "شعاعي"
+                }
+            },
+            "angle": {
+                "label": "الزاوية ({{angle}}°)"
+            },
+            "stop": {
+                "label": "نقطة توقف {{index}}"
+            },
+            "addStop": "+ إضافة نقطة توقف"
+        }
+    },
+    "borderShadow": {
+        "borderWidth": {
+            "label": "عرض الحد"
+        },
+        "borderColor": {
+            "label": "لون الحد"
+        },
+        "borderStyle": {
+            "label": "نمط الحد",
+            "options": {
+                "solid": "متصل",
+                "dashed": "متقطع",
+                "dotted": "منقّط"
+            }
+        },
+        "borderRadius": {
+            "label": "استدارة الحواف",
+            "options": {
+                "none": "بلا",
+                "full": "كامل"
+            }
+        },
+        "boxShadow": {
+            "label": "ظل الصندوق",
+            "options": {
+                "none": "بلا",
+                "sm": "صغير",
+                "md": "متوسط",
+                "lg": "كبير",
+                "xl": "كبير جدًا",
+                "xxl": "ضخم"
+            }
+        }
+    },
+    "premiumEffects": {
+        "glassSurface": {
+            "label": "سطح زجاجي",
+            "options": {
+                "off": "متوقف",
+                "subtle": "خفيف",
+                "medium": "متوسط",
+                "strong": "قوي"
+            }
+        },
+        "glow": {
+            "label": "توهج",
+            "options": {
+                "off": "متوقف",
+                "soft": "ناعم",
+                "medium": "متوسط",
+                "bold": "قوي"
+            }
+        },
+        "borderGradient": {
+            "label": "تدرج الحدود",
+            "options": {
+                "off": "متوقف",
+                "primary": "أساسي",
+                "bold": "قوي",
+                "aurora": "أورورا"
+            },
+            "hint": "يستحوذ تدرج الحدود على السطح — يتم تجاهل طبقات الخلفية والصور طالما هو مفعّل."
+        },
+        "meshBackground": {
+            "label": "خلفية شبكية",
+            "options": {
+                "off": "متوقف",
+                "soft": "ناعمة",
+                "bold": "قوية",
+                "aurora": "أورورا"
+            }
+        },
+        "imageOverlay": {
+            "label": "تراكب الصورة",
+            "options": {
+                "off": "متوقف",
+                "scrim": "تعتيم",
+                "bottom": "من الأسفل",
+                "light": "فاتح",
+                "brand": "لون العلامة"
+            }
+        }
+    },
+    "decorations": {
+        "ornaments": {
+            "label": "الزخارف",
+            "off": "متوقف"
+        },
+        "ornamentsHint": "أشكال محيطية تُرسم خلف المحتوى، ملوّنة حسب السمة الحالية. خفية بتصميمها.",
+        "divider": {
+            "labelTop": "الفاصل · الحافة العلوية",
+            "labelBottom": "الفاصل · الحافة السفلية",
+            "options": {
+                "off": "متوقف",
+                "wave": "موجة",
+                "angle": "زاوية",
+                "curve": "منحنى"
+            }
+        },
+        "dividerHeight": {
+            "label": "ارتفاع الفاصل",
+            "options": {
+                "s": "صغير",
+                "m": "متوسط",
+                "l": "كبير"
+            },
+            "hint": "يُقص الفاصل بلون خلفية الصفحة، مما يمزج هذا القسم بالأقسام المجاورة له. امنح القسم خلفيته الخاصة حتى يظهر الشكل بوضوح."
+        }
+    },
+    "effects": {
+        "opacity": {
+            "label": "العتامة ({{percent}}٪)"
+        },
+        "maxWidth": {
+            "label": "أقصى عرض",
+            "layoutHint": "العرض يتم التحكم به من «التخطيط والعرض» طالما غلاف القسم مفعّل (استخدم «أقصى عرض مخصص» هناك).",
+            "options": {
+                "none": "بلا"
+            }
+        },
+        "minHeight": {
+            "label": "الحد الأدنى للارتفاع (مخصص — الإعدادات المسبقة في التخطيط والعرض)",
+            "placeholder": "مثال: 400px"
+        },
+        "customClass": {
+            "label": "فئة CSS مخصصة",
+            "placeholder": "مثال: my-hero-section"
+        }
+    },
+    "typography": {
+        "fontFamily": {
+            "label": "نوع الخط",
+            "default": "افتراضي",
+            "serifSuffix": "{{label}} (سيريف)"
+        },
+        "fontSize": {
+            "label": "حجم الخط"
+        },
+        "fontWeight": {
+            "label": "وزن الخط",
+            "options": {
+                "regular": "عادي",
+                "medium": "متوسط",
+                "semi": "شبه عريض",
+                "bold": "عريض",
+                "extra": "إضافي"
+            }
+        },
+        "lineHeight": {
+            "label": "ارتفاع السطر ({{value}})"
+        },
+        "letterSpacing": {
+            "label": "تباعد الأحرف",
+            "options": {
+                "tight": "ضيق",
+                "normal": "عادي",
+                "wide": "واسع",
+                "wider": "أوسع"
+            }
+        },
+        "textColor": {
+            "label": "لون النص"
+        },
+        "textAlign": {
+            "label": "محاذاة النص",
+            "options": {
+                "left": "يسار",
+                "center": "وسط",
+                "right": "يمين"
+            }
+        },
+        "textTransform": {
+            "label": "تحويل النص",
+            "options": {
+                "none": "بلا",
+                "upper": "أحرف كبيرة",
+                "lower": "أحرف صغيرة",
+                "title": "عنوان"
+            }
+        }
+    },
+    "animation": {
+        "entrance": {
+            "label": "حركة الظهور",
+            "options": {
+                "none": "بلا",
+                "fadeIn": "تلاشي دخول",
+                "fadeUp": "تلاشي للأعلى",
+                "fadeDown": "تلاشي للأسفل",
+                "fadeLeft": "تلاشي لليسار",
+                "fadeRight": "تلاشي لليمين",
+                "scaleUp": "تكبير",
+                "slideUp": "انزلاق للأعلى"
+            }
+        },
+        "stagger": {
+            "label": "تعاقب العناصر الفرعية (تظهر البطاقات/العناصر تباعًا)",
+            "options": {
+                "off": "متوقف",
+                "fast": "سريع",
+                "normal": "عادي",
+                "slow": "بطيء"
+            }
+        },
+        "duration": {
+            "label": "المدة ({{ms}} مللي ثانية)"
+        },
+        "delay": {
+            "label": "التأخير ({{ms}} مللي ثانية)"
+        },
+        "easing": {
+            "label": "منحنى التسارع",
+            "options": {
+                "ease": "متدرج",
+                "easeIn": "تسارع دخول",
+                "easeOut": "تباطؤ خروج",
+                "easeInOut": "تسارع ثم تباطؤ"
+            }
+        },
+        "hover": {
+            "label": "تأثير التحويم",
+            "options": {
+                "none": "بلا",
+                "lift": "رفع",
+                "glow": "توهج",
+                "scale": "تكبير",
+                "brighten": "إضاءة"
+            }
+        }
+    },
+    "visibility": {
+        "viewports": {
+            "desktop": "سطح المكتب",
+            "tablet": "الجهاز اللوحي",
+            "mobile": "الجوال"
+        }
+    }
+}

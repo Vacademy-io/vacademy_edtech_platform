@@ -52,7 +52,25 @@ public class RefreshTokenService {
                     .clientName(clientName)
                     .build();
         }
-        return refreshTokenRepository.save(refreshToken);
+        RefreshToken saved = refreshTokenRepository.save(refreshToken);
+        stampSignIn(user);
+        return saved;
+    }
+
+    /**
+     * Every sign-in (password, email / WhatsApp OTP, Google, trusted login, sign-up) mints its
+     * refresh token here, and a token refresh does not — so this is the one place that sees
+     * each login exactly once. users.last_login_time is also bumped by JwtAuthFilter on
+     * authenticated auth-service requests; stamping it here as well means a member counts as
+     * "signed in" the moment they log in, whatever the client calls next. The Teams page reads
+     * it as "has this member ever signed in". Best effort: it must never fail a login.
+     */
+    private void stampSignIn(User user) {
+        try {
+            userRepository.updateLastLoginTime(user.getId());
+        } catch (Exception ignored) {
+            // The JwtAuthFilter stamp still lands on the next authenticated request.
+        }
     }
 
 

@@ -1,0 +1,26 @@
+{
+    "tabs": {
+        "batchSelection": "Sélection par lot",
+        "individualSelection": "Sélection individuelle"
+    },
+    "studentCount_one": "{{count}} élève",
+    "studentCount_many": "{{count}} élèves",
+    "studentCount_other": "{{count}} élèves",
+    "clickRowHint": "Cliquez sur une ligne pour commencer la saisie",
+    "search": {
+        "placeholder": "Rechercher par nom..."
+    },
+    "table": {
+        "headers": {
+            "studentName": "Nom de l'élève",
+            "status": "Statut",
+            "score": "Score"
+        },
+        "empty": "Aucun élève trouvé"
+    },
+    "status": {
+        "attempted": "Tenté",
+        "pending": "En attente",
+        "registered": "Inscrit"
+    }
+}

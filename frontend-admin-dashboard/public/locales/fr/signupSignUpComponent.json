@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "Logo de l'établissement",
+    "heading": "Évaluez plus intelligemment, apprenez mieux",
+    "subheading": "Redéfinir l'éducation avec des outils pertinents pour des évaluations plus intelligentes et de meilleurs résultats d'apprentissage.",
+    "continueWithGoogle": "Continuer avec Google",
+    "continueWithGithub": "Continuer avec GitHub",
+    "orContinueWith": "ou continuer avec",
+    "createFreeAccount": "Créer un compte gratuit",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "login": "Connexion",
+    "items": {
+        "assess": {
+            "description": "Plateforme intelligente d'évaluation"
+        },
+        "lms": {
+            "description": "Système complet de gestion de l'apprentissage"
+        },
+        "volt": {
+            "description": "Expérience de classe en direct interactive"
+        },
+        "vsmart": {
+            "description": "Assistant d'apprentissage propulsé par l'IA"
+        }
+    },
+    "validation": {
+        "selectAtLeastOne": "Vous devez sélectionner au moins un élément."
+    }
+}

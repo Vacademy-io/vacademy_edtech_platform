@@ -1,0 +1,39 @@
+{
+    "schema": {
+        "titleRequired": "Title is required",
+        "dateRequired": "Date is required",
+        "startTimeRequired": "Start time is required",
+        "durationRequired": "Duration is required",
+        "emailInvalid": "Enter a valid email"
+    },
+    "durationOption_one": "{{count}} minute",
+    "durationOption_other": "{{count}} minutes",
+    "toast": {
+        "missingInstitute": "Missing institute context",
+        "scheduled": "Meeting scheduled",
+        "scheduleFailed": "Failed to schedule the meeting. Try again."
+    },
+    "heading": "New Meeting",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Meeting title",
+    "dateLabel": "Date",
+    "startTimeLabel": "Start time",
+    "durationLabel": "Duration",
+    "participantsLabel": "Participants",
+    "inviteeFromLead": "Invitee (from lead)",
+    "inviteeExternal": "External invitee (optional)",
+    "prefilledFromLead": "Prefilled from the lead — edit only if the details are wrong.",
+    "inviteeNameLabel": "Invitee name",
+    "inviteeNamePlaceholder": "Full name",
+    "inviteeEmailLabel": "Invitee email",
+    "inviteeEmailPlaceholder": "name@example.com",
+    "inviteePhoneLabel": "Invitee phone",
+    "inviteePhonePlaceholder": "Phone number",
+    "allocateMeetTitle": "Allocate Google Meet link",
+    "allocateMeetDescription": "Automatically attach a Meet link to this meeting",
+    "actions": {
+        "cancel": "Cancel",
+        "scheduling": "Scheduling...",
+        "scheduleMeeting": "Schedule Meeting"
+    }
+}

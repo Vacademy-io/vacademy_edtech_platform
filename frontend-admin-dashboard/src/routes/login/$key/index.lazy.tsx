@@ -12,6 +12,7 @@ import CryptoJS from 'crypto-js';
 import ClipLoader from 'react-spinners/ClipLoader';
 import { getCachedInstituteBranding } from '@/services/domain-routing';
 import { useTheme } from '@/providers/theme/theme-provider';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createLazyFileRoute('/login/$key/')({
   component: RouteComponent,
@@ -20,6 +21,7 @@ export const Route = createLazyFileRoute('/login/$key/')({
 type FormValues = z.infer<typeof loginSchema>;
 
 function RouteComponent() {
+  const { t } = useTranslation('loginKeyIndex');
   const queryClient = useQueryClient();
   const { key } = useParams({ from: '/login/$key/' });
   const secretKey = 'asjhdjyehbadkjakykajnasdajgasdas';
@@ -53,8 +55,8 @@ function RouteComponent() {
           navigateFromLoginFlow(result);
         }
       } else {
-        toast.error('Login Error', {
-          description: 'Invalid credentials',
+        toast.error(t('loginError'), {
+          description: t('invalidCredentials'),
           className: 'error-toast',
           duration: 3000,
         });
@@ -76,7 +78,7 @@ function RouteComponent() {
 
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center">
-      <h1 className="mb-4">Loading your demo account</h1>
+      <h1 className="mb-4">{t('loadingDemoAccount')}</h1>
       <ClipLoader size={40} color={loaderColor} />
     </div>
   );

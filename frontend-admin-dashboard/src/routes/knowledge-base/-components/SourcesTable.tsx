@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowClockwise,
     DotsThreeVertical,
@@ -30,7 +31,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { LANGUAGE_LABEL, SOURCE_STATUS_META, STAGE_LABEL } from '../-constants';
+import {
+    buildLanguageLabel,
+    buildSourceStatusFallbackLabels,
+    buildSourceStatusMeta,
+    buildStageLabel,
+} from '../-constants';
 import { useSourceActions } from '../-hooks';
 import type { KnowledgeSource, SourceKind } from '../-types';
 
@@ -60,9 +66,18 @@ function SourceRow({
     writable: boolean;
     onDeleteRequest: (source: KnowledgeSource) => void;
 }) {
+    const { t: tConstants } = useTranslation('knowledgeBaseConstants');
+    const { t } = useTranslation('knowledgeBaseSourcesTable');
+    const languageLabel = useMemo(() => buildLanguageLabel(tConstants), [tConstants]);
+    const sourceStatusMeta = useMemo(() => buildSourceStatusMeta(tConstants), [tConstants]);
+    const stageLabel = useMemo(() => buildStageLabel(tConstants), [tConstants]);
+    const stageFallback = useMemo(
+        () => buildSourceStatusFallbackLabels(tConstants),
+        [tConstants]
+    );
     const { toggleActive, reindex } = useSourceActions(kbId);
     const Icon = KIND_ICON[source.source_kind] ?? Note;
-    const meta = SOURCE_STATUS_META[source.status];
+    const meta = sourceStatusMeta[source.status];
     const busy = source.status === 'PENDING' || source.status === 'PROCESSING';
 
     return (
@@ -76,30 +91,53 @@ function SourceRow({
                         </p>
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-caption text-neutral-500">
                             {source.page_count > 0 && (
-                                <span>{formatCount(source.page_count)} pages</span>
+                                <span>
+                                    {t('counts.pages', {
+                                        count: source.page_count,
+                                        formatted: formatCount(source.page_count),
+                                    })}
+                                </span>
                             )}
                             {source.chunk_count > 0 && (
-                                <span>{formatCount(source.chunk_count)} passages</span>
+                                <span>
+                                    {t('counts.passages', {
+                                        count: source.chunk_count,
+                                        formatted: formatCount(source.chunk_count),
+                                    })}
+                                </span>
                             )}
                             {source.figure_count > 0 && (
                                 <span>
-                                    {formatCount(source.figure_count)} diagrams &amp; tables
+                                    {t('counts.figures', {
+                                        count: source.figure_count,
+                                        formatted: formatCount(source.figure_count),
+                                    })}
                                 </span>
                             )}
                             {source.detected_languages.length > 0 && (
                                 <span>
                                     {source.detected_languages
-                                        .map((l) => LANGUAGE_LABEL[l] ?? l)
+                                        .map((l) => languageLabel[l] ?? l)
                                         .join(', ')}
                                 </span>
                             )}
                             {/* Cost transparency per source: what was actually charged, and
                                 how many pages needed the paid OCR path. */}
                             {source.credits_charged > 0 && (
-                                <span>{formatCount(source.credits_charged)} credits</span>
+                                <span>
+                                    {t('counts.credits', {
+                                        count: source.credits_charged,
+                                        formatted: formatCount(source.credits_charged),
+                                    })}
+                                </span>
                             )}
                             {source.ocr_pages > 0 && (
-                                <span>{formatCount(source.ocr_pages)} scanned pages read</span>
+                                <span>
+                                    {t('counts.ocrPages', {
+                                        count: source.ocr_pages,
+                                        formatted: formatCount(source.ocr_pages),
+                                    })}
+                                </span>
                             )}
                         </div>
                     </div>
@@ -119,8 +157,8 @@ function SourceRow({
                                 disabled={busy || toggleActive.isPending}
                                 aria-label={
                                     source.is_active
-                                        ? `Stop using ${source.title}`
-                                        : `Start using ${source.title}`
+                                        ? t('aria.stopUsing', { title: source.title })
+                                        : t('aria.startUsing', { title: source.title })
                                 }
                                 onCheckedChange={(next) =>
                                     toggleActive.mutate(
@@ -129,10 +167,10 @@ function SourceRow({
                                             onSuccess: () =>
                                                 toast.success(
                                                     next
-                                                        ? 'Now being used for answers'
-                                                        : 'No longer used for answers'
+                                                        ? t('toast.nowUsed')
+                                                        : t('toast.noLongerUsed')
                                                 ),
-                                            onError: () => toast.error('Could not update this'),
+                                            onError: () => toast.error(t('toast.updateFailed')),
                                         }
                                     )
                                 }
@@ -143,7 +181,7 @@ function SourceRow({
                                         buttonType="secondary"
                                         layoutVariant="icon"
                                         scale="small"
-                                        aria-label={`Actions for ${source.title}`}
+                                        aria-label={t('aria.actionsFor', { title: source.title })}
                                     >
                                         <DotsThreeVertical className="size-4" />
                                     </MyButton>
@@ -154,23 +192,21 @@ function SourceRow({
                                         onClick={() =>
                                             reindex.mutate(source.id, {
                                                 onSuccess: () =>
-                                                    toast.success(
-                                                        'Reading it again — you are not charged twice.'
-                                                    ),
+                                                    toast.success(t('toast.reindexing')),
                                                 onError: () =>
-                                                    toast.error('Could not start re-reading'),
+                                                    toast.error(t('toast.reindexFailed')),
                                             })
                                         }
                                     >
-                                        <ArrowClockwise className="mr-2 size-4" />
-                                        Read again
+                                        <ArrowClockwise className="me-2 size-4" />
+                                        {t('readAgain')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="text-danger-600"
                                         onClick={() => onDeleteRequest(source)}
                                     >
-                                        <Trash className="mr-2 size-4" />
-                                        Remove
+                                        <Trash className="me-2 size-4" />
+                                        {t('remove')}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -180,10 +216,12 @@ function SourceRow({
             </div>
 
             {busy && (
-                <div className="flex flex-col gap-1 pl-8">
+                <div className="flex flex-col gap-1 ps-8">
                     <Progress value={source.progress} className="h-1.5" />
                     <p className="text-caption text-neutral-500">
-                        {source.stage ? STAGE_LABEL[source.stage] ?? 'Working' : 'Getting started'}
+                        {source.stage
+                            ? stageLabel[source.stage] ?? stageFallback.working
+                            : stageFallback.gettingStarted}
                         {' · '}
                         {source.progress}%
                     </p>
@@ -192,25 +230,25 @@ function SourceRow({
 
             {/* An honest, actionable message beats a green tick over bad text. */}
             {source.status === 'PARTIAL' && source.pages_low_confidence > 0 && (
-                <p className="pl-8 text-caption text-warning-600">
-                    {formatCount(source.pages_low_confidence)} of {formatCount(source.page_count)}{' '}
-                    pages could not be read reliably. The rest is usable — re-upload a clearer scan
-                    of those pages if it matters.
+                <p className="ps-8 text-caption text-warning-600">
+                    {t('partialWarning', {
+                        lowConfidence: formatCount(source.pages_low_confidence),
+                        total: formatCount(source.page_count),
+                    })}
                 </p>
             )}
             {source.status === 'FAILED' && source.error_message && (
-                <p className="pl-8 text-caption text-danger-600">{source.error_message}</p>
+                <p className="ps-8 text-caption text-danger-600">{source.error_message}</p>
             )}
             {!source.is_active && source.status !== 'FAILED' && (
-                <p className="pl-8 text-caption text-neutral-400">
-                    Not being used for answers right now.
-                </p>
+                <p className="ps-8 text-caption text-neutral-400">{t('notActive')}</p>
             )}
         </div>
     );
 }
 
 export const SourcesTable = ({ kbId, sources, writable }: SourcesTableProps) => {
+    const { t } = useTranslation('knowledgeBaseSourcesTable');
     const [pendingDelete, setPendingDelete] = useState<KnowledgeSource | null>(null);
     const { remove } = useSourceActions(kbId);
 
@@ -218,9 +256,7 @@ export const SourcesTable = ({ kbId, sources, writable }: SourcesTableProps) => 
         return (
             <Card className="flex flex-col items-center gap-2 p-8 text-center">
                 <FilePdf className="size-6 text-neutral-300" />
-                <p className="text-body text-neutral-500">
-                    Nothing added yet. Add a textbook, a set of notes or a past paper to begin.
-                </p>
+                <p className="text-body text-neutral-500">{t('emptyState')}</p>
             </Card>
         );
     }
@@ -245,15 +281,17 @@ export const SourcesTable = ({ kbId, sources, writable }: SourcesTableProps) => 
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Remove this source?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            &ldquo;{pendingDelete?.title}&rdquo; and everything read from it will be
-                            deleted. Adding it again later will cost credits again. To stop using it
-                            without losing the work, switch it off instead.
+                            {t('deleteDialog.description', {
+                                title: pendingDelete?.title ?? '',
+                            })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={remove.isPending}>
+                            {t('deleteDialog.cancel')}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={remove.isPending}
                             className="bg-danger-600 text-white hover:bg-danger-700"
@@ -261,14 +299,16 @@ export const SourcesTable = ({ kbId, sources, writable }: SourcesTableProps) => 
                                 if (!pendingDelete) return;
                                 remove.mutate(pendingDelete.id, {
                                     onSuccess: () => {
-                                        toast.success('Removed');
+                                        toast.success(t('toast.removeSuccess'));
                                         setPendingDelete(null);
                                     },
-                                    onError: () => toast.error('Could not remove this source'),
+                                    onError: () => toast.error(t('toast.removeFailed')),
                                 });
                             }}
                         >
-                            {remove.isPending ? 'Removing…' : 'Remove'}
+                            {remove.isPending
+                                ? t('deleteDialog.removing')
+                                : t('deleteDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

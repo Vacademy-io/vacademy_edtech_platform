@@ -33,6 +33,10 @@ public interface IssuedCertificateRepository extends JpaRepository<IssuedCertifi
      */
     Optional<IssuedCertificate> findByShortCode(String shortCode);
 
+    /** Type-aware twin of the finder below, for certificate kinds that can coexist on one batch. */
+    Optional<IssuedCertificate> findFirstByUserIdAndPackageSessionIdAndCertificateTypeOrderByIssuedAtDesc(
+            String userId, String packageSessionId, String certificateType);
+
     Optional<IssuedCertificate> findFirstByUserIdAndPackageSessionIdOrderByIssuedAtDesc(
             String userId, String packageSessionId);
 

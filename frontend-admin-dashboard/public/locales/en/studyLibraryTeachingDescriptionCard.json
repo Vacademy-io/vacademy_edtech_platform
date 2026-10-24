@@ -1,0 +1,24 @@
+{
+    "kind": {
+        "video": "video",
+        "pdf": "PDF"
+    },
+    "action": {
+        "watch": "watch",
+        "read": "read"
+    },
+    "toggle": {
+        "title": "AI teacher: what this {{what}} teaches",
+        "described": "described",
+        "notDescribedYet": "not described yet",
+        "hide": "Hide",
+        "edit": "Edit"
+    },
+    "description": "The AI teacher cannot watch or read this {{what}}. Write the points it covers (3–10 sentences). In tutor mode the teacher asks the learner to {{action}} it, then checks those points before moving on.",
+    "placeholder": "This {{what}} explains…",
+    "save": "Save",
+    "toast": {
+        "saved": "Saved. Open the course’s Tutor Mode tab and press “Prepare for teaching”.",
+        "saveError": "Could not save"
+    }
+}

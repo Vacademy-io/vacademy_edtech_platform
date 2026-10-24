@@ -1,0 +1,16 @@
+{
+    "columns": {
+        "doubt": "Question",
+        "status": "Statut",
+        "category": "Catégorie",
+        "format": "Format",
+        "assignedTo": "Assigné à",
+        "raised": "Soulevée",
+        "resolved": "Résolue",
+        "actions": "Actions"
+    },
+    "learner": {
+        "unknown": "Inconnu",
+        "guest": "Invité"
+    }
+}

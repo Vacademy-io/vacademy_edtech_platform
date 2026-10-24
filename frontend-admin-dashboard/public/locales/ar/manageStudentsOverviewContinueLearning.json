@@ -1,0 +1,19 @@
+{
+    "heading": "متابعة التعلّم",
+    "action": {
+        "viewProgress": "عرض التقدّم"
+    },
+    "course": {
+        "fallbackName": "دورة نشطة",
+        "session": "الفصل الدراسي {{session}}"
+    },
+    "behindBadge_zero": "متأخر في {{count}} دورة",
+    "behindBadge_one": "متأخر في {{count}} دورة واحدة",
+    "behindBadge_two": "متأخر في {{count}} دورتين",
+    "behindBadge_few": "متأخر في {{count}} دورات",
+    "behindBadge_many": "متأخر في {{count}} دورة",
+    "behindBadge_other": "متأخر في {{count}} دورة",
+    "ring": {
+        "complete": "مكتمل"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "installmentDetails": "किश्त विवरण",
+    "errors": {
+        "unableToLoad": "किश्त विवरण लोड नहीं हो सका। कृपया पुनः प्रयास करें।"
+    },
+    "empty": {
+        "noInstallmentsFound": "इस भुगतान समूह के लिए कोई किश्त नहीं मिली।"
+    },
+    "table": {
+        "feeType": "शुल्क प्रकार",
+        "instNumber": "किश्त #",
+        "expected": "अपेक्षित",
+        "discount": "छूट",
+        "paid": "भुगतान किया गया",
+        "due": "बकाया",
+        "dueDate": "देय तिथि",
+        "status": "स्थिति"
+    }
+}

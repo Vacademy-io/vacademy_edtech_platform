@@ -36,5 +36,11 @@ public class BulkLiveSessionResponseDTO {
         private String error;
         /** true when the optional step2 template was applied successfully */
         private boolean step2Applied;
+        /**
+         * Non-fatal problems with a row that still succeeded — currently
+         * instructor identifiers that matched nobody in the institute. The row
+         * was created; the admin just needs to know one name didn't stick.
+         */
+        private List<String> warnings;
     }
 }

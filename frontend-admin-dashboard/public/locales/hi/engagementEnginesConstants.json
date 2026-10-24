@@ -1,0 +1,49 @@
+{
+    "engineStatus": {
+        "draft": "ड्राफ़्ट",
+        "templatesPending": "टेम्पलेट लंबित",
+        "dryRun": "ड्राई रन",
+        "active": "सक्रिय",
+        "paused": "रोका गया",
+        "archived": "संग्रहीत"
+    },
+    "actionStatus": {
+        "open": "खुला",
+        "acked": "स्वीकृत",
+        "dispatching": "भेजा जा रहा है…",
+        "sent": "भेजा गया",
+        "failed": "विफल",
+        "done": "पूर्ण",
+        "dismissed": "खारिज",
+        "expired": "समाप्त",
+        "simulated": "सिम्युलेटेड"
+    },
+    "proposalStatus": {
+        "aiProposed": "AI द्वारा प्रस्तावित",
+        "userReview": "समीक्षाधीन",
+        "userApproved": "स्वीकृत (आपके द्वारा)",
+        "submitted": "Meta को सबमिट हो रहा है…",
+        "metaPending": "Meta की प्रतीक्षा में",
+        "metaApproved": "लाइव",
+        "metaRejected": "Meta द्वारा अस्वीकृत",
+        "metaRecategorised": "पुनः वर्गीकृत",
+        "superseded": "प्रतिस्थापित",
+        "withdrawn": "वापस लिया गया"
+    },
+    "language": {
+        "english": "अंग्रेज़ी",
+        "hindi": "हिंदी",
+        "hinglish": "हिंग्लिश (लैटिन लिपि में हिंदी)"
+    },
+    "channel": {
+        "whatsapp": "व्हाट्सएप",
+        "email": "ईमेल",
+        "inApp": "इन-ऐप",
+        "aiCall": "AI कॉल"
+    },
+    "templateCategory": {
+        "marketing": "मार्केटिंग",
+        "utility": "उपयोगिता",
+        "authentication": "प्रमाणीकरण"
+    }
+}

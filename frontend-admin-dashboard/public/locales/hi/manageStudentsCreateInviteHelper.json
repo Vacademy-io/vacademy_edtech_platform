@@ -1,0 +1,15 @@
+{
+    "planDescription": {
+        "complexPaymentOption": "जटिल भुगतान विकल्प (किस्तों में)।",
+        "donation": "दान योजना तक पहुँच।",
+        "free": "निःशुल्क योजना तक पहुँच।",
+        "oneTime": "एकमुश्त भुगतान योजना तक पहुँच।",
+        "subscription": "सदस्यता योजना तक पहुँच।"
+    },
+    "planOption": {
+        "fallbackTitle": "{{name}} - विकल्प {{number}}"
+    },
+    "referral": {
+        "defaultBonusContentTitle": "बोनस सामग्री"
+    }
+}

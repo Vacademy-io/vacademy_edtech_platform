@@ -1,0 +1,14 @@
+{
+    "roleLabels": {
+        "admin": "व्यवस्थापक",
+        "student": "छात्र",
+        "parent": "अभिभावक"
+    },
+    "actions": {
+        "view": "देखें",
+        "edit": "संपादित करें"
+    },
+    "addRolePlaceholder": "भूमिका जोड़ें…",
+    "addRoleButton": "जोड़ें",
+    "removeRole": "{{role}} हटाएँ"
+}

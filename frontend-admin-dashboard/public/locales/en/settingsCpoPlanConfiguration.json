@@ -1,0 +1,93 @@
+{
+    "installmentPresets": {
+        "annual": "Annual",
+        "halfYearly": "Half-Yearly",
+        "quarterly": "Quarterly",
+        "monthly": "Monthly",
+        "custom": "Custom"
+    },
+    "feeTypePresets": {
+        "tuitionFee": {
+            "label": "Tuition Fee",
+            "description": "Regular tuition charges for the academic year"
+        },
+        "examFee": {
+            "label": "Exam Fee",
+            "description": "Examination and assessment charges"
+        },
+        "libraryFee": {
+            "label": "Library Fee",
+            "description": "Library access and resource charges"
+        },
+        "transportFee": {
+            "label": "Transport Fee",
+            "description": "School transportation charges"
+        },
+        "hostelFee": {
+            "label": "Hostel Fee",
+            "description": "Hostel accommodation charges"
+        },
+        "labFee": {
+            "label": "Lab Fee",
+            "description": "Laboratory usage and material charges"
+        }
+    },
+    "feeTypeEditor": {
+        "defaultName": "Fee Type {{number}}",
+        "installmentCount_one": "{{count}} installment",
+        "installmentCount_other": "{{count}} installments",
+        "remove": "Remove",
+        "feeName": {
+            "label": "Fee Name",
+            "placeholder": "e.g. Tuition Fee"
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "Brief description"
+        },
+        "totalAmount": {
+            "label": "Total Amount (₹)",
+            "placeholder": "e.g. 50000"
+        },
+        "hasInstallments": "Has Installments",
+        "refundable": "Refundable",
+        "latePenalty": "Late Penalty",
+        "penaltyPercentagePlaceholder": "%",
+        "paymentFrequency": "Payment Frequency",
+        "installmentCountPlaceholder": "Number of installments",
+        "installmentTable": {
+            "remaining": "₹{{amount}} remaining to allocate",
+            "exceeds": "Exceeds total by ₹{{amount}}",
+            "columns": {
+                "number": "#",
+                "amount": "Amount (₹)",
+                "startDate": "Start Date",
+                "endDate": "End Date",
+                "dueDate": "Due Date"
+            },
+            "total": "Total"
+        }
+    },
+    "classMultiSelect": {
+        "label": "Select Class",
+        "placeholder": "Select classes...",
+        "selectedCount_one": "{{count}} class selected",
+        "selectedCount_other": "{{count}} classes selected",
+        "searchPlaceholder": "Search classes...",
+        "noClassesAvailable": "No classes available",
+        "noSearchResults": "No classes match your search"
+    },
+    "summary": {
+        "feeTypes": "Fee Types",
+        "totalAmount": "Total Amount"
+    },
+    "status": {
+        "label": "Status",
+        "active": "Active",
+        "draft": "Draft"
+    },
+    "feeTypesSection": {
+        "title": "Fee Types",
+        "addFeeType": "Add Fee Type"
+    }
+}

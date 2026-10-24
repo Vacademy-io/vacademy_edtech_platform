@@ -1,0 +1,12 @@
+{
+    "addDefaultLinkForThisDay": "أضف رابطًا افتراضيًا لهذا اليوم",
+    "shownToLearnersWhenNotLive": "يُعرض للمتعلمين عندما لا تكون الجلسات مباشرة",
+    "defaultLink": "الرابط الافتراضي",
+    "shownWhenNotLive": "يُعرض عندما لا تكون الجلسات مباشرة",
+    "copy": "نسخ",
+    "remove": "إزالة",
+    "className": "اسم الفصل",
+    "classNamePlaceholder": "مثال: فصل الرياضيات",
+    "linkUrl": "رابط URL",
+    "linkUrlPlaceholder": "https://example.com"
+}

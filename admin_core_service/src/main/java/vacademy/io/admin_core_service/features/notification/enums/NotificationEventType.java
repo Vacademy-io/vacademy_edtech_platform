@@ -29,6 +29,19 @@ public enum NotificationEventType {
      * while the seeded DEFAULT config keeps every other institute rendering unchanged.
      */
     PAYMENT_CONFIRMATION("PAYMENT_CONFIRMATION"),
+    /**
+     * An assessment's results were released: the learner gets their report PDF by email (and by
+     * WhatsApp when a template with a document header is bound). Bound per assessment, per
+     * institute, or the seeded DEFAULT email, in that order (assessment_service resolves it).
+     */
+    ASSESSMENT_RESULT_RELEASED("ASSESSMENT_RESULT_RELEASED"),
+    /**
+     * Sent to a channel partner's admin when the partner's subscription becomes active:
+     * login details, the admin-portal link and (when the institute issues one) the
+     * Certificate of Affiliation as an attachment. Opt-in per institute via
+     * SUB_ORG_ONBOARDING_SETTING.sendWelcomeEmail.
+     */
+    SUB_ORG_PARTNER_WELCOME("SUB_ORG_PARTNER_WELCOME"),
 
     /**
      * Transactional emails that predate this enum and were dispatched with no event key at all.

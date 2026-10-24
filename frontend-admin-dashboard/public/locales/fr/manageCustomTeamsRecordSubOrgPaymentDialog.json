@@ -1,0 +1,22 @@
+{
+    "title": "Enregistrer un paiement hors ligne",
+    "description": "Saisissez n'importe quel montant — il est réparti (du plus ancien au plus récent) sur les échéances en attente. L'excédent est enregistré comme trop-perçu dans le journal des paiements ; les paiements partiels sont reportés sur l'échéance suivante.",
+    "fields": {
+        "amount": "Montant (₹)",
+        "amountPlaceholder": "ex. 5000",
+        "paymentDate": "Date de paiement",
+        "reference": "Référence",
+        "referencePlaceholder": "n° de chèque, référence UPI, n° de reçu.",
+        "generateInvoice": "Générer la facture PDF"
+    },
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "saveAndAllocate": "Enregistrer et répartir (FIFO)",
+    "toasts": {
+        "recorded": "Paiement hors ligne enregistré",
+        "failed": "Échec de l'enregistrement du paiement"
+    },
+    "errors": {
+        "enterPositiveAmount": "Saisissez un montant positif"
+    }
+}

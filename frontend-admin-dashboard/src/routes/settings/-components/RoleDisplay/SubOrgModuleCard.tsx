@@ -21,6 +21,7 @@
  * sub-org response to it — search, filters, pagination and totals included.
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -74,6 +75,7 @@ export const SubOrgModuleCard = ({
     roleLabel,
     isAdminRole = false,
 }: SubOrgModuleCardProps) => {
+    const { t } = useTranslation('settingsSubOrgModuleCard');
     // Institutes rename this concept (Channel Partner / Branch / Franchise / VLE …)
     // via Settings → Naming. Both forms are needed: the module is named in the
     // plural, but the per-record phrases below are singular.
@@ -154,30 +156,39 @@ export const SubOrgModuleCard = ({
         hint: string;
         uiOnly?: boolean;
     }[] = [
-        { key: 'canCreate', label: `Create ${many}`, hint: `Show the "Create ${one}" button.` },
+        {
+            key: 'canCreate',
+            label: t('permissions.items.canCreate.label', { many }),
+            hint: t('permissions.items.canCreate.hint', { one }),
+        },
         {
             key: 'canEditConfig',
-            label: `Edit ${one} configuration`,
-            hint: 'Edit courses, seats, validity, roles and permissions; re-sync invites.',
+            label: t('permissions.items.canEditConfig.label', { one }),
+            hint: t('permissions.items.canEditConfig.hint'),
         },
         {
             key: 'canManageTeam',
-            label: 'Manage team members',
-            hint: `Add and remove people on a ${one}'s Team tab.`,
+            label: t('permissions.items.canManageTeam.label'),
+            hint: t('permissions.items.canManageTeam.hint', { one }),
         },
         {
             key: 'canViewFinance',
-            label: 'View finances',
-            hint: 'See the Admin Payment and Invoices tabs.',
+            label: t('permissions.items.canViewFinance.label'),
+            hint: t('permissions.items.canViewFinance.hint'),
             uiOnly: true,
         },
         {
             key: 'canManageFinance',
-            label: 'Manage finances',
-            hint: 'Record payments, mark invoices paid, send reminders, raise invoices.',
+            label: t('permissions.items.canManageFinance.label'),
+            hint: t('permissions.items.canManageFinance.hint'),
             uiOnly: true,
         },
-        { key: 'canExport', label: 'Export CSV', hint: `Download the ${one} list.`, uiOnly: true },
+        {
+            key: 'canExport',
+            label: t('permissions.items.canExport.label'),
+            hint: t('permissions.items.canExport.hint', { one }),
+            uiOnly: true,
+        },
     ];
 
     return (
@@ -185,19 +196,17 @@ export const SubOrgModuleCard = ({
             <CardHeader>
                 <CardTitle>{term}</CardTitle>
                 <CardDescription>
-                    Give the {roleLabel} role access to the {term} module — the {many} list, learner
-                    counts and each {one}&apos;s details.
+                    {t('card.description', { roleLabel, term, many, one })}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
                 <div className="flex items-center justify-between gap-4 border-b border-border py-3.5">
                     <div>
                         <div className="text-sm font-medium text-neutral-800">
-                            Enable {term} module
+                            {t('toggle.title', { term })}
                         </div>
                         <p className="text-caption text-neutral-500">
-                            Adds &quot;{term}&quot; to the sidebar and unlocks the page for this
-                            role.
+                            {t('toggle.description', { term })}
                         </p>
                     </div>
                     <Switch checked={enabled} onCheckedChange={toggle} />
@@ -207,11 +216,10 @@ export const SubOrgModuleCard = ({
                     <div className="space-y-3 pt-3">
                         <div>
                             <div className="text-sm font-medium text-neutral-800">
-                                {term} for this role
+                                {t('assignment.title', { term })}
                             </div>
                             <p className="text-caption text-neutral-500">
-                                Everyone with this role sees these — including people added to the
-                                role later.
+                                {t('assignment.description')}
                             </p>
                         </div>
 
@@ -219,21 +227,21 @@ export const SubOrgModuleCard = ({
                             <DashboardLoader />
                         ) : options.length === 0 ? (
                             <div className="rounded-md border border-dashed border-neutral-200 px-3 py-4 text-center text-caption text-neutral-500">
-                                No {many} exist in this institute yet.
+                                {t('assignment.emptyState', { many })}
                             </div>
                         ) : (
                             <div className="space-y-2">
                                 <MultiSelectFilter
-                                    label={`Select ${many}`}
+                                    label={t('assignment.selectLabel', { many })}
                                     options={options}
                                     selected={assignedIds}
                                     onChange={(values) => patch({ assignedSubOrgIds: values })}
-                                    placeholder={`Search ${many}…`}
+                                    placeholder={t('assignment.searchPlaceholder', { many })}
                                     widthClass="w-64"
                                 />
                                 {selectedChips.length === 0 ? (
                                     <p className="text-caption text-neutral-500">
-                                        None selected — this role sees no {many} yet.
+                                        {t('assignment.noneSelected', { many })}
                                     </p>
                                 ) : (
                                     <div className="flex flex-wrap gap-1.5">
@@ -247,14 +255,20 @@ export const SubOrgModuleCard = ({
                                                 }
                                                 title={
                                                     chip.unresolved
-                                                        ? `This ${one} no longer exists or is still loading (${chip.id})`
+                                                        ? t('assignment.chipUnresolvedTitle', {
+                                                              one,
+                                                              id: chip.id,
+                                                          })
                                                         : chip.label
                                                 }
                                             >
-                                                {chip.label ?? `Unknown ${one}`}
+                                                {chip.label ??
+                                                    t('assignment.unknownOne', { one })}
                                                 <button
                                                     type="button"
-                                                    aria-label={`Remove ${chip.label ?? chip.id}`}
+                                                    aria-label={t('assignment.removeAriaLabel', {
+                                                        name: chip.label ?? chip.id,
+                                                    })}
                                                     onClick={() =>
                                                         patch({
                                                             assignedSubOrgIds: assignedIds.filter(
@@ -274,20 +288,15 @@ export const SubOrgModuleCard = ({
                         )}
 
                         <p className="rounded-md bg-primary-50 px-3 py-2 text-caption text-neutral-600">
-                            This role sees only the {many} listed above, plus any {one} assigned to
-                            a person individually from a {one}&apos;s Team tab. Search, filters,
-                            pagination and exports all stay within that set, and the list is empty
-                            when nothing is assigned.
+                            {t('assignment.scopeNote', { many, one })}
                         </p>
 
                         <div className="space-y-1 pt-2">
                             <div className="text-sm font-medium text-neutral-800">
-                                What this role can do
+                                {t('permissions.title')}
                             </div>
                             <p className="text-caption text-neutral-500">
-                                Everything starts read-only. Turning one off hides the action; those
-                                without the &ldquo;screen only&rdquo; tag are also refused by the
-                                server.
+                                {t('permissions.description')}
                             </p>
                             {PERMISSIONS.map((perm) => (
                                 <div
@@ -302,9 +311,11 @@ export const SubOrgModuleCard = ({
                                             {perm.uiOnly && (
                                                 <span
                                                     className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-500"
-                                                    title="Hides the action on screen. Runs through endpoints shared with other pages, so it is not re-checked server-side."
+                                                    title={t(
+                                                        'permissions.screenOnlyTooltip'
+                                                    )}
                                                 >
-                                                    screen only
+                                                    {t('permissions.screenOnlyBadge')}
                                                 </span>
                                             )}
                                         </div>
@@ -321,7 +332,7 @@ export const SubOrgModuleCard = ({
                 )}
                 {enabled && isAdminRole && (
                     <p className="rounded-md bg-primary-50 px-3 py-2 text-caption text-neutral-600">
-                        Admins see every {one} in the institute.
+                        {t('adminNote', { one })}
                     </p>
                 )}
             </CardContent>

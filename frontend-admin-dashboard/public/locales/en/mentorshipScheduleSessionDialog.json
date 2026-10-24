@@ -1,0 +1,18 @@
+{
+    "mentorFallback": "Mentor",
+    "learnerFallback": "the learner",
+    "sessionBookedToast": "Session booked with {{name}}",
+    "scheduleFailedFallback": "Couldn't schedule that session.",
+    "dialogHeading": "Schedule a 1:1",
+    "cancelButton": "Cancel",
+    "bookingButton": "Booking…",
+    "bookButton": "Book session",
+    "introParagraph": "The learner gets the confirmation, the meeting link and the reminders — exactly as if they had booked it themselves. Nothing is asked of them.",
+    "mentorLabel": "Mentor",
+    "mentorPlaceholder": "Choose a mentor",
+    "mentorSearchPlaceholder": "Search mentors…",
+    "mentorEmptyText": "No mentors match",
+    "learnerLabel": "Learner",
+    "pickTimeLabel": "Pick a time",
+    "chooseMentorFirst": "Choose a mentor to see when they're free."
+}

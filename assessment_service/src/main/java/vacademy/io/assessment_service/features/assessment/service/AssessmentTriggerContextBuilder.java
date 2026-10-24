@@ -68,6 +68,9 @@ public class AssessmentTriggerContextBuilder {
         put(ctx, "evaluationType", assessment.getEvaluationType());
         put(ctx, "assessmentStatus", assessment.getStatus());
         put(ctx, "resultType", assessment.getResultType());
+        // "API" for exams created through the partner API, so an institute that opted in to
+        // workflow events on them can branch (spec 12 item 7). Absent for dashboard exams.
+        put(ctx, "assessmentSource", assessment.getSource());
         put(ctx, "boundStartTime", iso(assessment.getBoundStartTime()));
         put(ctx, "boundEndTime", iso(assessment.getBoundEndTime()));
         put(ctx, "durationMinutes", assessment.getDuration());
@@ -131,6 +134,10 @@ public class AssessmentTriggerContextBuilder {
         put(ctx, "resultStatus", attempt.getResultStatus());
         put(ctx, "reportReleaseStatus", attempt.getReportReleaseStatus());
         put(ctx, "reportPdfFileId", attempt.getReportPdfFileId());
+        // The checked copy (AI-annotated or teacher-uploaded PDF). On a manual-result
+        // test this is the only document a learner gets — there is no generated
+        // report — so an automation needs it to link or attach anything.
+        put(ctx, "checkedCopyFileId", attempt.getEvaluatedFileId());
         put(ctx, "rank", rank);
         put(ctx, "percentile", percentile);
         return ctx;

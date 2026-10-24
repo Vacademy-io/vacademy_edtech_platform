@@ -1,0 +1,189 @@
+{
+    "nav": {
+        "title": "Prospects récents"
+    },
+    "heading": {
+        "loading": "Chargement des prospects…",
+        "leadsCount_one": "{{count}} prospect",
+        "leadsCount_many": "{{count}} prospects",
+        "leadsCount_other": "{{count}} prospects"
+    },
+    "slaOptions": {
+        "all": "Tous les statuts d'action",
+        "anyOverdueLabel": "Échéance manquée",
+        "anyOverdueHelper": "Premier contact ou relance — celui des deux qui est en retard",
+        "firstContactMissed": "Premier contact manqué",
+        "firstContactComingUp": "Premier contact à venir",
+        "followUpComingUp": "Relance à venir",
+        "followUpMissed": "Relance manquée"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "Dernières 24 heures",
+        "last7Days": "7 derniers jours",
+        "last15Days": "15 derniers jours",
+        "last30Days": "30 derniers jours",
+        "allTime": "Toute la période",
+        "customRange": "Période personnalisée"
+    },
+    "filters": {
+        "tier": {
+            "label": "Tous les niveaux",
+            "hot": "Chaud",
+            "warm": "Tiède",
+            "cold": "Froid"
+        },
+        "leadStatus": {
+            "label": "Tous les prospects",
+            "active": "Actif (non inscrit)",
+            "converted": "Inscrit / Converti",
+            "excludeSelected": "Exclure la sélection"
+        },
+        "sla": {
+            "label": "Tous les états SLA"
+        },
+        "audience": {
+            "label": "Tous : {{term}}",
+            "untitled": "Audience sans titre"
+        },
+        "campaignType": {
+            "label": "Tous les {{term}}"
+        },
+        "customDate": {
+            "setDates": "Définir les dates",
+            "done": "Terminé",
+            "from": "Du",
+            "to": "Au"
+        },
+        "calledWithin": {
+            "placeholder": null,
+            "any": null
+        },
+        "workedWithin": {
+            "placeholder": null,
+            "any": null
+        }
+    },
+    "toolbar": {
+        "leadSettings": "Paramètres des prospects",
+        "showDeletedTitle": "Afficher les prospects supprimés",
+        "backToActiveTitle": "Revenir aux prospects actifs",
+        "deletedLeadsButton": "Prospects supprimés",
+        "viewingDeletedButton": "Prospects supprimés affichés",
+        "exporting": "Exportation…",
+        "export": "Exporter",
+        "addLead": "Ajouter un prospect",
+        "filters": "Filtres",
+        "summaryShow": "Afficher le résumé",
+        "summaryHide": "Masquer le résumé"
+    },
+    "chips": {
+        "search": "Recherche : {{query}}",
+        "audience": "Audience : {{names}}",
+        "campaignType": "{{term}}: {{types}}",
+        "tier": "Niveau : {{tiers}}",
+        "status": "Statut : {{statuses}}",
+        "sla": "SLA : {{states}}",
+        "counsellor": "Conseiller : {{names}}",
+        "source": "Source : {{source}}",
+        "customField": "{{field}} : {{value}}",
+        "dateRangeCustomWithDates": "Date : {{from}} → {{to}}",
+        "dateRangeCustomFallback": "Date : période personnalisée",
+        "dateRangeFallback": "Période",
+        "fallbackSelected": "Sélectionné",
+        "fallbackField": "Champ",
+        "statusActive": "Actif",
+        "statusConverted": "Converti",
+        "unassigned": "Non assigné",
+        "removeAriaLabel": "Supprimer {{label}}",
+        "clearAll": "Tout effacer",
+        "calledWithin": null,
+        "workedWithin": null,
+        "pinnedTitle": "Épinglé par cet onglet — impossible de le retirer ici",
+        "statusExcluded": "Statut différent de : {{statuses}}"
+    },
+    "search": {
+        "placeholder": "Rechercher des prospects",
+        "showing": "Affichage de",
+        "resultsPending": "sur … résultats",
+        "resultsCount_one": "sur {{count}} résultat",
+        "resultsCount_many": "sur {{count}} résultats",
+        "resultsCount_other": "sur {{count}} résultats"
+    },
+    "bulk": {
+        "selectedCount_one": "{{count}} sélectionné",
+        "selectedCount_many": "{{count}} sélectionnés",
+        "selectedCount_other": "{{count}} sélectionnés",
+        "selecting": "Sélection…",
+        "selectAll_one": "Tout sélectionner ({{count}})",
+        "selectAll_many": "Tout sélectionner ({{count}})",
+        "selectAll_other": "Tout sélectionner ({{count}})",
+        "clear": "Effacer",
+        "actionsButton": "Actions groupées",
+        "assignLeads": "Assigner les prospects",
+        "unassignLeads": "Désassigner les prospects",
+        "restoreLeads": "Restaurer les prospects",
+        "deleteLeads": "Supprimer les prospects",
+        "changeStatus": null
+    },
+    "emptyState": {
+        "errorTitle": "Impossible de charger les prospects",
+        "errorDescription": "Une erreur est survenue lors du chargement des prospects. Réessayez."
+    },
+    "callReasons": {
+        "noSubmissionId": "Ce prospect n'a pas d'identifiant de soumission",
+        "noPhone": "Ce prospect n'a pas de numéro de téléphone enregistré",
+        "callInProgress": "Un autre appel est en cours de démarrage…"
+    },
+    "export": {
+        "columns": {
+            "leadId": "ID du prospect",
+            "submittedAt": "Soumis le",
+            "name": "Nom",
+            "email": "E-mail",
+            "mobile": "Mobile",
+            "audience": "Audience",
+            "campaignType": "{{term}}",
+            "leadStatus": "Statut du prospect",
+            "counsellor": "Conseiller",
+            "activityNotes": "Activité et notes",
+            "notesCount": "Nombre de notes",
+            "leadJourney": "Parcours du prospect (disposition et notes)",
+            "utmCampaign": "Campagne UTM"
+        },
+        "notes": {
+            "defaultTitle": "Note",
+            "updatedBy": "mis à jour par - {{name}}",
+            "date": "date - {{date}}"
+        },
+        "noLeadsToExport": "Aucun prospect à exporter",
+        "exportedLeads_one": "{{count}} prospect exporté",
+        "exportedLeads_many": "{{count}} prospects exportés",
+        "exportedLeads_other": "{{count}} prospects exportés",
+        "exportFailed": "Échec de l'exportation des prospects récents"
+    },
+    "toasts": {
+        "leadRestored_one": "{{count}} prospect restauré",
+        "leadRestored_many": "{{count}} prospects restaurés",
+        "leadRestored_other": "{{count}} prospects restaurés",
+        "restoreFailed": "Échec de la restauration. Veuillez réessayer.",
+        "selectAllFailed": "Échec de la sélection de tous les prospects",
+        "bulkStatusUpdated_one": null,
+        "bulkStatusUpdated_other": null,
+        "bulkStatusUnchanged_one": null,
+        "bulkStatusUnchanged_other": null,
+        "bulkStatusPartial": null,
+        "bulkStatusFailed": null
+    },
+    "filtersPanel": {
+        "title": "Filtres",
+        "active": "{{count}} actifs",
+        "close": "Fermer les filtres",
+        "sections": {
+            "pipeline": "Pipeline",
+            "owner": "Responsable et source",
+            "activity": "Activité",
+            "campaign": "Liens de campagne",
+            "custom": "Champs personnalisés"
+        }
+    }
+}

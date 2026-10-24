@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "التحكم في الوصول",
+        "description": "تحكم في من يمكنه إدارة هذا التقييم وعرض نتائجه وتقييمه.",
+        "update": "تحديث",
+        "save": "حفظ",
+        "publish": "نشر"
+    },
+    "sections": {
+        "creationAccess": "صلاحية إنشاء التقييم",
+        "creationAccessSurvey": "صلاحية إنشاء الاستبيان",
+        "liveNotification": "إشعار التقييم المباشر",
+        "liveNotificationSurvey": "إشعار الاستبيان المباشر",
+        "submissionReportAccess": "صلاحية تقديم التقييم وتقاريره",
+        "submissionReportAccessSurvey": "صلاحية تقديم الاستبيان وتقاريره",
+        "evaluationProcess": "عملية التقييم"
+    },
+    "toasts": {
+        "updateSuccess": "تم تحديث تقييمك بنجاح!",
+        "saveSuccess": "تم حفظ تقييمك بنجاح!",
+        "updatePublishSuccess": "تم تحديث تقييمك ونشره بنجاح!",
+        "publishSuccess": "تم نشر تقييمك بنجاح!",
+        "cancelInviteSuccess": "تم إلغاء دعوة هذا المستخدم بنجاح!"
+    },
+    "errors": {
+        "saveFailed": "فشل حفظ التحكم في الوصول.",
+        "publishFailed": "فشل نشر التقييم."
+    },
+    "card": {
+        "addButton": "إضافة",
+        "addUserTitle": "إضافة مستخدم",
+        "roleTypeLabel": "نوع الدور",
+        "selectAll": "تحديد الكل",
+        "cancelInvitation": "إلغاء الدعوة",
+        "attention": "تنبيه",
+        "confirmCancel": {
+            "prefix": "هل أنت متأكد أنك تريد إلغاء الدعوة لـ",
+            "suffix": "؟"
+        },
+        "yes": "نعم",
+        "done": "تم"
+    }
+}

@@ -36,6 +36,9 @@ public class WorkflowTriggerService {
     @Autowired
     private vacademy.io.admin_core_service.features.workflow.service.idempotency.IdempotencyStrategyFactory idempotencyStrategyFactory;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.workflow.util.WorkflowSubjectResolver workflowSubjectResolver;
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Map<String, Object> handleTriggerEvents(String eventName, String eventId, String instituteId,
             Map<String, Object> contextData) {
@@ -134,9 +137,13 @@ public class WorkflowTriggerService {
                         count, triggers.size(), trigger.getId(), trigger.getTriggerEventName(),
                         trigger.getWorkflow().getId());
 
+                // Declared outside the try so the failure path below marks the SAME execution.
+                // Re-generating the key there is wrong for non-deterministic strategies (UUID,
+                // the default): the new key matches no row, markAsFailed finds nothing, and the
+                // execution is left PROCESSING forever.
+                String idempotencyKey = null;
                 try {
                     // Generate idempotency key based on trigger's configuration
-                    String idempotencyKey;
                     try {
                         idempotencyKey = idempotencyStrategyFactory.generateKey(
                                 trigger, eventName, eventId, contextData);
@@ -149,6 +156,7 @@ public class WorkflowTriggerService {
                                 .withTag("trigger.event", eventName)
                                 .withTag("institute.id", instituteId)
                                 .send();
+                        recordKeyGenerationFailure(trigger, eventName, eventId, instituteId, contextData, e);
                         continue; // Skip this trigger
                     }
 
@@ -187,6 +195,13 @@ public class WorkflowTriggerService {
                     // SpEL (which the body evaluator doesn't pick up).
                     seedContext.put("triggerTime", Instant.now().toString());
                     log.info("Seed context prepared for workflow run ({} keys): {}", seedContext.size(), seedContext);
+
+                    // Record WHO this run is for and WHAT it started from, before running it.
+                    // Written up-front so a run that crashes mid-way still shows up on the
+                    // learner's Workflows tab (as FAILED) and can still be retried — recording
+                    // it after the run would lose exactly the failures worth retrying.
+                    recordRunSubject(execution.getId(), seedContext);
+
                     log.info("Starting workflowEngineService.run for workflowId='{}'", trigger.getWorkflow().getId());
 
                     // Execute workflow
@@ -202,11 +217,11 @@ public class WorkflowTriggerService {
                     log.error("Error executing workflowId='{}' for triggerId='{}'",
                             trigger.getWorkflow().getId(), trigger.getId(), ex);
 
-                    // Mark as failed
+                    // Mark as failed — on the key that created the execution, never a fresh one.
                     try {
-                        String idempotencyKey = idempotencyStrategyFactory.generateKey(
-                                trigger, eventName, eventId, contextData);
-                        idempotencyService.markAsFailed(idempotencyKey, ex.getMessage());
+                        if (idempotencyKey != null) {
+                            idempotencyService.markAsFailed(idempotencyKey, ex.getMessage());
+                        }
                     } catch (Exception e) {
                         log.error("Failed to mark execution as failed", e);
                     }
@@ -237,6 +252,67 @@ public class WorkflowTriggerService {
 
         log.info("---- Workflow Trigger Event END ----");
         return response;
+    }
+
+    /**
+     * Record which learner a run is for, and the inputs it started from, so the run can be
+     * listed on that learner's Workflows tab and retried from there.
+     *
+     * <p>Wholly best-effort and wholly swallowed. It sits inside the per-trigger try block,
+     * whose catch marks the execution FAILED and moves on — so an exception escaping here
+     * would fail a workflow that was about to run perfectly well. This is bookkeeping for a
+     * UI tab; it is never a reason not to run the automation. The worst outcome of a failure
+     * is one run missing from one tab.</p>
+     */
+    /**
+     * A trigger whose idempotency expression cannot be evaluated (typically a CUSTOM_EXPRESSION
+     * naming a context key the event never emits, e.g. {@code #ctx['lead']['id']}) used to be
+     * skipped with nothing but a log line — the workflow showed zero executions and the admin had
+     * no way to see why. Record a FAILED execution instead so it shows up in the Executions tab
+     * and on the learner's Workflows tab with the real cause. Best-effort: this must never throw
+     * back into the emitter.
+     */
+    private void recordKeyGenerationFailure(WorkflowTrigger trigger, String eventName, String eventId,
+            String instituteId, Map<String, Object> contextData, Exception cause) {
+        try {
+            String surrogateKey = "idempotency_error_" + java.util.UUID.randomUUID();
+            vacademy.io.admin_core_service.features.workflow.entity.WorkflowExecution execution =
+                    idempotencyService.markAsProcessingForTrigger(
+                            surrogateKey, trigger.getWorkflow().getId(), trigger.getId());
+            Map<String, Object> seedContext = new HashMap<>(
+                    Optional.ofNullable(contextData).orElse(new HashMap<>()));
+            seedContext.put("triggerEvents", eventName);
+            seedContext.put("triggerId", trigger.getId());
+            seedContext.put("instituteId", instituteId);
+            seedContext.put("executionId", execution.getId());
+            seedContext.put("eventId", eventId);
+            recordRunSubject(execution.getId(), seedContext);
+            Throwable root = cause;
+            while (root.getCause() != null && root.getCause() != root) {
+                root = root.getCause();
+            }
+            String message = "Idempotency key could not be generated from the trigger's "
+                    + "idempotency_generation_setting — the workflow did not run. "
+                    + "Check that every #ctx[...] key in the expression is emitted by " + eventName
+                    + ". Cause: " + root.getMessage();
+            idempotencyService.markAsFailed(surrogateKey, message.length() > 2000 ? message.substring(0, 2000) : message);
+            log.warn("Recorded FAILED execution {} for trigger {} (idempotency key generation failed)",
+                    execution.getId(), trigger.getId());
+        } catch (Exception e) {
+            log.error("Could not record idempotency-failure execution for trigger {}", trigger.getId(), e);
+        }
+    }
+
+    private void recordRunSubject(String executionId, Map<String, Object> seedContext) {
+        try {
+            idempotencyService.recordSubjectAndContext(
+                    executionId,
+                    workflowSubjectResolver.resolveSubjectUserId(seedContext),
+                    workflowSubjectResolver.toStorableContext(seedContext));
+        } catch (Exception e) {
+            log.warn("Could not record workflow run subject for execution {} — continuing with the run: {}",
+                    executionId, e.getMessage());
+        }
     }
 
     /**

@@ -1,0 +1,69 @@
+---
+title: "Tokens and expiry"
+description: "How long a connection lasts, how it renews itself, and what ends it."
+icon: "clock"
+---
+
+After a person approves a connection, the AI app holds two tokens. It renews them by itself, so people rarely notice them. This page explains what happens underneath.
+
+## How long each piece lasts
+
+| Piece | Lasts | Used |
+|---|---|---|
+| Approval page | 15 minutes | Once. After that, start again from the AI app. |
+| Sign-in code (returned to the app after approval) | 5 minutes | Once |
+| **Access token** | **1 hour** | On every request |
+| **Refresh token** | **30 days** | Once. Each use gives a new pair of tokens. |
+
+These are the standard values. Confirmation tokens for changes are separate and much shorter; see [Confirmations](/mcp-server/usage/confirmations).
+
+## What this means in practice
+
+- **Every hour**, the app uses its refresh token to get a new access token. The person sees nothing.
+- **Each refresh gives a new 30-day refresh token.** A connection that is used at least once every 30 days keeps working.
+- **After 30 days without use**, the connection expires. The person signs in again from the app.
+
+## Refresh tokens work once
+
+A refresh token can be used only one time. When the app uses it:
+
+1. the refresh token, and the access token issued with it, stop working;
+2. the app receives a fresh access token and a fresh refresh token.
+
+If the same refresh token is sent again, it is refused, and the app has to sign in again.
+
+## The person's own sign-in
+
+The connection works through the approving person's own account. While the connection is in use, the server keeps that account's sign-in renewed in the background.
+
+If that sign-in can no longer be renewed, the next request fails with a message such as *"This connection's … session has expired. Reconnect … to sign in again."* The person reconnects from the app.
+
+When someone changes role or leaves, revoke their rows in [Active connections](/mcp-server/settings/connections-and-revoking). Removing a role from **Who can connect** applies on the next request.
+
+## What ends a connection
+
+| Event | Effect |
+|---|---|
+| An admin clicks **Revoke** in [Active connections](/mcp-server/settings/connections-and-revoking) | Both tokens stop working at once. The next request is refused. |
+| The app signs out through the server's revocation endpoint | Both tokens stop working. Not every app does this. |
+| 30 days without use | The refresh token expires. |
+| The person's own sign-in cannot be renewed | The next request asks them to reconnect. |
+
+These do **not** end a connection, but refuse its requests while they last:
+
+- switching the server off;
+- removing the person's role from **Who can connect**;
+- setting an area to **Off** (only that area's tools disappear).
+
+Each takes effect on the next request. Turning them back on lets the same connection work again.
+
+## Keeping tokens safe
+
+- The tokens are random strings. They hold no readable data about the person or your institute.
+- The server stores only a hash of each token, never the token itself.
+- The AI app sends the access token in the `Authorization: Bearer …` header. It is never put in a URL.
+- If you think a token has leaked, [revoke the connection](/mcp-server/settings/connections-and-revoking). The person can then connect again with fresh tokens.
+
+## One scope
+
+Tokens carry one scope, `vacademy.read`. Your AI app may show it. It means "may connect to this institute". It does not decide what the app can read or change: that comes from [Areas and access levels](/mcp-server/settings/areas-and-levels) and the person's roles, checked on every request.

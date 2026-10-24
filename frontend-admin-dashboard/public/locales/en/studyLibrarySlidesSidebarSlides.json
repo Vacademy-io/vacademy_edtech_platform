@@ -1,0 +1,21 @@
+{
+    "slideType": {
+        "aiContent": "AI Content",
+        "scorm": "SCORM",
+        "slide": "Slide"
+    },
+    "slideTitle": {
+        "assessmentFallback": "Assessment {{ordinal}}",
+        "untitled": "Untitled"
+    },
+    "statusBadge": {
+        "draft": "D",
+        "unsync": "U",
+        "deleted": "DEL"
+    },
+    "unsavedChangesTitle": "Unsaved changes",
+    "empty": {
+        "heading": "No {{term}} yet",
+        "description": "Add your first {{term}} to get started"
+    }
+}

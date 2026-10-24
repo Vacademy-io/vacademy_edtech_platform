@@ -1,0 +1,105 @@
+{
+    "status": {
+        "converted": "परिवर्तित",
+        "lost": "खोया",
+        "lead": "लीड"
+    },
+    "tier": {
+        "hot": "उच्च रुचि",
+        "warm": "मध्यम रुचि",
+        "cold": "कम रुचि"
+    },
+    "scoreFactors": {
+        "sourceQuality": "स्रोत गुणवत्ता",
+        "profileCompleteness": "प्रोफ़ाइल पूर्णता",
+        "recency": "हाल की गतिविधि",
+        "engagement": "सहभागिता"
+    },
+    "noteActionTypes": {
+        "note": "नोट",
+        "callLog": "कॉल लॉग",
+        "followUp": "फ़ॉलो-अप",
+        "meeting": "मीटिंग"
+    },
+    "scoreEditor": {
+        "manualScore": "मैन्युअल: {{score}}",
+        "setManually": "स्कोर मैन्युअल रूप से सेट करें",
+        "clearOverrideTitle": "मैन्युअल ओवरराइड हटाएं — गणना किया गया स्कोर पुनर्स्थापित करता है",
+        "scoreUpdated": "स्कोर अपडेट किया गया",
+        "updateFailed": "स्कोर अपडेट करने में विफल",
+        "enterValidNumber": "0 से 100 के बीच एक संख्या दर्ज करें",
+        "placeholder": "0–100"
+    },
+    "scoreBreakdown": {
+        "hideBreakdown": "विवरण छिपाएं",
+        "showBreakdown": "स्कोर विवरण",
+        "loading": "लोड हो रहा है…",
+        "manualNotice": "स्कोर मैन्युअल रूप से सेट किया गया था — विवरण आनुपातिक है",
+        "initialBonus": "प्रारंभिक बोनस",
+        "total": "कुल"
+    },
+    "timeline": {
+        "viewLess": "कम देखें",
+        "viewMore": "और देखें",
+        "by": "द्वारा"
+    },
+    "addNote": {
+        "addPrompt": "नोट जोड़ें या गतिविधि लॉग करें…",
+        "scheduleTimeLabel": "निर्धारित समय",
+        "followUpPlaceholder": "इस फ़ॉलो-अप के लिए नोट जोड़ें (वैकल्पिक)…",
+        "noResponseLinked": "कोई कैंपेन प्रतिक्रिया लिंक नहीं है — फ़ॉलो-अप शेड्यूल नहीं किया जा सकता।",
+        "notePlaceholder": "यहां अपना नोट टाइप करें…",
+        "scheduleRequired": "निर्धारित समय आवश्यक है",
+        "ctrlEnterSubmit": "सबमिट करने के लिए Ctrl+Enter दबाएं",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "scheduleFollowUp": "फ़ॉलो-अप शेड्यूल करें",
+        "addNote": "नोट जोड़ें",
+        "followUpScheduled": "फ़ॉलो-अप शेड्यूल किया गया",
+        "followUpFailed": "फ़ॉलो-अप शेड्यूल करने में विफल",
+        "noteAdded": "नोट जोड़ा गया",
+        "noteFailed": "नोट जोड़ने में विफल",
+        "noteRequired": "आपका संस्थान हर फ़ॉलो-अप पर नोट अनिवार्य करता है।",
+        "followUpPlaceholderRequired": "इस फ़ॉलो-अप के लिए नोट लिखें (आवश्यक)…",
+        "fieldsRequired": "फ़ॉलो-अप शेड्यूल करने से पहले * वाले सभी फ़ील्ड भरें।"
+    },
+    "audiences": {
+        "linkedCampaigns": "लिंक किए गए कैंपेन",
+        "unnamedCampaign": "अनाम कैंपेन"
+    },
+    "crossStageTimeline": {
+        "activityAndNotes": "गतिविधि और नोट्स",
+        "loadingActivity": "गतिविधि लोड हो रही है…",
+        "pageOf": "पृष्ठ {{current}} / {{total}}",
+        "previous": "पिछला",
+        "next": "अगला",
+        "noActivityYet": "अभी तक कोई गतिविधि नहीं",
+        "noActivityHint": "नोट्स, स्थिति परिवर्तन और अन्य घटनाएं यहां दिखाई देंगी"
+    },
+    "profile": {
+        "noProfileYet": "अभी तक कोई लीड प्रोफ़ाइल नहीं",
+        "noProfileHint": "जैसे ही यह उपयोगकर्ता कोई पूछताछ सबमिट करेगा या स्कोर किया जाएगा, प्रोफ़ाइल दिखाई देगी।",
+        "leadInterestScore": "लीड रुचि स्कोर",
+        "lastCalculatedLabel": "अंतिम गणना",
+        "setTier": "{{tier}} सेट करें",
+        "campaigns": "कैंपेन",
+        "timelineEvents": "टाइमलाइन घटनाएं",
+        "demoAttendance": "डेमो उपस्थिति",
+        "bestSource": "सर्वश्रेष्ठ स्रोत",
+        "lastActivity": "अंतिम गतिविधि",
+        "leadSince": "लीड बनने की तारीख",
+        "convertedOn": "परिवर्तित तिथि",
+        "scoreUpdated": "स्कोर अपडेट किया गया",
+        "leadStatus": "लीड स्थिति",
+        "selectStatus": "स्थिति चुनें",
+        "scoreFrozenWhileConverted": "परिवर्तित होने के बाद स्कोर अपडेट रोक दिए जाते हैं।",
+        "assignedCounselor": "नियुक्त काउंसलर",
+        "reassign": "पुनः नियुक्त करें",
+        "assignCounselorPrompt": "+ काउंसलर नियुक्त करें",
+        "callHistory": "कॉल इतिहास",
+        "leadMarkedAs": "लीड को {{status}} के रूप में चिह्नित किया गया",
+        "statusUpdateFailed": "लीड स्थिति अपडेट करने में विफल",
+        "leadTierSetTo": "लीड स्तर {{tier}} पर सेट किया गया",
+        "tierUpdateFailed": "लीड स्तर अपडेट करने में विफल"
+    }
+}

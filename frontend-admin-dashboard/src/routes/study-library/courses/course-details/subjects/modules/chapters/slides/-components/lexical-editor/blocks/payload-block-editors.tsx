@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { RichTextField, RichTextHtml } from '../../yoopta-editor-customizations/RichTextField';
@@ -51,15 +52,16 @@ export function FlashcardBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<FlashcardPayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     const [flipped, setFlipped] = useState(false);
 
     if (readOnly) {
         return (
             <BlockShell
-                title="Flashcard"
+                title={t('flashcard.title')}
                 actions={
                     <MyButton buttonType="text" scale="small" onClick={() => setFlipped(!flipped)}>
-                        <ArrowsClockwise size={14} className="mr-1" /> Flip
+                        <ArrowsClockwise size={14} className="mr-1" /> {t('flashcard.flip')}
                     </MyButton>
                 }
             >
@@ -68,33 +70,37 @@ export function FlashcardBlockEditor({
         );
     }
     return (
-        <BlockShell title="Flashcard">
+        <BlockShell title={t('flashcard.title')}>
             <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                    <div className="mb-1 text-caption font-semibold text-primary-500">FRONT</div>
+                    <div className="mb-1 text-caption font-semibold text-primary-500">
+                        {t('flashcard.front')}
+                    </div>
                     <div className="rounded-md border border-neutral-200 bg-white p-2">
                         <RichTextField
                             value={payload.front}
                             onChange={(html) => setPayload({ ...payload, front: html })}
-                            placeholder="Front of the card…"
+                            placeholder={t('flashcard.frontPlaceholder')}
                             minHeight={60}
                         />
                     </div>
                 </div>
                 <div>
-                    <div className="mb-1 text-caption font-semibold text-primary-500">BACK</div>
+                    <div className="mb-1 text-caption font-semibold text-primary-500">
+                        {t('flashcard.back')}
+                    </div>
                     <div className="rounded-md border border-neutral-200 bg-white p-2">
                         <RichTextField
                             value={payload.back}
                             onChange={(html) => setPayload({ ...payload, back: html })}
-                            placeholder="Back of the card…"
+                            placeholder={t('flashcard.backPlaceholder')}
                             minHeight={60}
                         />
                     </div>
                 </div>
             </div>
             <div className="mt-2 flex items-center gap-2 text-caption text-neutral-600">
-                Aspect ratio:
+                {t('flashcard.aspectRatio')}
                 {(['original', '1:1', '4:3', '16:9'] as const).map((r) => (
                     <button
                         key={r}
@@ -115,13 +121,14 @@ export function FlashcardBlockEditor({
 
 // ---------- Tabs ----------
 export function TabsBlockEditor({ payload, setPayload, readOnly }: BlockEditorProps<TabsPayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     const [active, setActive] = useState(0);
     const tabs = payload.tabs;
     const activeTab = tabs[Math.min(active, tabs.length - 1)];
 
     return (
         <BlockShell
-            title="Tabbed content"
+            title={t('tabs.title')}
             actions={
                 !readOnly ? (
                     <MyButton
@@ -129,18 +136,24 @@ export function TabsBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                         scale="small"
                         onClick={() => {
                             setPayload({
-                                tabs: [...tabs, { label: `Tab ${tabs.length + 1}`, content: '' }],
+                                tabs: [
+                                    ...tabs,
+                                    {
+                                        label: t('tabs.tabDefaultLabel', { number: tabs.length + 1 }),
+                                        content: '',
+                                    },
+                                ],
                             });
                             setActive(tabs.length);
                         }}
                     >
-                        <Plus size={14} className="mr-1" /> Add tab
+                        <Plus size={14} className="mr-1" /> {t('tabs.addTab')}
                     </MyButton>
                 ) : undefined
             }
         >
             <div className="mb-2 flex flex-wrap gap-1 border-b border-neutral-200">
-                {tabs.map((t, i) => (
+                {tabs.map((tab, i) => (
                     <button
                         key={i}
                         type="button"
@@ -152,7 +165,7 @@ export function TabsBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                         )}
                         onClick={() => setActive(i)}
                     >
-                        {t.label || `Tab ${i + 1}`}
+                        {tab.label || t('tabs.tabDefaultLabel', { number: i + 1 })}
                     </button>
                 ))}
             </div>
@@ -162,12 +175,12 @@ export function TabsBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                         <div className="mb-2 flex items-center gap-2">
                             <MyInput
                                 inputType="text"
-                                inputPlaceholder="Tab label"
+                                inputPlaceholder={t('tabs.tabLabelPlaceholder')}
                                 input={activeTab.label}
                                 onChangeFunction={(e) =>
                                     setPayload({
-                                        tabs: tabs.map((t, i) =>
-                                            i === active ? { ...t, label: e.target.value } : t
+                                        tabs: tabs.map((tb, i) =>
+                                            i === active ? { ...tb, label: e.target.value } : tb
                                         ),
                                     })
                                 }
@@ -195,12 +208,12 @@ export function TabsBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                                 value={activeTab.content}
                                 onChange={(html) =>
                                     setPayload({
-                                        tabs: tabs.map((t, i) =>
-                                            i === active ? { ...t, content: html } : t
+                                        tabs: tabs.map((tb, i) =>
+                                            i === active ? { ...tb, content: html } : tb
                                         ),
                                     })
                                 }
-                                placeholder="Tab content…"
+                                placeholder={t('tabs.contentPlaceholder')}
                                 minHeight={80}
                             />
                         </div>
@@ -213,7 +226,14 @@ export function TabsBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
 
 // ---------- Quiz ----------
 export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorProps<QuizPayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     const letters = 'ABCDEFGHIJ';
+    /* Native radios sharing a `name` form ONE document-wide group, so a second
+     * quiz block on the same slide would silently uncheck the first one's DOM
+     * node (React only rewrites `checked` when the prop changes, so it never
+     * repaints the loser) — the answer looked lost even though the payload was
+     * intact. One group per block keeps them independent. */
+    const groupName = `quiz-correct-${useId()}`;
 
     const setType = (type: QuizPayload['type']) => {
         if (type === payload.type) return;
@@ -222,8 +242,8 @@ export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                 ...payload,
                 type,
                 options: [
-                    { text: 'True', isCorrect: true },
-                    { text: 'False', isCorrect: false },
+                    { text: t('quiz.true'), isCorrect: true },
+                    { text: t('quiz.false'), isCorrect: false },
                 ],
             });
         } else {
@@ -233,21 +253,21 @@ export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
 
     return (
         <BlockShell
-            title="Quiz"
+            title={t('quiz.title')}
             actions={
                 !readOnly ? (
                     <div className="flex gap-1">
-                        {(['mcq', 'trueFalse'] as const).map((t) => (
+                        {(['mcq', 'trueFalse'] as const).map((qType) => (
                             <button
-                                key={t}
+                                key={qType}
                                 type="button"
                                 className={cn(
                                     'rounded-md border border-neutral-200 px-2 py-0.5 text-caption',
-                                    payload.type === t && 'border-primary-400 text-primary-500'
+                                    payload.type === qType && 'border-primary-400 text-primary-500'
                                 )}
-                                onClick={() => setType(t)}
+                                onClick={() => setType(qType)}
                             >
-                                {t === 'mcq' ? 'MCQ' : 'True/False'}
+                                {qType === 'mcq' ? t('quiz.mcq') : t('quiz.trueFalse')}
                             </button>
                         ))}
                     </div>
@@ -261,7 +281,7 @@ export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                     <RichTextField
                         value={payload.question}
                         onChange={(html) => setPayload({ ...payload, question: html })}
-                        placeholder="Question…"
+                        placeholder={t('quiz.questionPlaceholder')}
                         minHeight={40}
                     />
                 </div>
@@ -276,7 +296,7 @@ export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                 >
                     <input
                         type="radio"
-                        name="correct-option"
+                        name={groupName}
                         className="mt-1.5"
                         checked={opt.isCorrect}
                         disabled={readOnly}
@@ -307,7 +327,7 @@ export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                                         ),
                                     })
                                 }
-                                placeholder={`Option ${letters[i]}…`}
+                                placeholder={t('quiz.optionPlaceholder', { letter: letters[i] })}
                                 minHeight={24}
                             />
                         )}
@@ -339,19 +359,19 @@ export function QuizBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                         })
                     }
                 >
-                    <Plus size={14} className="mr-1" /> Add option
+                    <Plus size={14} className="mr-1" /> {t('quiz.addOption')}
                 </MyButton>
             )}
             {!readOnly && (
                 <div className="mt-2">
                     <div className="mb-1 text-caption text-neutral-500">
-                        Explanation (shown after answering)
+                        {t('quiz.explanationLabel')}
                     </div>
                     <div className="rounded-md border border-neutral-200 bg-white p-2">
                         <RichTextField
                             value={payload.explanation}
                             onChange={(html) => setPayload({ ...payload, explanation: html })}
-                            placeholder="Why is this the correct answer?"
+                            placeholder={t('quiz.explanationPlaceholder')}
                             minHeight={32}
                         />
                     </div>
@@ -367,9 +387,10 @@ export function TimelineBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<TimelinePayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     return (
         <BlockShell
-            title="Timeline"
+            title={t('timeline.title')}
             actions={
                 !readOnly ? (
                     <MyButton
@@ -380,7 +401,9 @@ export function TimelineBlockEditor({
                                 steps: [
                                     ...payload.steps,
                                     {
-                                        title: `Step ${payload.steps.length + 1}`,
+                                        title: t('timeline.stepDefaultTitle', {
+                                            number: payload.steps.length + 1,
+                                        }),
                                         description: '',
                                         color: '#007acc', // design-lint-ignore: serialized learner HTML needs literal colours
                                     },
@@ -388,7 +411,7 @@ export function TimelineBlockEditor({
                             })
                         }
                     >
-                        <Plus size={14} className="mr-1" /> Add step
+                        <Plus size={14} className="mr-1" /> {t('timeline.addStep')}
                     </MyButton>
                 ) : undefined
             }
@@ -414,7 +437,7 @@ export function TimelineBlockEditor({
                                 <div className="flex grow flex-col gap-1">
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Step title"
+                                        inputPlaceholder={t('timeline.stepTitlePlaceholder')}
                                         input={step.title}
                                         onChangeFunction={(e) =>
                                             setPayload({
@@ -427,7 +450,7 @@ export function TimelineBlockEditor({
                                     />
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Description (optional)"
+                                        inputPlaceholder={t('timeline.descriptionPlaceholder')}
                                         input={step.description}
                                         onChangeFunction={(e) =>
                                             setPayload({
@@ -443,7 +466,7 @@ export function TimelineBlockEditor({
                                 </div>
                                 <input
                                     type="color"
-                                    aria-label="Step color"
+                                    aria-label={t('timeline.stepColorAriaLabel')}
                                     value={step.color}
                                     className="mt-1 size-6 cursor-pointer rounded border-none"
                                     onChange={(e) =>
@@ -482,9 +505,10 @@ export function ColumnsBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<ColumnsPayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     return (
         <BlockShell
-            title={`Columns (${payload.columns.length})`}
+            title={t('columns.title', { count: payload.columns.length })}
             actions={
                 !readOnly ? (
                     <div className="flex items-center gap-1">
@@ -499,7 +523,7 @@ export function ColumnsBlockEditor({
                                     })
                                 }
                             >
-                                <Plus size={14} className="mr-1" /> Add column
+                                <Plus size={14} className="mr-1" /> {t('columns.addColumn')}
                             </MyButton>
                         )}
                         {payload.columns.length > 1 && (
@@ -513,7 +537,7 @@ export function ColumnsBlockEditor({
                                     })
                                 }
                             >
-                                <Trash size={14} className="mr-1" /> Remove last
+                                <Trash size={14} className="mr-1" /> {t('columns.removeLast')}
                             </MyButton>
                         )}
                     </div>
@@ -542,7 +566,7 @@ export function ColumnsBlockEditor({
                                         ),
                                     })
                                 }
-                                placeholder={`Column ${i + 1}…`}
+                                placeholder={t('columns.columnPlaceholder', { number: i + 1 })}
                                 minHeight={60}
                             />
                         )}
@@ -559,6 +583,7 @@ export function AccordionBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<AccordionPayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     const [openSet, setOpenSet] = useState<Set<number>>(() => new Set([0]));
 
     const toggle = (i: number) => {
@@ -572,7 +597,7 @@ export function AccordionBlockEditor({
 
     return (
         <BlockShell
-            title="Accordion"
+            title={t('accordion.title')}
             actions={
                 !readOnly ? (
                     <MyButton
@@ -582,13 +607,18 @@ export function AccordionBlockEditor({
                             setPayload({
                                 items: [
                                     ...payload.items,
-                                    { heading: `Section ${payload.items.length + 1}`, content: '' },
+                                    {
+                                        heading: t('accordion.sectionDefaultHeading', {
+                                            number: payload.items.length + 1,
+                                        }),
+                                        content: '',
+                                    },
                                 ],
                             });
                             setOpenSet((prev) => new Set(prev).add(payload.items.length));
                         }}
                     >
-                        <Plus size={14} className="mr-1" /> Add section
+                        <Plus size={14} className="mr-1" /> {t('accordion.addSection')}
                     </MyButton>
                 ) : undefined
             }
@@ -601,7 +631,7 @@ export function AccordionBlockEditor({
                             <button
                                 type="button"
                                 onClick={() => toggle(i)}
-                                aria-label="Toggle section"
+                                aria-label={t('accordion.toggleSectionAriaLabel')}
                             >
                                 {open ? <CaretDown size={14} /> : <CaretRight size={14} />}
                             </button>
@@ -611,7 +641,7 @@ export function AccordionBlockEditor({
                                 <>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Section heading"
+                                        inputPlaceholder={t('accordion.sectionHeadingPlaceholder')}
                                         input={item.heading}
                                         onChangeFunction={(e) =>
                                             setPayload({
@@ -654,7 +684,7 @@ export function AccordionBlockEditor({
                                                 ),
                                             })
                                         }
-                                        placeholder="Section content…"
+                                        placeholder={t('accordion.sectionContentPlaceholder')}
                                         minHeight={48}
                                     />
                                 )}
@@ -687,12 +717,13 @@ const CODE_LANGUAGES = [
 ];
 
 export function CodeBlockEditor({ payload, setPayload, readOnly }: BlockEditorProps<CodePayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     return (
         <div className="my-2 overflow-hidden rounded-md">
             {!readOnly && (
                 <div className="flex items-center gap-2 bg-neutral-700 px-3 py-1">
                     <select
-                        aria-label="Code language"
+                        aria-label={t('code.languageAriaLabel')}
                         className="rounded-sm bg-neutral-600 px-1 py-0.5 text-caption text-white"
                         value={payload.language}
                         onChange={(e) => setPayload({ ...payload, language: e.target.value })}
@@ -710,7 +741,7 @@ export function CodeBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                 rows={Math.max(3, payload.code.split('\n').length)}
                 spellCheck={false}
                 readOnly={readOnly}
-                placeholder="// code"
+                placeholder={t('code.placeholder')}
                 value={payload.code}
                 onChange={(e) => setPayload({ ...payload, code: e.target.value })}
                 onKeyDown={(e) => e.stopPropagation()}
@@ -725,12 +756,15 @@ export function MultiLangCodeBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<MultiLangCodePayload>) {
+    const { t } = useTranslation('studyLibraryPayloadBlockEditors');
     return (
-        <BlockShell title={`${payload.language.toUpperCase()} Code Editor`}>
+        <BlockShell
+            title={t('multiLangCode.title', { language: payload.language.toUpperCase() })}
+        >
             {!readOnly && (
                 <div className="mb-2">
                     <select
-                        aria-label="Language"
+                        aria-label={t('multiLangCode.languageAriaLabel')}
                         className="rounded-md border border-neutral-200 px-2 py-1 text-caption"
                         value={payload.language}
                         onChange={(e) => setPayload({ ...payload, language: e.target.value })}
@@ -748,14 +782,14 @@ export function MultiLangCodeBlockEditor({
                 rows={Math.max(4, payload.code.split('\n').length)}
                 spellCheck={false}
                 readOnly={readOnly}
-                placeholder={`# ${payload.language} code — learners get an interactive runner`}
+                placeholder={t('multiLangCode.placeholder', { language: payload.language })}
                 value={payload.code}
                 onChange={(e) => setPayload({ ...payload, code: e.target.value })}
                 onKeyDown={(e) => e.stopPropagation()}
             />
             {payload.output && (
                 <div className="mt-2 text-caption text-neutral-500">
-                    Output:
+                    {t('multiLangCode.output')}
                     <pre className="mt-1 whitespace-pre-wrap rounded-md bg-neutral-100 p-2">
                         {payload.output}
                     </pre>

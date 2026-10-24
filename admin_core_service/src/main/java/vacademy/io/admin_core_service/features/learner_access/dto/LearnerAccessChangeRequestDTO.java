@@ -69,6 +69,24 @@ public class LearnerAccessChangeRequestDTO {
     private Boolean reactivateExpired = true;
 
     /** Free-text note stored on every log row this request writes. */
+    /**
+     * Move the learner's JOIN date (ssigm.enrolled_date). Independent of the expiry
+     * operations above: either, both or neither may be set in one request.
+     *
+     * <p>Used when someone enrolled for an intake they cannot start — the trial that begins
+     * next Monday moving to the Monday after, say. The plan's term and charge date follow it
+     * unless {@link #shiftPlanWindow} says otherwise, because leaving them behind is what
+     * made a learner's access window and their billing window disagree in the first place.
+     */
+    private Date newJoinDate;
+
+    /**
+     * Whether moving the join date also moves the plan's term (start_date, end_date) and its
+     * next charge. Defaults to true: a trial shifted a week later should end a week later and
+     * be billed a week later, which is the whole point of moving it.
+     */
+    private Boolean shiftPlanWindow = true;
+
     private String reason;
 
     /** Preview only: compute and return the changes without writing them. */

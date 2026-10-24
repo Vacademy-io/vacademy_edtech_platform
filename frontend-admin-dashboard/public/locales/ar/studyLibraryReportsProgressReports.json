@@ -1,0 +1,53 @@
+{
+    "validation": {
+        "batchRequired": "اختر دفعة واحدة على الأقل",
+        "studentRequired": "المتعلم مطلوب"
+    },
+    "toast": {
+        "exportSuccess": "تم تصدير التقرير",
+        "exportFailed": "فشل تصدير ملف PDF",
+        "csvExportSuccess": "تم تصدير CSV",
+        "csvExportFailed": "فشل تصدير CSV",
+        "learnerNotInBatches": "هذا المتعلم غير مسجل في أي من الدفعات المختارة."
+    },
+    "form": {
+        "selectStudent": "اختر الطالب",
+        "searchStudent": "ابحث عن طالب...",
+        "noStudentsFound": "لم يتم العثور على طلاب",
+        "generateReport": "إنشاء التقرير",
+        "fixErrorsPrefix": "يرجى تصحيح الأخطاء التالية:",
+        "loadingStudents": "جارٍ التحميل…",
+        "learnerHint": "{{count}} متاح",
+        "pickBatchFirst": "اختر {{batch}} أولًا."
+    },
+    "report": {
+        "exporting": "جارٍ التصدير...",
+        "exportPdf": "تصدير PDF",
+        "subjectWiseHeading": "تقرير التقدم حسب المادة",
+        "exportCsv": "تصدير CSV",
+        "batchCount": "{{term}} · تم اختيار {{count}}",
+        "batchLoadFailed": "تعذر تحميل تقرير {{name}}."
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "التقدم حسب {{subjectTerm}} لـ {{batchTerm}}",
+        "learnerProgressReport": "تقرير تقدم المتعلم",
+        "learnerLabel": "المتعلم",
+        "termCompleted": "{{term}} مكتمل",
+        "termsTracked": "{{term}} متتبَّعة",
+        "termWiseProgress": "التقدم حسب {{term}}",
+        "termColonName": "{{term}}: {{name}}",
+        "completed": "مكتمل",
+        "dailyTimeAvg": "متوسط الوقت اليومي",
+        "termDailyTimeAvg": "متوسط الوقت اليومي لـ {{term}}",
+        "termWiseProgressReport": "تقرير التقدم حسب {{term}}",
+        "learningProgressReport": "تقرير تقدم التعلم"
+    },
+    "csv": {
+        "fileStem": "learner-progress",
+        "title": "التقدم حسب {{term}}",
+        "moduleCompleted": "اكتمال {{module}} (%)",
+        "moduleCompletedByBatch": "اكتمال {{module}} حسب {{batch}} (%)",
+        "dailyTimeMin": "متوسط الوقت اليومي (دقيقة)",
+        "dailyTimeByBatchMin": "متوسط الوقت اليومي لـ {{batch}} (دقيقة)"
+    }
+}

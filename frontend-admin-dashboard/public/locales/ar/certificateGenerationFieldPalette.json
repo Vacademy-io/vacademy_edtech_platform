@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "الحقول المتاحة",
+        "count_zero": "لا توجد حقول متاحة",
+        "count_one": "حقل واحد متاح",
+        "count_two": "حقلان متاحان",
+        "count_few": "{{count}} حقول متاحة",
+        "count_many": "{{count}} حقلاً متاحاً",
+        "count_other": "{{count}} حقل متاح"
+    },
+    "instructions": {
+        "label": "تعليمات:",
+        "text": "اسحب الحقول من هذه اللوحة إلى قالب PDF لتحديد مكان ظهور البيانات على الشهادة."
+    },
+    "sections": {
+        "systemFields": "حقول النظام",
+        "csvFields": "حقول بيانات CSV",
+        "fieldCount": "({{count}})"
+    },
+    "noCsvFields": {
+        "title": "لا توجد حقول CSV متاحة",
+        "description": "قم برفع ملف CSV في الخطوة 1 لرؤية حقول إضافية للربط"
+    },
+    "legend": {
+        "title": "أنواع الحقول",
+        "systemFields": "حقول النظام - بيانات الطالب المدمجة",
+        "csvFields": "حقول CSV - بيانات مخصصة من الملف المرفوع"
+    },
+    "fields": {
+        "userId": { "label": "معرّف المستخدم", "sample": "USR001" },
+        "enrollmentNumber": { "label": "رقم التسجيل", "sample": "ENR2024001" },
+        "studentName": { "label": "اسم الطالب", "sample": "أحمد محمد" },
+        "fullName": { "label": "الاسم الكامل", "sample": "أحمد محمد علي" },
+        "email": { "label": "البريد الإلكتروني", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "رقم الجوال", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "اسم المؤسسة", "sample": "جامعة التكنولوجيا" },
+        "completionDate": { "label": "تاريخ الإكمال" }
+    }
+}

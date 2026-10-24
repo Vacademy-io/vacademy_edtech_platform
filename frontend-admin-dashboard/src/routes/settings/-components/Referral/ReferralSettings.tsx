@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ReferralManager } from './ReferralManager';
 import {
     UnifiedReferralSettings,
     UnifiedReferralSettings as UnifiedReferralSettingsType,
 } from './UnifiedReferralSettings';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { Warning, CheckCircle, CircleNotch } from '@phosphor-icons/react';
 import {
     addReferralOption,
     getReferralOptions,
@@ -15,6 +16,7 @@ import {
 } from '@/services/referral';
 
 const ReferralSettings = () => {
+    const { t } = useTranslation('settingsReferral');
     const [showUnifiedReferralSettings, setShowUnifiedReferralSettings] = useState(false);
     const [editingUnifiedReferralSettings, setEditingUnifiedReferralSettings] =
         useState<UnifiedReferralSettingsType | null>(null);
@@ -35,16 +37,16 @@ const ReferralSettings = () => {
             const programs = apiResponse.map(convertFromApiFormat);
             setReferralPrograms(programs);
         } catch (error) {
-            handleError(error, 'load referral programs');
+            handleError(error, 'load referral programs', t('errors.loadPrograms'));
         } finally {
             setLoading(false);
         }
     };
 
     // Error handling for component operations
-    const handleError = (error: unknown, operation: string) => {
+    const handleError = (error: unknown, operation: string, message: string) => {
         console.error(`Error in ${operation}:`, error);
-        setError(`Failed to ${operation}. Please try again.`);
+        setError(message);
         setTimeout(() => setError(null), 5000);
     };
 
@@ -63,11 +65,11 @@ const ReferralSettings = () => {
             if (editingUnifiedReferralSettings) {
                 // Update existing program
                 await updateReferralOption(editingUnifiedReferralSettings.id, settings);
-                setSuccess('Referral program updated successfully!');
+                setSuccess(t('toasts.programUpdated'));
             } else {
                 // Add new program
                 await addReferralOption(settings);
-                setSuccess('Referral program created successfully!');
+                setSuccess(t('toasts.programCreated'));
             }
             // Reload programs to get updated data
             await loadReferralPrograms();
@@ -75,7 +77,7 @@ const ReferralSettings = () => {
             setShowUnifiedReferralSettings(false);
             setTimeout(() => setSuccess(null), 5000);
         } catch (error) {
-            handleError(error, 'save referral program');
+            handleError(error, 'save referral program', t('errors.saveProgram'));
         }
     };
 
@@ -85,7 +87,7 @@ const ReferralSettings = () => {
             // Reload programs to get updated data
             await loadReferralPrograms();
         } catch (error) {
-            handleError(error, 'delete referral program');
+            handleError(error, 'delete referral program', t('errors.deleteProgram'));
         }
     };
 
@@ -94,14 +96,14 @@ const ReferralSettings = () => {
             const duplicatedProgram: UnifiedReferralSettingsType = {
                 ...program,
                 id: Date.now().toString(),
-                label: `${program.label} (Copy)`,
+                label: t('program.duplicateLabel', { label: program.label }),
                 isDefault: false,
             };
             await addReferralOption(duplicatedProgram);
             // Reload programs to get updated data
             await loadReferralPrograms();
         } catch (error) {
-            handleError(error, 'duplicate referral program');
+            handleError(error, 'duplicate referral program', t('errors.duplicateProgram'));
         }
     };
 
@@ -110,7 +112,7 @@ const ReferralSettings = () => {
             {/* Error Alert */}
             {error && (
                 <Alert variant="destructive">
-                    <AlertTriangle className="size-4" />
+                    <Warning className="size-4" />
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
@@ -125,9 +127,9 @@ const ReferralSettings = () => {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="size-10 animate-spin text-primary-500" />
+                    <CircleNotch className="size-10 animate-spin text-primary-500" />
 
-                    <p className="text-gray-600">Loading referral programs...</p>
+                    <p className="text-gray-600">{t('loading')}</p>
                 </div>
             ) : (
                 <ReferralManager

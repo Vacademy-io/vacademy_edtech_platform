@@ -16,7 +16,29 @@
         "loadMore": "تحميل المزيد",
         "announcementsErrorTitle": "تعذّر تحميل الإعلانات",
         "announcementsEmptyTitle": "لا توجد إعلانات بعد",
-        "announcementsEmptyDescription": "ستظهر إعلانات مؤسستك هنا."
+        "announcementsEmptyDescription": "ستظهر إعلانات مؤسستك هنا.",
+        "receivedTimes": "وردت {{count}} مرات",
+        "noContent": "لا توجد تفاصيل إضافية لهذا الإشعار.",
+        "close": "إغلاق",
+        "openLink": "فتح الرابط",
+        "unreadSummary_zero": "ليس لديك إشعارات غير مقروءة",
+        "unreadSummary_one": "لديك إشعار واحد غير مقروء",
+        "unreadSummary_two": "لديك إشعاران غير مقروءين",
+        "unreadSummary_few": "لديك {{count}} إشعارات غير مقروءة",
+        "unreadSummary_many": "لديك {{count}} إشعارًا غير مقروء",
+        "unreadSummary_other": "لديك {{count}} إشعار غير مقروء",
+        "clear": "مسح",
+        "clearOne": "مسح الإشعار: {{title}}",
+        "clearAll": "مسح الكل",
+        "clearing": "جارٍ المسح...",
+        "clearAllTitle": "مسح جميع الإشعارات؟",
+        "cancel": "إلغاء",
+        "clearAllDescription_zero": "لا توجد إشعارات لمسحها.",
+        "clearAllDescription_one": "سيؤدي هذا إلى إزالة إشعار واحد من صندوق الوارد. لا يمكن التراجع عن ذلك.",
+        "clearAllDescription_two": "سيؤدي هذا إلى إزالة إشعارين من صندوق الوارد. لا يمكن التراجع عن ذلك.",
+        "clearAllDescription_few": "سيؤدي هذا إلى إزالة {{count}} إشعارات من صندوق الوارد. لا يمكن التراجع عن ذلك.",
+        "clearAllDescription_many": "سيؤدي هذا إلى إزالة {{count}} إشعارًا من صندوق الوارد. لا يمكن التراجع عن ذلك.",
+        "clearAllDescription_other": "سيؤدي هذا إلى إزالة {{count}} إشعار من صندوق الوارد. لا يمكن التراجع عن ذلك."
     },
     "hero": {
         "greeting": {
@@ -25,7 +47,8 @@
             "evening": "مساء الخير",
             "morningWithName": "صباح الخير، {{name}}",
             "afternoonWithName": "طاب يومك، {{name}}",
-            "eveningWithName": "مساء الخير، {{name}}"
+            "eveningWithName": "مساء الخير، {{name}}",
+            "welcomeBackFallback": "مرحبًا بعودتك"
         },
         "pickUpWhereLeftOff": "تابع من حيث توقفت",
         "yourFirstSlide": "{{slide}} الأول لك",
@@ -81,6 +104,13 @@
         "renewPromptNoDate": "ادفع مرة واحدة وتستمر عضويتك.",
         "reactivatePrompt": "أعد تفعيل هذه العضوية — نفس الخطة ونفس الدورات، دون إعادة تسجيل.",
         "alsoEnableAutopay": "أعد تفعيل الدفع التلقائي أيضًا — موافقة واحدة تدفع الآن وتهيّئ التجديدات القادمة.",
+        "mandateMethod": {
+            "heading": "كيف تريد إعداد الدفع التلقائي؟",
+            "upiLabel": "UPI Autopay",
+            "upiHint": "GPay, PhonePe, Paytm",
+            "cardLabel": "بطاقة",
+            "cardHint": "بطاقة خصم / ائتمان"
+        },
         "payToContinue": "ادفع {{amount}} للمتابعة",
         "startingPayment": "جارٍ بدء الدفع...",
         "unavailable": "تفاصيل العضوية غير متاحة حاليًا.",
@@ -96,7 +126,37 @@
         "tryAgain": "يرجى المحاولة مرة أخرى بعد قليل.",
         "paymentReceivedToast": "تم استلام الدفعة!",
         "paymentReceivedToastBody": "يتم إعادة تفعيل عضويتك — يستغرق ذلك بضع ثوانٍ.",
-        "paymentNotCompletedToast": "لم تكتمل عملية الدفع"
+        "paymentNotCompletedToast": "لم تكتمل عملية الدفع",
+        "changePlan": "Change plan",
+        "completeEnrollmentPrompt": "لم يتم تنشيط هذه العضوية — لم يكتمل تسجيلك. أكمل التسجيل لتبدأ الحضور.",
+        "completeEnrollmentCta": "أكمل تسجيلك",
+        "changePlanTitle": "Change your plan",
+        "changePlanSubtitle": "You're on {{plan}}. Pick what you'd like to move to.",
+        "changePlanSubtitleNoPlan": "Pick the plan you'd like to move to.",
+        "changePlanLoadFailed": "We couldn't load the available plans. Please try again in a moment.",
+        "changePlanNoOptions": "There aren't any other plans you can switch to right now.",
+        "planChangeUpgrade": "Upgrade",
+        "planChangeDowngrade": "Downgrade",
+        "planChangeCadence": "{{price}} every {{days}} days",
+        "planChangePayNow": "Pay {{amount}} now — starts immediately",
+        "planChangeFreeOn": "Free — starts {{date}}",
+        "planChangeFreeAtCycleEnd": "Free — starts at the end of your current period",
+        "planChangeCredit": "يشمل رصيد {{amount}} من خطتك الحالية — يضيف {{days}} يومًا",
+        "planChangeFullPrice": "السعر الكامل للخطة الجديدة — {{days}} يومًا من الوصول",
+        "planChangeMandateReauth": "You'll be asked to re-approve auto-pay for the new amount.",
+        "planChangeAutopayRequired": "Re-approve auto-pay so future renewals keep working",
+        "planChangeCancel": "Cancel",
+        "planChangeConfirmPay": "Pay {{amount}}",
+        "planChangeConfirmSchedule": "Schedule this change",
+        "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+        "planChangeScheduledNoDate": "Moving to {{plan}} at the end of your current period.",
+        "planChangeCancelScheduled": "Cancel this change",
+        "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+        "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+        "planChangeCompletePayment": "Complete payment",
+        "planChangeDiscard": "Discard this change",
+        "planChangeScheduledToast": "Plan change scheduled",
+        "planChangeScheduledToastBody": "You'll move to {{plan}} on {{date}}. Nothing changes until then."
     },
     "books": {
         "title": "الكتب",
@@ -232,6 +292,205 @@
         "awardedTooltip": "{{name}} — ممنوحة من مؤسستك",
         "awardedTooltipWithReason": "{{name}} — ممنوحة من مؤسستك: {{reason}}",
         "unlockedCount": "{{unlocked}}/{{total}} مفتوحة",
-        "emptyPrompt": "أكمل أول {{slide}} لفتح شارة"
+        "emptyPrompt": "أكمل أول {{slide}} لفتح شارة",
+        "manualLockedHint": "تُمنح من مؤسستك — لا تُفتح تلقائيًا",
+        "manualLockedTooltip": "{{name}} — تُمنح من مؤسستك، ولا تُفتح تلقائيًا",
+        "celebrateTitle": "تم فتح شارة جديدة!",
+        "celebrateAwardedTitle": "منحتك مؤسستك شارة"
+    },
+    "tnc": {
+        "title": "قبول الشروط والأحكام",
+        "description": "يجب عليك قراءة الشروط والأحكام الخاصة بمؤسستك والموافقة عليها قبل الوصول إلى لوحتك.",
+        "scrollToRead": "مرّر للقراءة",
+        "readAgree": "لقد قرأت الشروط والأحكام وأوافق عليها",
+        "digitalSignature": "التوقيع الرقمي",
+        "namePlaceholder": "أدخل اسمك القانوني الكامل",
+        "signaturePrefilled": "اسمك المسجَّل معروض أعلاه. بالنقر على \"موافقة\"، فإنك توقّع هذا المستند رقميًا.",
+        "signatureManual": "بإدخال اسمك والنقر على \"موافقة\"، فإنك توقّع هذا المستند رقميًا.",
+        "accepting": "جارٍ الموافقة...",
+        "acceptButton": "أوافق وأتابع",
+        "toast": {
+            "needConfirmRead": "يرجى تأكيد أنك قرأت الشروط والأحكام وتوافق عليها",
+            "needName": "يرجى إدخال اسمك الكامل للموافقة",
+            "success": "تم قبول الشروط والأحكام بنجاح",
+            "failure": "تعذّر قبول الشروط والأحكام. يرجى المحاولة مرة أخرى."
+        }
+    },
+    "achievements": {
+        "title": "إنجازاتك",
+        "xpToNextLevel": "{{xp}} XP للوصول إلى المستوى {{level}}",
+        "badgesUnlocked": "الشارات · {{unlocked}}/{{total}} مفتوحة"
+    },
+    "attendance": {
+        "title": "الحضور",
+        "period7d": "7 أيام",
+        "period30d": "30 يومًا",
+        "period90d": "3 أشهر",
+        "dayStatus": {
+            "present": "حاضر",
+            "absent": "غائب",
+            "noClass": "لا توجد حصة",
+            "notMarked": "لم يُسجَّل بعد"
+        },
+        "emptyTitleWithStreak": "احضر {{liveClass}} اليوم لتبدأ سلسلة إنجازك",
+        "emptyTitleNoStreak": "احضر {{liveClass}} اليوم لتبدأ تتبّع حضورك",
+        "emptyBodyWithStreak": "ستظهر هنا إحصاءات حضورك وسلسلة إنجازك الأسبوعية.",
+        "emptyBodyNoStreak": "ستظهر هنا إحصاءات حضورك لهذا الأسبوع.",
+        "viewDetailsAria": "عرض تفاصيل الحضور",
+        "coverageNote_zero": "{{count}} يوم {{liveClass}} منذ {{date}}",
+        "coverageNote_one": "{{count}} يوم {{liveClass}} منذ {{date}}",
+        "coverageNote_two": "{{count}} يومان {{liveClass}} منذ {{date}}",
+        "coverageNote_few": "{{count}} أيام {{liveClass}} منذ {{date}}",
+        "coverageNote_many": "{{count}} يومًا {{liveClass}} منذ {{date}}",
+        "coverageNote_other": "{{count}} يوم {{liveClass}} منذ {{date}}",
+        "overall": "الإجمالي",
+        "streak": "سلسلة الإنجاز",
+        "daysPresent": "أيام الحضور",
+        "thisWeek": "هذا الأسبوع"
+    },
+    "continueLearning": {
+        "startLearningTitle": "ابدأ التعلم",
+        "allCaughtUpTitle": "أنجزت كل شيء!",
+        "browsePrompt": "تصفّح {{courses}} وابدأ أول {{slide}} لك.",
+        "allCompletePrompt": "لقد أكملت كل {{slides}} المتاحة. عمل رائع، واصل الزخم.",
+        "startFirstSlideButton": "ابدأ أول {{slide}} لك",
+        "exploreContentButton": "استكشف المحتوى",
+        "title": "متابعة التعلّم",
+        "slidesInProgress": "{{count}} {{slide}} قيد التقدم",
+        "continueFromWhereLeftOff": "تابع من حيث توقفت",
+        "resumeLearningButton": "استئناف التعلّم"
+    },
+    "enrolledCourses": {
+        "viewAll": "عرض كل {{courses}}",
+        "emptyTitle": "لم تسجّل في أي {{courses}} بعد",
+        "browse": "تصفّح {{courses}}",
+        "cta": {
+            "continue": "متابعة",
+            "start": "ابدأ",
+            "review": "مراجعة"
+        },
+        "cardAria": "{{course}}، {{percent}}٪ مكتمل. {{action}}"
+    },
+    "dashboardHero": {
+        "loadingAria": "جارٍ التحميل",
+        "liveNow": "مباشر الآن",
+        "startsInMinutes": "يبدأ خلال {{minutes}} د",
+        "joinAria": "انضم إلى {{title}}",
+        "welcomeWithName": "مرحبًا، {{name}}",
+        "welcome": "مرحبًا",
+        "getStartedTitle": "لنبدأ رحلتك",
+        "getStartedSubtitle": "بضع خطوات سريعة للاستفادة القصوى من تعلّمك.",
+        "browseCoursesLabel": "تصفّح {{courses}}",
+        "browseCoursesHint": "افتح موضوعًا وابدأ أول {{slide}} لك",
+        "tryAssessmentLabel": "جرّب تقييمًا",
+        "tryAssessmentHint": "اختبر معلوماتك باختبار سريع",
+        "completeProfileLabel": "أكمل ملفك الشخصي",
+        "completeProfileHint": "أضف تفاصيلك لتخصيص تجربة التعلّم"
+    },
+    "activityChart": {
+        "emptyMessage": "سيظهر نشاطك هنا أثناء تعلّمك.",
+        "title": "اتجاه تقدّم التعلّم",
+        "subtitle": "مقارنة أسبوعية لنشاط التعلّم",
+        "status": {
+            "justStarting": "بداية الانطلاق",
+            "excellent": "ممتاز",
+            "onTrack": "على المسار الصحيح",
+            "needsFocus": "بحاجة إلى تركيز"
+        },
+        "avgLabel": "المتوسط: {{time}}",
+        "yourStudyTime": "وقت دراستك",
+        "batchAverage": "متوسط {{batch}}",
+        "realTimeData": "بيانات فورية",
+        "performanceVsBatch": "الأداء مقارنة بـ {{batch}}:",
+        "above": "↗ أعلى",
+        "below": "↘ أدنى",
+        "activeDays": "{{active}}/{{total}} أيام نشطة",
+        "peakDay": "أفضل يوم",
+        "vsBatch": "مقابل {{batch}}",
+        "percentDifference": "{{percent}}% فرق",
+        "yourTime": "وقتك"
+    },
+    "learningInsights": {
+        "title": "تقدّم التعلّم",
+        "subtitle": "نشاط آخر 7 أيام مقارنة بمتوسط {{batch}}",
+        "avgLabel": "المتوسط",
+        "sessionsLabel": "الجلسات",
+        "streakLabel_zero": "أيام متتالية",
+        "streakLabel_one": "يوم متتالٍ",
+        "streakLabel_two": "يومان متتاليان",
+        "streakLabel_few": "أيام متتالية",
+        "streakLabel_many": "يومًا متتاليًا",
+        "streakLabel_other": "يوم متتالٍ",
+        "chartViewTitle": "عرض الرسم البياني",
+        "tableViewTitle": "عرض الجدول",
+        "loadError": "تعذّر تحميل نشاط تعلّمك.",
+        "tryAgain": "حاول مرة أخرى"
+    },
+    "mentors": {
+        "title": "موجّهيّ",
+        "emptyStateTitle": "التوجيه",
+        "emptyStateBody": "احصل على إرشاد فردي — تصفّح موجّهي مؤسستك واطلب من يناسب ما تعمل عليه.",
+        "findMentorButton": "ابحث عن موجّه",
+        "viewAll": "عرض الكل",
+        "nextSession": "الجلسة القادمة",
+        "mentorSessionFallback": "جلسة توجيه",
+        "linkPendingTooltip": "ما زال يتم إنشاء رابط اجتماع موجّهك. يرجى المراجعة بعد قليل.",
+        "linkComingSoon": "الرابط قادم قريبًا",
+        "mentorFallbackName": "الموجّه",
+        "chatOpenError": "تعذّر فتح المحادثة. يرجى المحاولة مرة أخرى."
+    },
+    "onboardingGate": {
+        "finishSetupWithName": "أكمل إعداد حساب {{name}}",
+        "finishSetupGeneric": "أكمل إعداد حسابك",
+        "completeStepsPrompt": "أكمل الخطوات أدناه للمتابعة إلى لوحتك.",
+        "progressLabel": "التقدّم",
+        "waitingOnAdminSuffix": "قيد المعالجة من قِبل مسؤول مدرستك — لا تحتاج إلى فعل أي شيء هنا."
+    },
+    "dashboardPage": {
+        "pageTitle": "لوحة التحكم",
+        "metaDescription": "لوحة تحكم للمؤسسات - نظام إدارة التعلّم",
+        "yogaGreeting": "هل أنت مستعد لرحلة اليوغا اليوم؟",
+        "classesToday": "{{count}} {{liveClass}} اليوم",
+        "attendanceStreakFact": "سلسلة حضور لمدة {{count}} يوم",
+        "statCard": {
+            "coursesEmptyAction": "تصفّح {{courses}}",
+            "liveClassesEmptyAction": "عرض {{liveClasses}}",
+            "assessmentsTitle": "التقييمات",
+            "assessmentsEmptyAction": "عرض التقييمات"
+        },
+        "customWidgetFallbackTitle": "أداة مخصصة",
+        "openButton": "فتح",
+        "devTesting": {
+            "title": "اختبار المطوّر",
+            "description": "اختبار وظيفة الإشعارات الفورية"
+        },
+        "exploreMembershipsButton": "استكشف العضويات",
+        "exploreBooksButton": "استكشف الكتب",
+        "toast": {
+            "attendanceMarkFailed": "تعذّر تسجيل الحضور"
+        },
+        "holistic": {
+            "yogaIllustrationAlt": "رسم توضيحي لليوغا",
+            "thisWeekTitle": "هذا الأسبوع",
+            "referFriendTitle": "أحِل صديقًا",
+            "referFriendSubtitle": "شارك الرحلة",
+            "inviteButton": "دعوة",
+            "myClassesTitle": "حصصي",
+            "liveBadge": "مباشر",
+            "joinNowButton": "انضم الآن",
+            "noLiveClassesScheduled": "لا توجد {{liveClasses}} مجدولة",
+            "checkBackLater": "راجع لاحقًا للاطلاع على الحصص المباشرة القادمة",
+            "viewAllClassesButton": "عرض كل الحصص",
+            "dateAtTime": "{{date}} في {{time}}"
+        }
+    },
+    "getApp": {
+        "title": "حمّل التطبيق",
+        "subtitle": "لتجربة سلسة، حمّل تطبيقاتنا.",
+        "android": "تطبيق أندرويد",
+        "ios": "تطبيق iPhone و iPad",
+        "windows": "تطبيق Windows",
+        "mac": "تطبيق Mac",
+        "webPortal": "بوابة الويب"
     }
 }

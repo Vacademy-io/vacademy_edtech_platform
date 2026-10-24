@@ -12,6 +12,7 @@ import {
     PencilSimple,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { useStudentSidebar } from '../../../../-context/selected-student-sidebar-context';
 import { useStudentCredentails } from '@/services/student-list-section/getStudentCredentails';
@@ -36,6 +37,7 @@ import { OfflineDevicesCard } from './offline-devices-card';
 import { useOfflineAccessEnabled } from '@/routes/settings/-hooks/use-offline-access-enabled';
 
 export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
+    const { t } = useTranslation('manageStudentsPortalAccess');
     const { selectedStudent } = useStudentSidebar();
     const { openIndividualShareCredentialsDialog } = useDialogStore();
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
@@ -47,8 +49,13 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
     const { data: credentials, isLoading: isCredentialsLoading } = useStudentCredentails({
         userId: userId || '',
     });
+    // `hasPassword` tracks whether a real password value exists, independent of
+    // the translated placeholder text shown while loading / not-found — the copy
+    // button's visibility must never branch on a translated display string.
+    const hasPassword = Boolean(credentials?.password);
     const password =
-        credentials?.password || (isCredentialsLoading ? 'Loading...' : 'password not found');
+        credentials?.password ||
+        (isCredentialsLoading ? t('credentials.loadingPlaceholder') : t('credentials.notFoundPlaceholder'));
     const [isEditCredentialsOpen, setIsEditCredentialsOpen] = useState(false);
     const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
     // Set on a successful rename so the card reflects it straight away —
@@ -112,20 +119,27 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
     const viewerIsAdmin = useMemo(() => isUserAdmin(), []);
     const canEditCredentials = learnerSettings?.allowEditCredentials ?? viewerIsAdmin;
 
-    const handleCopy = async (text: string, fieldName: string) => {
+    // `fieldKey` is an internal identifier used for both the copy-icon toggle
+    // state and to look up the translated field name for toasts — kept as a
+    // stable lowercase key so it never doubles as (and drifts from) display text.
+    const handleCopy = async (text: string, fieldKey: 'username' | 'password') => {
+        const fieldLabel =
+            fieldKey === 'username'
+                ? t('credentials.usernameFieldName')
+                : t('credentials.passwordFieldName');
         try {
             await navigator.clipboard.writeText(text);
-            setCopiedField(fieldName);
-            toast.success(`${fieldName} copied to clipboard!`);
+            setCopiedField(fieldKey);
+            toast.success(t('toast.copiedToClipboard', { field: fieldLabel }));
             setTimeout(() => setCopiedField(''), 2000);
         } catch (error) {
-            toast.error(`Failed to copy ${fieldName}`);
+            toast.error(t('toast.copyFailed', { field: fieldLabel }));
         }
     };
 
     const handleAccessPortal = async () => {
         if (!selectedStudent?.user_id) {
-            toast.error('Student user ID not found');
+            toast.error(t('toast.studentUserIdNotFound'));
             return;
         }
 
@@ -140,24 +154,24 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
         }
 
         if (!packageId) {
-            toast.error('Student package ID not found');
+            toast.error(t('toast.studentPackageIdNotFound'));
             return;
         }
 
         try {
-            toast.loading('Accessing learner portal...');
+            toast.loading(t('toast.accessingPortal'));
             const response = await getLearnerPortalAccess(selectedStudent.user_id, packageId);
 
             if (response.redirect_url) {
                 // Open the redirect URL in a new tab
                 window.open(response.redirect_url, '_blank', 'noopener,noreferrer');
-                toast.success('Learner portal opened in new tab');
+                toast.success(t('toast.portalOpened'));
             } else {
-                toast.error('No redirect URL received');
+                toast.error(t('toast.noRedirectUrl'));
             }
         } catch (error) {
             console.error('Error accessing learner portal:', error);
-            toast.error('Failed to access learner portal. Please try again.');
+            toast.error(t('toast.accessPortalFailed'));
         } finally {
             toast.dismiss();
         }
@@ -174,7 +188,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
 
     const handleOpenResetPassword = () => {
         if (!selectedStudent?.user_id) {
-            toast.error('Student user ID not found');
+            toast.error(t('toast.studentUserIdNotFound'));
             return;
         }
         setIsResetPasswordOpen(true);
@@ -186,7 +200,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                 packageSessionIds={enrollmentPsIds}
                 value={selectedPsId}
                 onChange={setSelectedPsId}
-                label="Open portal for"
+                label={t('batchPicker.openPortalForLabel')}
             />
 
             {/* Account Credentials Section.
@@ -203,7 +217,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                                 <Key className="size-3.5 text-primary-600" />
                             </div>
                             <h3 className="text-xs font-semibold text-neutral-700 transition-colors duration-200 group-hover:text-primary-700">
-                                Account Credentials
+                                {t('credentials.title')}
                             </h3>
                         </div>
 
@@ -219,7 +233,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                                     style={{ pointerEvents: 'auto', zIndex: 10 }}
                                 >
                                     <PencilSimple className="mr-1 size-2.5" />
-                                    Edit
+                                    {t('credentials.edit')}
                                 </MyButton>
                             )}
 
@@ -240,7 +254,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                                     style={{ pointerEvents: 'auto', zIndex: 10 }}
                                 >
                                     <Shield className="mr-1 size-2.5" />
-                                    Share
+                                    {t('credentials.share')}
                                 </MyButton>
                             )}
                         </div>
@@ -252,19 +266,21 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                             <div className="flex items-start gap-2 rounded-md px-1.5 py-1">
                                 <div className="mt-1.5 size-1 shrink-0 rounded-full bg-neutral-300"></div>
                                 <div className="min-w-0 flex-1 text-xs leading-relaxed text-neutral-700">
-                                    <span className="font-medium text-neutral-600">Username: </span>
+                                    <span className="font-medium text-neutral-600">
+                                        {t('credentials.usernameLabel')}{' '}
+                                    </span>
                                     <span className="group/value relative inline-flex items-center text-neutral-800">
-                                        <span>{username || 'N/A'}</span>
+                                        <span>{username || t('credentials.usernameNotFound')}</span>
                                         {username && (
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    username && handleCopy(username, 'Username');
+                                                    username && handleCopy(username, 'username');
                                                 }}
                                                 className="ml-2 cursor-pointer rounded-md p-1 hover:bg-neutral-200"
                                                 style={{ pointerEvents: 'auto' }}
                                             >
-                                                {copiedField === 'Username' ? (
+                                                {copiedField === 'username' ? (
                                                     <Check className="size-3 text-green-600" />
                                                 ) : (
                                                     <Copy className="size-3 text-neutral-500 hover:text-neutral-700" />
@@ -281,17 +297,19 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                             <div className="flex items-start gap-2 rounded-md px-1.5 py-1">
                                 <div className="mt-1.5 size-1 shrink-0 rounded-full bg-neutral-300"></div>
                                 <div className="min-w-0 flex-1 text-xs leading-relaxed text-neutral-700">
-                                    <span className="font-medium text-neutral-600">Password: </span>
+                                    <span className="font-medium text-neutral-600">
+                                        {t('credentials.passwordLabel')}{' '}
+                                    </span>
                                     <span className="group/value relative inline-flex items-center text-neutral-800">
                                         <span>{password}</span>
-                                        {password && password !== 'password not found' && (
+                                        {(hasPassword || isCredentialsLoading) && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleCopy(password, 'Password')}
+                                                onClick={() => handleCopy(password, 'password')}
                                                 className="ml-2 cursor-pointer rounded-md p-1 hover:bg-neutral-200"
                                                 style={{ pointerEvents: 'auto' }}
                                             >
-                                                {copiedField === 'Password' ? (
+                                                {copiedField === 'password' ? (
                                                     <Check className="size-3 text-green-600" />
                                                 ) : (
                                                     <Copy className="size-3 text-neutral-500 hover:text-neutral-700" />
@@ -316,10 +334,10 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                             </div>
                             <div className="flex-1">
                                 <h4 className="text-xs font-medium text-neutral-700">
-                                    Learner Portal
+                                    {t('actions.learnerPortal.title')}
                                 </h4>
                                 <p className="text-2xs text-neutral-500">
-                                    Access learner portal directly
+                                    {t('actions.learnerPortal.description')}
                                 </p>
                             </div>
                         </div>
@@ -333,7 +351,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                             style={{ pointerEvents: 'auto', zIndex: 10 }}
                         >
                             <MonitorPlay className="mr-1.5 size-3.5" />
-                            Access Learner Portal
+                            {t('actions.learnerPortal.button')}
                         </MyButton>
                     </div>
                 )}
@@ -346,10 +364,10 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                             </div>
                             <div className="flex-1">
                                 <h4 className="text-xs font-medium text-neutral-700">
-                                    Reset Password
+                                    {t('actions.resetPassword.title')}
                                 </h4>
                                 <p className="text-2xs text-neutral-500">
-                                    Send password reset email
+                                    {t('actions.resetPassword.description')}
                                 </p>
                             </div>
                         </div>
@@ -363,7 +381,7 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                             style={{ pointerEvents: 'auto', zIndex: 10 }}
                         >
                             <Envelope className="mr-1.5 size-3.5" />
-                            Send Reset Password Email
+                            {t('actions.resetPassword.button')}
                         </MyButton>
                     </div>
                 )}
@@ -403,12 +421,8 @@ export const StudentPortalAccess = ({ isSubmissionTab }: { isSubmissionTab?: boo
                 !learnerSettings?.allowSendResetPasswordMail && (
                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-neutral-200 bg-neutral-50/50 py-12">
                         <Shield className="mb-2 size-8 text-neutral-400" />
-                        <p className="text-sm text-neutral-500">
-                            No portal access features enabled
-                        </p>
-                        <p className="text-xs text-neutral-400">
-                            Contact admin to enable portal access settings
-                        </p>
+                        <p className="text-sm text-neutral-500">{t('emptyState.title')}</p>
+                        <p className="text-xs text-neutral-400">{t('emptyState.description')}</p>
                     </div>
                 )}
         </div>

@@ -1,0 +1,12 @@
+{
+    "readyToSubmitHeading": "Prêt à soumettre",
+    "reachedEndPrefix": "Vous avez atteint la fin du",
+    "admissionFormLabel": "formulaire d'admission",
+    "reachedEndSuffix": ". Veuillez vérifier tous les détails avant la soumission finale.",
+    "admissionSummaryHeading": "Résumé de l'admission",
+    "studentNameLabel": "Nom de l'élève :",
+    "classLabel": "Classe :",
+    "clickPrefix": "Cliquez sur",
+    "submitAdmissionLabel": "Soumettre l'admission",
+    "clickSuffix": "ci-dessous pour finaliser cet enregistrement."
+}

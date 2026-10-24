@@ -12,6 +12,8 @@ import {
     clearCourseSettingsCache,
 } from '@/services/course-settings';
 import { CourseSettingsData, DEFAULT_COURSE_SETTINGS } from '@/types/course-settings';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface CourseSettingsContextType {
     settings: CourseSettingsData;
@@ -51,7 +53,9 @@ export const CourseSettingsProvider: React.FC<CourseSettingsProviderProps> = ({ 
             setSettings(mergedSettings);
         } catch (err) {
             console.error('Error loading course settings:', err);
-            setError('Failed to load course settings');
+            setError(
+                `Failed to load ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} settings`
+            );
             // Use default settings as fallback
             setSettings(DEFAULT_COURSE_SETTINGS);
         } finally {

@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 export interface AIToolFeatureType {
     key: string;
     heading: string;
@@ -12,67 +14,72 @@ export interface AIToolCardDataType {
     features: AIToolFeatureType[];
 }
 
-export const AIToolCardData: AIToolCardDataType[] = [
+export const buildAIToolCardData = (t: TFunction): AIToolCardDataType[] => [
     {
-        title: 'Make a new question paper',
-        description: 'Start from a topic, a document, or a recording. Edit before you publish.',
+        title: t('cards.newPaper.title'),
+        description: t('cards.newPaper.description'),
         features: [
             {
                 key: 'assessment',
-                heading: 'Create a Question Paper',
-                subheading:
-                    'Drop a PDF, paste a topic, or upload audio. Get a draft you can edit before sending.',
-                tags: ['PDF, audio or topic', 'Ready in ~30s', 'Editable draft'],
+                heading: t('cards.newPaper.features.assessment.heading'),
+                subheading: t('cards.newPaper.features.assessment.subheading'),
+                tags: t('cards.newPaper.features.assessment.tags', {
+                    returnObjects: true,
+                }) as string[],
                 route: '/ai-center/ai-tools/vsmart-upload',
             },
         ],
     },
     {
-        title: 'Bring an existing paper online',
-        description: 'Turn printed or scanned papers into editable question sets.',
+        title: t('cards.existingPaper.title'),
+        description: t('cards.existingPaper.description'),
         features: [
             {
                 key: 'question',
-                heading: 'Reuse Existing Questions',
-                subheading:
-                    'Upload a printed paper — photo, scan, or PDF — and get back a digital, editable question set.',
-                tags: ['Photo, scan or PDF', 'OCR handled for you', 'Save to question bank'],
+                heading: t('cards.existingPaper.features.question.heading'),
+                subheading: t('cards.existingPaper.features.question.subheading'),
+                tags: t('cards.existingPaper.features.question.tags', {
+                    returnObjects: true,
+                }) as string[],
                 route: '/ai-center/ai-tools/vsmart-extract',
             },
         ],
     },
     {
-        title: 'Tidy your question bank',
-        description: 'Group questions by topic so you can reuse them next term.',
+        title: t('cards.questionBank.title'),
+        description: t('cards.questionBank.description'),
         features: [
             {
                 key: 'sortSplitPdf',
-                heading: 'Organize My Question Bank',
-                subheading:
-                    'Auto-group questions by topic, or pick your own splits. Refine the result with drag and drop.',
-                tags: ['Auto-group by topic', 'Chapter-wise', 'Drag to refine'],
+                heading: t('cards.questionBank.features.sortSplitPdf.heading'),
+                subheading: t('cards.questionBank.features.sortSplitPdf.subheading'),
+                tags: t('cards.questionBank.features.sortSplitPdf.tags', {
+                    returnObjects: true,
+                }) as string[],
                 route: '/ai-center/ai-tools/vsmart-organizer',
             },
         ],
     },
     {
-        title: 'Plan and improve your lectures',
-        description: 'Draft a lesson before class. Get kind, specific feedback after.',
+        title: t('cards.lecturePlanning.title'),
+        description: t('cards.lecturePlanning.description'),
         features: [
             {
                 key: 'planLecture',
-                heading: 'Lesson Planner',
-                subheading:
-                    'Describe what you are teaching and how long you have. Get a draft plan you can refine.',
-                tags: ['Time-based timeline', 'Editable in place', 'Homework optional'],
+                heading: t('cards.lecturePlanning.features.planLecture.heading'),
+                subheading: t('cards.lecturePlanning.features.planLecture.subheading'),
+                tags: t('cards.lecturePlanning.features.planLecture.tags', {
+                    returnObjects: true,
+                }) as string[],
                 route: '/ai-center/ai-tools/vsmart-lecture',
             },
             {
                 key: 'evaluateLecture',
-                heading: 'Lecture Coach',
-                subheading:
-                    'Drop a recording of a lecture you taught. Get a clear, constructive review.',
-                tags: ['Pacing & engagement', 'Strong moments', 'Concrete suggestions'],
+                heading: t('cards.lecturePlanning.features.evaluateLecture.heading'),
+                subheading: t('cards.lecturePlanning.features.evaluateLecture.subheading'),
+                tags: t('cards.lecturePlanning.features.evaluateLecture.tags', {
+                    returnObjects: true,
+                }) as string[],
                 route: '/ai-center/ai-tools/vsmart-feedback',
             },
         ],

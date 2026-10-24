@@ -123,6 +123,9 @@ interface AssessmentStore {
   isSectionAvailable: (sectionIndex: number) => boolean;
   tabSwitchCount: number;
   incrementTabSwitchCount: () => void;
+  /** Set once by the proctoring layer when the admin's violation ceiling is hit; the navbar submits. */
+  proctorAutoSubmitRequested: boolean;
+  requestProctorAutoSubmit: () => void;
   saveState: () => Promise<void>;
   loadState: () => Promise<void>;
   clearPersistedState: () => Promise<void>;
@@ -591,6 +594,9 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   tabSwitchCount: 0,
   incrementTabSwitchCount: () =>
     set((state) => ({ tabSwitchCount: state.tabSwitchCount + 1 })),
+
+  proctorAutoSubmitRequested: false,
+  requestProctorAutoSubmit: () => set({ proctorAutoSubmitRequested: true }),
 
   entireTestTimer: 0,
   setEntireTestTimer: (time) => set({ entireTestTimer: time }),

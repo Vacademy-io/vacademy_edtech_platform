@@ -1,0 +1,89 @@
+{
+    "dialogTitle": "Intégration API - {{campaignName}}",
+    "dialogDescription": "Utilisez ces informations pour intégrer des outils d'automatisation comme Zapier, Make ou des applications personnalisées.",
+    "tabs": {
+        "curl": "Commande cURL",
+        "docs": "Documentation"
+    },
+    "copyButton": {
+        "copy": "Copier",
+        "copied": "Copié",
+        "copyMarkdown": "Copier le Markdown"
+    },
+    "toasts": {
+        "copiedToClipboard": "Copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie"
+    },
+    "curlTab": {
+        "replaceHintPrefix": "Remplacez les valeurs d'exemple (par ex.,",
+        "replaceHintSuffix": ") par des données réelles avant d'envoyer la requête."
+    },
+    "common": {
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "docsPanel": {
+        "heading": "Guide d'intégration API",
+        "endpointHeading": "Point de terminaison",
+        "headersHeading": "En-têtes",
+        "headersTable": {
+            "header": "En-tête",
+            "value": "Valeur"
+        },
+        "customFieldsHeading": "Champs personnalisés",
+        "customFieldsTable": {
+            "fieldId": "ID du champ",
+            "name": "Nom",
+            "type": "Type",
+            "required": "Obligatoire"
+        },
+        "integrationExamplesHeading": "Exemples d'intégration",
+        "zapierHeading": "Intégration Zapier",
+        "zapierSteps": {
+            "createZap": "Créez un nouveau Zap",
+            "chooseTrigger": "Choisissez votre application déclencheuse",
+            "addWebhooks": "Ajoutez Webhooks by Zapier comme action",
+            "selectPostMethod": "Sélectionnez la méthode \"POST\"",
+            "pasteUrl": "Collez l'URL du point de terminaison",
+            "mapFields": "Associez vos champs au corps de la requête"
+        }
+    },
+    "markdown": {
+        "guideHeading": "Guide d'intégration API",
+        "endpointHeading": "Point de terminaison",
+        "headersHeading": "En-têtes",
+        "headersTable": {
+            "header": "En-tête",
+            "value": "Valeur"
+        },
+        "requestBodyHeading": "Structure du corps de la requête",
+        "customFieldsHeading": "Référence des champs personnalisés",
+        "customFieldsTable": {
+            "fieldId": "ID du champ",
+            "fieldName": "Nom du champ",
+            "type": "Type",
+            "required": "Obligatoire"
+        },
+        "responseHeading": "Réponse",
+        "successLabel": "Succès",
+        "errorLabel": "Erreur",
+        "integrationExamplesHeading": "Exemples d'intégration",
+        "zapierHeading": "Intégration Zapier",
+        "zapierSteps": {
+            "createZap": "Créez un nouveau Zap",
+            "chooseTrigger": "Choisissez votre application déclencheuse (ex. : Google Forms, Typeform)",
+            "addWebhooks": "Ajoutez Webhooks by Zapier comme action",
+            "selectPostMethod": "Sélectionnez la méthode \"POST\"",
+            "pasteUrl": "Collez l'URL du point de terminaison",
+            "setContentType": "Définissez Content-Type sur application/json",
+            "mapFields": "Associez les champs de votre déclencheur au corps de la requête"
+        },
+        "makeHeading": "Make (Integromat)",
+        "makeSteps": {
+            "createScenario": "Créez un nouveau scénario",
+            "addTrigger": "Ajoutez votre module déclencheur",
+            "addHttpModule": "Ajoutez le module HTTP > Effectuer une requête",
+            "configure": "Configurez avec le point de terminaison et la structure de charge utile ci-dessus"
+        }
+    }
+}

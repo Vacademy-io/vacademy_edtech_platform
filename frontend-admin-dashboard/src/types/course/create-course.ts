@@ -26,6 +26,10 @@ export interface Instructor {
     name: string;
     profilePicId?: string;
     roles?: string[];
+    authorSubtitle?: string;
+    authorDescription?: string;
+    /** Display role in this course (Author / Instructor / Acharya ...). '' = institute default. */
+    roleLabel?: string;
 }
 
 // === Subject Details with optional modules ===

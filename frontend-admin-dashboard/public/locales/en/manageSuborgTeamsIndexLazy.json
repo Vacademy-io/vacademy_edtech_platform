@@ -1,0 +1,8 @@
+{
+    "untitledTerm": "Untitled {{term}}",
+    "pageDescription": "Your {{term}}'s payments, learners and team. The ledger is read-only — the parent institute admin manages installments and discounts.",
+    "switchTerm": "Switch {{term}}",
+    "selectTermPlaceholder": "Select {{term}}",
+    "noAccessTitle": "No {{term}} access.",
+    "noAccessBody": "Ask your institute admin to grant you {{term}} admin access."
+}

@@ -1,0 +1,522 @@
+{
+    "catalogHero": {
+        "_owner": "Feature 'hero' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogTabs": {
+        "_owner": "Feature 'tabs' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogSidebar": {
+        "filters": "عوامل التصفية",
+        "clearAll": "مسح الكل",
+        "showMore": "+ عرض المزيد",
+        "showLess": "− عرض أقل",
+        "_owner": "Feature 'sidebar' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogSections": {
+        "_owner": "Feature 'sections' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogCards": {
+        "_owner": "Feature 'cards' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "siteChrome": {
+        "_owner": "Feature 'chrome' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "learningPaths": {
+        "_owner": "Feature 'paths' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "common": {
+        "viewMore": "عرض المزيد",
+        "viewLess": "عرض أقل",
+        "clearSearch": "مسح البحث",
+        "previousSlide": "الشريحة السابقة",
+        "nextSlide": "الشريحة التالية",
+        "addToCart": "أضف إلى السلة",
+        "remove": "إزالة",
+        "inStock": "متوفر",
+        "outOfStock": "غير متوفر",
+        "onlyLeft": "تبقّى {{count}} فقط",
+        "previousPage": "الصفحة السابقة",
+        "nextPage": "الصفحة التالية"
+    },
+    "productPageOffer": {
+        "spendMoreForTierAmount": "أنفق {{spend}} إضافية للحصول على خصم {{amount}}.",
+        "spendMoreForTierPercent": "أنفق {{spend}} إضافية للحصول على خصم {{percent}}٪.",
+        "addMoreForTierAmount": "أضف {{count}} {{course}} أخرى للحصول على خصم {{amount}}.",
+        "addMoreForTierAmountMore": "أضف {{count}} {{course}} أخرى للحصول على خصم إضافي قدره {{amount}}.",
+        "addMoreForTierPercent": "أضف {{count}} {{course}} أخرى للحصول على خصم {{percent}}٪.",
+        "finderShowing": "عرض",
+        "finderShowAll": "عرض كل {{courses}}",
+        "addMoreForTier": "أضف {{count}} {{course}} أخرى للحصول على {{offer}}.",
+        "savedAmount": "وفّرت {{amount}} · {{percent}}٪",
+        "emptyConfig": "اختر صفحة منتج من لوحة الخصائص لعرض {{courses}} الخاصة بها هنا.",
+        "errorLoad": "تعذّر تحميل صفحة المنتج هذه. تأكد من أنها نشطة وتابعة لهذه المؤسسة.",
+        "emptyCourses": "لا تحتوي صفحة المنتج هذه على {{courses}} بعد — أضفها في علامة تبويب {{courses}}.",
+        "seeAll": "عرض الكل",
+        "seeAllCourses": "عرض كل {{courses}}",
+        "enrolNow": "سجّل الآن",
+        "viewCourse": "عرض {{course}}",
+        "searchAndFilter": "ابحث وصفِّ القائمة الكاملة",
+        "scrollPrevious": "التمرير إلى {{courses}} السابقة",
+        "scrollNext": "التمرير إلى مزيد من {{courses}}",
+        "searchPlaceholder": "ابحث في {{courses}}...",
+        "searchAriaLabel": "ابحث في {{courses}}",
+        "noMatches": "لا توجد نتائج مطابقة",
+        "showingRange": "عرض {{from}}–{{to}} من {{total}}",
+        "noCoursesMatch": "لا توجد {{courses}} مطابقة لـ「{{query}}」.",
+        "page": "الصفحة {{number}}",
+        "coursePagesAriaLabel": "صفحات {{course}}",
+        "added": "أُضيف",
+        "addToCartAriaLabel": "أضف {{course}} إلى السلة",
+        "removeFromCartAriaLabel": "إزالة {{course}} من السلة",
+        "selectedCount_zero": "لم يتم تحديد شيء",
+        "selectedCount_one": "تم تحديد {{count}}",
+        "selectedCount_two": "تم تحديد {{count}}",
+        "selectedCount_few": "تم تحديد {{count}}",
+        "selectedCount_many": "تم تحديد {{count}}",
+        "selectedCount_other": "تم تحديد {{count}}",
+        "itemsSelected_zero": "لم يتم اختيار أي {{courses}}",
+        "itemsSelected_one": "تم اختيار {{course}} واحد",
+        "itemsSelected_two": "تم اختيار {{count}} {{courses}}",
+        "itemsSelected_few": "تم اختيار {{count}} {{courses}}",
+        "itemsSelected_many": "تم اختيار {{count}} {{courses}}",
+        "itemsSelected_other": "تم اختيار {{count}} {{courses}}",
+        "total": "الإجمالي",
+        "free": "مجانًا",
+        "clearCart": "مسح",
+        "proceedToCheckout": "المتابعة إلى الدفع",
+        "nothingForSelection": "لا يوجد شيء لهذا الاختيار بعد.",
+        "showAllCourses": "عرض كل {{courses}}"
+    },
+    "heroSection": {
+        "defaultAlt": "معاينة {{course}}",
+        "defaultVideoTitle": "فيديو الترويسة",
+        "goToSlide": "الانتقال إلى الشريحة {{number}}"
+    },
+    "checkoutForm": {
+        "toast": {
+            "missingEnrollmentInfo": "معلومات التسجيل مفقودة",
+            "otpSentWhatsapp": "تم إرسال رمز التحقق عبر واتساب",
+            "otpSendFailed": "تعذّر إرسال رمز التحقق. حاول مرة أخرى",
+            "phoneVerified": "تم التحقق من رقم الهاتف بنجاح",
+            "otpInvalid": "رمز التحقق غير صحيح. حاول مرة أخرى",
+            "loadPaymentOptionsFailed": "تعذّر تحميل خيارات الدفع. حاول مرة أخرى.",
+            "paymentSuccessful": "تم الدفع بنجاح!",
+            "paymentCancelled": "تم إلغاء الدفع",
+            "checkoutSuccessful": "تم الدفع بنجاح!",
+            "checkoutFailedDefault": "فشل إتمام الدفع. حاول مرة أخرى."
+        },
+        "razorpayDescription": "التسجيل في {{course}}",
+        "errors": {
+            "razorpaySdkLoadFailed": "تعذّر تحميل حزمة Razorpay",
+            "fullNameRequired": "الاسم الكامل مطلوب",
+            "emailRequired": "يلزم إدخال بريد إلكتروني صحيح",
+            "phoneRequiredOtp": "يلزم إدخال رقم هاتف صحيح لإرسال رمز التحقق",
+            "phoneRequired": "يلزم إدخال رقم هاتف صحيح",
+            "otpRequired": "يرجى إدخال رمز التحقق",
+            "phoneVerificationRequired": "التحقق من رقم الهاتف مطلوب",
+            "booksPreferenceMissing": "تعذّر العثور على حقل \"تفضيلات الكتب\" المخصص. يرجى التواصل مع الدعم."
+        },
+        "header": {
+            "title": "الدفع",
+            "subtitle": "أكمل معلوماتك"
+        },
+        "loading": "جارٍ تجهيز الدفع...",
+        "labels": {
+            "fullName": "الاسم الكامل",
+            "emailAddress": "البريد الإلكتروني",
+            "phoneWhatsapp": "رقم الهاتف (واتساب)"
+        },
+        "placeholders": {
+            "name": "أدخل اسمك",
+            "email": "email@example.com",
+            "otp": "------"
+        },
+        "buttons": {
+            "sent": "تم الإرسال",
+            "verify": "تحقّق",
+            "verifyOtp": "تحقّق من الرمز",
+            "proceedToPayment": "المتابعة إلى الدفع"
+        },
+        "summary": {
+            "subtotalCount_zero": "الإجمالي الفرعي ({{count}} عنصر)",
+            "subtotalCount_one": "الإجمالي الفرعي ({{count}} عنصر)",
+            "subtotalCount_two": "الإجمالي الفرعي ({{count}} عنصر)",
+            "subtotalCount_few": "الإجمالي الفرعي ({{count}} عناصر)",
+            "subtotalCount_many": "الإجمالي الفرعي ({{count}} عنصرًا)",
+            "subtotalCount_other": "الإجمالي الفرعي ({{count}} عنصر)",
+            "orderTotal": "إجمالي الطلب",
+            "itemsCount": "{{count}} عنصر",
+            "secure": "آمن"
+        },
+        "whatsappRequired": "يلزم التحقق من واتساب للمتابعة"
+    },
+    "policy": {
+        "notFoundTitle": "السياسة غير موجودة",
+        "notFoundDescription": "تعذّر العثور على السياسة المطلوبة."
+    },
+    "banner": {
+        "alt": "لافتة"
+    },
+    "courseRecommendations": {
+        "untitledCourse": "{{course}} بدون عنوان",
+        "free": "مجانًا",
+        "by": "بواسطة {{instructor}}"
+    },
+    "cart": {
+        "emptyDefault": "سلتك فارغة. أضف بعض الكتب!",
+        "yourBooks": "كتبك",
+        "subscriptionPlans": "خطط الاشتراك",
+        "noPlansAvailable": "لا توجد خطط عضوية متاحة حاليًا.",
+        "securityDeposit": "ملاحظة: يشمل سعر كل خطة اشتراك تأمينًا قابلًا للاسترداد قدره 300 ₹، ويُعاد عند انتهاء العضوية.",
+        "total": "الإجمالي",
+        "checkout": "الدفع",
+        "selectPlanFirst": "يرجى اختيار خطة عضوية قبل الدفع",
+        "maxBooksExceeded": "يمكنك استئجار {{max}} كتابًا كحد أقصى خلال هذه الفترة",
+        "noImage": "لا توجد صورة",
+        "paymentStatus": "حالة الدفع:",
+        "dismiss": "إغلاق",
+        "subtotalCount_zero": "الإجمالي الفرعي ({{count}} كتاب)",
+        "subtotalCount_one": "الإجمالي الفرعي ({{count}} كتاب)",
+        "subtotalCount_two": "الإجمالي الفرعي ({{count}} كتاب)",
+        "subtotalCount_few": "الإجمالي الفرعي ({{count}} كتب)",
+        "subtotalCount_many": "الإجمالي الفرعي ({{count}} كتابًا)",
+        "subtotalCount_other": "الإجمالي الفرعي ({{count}} كتاب)",
+        "crossStore": {
+            "multiple": "تحتوي سلتك على عناصر من {{count}} متاجر مختلفة ({{stores}}). يتولى كل متجر تنفيذ طلبه بنفسه، لذا قد تحتاج إلى إتمام الدفع لكل متجر على حدة.",
+            "mismatch": "عناصر سلتك من {{store}}، لكن متجرك النشط مختلف. بدّل المتجر أو أزل هذه العناصر للحفاظ على الاتساق."
+        },
+        "plan": {
+            "defaultName": "الخطة",
+            "maxBooksDescription": "يمكن استئجار {{max}} كتابًا كحد أقصى خلال هذه الفترة",
+            "noLimitDescription": "لا يوجد حد لعدد الكتب الإجمالي خلال هذه الفترة",
+            "booksAtOnce": "الكتب في المرة الواحدة:",
+            "booksInPeriod": "الكتب خلال الفترة:",
+            "selected": "محدَّدة",
+            "select": "اختيار"
+        },
+        "toast": {
+            "loginRequiredAfterPayment": "تم الدفع بنجاح! يرجى تسجيل الدخول للوصول إلى دوراتك.",
+            "redirecting": "تم الدفع بنجاح. جارٍ إعادة التوجيه...",
+            "loginAutomated": "تم تسجيل الدخول تلقائيًا بنجاح. مرحبًا بك!"
+        }
+    },
+    "addressForm": {
+        "label": "عنوان التوصيل",
+        "placeholders": {
+            "houseNo": "رقم المنزل / الشقة / المبنى",
+            "area": "المنطقة / الشارع / الحي",
+            "landmark": "معلم مميز (اختياري)",
+            "pincode": "الرمز البريدي",
+            "city": "المدينة / البلدة / القرية",
+            "district": "المنطقة الإدارية",
+            "postOffice": "مكتب البريد"
+        },
+        "selectState": "اختر الولاية",
+        "selectPostOffice": "اختر مكتب البريد",
+        "errors": {
+            "required": "مطلوب",
+            "pincodeRequired": "الرمز البريدي مطلوب",
+            "pincodeDigits": "يجب أن يتكون من 6 أرقام",
+            "selectState": "اختر ولاية",
+            "pincodeNotFound": "لم يتم العثور على الرمز البريدي — يرجى إدخال العنوان يدويًا",
+            "indiaPostUnreachable": "تعذّر الوصول إلى India Post. أدخل العنوان يدويًا."
+        }
+    },
+    "detailBlocks": {
+        "emptyGuidance": "أضف كتلة لكل برنامج تريد توثيقه."
+    },
+    "mediaShowcase": {
+        "videoUnavailable": "الفيديو غير متاح",
+        "loading": "جارٍ التحميل...",
+        "defaultVideoTitle": "فيديو",
+        "goToSlide": "الانتقال إلى الشريحة {{number}}",
+        "slideAlt": "الشريحة {{number}}",
+        "highlightsAriaLabel": "أبرز المحتويات",
+        "resumeSlideshow": "استئناف عرض الشرائح التلقائي",
+        "pauseSlideshow": "إيقاف عرض الشرائح التلقائي مؤقتًا"
+    },
+    "shareButton": {
+        "ariaLabel": "مشاركة الكتاب",
+        "toast": {
+            "linkError": "تعذّر إنشاء رابط المشاركة",
+            "linkCopied": "تم نسخ الرابط!"
+        },
+        "copied": "تم النسخ!",
+        "copyLink": "نسخ الرابط",
+        "shareWhatsapp": "مشاركة عبر واتساب"
+    },
+    "testimonial": {
+        "ratedOutOf5": "التقييم {{stars}} من 5",
+        "previous": "الشهادة السابقة",
+        "next": "الشهادة التالية",
+        "goToTestimonial": "الانتقال إلى الشهادة {{number}}"
+    },
+    "leadForm": {
+        "emptyConfig": "اختر حملة جمهور من لوحة الخصائص — ستظهر حقول نموذجها هنا.",
+        "errorLoad": "تعذّر تحميل هذه الحملة. تأكد من أنها نشطة وتابعة لهذه المؤسسة.",
+        "emptyFields": "لا تحتوي هذه الحملة على حقول نموذج بعد — أضفها في مدير الجمهور.",
+        "missingFields": "يرجى تعبئة: {{fields}}",
+        "genericError": "حدث خطأ ما — يرجى المحاولة مرة أخرى.",
+        "defaultThankYou": "شكرًا لك! لقد استلمنا بياناتك.",
+        "defaultAnotherResponse": "إرسال رد آخر",
+        "redirectingIn_zero": "جارٍ إعادة التوجيه خلال {{count}} ثانية…",
+        "redirectingIn_one": "جارٍ إعادة التوجيه خلال {{count}} ثانية…",
+        "redirectingIn_two": "جارٍ إعادة التوجيه خلال {{count}} ثانية…",
+        "redirectingIn_few": "جارٍ إعادة التوجيه خلال {{count}} ثوانٍ…",
+        "redirectingIn_many": "جارٍ إعادة التوجيه خلال {{count}} ثانية…",
+        "redirectingIn_other": "جارٍ إعادة التوجيه خلال {{count}} ثانية…",
+        "companyWebsite": "موقع الشركة",
+        "sending": "جارٍ الإرسال…",
+        "submit": "إرسال",
+        "placeholderPrefix": "أدخل {{name}}",
+        "selectParentFirst": "اختر {{name}} أولاً"
+    },
+    "bookDetails": {
+        "bookAltFallback": "كتاب",
+        "loadingCover": "جارٍ تحميل الغلاف...",
+        "onlyLeftUppercase": "تبقّى {{count}} فقط",
+        "unknownAuthor": "مؤلف غير معروف",
+        "genre": "النوع:",
+        "price": "السعر",
+        "goToCart": "الذهاب إلى السلة",
+        "added": "أُضيف",
+        "aboutThisBook": "عن هذا الكتاب",
+        "toast": {
+            "addedToCart": "أُضيف إلى السلة",
+            "missingEnrollInfo": "تعذّرت الإضافة إلى السلة: معلومات التسجيل مفقودة"
+        },
+        "modeTag": {
+            "rent": "استئجار",
+            "buy": "شراء"
+        }
+    },
+    "bookCatalogue": {
+        "untitledBook": "كتاب بدون عنوان",
+        "searchPlaceholder": "ابحث عن الكتب...",
+        "store": "المتجر",
+        "selectedStore": "المتجر المحدد",
+        "allStores": "كل المتاجر",
+        "pickStoreRentHint": "اختر متجرًا لتصفح مخزون الاستئجار",
+        "bestPriceHint": "يُعرض أفضل سعر من بين كل المتاجر",
+        "browseByGenre": "تصفّح حسب النوع",
+        "rentMode": "وضع الاستئجار",
+        "buyMode": "وضع الشراء",
+        "clearAll": "مسح الكل",
+        "pickStoreTitle": "اختر متجرًا لتصفح خيارات الاستئجار",
+        "pickStoreDescription": "يتم استلام كتب الاستئجار من متجر، لذا يختلف المخزون حسب المتجر. اختر متجرًا أعلاه لمعرفة المتاح.",
+        "noBooksFound": "لم يتم العثور على كتب مطابقة لمعاييرك.",
+        "availableAtStores": "متوفر في {{count}} متاجر",
+        "cart": "السلة",
+        "fromPrefix": "من",
+        "lowestPriceSuffix": "— أفضل سعر",
+        "loadingMoreBooks": "جارٍ تحميل المزيد من الكتب...",
+        "endOfCatalogue": "لقد وصلت إلى نهاية الفهرس",
+        "showingAllBooks": "عرض جميع الكتب البالغ عددها {{total}}",
+        "toast": {
+            "removedFromCart": "أُزيل من السلة",
+            "addedToCart": "أُضيف إلى السلة"
+        }
+    },
+    "courseCatalog": {
+        "breadcrumbAriaLabel": "مسار التنقل",
+        "filters": "التصفية",
+        "clearAll": "مسح الكل",
+        "showResults": "عرض النتائج",
+        "authors": "المؤلفون",
+        "priceRange": "نطاق السعر",
+        "min": "الحد الأدنى",
+        "max": "الحد الأقصى",
+        "searchPlaceholder": "ابحث في {{courses}}...",
+        "searchAriaLabel": "ابحث في {{courses}}",
+        "noResultsFound": "لم يتم العثور على {{courses}}",
+        "noResultsHint": "حاول تعديل بحثك أو عوامل التصفية للعثور على ما تبحث عنه.",
+        "clearAllFilters": "مسح كل عوامل التصفية",
+        "showLess": "عرض أقل",
+        "showMore": "عرض المزيد",
+        "noItemsAvailable": "لا يوجد {{title}} متاح.",
+        "filtersUnavailable": "عوامل تصفية {{title}} غير متاحة حاليًا.",
+        "removedFromCart": "أُزيل {{title}} من السلة",
+        "addedToCart": "أُضيف {{title}} إلى السلة!",
+        "missingEnrollInvite": "تعذّرت إضافة العنصر إلى السلة: معرّف دعوة التسجيل مفقود",
+        "untitledCourse": "{{course}} بدون عنوان",
+        "noDescriptionAvailable": "لا يوجد وصف متاح",
+        "unknownInstructor": "{{teacher}} غير معروف",
+        "add": "إضافة",
+        "openSoon": "يفتح قريبًا",
+        "enrollmentClosed": "التسجيل مغلق",
+        "freeLabel": "مجاني 100%",
+        "viewCourse": "عرض {{course}}",
+        "previous": "السابق",
+        "next": "التالي",
+        "showingRange": "عرض {{from}}–{{to}} من {{total}} {{courses}}",
+        "paginationAriaLabel": "ترقيم الصفحات",
+        "loadingImage": "جارٍ التحميل..."
+    },
+    "buyRentSection": {
+        "chooseOption": "اختر الخيار الأنسب لاحتياجاتك",
+        "rentTitle": "استئجار كتاب",
+        "rentDescription": "احصل على الكتب بأسعار معقولة",
+        "buyTitle": "شراء كتاب",
+        "buyDescription": "امتلك الكتب إلى الأبد",
+        "howItWorks": "كيف يعمل ذلك",
+        "steps": {
+            "step1Title": "تصفّح واختر",
+            "step1Desc": "استكشف مجموعتنا واختر الكتب.",
+            "step2Title": "اختر الخيار",
+            "step2Desc": "اشترِ للتملّك أو استأجر للوصول.",
+            "step3Title": "أكمل الشراء",
+            "step3Desc": "أضف إلى السلة وأتمم الدفع بأمان.",
+            "step4Title": "ابدأ القراءة",
+            "step4Desc": "احصل على كتبك فورًا."
+        },
+        "close": "إغلاق",
+        "locationRestrictionTitle": "قيد جغرافي",
+        "locationRestrictionMessage": "نسمح باستئجار الكتب فقط في {{city}}. هل تريد المتابعة؟",
+        "buyInstead": "الشراء بدلًا من ذلك",
+        "continue": "متابعة"
+    },
+    "header": {
+        "toggleMenu": "تبديل القائمة",
+        "search": "بحث",
+        "shoppingCart": "سلة التسوق",
+        "login": "تسجيل الدخول",
+        "dashboard": "لوحة التحكم",
+        "customerServices": "خدمة العملاء",
+        "joinCommunity": "انضم إلى مجتمعنا",
+        "logoAlt": "الشعار",
+        "instituteLogoAlt": "شعار المؤسسة"
+    },
+    "courseDetailsRoute": {
+        "domainResolutionErrorTitle": "خطأ في تحليل النطاق",
+        "retry": "إعادة المحاولة"
+    },
+    "courseDetails": {
+        "accordion": {
+            "highlightsTitle": "أبرز نقاط {{course}}",
+            "aboutThisCourse": "عن هذا {{course}}",
+            "whatYoullLearn": "ما ستتعلمه",
+            "whoShouldJoin": "من يجب أن ينضم"
+        },
+        "noEmailProvided": "لم يُقدَّم بريد إلكتروني",
+        "unknownTeacher": "{{teacher}} غير معروف",
+        "defaultWhoShouldLearn": "أي شخص مهتم بتعلّم هذا {{subject}}",
+        "defaultWhyLearn": "اكتسب مهارات ومعرفة قيّمة",
+        "untitledCourse": "{{course}} بدون عنوان",
+        "courseNotFoundDefault": "{{course}} غير موجود",
+        "courseNotFoundError": "{{course}} غير موجود.",
+        "courseNotPublicError": "هذا {{course}} غير متاح للعرض العام.",
+        "loadFailedError": "فشل تحميل تفاصيل {{course}}",
+        "courseLoadFailedDescription": "تعذّر تحميل {{course}} المطلوب.",
+        "backToCatalog": "العودة إلى الفهرس",
+        "loadingCatalogueTitle": "جارٍ تحميل فهرس {{course}}...",
+        "loadingCatalogueDescription": "يرجى الانتظار بينما نُحمّل معلومات {{course}}.",
+        "courseOverview": "نظرة عامة على {{course}}",
+        "price": "السعر",
+        "rating": "التقييم",
+        "duration": "المدة",
+        "enrollForFree": "سجّل مجانًا",
+        "enrollNow": "سجّل الآن",
+        "getStarted": "ابدأ الآن",
+        "clickToRegister": "انقر للتسجيل في هذا {{course}}",
+        "forNewUsers": "للمستخدمين الجدد",
+        "enrollmentUnavailableTitle": "التسجيل غير متاح",
+        "leadFormDefaults": {
+            "fullName": "الاسم الكامل",
+            "email": "البريد الإلكتروني",
+            "phone": "رقم الهاتف"
+        },
+        "page": {
+            "breadcrumb": "مسار التنقل",
+            "home": "الرئيسية",
+            "courses": "الدورات",
+            "watchPreview": "شاهد المعاينة",
+            "closePreview": "إغلاق المعاينة",
+            "mode": "النمط",
+            "modeSelfPaced": "ذاتي الوتيرة",
+            "modeLive": "مباشر",
+            "language": "اللغة",
+            "format": "الصيغة",
+            "author": "المؤلف",
+            "instructor": "المدرّب",
+            "category": "الفئة",
+            "free": "مجاني",
+            "freeHint": "ابدأ الآن، دون دفع",
+            "paidHint": "وصول فوري بعد الدفع",
+            "bookHint": "فقط {{price}}. اطلبه الآن واستمتع بالقراءة.",
+            "getFree": "احصل على الدورة مجانًا",
+            "orderNow": "اطلب الآن",
+            "partOf": "جزء من {{name}}",
+            "tabDescription": "الوصف",
+            "tabContent": "محتوى الدورة",
+            "tabToc": "جدول المحتويات",
+            "tabAudience": "لمن هذه الدورة",
+            "tabLanguage": "اللغة",
+            "tabFaq": "الأسئلة الشائعة",
+            "tabInstructor": "عن المدرّب",
+            "tabAuthor": "عن المؤلف",
+            "aboutCourse": "عن هذه الدورة",
+            "aboutBook": "عن هذا الكتاب الإلكتروني",
+            "languageCourse": "هذه الدورة باللغة {{language}}.",
+            "languageBook": "هذا الكتاب الإلكتروني باللغة {{language}}.",
+            "faqTitle": "الأسئلة الشائعة",
+            "courseIncludes": "تتضمن هذه الدورة",
+            "bookIncludes": "يتضمن هذا الكتاب الإلكتروني",
+            "nextInSeries": "التالي في السلسلة",
+            "view": "عرض",
+            "youMayAlsoLike": "قد يعجبك أيضًا",
+            "viewAllCourses": "عرض كل الدورات"
+        }
+    },
+    "blog": {
+        "readMore": "اقرأ المزيد",
+        "backToList": "كل المقالات",
+        "viewMore": "عرض المزيد",
+        "empty": "لا توجد مقالات بعد — عُد قريبًا.",
+        "emptyGuidance": "لا توجد مقالات منشورة بعد. اكتب مقالًا في Manage Pages → Blog وانشره ليظهر هنا.",
+        "homePageHint": "هذه المدونة على الصفحة الرئيسية، لذا تُفتح المقالات بـ ?post=… في العنوان. ضعها في صفحة خاصة (مثل /blog) ليحصل كل مقال على رابط نظيف.",
+        "categories": "الفئات",
+        "allCategories": "الكل",
+        "loadFailed": "تعذّر تحميل المقالات الآن.",
+        "pagination": "صفحات المدونة",
+        "newer": "الأحدث",
+        "older": "الأقدم",
+        "pageOf": "صفحة {{page}} من {{total}}",
+        "minRead": "{{minutes}} دقيقة قراءة",
+        "notFoundTitle": "المقال غير موجود",
+        "notFoundBody": "ربما أُلغي نشر هذا المقال أو نُقل.",
+        "tags": "الوسوم",
+        "copyLink": "نسخ الرابط",
+        "linkCopied": "تم نسخ الرابط",
+        "gateTitle": "افتح هذا المقال",
+        "gateSubtitle": "شارك بياناتك مرة واحدة لقراءة هذا المقال وجميع الموارد المجانية على موقعنا.",
+        "contents": "في هذه الصفحة",
+        "readingProgress": "تقدم القراءة",
+        "percentRead": "تمت قراءة {{percent}}%",
+        "recommendedCourses": "{{courses}} مقترحة",
+        "relatedPosts": "تابع القراءة",
+        "share": "مشاركة",
+        "shareOn": "المشاركة على {{network}}"
+    },
+    "jobOpenings": {
+        "viewDetails": "عرض وصف الوظيفة",
+        "apply": "قدّم الآن",
+        "backToList": "كل الوظائف",
+        "opensInNewTab": "(يفتح في علامة تبويب جديدة)",
+        "empty": "لا توجد وظائف شاغرة حاليًا — عُد قريبًا.",
+        "emptyGuidance": "لا توجد وظائف لعرضها بعد. أضف وظيفة من قسم الوظائف في إعدادات هذا القسم، أو أعد تفعيل وظيفة معطّلة.",
+        "homePageHint": "هذه الوظائف موجودة في الصفحة الرئيسية، لذا تفتح كل وظيفة مع ?job=… في العنوان. ضعها في صفحة خاصة بها (مثل /careers) ليحصل كل منها على رابط واضح.",
+        "jobDetails": "تفاصيل الوظيفة",
+        "compensation": "الراتب",
+        "location": "الموقع",
+        "jobType": "نوع الوظيفة"
+    },
+    "comingSoon": {
+        "ribbon": "قريبًا",
+        "notifyMe": "أبلغني",
+        "viewDetails": "عرض التفاصيل",
+        "launchingOn": "الإطلاق في {{date}}",
+        "launchingOnHint": "الإطلاق في {{date}}. اترك بياناتك وسنخبرك فور توفره.",
+        "notifyHint": "اترك بياناتك وسنخبرك فور توفره.",
+        "notifyTitle": "احصل على إشعار عند إطلاق {{title}}"
+    }
+}

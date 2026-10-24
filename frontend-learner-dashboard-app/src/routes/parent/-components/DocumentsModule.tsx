@@ -4,6 +4,8 @@
 
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { ChildProfile, DocumentRequirement } from "@/types/parent-portal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,12 +27,14 @@ import {
   Warning,
   ShieldCheck,
 } from "@phosphor-icons/react";
+import { formatDate } from "@/lib/formatters";
 
 interface DocumentsModuleProps {
   child: ChildProfile;
 }
 
 export function DocumentsModule({ child }: DocumentsModuleProps) {
+  const { t } = useTranslation("parent");
   // Placeholder data - Document upload API endpoints not implemented yet
   const docData = null;
   const isLoading = false;
@@ -52,7 +56,11 @@ export function DocumentsModule({ child }: DocumentsModuleProps) {
     // Validate file size (max size from requirement)
     const requirement = docData?.documents.find((d) => d.id === requirementId);
     if (requirement && file.size > requirement.max_size_mb * 1024 * 1024) {
-      toast.error(`File exceeds ${requirement.max_size_mb}MB limit`);
+      toast.error(
+        t("admissionPortal.documents.toast.fileExceeds", {
+          size: requirement.max_size_mb,
+        }),
+      );
       return;
     }
 
@@ -70,7 +78,7 @@ export function DocumentsModule({ child }: DocumentsModuleProps) {
   };
 
   const handleDelete = (requirementId: string) => {
-    if (!confirm("Are you sure you want to remove this document?")) return;
+    if (!confirm(t("admissionPortal.documents.confirmDelete"))) return;
     deleteMutation.mutate({
       childId: child.id,
       requirementId,
@@ -96,10 +104,12 @@ export function DocumentsModule({ child }: DocumentsModuleProps) {
       {/* Header */}
       <div>
         <h2 className="text-lg sm:text-xl font-bold text-foreground">
-          Required Documents
+          {t("admissionPortal.documents.heading")}
         </h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Required documents for {child.full_name}&apos;s admission
+          {t("admissionPortal.documents.subheading", {
+            name: child.full_name,
+          })}
         </p>
       </div>
 
@@ -116,16 +126,21 @@ export function DocumentsModule({ child }: DocumentsModuleProps) {
                 background: `linear-gradient(to right, rgb(16 185 129) ${progress.percent}%, rgb(229 231 235) ${progress.percent}%)`,
               }}
             />
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
+            <CardContent className="p-card space-y-stack">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldCheck size={18} className="text-primary" />
                   <p className="text-sm font-semibold text-foreground">
-                    Submission Progress: {progress.percent}%
+                    {t("admissionPortal.documents.submissionProgress", {
+                      percent: progress.percent,
+                    })}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {progress.approved} of {progress.total} verified
+                  {t("admissionPortal.documents.verifiedOfTotal", {
+                    approved: progress.approved,
+                    total: progress.total,
+                  })}
                 </p>
               </div>
 
@@ -133,21 +148,27 @@ export function DocumentsModule({ child }: DocumentsModuleProps) {
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="text-muted-foreground">
-                    {progress.approved} Verified
+                    {t("admissionPortal.documents.verifiedCount", {
+                      count: progress.approved,
+                    })}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-amber-500" />
                   <span className="text-muted-foreground">
-                    {progress.uploaded - progress.approved - progress.rejected}{" "}
-                    Under Review
+                    {t("admissionPortal.documents.underReviewCount", {
+                      count:
+                        progress.uploaded - progress.approved - progress.rejected,
+                    })}
                   </span>
                 </div>
                 {progress.rejected > 0 && (
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-red-500" />
                     <span className="text-muted-foreground">
-                      {progress.rejected} Rejected
+                      {t("admissionPortal.documents.rejectedCount", {
+                        count: progress.rejected,
+                      })}
                     </span>
                   </div>
                 )}
@@ -189,10 +210,10 @@ export function DocumentsModule({ child }: DocumentsModuleProps) {
               className="mx-auto text-muted-foreground/40 mb-3"
             />
             <p className="text-sm font-medium text-muted-foreground">
-              No Documents Required
+              {t("admissionPortal.documents.emptyTitle")}
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              You have no pending document requests at this time.
+              {t("admissionPortal.documents.emptyBody")}
             </p>
           </CardContent>
         </Card>
@@ -216,9 +237,10 @@ function DocumentCard({
   isUploading: boolean;
   isDeleting: boolean;
 }) {
+  const { t } = useTranslation("parent");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const statusConfig = getDocStatusConfig(doc.status);
+  const statusConfig = getDocStatusConfig(doc.status, t);
   const isUploaded = doc.status !== "NOT_UPLOADED";
   const isRejected = doc.status === "REJECTED";
   const isApproved = doc.status === "APPROVED";
@@ -247,7 +269,7 @@ function DocumentCard({
             : ""
       }`}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-card">
         <div className="flex items-start gap-3">
           {/* Icon */}
           <div className={`p-2 rounded-lg shrink-0 ${statusConfig.iconBg}`}>
@@ -262,7 +284,7 @@ function DocumentCard({
               </p>
               {doc.is_required && (
                 <Badge variant="outline" className="text-caption shrink-0">
-                  Required
+                  {t("admissionPortal.documents.required")}
                 </Badge>
               )}
             </div>
@@ -291,10 +313,11 @@ function DocumentCard({
                   </p>
                   {doc.uploaded_at && (
                     <p className="text-caption text-muted-foreground">
-                      Uploaded{" "}
-                      {new Date(doc.uploaded_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
+                      {t("admissionPortal.documents.uploadedOn", {
+                        date: formatDate(doc.uploaded_at, {
+                          month: "short",
+                          day: "numeric",
+                        }),
                       })}
                     </p>
                   )}
@@ -353,7 +376,9 @@ function DocumentCard({
                   ) : (
                     <UploadSimple size={12} />
                   )}
-                  {isRejected ? "Re-upload" : "Upload"}
+                  {isRejected
+                    ? t("admissionPortal.documents.reupload")
+                    : t("admissionPortal.documents.upload")}
                 </Button>
 
                 <Button
@@ -364,12 +389,14 @@ function DocumentCard({
                   disabled={isUploading}
                 >
                   <Camera size={12} />
-                  Camera
+                  {t("admissionPortal.documents.camera")}
                 </Button>
 
                 <span className="text-caption text-muted-foreground ms-auto">
-                  Max {doc.max_size_mb}MB •{" "}
-                  {doc.allowed_formats.join(", ").toUpperCase()}
+                  {t("admissionPortal.documents.maxSizeAndFormats", {
+                    size: doc.max_size_mb,
+                    formats: doc.allowed_formats.join(", ").toUpperCase(),
+                  })}
                 </span>
               </div>
             )}
@@ -393,7 +420,7 @@ function FileIcon({ filename }: { filename: string }) {
 
 // ── Status Config ────────────────────────────────────────────
 
-function getDocStatusConfig(status: string) {
+function getDocStatusConfig(status: string, t: TFunction) {
   const map: Record<
     string,
     {
@@ -406,7 +433,7 @@ function getDocStatusConfig(status: string) {
     }
   > = {
     NOT_UPLOADED: {
-      label: "Not Uploaded",
+      label: t("admissionPortal.documents.status.notUploaded"),
       icon: <UploadSimple size={18} className="text-muted-foreground" />,
       iconBg: "bg-muted",
       badgeBg: "bg-gray-100 dark:bg-gray-800",
@@ -414,7 +441,7 @@ function getDocStatusConfig(status: string) {
       statusIcon: null,
     },
     UPLOADED: {
-      label: "Uploaded",
+      label: t("admissionPortal.documents.status.uploaded"),
       icon: <FileText size={18} className="text-blue-600 dark:text-blue-400" />,
       iconBg: "bg-blue-100 dark:bg-blue-900/30",
       badgeBg: "bg-blue-100 dark:bg-blue-900/30",
@@ -422,7 +449,7 @@ function getDocStatusConfig(status: string) {
       statusIcon: <UploadSimple size={10} className="me-1" />,
     },
     UNDER_REVIEW: {
-      label: "Under Review",
+      label: t("admissionPortal.documents.status.underReview"),
       icon: <Clock size={18} className="text-amber-600 dark:text-amber-400" />,
       iconBg: "bg-amber-100 dark:bg-amber-900/30",
       badgeBg: "bg-amber-100 dark:bg-amber-900/30",
@@ -430,7 +457,7 @@ function getDocStatusConfig(status: string) {
       statusIcon: <Clock size={10} className="me-1" />,
     },
     APPROVED: {
-      label: "Verified",
+      label: t("admissionPortal.documents.status.verified"),
       icon: (
         <CheckCircle
           size={18}
@@ -443,7 +470,7 @@ function getDocStatusConfig(status: string) {
       statusIcon: <CheckCircle size={10} className="me-1" />,
     },
     REJECTED: {
-      label: "Rejected",
+      label: t("admissionPortal.documents.status.rejected"),
       icon: <XCircle size={18} className="text-red-600 dark:text-red-400" />,
       iconBg: "bg-red-100 dark:bg-red-900/30",
       badgeBg: "bg-red-100 dark:bg-red-900/30",

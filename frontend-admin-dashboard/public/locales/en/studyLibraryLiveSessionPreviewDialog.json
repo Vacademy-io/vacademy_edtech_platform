@@ -1,0 +1,83 @@
+{
+    "reviewAndConfirm": "Review & confirm",
+    "reviewAndConfirmDescription": "Make sure everything looks right. Confirm to create — or go back and edit.",
+    "confirmAndCreate": "Confirm & create",
+    "creating": "Creating…",
+    "backToEdit": "Back to edit",
+    "channels": {
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "push": "Push",
+        "system": "System"
+    },
+    "triggers": {
+        "onCreate": "On create",
+        "beforeLive": "Before live ({{times}})",
+        "onLive": "On live",
+        "onAttendance": "On attendance"
+    },
+    "playback": {
+        "rewind": "rewind",
+        "pause": "pause",
+        "unrestricted": "Unrestricted",
+        "blocked": "Blocked: {{items}}"
+    },
+    "sessionCount_one": "{{count}} session",
+    "sessionCount_other": "{{count}} sessions",
+    "fullyFilledCount": "{{count}} fully filled",
+    "schedule": "Schedule",
+    "timezone": "Timezone",
+    "access": "Access",
+    "sessionFeatures": "Session features",
+    "waitingRoom": "Waiting room",
+    "waitingRoomOpensBefore": "Opens {{minutes}}m before",
+    "disabled": "Disabled",
+    "playbackLabel": "Playback",
+    "feedback": "Feedback",
+    "defaultForm": "Default form",
+    "off": "Off",
+    "on": "On",
+    "recording": "Recording",
+    "notifications": "Notifications",
+    "channelsLabel": "Channels",
+    "triggersLabel": "Triggers",
+    "none": "None",
+    "description": "Description",
+    "daysLabel": "Days:",
+    "endsLabel": "Ends:",
+    "weeklySchedule": "Weekly schedule",
+    "sessionToBeCreated": "Session to be created",
+    "sessionsToBeCreated": "Sessions to be created",
+    "slotCount_one": "{{count}} slot",
+    "slotCount_other": "{{count}} slots",
+    "rowCount_one": "{{count}} row",
+    "rowCount_other": "{{count}} rows",
+    "table": {
+        "title": "Title",
+        "subject": "Subject",
+        "when": "When",
+        "duration": "Duration",
+        "platform": "Platform",
+        "link": "Link",
+        "batches": "Batches"
+    },
+    "courseFallback": "Course",
+    "durationHoursMinutes": "{{hours}}h {{minutes}}m",
+    "durationMinutes": "{{minutes}}m",
+    "emptyTitle": "(empty)",
+    "noBatches": "No batches",
+    "perClassDescriptions": "Per-class descriptions",
+    "missingFieldsWarning_one": "{{count}} row still missing required fields. Sessions will still be created for fully-filled rows; failed rows will appear in the result dialog.",
+    "missingFieldsWarning_other": "{{count}} rows still missing required fields. Sessions will still be created for fully-filled rows; failed rows will appear in the result dialog.",
+    "footerNote": {
+        "recurring_one": "By confirming, the system creates this recurring class with {{count}} weekly slot and applies access & notification settings.",
+        "recurring_other": "By confirming, the system creates this recurring class with {{count}} weekly slots and applies access & notification settings.",
+        "single": "By confirming, the system creates this live class and applies access & notification settings.",
+        "multiple_one": "By confirming, the system creates {{count}} session and applies access & notification settings to each.",
+        "multiple_other": "By confirming, the system creates {{count}} sessions and applies access & notification settings to each."
+    },
+    "attendanceOnly": {
+        "title": "Not visible to learners — attendance only",
+        "description": "Learners will not see this live class or get any notification about it. It is created only to mark attendance; learners will see just their attendance."
+    }
+}

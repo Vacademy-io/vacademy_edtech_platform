@@ -1,4 +1,5 @@
 import { parseHtmlToString } from "@/lib/utils";
+import type { TFunction } from "i18next";
 
 interface QuestionOption {
   id: string;
@@ -54,9 +55,10 @@ interface Review {
 // Function to render student response based on question type
 export const renderStudentResponse = (
   review: Review,
-  questionsData: SectionQuestions | null = null
+  questionsData: SectionQuestions | null = null,
+  t: TFunction
 ) => {
-  if (!review.student_response_options) return <p>No response</p>;
+  if (!review.student_response_options) return <p>{t("questionResponseRenderer.noResponse")}</p>;
 
   try {
     // Handle both string and object formats
@@ -76,16 +78,16 @@ export const renderStudentResponse = (
 
     switch (review.question_type) {
       case "ONE_WORD":
-        return <p>{responseData.responseData?.answer || "No response"}</p>;
+        return <p>{responseData.responseData?.answer || t("questionResponseRenderer.noResponse")}</p>;
 
       case "LONG_ANSWER":
-        return <p>{responseData.responseData?.answer || "No response"}</p>;
+        return <p>{responseData.responseData?.answer || t("questionResponseRenderer.noResponse")}</p>;
 
       case "NUMERIC":
         return (
           <p>
             {responseData.responseData?.validAnswer?.toString() ||
-              "No response"}
+              t("questionResponseRenderer.noResponse")}
           </p>
         );
 
@@ -100,7 +102,7 @@ export const renderStudentResponse = (
           );
           return <p>{optionName}</p>;
         }
-        return <p>No option selected</p>;
+        return <p>{t("questionResponseRenderer.noOptionSelected")}</p>;
 
       case "MCQM":
         if (responseData.responseData?.optionIds?.length) {
@@ -117,7 +119,7 @@ export const renderStudentResponse = (
             </div>
           );
         }
-        return <p>No options selected</p>;
+        return <p>{t("questionResponseRenderer.noOptionsSelected")}</p>;
 
       case "CODING": {
         const r = responseData.responseData || {};
@@ -135,7 +137,6 @@ export const renderStudentResponse = (
         const gradedTests = hiddenTests.length > 0 ? hiddenTests : sampleTests;
         const gradedPassed = gradedTests.filter((t) => t.passed).length;
         const gradedTotal = gradedTests.length;
-        const gradedLabel = hiddenTests.length > 0 ? "hidden" : "sample";
         const samplePassed = sampleTests.filter((t) => t.passed).length;
         const passed = gradedPassed;
         const total = gradedTotal;
@@ -185,11 +186,11 @@ export const renderStudentResponse = (
                 {r.verdict || "—"}
               </span>
               <span className="text-muted-foreground">
-                {passed}/{total} tests
+                {t("questionResponseRenderer.testsFraction", { passed, total })}
               </span>
               {typeof r.score === "number" && (
                 <span className="text-muted-foreground">
-                  · {r.score.toFixed(2)} pts
+                  {t("questionResponseRenderer.scorePts", { score: r.score.toFixed(2) })}
                 </span>
               )}
               {r.language && (
@@ -199,22 +200,27 @@ export const renderStudentResponse = (
               )}
               {(r.pasteAttemptCount ?? 0) > 0 && (
                 <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
-                  {r.pasteAttemptCount} paste attempt(s)
+                  {t("questionResponseRenderer.pasteAttempts", { count: r.pasteAttemptCount })}
                 </span>
               )}
             </div>
             {tests.length > 0 && (
               <div className="flex flex-wrap gap-3 text-xs">
                 <span>
-                  <b>Test cases passed:</b>{" "}
+                  <b>{t("questionResponseRenderer.testCasesPassed")}</b>{" "}
                   <code className="rounded bg-muted px-1">
                     {gradedPassed}/{gradedTotal}
                   </code>{" "}
-                  <span className="text-muted-foreground">({gradedLabel})</span>
+                  <span className="text-muted-foreground">
+                    ({hiddenTests.length > 0 ? t("questionResponseRenderer.hiddenWord") : t("questionResponseRenderer.sampleWord")})
+                  </span>
                 </span>
                 {hiddenTests.length > 0 && sampleTests.length > 0 && (
                   <span className="text-muted-foreground">
-                    Sample: {samplePassed}/{sampleTests.length}
+                    {t("questionResponseRenderer.sampleFraction", {
+                      passed: samplePassed,
+                      total: sampleTests.length,
+                    })}
                   </span>
                 )}
               </div>
@@ -222,28 +228,30 @@ export const renderStudentResponse = (
             {showRuntimeRow && (
               <div className="flex flex-wrap gap-3 text-xs">
                 <span>
-                  <b>Time taken:</b>{" "}
+                  <b>{t("questionResponseRenderer.timeTakenLabel")}</b>{" "}
                   <code className="rounded bg-muted px-1">
-                    {measuredTimeMs !== null ? `${measuredTimeMs} ms` : "—"}
+                    {measuredTimeMs !== null
+                      ? t("questionResponseRenderer.msValue", { value: measuredTimeMs })
+                      : "—"}
                   </code>
                   {allowedTimeMs !== null && (
                     <span className="text-muted-foreground">
                       {" "}
-                      / {allowedTimeMs} ms allowed
+                      {t("questionResponseRenderer.msAllowed", { value: allowedTimeMs })}
                     </span>
                   )}
                 </span>
                 <span>
-                  <b>Memory:</b>{" "}
+                  <b>{t("questionResponseRenderer.memoryLabel")}</b>{" "}
                   <code className="rounded bg-muted px-1">
                     {measuredMemoryKb !== null
-                      ? `${measuredMemoryKb} KB`
+                      ? t("questionResponseRenderer.kbValue", { value: measuredMemoryKb })
                       : "—"}
                   </code>
                   {allowedMemoryKb !== null && (
                     <span className="text-muted-foreground">
                       {" "}
-                      / {allowedMemoryKb} KB allowed
+                      {t("questionResponseRenderer.kbAllowed", { value: allowedMemoryKb })}
                     </span>
                   )}
                 </span>
@@ -252,7 +260,7 @@ export const renderStudentResponse = (
             {r.sourceCode && (
               <details>
                 <summary className="cursor-pointer text-xs">
-                  Show submitted source code
+                  {t("questionResponseRenderer.showSourceCode")}
                 </summary>
                 <pre className="mt-1 max-h-64 overflow-auto rounded bg-gray-100 p-2 text-xs">
                   {r.sourceCode}
@@ -261,17 +269,17 @@ export const renderStudentResponse = (
             )}
             {tests.length > 0 && (
               <details open>
-                <summary className="cursor-pointer text-xs">Test cases</summary>
+                <summary className="cursor-pointer text-xs">{t("questionResponseRenderer.testCasesHeading")}</summary>
                 <div className="mt-1 space-y-1">
-                  {tests.map((t, i) => (
+                  {tests.map((tc, i) => (
                     <div
-                      key={t.id || i}
+                      key={tc.id || i}
                       className="flex items-center gap-2 text-xs"
                     >
-                      <span>{t.passed ? "✓" : "✗"}</span>
-                      <span>{t.label || `Test ${i + 1}`}</span>
-                      {!t.visible && (
-                        <span className="text-muted-foreground">(hidden)</span>
+                      <span>{tc.passed ? "✓" : "✗"}</span>
+                      <span>{tc.label || t("questionResponseRenderer.testNumber", { number: i + 1 })}</span>
+                      {!tc.visible && (
+                        <span className="text-muted-foreground">{t("questionResponseRenderer.hiddenParenthetical")}</span>
                       )}
                     </div>
                   ))}
@@ -291,7 +299,7 @@ export const renderStudentResponse = (
           );
         }
         return (
-          <p>{JSON.stringify(responseData.responseData) || "No response"}</p>
+          <p>{JSON.stringify(responseData.responseData) || t("questionResponseRenderer.noResponse")}</p>
         );
     }
   } catch (error) {
@@ -306,16 +314,17 @@ export const renderStudentResponse = (
       );
     }
 
-    return <p>Error displaying response</p>;
+    return <p>{t("questionResponseRenderer.errorDisplayingResponse")}</p>;
   }
 };
 
 // Function to render correct answer based on question type
 export const renderCorrectAnswer = (
   review: Review,
-  questionsData: SectionQuestions | null = null
+  questionsData: SectionQuestions | null = null,
+  t: TFunction
 ) => {
-  if (!review.correct_options) return <p>No correct answer provided</p>;
+  if (!review.correct_options) return <p>{t("questionResponseRenderer.noCorrectAnswerProvided")}</p>;
 
   try {
     // Handle both string and array formats
@@ -326,19 +335,19 @@ export const renderCorrectAnswer = (
 
     switch (review.question_type) {
       case "ONE_WORD":
-        return <p>{correctData.data?.answer || "No answer provided"}</p>;
+        return <p>{correctData.data?.answer || t("questionResponseRenderer.noAnswerProvided")}</p>;
 
       case "LONG_ANSWER":
         if (correctData.data?.answer?.content) {
           return <p>{parseHtmlToString(correctData.data.answer.content)}</p>;
         }
-        return <p>No answer provided</p>;
+        return <p>{t("questionResponseRenderer.noAnswerProvided")}</p>;
 
       case "NUMERIC":
         if (correctData.data?.validAnswers?.length) {
           return <p>{correctData.data.validAnswers.join(" or ")}</p>;
         }
-        return <p>No answer provided</p>;
+        return <p>{t("questionResponseRenderer.noAnswerProvided")}</p>;
 
       case "MCQS":
       case "MCQM":
@@ -356,19 +365,18 @@ export const renderCorrectAnswer = (
             </div>
           );
         }
-        return <p>No correct options provided</p>;
+        return <p>{t("questionResponseRenderer.noCorrectOptionsProvided")}</p>;
 
       case "CODING": {
         const tcs = (correctData.data?.testCases || []) as Array<{
           visible?: boolean;
         }>;
         const total = tcs.length;
-        const visible = tcs.filter((t) => t.visible).length;
+        const visible = tcs.filter((tc) => tc.visible).length;
         const hidden = total - visible;
         return (
           <p className="text-xs text-muted-foreground">
-            {visible} visible + {hidden} hidden test case(s) — see test results
-            in the response panel.
+            {t("questionResponseRenderer.codingTestCaseSummary", { visible, hidden })}
           </p>
         );
       }
@@ -382,7 +390,7 @@ export const renderCorrectAnswer = (
           );
         }
         return (
-          <p>{JSON.stringify(correctData.data) || "No answer provided"}</p>
+          <p>{JSON.stringify(correctData.data) || t("questionResponseRenderer.noAnswerProvided")}</p>
         );
     }
   } catch (error) {
@@ -395,6 +403,6 @@ export const renderCorrectAnswer = (
       ));
     }
 
-    return <p>Error displaying correct answer</p>;
+    return <p>{t("questionResponseRenderer.errorDisplayingCorrectAnswer")}</p>;
   }
 };

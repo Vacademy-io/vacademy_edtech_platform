@@ -13,6 +13,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupResponse;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -145,7 +146,73 @@ public class CloudflareService {
         return d != null ? d.getStatus() : null;
     }
 
+    /**
+     * Every custom domain attached to {@code projectName}, as host → status
+     * ("active", "pending", "deactivated", …).
+     *
+     * <p>For asking about one host use {@link #getPagesCustomDomainStatus}; this is
+     * for the callers that are about to ask about all of them. The reconcile sweep
+     * covers ~120 hosts, and one round trip each is a needless minute of wall clock
+     * against an API this deployment shares with every other white-label operation.
+     *
+     * <p>Returns null — distinct from an empty map — when the listing could not be
+     * completed, so a caller can tell "this project has no custom domains" from
+     * "Cloudflare did not answer" and decline to conclude that nothing is attached.
+     */
+    public Map<String, String> listPagesCustomDomains(String projectName) {
+        if (!isPagesEnabled() || !StringUtils.hasText(projectName)) {
+            return null;
+        }
+        Map<String, String> statusByHost = new LinkedHashMap<>();
+        // The endpoint pages at 20 and rejects per_page overrides, so walk it. The
+        // bound is a guard against an unterminating cursor, not an expected depth:
+        // 50 pages is 1000 custom domains.
+        for (int page = 1; page <= 50; page++) {
+            List<CfPagesDomain> batch = getPagesDomainPage(projectName, page);
+            if (batch == null) {
+                return null; // partial listing would read as "the rest is unattached"
+            }
+            if (batch.isEmpty()) {
+                return statusByHost;
+            }
+            for (CfPagesDomain d : batch) {
+                if (d != null && StringUtils.hasText(d.getName())) {
+                    statusByHost.put(d.getName().trim().toLowerCase(), d.getStatus());
+                }
+            }
+        }
+        log.warn("[CloudflareService] Pages custom-domain listing for {} exceeded 50 pages; treating as incomplete",
+                projectName);
+        return null;
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * One page of a project's custom domains, empty when the page is past the end,
+     * or null when the request failed — the caller must not read a failure as an
+     * end-of-list.
+     */
+    private List<CfPagesDomain> getPagesDomainPage(String projectName, int page) {
+        try {
+            String url = CF_API_BASE + "/accounts/" + accountId + "/pages/projects/" + projectName
+                    + "/domains?page=" + page;
+            ResponseEntity<CfPagesDomainListResponse> resp = restTemplate.exchange(
+                    url, HttpMethod.GET,
+                    new HttpEntity<>(authHeaders()),
+                    CfPagesDomainListResponse.class);
+            CfPagesDomainListResponse body = resp.getBody();
+            if (body == null || !body.isSuccess()) {
+                log.warn("[CloudflareService] Pages domain listing for {} page {} was unsuccessful", projectName, page);
+                return null;
+            }
+            return body.getResult() != null ? body.getResult() : List.of();
+        } catch (Exception e) {
+            log.warn("[CloudflareService] Could not list Pages domains for {} page {}: {}",
+                    projectName, page, e.getMessage());
+            return null;
+        }
+    }
 
     private HttpHeaders authHeaders() {
         HttpHeaders h = new HttpHeaders();
@@ -304,5 +371,18 @@ public class CloudflareService {
         private String id;
         private String name;
         private String status;
+    }
+
+    /**
+     * {@code success} is read here, unlike the single-record responses, because a
+     * paged listing has a failure mode they don't: Cloudflare answers 200 with
+     * {@code success=false, result=null} for a bad page cursor, which would
+     * otherwise be indistinguishable from the end of the list.
+     */
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class CfPagesDomainListResponse {
+        private boolean success;
+        private List<CfPagesDomain> result;
     }
 }

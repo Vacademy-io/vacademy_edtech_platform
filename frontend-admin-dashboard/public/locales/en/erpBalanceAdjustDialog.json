@@ -1,0 +1,31 @@
+{
+    "heading": "Adjust leave balance",
+    "cancel": "Cancel",
+    "applyAdjustment": "Apply adjustment",
+    "adjusting": "Adjusting…",
+    "leave": "Leave",
+    "closingBalance": "closing balance {{value}} days",
+    "adjustmentExplainer": {
+        "before": "An adjustment is an absolute correction added to the balance — not the balance you want to end up with. Enter",
+        "middle": "to grant a day and a half,",
+        "after": "to take two days away."
+    },
+    "fields": {
+        "adjustmentLabel": "Adjustment in days",
+        "adjustmentHelpDefault": "Decimals allowed — 0.5 is half a day.",
+        "adjustmentHelpProjected": "Closing balance becomes {{value}} days.",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "Why the balance is being corrected",
+        "reasonHelp": "Kept on the record so the next admin can see why the number moved."
+    },
+    "toasts": {
+        "adjusted": "Balance adjusted"
+    },
+    "errors": {
+        "correctionRequired": "Enter the correction, e.g. 1.5 or -2",
+        "numbersOnly": "Numbers only — use a leading minus to take days away",
+        "notZero": "Zero would not change anything",
+        "reasonLength": "Keep the reason under 500 characters",
+        "adjustFailed": "Could not adjust this balance."
+    }
+}

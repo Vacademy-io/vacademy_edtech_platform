@@ -3,17 +3,14 @@ package vacademy.io.admin_core_service.features.student_analysis.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vacademy.io.admin_core_service.features.ai_usage.enums.ApiProvider;
 import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
 import vacademy.io.admin_core_service.features.ai_usage.service.AiTokenUsageService;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.student_analysis.dto.StudentAnalysisData;
 import vacademy.io.admin_core_service.features.student_analysis.dto.StudentReportData;
 import vacademy.io.admin_core_service.features.student_analysis.entity.UserLinkedData;
@@ -24,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import vacademy.io.admin_core_service.features.ai_models.service.AIModelRegistryService;
+import vacademy.io.admin_core_service.features.ai_models.service.LlmGatewayRouter;
 
 /**
  * Service to generate student analysis reports using LLM
@@ -34,36 +32,31 @@ import vacademy.io.admin_core_service.features.ai_models.service.AIModelRegistry
 @Service
 public class StudentReportLLMService {
 
-        private static final String API_URL = "https://openrouter.ai";
-        private static final int RESPONSE_TIMEOUT_SECONDS = 60;
+        /** GLM reasons before it writes; a full report at effort low needs more than 60 s. */
+        private static final int RESPONSE_TIMEOUT_SECONDS = 120;
 
         private static final int MAX_RETRIES_PER_MODEL = 2;
 
-        private final WebClient webClient;
         private final ObjectMapper objectMapper;
         private final UserLinkedDataRepository userLinkedDataRepository;
         private final AiTokenUsageService aiTokenUsageService;
         private final AIModelRegistryService aiModelRegistryService;
         private final CreditClient creditClient;
+        private final LlmGatewayRouter gatewayRouter;
 
         public StudentReportLLMService(
-                        @Value("${openrouter.api.key}") String apiKey,
                         ObjectMapper objectMapper,
                         UserLinkedDataRepository userLinkedDataRepository,
                         AiTokenUsageService aiTokenUsageService,
                         AIModelRegistryService aiModelRegistryService,
-                        CreditClient creditClient) {
+                        CreditClient creditClient,
+                        LlmGatewayRouter gatewayRouter) {
                 this.objectMapper = objectMapper;
                 this.userLinkedDataRepository = userLinkedDataRepository;
                 this.aiTokenUsageService = aiTokenUsageService;
                 this.aiModelRegistryService = aiModelRegistryService;
                 this.creditClient = creditClient;
-
-                this.webClient = WebClient.builder()
-                                .baseUrl(API_URL)
-                                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                                .build();
+                this.gatewayRouter = gatewayRouter;
         }
 
         /**
@@ -138,12 +131,9 @@ public class StudentReportLLMService {
                                                 Map.of("role", "user", "content", prompt)),
                                 "response_format", Map.of("type", "json_object"));
 
-                return webClient.post()
-                                .uri("/api/v1/chat/completions")
-                                .bodyValue(payload)
-                                .retrieve()
-                                .bodyToMono(String.class)
-                                .timeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))
+                // Isoquant for routed models (one OpenRouter try on a gateway failure), GLM
+                // reasoning headroom + effort low. Usage stays under the registry id.
+                return gatewayRouter.callModel(model, payload, Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS), null)
                                 .doOnNext(response -> logTokenUsage(response, model, userId, instituteId))
                                 .flatMap(response -> parseResponse(response, model, userId));
         }
@@ -189,9 +179,14 @@ public class StudentReportLLMService {
                                                 userUuid);
 
                                 if (instituteId != null && !instituteId.isBlank()) {
+                                        // Metering only: the learner rides in usage_context, so the
+                                        // ledger row stays exactly as before (no user, no subject).
                                         creditClient.deductCreditsAsync(
                                                         instituteId, "analytics", model,
-                                                        promptTokens, completionTokens, null);
+                                                        promptTokens, completionTokens, null,
+                                                        MeteringFields.system("student_report")
+                                                                        .subjectUserId(userId)
+                                                                        .build());
                                 }
                         }
                 } catch (Exception e) {

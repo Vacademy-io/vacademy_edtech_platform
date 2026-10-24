@@ -1,0 +1,259 @@
+{
+    "common": {
+        "footer": "Best regards,<br/>{{instituteName}}"
+    },
+    "emailBatchStudents": {
+        "subject": "Important Update for You, {{fullName}}",
+        "greeting": "Hello {{fullName}},",
+        "body1": "We have an important update for you. Please check your dashboard for more details.",
+        "body2": "If you have any questions, feel free to reach out to us."
+    },
+    "welcomeEnrolledStudent": {
+        "subject": "Welcome {{fullName}}! Your enrollment is confirmed",
+        "heroTitle": "Welcome Aboard!",
+        "greeting": "Hi {{fullName}},",
+        "body1": "Congratulations! Your enrollment has been confirmed. We're excited to have you with us.",
+        "credentialsHeading": "Your login credentials",
+        "usernameLabel": "Username:",
+        "usernameValue": "{{username}}",
+        "passwordLabel": "Password:",
+        "passwordValue": "{{password}}",
+        "credentialsNote": "Please change your password after first login.",
+        "nextStepsIntro": "Here's what to do next:",
+        "step1": "Log in to your student dashboard with the credentials above",
+        "step2": "Complete your profile",
+        "step3": "Explore your courses and materials",
+        "body2": "If you need help getting started, our team is here for you."
+    },
+    "emailParentsBatch": {
+        "subject": "Update about {{fullName}}",
+        "greeting": "Dear Parent,",
+        "body1": "We would like to inform you about an important update regarding your child <strong>{{fullName}}</strong>.",
+        "body2": "Please check the student portal for details or contact us if you have questions."
+    },
+    "terminationNotice": {
+        "subject": "{{fullName}}, your membership has been updated",
+        "greeting": "Hi {{fullName}},",
+        "body1": "We're writing to let you know that your membership status has been updated. Your access has been removed from the organization.",
+        "body2": "If you believe this is an error or have questions, please contact the administrator."
+    },
+    "audienceLeadConfirmation": {
+        "subject": "Thank you for your interest, {{parentName}}!",
+        "heroTitle": "Thank You!",
+        "greeting": "Hi {{parentName}},",
+        "body1": "Thank you for your interest! We've received your enquiry and our team will get back to you shortly.",
+        "body2": "In the meantime, feel free to explore our website to learn more about our programs."
+    },
+    "leadFollowupEmail": {
+        "subject": "{{parentName}}, following up on your enquiry",
+        "greeting": "Hi {{parentName}},",
+        "body1": "We noticed you recently showed interest in our programs. We wanted to follow up and see if you have any questions.",
+        "body2": "Our team is ready to help you with:",
+        "item1": "Course information and curriculum details",
+        "item2": "Fee structure and payment options",
+        "item3": "Admission process and timelines",
+        "body3": "Simply reply to this email or call us to get started!"
+    },
+    "paymentFailedEmail": {
+        "subject": "{{fullName}}, payment issue - action required",
+        "bannerTitle": "Payment Failed",
+        "bannerBody": "Your recent payment could not be processed.",
+        "greetingLabel": "Hi",
+        "greetingName": "{{fullName}}",
+        "body1": "We were unable to process your payment. This may happen due to insufficient funds, card expiry, or a temporary bank issue.",
+        "nextStepsHeading": "What to do next:",
+        "step1": "Check your payment method details",
+        "step2": "Ensure sufficient balance is available",
+        "step3": "Try the payment again from your dashboard",
+        "body2": "If the issue persists, please contact our support team."
+    },
+    "abandonedCartReminder": {
+        "subject": "{{fullName}}, you're almost there! Complete your enrollment",
+        "greeting": "Hi {{fullName}},",
+        "body1": "We noticed you started your enrollment but didn't complete the payment. Your spot is still available!",
+        "body2": "Complete your enrollment now to secure your place and get started right away.",
+        "cta": "Complete Enrollment",
+        "footNote": "If you have questions about fees or need assistance, just reply to this email."
+    },
+    "sessionStartReminder": {
+        "subject": "{{fullName}}, your live session is starting!",
+        "bannerTitle": "Live Session Starting Now!",
+        "greetingLabel": "Hi",
+        "greetingName": "{{fullName}}",
+        "body1": "Your live session is starting. Join now to not miss anything!",
+        "body2": "Make sure you have a stable internet connection and your audio/video is working.",
+        "signoff": "See you there!"
+    },
+    "postSessionFollowup": {
+        "subject": "{{fullName}}, session complete - recording & next steps",
+        "greeting": "Hi {{fullName}},",
+        "body1": "Thank you for attending today's session! Here's a quick summary:",
+        "item1": "Session recording will be available in your dashboard",
+        "item2": "Review the materials shared during the session",
+        "item3": "Complete any assignments before the next session",
+        "body2": "We'd love to hear your feedback. Please take a moment to share your thoughts.",
+        "signoff": "See you next time!<br/>{{instituteName}}"
+    },
+    "scheduledFeeReminder": {
+        "subject": "Fee payment reminder - {{dueDate}}",
+        "bannerTitle": "Fee Payment Reminder",
+        "greetingLabel": "Dear",
+        "greetingName": "{{recipientName}}",
+        "body1": "This is a reminder for the upcoming fee payment for <strong>{{studentName}}</strong>.",
+        "dueDateLabel": "Due Date",
+        "dueDateValue": "{{dueDate}}",
+        "totalAmountLabel": "Total Amount",
+        "totalAmountValue": "{{amountExpected}}",
+        "alreadyPaidLabel": "Already Paid",
+        "alreadyPaidValue": "{{amountPaid}}",
+        "remainingLabel": "Remaining",
+        "remainingValue": "{{remainingAmount}}",
+        "body2": "Please ensure the payment is made before the due date to avoid any late fees."
+    },
+    "scheduledBatchReport": {
+        "subject": "{{fullName}}, your attendance report ({{startDate}} - {{endDate}})",
+        "heading": "Attendance Report",
+        "intro": "Hi <strong>{{fullName}}</strong>, here's your attendance summary for <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong>:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceRateLabel": "Attendance Rate",
+        "sessionsSummary": "{{sessionsAttended}} of {{totalSessions}} sessions attended &middot; {{totalDurationMinutes}} min total",
+        "sessionDetailsHeading": "Session Details",
+        "cta": "View Full Report &amp; Download PDF",
+        "body1": "Regular attendance is the key to success.",
+        "concentrationScoreLabel": "* Concentration Score",
+        "concentrationScoreBody": "= 80 pts attendance time + 20 pts interactions (chats, talks, raises, emojis, polls). View the full report for a per-session breakdown."
+    },
+    "scheduledEngagementSummary": {
+        "subject": "{{fullName}}, your weekly engagement report",
+        "heading": "Weekly Engagement Report",
+        "intro": "Hi <strong>{{fullName}}</strong>, here's how you engaged this week:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceLabel": "Attendance",
+        "sessionsValue": "{{sessionsAttended}}/{{totalSessions}}",
+        "sessionsLabel": "Sessions",
+        "minutesValue": "{{totalDurationMinutes}}",
+        "minutesLabel": "Minutes",
+        "chatsValue": "{{totalChats}}",
+        "chatsLabel": "Chats",
+        "sessionDetailsHeading": "Session Details",
+        "period": "Period: {{startDate}} to {{endDate}}",
+        "signoff": "Keep learning!<br/>{{instituteName}}"
+    },
+    "scheduledParentsAttendance": {
+        "subject": "{{fullName}}'s weekly attendance update ({{startDate}} - {{endDate}})",
+        "heading": "Weekly Attendance Update",
+        "greeting": "Dear Parent,",
+        "intro": "Here is the weekly attendance summary for <strong>{{fullName}}</strong> ({{startDate}} - {{endDate}}):",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceRateLabel": "Attendance Rate",
+        "sessionsSummary": "{{sessionsAttended}} of {{totalSessions}} sessions attended",
+        "sessionDetailsHeading": "Session Details",
+        "body1": "If you have any concerns about attendance, please reach out to us."
+    },
+    "membershipExpiryReminder": {
+        "subject": "{{fullName}}, your membership is expiring soon",
+        "bannerTitle": "Membership Expiring Soon",
+        "greetingLabel": "Hi",
+        "greetingName": "{{fullName}}",
+        "body1": "Your membership is about to expire. Renew now to continue enjoying uninterrupted access to all your courses and materials.",
+        "cta": "Renew Now",
+        "footNote": "Don't lose your progress! Renewing takes just a minute."
+    },
+    "scheduledExpiryCheck": {
+        "subject": "{{fullName}}, renew your membership",
+        "greeting": "Hi {{fullName}},",
+        "body1": "Your membership will expire soon. Renew today to continue accessing your courses without interruption.",
+        "body2": "Contact us if you have any questions about renewal options."
+    },
+    "assessmentCreatedNotify": {
+        "subject": "{{fullName}}, new assessment available for you",
+        "bannerTitle": "New Assessment Available",
+        "greetingLabel": "Hi",
+        "greetingName": "{{fullName}}",
+        "body1": "A new assessment has been published for you. Log in to your dashboard to view the details and start the assessment.",
+        "goodLuck": "Good luck!"
+    },
+    "assessmentEmailBatch": {
+        "subject": "{{fullName}}, assessment submitted successfully",
+        "heroTitle": "Assessment Submitted!",
+        "greetingLabel": "Hi",
+        "greetingName": "{{fullName}}",
+        "body1": "Your assessment has been submitted successfully. Results will be shared once the evaluation is complete."
+    },
+    "inviteNotifyBatch": {
+        "subject": "New enrollment opportunity",
+        "greeting": "Hi {{fullName}},",
+        "body1": "A new enrollment invite has been created. Check your dashboard for details and enrollment instructions."
+    },
+    "scheduledAudienceFollowup": {
+        "subject": "{{parentName}}, we haven't heard from you",
+        "greeting": "Hi {{parentName}},",
+        "body1": "We noticed you recently enquired about our programs. We wanted to check if you have any questions or need more information.",
+        "body2": "Our admissions team is happy to help with anything you need. Simply reply to this email!"
+    },
+    "liveSessionRecapPresent": {
+        "subject": "Thanks for attending {{sessionTitle}}",
+        "heroTitle": "Great to see you!",
+        "greeting": "Hi {{fullName}},",
+        "body1": "Thanks for attending <strong>{{sessionTitle}}</strong> on {{date}} at {{time}}. We hope it was useful.",
+        "body2": "Keep up the consistency — see you in the next class!"
+    },
+    "liveSessionRecapAbsent": {
+        "subject": "You missed {{sessionTitle}}",
+        "heroTitle": "We missed you!",
+        "greeting": "Hi {{fullName}},",
+        "body1": "We noticed you weren't able to join <strong>{{sessionTitle}}</strong> on {{date}} at {{time}}.",
+        "body2": "No worries — please make sure to attend the next live class so you don't fall behind."
+    },
+    "leadAssignedToCounselor": {
+        "subject": "New lead assigned: {{leadName}}",
+        "greeting": "Hi {{counselorName}},",
+        "body1": "A new lead has been assigned to you.",
+        "nameLabel": "Name:",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "Mobile:",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "Email:",
+        "emailValue": "{{leadEmail}}",
+        "campaignLabel": "Campaign:",
+        "campaignValue": "{{campaignName}}",
+        "body2": "Please reach within {{tat}} time."
+    },
+    "leadTatReminderBefore": {
+        "subject": "Reminder: respond to {{leadName}} within {{minutesToBreach}} minutes",
+        "heading": "Lead awaiting your response",
+        "greeting": "Hi {{counselorName}},",
+        "body1": "This lead needs a response in <strong>{{minutesToBreach}} minutes</strong>:",
+        "leadName": "{{leadName}}",
+        "leadMobile": "{{leadMobile}}",
+        "campaignLine": "Campaign: {{campaignName}}",
+        "dueAtLine": "SLA due at: {{dueAt}}"
+    },
+    "leadTatOverdue": {
+        "subject": "Overdue: {{leadName}} has not been contacted",
+        "heading": "Lead TAT overdue",
+        "body1": "Hi {{counselorName}}, the SLA deadline has passed for this lead:",
+        "leadName": "{{leadName}}",
+        "leadMobile": "{{leadMobile}}",
+        "campaignLine": "Campaign: {{campaignName}}",
+        "dueAtLine": "Due at: {{dueAt}}",
+        "body2": "Please act on this lead as soon as possible."
+    },
+    "followUpDue": {
+        "subject": "Follow-up due for {{leadName}}",
+        "heading": "Follow-up due",
+        "body1": "Hi {{counselorName}}, your next follow-up for <strong>{{leadName}}</strong> ({{leadMobile}}) is due in <strong>{{minutesToBreach}}</strong> minutes (at {{dueAt}})."
+    },
+    "followUpOverdue": {
+        "subject": "Follow-up overdue for {{leadName}}",
+        "heading": "Follow-up overdue",
+        "body1": "Hi {{counselorName}}, the follow-up for <strong>{{leadName}}</strong> ({{leadMobile}}) is overdue (was due at {{dueAt}}).",
+        "body2": "Please action this lead now."
+    },
+    "leadStatusChanged": {
+        "subject": "Lead status updated: {{leadName}} → {{newStatus}}",
+        "heading": "Lead status updated",
+        "greeting": "Hi {{counselorName}},",
+        "body1": "Status for <strong>{{leadName}}</strong> changed from <strong>{{oldStatus}}</strong> to <strong>{{newStatus}}</strong> (<em>{{changeType}}</em>)."
+    }
+}

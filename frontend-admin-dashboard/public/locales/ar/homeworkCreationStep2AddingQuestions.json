@@ -1,0 +1,30 @@
+{
+    "heading": "إضافة أسئلة",
+    "defaultSectionName": "القسم {{number}}",
+    "actions": {
+        "update": "تحديث",
+        "next": "التالي",
+        "addSection": "إضافة قسم"
+    },
+    "toast": {
+        "updateSuccess": "تم تحديث بيانات الخطوة 2 بنجاح!",
+        "saveSuccess": "تم حفظ بيانات الخطوة 2 بنجاح!"
+    },
+    "errors": {
+        "saveQuestionsFailed": "فشل حفظ الأسئلة."
+    },
+    "durationDistribution": {
+        "entireAssessmentLabel": "مدة التقييم بالكامل",
+        "sectionWiseLabel": "المدة حسب القسم",
+        "questionWiseLabel": "المدة حسب السؤال",
+        "entireAssessmentHeading": "مدة التقييم بالكامل",
+        "entireAssessmentDescription": "حدد حدًا زمنيًا واحدًا للتقييم بأكمله.",
+        "sectionWiseHeading": "المدة حسب القسم",
+        "sectionWiseDescription": "خصص وقتًا محددًا لكل قسم في علامة تبويب الأقسام. ستكون مدة التقييم الإجمالية مجموع أوقات جميع الأقسام.",
+        "questionWiseHeading": "المدة حسب السؤال",
+        "questionWiseDescription": "حدد حدودًا زمنية فردية لكل سؤال في علامة تبويب الأقسام، حيث يتوفر حقل إدخال الوقت بجانب كل سؤال.",
+        "entireTestDurationLabel": "مدة الاختبار بالكامل",
+        "hrs": "ساعات",
+        "minutes": "دقائق"
+    }
+}

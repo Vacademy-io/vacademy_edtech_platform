@@ -1,0 +1,49 @@
+{
+    "engineStatus": {
+        "draft": "مسودة",
+        "templatesPending": "القوالب قيد الانتظار",
+        "dryRun": "تشغيل تجريبي",
+        "active": "نشط",
+        "paused": "متوقف مؤقتًا",
+        "archived": "مؤرشف"
+    },
+    "actionStatus": {
+        "open": "مفتوح",
+        "acked": "تم الإقرار",
+        "dispatching": "جارٍ الإرسال…",
+        "sent": "تم الإرسال",
+        "failed": "فشل",
+        "done": "منجَز",
+        "dismissed": "مرفوض",
+        "expired": "منتهي الصلاحية",
+        "simulated": "محاكاة"
+    },
+    "proposalStatus": {
+        "aiProposed": "اقترحه الذكاء الاصطناعي",
+        "userReview": "قيد المراجعة",
+        "userApproved": "تمت الموافقة (منك)",
+        "submitted": "جارٍ الإرسال إلى Meta…",
+        "metaPending": "بانتظار Meta",
+        "metaApproved": "مباشر",
+        "metaRejected": "مرفوض من Meta",
+        "metaRecategorised": "أُعيد تصنيفه",
+        "superseded": "استُبدل",
+        "withdrawn": "مسحوب"
+    },
+    "language": {
+        "english": "الإنجليزية",
+        "hindi": "الهندية",
+        "hinglish": "الهينغليش (الهندية بحروف لاتينية)"
+    },
+    "channel": {
+        "whatsapp": "واتساب",
+        "email": "البريد الإلكتروني",
+        "inApp": "داخل التطبيق",
+        "aiCall": "مكالمة بالذكاء الاصطناعي"
+    },
+    "templateCategory": {
+        "marketing": "تسويق",
+        "utility": "خدمي",
+        "authentication": "مصادقة"
+    }
+}

@@ -1,8 +1,11 @@
 import { saveAs } from 'file-saver';
+import i18n from '@/i18n';
 import {
     GeneratedCertificate,
     CertificateGenerationResult,
 } from '@/types/certificate/certificate-types';
+
+const NS = 'certificateGenerationDownloadManager';
 
 export class DownloadManager {
     // Download a single certificate
@@ -12,7 +15,9 @@ export class DownloadManager {
             console.log(`Downloaded certificate: ${certificate.fileName}`);
         } catch (error) {
             console.error('Error downloading certificate:', error);
-            throw new Error(`Failed to download certificate for ${certificate.studentName}`);
+            throw new Error(
+                i18n.t(`${NS}:errors.downloadFailed`, { name: certificate.studentName })
+            );
         }
     }
 
@@ -103,7 +108,7 @@ export class DownloadManager {
         onProgress?: (completed: number, total: number) => void
     ): Promise<void> {
         if (result.certificates.length === 0) {
-            throw new Error('No certificates available for download');
+            throw new Error(i18n.t(`${NS}:errors.noCertificatesAvailable`));
         }
 
         try {
@@ -124,14 +129,14 @@ export class DownloadManager {
     createGenerationSummary(result: CertificateGenerationResult): string {
         const timestamp = new Date().toISOString();
         const lines = [
-            'Certificate Generation Summary',
+            i18n.t(`${NS}:summary.title`),
             '='.repeat(50),
-            `Generated on: ${timestamp}`,
-            `Total Students: ${result.totalCount}`,
-            `Successful: ${result.successCount}`,
-            `Errors: ${result.errorCount}`,
+            i18n.t(`${NS}:summary.generatedOn`, { timestamp }),
+            i18n.t(`${NS}:summary.totalStudents`, { count: result.totalCount }),
+            i18n.t(`${NS}:summary.successful`, { count: result.successCount }),
+            i18n.t(`${NS}:summary.errorsLabel`, { count: result.errorCount }),
             '',
-            'Successful Certificates:',
+            i18n.t(`${NS}:summary.successfulCertificatesHeading`),
             '-'.repeat(30),
         ];
 
@@ -141,7 +146,7 @@ export class DownloadManager {
 
         if (result.errors.length > 0) {
             lines.push('');
-            lines.push('Errors:');
+            lines.push(i18n.t(`${NS}:summary.errorsHeading`));
             lines.push('-'.repeat(15));
 
             result.errors.forEach((error, index) => {
@@ -167,10 +172,15 @@ export class DownloadManager {
 
     // Utility method to format file size
     formatFileSize(bytes: number): string {
-        if (bytes === 0) return '0 Bytes';
+        if (bytes === 0) return i18n.t(`${NS}:fileSize.zeroBytes`);
 
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const sizes = [
+            i18n.t(`${NS}:fileSize.units.bytes`),
+            i18n.t(`${NS}:fileSize.units.kb`),
+            i18n.t(`${NS}:fileSize.units.mb`),
+            i18n.t(`${NS}:fileSize.units.gb`),
+        ];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];

@@ -1,0 +1,31 @@
+{
+    "emptyState": {
+        "learnerUnavailable": "Learner details unavailable",
+        "noCourseContent": "No course content yet",
+        "noCourseContentHint": "No subjects have been created for this batch."
+    },
+    "errorState": {
+        "title": "Couldn't load learning progress",
+        "hint": "Something went wrong while fetching this learner's progress."
+    },
+    "batchPicker": {
+        "label": "View progress for"
+    },
+    "hero": {
+        "courseFallback": "Course",
+        "percentComplete": "{{percent}}% Complete",
+        "behindOn_one": "Behind on {{count}} {{term}}",
+        "behindOn_other": "Behind on {{count}} {{term}}s"
+    },
+    "actions": {
+        "learningTimeline": "Learning Timeline",
+        "learningProgress": "Learning Progress"
+    },
+    "courseContent": {
+        "heading": "Course Content",
+        "selectSubject": "Select {{term}}",
+        "noModules": "No {{moduleTerm}}s for this {{subjectTerm}}.",
+        "noChapters": "No chapters in this {{moduleTerm}}.",
+        "moduleLabel": "{{moduleTerm}}: {{moduleName}}"
+    }
+}

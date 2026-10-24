@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarX, CaretLeft, CaretRight, WarningCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,6 +31,7 @@ export function MentorSlotPicker({
     value: string | null;
     onChange: (slot: string | null) => void;
 }) {
+    const { t } = useTranslation('mentorshipMentorSlotPicker');
     const tz = useMemo(() => browserTimezone(), []);
     const [weekOffset, setWeekOffset] = useState(0);
     const [dayKey, setDayKey] = useState<string | null>(null);
@@ -54,8 +56,7 @@ export function MentorSlotPicker({
             <div className="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3">
                 <WarningCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-warning-600" />
                 <p className="text-caption text-neutral-600">
-                    This mentor has no booking page yet, so there are no slots to pick. Enable
-                    booking for them from the mentor list first.
+                    {t('noBookingPage')}
                 </p>
             </div>
         );
@@ -74,7 +75,7 @@ export function MentorSlotPicker({
                     // Offset 0 already starts today; going back would only show the past.
                     disable={weekOffset === 0}
                     onClick={() => setWeekOffset((w) => Math.max(0, w - 1))}
-                    aria-label="Previous week"
+                    aria-label={t('previousWeek')}
                 >
                     <CaretLeft size={16} />
                 </MyButton>
@@ -91,7 +92,7 @@ export function MentorSlotPicker({
                     scale="small"
                     layoutVariant="icon"
                     onClick={() => setWeekOffset((w) => w + 1)}
-                    aria-label="Next week"
+                    aria-label={t('nextWeek')}
                 >
                     <CaretRight size={16} />
                 </MyButton>
@@ -138,22 +139,21 @@ export function MentorSlotPicker({
                 </div>
             ) : query.isError ? (
                 <div className="flex flex-col items-start gap-2 rounded-lg border border-danger-100 bg-danger-50 p-3">
-                    <p className="text-caption text-danger-600">Couldn&apos;t load available slots.</p>
+                    <p className="text-caption text-danger-600">{t('couldNotLoadSlots')}</p>
                     <MyButton
                         type="button"
                         buttonType="secondary"
                         scale="small"
                         onClick={() => query.refetch()}
                     >
-                        Retry
+                        {t('retry')}
                     </MyButton>
                 </div>
             ) : daySlots.length === 0 ? (
                 <div className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-neutral-200 p-6 text-center">
                     <CalendarX size={28} className="text-neutral-300" />
                     <p className="text-caption text-neutral-500">
-                        No free slots this week. Try the next one, or widen the mentor&apos;s
-                        availability.
+                        {t('noFreeSlots')}
                     </p>
                 </div>
             ) : (

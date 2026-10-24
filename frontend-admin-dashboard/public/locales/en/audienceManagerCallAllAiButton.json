@@ -1,0 +1,47 @@
+{
+    "button": {
+        "label": "Call all with AI",
+        "viewProgress": "View AI call progress"
+    },
+    "dialog": {
+        "heading": "Call all leads with AI"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "starting": "Starting…",
+        "callLeads_one": "Call {{count}} lead",
+        "callLeads_other": "Call {{count}} leads",
+        "callLeadsGeneric": "Call leads"
+    },
+    "body": {
+        "checkingEligibility": "Checking how many leads can be called…",
+        "eligibleOfTotal_one": "<bold>{{eligible}}</bold> of {{count}} lead in this list can be called (they have a saved contact number).",
+        "eligibleOfTotal_other": "<bold>{{eligible}}</bold> of {{count}} leads in this list can be called (they have a saved contact number).",
+        "disclaimer": "The AI agent calls each one, paced in the background, and consumes calling credits. Each lead's outcome and counsellor assignment happen automatically after the call. This can't be undone once started.",
+        "noneEligible": "No leads in this list have a contact number to call.",
+        "scope": {
+            "label": "Who to call",
+            "selectedOption_one": "Only the {{count}} selected lead",
+            "selectedOption_other": "Only the {{count}} selected leads",
+            "allOption_one": "All {{count}} eligible lead in this list",
+            "allOption_other": "All {{count}} eligible leads in this list"
+        },
+        "parallel": {
+            "label": "Calls at a time",
+            "options": {
+                "one": "1 — one call at a time",
+                "two": "2 in parallel",
+                "three": "3 in parallel"
+            },
+            "caption": "The next call starts as soon as one ends, keeping at most this many live at once."
+        }
+    },
+    "toast": {
+        "noneDispatched": "No AI calls were placed",
+        "queued_one": "Queued {{count}} AI call",
+        "queued_other": "Queued {{count}} AI calls"
+    },
+    "errors": {
+        "startFailed": "Could not start the AI call campaign"
+    }
+}

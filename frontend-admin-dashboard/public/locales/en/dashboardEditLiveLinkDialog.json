@@ -1,0 +1,10 @@
+{
+    "heading": "Edit Live Class Link",
+    "currentLinkLabel": "Current Link",
+    "newLinkLabel": "New Link",
+    "newLinkPlaceholder": "Enter new link",
+    "actions": {
+        "cancel": "Cancel",
+        "update": "Update"
+    }
+}

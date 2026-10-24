@@ -1,0 +1,91 @@
+{
+    "waFieldOptions": {
+        "auto": "स्वतः (नाम से मिलान)",
+        "recipientName": "प्राप्तकर्ता का नाम",
+        "mentorName": "मेंटर का नाम",
+        "studentName": "छात्र का नाम",
+        "sessionTitle": "सत्र शीर्षक",
+        "sessionDatetime": "सत्र की तिथि और समय",
+        "declineReason": "अस्वीकृति का कारण (मेंटर अनुरोध)"
+    },
+    "placeholderHint": {
+        "label": "प्लेसहोल्डर:"
+    },
+    "channel": {
+        "email": {
+            "label": "ईमेल",
+            "subjectLabel": "विषय"
+        },
+        "inAppAlert": {
+            "label": "इन-ऐप अलर्ट",
+            "titleLabel": "शीर्षक"
+        },
+        "push": {
+            "label": "पुश सूचना",
+            "titleLabel": "शीर्षक"
+        },
+        "messageLabel": "संदेश",
+        "usesDefault": "सिस्टम के डिफ़ॉल्ट संदेश का उपयोग करता है।",
+        "customize": "अनुकूलित करें",
+        "resetToDefault": "सिस्टम डिफ़ॉल्ट पर रीसेट करें"
+    },
+    "whatsapp": {
+        "label": "व्हाट्सएप",
+        "requiresTemplate": "एक स्वीकृत Meta टेम्पलेट आवश्यक है।",
+        "approvedTemplateLabel": "स्वीकृत टेम्पलेट",
+        "selectTemplatePlaceholder": "एक स्वीकृत टेम्पलेट चुनें",
+        "noTemplatesFound": "कोई स्वीकृत व्हाट्सएप टेम्पलेट नहीं मिला।",
+        "noTemplateMatchesSearch": "आपकी खोज से कोई स्वीकृत टेम्पलेट मेल नहीं खाता।",
+        "mapVariables": "टेम्पलेट वेरिएबल मैप करें",
+        "mapVariablesHint": "जब टेम्पलेट वेरिएबल का नाम पहले से ही किसी मेंटरशिप फ़ील्ड से मेल खाता हो, तो इसे \"स्वतः\" पर छोड़ दें।"
+    },
+    "header": {
+        "title": "मेंटरशिप सेटिंग्स",
+        "subtitle": "चुनें कि हर मेंटरशिप इवेंट के लिए शिक्षार्थियों को कैसे सूचित किया जाए।"
+    },
+    "actions": {
+        "reset": "रीसेट करें",
+        "save": "बदलाव सहेजें",
+        "saving": "सहेजा जा रहा है…"
+    },
+    "toasts": {
+        "saveSuccess": "मेंटरशिप सेटिंग्स सहेज दी गईं",
+        "saveError": "मेंटरशिप सेटिंग्स सहेजने में विफल।"
+    },
+    "whoToNotify": "किसे सूचित करें",
+    "learnerMessageAndChannels": "शिक्षार्थी संदेश और चैनल",
+    "assignment": {
+        "title": "मेंटर नियुक्त किया गया",
+        "description": "जब किसी छात्र को मेंटर सौंपा जाता है।",
+        "notifyStudent": "छात्र को सूचित करें",
+        "notifyMentor": "मेंटर को सूचित करें"
+    },
+    "request": {
+        "title": "मेंटर अनुरोध",
+        "description": "जब कोई शिक्षार्थी \"मेंटर खोजें\" से मेंटर का अनुरोध करता है।",
+        "notifyMentorRequested": "मेंटर को बताएं कि किसी ने उन्हें अनुरोधित किया है",
+        "notifyStudentDeclined": "अस्वीकार करने पर शिक्षार्थी को बताएं",
+        "approvalNote": "स्वीकृति देने पर कुछ अतिरिक्त नहीं भेजा जाता — शिक्षार्थी को जोड़ी बनते ही \"आपके पास एक नया मेंटर है\" संदेश पहले से मिल जाता है।",
+        "declineMessageAndChannels": "अस्वीकृति संदेश और चैनल"
+    },
+    "booking": {
+        "title": "सत्र बुक किया गया",
+        "description": "जब कोई शिक्षार्थी 1:1 सत्र बुक करता है।"
+    },
+    "cancellation": {
+        "title": "सत्र रद्द किया गया",
+        "description": "जब कोई सत्र रद्द किया जाता है।"
+    },
+    "sessionReminder": {
+        "title": "सत्र अनुस्मारक",
+        "description": "आगामी सत्र से पहले।",
+        "sendReminders": "सत्र अनुस्मारक भेजें",
+        "hoursBeforeSession": "सत्र से पहले घंटे"
+    },
+    "checkinReminder": {
+        "title": "चेक-इन रिमाइंडर",
+        "description": "जब कोई शिक्षार्थी काफी समय से अपने मेंटर से नहीं मिला हो।",
+        "sendNudges": "चेक-इन रिमाइंडर भेजें",
+        "daysWithoutSession": "बिना सत्र के दिन"
+    }
+}

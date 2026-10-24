@@ -25,9 +25,18 @@ import { useMediaRefsStore } from "@/stores/mediaRefsStore";
 interface PDFViewerProps {
   documentId?: string;
   pdfUrl: string;
+  /**
+   * Open at this page (1-based, as cited by the chat) instead of the saved
+   * progress. Clamped to the page count once the document has loaded.
+   */
+  startPage?: number;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
+const PDFViewer: React.FC<PDFViewerProps> = ({
+  documentId,
+  pdfUrl,
+  startPage,
+}) => {
   const { t } = useTranslation("studyContent");
   const { addActivity } = useTrackingStore();
   const [currentPage, setCurrentPage] = useState<number>(0);
@@ -106,6 +115,15 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
   const trackingSettings = getLearnerTrackingSettings();
   const inactivityThreshold = trackingSettings.focus.idlePopupDelaySeconds * 1000;
   const {setCurrentPdfPage, navigationTrigger} = useMediaRefsStore();
+
+  // Zero-based cited page, captured once per mount so a later prop change
+  // cannot move the reader. Without one the viewer opens at the saved
+  // progress marker exactly as before.
+  const startPageIndexRef = useRef<number | null>(
+    startPage !== undefined && startPage >= 1 ? Math.floor(startPage) - 1 : null
+  );
+  const openAtPageIndex =
+    startPageIndexRef.current ?? activeItem?.progress_marker;
 
   // Add ref for PDF viewer component
   const pdfViewerRef = useRef<PdfViewerComponentRef>(null);
@@ -531,6 +549,19 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
     const { setCurrentPdfLength } = useMediaRefsStore.getState();
     setCurrentPdfLength(e.doc.numPages);
 
+    // A cited page past the end (stale citation, replaced file) lands on the
+    // last page rather than leaving the viewer at the top.
+    const startPageIndex = startPageIndexRef.current;
+    if (
+      startPageIndex !== null &&
+      e.doc.numPages > 0 &&
+      startPageIndex > e.doc.numPages - 1
+    ) {
+      const lastPageIndex = e.doc.numPages - 1;
+      // Deferred a beat: the page layer is still being laid out on load.
+      setTimeout(() => pdfViewerRef.current?.jumpToPage(lastPageIndex), 250);
+    }
+
     if (isFirstView) {
       console.log("integrate add document activity api now");
       syncPDFTrackingData();
@@ -549,6 +580,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
   };
 
   useEffect(() => {
+    // Opened from a citation: the viewer starts at the cited page, so page
+    // views are attributed to it rather than to the saved marker.
+    if (startPageIndexRef.current !== null) {
+      setCurrentPage(startPageIndexRef.current);
+      return;
+    }
     setCurrentPage(activeItem?.progress_marker || 0);
   }, [activeItem?.progress_marker]);
 
@@ -696,7 +733,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ documentId, pdfUrl }) => {
         pdfUrl={pdfUrl}
         handlePageChange={handlePageChange}
         handleDocumentLoad={handleDocumentLoad}
-        initialPage={activeItem?.progress_marker}
+        initialPage={openAtPageIndex}
       />
 
       {/* Tap-to-interact overlay â keeps the outer page scrollable on phones

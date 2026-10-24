@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import {
     DropdownMenu,
@@ -30,6 +31,7 @@ export function ScheduleTestDetailsDropdownLive({
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
 }) {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     const [isRemiderAlertDialogOpen, setIsRemiderAlertDialogOpen] = useState(false);
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
     const [isPauseLiveStatausDialog, setIsPauseLiveStatausDialog] = useState(false);
@@ -69,7 +71,7 @@ export function ScheduleTestDetailsDropdownLive({
                         className="cursor-pointer"
                         onClick={() => handleNavigateAssessment(scheduleTestContent.assessment_id)}
                     >
-                        View Assessment Details
+                        {t('viewAssessmentDetails')}
                     </DropdownMenuItem>
                     {canDelete && (
                         <DropdownMenuItem
@@ -79,7 +81,7 @@ export function ScheduleTestDetailsDropdownLive({
                                 handleDeleteAssessmentClick(scheduleTestContent.assessment_id);
                             }}
                         >
-                            Delete Assessment
+                            {t('deleteAssessment')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>
@@ -111,6 +113,7 @@ export function ScheduleTestDetailsDropdownUpcoming({
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
 }) {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
     const navigate = useNavigate();
     const handleNavigateAssessment = (assessmentId: string) => {
@@ -148,7 +151,7 @@ export function ScheduleTestDetailsDropdownUpcoming({
                         className="cursor-pointer"
                         onClick={() => handleNavigateAssessment(scheduleTestContent.assessment_id)}
                     >
-                        View Assessment Details
+                        {t('viewAssessmentDetails')}
                     </DropdownMenuItem>
 
                     {canDelete && (
@@ -159,7 +162,7 @@ export function ScheduleTestDetailsDropdownUpcoming({
                                 handleDeleteAssessmentClick(scheduleTestContent.assessment_id);
                             }}
                         >
-                            Delete Assessment
+                            {t('deleteAssessment')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>
@@ -182,6 +185,7 @@ export function ScheduleTestDetailsDropdownPrevious({
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
 }) {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
     const [isReopenAssessment, setIsReopenAssessment] = useState(false);
     const navigate = useNavigate();
@@ -220,7 +224,7 @@ export function ScheduleTestDetailsDropdownPrevious({
                         className="cursor-pointer"
                         onClick={() => handleNavigateAssessment(scheduleTestContent.assessment_id)}
                     >
-                        View Assessment Details
+                        {t('viewAssessmentDetails')}
                     </DropdownMenuItem>
 
                     {canDelete && (
@@ -231,7 +235,7 @@ export function ScheduleTestDetailsDropdownPrevious({
                                 handleDeleteAssessmentClick(scheduleTestContent.assessment_id);
                             }}
                         >
-                            Delete Assessment
+                            {t('deleteAssessment')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>
@@ -257,6 +261,7 @@ export function ScheduleTestDetailsDropdowDrafts({
     scheduleTestContent: TestContent;
     handleRefetchData: () => void;
 }) {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     const [isDeleteAssessmentDialog, setIsDeleteAssessmentDialog] = useState(false);
     const navigate = useNavigate();
     const handleNavigateAssessment = (assessmentId: string) => {
@@ -292,7 +297,7 @@ export function ScheduleTestDetailsDropdowDrafts({
                         className="cursor-pointer"
                         onClick={() => handleNavigateAssessment(scheduleTestContent.assessment_id)}
                     >
-                        View Assessment Details
+                        {t('viewAssessmentDetails')}
                     </DropdownMenuItem>
                     {canDelete && (
                         <DropdownMenuItem
@@ -302,7 +307,7 @@ export function ScheduleTestDetailsDropdowDrafts({
                                 handleDeleteAssessmentClick(scheduleTestContent.assessment_id);
                             }}
                         >
-                            Delete Assessment
+                            {t('deleteAssessment')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>
@@ -362,24 +367,30 @@ export function ScheduleTestMainDropdownComponent({
 }
 
 const ScheduleTestReminderDialog = ({ onClose }: { onClose: () => void }) => {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogTrigger>Open</DialogTrigger>
+            <DialogTrigger>{t('open')}</DialogTrigger>
             <DialogContent className="flex w-[500px] flex-col p-0">
-                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">Send Reminder</h1>
+                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">
+                    {t('sendReminder')}
+                </h1>
                 <div className="flex flex-col gap-4 p-4 pt-3">
                     <div className="flex items-center gap-1">
-                        <span className="text-danger-600">Attention</span>
+                        <span className="text-danger-600">{t('attention')}</span>
                         <Info size={18} className="text-danger-600" />
                     </div>
                     <h1 className="-mt-2 font-thin">
-                        A Assessment reminder will be sent to all
-                        <span className="text-primary-500"> 56 participants </span>
-                        who have not yet appeared from the assigned batches.
+                        {t('reminderBody.prefix')}
+                        <span className="text-primary-500">
+                            {' '}
+                            {t('reminderBody.participantCount', { count: 56 })}{' '}
+                        </span>
+                        {t('reminderBody.suffix')}
                     </h1>
                     <div className="mt-2 flex justify-end">
                         <MyButton type="button" scale="large" buttonType="primary">
-                            Send
+                            {t('send')}
                         </MyButton>
                     </div>
                 </div>
@@ -397,6 +408,7 @@ const ScheduleTestDeleteDialog = ({
     scheduleTestContent: TestContent;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     const instituteId = getInstituteId();
     // An assessment created from a course slide is only half-deleted if the slide
     // survives, so offer to take both — ticked by default.
@@ -425,16 +437,13 @@ const ScheduleTestDeleteDialog = ({
                     // here would read as "nothing was deleted" and invite a retry
                     // that then 404s. Report the partial outcome instead.
                     console.error('Failed to delete linked assessment slides:', slideError);
-                    toast.warning(
-                        'Assessment deleted, but its course slides could not be removed.',
-                        { duration: 4000 }
-                    );
+                    toast.warning(t('toasts.slideDeleteFailed'), { duration: 4000 });
                 }
             }
             return result;
         },
         onSuccess: async () => {
-            toast.success('Assessment has been deleted successfully!', {
+            toast.success(t('toasts.deleteSuccess'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -463,16 +472,18 @@ const ScheduleTestDeleteDialog = ({
     };
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogTrigger>Open</DialogTrigger>
+            <DialogTrigger>{t('open')}</DialogTrigger>
             <DialogContent className="flex w-[500px] flex-col p-0">
-                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">Delete Assessment</h1>
+                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">
+                    {t('deleteAssessment')}
+                </h1>
                 <div className="flex flex-col gap-4 p-4 pt-3">
                     <div className="flex items-center gap-1">
-                        <span className="text-danger-600">Attention</span>
+                        <span className="text-danger-600">{t('attention')}</span>
                         <Info size={18} className="text-danger-600" />
                     </div>
                     <h1 className="-mt-2 font-thin">
-                        Are you sure you want to delete
+                        {t('deleteConfirm.prefix')}
                         <span className="text-primary-500">&nbsp;{scheduleTestContent.name}</span>?
                     </h1>
                     <AssessmentSlideCascadeOption
@@ -488,7 +499,7 @@ const ScheduleTestDeleteDialog = ({
                             buttonType="primary"
                             onClick={deleteAssessment}
                         >
-                            Delete
+                            {t('delete')}
                         </MyButton>
                     </div>
                 </div>
@@ -498,27 +509,30 @@ const ScheduleTestDeleteDialog = ({
 };
 
 const ScheduleTestPauseDialog = ({ onClose }: { onClose: () => void }) => {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogTrigger>Open</DialogTrigger>
+            <DialogTrigger>{t('open')}</DialogTrigger>
             <DialogContent className="flex w-[500px] flex-col p-0">
-                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">Pause Live Status</h1>
+                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">
+                    {t('pauseLiveStatus')}
+                </h1>
                 <div className="flex flex-col gap-4 p-4 pt-3">
                     <div>
                         <h1 className="mb-1 text-sm">
-                            Date <span className="text-danger-600">*</span>
+                            {t('date')} <span className="text-danger-600">*</span>
                         </h1>
-                        <Input type="date" placeholder="Date" />
+                        <Input type="date" placeholder={t('date')} />
                     </div>
                     <div className="text-sm">
                         <h1 className="mb-1 text-sm">
-                            Pause Until <span className="text-danger-600">*</span>
+                            {t('pauseUntil')} <span className="text-danger-600">*</span>
                         </h1>
-                        <Input type="time" placeholder="Time" />
+                        <Input type="time" placeholder={t('time')} />
                     </div>
                     <div className="mt-2 flex justify-end">
                         <MyButton type="button" scale="large" buttonType="primary">
-                            Pause
+                            {t('pause')}
                         </MyButton>
                     </div>
                 </div>
@@ -528,28 +542,29 @@ const ScheduleTestPauseDialog = ({ onClose }: { onClose: () => void }) => {
 };
 
 const ScheduleTestResumeDialog = ({ onClose }: { onClose: () => void }) => {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogTrigger>Open</DialogTrigger>
+            <DialogTrigger>{t('open')}</DialogTrigger>
             <DialogContent className="flex w-[500px] flex-col p-0">
                 <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">
-                    Resume Live Status
+                    {t('resumeLiveStatus')}
                 </h1>
                 <div className="flex flex-col gap-4 p-4 pt-3">
                     <div className="flex items-center gap-1">
-                        <span className="text-danger-600">Attention</span>
+                        <span className="text-danger-600">{t('attention')}</span>
                         <Info size={18} className="text-danger-600" />
                     </div>
                     <h1 className="-mt-2 font-thin">
-                        Do you want to resume your Live assessment
+                        {t('resumeConfirm.prefix')}
                         <span className="text-primary-500">
-                            &nbsp;The Human Eye and The Colourful World
+                            &nbsp;{t('resumeConfirm.assessmentName')}
                         </span>
                         ?
                     </h1>
                     <div className="mt-2 flex justify-end">
                         <MyButton type="button" scale="large" buttonType="primary">
-                            Resume
+                            {t('resume')}
                         </MyButton>
                     </div>
                 </div>
@@ -559,41 +574,47 @@ const ScheduleTestResumeDialog = ({ onClose }: { onClose: () => void }) => {
 };
 
 const ScheduleTestReopenDialog = ({ onClose }: { onClose: () => void }) => {
+    const { t } = useTranslation('evaluationScheduleTestDetailsDropdownMenu');
     return (
         <Dialog open={true} onOpenChange={onClose}>
-            <DialogTrigger>Open</DialogTrigger>
+            <DialogTrigger>{t('open')}</DialogTrigger>
             <DialogContent className="flex w-[500px] flex-col p-0">
-                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">Reopen Assessment</h1>
+                <h1 className="rounded-lg bg-primary-50 p-4 text-primary-500">
+                    {t('reopenAssessment')}
+                </h1>
                 <div className="flex flex-col gap-4 p-4 pt-3">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-1">
-                            <span className="text-danger-600">Attention</span>
+                            <span className="text-danger-600">{t('attention')}</span>
                             <Info size={18} className="text-danger-600" />
                         </div>
                         <h1 className="-mt-2 font-thin">
-                            A Assessment reminder will be sent to all
-                            <span className="text-primary-500"> 56 participants </span>
-                            who have not yet appeared from the assigned batches.
+                            {t('reminderBody.prefix')}
+                            <span className="text-primary-500">
+                                {' '}
+                                {t('reminderBody.participantCount', { count: 56 })}{' '}
+                            </span>
+                            {t('reminderBody.suffix')}
                         </h1>
                     </div>
-                    <h1>Select assessment reopening date and time</h1>
+                    <h1>{t('selectReopenDateTime')}</h1>
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="mb-1 text-sm">
-                                Start Date & Time <span className="text-danger-600">*</span>
+                                {t('startDateTime')} <span className="text-danger-600">*</span>
                             </h1>
-                            <Input type="datetime-local" placeholder="Date" />
+                            <Input type="datetime-local" placeholder={t('date')} />
                         </div>
                         <div className="text-sm">
                             <h1 className="mb-1 text-sm">
-                                End Date & Time <span className="text-danger-600">*</span>
+                                {t('endDateTime')} <span className="text-danger-600">*</span>
                             </h1>
-                            <Input type="datetime-local" placeholder="Time" />
+                            <Input type="datetime-local" placeholder={t('time')} />
                         </div>
                     </div>
                     <div className="mt-2 flex justify-end">
                         <MyButton type="button" scale="large" buttonType="primary">
-                            Reopen
+                            {t('reopen')}
                         </MyButton>
                     </div>
                 </div>

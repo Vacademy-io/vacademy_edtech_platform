@@ -2,6 +2,7 @@
 // @ts-nocheck
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,9 @@ export interface SelectedReleaseResultFilterInterface {
 }
 
 const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
+    const { t } = useTranslation('homeworkCreationAssessmentSubmissionsTab');
+    const { t: tHelper } = useTranslation('homeworkCreationAssessmentDetailsHelper');
+    const { t: tStudentColumns } = useTranslation('homeworkCreationStudentColumns');
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const { BatchesFilterData } = useFilterDataForAssesment(initData);
     const instituteId = getInstituteId();
@@ -160,9 +164,9 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     };
 
     const getAssessmentColumn = {
-        Attempted: getAllColumnsForTable(type, selectedParticipantsTab).Attempted,
-        Pending: getAllColumnsForTable(type, selectedParticipantsTab).Pending,
-        Ongoing: getAllColumnsForTable(type, selectedParticipantsTab).Ongoing,
+        Attempted: getAllColumnsForTable(type, selectedParticipantsTab, tStudentColumns).Attempted,
+        Pending: getAllColumnsForTable(type, selectedParticipantsTab, tStudentColumns).Pending,
+        Ongoing: getAllColumnsForTable(type, selectedParticipantsTab, tStudentColumns).Ongoing,
     };
 
     const getAssessmentColumnWidth = {
@@ -707,7 +711,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Student submissions list data for PDF exported successfully');
+            toast.success(t('toasts.exportPdfSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -749,7 +753,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
 
             // Clean up the created URL object
             URL.revokeObjectURL(url);
-            toast.success('Student submissions list data for CSV exported successfully');
+            toast.success(t('toasts.exportCsvSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -777,7 +781,8 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
             type,
             selectedTab,
             initData?.batches_for_sessions,
-            totalMarks.total_achievable_marks
+            totalMarks.total_achievable_marks,
+            tHelper
         )
     );
 
@@ -851,10 +856,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                     selectedTab === 'Attempted' ? 'text-primary-500' : ''
                                 }`}
                             >
-                                Attempted
+                                {t('tabs.attempted')}
                             </span>
                             <Badge
-                                className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                                className="rounded-full bg-primary-500 p-0 px-2 text-2xs text-white"
                                 variant="outline"
                             >
                                 {attemptedCount}
@@ -874,10 +879,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                         selectedTab === 'Ongoing' ? 'text-primary-500' : ''
                                     }`}
                                 >
-                                    Ongoing
+                                    {t('tabs.ongoing')}
                                 </span>
                                 <Badge
-                                    className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                                    className="rounded-full bg-primary-500 p-0 px-2 text-2xs text-white"
                                     variant="outline"
                                 >
                                     {ongoingCount}
@@ -895,10 +900,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             <span
                                 className={`${selectedTab === 'Pending' ? 'text-primary-500' : ''}`}
                             >
-                                Pending
+                                {t('tabs.pending')}
                             </span>
                             <Badge
-                                className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                                className="rounded-full bg-primary-500 p-0 px-2 text-2xs text-white"
                                 variant="outline"
                             >
                                 {pendingCount}
@@ -950,7 +955,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                                 : ''
                                         }`}
                                     >
-                                        Internal Participants
+                                        {t('participantsTabs.internal')}
                                     </span>
                                 </TabsTrigger>
                                 <Separator orientation="vertical" className="h-full bg-gray-500" />
@@ -969,7 +974,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                                 : ''
                                         }`}
                                     >
-                                        External Participants
+                                        {t('participantsTabs.external')}
                                     </span>
                                 </TabsTrigger>
                             </TabsList>
@@ -1016,7 +1021,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                             batchSelectionTab === 'batch' ? 'text-primary-500' : ''
                                         }`}
                                     >
-                                        Batch Selection
+                                        {t('batchSelectionTabs.batch')}
                                     </span>
                                 </TabsTrigger>
                                 <TabsTrigger
@@ -1034,7 +1039,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                                 : ''
                                         }`}
                                     >
-                                        Individual Selection
+                                        {t('batchSelectionTabs.individual')}
                                     </span>
                                 </TabsTrigger>
                             </TabsList>
@@ -1049,12 +1054,12 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                             buttonType="secondary"
                                             className="font-medium"
                                         >
-                                            Revaluate
+                                            {t('actions.revaluate')}
                                         </MyButton>
                                     </DialogTrigger>
                                     <DialogContent className="p-0">
                                         <h1 className="rounded-t-lg bg-primary-50 p-4 text-primary-500">
-                                            Revaluate Result
+                                            {t('dialogs.revaluateResultTitle')}
                                         </h1>
                                         <div className="flex flex-col items-center justify-center gap-4 p-4">
                                             <AssessmentGlobalLevelRevaluateAssessment />
@@ -1067,7 +1072,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         )}
                     </div>
                 )}
-                <div className="flex max-h-[72vh] flex-col gap-6 overflow-y-auto p-4">
+                <div className="flex max-h-[72vh] flex-col gap-6 overflow-y-auto p-4">{/* design-lint-ignore: viewport-relative scroll cap has no spacing token */}
                     <TabsContent value={selectedTab}>
                         <SidebarProvider
                             style={{ ['--sidebar-width' as string]: '565px' }}
@@ -1080,7 +1085,8 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                         type,
                                         selectedTab,
                                         initData?.batches_for_sessions,
-                                        totalMarks.total_achievable_marks
+                                        totalMarks.total_achievable_marks,
+                                        tHelper
                                     ),
                                     total_pages: participantsData.total_pages,
                                     page_no: page,

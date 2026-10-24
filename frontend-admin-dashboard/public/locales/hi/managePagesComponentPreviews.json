@@ -1,0 +1,159 @@
+{
+    "productPageOffer": {
+        "seeAll": "सभी देखें",
+        "pickPage": "इसके कोर्स यहां दिखाने के लिए प्रॉपर्टीज़ पैनल में एक प्रोडक्ट पेज चुनें।",
+        "loading": "कोर्स लोड हो रहे हैं…",
+        "noCourses": "इस प्रोडक्ट पेज पर अभी तक कोई सक्रिय कोर्स नहीं है।",
+        "courseFallback": "कोर्स",
+        "free": "मुफ़्त",
+        "viewCourse": "कोर्स देखें",
+        "enrolNow": "अभी नामांकन करें",
+        "addToCart": "कार्ट में जोड़ें",
+        "checkout": "चेकआउट पर जाएँ",
+        "basketPreviewCount_one": "{{count}} कोर्स चयनित",
+        "basketPreviewCount_other": "{{count}} कोर्स चयनित",
+        "hiddenCountCapped_one": "+ {{count}} और कोर्स — पंक्ति पूरे प्रोडक्ट पेज से जुड़े एक कार्ड पर समाप्त होती है।",
+        "hiddenCountCapped_other": "+ {{count}} और कोर्स — पंक्ति पूरे प्रोडक्ट पेज से जुड़े एक कार्ड पर समाप्त होती है।",
+        "hiddenCountPaged_one": "+ {{count}} और कोर्स — विज़िटर {{totalPages}} पेजों में देखते हैं{{suffix}}।",
+        "hiddenCountPaged_other": "+ {{count}} और कोर्स — विज़िटर {{totalPages}} पेजों में देखते हैं{{suffix}}।",
+        "pagedSuffixCarousel": ", हर पंक्ति साइड में स्क्रॉल होती है",
+        "pagedSuffixScrollable": ", सेक्शन के अंदर स्क्रॉल होता है"
+    },
+    "leadForm": {
+        "pickCampaign": "प्रॉपर्टीज़ पैनल में एक कैंपेन चुनें — उसके फ़ॉर्म फ़ील्ड यहां दिखेंगे।",
+        "loading": "फ़ॉर्म फ़ील्ड लोड हो रहे हैं…",
+        "noFields": "इस कैंपेन में अभी तक कोई फ़ॉर्म फ़ील्ड नहीं है — इन्हें ऑडियंस मैनेजर में जोड़ें।",
+        "submit": "सबमिट करें"
+    },
+    "detailBlocks": {
+        "empty": "आप जिस भी प्रोग्राम का विवरण देना चाहते हैं, उसके लिए एक ब्लॉक जोड़ें।"
+    },
+    "header": {
+        "getStarted": "शुरू करें",
+        "logoAlt": "लोगो"
+    },
+    "hero": {
+        "titleFallback": "हीरो शीर्षक",
+        "getStarted": "शुरू करें",
+        "photoFallback": "फ़ोटो {{index}}",
+        "imageArea": "इमेज क्षेत्र"
+    },
+    "footer": {
+        "platform": "प्लेटफ़ॉर्म",
+        "bottomNote": "© 2025"
+    },
+    "stats": {
+        "empty": "अभी तक कोई आँकड़े नहीं जोड़े गए"
+    },
+    "testimonial": {
+        "textFallback": "प्रशंसापत्र टेक्स्ट…",
+        "authorFallback": "छात्र",
+        "empty": "प्रॉपर्टीज़ पैनल में प्रशंसापत्र जोड़ें"
+    },
+    "mediaShowcase": {
+        "slideFallback": "स्लाइड {{index}}",
+        "moreSlides_one": "+{{count}} और",
+        "moreSlides_other": "+{{count}} और",
+        "slideCount_one": "{{count}} स्लाइड · स्लाइडर लेआउट",
+        "slideCount_other": "{{count}} स्लाइड्स · स्लाइडर लेआउट",
+        "mediaItemFallback": "मीडिया आइटम",
+        "typeImage": "इमेज",
+        "typeVideo": "वीडियो",
+        "empty": "प्रॉपर्टीज़ पैनल में स्लाइड या मीडिया आइटम जोड़ें"
+    },
+    "video": {
+        "addUrl": "प्रॉपर्टीज़ में वीडियो URL जोड़ें"
+    },
+    "ctaBanner": {
+        "headingFallback": "कॉल टू एक्शन"
+    },
+    "gallery": {
+        "imageFallback": "इमेज {{index}}"
+    },
+    "dataPlaceholder": {
+        "defaultDescription": "प्रकाशित पेज पर लाइव डेटा दिखाता है"
+    },
+    "marquee": {
+        "defaultItem1": "टॉप-रेटेड कोर्स",
+        "defaultItem2": "10,000+ शिक्षार्थी",
+        "defaultItem3": "विशेषज्ञ प्रशिक्षक",
+        "scrollingHint": "→ स्क्रॉल हो रहा है"
+    },
+    "dispatcher": {
+        "buyRentHeading": "अपना रास्ता चुनें",
+        "buy": "खरीदें",
+        "rent": "किराए पर लें",
+        "courseCatalogLabel": "कोर्स कैटलॉग",
+        "courseCatalogDesc": "लाइव कोर्स दिखाता है — \"{{title}}\"",
+        "ourCoursesDefault": "हमारे कोर्स",
+        "bookCatalogueLabel": "बुक कैटलॉग",
+        "bookCatalogueDesc": "लाइव किताबें दिखाता है — \"{{title}}\"",
+        "bookCollectionDefault": "बुक कलेक्शन",
+        "cartLabel": "शॉपिंग कार्ट",
+        "cartDesc": "आइटम और चेकआउट फ़्लो के साथ छात्र कार्ट",
+        "courseDetailsLabel": "कोर्स विवरण",
+        "courseDetailsDesc": "मौजूदा कोर्स का विवरण डेटा दिखाता है",
+        "bookDetailsLabel": "बुक विवरण",
+        "bookDetailsDesc": "मौजूदा किताब का विवरण डेटा दिखाता है",
+        "policyLabel": "पॉलिसी पेज",
+        "policyDesc": "पॉलिसी / नियम व शर्तें दिखाता है",
+        "tabItemFallback": "आइटम {{index}}",
+        "tabTabFallback": "टैब {{index}}",
+        "tabContentDefault": "टैब कंटेंट",
+        "logoCloudEmptyTicker": "प्रॉपर्टी पैनल के ज़रिए टिकर आइटम जोड़ें",
+        "logoCloudEmptyLogos": "प्रॉपर्टी पैनल के ज़रिए लोगो जोड़ें",
+        "mapEmbedPreview": "मैप एम्बेड प्रीव्यू",
+        "mapEmbedAddUrl": "एक गूगल मैप्स एम्बेड URL जोड़ें",
+        "countdownHeadingFallback": "इवेंट शुरू होने में",
+        "unitDays": "दिन",
+        "unitHours": "घंटे",
+        "unitMins": "मिनट",
+        "unitSecs": "सेकंड",
+        "textBlockDefault": "टेक्स्ट ब्लॉक — कंटेंट संपादित करने के लिए क्लिक करें",
+        "uploadImage": "एक इमेज अपलोड करें",
+        "buttonFallback": "बटन",
+        "newsletterPlaceholder": "अपना ईमेल दर्ज करें",
+        "newsletterButton": "सब्सक्राइब करें",
+        "columnLayoutLabel": "{{cols}}-कॉलम लेआउट · गैप: {{gap}}",
+        "slotEmpty": "स्लॉट {{index}} — खाली",
+        "slotComponentCount_one": "{{count}} कंपोनेंट",
+        "slotComponentCount_other": "{{count}} कंपोनेंट्स",
+        "filterCategory": "श्रेणी",
+        "filterLevel": "स्तर",
+        "filterPrice": "कीमत",
+        "courseImage": "कोर्स इमेज",
+        "courseGridNote": "कोर्स ग्रिड · कंटेंट रनटाइम पर लोड होता है",
+        "htmlPageEmptyTitle": "खाली HTML पेज",
+        "htmlPageEmptyBody": "प्रॉपर्टीज़ पैनल में अपना HTML और CSS पेस्ट करें।",
+        "htmlBlockLabel": "HTML ब्लॉक",
+        "htmlBlockEmpty": "खाली HTML ब्लॉक",
+        "unknownComponent": "अज्ञात कंपोनेंट: {{type}}"
+    },
+    "documentViewer": {
+        "noFile": "अभी कोई PDF नहीं",
+        "addPdf": "दाईं ओर के पैनल में PDF जोड़ें",
+        "openDocument": "दस्तावेज़ खोलें",
+        "download": "PDF डाउनलोड करें"
+    },
+    "blog": {
+        "sampleCategory": "पढ़ाई के टिप्स",
+        "sampleTitle": "नमूना पोस्ट {{n}}",
+        "sampleExcerpt": "लेख का छोटा सा अंश यहाँ दिखता है।",
+        "readMore": "और पढ़ें",
+        "liveNote": "प्रकाशित पोस्ट लाइव साइट पर यहाँ दिखती हैं। उन्हें Manage Pages → Blog में लिखें।"
+    },
+    "jobOpenings": {
+        "view": "नौकरी का विवरण देखें",
+        "empty": "अभी कोई नौकरी नहीं — सेक्शन सेटिंग में एक जोड़ें।",
+        "liveNote": "लाइव साइट पर हर नौकरी अपने पेज पर खुलती है।"
+    },
+    "catalogFeatures": {
+        "hero": "हीरो",
+        "streamIcons": "स्ट्रीम आइकन",
+        "streamTabs": "स्ट्रीम टैब",
+        "filterSidebar": "फ़िल्टर साइडबार",
+        "highlightedRows_one": "{{count}} विशेष पंक्ति",
+        "highlightedRows_other": "{{count}} विशेष पंक्तियाँ",
+        "editorialCards": "एडिटोरियल कार्ड"
+    }
+}

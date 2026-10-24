@@ -1,0 +1,32 @@
+{
+    "title": {
+        "apiError": "خطأ في الرفع",
+        "validationError": "أخطاء التحقق"
+    },
+    "apiError": {
+        "heading": "فشل رفع هذا السجل",
+        "sqlStatementLabel": "عبارة SQL:",
+        "unknownError": "خطأ غير معروف",
+        "unknownUploadError": "حدث خطأ غير معروف أثناء الرفع.",
+        "rowDataHeading": "بيانات الصف",
+        "table": {
+            "field": "الحقل",
+            "value": "القيمة"
+        }
+    },
+    "validationErrors": {
+        "table": {
+            "position": "الموضع",
+            "error": "الخطأ",
+            "resolution": "الحل",
+            "currentValue": "القيمة الحالية"
+        },
+        "rowPosition": "في الصف {{row}} من {{field}}"
+    },
+    "common": {
+        "notAvailable": "غير متاح"
+    },
+    "buttons": {
+        "close": "إغلاق"
+    }
+}

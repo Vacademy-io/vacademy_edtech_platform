@@ -1,0 +1,143 @@
+{
+    "feePlan": {
+        "heading": "फीस योजना",
+        "planLabelFallback": "फीस योजना",
+        "installments_one": "{{count}} किस्त",
+        "installments_other": "{{count}} किस्तें",
+        "netPaid": "नेट {{net}} · भुगतान {{paid}}",
+        "outstanding": "बकाया"
+    },
+    "accountSummary": {
+        "heading": "खाता सारांश",
+        "totalAccrued": "कुल उपार्जित",
+        "totalPaid": "कुल भुगतान",
+        "due": "देय",
+        "pastDue": "अतिदेय"
+    },
+    "markPaidDialog": {
+        "successToast": "चालान {{invoice}} भुगतान के रूप में चिह्नित किया गया",
+        "errorToast": "भुगतान के रूप में चिह्नित करने में विफल",
+        "title": "चालान भुगतान के रूप में चिह्नित करें",
+        "descriptionPrefix": "एक ऑफ़लाइन भुगतान दर्ज करता है",
+        "descriptionFallback": "इस चालान के विरुद्ध एक ऑफ़लाइन भुगतान दर्ज करता है।",
+        "transactionReference": "लेन-देन संदर्भ",
+        "transactionReferencePlaceholder": "चेक #, यूपीआई संदर्भ, रसीद संख्या",
+        "notes": "नोट्स",
+        "notesPlaceholder": "वैकल्पिक नोट",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "submit": "भुगतान के रूप में चिह्नित करें"
+    },
+    "invoicesList": {
+        "cancelSuccessToast": "चालान रद्द किया गया",
+        "cancelErrorToast": "चालान रद्द नहीं किया जा सका",
+        "copyLinkSuccessToast": "भुगतान लिंक कॉपी किया गया",
+        "copyLinkErrorToast": "क्लिपबोर्ड पर कॉपी नहीं किया जा सका",
+        "emptyTitle": "अभी तक कोई चालान नहीं",
+        "emptyHint": "इस शिक्षार्थी के लिए बनाए गए चालान यहाँ दिखाई देंगे।",
+        "proforma": "प्रोफ़ॉर्मा",
+        "proformaTitle": "प्रोफ़ॉर्मा — भुगतान होने पर एक क्रमांकित चालान बन जाता है",
+        "discountFallback": "छूट",
+        "sourceAdminInvoice": "एडमिन चालान",
+        "sourceSubscription": "सब्सक्रिप्शन",
+        "sourceFeePayment": "फीस भुगतान",
+        "previewTitle": "चालान पीडीएफ को डाउनलोड किए बिना पूर्वावलोकन करें",
+        "preview": "पूर्वावलोकन",
+        "downloadTitle": "चालान पीडीएफ डाउनलोड करें",
+        "download": "डाउनलोड",
+        "copied": "कॉपी किया गया",
+        "copyPaymentLink": "भुगतान लिंक कॉपी करें",
+        "copyPaymentLinkTitle": "शिक्षार्थी के साथ साझा करने के लिए भुगतान लिंक कॉपी करें",
+        "editTitle": "इस अवैतनिक चालान को संपादित करें — वही चालान संख्या बनी रहती है",
+        "edit": "संपादित करें",
+        "markPaidTitle": "एक ऑफ़लाइन / मैन्युअल भुगतान दर्ज करें",
+        "markPaid": "भुगतान के रूप में चिह्नित करें",
+        "cancelInvoiceTitle": "इस चालान को शून्य करें — भुगतान लिंक काम करना बंद कर देगा",
+        "cancelling": "रद्द किया जा रहा है…",
+        "cancelAction": "रद्द करें",
+        "paginationRange": "{{total}} में से {{from}}–{{to}}",
+        "cancelDialog": {
+            "title": "चालान {{number}} रद्द करें?",
+            "description": "यह चालान को स्थायी रूप से शून्य कर देता है — भुगतान लिंक काम करना बंद कर देगा और इसे कभी भुगतान के रूप में चिह्नित नहीं किया जा सकेगा। इसे पूर्ववत नहीं किया जा सकता। गलती सुधारने के लिए, बाद में एक नया चालान बनाएं।",
+            "keep": "चालान रखें",
+            "confirm": "चालान रद्द करें"
+        },
+        "left": "{{amount}} बाकी",
+        "paidWithReceipt": "{{amount}} भुगतान · रसीद {{receipt}}",
+        "paidSoFar": "{{amount}} भुगतान"
+    },
+    "invoiceStatus": {
+        "generated": "जनरेट किया गया",
+        "sent": "भेजा गया",
+        "viewed": "देखा गया",
+        "pendingPayment": "भुगतान लंबित",
+        "paid": "भुगतान किया गया",
+        "rejected": "अस्वीकृत"
+    },
+    "transactionHistory": {
+        "heading": "लेन-देन इतिहास",
+        "loading": "लेन-देन लोड हो रहे हैं…",
+        "empty": "अभी तक कोई लेन-देन इतिहास नहीं है।",
+        "pageOf": "{{total}} में से पृष्ठ {{page}}",
+        "event": {
+            "debitAccrual": "चालान जारी किया गया",
+            "creditPayment": "भुगतान प्राप्त हुआ",
+            "creditWaiver": "छूट (माफी)",
+            "creditAdjustment": "समायोजन",
+            "debitPenalty": "जुर्माना",
+            "debitReversal": "चालान रद्द किया गया",
+            "creditReversal": "भुगतान रद्द किया गया"
+        }
+    },
+    "main": {
+        "loadInvoiceError": "संपादन हेतु चालान लोड नहीं हो सका",
+        "noLearnerTitle": "कोई शिक्षार्थी चयनित नहीं",
+        "noLearnerHint": "भुगतान इतिहास देखने के लिए एक शिक्षार्थी चुनें।",
+        "installmentsHeading": "किस्तें",
+        "invoicesHeading": "चालान",
+        "invoicesHeadingCount": "चालान ({{count}})",
+        "createInvoice": "चालान बनाएं",
+        "loadingInvoices": "चालान लोड हो रहे हैं..."
+    },
+    "voidPayment": {
+        "action": "भुगतान रद्द करें",
+        "actionTitle": "यह भुगतान रद्द करें — जब भुगतान गलती से दर्ज हुआ हो",
+        "voidedTag": "रद्द",
+        "dialog": {
+            "title": "{{amount}} का यह भुगतान रद्द करें?",
+            "description": "गलती से दर्ज किए गए भुगतान के लिए इसका उपयोग करें। राशि छात्र के बकाया और किस्तों में वापस जुड़ जाएगी, उसका इनवॉइस रद्द हो जाएगा और यह एकत्रित राशि में नहीं गिना जाएगा। भुगतान इतिहास में \"रद्द\" के रूप में दिखता रहेगा। इसे वापस नहीं किया जा सकता।",
+            "reasonLabel": "कारण (वैकल्पिक)",
+            "reasonPlaceholder": "जैसे: दो बार दर्ज हुआ",
+            "keep": "भुगतान रखें",
+            "confirm": "भुगतान रद्द करें"
+        },
+        "successToast": "भुगतान रद्द — {{amount}} छात्र के बकाया में वापस जुड़ गया",
+        "errorToast": "यह भुगतान रद्द नहीं हो सका"
+    },
+    "permanentDelete": {
+        "action": "स्थायी रूप से हटाएं",
+        "paymentTitle": "{{label}} का भुगतान स्थायी रूप से हटाएं?",
+        "invoiceTitle": "इनवॉइस {{label}} स्थायी रूप से हटाएं?",
+        "cannotUndo": "इसे वापस नहीं किया जा सकता।",
+        "whatHappens": "क्या होगा",
+        "payment": {
+            "removed": "भुगतान का रिकॉर्ड हमेशा के लिए हट जाएगा।",
+            "balance": "अगर यह अभी गिना जा रहा है, तो राशि छात्र के बकाया और किस्तों में वापस जुड़ जाएगी।",
+            "invoice": "इसके लिए बना रसीद इनवॉइस हटा दिया जाएगा, और उसका नंबर अगले इनवॉइस के लिए खाली हो जाएगा।"
+        },
+        "invoice": {
+            "removed": "इनवॉइस हमेशा के लिए हट जाएगा।",
+            "balance": "बिना भुगतान वाला बिल छात्र के बकाया में नहीं गिना जाएगा।",
+            "number": "इसका इनवॉइस नंबर खाली होकर अगले इनवॉइस को मिलेगा।"
+        },
+        "auditLog": "हटाने का रिकॉर्ड एडमिन एक्टिविटी लॉग में रहेगा।",
+        "typePrefix": "पुष्टि के लिए",
+        "typeSuffix": "टाइप करें",
+        "keep": "रहने दें",
+        "confirm": "स्थायी रूप से हटाएं",
+        "deleting": "हटाया जा रहा है…",
+        "paymentDeletedToast": "भुगतान {{label}} हटाया गया",
+        "invoiceDeletedToast": "इनवॉइस {{label}} हटाया गया",
+        "errorToast": "हटाया नहीं जा सका"
+    }
+}

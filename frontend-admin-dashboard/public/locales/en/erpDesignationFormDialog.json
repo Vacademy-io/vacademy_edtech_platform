@@ -1,0 +1,29 @@
+{
+    "editHeading": "Edit designation",
+    "addHeading": "Add designation",
+    "cancel": "Cancel",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "fields": {
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g. Senior Teacher",
+        "codeLabel": "Code",
+        "codePlaceholder": "e.g. SR-TCH",
+        "levelLabel": "Level",
+        "levelPlaceholder": "e.g. 3",
+        "levelHelp": "Higher means more senior.",
+        "gradeLabel": "Grade",
+        "gradePlaceholder": "e.g. L3",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "What this designation covers"
+    },
+    "toasts": {
+        "updated": "Designation updated",
+        "added": "Designation added"
+    },
+    "errors": {
+        "nameRequired": "Give the designation a name",
+        "levelWholeNumber": "Use a whole number",
+        "saveFailed": "Could not save this designation"
+    }
+}

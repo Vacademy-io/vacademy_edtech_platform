@@ -1,0 +1,68 @@
+{
+    "menuItem": "Générer un lien UTM",
+    "title": "Générer un lien UTM",
+    "subtitle": "Balisez ce lien de {{surface}} pour que le trafic de campagne soit attribué dans vos rapports.",
+    "subtitleFor": "Balisez le lien de {{surface}} de « {{name}} » pour que le trafic de campagne soit attribué dans vos rapports.",
+    "surface": {
+        "AUDIENCE": "formulaire d'audience",
+        "LIVE_SESSION": "session en direct",
+        "ASSESSMENT": "évaluation",
+        "ENROLL_INVITE": "invitation d'inscription",
+        "PRODUCT_PAGE": "page produit",
+        "CATALOGUE": "site catalogue",
+        "CUSTOM": "Page libre"
+    },
+    "destination": {
+        "label": "Destination",
+        "missing": "Aucun lien partageable n'est encore disponible."
+    },
+    "fields": {
+        "utm_source": {
+            "label": "Source",
+            "placeholder": "whatsapp",
+            "hint": "D'où vient le trafic — la plateforme ou le partenaire."
+        },
+        "utm_medium": {
+            "label": "Support",
+            "placeholder": "social",
+            "hint": "Comment il les atteint — social, cpc, email, sms, qr."
+        },
+        "utm_campaign": {
+            "label": "Campagne",
+            "placeholder": "diwali-2026",
+            "hint": "Le nom de la campagne. Utilisez la même valeur sur tous les liens de la campagne."
+        },
+        "utm_content": {
+            "label": "Contenu",
+            "placeholder": "story-cta",
+            "hint": "Facultatif. Distingue deux versions de la même annonce ou publication."
+        },
+        "utm_term": {
+            "label": "Mot-clé",
+            "placeholder": "neet-coaching",
+            "hint": "Facultatif. Le mot-clé payant pour lequel ce lien a été acheté."
+        }
+    },
+    "preview": {
+        "label": "Lien généré",
+        "empty": "Renseignez la source et le support pour construire le lien."
+    },
+    "validation": {
+        "sourceMediumRequired": "La source et le support sont tous deux requis — sans eux, la visite est comptée comme trafic direct.",
+        "campaignRequired": "Votre établissement exige un nom de campagne sur chaque lien généré."
+    },
+    "actions": {
+        "copy": "Copier le lien",
+        "copied": "Copié",
+        "open": "Ouvrir",
+        "showQr": "Code QR",
+        "hideQr": "Masquer le QR",
+        "downloadQr": "Télécharger le QR",
+        "reset": "Réinitialiser"
+    },
+    "toast": {
+        "copied": "Lien UTM copié",
+        "copyFailed": "Impossible de copier le lien. Sélectionnez-le et copiez-le manuellement.",
+        "qrFailed": "Impossible de générer l'image QR."
+    }
+}

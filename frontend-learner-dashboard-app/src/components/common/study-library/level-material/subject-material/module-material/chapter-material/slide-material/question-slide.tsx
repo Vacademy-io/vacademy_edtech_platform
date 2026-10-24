@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { MyInput } from "@/components/design-system/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -73,6 +74,7 @@ interface QuestionResponseMap {
 }
 
 const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
+    const { t } = useTranslation("libraryCommonB");
     const router = useRouter();
     const queryClient = useQueryClient();
     const { chapterId, moduleId, subjectId } = router.state.location.search;
@@ -298,7 +300,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
         },
         onSuccess: (result) => {
             if (result && "offlineQueued" in result && result.offlineQueued) {
-                toast.info("Saved — will sync when online");
+                toast.info(t("questionSlide.toast.savedOffline"));
             } else {
                 console.log("Question answer submitted successfully");
             }
@@ -862,7 +864,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                             inputType="text"
                             input={inputValue}
                             onChangeFunction={handleInputChange}
-                            inputPlaceholder="Type your one-word answer"
+                            inputPlaceholder={t("questionSlide.placeholders.oneWord")}
                             className="text-base sm:text-lg py-3 font-normal w-full border-gray-300 focus:border-gray-600 focus:ring-gray-600"
                             onCopy={(e) => e.preventDefault()}
                             onCut={(e) => e.preventDefault()}
@@ -877,7 +879,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                         <Textarea
                             value={inputValue}
                             onChange={handleInputChange}
-                            placeholder="Type your answer..."
+                            placeholder={t("questionSlide.placeholders.longAnswer")}
                             className="min-h-reg-150 sm:min-h-reg-200 text-base border-gray-300 focus:border-gray-600 focus:ring-gray-600"
                             onCopy={(e) => e.preventDefault()}
                             onCut={(e) => e.preventDefault()}
@@ -896,8 +898,8 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                                 onChangeFunction={handleNumericChange}
                                 inputPlaceholder={
                                     isDecimal
-                                        ? "Enter decimal value"
-                                        : "Enter integer value"
+                                        ? t("questionSlide.placeholders.decimal")
+                                        : t("questionSlide.placeholders.integer")
                                 }
                                 inputMode="numeric"
                                 className="text-base sm:text-lg py-3 font-normal w-full max-w-md border-gray-300 focus:border-gray-600 focus:ring-gray-600"
@@ -958,7 +960,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                                         className="h-12 text-base font-normal hover:bg-gray-100 border-gray-200"
                                         onClick={() => handleKeyPress("clear")}
                                     >
-                                        Clear
+                                        {t("questionSlide.numericPad.clear")}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -967,7 +969,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                 );
 
             default:
-                return <p>Unsupported question type: {questionType}</p>;
+                return <p>{t("questionSlide.unsupportedType", { type: questionType })}</p>;
         }
     };
 
@@ -985,7 +987,7 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
     return (
         <div className="w-full bg-white rounded-lg shadow-sm p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-medium text-gray-900 mb-2 sm:mb-3">
-                Question:
+                {t("questionSlide.questionLabel")}
             </h2>
             {/* Render the question's rich HTML on its own (NOT inside the <h2>):
                 it can contain block content like ordered/bulleted lists, which
@@ -1011,16 +1013,16 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
             <div className="mt-4 sm:mt-6">
                 <h3 className="text-base sm:text-lg font-medium text-gray-700 mb-2 sm:mb-3">
                     {questionType === "MCQS"
-                        ? "Select one answer:"
+                        ? t("questionSlide.prompts.mcqs")
                         : questionType === "TRUE_FALSE"
-                          ? "Select True or False:"
+                          ? t("questionSlide.prompts.trueFalse")
                           : questionType === "MCQM"
-                            ? "Select all that apply:"
+                            ? t("questionSlide.prompts.mcqm")
                             : questionType === "ONE_WORD"
-                              ? "Enter your answer:"
+                              ? t("questionSlide.prompts.oneWord")
                               : questionType === "LONG_ANSWER"
-                                ? "Type your answer:"
-                                : "Enter numeric value:"}
+                                ? t("questionSlide.prompts.longAnswer")
+                                : t("questionSlide.prompts.numeric")}
                 </h3>
 
                 {renderQuestionContent()}
@@ -1038,12 +1040,12 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                     }`}
                 >
                     {isSubmitting
-                        ? "Submitting..."
+                        ? t("questionSlide.buttons.submitting")
                         : unchangedSinceSubmit
-                          ? "Submitted"
+                          ? t("questionSlide.buttons.submitted")
                           : hasSubmitted
-                            ? "Resubmit"
-                            : "Submit"}
+                            ? t("questionSlide.buttons.resubmit")
+                            : t("questionSlide.buttons.submit")}
                 </button>
             </div>
 
@@ -1064,8 +1066,8 @@ const QuestionSlide = ({ questionData, onSubmit }: QuestionSlideProps) => {
                         className="text-sm font-medium text-primary-500 transition-colors hover:text-primary-400"
                     >
                         {showExplanation
-                            ? "Hide answer guidance"
-                            : "Show answer guidance"}
+                            ? t("questionSlide.explanation.hide")
+                            : t("questionSlide.explanation.show")}
                     </button>
 
                     {showExplanation && (

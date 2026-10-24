@@ -1,0 +1,11 @@
+{
+    "defaultTitle": "Quiz",
+    "assessmentPaperSuffix": "{{title}} (Assessment Paper)",
+    "totalQuestions_one": "Total Question: {{count}}",
+    "totalQuestions_other": "Total Questions: {{count}}",
+    "difficultySuffix": " | Difficulty: {{difficulty}}",
+    "assessmentInstructions": "Instructions: Answer all questions. Write your answers clearly.",
+    "questionNumber": "Question {{number}}",
+    "answerLabel": "Answer:",
+    "explanationLabel": "Explanation:"
+}

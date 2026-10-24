@@ -21,6 +21,7 @@
 // height until then (the chapter payload already carries its slide count).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CaretRight, CheckCircle, LockSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
@@ -127,6 +128,7 @@ const LessonRow = ({
   lockMessage?: string | null;
   onClick: () => void;
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const Icon = getSlideTypeIcon(slide);
   const colors = getSlideTypeColors(slide);
   const meta = getSlideMeta(slide);
@@ -144,7 +146,7 @@ const LessonRow = ({
       onClick={isLocked ? undefined : onClick}
       aria-current={isActive ? "true" : undefined}
       aria-disabled={isLocked || undefined}
-      title={isLocked ? lockMessage || "Locked" : undefined}
+      title={isLocked ? lockMessage || t("lessonListSidebar.locked") : undefined}
       className={`group/lesson relative flex w-full items-start gap-3 border-s-2 border-b border-b-gray-100 px-3 py-3 text-start transition-colors ${
         isActive
           ? "border-s-primary-500 bg-primary-50"
@@ -252,6 +254,7 @@ const LessonSection = ({
   onVisible: () => void;
   onSlideSelect: Props["onSlideSelect"];
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const slideEvaluations = useContentStore((state) => state.slideEvaluations);
   const sectionRef = useRef<HTMLDivElement>(null);
   // `onVisible` is a fresh closure each render; holding it in a ref keeps the
@@ -309,8 +312,8 @@ const LessonSection = ({
         {total > 0 && (
           <p className="mt-0.5 text-2xs text-gray-500 tabular-nums">
             {done == null
-              ? `${total} ${slidesTerm}`
-              : `${done} / ${total} completed`}
+              ? t("lessonListSidebar.slideCount", { count: total, term: slidesTerm })
+              : t("lessonListSidebar.progressCompleted", { done, total })}
           </p>
         )}
       </div>
@@ -378,7 +381,9 @@ const LessonSection = ({
         ))}
 
       {slides && visible.length === 0 && (
-        <p className="px-3 pb-2 text-caption text-gray-500">No {slidesTerm}</p>
+        <p className="px-3 pb-2 text-caption text-gray-500">
+          {t("lessonListSidebar.noSlides", { term: slidesTerm })}
+        </p>
       )}
     </div>
   );
@@ -393,6 +398,7 @@ export const LessonListSidebar = ({
   currentSubjectModules,
   onSlideSelect,
 }: Props) => {
+  const { t } = useTranslation("libraryCommonB");
   const [subjectModulesMap, setSubjectModulesMap] = useState<
     Record<string, ModulesWithChapters[]>
   >(() =>
@@ -442,7 +448,7 @@ export const LessonListSidebar = ({
         }));
       } catch {
         requestedSubjects.current.delete(subjectId);
-        toast.error("Couldn't load the course outline.");
+        toast.error(t("lessonListSidebar.loadOutlineFailed"));
       }
     },
     [sessionId]
@@ -588,8 +594,12 @@ export const LessonListSidebar = ({
       <div className="sticky top-0 z-20 border-b border-gray-100 bg-gray-50 px-3 py-2.5">
         <p className="text-caption font-medium text-gray-700 tabular-nums">
           {totalLessons > 0
-            ? `${doneLessons} / ${totalLessons} ${slidesTerm} completed`
-            : `${slidesTerm}`}
+            ? t("lessonListSidebar.courseProgress", {
+                done: doneLessons,
+                total: totalLessons,
+                term: slidesTerm,
+              })
+            : slidesTerm}
         </p>
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 [.ui-play_&]:h-2">
           <div
@@ -658,7 +668,7 @@ export const LessonListSidebar = ({
             })}
             {modules.length === 0 && (
               <p className="px-3 py-4 text-caption text-gray-500">
-                No {modulesTerm} yet
+                {t("lessonListSidebar.noModulesYet", { term: modulesTerm })}
               </p>
             )}
           </div>

@@ -1,0 +1,8 @@
+{
+    "steps": {
+        "searchStudent": "Search Student",
+        "selectInstallments": "Select Installments",
+        "paymentDetails": "Payment Details",
+        "done": "Done"
+    }
+}

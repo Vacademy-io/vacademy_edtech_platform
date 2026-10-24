@@ -1,4 +1,5 @@
 import { Check, WarningCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
@@ -45,6 +46,7 @@ function MetaChip({
 }
 
 export function QuestionDisplay() {
+  const { t } = useTranslation("questionTest");
   const { settings } = useLiveTestUi();
   const {
     currentQuestion,
@@ -120,7 +122,7 @@ export function QuestionDisplay() {
   if (!currentQuestion) {
     return (
       <p className="py-12 text-center text-body text-neutral-500">
-        Select a question to begin
+        {t("questionDisplay.selectPrompt")}
       </p>
     );
   }
@@ -130,8 +132,7 @@ export function QuestionDisplay() {
       <Alert variant="destructive">
         <WarningCircle className="size-4" />
         <AlertDescription>
-          Time is up for this section. Please move to the next available
-          section.
+          {t("questionDisplay.sectionTimeUp")}
         </AlertDescription>
       </Alert>
     );
@@ -196,10 +197,15 @@ export function QuestionDisplay() {
           both survive a narrow phone without the stem shifting around. */}
       <div className="mb-4 flex flex-wrap items-center gap-2 md:mb-5">
         <span className="text-title font-bold text-neutral-900">
-          Question {indexInSection >= 0 ? indexInSection + 1 : currentQuestion.serial_number}
+          {t("common.questionNumber", {
+            number:
+              indexInSection >= 0
+                ? indexInSection + 1
+                : currentQuestion.serial_number,
+          })}
         </span>
         <span className="text-caption text-neutral-400">
-          of {sectionQuestions.length}
+          {t("questionDisplay.ofTotal", { total: sectionQuestions.length })}
         </span>
         {!isPracticeMode &&
           assessment?.distribution_duration ===
@@ -255,7 +261,7 @@ export function QuestionDisplay() {
             if (!codingConfig) {
               return (
                 <p className="text-body text-neutral-500">
-                  Coding question is missing configuration.
+                  {t("questionDisplay.codingMissingConfig")}
                 </p>
               );
             }
@@ -273,9 +279,9 @@ export function QuestionDisplay() {
           case QUESTION_TYPES.TRUE_FALSE:
             return (
               <div
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-stack"
                 role={isMultiSelect ? "group" : "radiogroup"}
-                aria-label="Answer options"
+                aria-label={t("questionDisplay.answerOptionsAriaLabel")}
               >
                 {currentQuestion?.options?.map((option, index) => {
                   const isSelected = currentAnswer.includes(option.id);
@@ -360,7 +366,7 @@ export function QuestionDisplay() {
           default:
             return (
               <p className="text-body text-neutral-500">
-                This question type cannot be displayed here.
+                {t("questionDisplay.unsupportedType")}
               </p>
             );
         }

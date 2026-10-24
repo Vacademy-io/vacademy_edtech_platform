@@ -1,0 +1,18 @@
+{
+    "heading": "हाल की गतिविधि",
+    "viewAll": "सभी",
+    "loading": "गतिविधि लोड हो रही है…",
+    "fallbackTitle": "गतिविधि",
+    "empty": {
+        "title": "कोई हाल की गतिविधि नहीं",
+        "hint": "नोट्स, कॉल और फॉलो-अप यहाँ दिखाई देंगे।"
+    },
+    "relativeTime": {
+        "minutesAgo_one": "{{count}} मिनट पहले",
+        "minutesAgo_other": "{{count}} मिनट पहले",
+        "hoursAgo_one": "{{count}} घंटे पहले",
+        "hoursAgo_other": "{{count}} घंटे पहले",
+        "daysAgo_one": "{{count}} दिन पहले",
+        "daysAgo_other": "{{count}} दिन पहले"
+    }
+}

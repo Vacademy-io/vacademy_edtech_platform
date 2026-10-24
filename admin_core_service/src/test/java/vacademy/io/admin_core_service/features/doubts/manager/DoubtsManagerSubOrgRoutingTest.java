@@ -20,6 +20,8 @@ import vacademy.io.admin_core_service.features.institute.service.setting.Institu
 import vacademy.io.admin_core_service.features.slide.service.SlideMetaDataService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgStaffLookupService;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
+import vacademy.io.common.auth.dto.UserServiceDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,6 +68,15 @@ class DoubtsManagerSubOrgRoutingTest {
     @Mock private SubOrgStaffLookupService subOrgStaffLookupService;
 
     @InjectMocks private DoubtsManager manager;
+
+    /** The learner raising the doubt — doubts/create raises it as the authenticated caller. */
+    private static CustomUserDetails learner() {
+        UserServiceDTO dto = new UserServiceDTO();
+        dto.setUserId(LEARNER);
+        dto.setUsername(LEARNER);
+        dto.setAuthorities(List.of("STUDENT"));
+        return new CustomUserDetails(dto);
+    }
 
     private DoubtsDto slideDoubtRequest() {
         return DoubtsDto.builder()
@@ -124,7 +135,7 @@ class DoubtsManagerSubOrgRoutingTest {
                 SubOrgStaffLookupService.Audience.ADMINS_ONLY))
                 .thenReturn(new ArrayList<>(List.of("so-admin-1")));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest());
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest());
 
         assertEquals(List.of("so-admin-1"), captureRaisedRecipients());
         // The whole point of exclusive mode: the parent institute's batch cascade must NOT run.
@@ -145,7 +156,7 @@ class DoubtsManagerSubOrgRoutingTest {
                 SubOrgStaffLookupService.Audience.ALL_TEAM))
                 .thenReturn(new ArrayList<>(List.of("so-staff-1")));
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest());
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest());
 
         List<String> recipients = captureRaisedRecipients();
         assertTrue(recipients.contains(PARENT_TEACHER), "parent teacher must still be notified");
@@ -164,7 +175,7 @@ class DoubtsManagerSubOrgRoutingTest {
         when(subOrgStaffLookupService.resolveLearnerSubOrgIds(LEARNER, INST, PS))
                 .thenReturn(List.of());
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest());
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest());
 
         assertEquals(List.of(PARENT_TEACHER), captureRaisedRecipients());
         // Never resolves sub-org staff when the raiser has no sub-org linkage.
@@ -178,7 +189,7 @@ class DoubtsManagerSubOrgRoutingTest {
         wireParentBatchTeacher();
         wireSetting(/* enabled */ false, "ALL_TEAM", false);
 
-        manager.updateOrCreateDoubt(null, null, slideDoubtRequest());
+        manager.updateOrCreateDoubt(learner(), null, slideDoubtRequest());
 
         assertEquals(List.of(PARENT_TEACHER), captureRaisedRecipients());
         // enabled=false short-circuits before any sub-org lookup runs.

@@ -2,6 +2,7 @@
  * Card Validator Utilities
  * Implements Luhn algorithm for credit card validation and card type detection
  */
+import i18n from "@/i18n";
 
 /**
  * Credit Card Types
@@ -160,7 +161,7 @@ export const validateCardNumber = (
     return {
       isValid: false,
       cardType: "unknown",
-      error: "Card number is too short",
+      error: i18n.t("enrollmentB:cardValidator.tooShort"),
     };
   }
 
@@ -172,7 +173,7 @@ export const validateCardNumber = (
     return {
       isValid: false,
       cardType: "unknown",
-      error: "Card type not recognized",
+      error: i18n.t("enrollmentB:cardValidator.typeNotRecognized"),
     };
   }
 
@@ -184,7 +185,7 @@ export const validateCardNumber = (
     return {
       isValid: false,
       cardType,
-      error: `Invalid card length for ${cardType}`,
+      error: i18n.t("enrollmentB:cardValidator.invalidLength", { cardType }),
     };
   }
 
@@ -193,7 +194,7 @@ export const validateCardNumber = (
     return {
       isValid: false,
       cardType,
-      error: "Card number is invalid",
+      error: i18n.t("enrollmentB:cardValidator.invalidNumber"),
     };
   }
 
@@ -246,7 +247,7 @@ export const validateExpiryDate = (
   if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
     return {
       isValid: false,
-      error: "Invalid month",
+      error: i18n.t("enrollmentB:cardValidator.invalidMonth"),
     };
   }
 
@@ -260,7 +261,7 @@ export const validateExpiryDate = (
   if (isNaN(yearNum) || yearNum < currentYear) {
     return {
       isValid: false,
-      error: "Card has expired",
+      error: i18n.t("enrollmentB:cardValidator.expired"),
     };
   }
 
@@ -269,7 +270,7 @@ export const validateExpiryDate = (
   if (yearNum === currentYear && monthNum < currentMonth) {
     return {
       isValid: false,
-      error: "Card has expired",
+      error: i18n.t("enrollmentB:cardValidator.expired"),
     };
   }
 
@@ -325,7 +326,7 @@ export const validateCVV = (
   if (sanitized.length === 0) {
     return {
       isValid: false,
-      error: "CVV is required",
+      error: i18n.t("enrollmentB:cardValidator.cvvRequired"),
     };
   }
 
@@ -335,7 +336,7 @@ export const validateCVV = (
   if (sanitized.length !== expectedLength) {
     return {
       isValid: false,
-      error: `CVV must be ${expectedLength} digits`,
+      error: i18n.t("enrollmentB:cardValidator.cvvLength", { expectedLength }),
     };
   }
 
@@ -372,14 +373,14 @@ export const formatExpiryDate = (value: string): string => {
  */
 export const getCardTypeDisplayName = (cardType: CardType): string => {
   const displayNames: Record<CardType, string> = {
-    visa: "Visa",
-    mastercard: "Mastercard",
-    amex: "American Express",
-    discover: "Discover",
-    diners: "Diners Club",
-    jcb: "JCB",
-    unknown: "Unknown",
+    visa: i18n.t("enrollmentB:cardValidator.brands.visa"),
+    mastercard: i18n.t("enrollmentB:cardValidator.brands.mastercard"),
+    amex: i18n.t("enrollmentB:cardValidator.brands.amex"),
+    discover: i18n.t("enrollmentB:cardValidator.brands.discover"),
+    diners: i18n.t("enrollmentB:cardValidator.brands.diners"),
+    jcb: i18n.t("enrollmentB:cardValidator.brands.jcb"),
+    unknown: i18n.t("enrollmentB:cardValidator.brands.unknown"),
   };
 
-  return displayNames[cardType] || "Unknown";
+  return displayNames[cardType] || i18n.t("enrollmentB:cardValidator.brands.unknown");
 };

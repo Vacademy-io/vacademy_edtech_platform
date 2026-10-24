@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "دي سمارت أورجانايزر"
+    },
+    "fields": {
+        "prompt": {
+            "label": "أدخل الطلب الخاص بك",
+            "placeholder": "أدخل الطلب هنا..."
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "regenerate": "إعادة الإنشاء"
+    }
+}

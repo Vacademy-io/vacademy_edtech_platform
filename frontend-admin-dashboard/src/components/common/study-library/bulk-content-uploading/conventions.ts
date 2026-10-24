@@ -7,10 +7,18 @@ export const MAX_ZIP_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB hard cap
 export const WARN_ZIP_BYTES = 500 * 1024 * 1024; // warn ≥ 500 MB
 export const MAX_FILE_COUNT = 2000;
 export const WARN_FILE_COUNT = 500;
-export const MAX_SINGLE_FILE_BYTES = 500 * 1024 * 1024; // 500 MB
+export const MAX_SINGLE_FILE_BYTES = 800 * 1024 * 1024; // 800 MB
 export const MAX_PPTX_BYTES = 20 * 1024 * 1024; // server-side conversion multipart limit
+// admin_core_service spring.servlet.multipart.max-file-size on stage/prod. The
+// SCORM package is posted whole, so anything larger is rejected server-side —
+// catch it here instead of after a long upload. Raising this alone does nothing:
+// the ingress proxy-body-size and media_service's own multipart limit cap it too.
+export const MAX_SCORM_BYTES = 800 * 1024 * 1024;
 
 export const DEFAULT_ENTITY_NAME = 'DEFAULT';
+
+/** Empty folders named individually in the issues list before summarising. */
+const MAX_LISTED_EMPTY_FOLDERS = 5;
 
 const JUNK_SEGMENTS = new Set(['__macosx', '.ds_store', 'thumbs.db', 'desktop.ini']);
 
@@ -66,6 +74,13 @@ export const detectKind = (fileName: string): DetectedKind => {
     if (ext === 'ppt' || ext === 'pptx') return 'PPT';
     if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return 'IMAGE';
     if (['mp4', 'mov', 'mkv', 'webm'].includes(ext)) return 'VIDEO_FILE';
+    // A nested .zip means a SCORM package — that is the only zip-shaped content
+    // the library supports. It is NOT validated here: peeking for imsmanifest.xml
+    // would mean decompressing the whole package during preview (they run to
+    // hundreds of MB). The SCORM service unzips and parses it on upload and
+    // rejects non-SCORM zips, so a wrong zip fails that one item with a real
+    // message instead of costing every preview a full extraction.
+    if (ext === 'zip') return 'SCORM';
     return null;
 };
 
@@ -281,6 +296,22 @@ export const buildTree = async ({
             !isJunkPath(e.path) && !e.isDirectory && (!basePrefix || e.path.startsWith(basePrefix))
     );
 
+    // Directory entries, shallowest first. Nodes are only ever created from
+    // files, so a folder holding nothing but junk (a lone .DS_Store) or nothing
+    // at all never becomes a node — and would otherwise vanish from the preview
+    // with no explanation. Reported at the end against the folders that did
+    // yield files. Only detectable when the zip carries directory entries;
+    // some tools omit them, and then an empty folder simply isn't in the zip.
+    const usableDirs = entries
+        .filter(
+            (e) =>
+                e.isDirectory &&
+                !isJunkPath(e.path) &&
+                (!basePrefix || e.path.startsWith(basePrefix))
+        )
+        .sort((a, b) => a.path.split('/').length - b.path.split('/').length);
+    const foldersWithFiles = new Set<string>();
+
     // Non-UTF8 zips only matter when a name actually contains non-ASCII
     // characters — plain-English names decode identically under cp437.
     usable
@@ -413,6 +444,18 @@ export const buildTree = async ({
         if (segments.length === 0) continue;
         const fileName = segments[segments.length - 1]!;
         const folderSegs = segments.slice(0, -1);
+
+        // Mark this folder and its ancestors as holding a file BEFORE the type
+        // and depth guards below. A folder whose files are unsupported, or sit
+        // at the wrong level, already gets a precise per-file message — adding
+        // "no supported files (empty)" on top of that would contradict it. Only
+        // folders with no non-junk file at all should reach the empty sweep.
+        const contentSegs = folderSegs
+            .slice(0, folderLevels)
+            .map((seg) => normalizeName(parseOrderPrefix(seg).displayName));
+        for (let level = 1; level <= contentSegs.length; level++) {
+            foldersWithFiles.add(contentSegs.slice(0, level).join('/'));
+        }
 
         const kind = detectKind(fileName);
         if (kind === null) {
@@ -552,6 +595,14 @@ export const buildTree = async ({
                 });
                 continue;
             }
+            if (kind === 'SCORM' && file.entry.uncompressedSize > MAX_SCORM_BYTES) {
+                issues.push({
+                    level: 'error',
+                    path: relativePath,
+                    message: `SCORM package is ${formatBytes(file.entry.uncompressedSize)} — the upload accepts up to ${formatBytes(MAX_SCORM_BYTES)}. Add it from the chapter's Add SCORM option instead.`,
+                });
+                continue;
+            }
 
             pushItem({
                 chapterNodeId,
@@ -563,6 +614,59 @@ export const buildTree = async ({
                 sizeBytes: file.entry.uncompressedSize,
                 warnings,
                 status: 'pending',
+            });
+        }
+    }
+
+    // Report folders that held no supported files. Without this they are absent
+    // from the preview AND from the issues list, so a folder the user expected
+    // to see just isn't mentioned anywhere.
+    if (folderLevels > 0) {
+        const reported: string[] = [];
+        for (const dir of usableDirs) {
+            // Directory paths arrive without their trailing slash, so compare
+            // with one added — otherwise the unwrapped root folder never
+            // matches stripPrefix and gets reported as an empty chapter itself.
+            const dirPrefix = `${dir.path}/`;
+            if (stripPrefix && dirPrefix === stripPrefix) continue;
+            const relative =
+                stripPrefix && dirPrefix.startsWith(stripPrefix)
+                    ? dir.path.slice(stripPrefix.length)
+                    : dir.path;
+            const segments = relative.split('/').filter(Boolean);
+            // Deeper-than-chapter folders are folded into slide titles, not
+            // skipped, so they are not "empty" in any sense the user cares about.
+            if (segments.length === 0 || segments.length > folderLevels) continue;
+            const normalizedPath = segments
+                .map((seg) => normalizeName(parseOrderPrefix(seg).displayName))
+                .join('/');
+            if (foldersWithFiles.has(normalizedPath)) continue;
+            // An empty parent already explains every empty child beneath it.
+            if (reported.some((ancestor) => normalizedPath.startsWith(`${ancestor}/`))) continue;
+            reported.push(normalizedPath);
+            // The downloadable template ships a folder per EXISTING chapter, so
+            // a part-filled template legitimately leaves many empty. Name the
+            // first few and count the rest, matching the non-UTF8 cap above.
+            if (reported.length <= MAX_LISTED_EMPTY_FOLDERS) {
+                issues.push({
+                    level: 'info',
+                    path: relative,
+                    message: 'Folder has no supported files — skipped (empty).',
+                });
+            }
+        }
+        if (reported.length > MAX_LISTED_EMPTY_FOLDERS) {
+            const rest = reported.length - MAX_LISTED_EMPTY_FOLDERS;
+            issues.push({
+                level: 'info',
+                // Multi-course renders each section's issues inside that
+                // section's card, so attribute the count to the course folder
+                // it describes rather than to the whole zip.
+                path: basePrefix ? basePrefix.replace(/\/$/, '') : zipFileName,
+                message:
+                    rest === 1
+                        ? '1 more folder had no supported files and was skipped.'
+                        : `${rest} more folders had no supported files and were skipped.`,
             });
         }
     }

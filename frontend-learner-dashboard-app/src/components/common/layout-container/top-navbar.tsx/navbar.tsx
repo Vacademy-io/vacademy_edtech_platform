@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Sidebar } from "@phosphor-icons/react";
 import { isChildViewActive } from "@/routes/parent/child/-lib/child-view";
@@ -31,6 +32,12 @@ import { Question } from "@phosphor-icons/react";
 import { useQueryDialogStore } from "@/stores/useQueryDialogStore";
 import { useDoubtManagementSetting } from "@/services/doubt-management-settings";
 import { QueryDialog } from "@/components/common/queries/QueryDialog";
+import { LanguageDropdown } from "@/components/common/localization/language-dropdown";
+import { useLanguageStore } from "@/stores/localization/useLanguageStore";
+import {
+  getEnabledLocales,
+  syncLanguageSettingFromSettingJson,
+} from "@/services/language-settings";
 
 interface UserRole {
   id: string;
@@ -41,11 +48,28 @@ interface UserRole {
 }
 
 export function Navbar() {
+  const { t } = useTranslation("layoutCommonA");
   // useQuery (NOT useSuspenseQuery): a failed navbar fetch must degrade to the
   // fallback UI below, not throw to the router error boundary and replace the
   // whole page (live class, assessment, ...) with an error screen.
   const { data: instituteDetails } = useQuery(
     handleGetPublicInstituteDetails(),
+  );
+
+  // Keep the institute language cache fresh on every app load (it is
+  // otherwise only written at login), then show the switcher only when the
+  // institute has enabled more than one language — same gate as the admin
+  // navbar.
+  useEffect(() => {
+    if (instituteDetails?.setting !== undefined) {
+      syncLanguageSettingFromSettingJson(instituteDetails.setting);
+    }
+  }, [instituteDetails]);
+  const currentLocale = useLanguageStore((state) => state.locale);
+  const showLanguageSwitcher = useMemo(
+    () => getEnabledLocales(currentLocale).length > 1,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentLocale, instituteDetails],
   );
   const {
     data: userRoleDetails,
@@ -84,6 +108,21 @@ export function Navbar() {
   const [canGoBack, setCanGoBack] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isDashboard = pathname.startsWith("/dashboard");
+
+  // Deep link into Help & Queries → My queries: `?openQueries=1` (the AI
+  // tutor's "Sent to your teacher" card) and `?doubtId=…` (the doubt email
+  // link, which had no handler). Open the dialog, then drop the params so a
+  // refresh or Back doesn't reopen it.
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
+  useEffect(() => {
+    const params = new URLSearchParams(searchStr);
+    if (!params.has("openQueries") && !params.has("doubtId")) return;
+    openQueryDialog("my-queries");
+    params.delete("openQueries");
+    params.delete("doubtId");
+    const rest = params.toString();
+    router.history.replace(`${window.location.pathname}${rest ? `?${rest}` : ""}`);
+  }, [searchStr, openQueryDialog, router]);
 
   // Session state wiped mid-page (expired refresh token, cleared storage):
   // the role query fails with the missing-userId error, or with the
@@ -227,7 +266,7 @@ export function Navbar() {
                 className="bg-primary-400 text-white"
                 side="bottom"
               >
-                Go back
+                {t("navbar.goBack")}
               </TooltipContent>
             </Tooltip>
           )}
@@ -245,7 +284,7 @@ export function Navbar() {
                 className="bg-primary-400 text-white"
                 side="bottom"
               >
-                Home
+                {t("common.home")}
               </TooltipContent>
             </Tooltip>
           )}
@@ -303,7 +342,7 @@ export function Navbar() {
                       </span>
                       <div className="flex items-center gap-1">
                         <span className="text-caption text-muted-foreground">
-                          Powered by
+                          {t("common.poweredBy")}
                         </span>
                         {instituteLogoFileUrl ? (
                           <img
@@ -325,7 +364,7 @@ export function Navbar() {
                     {instituteLogoFileUrl ? (
                       <img
                         src={instituteLogoFileUrl}
-                        alt={instituteName || "Institute"}
+                        alt={instituteName || t("navbar.instituteFallbackAlt")}
                         onClick={
                           homeIconClickRoute
                             ? handleInstituteLogoClick
@@ -358,15 +397,16 @@ export function Navbar() {
 
           {/* Always-on page title */}
           <h1 className="min-w-0 truncate text-sm md:text-base font-semibold text-primary-900 dark:text-primary-100 [.ui-play_&]:font-bold">
-            {navHeading || "Dashboard"}
+            {navHeading || t("sidebar.tabs.dashboard")}
           </h1>
         </div>
 
         {/* Right Section */}
         <div className="flex shrink-0 items-center gap-1">
+          {showLanguageSwitcher && <LanguageDropdown className="relative hidden sm:block" />}
           <TutorialsHelpButton className="h-9 w-9" />
           <NotificationsBell className="h-9 w-9" />
-          <UserMenu />
+          <UserMenu showLanguage={showLanguageSwitcher} />
         </div>
       </div>
     );
@@ -399,7 +439,7 @@ export function Navbar() {
               </button>
             </TooltipTrigger>
             <TooltipContent className="bg-primary-400 text-white" side="bottom">
-              Go back
+              {t("navbar.goBack")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -414,7 +454,7 @@ export function Navbar() {
               </button>
             </TooltipTrigger>
             <TooltipContent className="bg-primary-400 text-white" side="bottom">
-              Home
+              {t("common.home")}
             </TooltipContent>
           </Tooltip>
         )}
@@ -429,7 +469,7 @@ export function Navbar() {
               {instituteLogoFileUrl ? (
                 <img
                   src={instituteLogoFileUrl}
-                  alt={instituteName || "Institute"}
+                  alt={instituteName || t("navbar.instituteFallbackAlt")}
                   onClick={
                     homeIconClickRoute ? handleInstituteLogoClick : undefined
                   }
@@ -450,13 +490,14 @@ export function Navbar() {
                 </div>
               )}
             </div>
-            <div className="w-px h-7 md:h-8 shrink-0 bg-primary-200/60 dark:bg-neutral-700"></div>
+            <div className="hidden w-px h-7 md:h-8 shrink-0 bg-primary-200/60 dark:bg-neutral-700 sm:block"></div>
           </div>
         )}
 
-        {/* Always-on page title: identity + location on every viewport */}
+        {/* Page title: identity + location. Dropped on phones on the dashboard,
+            where the greeting already says where you are and the bar is full. */}
         {navHeading ? (
-          <h1 className="min-w-0 truncate text-sm md:text-base font-semibold leading-tight text-neutral-900 dark:text-neutral-100 [.ui-play_&]:font-bold">
+          <h1 className={`min-w-0 truncate text-sm md:text-base font-semibold leading-tight text-neutral-900 dark:text-neutral-100 [.ui-play_&]:font-bold${isDashboard ? " hidden sm:block" : ""}`}>
             {navHeading}
           </h1>
         ) : null}
@@ -474,21 +515,25 @@ export function Navbar() {
               >
                 <Student className="h-4 w-4 md:h-5 md:w-5" />
                 <span className="hidden sm:inline text-xs md:text-sm font-medium">
-                  Switch to{" "}
-                  {getTerminology(RoleTerms.Teacher, SystemTerms.Teacher)}
+                  {t("navbar.switchToRole", {
+                    role: getTerminology(RoleTerms.Teacher, SystemTerms.Teacher),
+                  })}
                 </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent className="bg-primary-400 text-white" side="left">
               <p>
-                Switch to{" "}
-                {getTerminology(RoleTerms.Teacher, SystemTerms.Teacher)}
+                {t("navbar.switchToRole", {
+                  role: getTerminology(RoleTerms.Teacher, SystemTerms.Teacher),
+                })}
               </p>
             </TooltipContent>
           </Tooltip>
         )}
         {/* Achievements — badge count + points, opens the achievements popup */}
         <AchievementsPill className="hidden xs:flex" />
+        {/* Language switcher — only when the institute enabled >1 language */}
+        {showLanguageSwitcher && <LanguageDropdown className="relative hidden sm:block" />}
         {/* Help & tutorials */}
         <TutorialsHelpButton className="h-9 w-9" />
         {/* Notifications */}
@@ -499,21 +544,24 @@ export function Navbar() {
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Raise a query"
-                onClick={openQueryDialog}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors duration-200 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 dark:text-primary-400 dark:hover:bg-neutral-700 dark:hover:text-primary-300 [.ui-play_&]:rounded-full [.ui-play_&]:border [.ui-play_&]:border-border [.ui-play_&]:bg-primary/10"
+                aria-label={t("navbar.raiseQuery")}
+                onClick={() => openQueryDialog()}
+                className="hidden h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors sm:flex duration-200 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 dark:text-primary-400 dark:hover:bg-neutral-700 dark:hover:text-primary-300 [.ui-play_&]:rounded-full [.ui-play_&]:border [.ui-play_&]:border-border [.ui-play_&]:bg-primary/10"
               >
                 <Question className="h-4 w-4 md:h-5 md:w-5" />
               </button>
             </TooltipTrigger>
             <TooltipContent className="bg-primary-400 text-white" side="bottom">
-              Raise a query
+              {t("navbar.raiseQuery")}
             </TooltipContent>
           </Tooltip>
         )}
 
-        {/* Avatar + account dropdown */}
-        <UserMenu />
+        {/* Avatar + account dropdown (also holds language + raise-a-query on phones) */}
+        <UserMenu
+          showLanguage={showLanguageSwitcher}
+          onRaiseQuery={showTopbarIcon ? () => openQueryDialog() : undefined}
+        />
       </div>
 
       {/* Global query dialog — opened from this icon and the dashboard card */}

@@ -1,5 +1,22 @@
 import { z } from 'zod';
+import type { TFunction } from 'i18next';
+import i18n from '@/i18n';
 import { AccessType, WaitingRoomType } from '../../-constants/enums';
+import { hasRequiredIdentityField } from '@/components/common/custom-fields/field-roles';
+
+const NAMESPACE = 'studyLibraryBulkSchema';
+
+/**
+ * These zod schemas are module-scope singletons whose exact shape is consumed
+ * via `z.infer<typeof X>` across other files in the bulk-schedule flow, so
+ * converting them to `buildXxx(t)` factories would require touching every
+ * type-inference call site outside this batch. Instead we use the same
+ * "outside a React render tree" fallback already established for the sibling
+ * schema.ts in this directory: call the shared i18next singleton directly
+ * with a fixed namespace.
+ */
+const t: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
 
 /**
  * Single row in the Bulk Schedule grid. Each row produces one independent
@@ -10,10 +27,10 @@ import { AccessType, WaitingRoomType } from '../../-constants/enums';
  */
 export const bulkSessionRowSchema = z
     .object({
-        title: z.string().min(1, 'Title is required'),
+        title: z.string().min(1, t('validation.titleRequired')),
         subject: z.string().optional(),
-        startDate: z.string().min(1, 'Start date is required'),
-        startTime: z.string().min(1, 'Start time is required'),
+        startDate: z.string().min(1, t('validation.startDateRequired')),
+        startTime: z.string().min(1, t('validation.startTimeRequired')),
         durationHours: z.string().default('0'),
         durationMinutes: z.string().default('30'),
         platform: z.string().default('other'),
@@ -33,6 +50,17 @@ export const bulkSessionRowSchema = z
                 })
             )
             .default([]),
+
+        /**
+         * Teachers (instructors) for THIS row. Each entry is a user id when
+         * picked in the grid's Teacher column, or the raw text of the CSV's
+         * teacher column: email (recommended), username or user id. The grid
+         * resolves entries against the staff directory (see
+         * `-utils/teacherDirectory.ts`); entries that match nobody are flagged
+         * on the row and skipped with a warning, never failing the row.
+         * Empty = whoever schedules the classes.
+         */
+        instructorIdentifiers: z.array(z.string()).default([]),
 
         // === Waiting-room per-row overrides ===
         // Each is OPTIONAL on purpose: an undefined value means "use the
@@ -60,7 +88,7 @@ export const bulkSessionRowSchema = z
         if ((isNaN(h) ? 0 : h) === 0 && (isNaN(m) ? 0 : m) === 0) {
             ctx.addIssue({
                 code: 'custom',
-                message: 'Duration must be greater than zero',
+                message: t('validation.durationGreaterThanZero'),
                 path: ['durationMinutes'],
             });
         }
@@ -68,7 +96,7 @@ export const bulkSessionRowSchema = z
             if (!row.link) {
                 ctx.addIssue({
                     code: 'custom',
-                    message: 'Link is required',
+                    message: t('validation.linkRequired'),
                     path: ['link'],
                 });
             } else {
@@ -77,7 +105,7 @@ export const bulkSessionRowSchema = z
                 } catch {
                     ctx.addIssue({
                         code: 'custom',
-                        message: 'Invalid URL',
+                        message: t('validation.invalidUrl'),
                         path: ['link'],
                     });
                 }
@@ -102,7 +130,10 @@ export const feedbackQuestionSchema = z.object({
  */
 export const bulkRegistrationFieldSchema = z.object({
     id: z.string().optional(),
-    label: z.string().min(1, 'Field label is required').max(100, 'Field label too long'),
+    label: z
+        .string()
+        .min(1, t('validation.fieldLabelRequired'))
+        .max(100, t('validation.fieldLabelTooLong')),
     required: z.boolean(),
     isDefault: z.boolean(),
     type: z.string(),
@@ -125,6 +156,8 @@ export const bulkSharedOptionsSchema = z.object({
     waitingRoomMusicFileId: z.string().optional(),
     allowRewind: z.boolean().default(true),
     allowPause: z.boolean().default(true),
+    /** Attendance-only institutes: show every class created from this grid to learners. */
+    showToLearners: z.boolean().default(false),
     enableFeedback: z.boolean().default(false),
     /** When true, learner cannot skip the feedback form — serialized as feedback_config.allow_skip = false. */
     feedbackCompulsory: z.boolean().default(false),
@@ -174,8 +207,8 @@ export const bulkSharedOptionsSchema = z.object({
 });
 
 export const bulkSessionFormSchema = z.object({
-    timeZone: z.string().min(1, 'Time zone is required'),
-    rows: z.array(bulkSessionRowSchema).min(1, 'Add at least one session'),
+    timeZone: z.string().min(1, t('validation.timeZoneRequired')),
+    rows: z.array(bulkSessionRowSchema).min(1, t('validation.addAtLeastOneSession')),
     sharedOptions: bulkSharedOptionsSchema,
 
     /**
@@ -229,7 +262,7 @@ export const bulkSessionFormSchema = z.object({
             onCreate: z.boolean(),
             beforeLive: z.boolean(),
             beforeLiveTime: z
-                .array(z.object({ time: z.string().min(1, 'Select time') }))
+                .array(z.object({ time: z.string().min(1, t('validation.selectTime')) }))
                 .optional(),
             onLive: z.boolean(),
             onAttendance: z.boolean(),
@@ -252,10 +285,25 @@ export const bulkSessionFormSchema = z.object({
                 if ((row.selectedLevels?.length ?? 0) === 0) {
                     ctx.addIssue({
                         code: 'custom',
-                        message: 'Assign at least one batch to this private class.',
+                        message: t('validation.assignAtLeastOneBatch'),
                         path: ['rows', index, 'selectedLevels'],
                     });
                 }
+            });
+        }
+
+        // Any registration field can be made optional, phone number included — but a registrant
+        // is identified by their email or their mobile number, and a submission carrying
+        // neither is rejected server-side. One of the two has to stay required.
+        if (
+            data.accessType === AccessType.PUBLIC &&
+            data.fields.length > 0 &&
+            !hasRequiredIdentityField(data.fields)
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                message: t('validation.emailOrPhoneRequired'),
+                path: ['fields'],
             });
         }
     });

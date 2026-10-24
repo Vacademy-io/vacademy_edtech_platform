@@ -1,0 +1,45 @@
+{
+    "dailyActivity": {
+        "title": "النشاط اليومي",
+        "summary_zero": "لا يوجد نشاط ({{count}}) · توقيت المؤسسة",
+        "summary_one": "نشاط واحد ({{count}}) · توقيت المؤسسة",
+        "summary_two": "نشاطان ({{count}}) · توقيت المؤسسة",
+        "summary_few": "{{count}} أنشطة · توقيت المؤسسة",
+        "summary_many": "{{count}} نشاطًا · توقيت المؤسسة",
+        "summary_other": "{{count}} نشاط · توقيت المؤسسة",
+        "empty": "لا يوجد نشاط في هذه الفترة.",
+        "barTooltip_zero": "{{date}} — لا يوجد نشاط ({{count}})",
+        "barTooltip_one": "{{date}} — نشاط واحد ({{count}})",
+        "barTooltip_two": "{{date}} — نشاطان ({{count}})",
+        "barTooltip_few": "{{date}} — {{count}} أنشطة",
+        "barTooltip_many": "{{date}} — {{count}} نشاطًا",
+        "barTooltip_other": "{{date}} — {{count}} نشاط"
+    },
+    "counsellorActivity": {
+        "title": "نشاط المستشارين",
+        "empty": "لا يوجد نشاط للمستشارين في هذه الفترة.",
+        "unknownCounsellor": "مستشار غير معروف"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "المستشار",
+            "notes": "الملاحظات",
+            "calls": "المكالمات",
+            "statusChanges": "تغييرات الحالة",
+            "followupsCreated": "المتابعات المُنشأة",
+            "followupsClosed": "المتابعات المغلقة",
+            "total": "الإجمالي"
+        }
+    },
+    "table": {
+        "headers": {
+            "counsellor": "المستشار",
+            "notes": "الملاحظات",
+            "calls": "المكالمات",
+            "statusChanges": "تغييرات الحالة",
+            "followupsCreated": "المتابعات المُنشأة",
+            "followupsClosed": "المتابعات المغلقة",
+            "total": "الإجمالي"
+        }
+    }
+}

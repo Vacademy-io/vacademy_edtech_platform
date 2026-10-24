@@ -1,0 +1,542 @@
+---
+title: "Submissions"
+description: "Submit one candidate's handwritten copy or typed answers for grading, follow it through the queue, and replace, cancel, delete or re-evaluate it."
+icon: "file-pen"
+---
+
+A **submission** is one candidate's answers to one exam: either a handwritten copy (a PDF [upload](/concepts/uploads)) or typed answers. Creating a submission fixes its price, reserves the credits and puts it in the grading queue. When grading finishes, read its [result](/concepts/results).
+
+<Info>
+The exam must be **open** before it accepts submissions (`POST /exams/{exam_id}/open`), and its mode decides the body: a `handwritten` exam takes `upload_id`, a `typed` exam takes `answers[]`. Sending the wrong one is refused with `422 mode_mismatch`. See [Exams](/concepts/exams-and-questions).
+</Info>
+
+| Action | Endpoint | Scope |
+| --- | --- | --- |
+| Create or replace | `POST /exams/{exam_id}/submissions` | `evaluation:write` |
+| Read one | `GET /submissions/{submission_id}` | `evaluation:read` |
+| List an exam's submissions | `GET /exams/{exam_id}/submissions` | `evaluation:read` |
+| Feed across exams | `GET /submissions?updated_since=…` | `evaluation:read` |
+| Cancel | `POST /submissions/{submission_id}/cancel` | `evaluation:write` |
+| Delete | `DELETE /submissions/{submission_id}` | `evaluation:write` |
+| Re-evaluate | `POST /submissions/{submission_id}/re-evaluate` | `evaluation:write` |
+
+<Accordion title="Setup for the code samples" icon="gear">
+The Python and Node samples on this page assume this setup. The Node samples use top-level `await`, so run them as ES modules (a `.mjs` file, or `"type": "module"` in `package.json`).
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const headers = {
+  "X-API-Key": process.env.EVALEZY_API_KEY,
+  "Content-Type": "application/json",
+};
+```
+
+</CodeGroup>
+</Accordion>
+
+## Identify the candidate
+
+Every submission names its candidate in one of two ways. Send exactly one of them.
+
+<ParamField body="candidate" type="object">
+  Your own reference for the candidate. The candidate is created or updated by `external_id` and registered for the exam automatically if needed. Fields you send replace stored ones; fields you leave out keep their stored value.
+
+  <Expandable title="properties">
+    <ParamField body="external_id" type="string" required>
+      Your id for the candidate, such as an enrolment or roll number. Up to 128 characters, unique within your institute.
+    </ParamField>
+    <ParamField body="name" type="string">
+      Up to 255 characters. Angle brackets (`<`, `>`) are refused.
+    </ParamField>
+    <ParamField body="roll_number" type="string">
+      Up to 64 characters. Angle brackets are refused.
+    </ParamField>
+    <ParamField body="section_or_class" type="string">
+      Up to 64 characters, for example `10-A`. Angle brackets are refused.
+    </ParamField>
+    <ParamField body="metadata" type="object">
+      Any JSON object, up to 2 KB.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="candidate_id" type="string">
+  The Evalezy id of a candidate you already created.
+</ParamField>
+
+Each candidate can have **one live submission per exam**. A second submission for the same candidate and exam is refused with `409 submission_exists`, and `details.submission_id` gives you the existing one. To send a new copy, [replace](#replace-a-submission) it.
+
+<ParamField body="metadata" type="object">
+  Optional. Any JSON object up to 2 KB, such as your barcode or booklet number. It is returned on the submission as is.
+</ParamField>
+
+## Handwritten copies
+
+Send the `upload_id` of a PDF you uploaded. The upload must belong to your institute, hold a readable PDF and not be used by another submission.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.evalezy.com/v1/exams/91aa4f02-5c3e-4d1b-8f7a-1e2d3c4b5a60/submissions \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: bcom-acc-2026-DN-04417" \
+  -d '{
+    "candidate": {
+      "external_id": "DN-2026-BCOM-04417",
+      "name": "Ritika Sharma",
+      "roll_number": "BCOM-04417"
+    },
+    "upload_id": "0d2b6c1e-6a1f-4c55-9a43-2b1f0c9e7a10",
+    "metadata": {"barcode": "A9921833"}
+  }'
+```
+
+```python Python
+resp = requests.post(
+    f"{API}/exams/{exam_id}/submissions",
+    headers={**HEADERS, "Idempotency-Key": "bcom-acc-2026-DN-04417"},
+    json={
+        "candidate": {
+            "external_id": "DN-2026-BCOM-04417",
+            "name": "Ritika Sharma",
+            "roll_number": "BCOM-04417",
+        },
+        "upload_id": upload_id,
+        "metadata": {"barcode": "A9921833"},
+    },
+)
+resp.raise_for_status()
+submission = resp.json()
+```
+
+```javascript Node
+const resp = await fetch(`${API}/exams/${examId}/submissions`, {
+  method: "POST",
+  headers: { ...headers, "Idempotency-Key": "bcom-acc-2026-DN-04417" },
+  body: JSON.stringify({
+    candidate: {
+      external_id: "DN-2026-BCOM-04417",
+      name: "Ritika Sharma",
+      roll_number: "BCOM-04417",
+    },
+    upload_id: uploadId,
+    metadata: { barcode: "A9921833" },
+  }),
+});
+const submission = await resp.json();
+```
+
+</CodeGroup>
+
+The response is `202 Accepted`: the [submission object](#the-submission-object) plus the `quote` and any `warnings`.
+
+```json
+{
+  "id": "5a7e2c90-1b4d-4e8f-a3c2-7d9e0f1a2b3c",
+  "exam_id": "91aa4f02-5c3e-4d1b-8f7a-1e2d3c4b5a60",
+  "candidate": { "id": "e9c1d2b3-4a5f-46e7-8b9c-0d1e2f3a4b5c", "external_id": "DN-2026-BCOM-04417" },
+  "state": "live",
+  "status": "queued",
+  "lane": "copy",
+  "pages": 28,
+  "needs_review": false,
+  "review_reasons": [],
+  "finalized": false,
+  "finalized_at": null,
+  "progress": { "step": null, "questions_done": 0, "questions_total": 0 },
+  "queue": { "position": 3, "estimated_ready_at": "2026-10-02T10:24:00Z" },
+  "attempt_count": 1,
+  "rubric_version": null,
+  "credits_charged": null,
+  "error": null,
+  "metadata": { "barcode": "A9921833" },
+  "created_at": "2026-10-02T10:02:11Z",
+  "updated_at": "2026-10-02T10:02:11Z",
+  "quote": { "unit": "page", "pages": 28, "credits": 28, "rate_source": "standard" },
+  "warnings": []
+}
+```
+
+### Page policy
+
+Handwritten copies are priced and handled by their page count, which comes from the upload.
+
+| Pages | What happens |
+| --- | --- |
+| 1 to 40 | Graded normally. |
+| 41 to 80 | Accepted, but pages after 40 are read with plain text recognition only. The submission is flagged `needs_review` with the reason `pages_beyond_vision_limit`, and the response carries a warning with the same code. |
+| More than 80 | Refused with `422 too_many_pages` (`details.pages`, `details.max_pages`). Nothing is charged. |
+
+```json
+"warnings": [
+  {
+    "code": "pages_beyond_vision_limit",
+    "message": "Pages after 40 are read with plain OCR only; the copy is marked for human review.",
+    "field": "upload_id"
+  }
+]
+```
+
+<Note>
+Every page of the PDF counts, including blank ones. Remove cover sheets and blank pages before you upload to keep the cost down.
+</Note>
+
+<Warning>
+Handwriting in Hindi or other regional languages is not supported yet. A copy written mostly in Devanagari fails with the error code `language_not_supported` and is not charged.
+</Warning>
+
+## Typed answers
+
+For a `typed` exam, send `answers[]`. Each answer names its question by `question_id` or by `question_label` (labels are matched without regard to case) and uses the field that fits the question type.
+
+| Question type | Answer field | Example |
+| --- | --- | --- |
+| `long_answer` | `text`: plain text, up to 20,000 characters | `{"question_label": "3", "text": "Article 356 empowers…"}` |
+| `mcq_single`, `true_false` | `option_labels`: exactly one label | `{"question_label": "1", "option_labels": ["B"]}` |
+| `mcq_multi` | `option_labels`: one or more labels | `{"question_label": "2", "option_labels": ["A", "C"]}` |
+| `numeric` | `value`: a number | `{"question_label": "4", "value": 12.5}` |
+| `one_word` | `value`: a string, up to 1,000 characters | `{"question_label": "5", "value": "Mitochondria"}` |
+
+Option labels are the labels you gave the options when you created the exam.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.evalezy.com/v1/exams/6f1c8a3e-2d4b-4c9f-a1e7-3b5d7f9a1c2e/submissions \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "candidate": {"external_id": "UPSC-TS-77120", "name": "Neha Rawat"},
+    "answers": [
+      {"question_label": "1", "option_labels": ["B"]},
+      {"question_label": "2", "text": "Article 356 empowers the President to assume the functions of a State government when its constitutional machinery fails. The S. R. Bommai judgment (1994) made the proclamation subject to judicial review..."}
+    ]
+  }'
+```
+
+```python Python
+exam_id = "6f1c8a3e-2d4b-4c9f-a1e7-3b5d7f9a1c2e"
+answer_text = "Article 356 empowers the President to assume the functions of a State government..."
+
+resp = requests.post(
+    f"{API}/exams/{exam_id}/submissions",
+    headers=HEADERS,
+    json={
+        "candidate": {"external_id": "UPSC-TS-77120", "name": "Neha Rawat"},
+        "answers": [
+            {"question_label": "1", "option_labels": ["B"]},
+            {"question_label": "2", "text": answer_text},
+        ],
+    },
+)
+```
+
+```javascript Node
+const examId = "6f1c8a3e-2d4b-4c9f-a1e7-3b5d7f9a1c2e";
+const answerText = "Article 356 empowers the President to assume the functions of a State government...";
+
+const resp = await fetch(`${API}/exams/${examId}/submissions`, {
+  method: "POST",
+  headers,
+  body: JSON.stringify({
+    candidate: { external_id: "UPSC-TS-77120", name: "Neha Rawat" },
+    answers: [
+      { question_label: "1", option_labels: ["B"] },
+      { question_label: "2", text: answerText },
+    ],
+  }),
+});
+```
+
+</CodeGroup>
+
+Rules for typed answers:
+
+- Send at most one answer per question. Questions you leave out, and answers that are empty, count as **not answered**: they score 0 and are not charged.
+- Objective answers (`mcq_*`, `true_false`, `numeric`, `one_word`) are marked automatically against the answer key, free of charge.
+- Each non-blank `long_answer` costs 1 credit at the standard rate. A submission with no non-blank long answer is marked at once with `status: "graded"` and a quote of 0 credits.
+- Send plain text. Markup and angle brackets are kept as plain text, so `x < 5` reaches the grader as typed. Text containing NUL characters (`\u0000`) is refused with `422 validation_failed`, with the field error code `invalid_characters`.
+- An answer whose letters are more than 20% Devanagari is refused with `422 language_not_supported` (`details.question_label`). Only English answers are graded today.
+- An option label the question does not have is refused with `422 unknown_option_label`.
+
+## Quotes and credits
+
+Every submission is priced **before** grading starts, and the price does not change afterwards.
+
+<ResponseField name="quote" type="object">
+  <Expandable title="properties">
+    <ResponseField name="unit" type="string">`page` for a handwritten copy, `answer` for typed answers.</ResponseField>
+    <ResponseField name="pages" type="integer">Pages charged (handwritten).</ResponseField>
+    <ResponseField name="answers" type="integer">Non-blank long answers charged (typed).</ResponseField>
+    <ResponseField name="credits" type="number">The fixed price of this submission in credits.</ResponseField>
+    <ResponseField name="rate_source" type="string | null">`standard` for the default API price, `contract` when your institute has its own price. `null` when nothing is charged.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+The credits are reserved when the submission is accepted and charged only when grading completes. Failed and cancelled submissions are not charged, and `credits_charged` on the submission shows what was actually charged. If your balance cannot cover the quote, the submission is refused with `402 insufficient_credits`, and `details` gives `required`, `available`, `balance`, `credit_limit` and `committed`. Buy credits in the Vacademy dashboard; see [evalezy.com/pricing](https://evalezy.com/pricing).
+
+## The submission object
+
+Every submission endpoint (create, get, the lists and the feed) returns this same shape.
+
+<ResponseField name="id" type="string">The submission id.</ResponseField>
+<ResponseField name="exam_id" type="string">The exam it belongs to.</ResponseField>
+<ResponseField name="candidate" type="object">`{ "id", "external_id" }` of the candidate.</ResponseField>
+<ResponseField name="state" type="string">
+  `live`, `replaced` or `deleted`. Only a `live` submission can be reviewed, finalized or changed.
+</ResponseField>
+<ResponseField name="replaced_by" type="string">
+  Present only when `state` is `replaced`: the id of the submission that replaced it.
+</ResponseField>
+<ResponseField name="status" type="string">Where grading is. See [Statuses](#statuses).</ResponseField>
+<ResponseField name="lane" type="string">`copy` for handwritten copies, `typed` for typed answers.</ResponseField>
+<ResponseField name="pages" type="integer | null">Pages of the handwritten copy; `null` for typed answers.</ResponseField>
+<ResponseField name="needs_review" type="boolean">
+  `true` when a teacher should look at the result. See [Needs review](/concepts/results#needs-review).
+</ResponseField>
+<ResponseField name="review_reasons" type="string[]">
+  Submission-level reasons, such as `pages_beyond_vision_limit`. Cleared when the submission is approved.
+</ResponseField>
+<ResponseField name="finalized" type="boolean">Whether the result is final. See [Finalize](/concepts/results#finalize-and-unfinalize).</ResponseField>
+<ResponseField name="finalized_at" type="string | null">When it was finalized.</ResponseField>
+<ResponseField name="progress" type="object | null">
+  `{ "step", "questions_done", "questions_total" }`, plus `estimated_ready_at` while grading runs. `null` when no AI grading was needed. `step` is informational; do not branch on it.
+</ResponseField>
+<ResponseField name="queue" type="object | null">
+  `{ "position", "estimated_ready_at" }` while the submission is `queued`; `null` otherwise. See [Queue position and ETA](#queue-position-and-eta).
+</ResponseField>
+<ResponseField name="attempt_count" type="integer">How many grading runs this submission has had (re-evaluations add one).</ResponseField>
+<ResponseField name="rubric_version" type="integer | null">The rubric version the latest run graded with.</ResponseField>
+<ResponseField name="credits_charged" type="number | null">
+  What was charged: the quote once grading completes, `0` when no AI grading was needed, and `null` while grading has not completed (and for failed or cancelled runs, which are free).
+</ResponseField>
+<ResponseField name="error" type="object | null">`{ "code", "message" }` when `status` is `failed`. See [Failure codes](#failure-codes).</ResponseField>
+<ResponseField name="metadata" type="object | null">The metadata you sent.</ResponseField>
+<ResponseField name="created_at" type="string">ISO 8601, UTC.</ResponseField>
+<ResponseField name="updated_at" type="string">Moves whenever anything you can see about the submission changes.</ResponseField>
+
+## Statuses
+
+| `status` | Meaning | Terminal |
+| --- | --- | --- |
+| `queued` | Waiting for a grading slot. | No |
+| `processing` | Grading has started. | No |
+| `reading` | The handwriting is being read. | No |
+| `grading` | Answers are being marked. | No |
+| `graded` | Every question was graded. Typed submissions with only objective answers are `graded` at once. | Yes |
+| `partially_graded` | Grading finished, but at least one question failed. Those questions need a teacher. | Yes |
+| `failed` | The copy could not be graded. `error.code` says why. Not charged. | Yes |
+| `cancelled` | You cancelled grading. Not charged. | Yes |
+
+`needs_review` and `finalized` are separate flags, not statuses: a `graded` submission can still need review.
+
+### Failure codes
+
+| `error.code` | Meaning | What to do |
+| --- | --- | --- |
+| `copy_unreadable` | The answer sheet could not be read reliably. | Rescan and [replace](#replace-a-submission) the submission. |
+| `language_not_supported` | The answers are in Hindi (Devanagari). | Not supported yet. |
+| `file_missing` | The submission has no answer sheet to grade. | Replace the submission. |
+| `file_unavailable` | The answer sheet could not be fetched from storage. | [Re-evaluate](#re-evaluate). |
+| `no_gradable_questions` | The exam has no question the AI can grade. | Check the exam's questions. |
+| `timed_out` | Grading timed out. | Re-evaluate. |
+| `cancelled` | Grading was cancelled. | |
+| `insufficient_credits` | Not enough credits when the copy reached the front of the queue. | Buy credits, then re-evaluate. |
+| `engine_unavailable` | The evaluation engine failed on this copy. | Re-evaluate. |
+
+## Follow a submission
+
+Read one submission with `GET /submissions/{submission_id}`.
+
+```bash
+curl https://api.evalezy.com/v1/submissions/5a7e2c90-1b4d-4e8f-a3c2-7d9e0f1a2b3c \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+How often to poll depends on who is waiting. For one typed submission a user is waiting on, poll every 2 to 5 seconds and back off to 10 seconds. A handwritten copy typically takes a few minutes, and longer copies take longer, so poll it every 15 to 30 seconds. With many submissions in flight, poll the [feed](#the-submission-feed) every 30 to 60 seconds instead of each submission. See [Syncing results](/guides/syncing-results).
+
+### Queue position and ETA
+
+While a submission is `queued`, `queue` tells you where it stands:
+
+- `position` is the number of your institute's submissions in the same lane that are ahead of it. `0` means it is next. Other institutes' work is not counted in your position.
+- `estimated_ready_at` is when the result should be ready, estimated from recent grading times and current load. It is a single estimate, never earlier than 30 seconds from now.
+
+Once grading starts, `queue` becomes `null` and `progress.estimated_ready_at` carries the estimate, refined as questions are marked. Handwritten copies and typed answers wait in separate lanes, so a large batch of copies does not hold up typed answers.
+
+## List an exam's submissions
+
+`GET /exams/{exam_id}/submissions` lists the exam's **live** submissions, ordered by `(updated_at, id)`.
+
+| Query parameter | Description |
+| --- | --- |
+| `status` | One status or a comma-separated list, such as `graded,partially_graded`. |
+| `needs_review` | `true` or `false`. |
+| `finalized` | `true` or `false`. |
+| `candidate_id` | Only this candidate's submission. |
+| `updated_since` | ISO 8601 UTC time, such as `2026-10-02T09:00:00Z`. Only submissions changed after it. |
+| `limit` | 1 to 200, default 50. |
+| `cursor` | `next_cursor` from the previous page. |
+| `include` | `result` adds the full [result](/concepts/results) to each row as `result`. The page size is then capped at 50. |
+
+```json
+{
+  "data": [ { "id": "5a7e2c90-…", "status": "graded", "…": "…" } ],
+  "next_cursor": "MTc1OTM5…",
+  "has_more": true
+}
+```
+
+## The submission feed
+
+`GET /submissions?updated_since=…` returns submissions from **all** your exams that changed after `updated_since`, ordered by `(updated_at, id)`. Use it to keep your system in sync without polling each submission. It also returns replaced and deleted submissions, so your sync loop learns about them (check `state`).
+
+| Query parameter | Description |
+| --- | --- |
+| `updated_since` | **Required.** ISO 8601 UTC time. Start with a time before your first submission. |
+| `status`, `needs_review`, `finalized` | Same filters as the exam list. |
+| `limit` | 1 to 200, default 50. |
+| `cursor` | `next_cursor` from the previous page. |
+
+Follow these rules when you read the feed:
+
+- Keep `updated_since` the same for every page of one pass, and follow `next_cursor` until `has_more` is `false`. Don't move `updated_since` forward in the middle of a pass: rows written together share the same `updated_at`, and you would skip some of them.
+- Remember the newest `updated_at` you processed (your watermark). Start the next pass from the watermark **minus about 2 minutes**, so rows committed a moment late are not missed.
+- Upsert by `id` and skip a row whose `updated_at` is not newer than what you already stored. The overlap means you see some rows twice; this check makes that harmless.
+
+<CodeGroup>
+
+```python Python
+import datetime as dt
+
+OVERLAP = dt.timedelta(minutes=2)
+
+def parse(ts):
+    return dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+def sync_once(watermark):
+    since = (parse(watermark) - OVERLAP).isoformat().replace("+00:00", "Z")
+    params = {"updated_since": since, "limit": 200}      # same updated_since for the whole pass
+    while True:
+        page = requests.get(f"{API}/submissions", headers=HEADERS, params=params, timeout=60).json()
+        for sub in page["data"]:
+            if is_newer(sub["id"], sub["updated_at"]):   # skip rows you already have
+                handle(sub)                              # upsert by sub["id"]; check sub["state"]
+            if parse(sub["updated_at"]) > parse(watermark):
+                watermark = sub["updated_at"]
+        if not page["has_more"]:
+            return watermark
+        params["cursor"] = page["next_cursor"]
+```
+
+```javascript Node
+const OVERLAP_MS = 2 * 60 * 1000;
+
+async function syncOnce(watermark) {
+  const since = new Date(Date.parse(watermark) - OVERLAP_MS).toISOString();
+  const params = new URLSearchParams({ updated_since: since, limit: "200" }); // same for the whole pass
+  for (;;) {
+    const page = await (await fetch(`${API}/submissions?${params}`, { headers })).json();
+    for (const sub of page.data) {
+      if (await isNewer(sub.id, sub.updated_at)) await handle(sub); // upsert by sub.id; check sub.state
+      if (Date.parse(sub.updated_at) > Date.parse(watermark)) watermark = sub.updated_at;
+    }
+    if (!page.has_more) return watermark;
+    params.set("cursor", page.next_cursor);
+  }
+}
+```
+
+</CodeGroup>
+
+Run a pass every 30 to 60 seconds and save the watermark after each one. [Syncing results](/guides/syncing-results) has the complete worker, and [Pagination and syncing](/platform/pagination) explains the cursor rules.
+
+<Tip>
+A submission appears in the feed again every time it changes: when it moves from `queued` to `grading` to `graded`, when it is reviewed or finalized, and when it is replaced or deleted. Changes made by teachers in the Vacademy dashboard appear too. Engine progress reaches the feed within a few seconds. Webhooks are on the [roadmap](/platform/roadmap); until then, the feed is the way to hear about changes.
+</Tip>
+
+## Replace a submission
+
+To send a corrected or rescanned copy for a candidate who already has a submission, create a new submission with `"replace": true`.
+
+```json
+{
+  "candidate": { "external_id": "DN-2026-BCOM-04417" },
+  "upload_id": "7c3f9e21-…",
+  "replace": true
+}
+```
+
+The old submission's grading is stopped, its `state` becomes `replaced` and its `replaced_by` points to the new one. The new submission is quoted and charged as a new copy; a cancelled grading run of the old one is not charged. A finalized submission cannot be replaced (`409 submission_finalized`): [unfinalize](/concepts/results#finalize-and-unfinalize) it first.
+
+## Cancel grading
+
+`POST /submissions/{submission_id}/cancel` stops grading. A queued submission is cancelled at once; a running one is stopped. Cancelled submissions are not charged.
+
+```json
+{ "id": "5a7e2c90-1b4d-4e8f-a3c2-7d9e0f1a2b3c", "status": "cancelled" }
+```
+
+Cancelling an already cancelled submission returns the same response. A submission whose grading has finished (graded or failed) is refused with `409 already_completed`. To grade a cancelled submission later, [re-evaluate](#re-evaluate) it.
+
+## Delete a submission
+
+`DELETE /submissions/{submission_id}` removes a submission that is not finalized, for example one made with the wrong upload. Any grading in progress is stopped.
+
+```json
+{ "id": "5a7e2c90-1b4d-4e8f-a3c2-7d9e0f1a2b3c", "deleted": true }
+```
+
+After a delete, the candidate can be given a new submission on the exam. The deleted submission still appears in the feed with `state: "deleted"`, but its result is no longer available. An upload can be used only once, even if its submission is deleted: upload the file again for the new submission.
+
+## Re-evaluate
+
+`POST /submissions/{submission_id}/re-evaluate` grades the whole copy again, for example after you changed the rubric or after a `timed_out` failure. It returns `202 Accepted` with the submission object.
+
+<ParamField body="keep_reviewed" type="boolean" default="true">
+  Keep the marks of questions a teacher already overrode. Set `false` to have every question graded again.
+</ParamField>
+
+<Warning>
+Re-evaluation is **charged again** at the same price as the original submission (per page, or per non-blank long answer). It also clears any approval, so review the new result again.
+</Warning>
+
+Re-evaluation is refused with `409 evaluation_in_progress` while a run is still active (cancel it or wait), and with `409 submission_finalized` once the result is finalized. Re-evaluating single questions (`question_ids`) is not available yet and is refused with `422 feature_not_available`.
+
+## Retries and idempotency
+
+Every `POST` above accepts an optional `Idempotency-Key` header. A retry with the same key and the same body returns the stored response with `Idempotent-Replayed: true`, so a network timeout never creates or charges a submission twice. The one-live-submission rule protects you too: a duplicate submission for the same candidate and exam is refused with `409 submission_exists`.
+
+## Errors
+
+| Status | Code | When |
+| --- | --- | --- |
+| `402` | `insufficient_credits` | Your balance cannot cover the quote. |
+| `404` | `exam_not_found`, `candidate_not_found`, `upload_not_found`, `submission_not_found` | The id does not exist in your institute. Replaced and deleted submissions also answer `404` to cancel, delete, re-evaluate and review calls. |
+| `409` | `exam_not_open` | The exam is still a draft. |
+| `409` | `submission_exists` | The candidate already has a live submission on this exam. Send `replace: true`. |
+| `409` | `submission_finalized` | The submission is finalized. |
+| `409` | `upload_already_used` | Another submission already uses this upload. |
+| `409` | `evaluation_in_progress` | A grading run is still active. |
+| `409` | `already_completed` | Cancel was called after grading finished. |
+| `422` | `validation_failed` | A field is missing or invalid (`details.errors[]`), such as both `candidate` and `candidate_id`, or text over 20,000 characters. |
+| `422` | `mode_mismatch` | `answers[]` on a handwritten exam, or `upload_id` on a typed exam. |
+| `422` | `upload_rejected` | The upload is rejected, not uploaded yet or not ready (`details.reason`). |
+| `422` | `too_many_pages` | The copy has more than 80 pages. |
+| `422` | `language_not_supported` | More than 20% of the letters in a typed answer (long answer or one-word) are Devanagari. |
+| `422` | `unknown_option_label` | An option label the question does not have. |
+| `422` | `no_gradable_questions` | The exam has no questions, or a typed re-evaluation has no written answer to grade. |
+| `422` | `feature_not_available` | `images[]`, `files[]` or `question_ids` were sent. These are not available yet. |
+| `429` | `daily_quota_exceeded` | Your institute's or key's daily submission quota is used up. Quotas reset at 00:00 UTC. |
+| `503` | `engine_unavailable` | The upload or credits could not be checked right now. Retry after `Retry-After` seconds. |

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
 import { getInstituteId } from '@/constants/helper';
@@ -7,6 +8,9 @@ import {
     type StudentSidebarTabConfig,
     type StudentDashboardWidgetConfig,
     type StudentDashboardWidgetId,
+    type StudentAllCoursesCustomTab,
+    type StudentAllCoursesCustomTabProductPage,
+    type StudentAllCoursesCustomTabType,
 } from '@/types/student-display-settings';
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from '@/constants/display-settings/student-defaults';
 
@@ -46,6 +50,51 @@ function mergeArrayById<T extends { id: string }>(
         else byId.set(i.id, i as T);
     });
     return Array.from(byId.values());
+}
+
+const CUSTOM_COURSE_TAB_TYPES: ReadonlyArray<StudentAllCoursesCustomTabType> = [
+    'TAG',
+    'COURSES',
+    'FREE_COURSES',
+    'LIVE_SESSIONS',
+    'PRODUCT_PAGES',
+];
+
+const stringList = (value: unknown): string[] =>
+    Array.isArray(value)
+        ? value.filter((v): v is string => typeof v === 'string' && v.length > 0)
+        : [];
+
+/** Drops custom Courses-page tabs without an id and fills missing fields. */
+function normalizeCustomCourseTabs(
+    incoming: Array<Partial<StudentAllCoursesCustomTab>> | undefined
+): StudentAllCoursesCustomTab[] {
+    if (!Array.isArray(incoming)) return [];
+    return incoming
+        .filter((t) => typeof t?.id === 'string' && t.id.length > 0)
+        .map((t) => ({
+            id: t.id as string,
+            label: typeof t.label === 'string' ? t.label : '',
+            // Tabs saved before types existed are tag tabs.
+            type: CUSTOM_COURSE_TAB_TYPES.includes(t.type as StudentAllCoursesCustomTabType)
+                ? (t.type as StudentAllCoursesCustomTabType)
+                : 'TAG',
+            tags: stringList(t.tags),
+            courseIds: stringList(t.courseIds),
+            productPages: Array.isArray(t.productPages)
+                ? t.productPages
+                      .filter(
+                          (p): p is StudentAllCoursesCustomTabProductPage =>
+                              typeof p?.code === 'string' && p.code.length > 0
+                      )
+                      .map((p) => ({
+                          code: p.code,
+                          name: typeof p.name === 'string' ? p.name : p.code,
+                      }))
+                : [],
+            order: typeof t.order === 'number' ? t.order : 0,
+            visible: t.visible ?? true,
+        }));
 }
 
 /**
@@ -162,6 +211,10 @@ function mergeWithDefaults(
                     d.signup.providers.defaultProvider,
             },
             usernameStrategy: incoming?.signup?.usernameStrategy ?? d.signup.usernameStrategy,
+            usernameCustomFieldId: incoming?.signup?.usernameCustomFieldId,
+            usernamePrefix: incoming?.signup?.usernamePrefix,
+            usernameApplyToAll: incoming?.signup?.usernameApplyToAll ?? false,
+            usernameOverrideTyped: incoming?.signup?.usernameOverrideTyped ?? false,
             passwordStrategy: incoming?.signup?.passwordStrategy ?? d.signup.passwordStrategy,
             passwordDelivery: incoming?.signup?.passwordDelivery ?? d.signup.passwordDelivery,
             presentation: incoming?.signup?.presentation ?? d.signup.presentation,
@@ -200,6 +253,7 @@ function mergeWithDefaults(
             showCourseConfiguration:
                 incoming?.courseDetails?.showCourseConfiguration ??
                 d.courseDetails.showCourseConfiguration,
+            hideTags: incoming?.courseDetails?.hideTags ?? d.courseDetails.hideTags,
             showCourseContentPrefixes:
                 incoming?.courseDetails?.showCourseContentPrefixes ??
                 d.courseDetails.showCourseContentPrefixes,
@@ -263,6 +317,14 @@ function mergeWithDefaults(
                     incoming?.courseSettings?.quiz?.showReportAndCorrectAnswers ??
                     d.courseSettings.quiz.showReportAndCorrectAnswers,
             },
+            assignment: {
+                hideAttemptsAllowed:
+                    incoming?.courseSettings?.assignment?.hideAttemptsAllowed ??
+                    d.courseSettings.assignment.hideAttemptsAllowed,
+                hideRepeatedTitle:
+                    incoming?.courseSettings?.assignment?.hideRepeatedTitle ??
+                    d.courseSettings.assignment.hideRepeatedTitle,
+            },
         },
         allCourses: {
             tabs: mergeArrayById(incoming?.allCourses?.tabs, d.allCourses.tabs).map((t) => ({
@@ -271,10 +333,15 @@ function mergeWithDefaults(
                 order: t.order ?? d.allCourses.tabs.find((x) => x.id === t.id)?.order ?? 0,
                 visible: t.visible ?? d.allCourses.tabs.find((x) => x.id === t.id)?.visible ?? true,
             })),
+            customTabs: normalizeCustomCourseTabs(incoming?.allCourses?.customTabs),
             defaultTab: incoming?.allCourses?.defaultTab ?? d.allCourses.defaultTab,
             hideInstructorName:
                 incoming?.allCourses?.hideInstructorName ??
                 d.allCourses.hideInstructorName,
+            pageSize: incoming?.allCourses?.pageSize ?? d.allCourses.pageSize,
+            showAllEnrolledOnDashboard:
+                incoming?.allCourses?.showAllEnrolledOnDashboard ??
+                d.allCourses.showAllEnrolledOnDashboard,
         },
         notifications: {
             allowSystemAlerts:
@@ -297,12 +364,42 @@ function mergeWithDefaults(
                 incoming?.liveClasses?.showActivityStats ?? d.liveClasses.showActivityStats,
             showClassMaterials:
                 incoming?.liveClasses?.showClassMaterials ?? d.liveClasses.showClassMaterials,
+            showUnassignedPublicSessions:
+                incoming?.liveClasses?.showUnassignedPublicSessions ??
+                d.liveClasses.showUnassignedPublicSessions,
         },
         tutorials: {
             enabled: incoming?.tutorials?.enabled ?? d.tutorials.enabled,
             enabledTours: incoming?.tutorials?.enabledTours ?? d.tutorials.enabledTours,
             pdfGuideEnabled:
                 incoming?.tutorials?.pdfGuideEnabled ?? d.tutorials.pdfGuideEnabled,
+        },
+        concentration: {
+            enabled: incoming?.concentration?.enabled ?? d.concentration.enabled,
+            frequency: {
+                min_minutes:
+                    incoming?.concentration?.frequency?.min_minutes ??
+                    d.concentration.frequency.min_minutes,
+                max_minutes:
+                    incoming?.concentration?.frequency?.max_minutes ??
+                    d.concentration.frequency.max_minutes,
+            },
+            behavior: {
+                allow_skip:
+                    incoming?.concentration?.behavior?.allow_skip ??
+                    d.concentration.behavior.allow_skip,
+                penalty_type:
+                    incoming?.concentration?.behavior?.penalty_type ??
+                    d.concentration.behavior.penalty_type,
+            },
+            appearance: {
+                title:
+                    incoming?.concentration?.appearance?.title ??
+                    d.concentration.appearance.title,
+                subtitle:
+                    incoming?.concentration?.appearance?.subtitle ??
+                    d.concentration.appearance.subtitle,
+            },
         },
         postLoginRedirectRoute: incoming?.postLoginRedirectRoute ?? d.postLoginRedirectRoute,
     };
@@ -322,6 +419,28 @@ function mergeWithDefaults(
 export const getStudentDisplaySettingsFromCache = (): StudentDisplaySettingsData | null => {
     return readCache();
 };
+
+/**
+ * Server copy for the settings editor. Unlike getStudentDisplaySettings it
+ * never answers from the 24h cache and THROWS instead of falling back to
+ * defaults — the editor saves the whole blob back, so either fallback would
+ * let one Save overwrite the institute's real settings.
+ */
+export async function fetchStudentDisplaySettingsForEdit(): Promise<StudentDisplaySettingsData> {
+    const instituteId = getInstituteId();
+    if (!instituteId) throw new Error('No institute selected');
+    const res = await authenticatedAxiosInstance.get<{
+        data: StudentDisplaySettingsData | null;
+    }>(`${BASE_URL}/admin-core-service/institute/setting/v1/get`, {
+        params: { instituteId, settingKey: STUDENT_DISPLAY_SETTINGS_KEY },
+    });
+    const serverData = res.data?.data;
+    const merged = mergeWithDefaults(
+        serverData && Object.keys(serverData).length ? serverData : DEFAULT_STUDENT_DISPLAY_SETTINGS
+    );
+    writeCache(merged);
+    return merged;
+}
 
 export async function getStudentDisplaySettings(
     forceRefresh = false
@@ -372,6 +491,28 @@ export async function saveStudentDisplaySettings(
     );
     writeCache(settings);
 }
+
+/**
+ * The institute's learner-username rule for admin add forms (Settings → Login &
+ * Signup). `applies`: the strategy also covers admin adds. `overridesTyped`: it
+ * replaces a username the admin types, so forms lock that field. Reads the server
+ * copy (not the 24h cache) so a just-changed setting shows.
+ */
+export const useLearnerUsernamePolicy = () => {
+    const { data } = useQuery({
+        queryKey: ['student-display-settings', 'username-policy', getInstituteId()],
+        queryFn: () => getStudentDisplaySettings(true),
+        staleTime: 5 * 60 * 1000,
+    });
+    const signup = data?.signup;
+    const strategy = signup?.usernameStrategy;
+    const applies = !!signup?.usernameApplyToAll && strategy !== 'manual';
+    return {
+        strategy,
+        applies,
+        overridesTyped: applies && !!signup?.usernameOverrideTyped && strategy !== 'random',
+    };
+};
 
 export function clearStudentDisplaySettingsCache(): void {
     try {

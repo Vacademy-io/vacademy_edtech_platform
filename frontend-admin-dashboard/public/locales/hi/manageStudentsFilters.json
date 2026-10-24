@@ -1,0 +1,28 @@
+{
+    "session": {
+        "addButton": "जोड़ें",
+        "addNewSession": "नया सत्र जोड़ें",
+        "addSessionShort": "सत्र जोड़ें",
+        "createCourseFirst": "(पहले एक कोर्स बनाएं)",
+        "selectPlaceholder": "सत्र चुनें",
+        "addedSuccess": " {{term}} सफलतापूर्वक जोड़ा गया",
+        "addError": "{{term}} जोड़ने में विफल"
+    },
+    "export": {
+        "exportingLoading": "निर्यात हो रहा है...",
+        "accountDetails": {
+            "short": "खाता विवरण",
+            "medium": "खाता",
+            "full": "खाता विवरण निर्यात करें"
+        },
+        "data": {
+            "short": "निर्यात",
+            "medium": "निर्यात",
+            "full": "डेटा निर्यात करें"
+        }
+    },
+    "actions": {
+        "applyFilters": "फ़िल्टर लागू करें",
+        "resetAll": "सभी रीसेट करें"
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "cardTitle": "भुगतान कॉन्फ़िगरेशन",
+    "addPaymentPlan": "भुगतान प्लान जोड़ें",
+    "defaultCurrency": "डिफ़ॉल्ट मुद्रा",
+    "selectCurrencyPlaceholder": "मुद्रा चुनें",
+    "sections": {
+        "freeOptions": "मुफ़्त विकल्प",
+        "paidOptions": "सशुल्क विकल्प"
+    },
+    "planCount_one": "{{count}} प्लान",
+    "planCount_other": "{{count}} प्लान",
+    "planPreviewTitle": "प्लान पूर्वावलोकन - {{name}}",
+    "intervalPlanFallback": "{{value}} {{unit}} प्लान",
+    "discounts": {
+        "percentageOff": "{{amount}}% छूट",
+        "fixedOff": "{{symbol}}{{amount}} छूट",
+        "nameWithInterval": "{{discountLabel}} - {{intervalTitle}}"
+    },
+    "toasts": {
+        "noPaymentOptions": "कोई भुगतान विकल्प नहीं मिला। अपना पहला भुगतान प्लान बनाएं!",
+        "loadFailed": "भुगतान विकल्प लोड करने में विफल",
+        "defaultUpdated": "डिफ़ॉल्ट भुगतान प्लान सफलतापूर्वक अपडेट किया गया",
+        "feePlanCreated": "फ़ीस प्लान सफलतापूर्वक बनाया गया",
+        "planUpdated": "भुगतान प्लान सफलतापूर्वक अपडेट किया गया",
+        "planCreated": "भुगतान प्लान सफलतापूर्वक बनाया गया"
+    },
+    "errors": {
+        "generic": "{{operation}} में त्रुटि"
+    },
+    "operations": {
+        "setDefaultPlan": "डिफ़ॉल्ट प्लान सेट करना",
+        "editPlan": "प्लान संपादित करना",
+        "savePaymentPlan": "भुगतान प्लान सहेजना",
+        "previewPlan": "प्लान पूर्वावलोकन करना"
+    }
+}

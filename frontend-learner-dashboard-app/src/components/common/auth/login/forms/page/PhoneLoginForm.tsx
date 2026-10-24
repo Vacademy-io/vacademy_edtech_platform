@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -30,7 +30,10 @@ import { REQUEST_WHATSAPP_OTP, VERIFY_WHATSAPP_OTP_LOGIN } from "@/constants/url
 import { fetchAndStoreInstituteDetails } from "@/services/fetchAndStoreInstituteDetails";
 import { fetchAndStoreStudentDetails } from "@/services/studentDetails";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
-import { getPreferredPhoneCountries } from "@/services/domain-routing";
+import {
+    phoneFieldHasInput,
+    usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
 import { SessionLimitDialog } from "@/components/common/auth/login/components/SessionLimitDialog";
 import { phoneSchema as phoneValidationSchema } from "@/lib/phone-validation";
 import { navigateAfterLogin } from "@/lib/auth/post-login-redirect";
@@ -67,6 +70,8 @@ export function PhoneLoginForm({
     onSwitchToSignup,
     allowUsernamePasswordAuth,
     allowEmailOtpAuth,
+    allowSignup,
+    initialPhone,
 }: {
     onSwitchToUsername?: () => void;
     onSwitchToEmail?: () => void;
@@ -75,6 +80,10 @@ export function PhoneLoginForm({
     onSwitchToSignup?: () => void;
     allowUsernamePasswordAuth?: boolean;
     allowEmailOtpAuth?: boolean;
+    /** Portal policy from domain routing. This form never gated the link before, so only an explicit false hides it. */
+    allowSignup?: boolean;
+    /** Pre-fills the number (digits with dial code); the learner still has to receive and enter the OTP. */
+    initialPhone?: string;
 }) {
     const { t, i18n: i18nInstance } = useTranslation("auth");
     const phoneSchema = useMemo(
@@ -83,10 +92,6 @@ export function PhoneLoginForm({
         [i18nInstance.language]
     );
     const [isOtpSent, setIsOtpSent] = useState(false);
-    const { defaultCountry, preferredCountries } = useMemo(
-        () => getPreferredPhoneCountries(),
-        [],
-    );
     const [phoneDial, setPhoneDial] = useState("");
     const [timer, setTimer] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,8 +110,17 @@ export function PhoneLoginForm({
     const phoneForm = useForm<PhoneFormValues>({
         resolver: zodResolver(phoneSchema),
         defaultValues: {
-            phone: "",
+            phone: initialPhone ?? "",
         },
+    });
+
+    // Resolved after `phoneForm` so the freeze flag can read the field. The
+    // login page is public and can render before domain routing replies, which
+    // is exactly the case this hook corrects; it never moves the country once a
+    // number has been typed.
+    const typedPhone = useWatch({ control: phoneForm.control, name: "phone" });
+    const { defaultCountry, preferredCountries } = usePreferredPhoneCountries({
+        freeze: phoneFieldHasInput(typedPhone),
     });
     const startTimer = () => {
         setTimer(60);
@@ -715,19 +729,21 @@ export function PhoneLoginForm({
                     )}
                 </div>
 
-                <div className="text-sm text-gray-600 pt-2">
-                    {t("common.dontHaveAccount")}{" "}
-                    <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        onClick={
-                            onSwitchToSignup || (() => navigate({ to: "/signup" }))
-                        }
-                        className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
-                    >
-                        {t("common.signUpHere")}
-                    </motion.button>
-                </div>
+                {allowSignup !== false && (
+                    <div className="text-sm text-gray-600 pt-2">
+                        {t("common.dontHaveAccount")}{" "}
+                        <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            onClick={
+                                onSwitchToSignup || (() => navigate({ to: "/signup" }))
+                            }
+                            className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
+                        >
+                            {t("common.signUpHere")}
+                        </motion.button>
+                    </div>
+                )}
             </motion.div>
 
             <SessionLimitDialog

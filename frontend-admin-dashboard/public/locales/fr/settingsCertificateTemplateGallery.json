@@ -1,0 +1,23 @@
+{
+    "header": {
+        "title": "Choisissez un modèle de certificat",
+        "subtitle": "Choisissez un design prêt à l'emploi ou téléversez votre propre image / PDF ci-dessous."
+    },
+    "badge": {
+        "customUpload": "Téléversement personnalisé",
+        "builtin": "Intégré"
+    },
+    "card": {
+        "default": "Par défaut",
+        "selected": "Sélectionné"
+    },
+    "customCard": {
+        "title": "Téléversement personnalisé",
+        "altText": "Téléversement personnalisé",
+        "uploadPlaceholder": "Votre fichier",
+        "tooltipUse": "Utiliser l'image que vous avez téléversée",
+        "tooltipEnable": "Téléversez une image ou un PDF ci-dessous pour activer cet emplacement",
+        "descriptionUploaded": "Votre design téléversé",
+        "descriptionEmpty": "Téléversez ci-dessous pour l'utiliser"
+    }
+}

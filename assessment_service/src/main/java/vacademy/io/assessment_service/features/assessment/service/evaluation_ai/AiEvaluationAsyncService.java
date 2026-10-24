@@ -75,10 +75,18 @@ public class AiEvaluationAsyncService {
         private boolean useAiServicePipeline;
 
         /**
-         * Main async evaluation method - orchestrates the entire evaluation process
+         * Main async evaluation method - orchestrates the entire evaluation process.
+         *
+         * Runs on its own dispatch executor, not the shared default pool (11.2).
+         *
+         * @param claimToken the claimed_by value the row was claimed with (the poller's
+         *                   instance id, or the direct path's per-run token). Dispatch
+         *                   only proceeds while the row is DISPATCHED under this claim,
+         *                   so the same row can never be dispatched twice.
          */
-        @Async
-        public void evaluateAttemptAsync(String processId, String attemptId, String preferredModel) {
+        @Async(AiEvaluationDispatchExecutorConfig.EXECUTOR)
+        public void evaluateAttemptAsync(String processId, String attemptId, String preferredModel,
+                        String claimToken) {
                 log.info("Starting async evaluation for process: {}, attempt: {}, preferredModel: {}", processId,
                                 attemptId, preferredModel);
 
@@ -94,7 +102,7 @@ public class AiEvaluationAsyncService {
                 if (useAiServicePipeline) {
                         log.info("[copy-check] feature flag ON — delegating process {} to ai_service", processId);
                         try {
-                                copyCheckOrchestratorService.dispatch(processId, attemptId, preferredModel);
+                                copyCheckOrchestratorService.dispatch(processId, attemptId, preferredModel, claimToken);
                         } catch (Exception e) {
                                 // Nothing else catches this — we are the top of an @Async thread, and
                                 // dispatch's own transaction (including any FAILED marker it tried to
@@ -105,6 +113,14 @@ public class AiEvaluationAsyncService {
                                 copyCheckOrchestratorService.markDispatchFailed(processId,
                                                 "dispatch failed: " + e.getMessage());
                         }
+                        return;
+                }
+
+                // Legacy in-JVM pipeline: same guard as the ai_service path - only the
+                // holder of the claim may start the run, and only once.
+                if (aiEvaluationProcessRepository.beginDispatch(processId, claimToken, new java.util.Date()) == 0) {
+                        log.info("Process {} is no longer DISPATCHED under claim {}; not starting it", processId,
+                                        claimToken);
                         return;
                 }
 

@@ -1,0 +1,14 @@
+{
+    "delete": "Delete",
+    "deletingEllipsis": "Deleting…",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "alsoDeleteAssessmentPrefix": "Also delete this assessment from the",
+    "assessmentsTab": "Assessments tab",
+    "otherSlidesWarning_one": "This assessment also backs {{count}} other slide (from a copied chapter or course). Deleting it will break that slide too.",
+    "otherSlidesWarning_other": "This assessment also backs {{count}} other slides (from a copied chapter or course). Deleting it will break those slides too.",
+    "assessmentStaysLive": "The assessment stays live for learners in the Assessments tab.",
+    "slideAndAssessmentDeleted": "Slide and assessment deleted successfully!",
+    "assessmentDeleteFailed": "Slide deleted, but the assessment could not be removed from the Assessments tab.",
+    "slideDeleted": "Slide deleted successfully!",
+    "slideDeleteFailed": "Failed to delete the slide"
+}

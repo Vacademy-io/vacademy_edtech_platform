@@ -69,26 +69,32 @@ PASSAGES_PER_ROW = 6
 
 MAX_QUESTIONS_PER_PAPER = 120
 
-QUESTION_TYPES = ("MCQS", "ONE_WORD", "LONG_ANSWER", "NUMERIC")
+QUESTION_TYPES = (
+    "MCQS", "MCQM", "TRUE_FALSE", "ONE_WORD", "LONG_ANSWER", "NUMERIC",
+    "PASSAGE", "ASSERTION_REASON",
+)
+
+# Types that carry options, i.e. where `correct_options` is the answer key rather
+# than `ans`.
+OPTION_QUESTION_TYPES = ("MCQS", "MCQM", "TRUE_FALSE", "PASSAGE", "ASSERTION_REASON")
 
 # What each blueprint type is STORED as.
 #
-# `question_format.format_questions` — the shared converter every AI question
-# source funnels through — dispatches on MCQS / MCQM / ONE_WORD / LONG_ANSWER and
-# SILENTLY SKIPS anything else. It has no NUMERIC branch, even though NUMERIC is
-# a real platform question type. So a numerical question emitted as NUMERIC is
-# dropped on the floor: it shows in the review board and then never reaches the
-# question bank.
+# This used to map NUMERIC -> ONE_WORD, because `question_format.format_questions`
+# had no NUMERIC branch and SILENTLY SKIPPED anything it could not dispatch — so a
+# question emitted as NUMERIC showed up in the review board and then vanished on
+# the way to the question bank.
 #
-# NUMERIC therefore stays a PLANNING type (it shapes the prompt — "a numerical
-# problem with a definite answer, show the working") but is stored as ONE_WORD,
-# which is what a numeric answer actually is. Removing NUMERIC from the blueprint
-# instead would cost teachers the ability to ask for numericals at all.
+# format_questions now handles NUMERIC and TRUE_FALSE natively, so the downgrade is
+# gone and every planning type is stored as itself. Questions saved BEFORE this
+# change remain stored as ONE_WORD and keep grading exactly as they did.
+# PASSAGE and ASSERTION_REASON are authoring formats, not platform question
+# enums. Both are saved as a normal single-choice MCQ so learners, exports and
+# auto-evaluation work without every downstream surface needing a new type.
 STORAGE_QUESTION_TYPE = {
-    "MCQS": "MCQS",
-    "ONE_WORD": "ONE_WORD",
-    "LONG_ANSWER": "LONG_ANSWER",
-    "NUMERIC": "ONE_WORD",
+    **{t: t for t in QUESTION_TYPES},
+    "PASSAGE": "MCQS",
+    "ASSERTION_REASON": "MCQS",
 }
 
 
@@ -278,6 +284,29 @@ def _blueprint_prompt(
         wanted.append(f"paper language: {spec['language']}")
     if spec.get("exam_style"):
         wanted.append(f"pattern to follow: {spec['exam_style']}")
+    if spec.get("title"):
+        wanted.append(f"the paper is titled \"{spec['title']}\" — use exactly this title")
+    type_plan = spec.get("type_plan") or []
+    if type_plan:
+        # The teacher fixed the mix (Acadine-style "question types & marks"):
+        # the planner only decides WHICH material each row draws on. Counts and
+        # marks are re-imposed after the model answers (apply_type_plan), so
+        # this line is guidance, not the enforcement.
+        mix = "; ".join(
+            f"{int(e.get('count') or 0)} × {e.get('label') or e.get('question_type')} "
+            f"({e.get('question_type')}, {e.get('marks_each')} mark(s) each)"
+            for e in type_plan
+        )
+        wanted.append(
+            "REQUIRED question mix, in this order, one or more rows per entry, "
+            f"counts and marks exactly as given: {mix}"
+        )
+    weightage = spec.get("weightage") or {}
+    if weightage:
+        wanted.append(
+            "weightage the teacher set (share of questions per chapter/topic id): "
+            + ", ".join(f"{k}: {v}%" for k, v in weightage.items())
+        )
 
     refine_block = ""
     if current is not None:
@@ -314,7 +343,7 @@ Produce a BLUEPRINT — the plan, not the questions. Return STRICT JSON, no pros
       "node_ids": ["ids copied EXACTLY from the outline above that this row draws on"],
       "page_start": 11,
       "page_end": 18,
-      "question_type": "MCQS | ONE_WORD | LONG_ANSWER | NUMERIC",
+      "question_type": "MCQS | MCQM | TRUE_FALSE | ONE_WORD | LONG_ANSWER | NUMERIC | PASSAGE | ASSERTION_REASON",
       "count": 10,
       "marks_each": 1,
       "difficulty": "EASY | MEDIUM | HARD",
@@ -408,12 +437,98 @@ async def build_blueprint(
             "map to anything in this knowledge base."
         )
 
+    if spec.get("type_plan"):
+        apply_type_plan(blueprint, spec["type_plan"], selected_node_ids or sorted(valid_ids))
+    if (spec.get("title") or "").strip():
+        blueprint.title = str(spec["title"]).strip()
+    if spec.get("instructions"):
+        # The teacher's own instruction lines replace the model's: what is
+        # printed under "General Instructions" is theirs to decide.
+        blueprint.instructions = [
+            str(line).strip() for line in spec["instructions"] if str(line or "").strip()
+        ]
+    if spec.get("duration_minutes"):
+        blueprint.duration_minutes = int(spec["duration_minutes"])
+    if spec.get("language"):
+        blueprint.language = str(spec["language"])
+
     if blueprint.total_questions > MAX_QUESTIONS_PER_PAPER:
         blueprint.notes.append(
             f"This plan has {blueprint.total_questions} questions; the limit per "
             f"paper is {MAX_QUESTIONS_PER_PAPER}. Reduce some counts before generating."
         )
     return blueprint, usage, model
+
+
+def _section_name(index: int) -> str:
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    return f"Section {letters[index]}" if index < len(letters) else f"Section {index + 1}"
+
+
+def apply_type_plan(
+    blueprint: Blueprint, type_plan: Sequence[Dict[str, Any]], fallback_node_ids: Sequence[str]
+) -> None:
+    """Make the plan match the mix the teacher configured, exactly.
+
+    The model is asked to honour the mix but a language model does not do
+    arithmetic reliably; a teacher who configured "10 MCQs × 1 mark, 5 short
+    answers × 3 marks" must see 10 and 5, not 9 and 6. For each entry, in the
+    teacher's order: keep the model's rows of that type (they carry the
+    material split), rescale their counts to the requested total, set the
+    marks and the section instruction; invent one row on the whole selection
+    when the model planned none. Rows of types not in the mix are dropped.
+    Sections are relettered A, B, C… in mix order.
+    """
+    kept: List[BlueprintRow] = []
+    for index, entry in enumerate(type_plan):
+        qtype = str(entry.get("question_type") or "MCQS").upper()
+        if qtype not in QUESTION_TYPES:
+            qtype = "MCQS"
+        count = max(0, int(entry.get("count") or 0))
+        if count == 0:
+            continue
+        try:
+            marks_each = float(entry.get("marks_each") or 1)
+        except (TypeError, ValueError):
+            marks_each = 1.0
+        instruction = (entry.get("instruction") or "").strip() or None
+        section = _section_name(index)
+
+        rows = [r for r in blueprint.rows if r.question_type == qtype and r not in kept]
+        if not rows:
+            rows = [BlueprintRow(
+                id=f"row-{index + 1}", section=section,
+                topic=str(entry.get("label") or qtype).strip() or qtype,
+                node_ids=list(fallback_node_ids), question_type=qtype,
+                count=count, marks_each=marks_each,
+                difficulty=str(entry.get("difficulty") or "MEDIUM").upper(),
+                instruction=instruction,
+            )]
+        else:
+            planned = sum(max(0, r.count) for r in rows) or len(rows)
+            assigned = 0
+            for i, r in enumerate(rows):
+                if i == len(rows) - 1:
+                    r.count = count - assigned
+                else:
+                    share = max(0, r.count) if planned else 1
+                    r.count = int(round(count * share / planned)) if planned else 0
+                    assigned += r.count
+            # Rounding can leave a row at 0 or push the tail negative; both mean
+            # one row should carry the remainder.
+            if any(r.count < 0 for r in rows):
+                for r in rows:
+                    r.count = 0
+                rows[0].count = count
+            rows = [r for r in rows if r.count > 0]
+        for r in rows:
+            r.section = section
+            r.marks_each = marks_each
+            if instruction and not r.instruction:
+                r.instruction = instruction
+            r.id = r.id if r.id and not any(k.id == r.id for k in kept) else f"row-{len(kept) + 1}"
+            kept.append(r)
+    blueprint.rows = kept
 
 
 # ---------------------------------------------------------------------------
@@ -447,6 +562,24 @@ def _passages_prompt_block(hits: Sequence[Dict[str, Any]]) -> tuple[str, Dict[st
     return "\n\n".join(blocks), figures
 
 
+def syllabus_scope(kb: Dict[str, Any]) -> Optional[str]:
+    """"ICSE Class 10 Physics" when the base is an official SYLLABUS rather
+    than a textbook (the syllabus loader stamps meta.curriculum.kind), else
+    None. A syllabus lists what is examinable; it does not teach it — so the
+    question prompt must treat its passages as scope, not as the only content
+    a question may draw on."""
+    cur = (kb.get("meta") or {}).get("curriculum") or {}
+    if cur.get("kind") != "SYLLABUS":
+        return None
+    cls = str(cur.get("class") or "")
+    parts = [
+        cur.get("exam") or cur.get("board"),          # "JEE Main", not the key
+        f"Class {cls}" if cls.isdigit() else None,    # exams carry "UG", not a class
+        cur.get("subject"),
+    ]
+    return " ".join(str(x) for x in parts if x) or "the official syllabus"
+
+
 def _question_prompt(
     row: BlueprintRow,
     passages: str,
@@ -454,6 +587,7 @@ def _question_prompt(
     language: Optional[str],
     grade: Optional[str],
     start_number: int,
+    syllabus: Optional[str] = None,
 ) -> str:
     figure_block = (
         f"""
@@ -472,6 +606,15 @@ image tag that is not in that list.
             '"choose all that apply". Wrong options must be plausible — a '
             "distractor nobody would pick tests nothing."
         ),
+        "MCQM": (
+            "Exactly 4 options, with TWO OR MORE correct. List every correct option "
+            "in correct_options. Wrong options must be plausible."
+        ),
+        "TRUE_FALSE": (
+            "Exactly 2 options, \"True\" and \"False\" in that order (preview_id 1 and "
+            "2). Exactly one is correct. The statement must be unambiguously one or "
+            "the other from the passages — not a matter of opinion."
+        ),
         "ONE_WORD": "Answer is a single word, number, or very short phrase.",
         "LONG_ANSWER": (
             "A structured answer worth the marks. Provide a model answer with the "
@@ -481,9 +624,54 @@ image tag that is not in that list.
             "A numerical problem with a definite numeric answer. Show the full "
             "working in the explanation, with units."
         ),
+        "PASSAGE": (
+            "Write a short, self-contained comprehension passage (60–120 words) "
+            "in the question content, followed by ONE question about it. Then give "
+            "exactly 4 options and exactly one correct answer. The passage and its "
+            "question must both be grounded in the supplied material."
+        ),
+        "ASSERTION_REASON": (
+            "Write an Assertion and a Reason, then use exactly these four options: "
+            "(1) Both Assertion and Reason are true, and Reason is the correct "
+            "explanation of Assertion; (2) Both are true, but Reason is not the "
+            "correct explanation; (3) Assertion is true, but Reason is false; "
+            "(4) Assertion is false, but Reason is true. Exactly one option must "
+            "be correct and both statements must be supported by the material."
+        ),
     }
 
-    return f"""Write {row.count} exam questions for a teacher, using ONLY the passages below from their own material.
+    if syllabus:
+        # The passages are the board's syllabus: units and the points under
+        # them. They fix the SCOPE; the content comes from the model's own
+        # knowledge of what that board teaches at that level.
+        opening = (
+            f"Write {row.count} exam questions for a teacher setting a paper for {syllabus}.\n"
+            f"The passages below are the OFFICIAL SYLLABUS for {syllabus}. They define what is "
+            f"examinable — they are not teaching material. Draw the actual content from your "
+            f"knowledge of the standard {syllabus} curriculum, and stay strictly inside the "
+            f"syllabus points quoted."
+        )
+        passages_heading = f"THE OFFICIAL SYLLABUS ({syllabus}):"
+        grounding_rules = (
+            "- Every question must fall under a syllabus point quoted above; never test a topic\n"
+            "  the syllabus does not list, even if it is common at this level.\n"
+            "- \"source_passage\" and \"source_page\" must point at the syllabus line the question\n"
+            "  falls under. A teacher checks these against the syllabus."
+        )
+    else:
+        opening = (
+            f"Write {row.count} exam questions for a teacher, using ONLY the passages below "
+            f"from their own material."
+        )
+        passages_heading = "PASSAGES FROM THE TEACHER'S MATERIAL:"
+        grounding_rules = (
+            f"- Ground EVERY question in the passages. If the passages do not support {row.count}\n"
+            "  distinct questions, return fewer — a padded paper is worse than a short one.\n"
+            "- \"source_passage\" and \"source_page\" must point at the passage you actually used.\n"
+            "  A teacher checks these; a wrong citation destroys trust in the whole paper."
+        )
+
+    return f"""{opening}
 
 SECTION: {row.section} — {row.topic}
 TYPE: {row.question_type} — {type_rules.get(row.question_type, '')}
@@ -492,7 +680,7 @@ MARKS EACH: {row.marks_each}
 {f'CLASS/LEVEL: {grade}' if grade else ''}
 {f'WRITE THE QUESTIONS IN: {language}' if language else ''}
 {figure_block}
-PASSAGES FROM THE TEACHER'S MATERIAL:
+{passages_heading}
 {passages}
 
 Return STRICT JSON, no prose, no markdown fence:
@@ -518,23 +706,26 @@ Return STRICT JSON, no prose, no markdown fence:
       "level": "{row.difficulty.lower()}",
       "tags": ["concept names this tests"],
       "source_passage": "P1",
-      "source_page": 14
+      "source_page": 14,
+      "diagram_needed": null
     }}
   ]
 }}
 
 RULES THAT MATTER:
+- "diagram_needed": normally null. Only when the question CANNOT be answered
+  without a figure and no DIAGRAMS AVAILABLE tag fits, describe in one line the
+  simple labelled diagram to draw (e.g. "a series circuit with a 6 V cell, two
+  resistors R1 = 2 Ω and R2 = 4 Ω, and an ammeter"). It is drawn separately, so
+  the question text must still read correctly on its own.
 - "marking_steps" is what a teacher marks from: at most 6 short steps, each one
   line. NEVER put your reasoning in it. No "Let's re-examine", no "However, the
   provided solution…", no discussion of whether the source is ambiguous, no
   mention of these instructions. If the source material is unclear, silently
   pick the best-supported answer and give clean working for THAT.
-- For MCQS give EXACTLY ONE correct option. If more than one option is
-  defensible, rewrite the options so only one is.
-- Ground EVERY question in the passages. If the passages do not support {row.count}
-  distinct questions, return fewer — a padded paper is worse than a short one.
-- "source_passage" and "source_page" must point at the passage you actually used.
-  A teacher checks these; a wrong citation destroys trust in the whole paper.
+- For MCQS, TRUE_FALSE, PASSAGE and ASSERTION_REASON give EXACTLY ONE correct option. If more than one option
+  is defensible, rewrite the options so only one is. For MCQM give at least two.
+{grounding_rules}
 - Preserve the source's notation exactly, including LaTeX like $E_k=\\frac{{1}}{{2}}mv^2$.
 - JSON REQUIRES every backslash to be doubled. Write \\\\sqrt, \\\\int, \\\\pi, \\\\frac —
   NOT \\sqrt. A single backslash makes the whole response invalid and it is thrown away.
@@ -553,6 +744,7 @@ class GeneratedPaper:
     model: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
     per_row: Dict[str, int] = field(default_factory=dict)           # row id → delivered count
+    diagrams_drawn: int = 0                                          # billed per image
 
 
 # Openers that mark the model thinking out loud rather than explaining an answer.
@@ -653,6 +845,89 @@ def _substitute_figures(
     return re.sub(r"\[(FIG\d+)\]", repl, content or "")
 
 
+# A drawn diagram is ~70 s of an image model; six is a paper's worth and a
+# bounded wait. The rest keep their description in kb_meta for a teacher to
+# supply by hand.
+MAX_DIAGRAMS_PER_PAPER = 6
+_DIAGRAM_SEMAPHORE = asyncio.Semaphore(2)
+_DIAGRAM_TIMEOUT_S = 150
+
+
+async def _draw_diagram(description: str) -> Optional[str]:
+    """One exam-style figure for a question, as a public S3 URL (None on failure).
+
+    Same route as document illustrations (ImageGenerationService → OpenRouter
+    image model → S3), with an exam-figure style: black line art, labelled,
+    nothing decorative — the way a printed paper draws a circuit or a ray
+    diagram.
+    """
+    from ...config import get_settings
+    from ..image_service import ImageGenerationService
+    from ..s3_service import S3Service
+
+    settings = get_settings()
+    key = getattr(settings, "openrouter_api_key", None)
+    if not key:
+        return None
+    prompt = (
+        f"A clean black-and-white line diagram for a school exam question: {description}. "
+        "Textbook figure style: thin black lines on a white background, clear labels in "
+        "plain sans-serif, no colour fill, no shading, no decoration, no extra text, "
+        "no watermark."
+    )
+    svc = ImageGenerationService(openrouter_api_key=key)
+    try:
+        async with _DIAGRAM_SEMAPHORE:
+            image_bytes, _usage = await asyncio.wait_for(
+                svc._call_image_generation_llm(prompt, 1024, 768),
+                timeout=_DIAGRAM_TIMEOUT_S,
+            )
+        if not image_bytes:
+            return None
+        import secrets
+
+        return await asyncio.to_thread(
+            S3Service().upload_file_content,
+            image_bytes,
+            "diagram.png",
+            s3_key=f"kb-papers/diagrams/{secrets.token_urlsafe(12)}.png",
+            content_type="image/png",
+        )
+    except Exception:  # noqa: BLE001 — a missing figure is a review-board note, not a failed paper
+        logger.warning("Diagram generation failed for %r", description[:80], exc_info=True)
+        return None
+
+
+async def attach_generated_diagrams(questions: List[Dict[str, Any]]) -> int:
+    """Draw the diagrams the writer asked for and place them under the question
+    text. Returns how many were drawn (what gets billed)."""
+    wanted = [
+        q for q in questions
+        if str(q.get("diagram_needed") or "").strip()
+        and "<img" not in ((q.get("question") or {}).get("content") or "")
+    ][:MAX_DIAGRAMS_PER_PAPER]
+    if not wanted:
+        return 0
+    urls = await asyncio.gather(*(_draw_diagram(str(q["diagram_needed"])) for q in wanted))
+    drawn = 0
+    for q, url in zip(wanted, urls):
+        meta = q.setdefault("kb_meta", {})
+        if not url:
+            meta["diagram_missing"] = str(q["diagram_needed"])
+            continue
+        content = (q.get("question") or {}).get("content") or ""
+        import html as _html
+
+        q["question"]["content"] = (
+            f'{content}<p><img src="{_html.escape(url, quote=True)}" '
+            f'alt="{_html.escape(str(q["diagram_needed"])[:120], quote=True)}"></p>'
+        )
+        meta.setdefault("figures", []).append({"image_url": url, "page_number": None, "generated": True})
+        meta["diagram_generated"] = str(q["diagram_needed"])
+        drawn += 1
+    return drawn
+
+
 async def generate_questions(
     db: Session,
     *,
@@ -660,6 +935,7 @@ async def generate_questions(
     institute_id: str,
     blueprint: Blueprint,
     grade: Optional[str] = None,
+    generate_diagrams: bool = False,
 ) -> GeneratedPaper:
     """Generate every question in a blueprint, row by row, in bounded parallel.
 
@@ -677,6 +953,7 @@ async def generate_questions(
     models = [primary, *fallbacks]
     result.model = primary
     language = blueprint.language
+    syllabus = syllabus_scope(kb)
     semaphore = asyncio.Semaphore(GENERATION_CONCURRENCY)
 
     # Stable numbering across rows, assigned up front so concurrent rows cannot
@@ -686,6 +963,28 @@ async def generate_questions(
     for row in blueprint.rows:
         numbering[row.id] = running
         running += row.count
+
+    # Pin each row's retrieval to the SOURCES its nodes belong to — on an
+    # AUTHORED (textbook) tree only, where every node is one chapter, so
+    # "Chapter 5 rows" can only ever retrieve Chapter 5; a similarity search
+    # over the whole book would happily answer "Introduction" from whichever
+    # chapter's intro embeds closest. Every other kind of base keeps the
+    # KB-wide search it always had (a blueprint planned from the summary
+    # outline also carries source-bound section nodes, and pinning those would
+    # be a behaviour change for existing users). Resolved once, on the request
+    # session, before the rows fan out onto their own sessions.
+    authored = (kb.get("meta") or {}).get("topic_tree_mode") == "AUTHORED"
+    row_sources: Dict[str, List[str]] = {
+        row.id: (repo.get_node_source_ids(kb_id, row.node_ids) if authored else [])
+        for row in blueprint.rows
+    }
+    if authored:
+        for row in blueprint.rows:
+            if row.node_ids and not row_sources.get(row.id):
+                logger.warning(
+                    "Paper row %r references node ids no longer in the tree; "
+                    "falling back to a book-wide search", row.topic,
+                )
 
     async def do_row(row: BlueprintRow) -> List[Dict[str, Any]]:
         if row.count <= 0:
@@ -708,6 +1007,7 @@ async def generate_questions(
                 hits = await KbRetrievalService(row_db).search(
                     kb_id=kb_id, institute_id=institute_id, query=query,
                     top_k=PASSAGES_PER_ROW, similarity_threshold=0.2,
+                    source_ids=row_sources.get(row.id) or None,
                 )
         except Exception as exc:  # noqa: BLE001
             logger.warning("Retrieval failed for row %s: %s", row.id, exc)
@@ -735,6 +1035,7 @@ async def generate_questions(
                         _question_prompt(
                             batch_row, passages, list(figures.keys()),
                             language, grade, start + len(produced),
+                            syllabus=syllabus,
                         ),
                         models,
                         label=f"kb-paper-{row.id}",
@@ -784,6 +1085,9 @@ async def generate_questions(
                     "topic": row.topic,
                     "marks": row.marks_each,
                     "source_page": q.get("source_page"),
+                    # The topic nodes this row drew on. Carried through to the saved
+                    # question so the bank can later be filtered by topic.
+                    "node_ids": list(row.node_ids or []),
                     # What the teacher ASKED for, which may differ from what the
                     # platform stores (see STORAGE_QUESTION_TYPE). The review
                     # board shows this one.
@@ -822,6 +1126,9 @@ async def generate_questions(
         len(result.questions), blueprint.total_questions, len(blueprint.rows),
         result.prompt_tokens, result.completion_tokens,
     )
+    if generate_diagrams and result.questions:
+        result.diagrams_drawn = await attach_generated_diagrams(result.questions)
+
     return result
 
 
@@ -860,12 +1167,14 @@ def validate_paper(blueprint: Blueprint, questions: Sequence[Dict[str, Any]]) ->
                 num, "warning", "missing_answer",
                 "No explanation or marking scheme — a teacher cannot mark this consistently.",
             ))
-        if qtype == "MCQS":
+        if qtype in OPTION_QUESTION_TYPES:
             options = q.get("options") or []
-            if len(options) != 4:
+            # TRUE_FALSE has two options by definition; the others are 4-option.
+            expected_options = 2 if qtype == "TRUE_FALSE" else 4
+            if len(options) != expected_options:
                 issues.append(PaperIssue(
                     num, "error", "bad_options",
-                    f"{len(options)} option(s) instead of 4.",
+                    f"{len(options)} option(s) instead of {expected_options}.",
                 ))
             correct = q.get("correct_options") or []
             if not correct:
@@ -878,14 +1187,23 @@ def validate_paper(blueprint: Blueprint, questions: Sequence[Dict[str, Any]]) ->
                         num, "error", "missing_answer",
                         f"Correct option {stray} does not match any option on this question.",
                     ))
-                # MCQS is single-choice. Two correct answers means the student
-                # cannot score it and the auto-evaluation is wrong — seen live on
-                # a generated paper that otherwise "passed all checks".
-                if len(set(map(str, correct))) > 1:
+                distinct_correct = len(set(map(str, correct)))
+                # MCQS and TRUE_FALSE are single-choice. Two correct answers means the
+                # student cannot score it and the auto-evaluation is wrong — seen live
+                # on a generated paper that otherwise "passed all checks".
+                if qtype != "MCQM" and distinct_correct > 1:
                     issues.append(PaperIssue(
                         num, "error", "bad_options",
-                        f"{len(set(map(str, correct)))} options are marked correct, but this "
+                        f"{distinct_correct} options are marked correct, but this "
                         "is a single-choice question.",
+                    ))
+                # MCQM with one correct option is an MCQS wearing the wrong label: the
+                # learner sees checkboxes for a question that has a single answer.
+                if qtype == "MCQM" and distinct_correct < 2:
+                    issues.append(PaperIssue(
+                        num, "warning", "bad_options",
+                        "Only one option is marked correct on a multiple-correct "
+                        "question — it should be single-choice instead.",
                     ))
 
         # Unsubstituted figure placeholders make a question unanswerable.
@@ -958,8 +1276,94 @@ def validate_paper(blueprint: Blueprint, questions: Sequence[Dict[str, Any]]) ->
     return issues
 
 
+def _provenance(
+    raw: Dict[str, Any], kb_id: Optional[str], generation_id: Optional[str]
+) -> Dict[str, Any]:
+    """What the question bank stores about where this question came from.
+
+    Everything here is already known at generation time and was previously thrown
+    away at the save boundary, which is why a saved KB question could not be traced
+    back to its book, its topic or its page — and therefore could never be found
+    again to reuse.
+    """
+    meta = raw.get("kb_meta") or {}
+    return {
+        "kb_id": kb_id,
+        "generation_id": generation_id,
+        "row_id": meta.get("row_id"),
+        # The marks and section the paper printed for this question. The
+        # assessment builder pre-fills per-question marks from these on import,
+        # so a mixed paper (1-mark MCQs, 3-mark short answers) is not flattened
+        # to one section default — which would also mis-set the AI checker's
+        # maximum for every question.
+        "marks": meta.get("marks"),
+        "section": meta.get("section"),
+        "topic": meta.get("topic"),
+        "node_ids": meta.get("node_ids") or [],
+        # kb_meta.source_page is the one the model cited and the review board shows.
+        "source_page": meta.get("source_page") or raw.get("source_page"),
+        "figures": meta.get("figures") or [],
+        "planned_type": meta.get("planned_type"),
+    }
+
+
+def marking_rubric(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """The paper's marking scheme in the shape the AI evaluator grades against.
+
+    assessment_service's evaluator (AiEvaluationAsyncService) reads
+    `evaluation_criteria_json` — {max_marks, rubric:[{criteria_name, max_marks,
+    keywords, evaluation_guidelines}]} — and, when it is empty, invents a rubric
+    from the question text alone. A generated paper already has the scheme the
+    teacher reviewed (`marking_steps`), so it is handed over as the rubric:
+    what the answer key prints is what the checker marks against.
+    """
+    meta = raw.get("kb_meta") or {}
+    try:
+        max_marks = float(meta.get("marks") or 1)
+    except (TypeError, ValueError):
+        max_marks = 1.0
+    steps = [str(s).strip() for s in (raw.get("marking_steps") or []) if str(s or "").strip()]
+    tags = [str(t) for t in (raw.get("tags") or []) if str(t or "").strip()]
+    qtype = str(raw.get("question_type") or "").upper()
+    if qtype in OPTION_QUESTION_TYPES or qtype in ("ONE_WORD", "TRUE_FALSE") or not steps:
+        rubric = [{
+            "criteria_name": "Correct answer",
+            "max_marks": max_marks,
+            "keywords": tags,
+            "evaluation_guidelines": (
+                "Full marks for the correct answer as given in the answer key; "
+                "no partial marks." if not steps else " ".join(steps)
+            ),
+        }]
+    else:
+        # Equal split with the remainder on the final step (the answer), so the
+        # rubric always sums to exactly the question's marks.
+        share = round(max_marks / len(steps), 2)
+        rubric = [
+            {
+                "criteria_name": f"Step {i + 1}",
+                "max_marks": share if i < len(steps) - 1 else round(max_marks - share * (len(steps) - 1), 2),
+                "keywords": tags if i == len(steps) - 1 else [],
+                "evaluation_guidelines": step,
+            }
+            for i, step in enumerate(steps)
+        ]
+    return {
+        "max_marks": max_marks,
+        "partial_marking_enabled": len(rubric) > 1,
+        "evaluation_instructions": (
+            "Mark step-wise against the scheme below. Award a step's marks when the "
+            "student's working shows it, in any equivalent form; do not penalise a "
+            "correct method for a slip that was carried forward."
+        ),
+        "rubric": rubric,
+    }
+
+
 def pair_with_formatted(
     raw_questions: Sequence[Dict[str, Any]],
+    kb_id: Optional[str] = None,
+    generation_id: Optional[str] = None,
 ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
     """Format questions ONE AT A TIME so the two lists can never drift apart.
 
@@ -971,6 +1375,9 @@ def pair_with_formatted(
 
     Returns (raw_kept, formatted, warnings), guaranteed equal length and aligned.
     Anything dropped is reported rather than vanishing.
+
+    Also stamps each formatted question with its provenance, which the question bank
+    persists (assessment_service V42) so these questions stay findable afterwards.
     """
     from ..question_format import format_questions
 
@@ -985,8 +1392,16 @@ def pair_with_formatted(
             logger.warning("Formatting failed for question %s: %s", raw.get("question_number"), exc)
             out = []
         if out:
+            question = out[0]
+            question["source_type"] = "KNOWLEDGE_BASE"
+            question["source_meta"] = json.dumps(
+                _provenance(raw, kb_id, generation_id), ensure_ascii=False
+            )
+            question["evaluation_criteria_json"] = json.dumps(
+                marking_rubric(raw), ensure_ascii=False
+            )
             raw_kept.append(raw)
-            formatted.append(out[0])
+            formatted.append(question)
         else:
             dropped.append(raw.get("question_number"))
 
@@ -1003,5 +1418,7 @@ def pair_with_formatted(
 __all__ = [
     "Blueprint", "BlueprintRow", "GeneratedPaper", "PaperIssue",
     "build_blueprint", "generate_questions", "validate_paper", "pair_with_formatted",
-    "MAX_QUESTIONS_PER_PAPER", "QUESTION_TYPES", "STORAGE_QUESTION_TYPE",
+    "marking_rubric",
+    "MAX_QUESTIONS_PER_PAPER", "QUESTION_TYPES", "OPTION_QUESTION_TYPES",
+    "STORAGE_QUESTION_TYPE",
 ]

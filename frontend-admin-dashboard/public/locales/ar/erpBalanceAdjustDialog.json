@@ -1,0 +1,31 @@
+{
+    "heading": "تعديل رصيد الإجازة",
+    "cancel": "إلغاء",
+    "applyAdjustment": "تطبيق التعديل",
+    "adjusting": "جارٍ التعديل…",
+    "leave": "إجازة",
+    "closingBalance": "الرصيد الختامي {{value}} يوم",
+    "adjustmentExplainer": {
+        "before": "التعديل تصحيح مطلق يُضاف إلى الرصيد — وليس الرصيد الذي تريد الوصول إليه. أدخل",
+        "middle": "لمنح يوم ونصف، أو",
+        "after": "لخصم يومين."
+    },
+    "fields": {
+        "adjustmentLabel": "التعديل بالأيام",
+        "adjustmentHelpDefault": "الكسور العشرية مسموحة — 0.5 تعني نصف يوم.",
+        "adjustmentHelpProjected": "سيصبح الرصيد الختامي {{value}} يوم.",
+        "reasonLabel": "السبب",
+        "reasonPlaceholder": "سبب تصحيح الرصيد",
+        "reasonHelp": "يُحفظ في السجل ليرى المسؤول التالي سبب تغيّر الرقم."
+    },
+    "toasts": {
+        "adjusted": "تم تعديل الرصيد"
+    },
+    "errors": {
+        "correctionRequired": "أدخل التصحيح، مثل 1.5 أو -2",
+        "numbersOnly": "أرقام فقط — استخدم علامة سالب في البداية لخصم أيام",
+        "notZero": "الصفر لن يغيّر شيئًا",
+        "reasonLength": "اجعل السبب أقل من 500 حرف",
+        "adjustFailed": "تعذّر تعديل هذا الرصيد."
+    }
+}

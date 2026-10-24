@@ -23,6 +23,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Component
 @Slf4j
 public class UserDetailsRestServiceImpl implements UserDetailsService {
@@ -45,12 +48,16 @@ public class UserDetailsRestServiceImpl implements UserDetailsService {
         String sessionToken = extractSessionToken();
 
         // Build endpoint URL with service name and optional session token
+        // Percent-encode every query value. The username is an email, which can
+        // legitimately contain '+', '&' and non-ASCII characters — unencoded, those
+        // either truncate the query string or get mangled downstream. Paired with
+        // makeHmacRequestWithEncodedRoute so nothing encodes them a second time.
         String endpoint = AuthConstant.userServiceRoute
-                + "?userName=" + username
-                + "&serviceName=" + clientName
-                + (sessionToken != null ? "&sessionToken=" + sessionToken : "");
+                + "?userName=" + encode(username)
+                + "&serviceName=" + encode(clientName)
+                + (sessionToken != null ? "&sessionToken=" + encode(sessionToken) : "");
 
-        ResponseEntity<String> response = hmacClientUtils.makeHmacRequest(
+        ResponseEntity<String> response = hmacClientUtils.makeHmacRequestWithEncodedRoute(
                 clientName,
                 HttpMethod.GET.name(),
                 authServerBaseUrl,
@@ -108,5 +115,9 @@ public class UserDetailsRestServiceImpl implements UserDetailsService {
     private String generateSessionIdFromToken(String token) {
         // Generate consistent session ID from JWT token
         return "session_" + Integer.toHexString(token.hashCode());
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 }

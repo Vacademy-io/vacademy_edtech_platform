@@ -1,0 +1,79 @@
+{
+    "modes": {
+        "SYSTEM_ALERT": {
+            "label": "تنبيه النظام",
+            "description": "يظهر في مركز الإشعارات مع أولوية وانتهاء صلاحية اختياري."
+        },
+        "DASHBOARD_PIN": {
+            "label": "تثبيت في لوحة التحكم",
+            "description": "يُثبّت في لوحة التحكم لفترة زمنية محددة."
+        },
+        "APP_OVERLAY": {
+            "label": "طبقة تراكب التطبيق",
+            "description": "رسالة بملء الشاشة تظهر في المرة القادمة التي يُفتح فيها التطبيق."
+        },
+        "DM": {
+            "label": "رسالة مباشرة",
+            "description": "تصل إلى صندوق الوارد كرسالة. يمكن السماح بالردود."
+        },
+        "STREAM": {
+            "label": "تدفق النقاش",
+            "description": "تُنشر في تدفق نقاش دفعة أو صف دراسي."
+        },
+        "RESOURCES": {
+            "label": "الموارد",
+            "description": "يودع الإعلان في مجلد موارد."
+        },
+        "COMMUNITY": {
+            "label": "المجتمع",
+            "description": "تُنشر في تغذية المجتمع."
+        },
+        "TASKS": {
+            "label": "المهام",
+            "description": "ينشئ مهمة بوقت انطلاق وموعد نهائي."
+        }
+    },
+    "mediums": {
+        "PUSH_NOTIFICATION": {
+            "label": "إشعار فوري",
+            "description": "إشعار فوري على الجوال والويب. مجاني وفوري، الأنسب للتذكيرات القصيرة."
+        },
+        "EMAIL": {
+            "label": "البريد الإلكتروني",
+            "description": "بريد إلكتروني بتنسيق HTML غني من أحد عناوين الإرسال الموثّقة لديك."
+        },
+        "WHATSAPP": {
+            "label": "واتساب",
+            "description": "يُرسل عبر قالب واتساب بزنس معتمد."
+        }
+    },
+    "presets": {
+        "GENERAL": {
+            "label": "إعلان عام",
+            "description": "تحديثات ومعلومات عامة"
+        },
+        "PINNED": {
+            "label": "تحديث مثبّت",
+            "description": "تحديثات مهمة مثبّتة في الأعلى"
+        }
+    },
+    "whatsappValues": {
+        "RECIPIENT_NAME": "اسم المستلم",
+        "RECIPIENT_FULL_NAME": "الاسم الكامل",
+        "RECIPIENT_USERNAME": "اسم المستخدم",
+        "RECIPIENT_EMAIL": "البريد الإلكتروني",
+        "RECIPIENT_PHONE": "رقم الجوال",
+        "RECIPIENT_ID": "معرّف المستخدم",
+        "ANNOUNCEMENT_TITLE": "عنوان الإعلان",
+        "ANNOUNCEMENT_CONTENT": "محتوى الإعلان",
+        "SENDER_NAME": "اسم المُرسِل",
+        "CURRENT_DATE": "تاريخ اليوم",
+        "CURRENT_TIME": "الوقت الحالي",
+        "CUSTOM": "نص مخصص…"
+    },
+    "cronPresets": {
+        "DAILY_9": "كل يوم، الساعة 9:00 صباحًا",
+        "MON_9": "كل يوم إثنين، الساعة 9:00 صباحًا",
+        "HOURLY": "كل ساعة"
+    }
+}

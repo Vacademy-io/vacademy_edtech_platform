@@ -1,0 +1,6 @@
+{
+    "comprehensionText": "Texte de compréhension",
+    "optionLabelFallback": "({{letter}}.)",
+    "duplicateSlide": "Dupliquer la diapositive",
+    "deleteSlide": "Supprimer la diapositive"
+}

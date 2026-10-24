@@ -1,0 +1,51 @@
+{
+    "title": "Adjust Installment",
+    "summary": {
+        "feeType": "Fee Type",
+        "expected": "Expected",
+        "paid": "Paid",
+        "due": "Due"
+    },
+    "type": {
+        "concession": "Concession",
+        "penalty": "Penalty"
+    },
+    "current": {
+        "heading": "Current Adjustment"
+    },
+    "reasonPrefix": "Reason: {{reason}}",
+    "actions": {
+        "retract": "Retract Adjustment",
+        "submitPenalty": "Apply Penalty",
+        "submitConcession": "Submit for Approval",
+        "submitting": "Submitting..."
+    },
+    "form": {
+        "concessionHint": "Decreases due amount",
+        "concessionApproval": "Requires approval",
+        "penaltyHint": "Increases due amount",
+        "penaltyInstant": "Applied instantly",
+        "amountLabel": "Amount",
+        "amountPlaceholder": "Enter amount",
+        "reasonLabel": "Reason",
+        "reasonPlaceholderConcession": "e.g., Scholarship, Financial hardship",
+        "reasonPlaceholderPenalty": "e.g., Late payment, Policy violation"
+    },
+    "toast": {
+        "penaltyApplied": "Penalty applied",
+        "concessionSubmitted": "Concession submitted for approval",
+        "submitFailed": "Failed to submit adjustment",
+        "retracted": "Adjustment retracted",
+        "retractFailed": "Failed to retract adjustment",
+        "selectType": "Select Concession or Penalty",
+        "invalidAmount": "Enter a valid amount",
+        "exceedsExpected": "Concession cannot exceed expected amount"
+    },
+    "history": {
+        "heading": "History",
+        "loading": "Loading history…",
+        "empty": "No adjustment activity yet.",
+        "by": "by {{actor}}",
+        "page": "Page {{current}} of {{total}}"
+    }
+}

@@ -176,6 +176,14 @@ export interface InvoiceSettingsData {
      */
     numbering: InvoiceNumberingConfig;
     /**
+     * Extra receipt series picked by a learner field (e.g. one per branch); a learner no
+     * series matches stays on {@link numbering}. Top-level on purpose: {@link numbering} is
+     * rebuilt from a fixed key list on load. Read by InvoiceNumberConfig on the backend.
+     */
+    numberingSeries?: InvoiceNumberingSeries[];
+    /** Whether the record-payment dialogs ask for the series field on an enrolment's first payment. */
+    numberingSeriesPolicy?: InvoiceNumberingSeriesPolicy;
+    /**
      * Institute-level invoice defaults set from the admin Create-Invoice dialog (Review
      * step "Institute" group) — corrected institute name/address/contact and default
      * notes, remembered so future invoices (by any admin) prefill them. Not editable
@@ -187,6 +195,37 @@ export interface InvoiceSettingsData {
     instituteAddressOverride?: string;
     instituteContactOverride?: string;
     defaultNotes?: string;
+    /**
+     * Template ids the admin marked default in the Templates sections (INVOICE PDF layout /
+     * INVOICE_EMAIL body). Owned by {@link setDefaultInvoiceTemplate} only; when absent, or
+     * the template was deleted, the backend uses the newest template of that type.
+     */
+    defaultInvoiceTemplateId?: string;
+    defaultInvoiceEmailTemplateId?: string;
+}
+
+/** INVOICE_SETTING key holding the default template id for each invoice template type. */
+export const DEFAULT_TEMPLATE_SETTING_KEYS = {
+    INVOICE: 'defaultInvoiceTemplateId',
+    INVOICE_EMAIL: 'defaultInvoiceEmailTemplateId',
+} as const;
+
+export type InvoiceTemplateType = keyof typeof DEFAULT_TEMPLATE_SETTING_KEYS;
+
+/** One extra receipt series: its own format and counter, for learners with one of `values`. */
+export interface InvoiceNumberingSeries {
+    /** Names the counter; A-Z 0-9 _, at most 16. Never reuse one for something else. */
+    key: string;
+    format: string;
+    startFrom: number;
+    learnerFieldId: string;
+    values: string[];
+}
+
+export interface InvoiceNumberingSeriesPolicy {
+    askOnFirstPayment: boolean;
+    required: boolean;
+    fieldId?: string | null;
 }
 
 export const SETTING_KEY = 'INVOICE_SETTING';
@@ -306,6 +345,9 @@ const normalize = (raw: Partial<InvoiceSettingsData> | null | undefined): Invoic
         }
     }
     return {
+        // Keys this page does not edit (e.g. termsAndConditions, set from the backend) must
+        // survive a save: INVOICE_SETTING writes are a full overwrite, not a merge.
+        ...base,
         taxIncluded: base.taxIncluded ?? DEFAULT_INVOICE_SETTINGS.taxIncluded,
         taxRate: Number(base.taxRate ?? DEFAULT_INVOICE_SETTINGS.taxRate) || 0,
         taxLabel: base.taxLabel ?? DEFAULT_INVOICE_SETTINGS.taxLabel,
@@ -429,11 +471,69 @@ export const fetchInvoiceNumberingState = async (): Promise<InvoiceNumberingStat
     }
 };
 
-export const saveInvoiceSettings = async (data: InvoiceSettingsData): Promise<void> => {
+/** The stored INVOICE_SETTING exactly as saved (no defaults applied), or null if never saved. */
+const fetchRawInvoiceSettings = async (): Promise<Record<string, unknown> | null> => {
+    const instituteId = getCurrentInstituteId();
+    const response = await authenticatedAxiosInstance({
+        method: 'GET',
+        url: GET_INSITITUTE_SETTINGS,
+        params: { instituteId, settingKey: SETTING_KEY },
+    });
+    const raw = response.data?.data;
+    return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null;
+};
+
+const postInvoiceSettings = async (data: object): Promise<void> => {
     const instituteId = getCurrentInstituteId();
     await authenticatedAxiosInstance.post(
         SAVE_INSTITUTE_SETTING,
         { setting_name: 'Invoice Setting', setting_data: data },
         { params: { instituteId, settingKey: SETTING_KEY } }
     );
+};
+
+export const saveInvoiceSettings = async (data: InvoiceSettingsData): Promise<void> => {
+    // The default-template keys are set from the Templates sections on this same page,
+    // possibly after this form loaded. Keep the stored values so saving the form never
+    // reverts a default picked meanwhile (INVOICE_SETTING writes are a full overwrite).
+    let payload: InvoiceSettingsData = data;
+    try {
+        const current = await fetchRawInvoiceSettings();
+        payload = {
+            ...data,
+            defaultInvoiceTemplateId: current?.defaultInvoiceTemplateId as string | undefined,
+            defaultInvoiceEmailTemplateId: current?.defaultInvoiceEmailTemplateId as string | undefined,
+        };
+    } catch {
+        // Fall back to the values the form loaded with.
+    }
+    await postInvoiceSettings(payload);
+};
+
+/** Default template ids per type, read fresh from the stored setting. */
+export const fetchDefaultInvoiceTemplateIds = async (): Promise<
+    Record<InvoiceTemplateType, string | null>
+> => {
+    const raw = await fetchRawInvoiceSettings();
+    const read = (key: string) => (typeof raw?.[key] === 'string' && raw[key] ? (raw[key] as string) : null);
+    return {
+        INVOICE: read(DEFAULT_TEMPLATE_SETTING_KEYS.INVOICE),
+        INVOICE_EMAIL: read(DEFAULT_TEMPLATE_SETTING_KEYS.INVOICE_EMAIL),
+    };
+};
+
+/**
+ * Mark `templateId` as the default template of `type`. Only that one key changes: the rest
+ * of the stored setting is written back as it is (an institute that never saved invoice
+ * settings gets the same defaults the settings page would save).
+ */
+export const setDefaultInvoiceTemplate = async (
+    type: InvoiceTemplateType,
+    templateId: string
+): Promise<void> => {
+    const raw = await fetchRawInvoiceSettings();
+    await postInvoiceSettings({
+        ...(raw ?? DEFAULT_INVOICE_SETTINGS),
+        [DEFAULT_TEMPLATE_SETTING_KEYS[type]]: templateId,
+    });
 };

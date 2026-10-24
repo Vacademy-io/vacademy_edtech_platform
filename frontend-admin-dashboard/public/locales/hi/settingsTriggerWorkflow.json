@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "वर्कफ़्लो ट्रिगर करें",
+        "descriptionPrefix": "इसके लिए ऑटोमेशन चलाएं",
+        "descriptionSuffix": "जब कोई लीड इवेंट होता है।"
+    },
+    "actionType": {
+        "label": "आप क्या करना चाहते हैं?",
+        "communication": {
+            "title": "संचार",
+            "description": "ईमेल या व्हाट्सएप संदेश भेजें।"
+        },
+        "payload": {
+            "title": "पेलोड में डेटा पेस्ट करें",
+            "description": "इवेंट डेटा को किसी URL पर POST करें।"
+        }
+    },
+    "event": {
+        "label": "किस इवेंट पर ट्रिगर करें?",
+        "placeholder": "एक लीड इवेंट चुनें",
+        "options": {
+            "leadAssignedToCounselor": "लीड काउंसलर को असाइन की गई",
+            "leadTatReminderBefore": "लीड TAT रिमाइंडर (ब्रीच से पहले)",
+            "leadTatOverdue": "लीड TAT ओवरड्यू",
+            "followUpDue": "फॉलो-अप ड्यू",
+            "followUpOverdue": "फॉलो-अप ओवरड्यू",
+            "leadStatusChanged": "लीड की स्थिति बदली गई"
+        }
+    },
+    "statusGate": {
+        "label": "स्थिति बदलकर होने पर",
+        "placeholder": "कोई भी स्थिति",
+        "anyStatusChange": "किसी भी स्थिति में बदलाव",
+        "hint": "लीड की नई स्थिति से मेल खाता है। केवल उस बदलाव पर ट्रिगर करने के लिए कोई स्थिति चुनें, या \"किसी भी स्थिति में बदलाव\" बनाए रखें।"
+    },
+    "channel": {
+        "label": "चैनल",
+        "email": "ईमेल",
+        "whatsapp": "व्हाट्सएप"
+    },
+    "recipient": {
+        "label": "सूचना किसे भेजें",
+        "counselor": "असाइन किया गया काउंसलर (डिफ़ॉल्ट)",
+        "lead": "लीड का अपना संपर्क"
+    },
+    "template": {
+        "label": "टेम्पलेट",
+        "createSample": "सैंपल टेम्पलेट बनाएं",
+        "creatingSample": "सैंपल बनाया जा रहा है…",
+        "placeholder": "एक टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से कोई टेम्पलेट मेल नहीं खाता।",
+        "noneFoundEmail": "कोई ईमेल टेम्पलेट नहीं मिला। तैयार शुरुआती टेम्पलेट के लिए ऊपर \"सैंपल टेम्पलेट बनाएं\" पर क्लिक करें।",
+        "noneFoundWhatsapp": "कोई व्हाट्सएप टेम्पलेट नहीं मिला। पहले एक स्वीकृत व्हाट्सएप टेम्पलेट बनाएं।"
+    },
+    "payload": {
+        "label": "डेस्टिनेशन URL",
+        "placeholder": "https://example.com/webhook",
+        "hint": "इवेंट का संदर्भ (लीड, काउंसलर, पूल आदि) JSON के रूप में POST किया जाता है।"
+    },
+    "name": {
+        "label": "वर्कफ़्लो का नाम",
+        "placeholder": "जैसे, फॉलो-अप ड्यू होने पर अभिभावक को सूचित करें"
+    },
+    "description": {
+        "label": "विवरण",
+        "optional": "(वैकल्पिक)",
+        "placeholder": "यह वर्कफ़्लो क्या करता है?"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "creating": "बनाया जा रहा है…",
+        "create": "वर्कफ़्लो बनाएं"
+    },
+    "toasts": {
+        "sampleCreated": "सैंपल टेम्पलेट \"{{name}}\" बनाया गया",
+        "noSampleTemplate": "इस इवेंट के लिए कोई सैंपल टेम्पलेट उपलब्ध नहीं है।",
+        "sampleCreateFailed": "टेम्पलेट बनाने में विफल",
+        "workflowCreated": "वर्कफ़्लो बनाया गया",
+        "workflowCreateFailed": "वर्कफ़्लो बनाने में विफल"
+    }
+}

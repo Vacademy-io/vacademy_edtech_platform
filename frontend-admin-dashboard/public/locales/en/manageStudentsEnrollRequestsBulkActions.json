@@ -1,0 +1,6 @@
+{
+    "selectedCount_one": "[{{count}}] Selected",
+    "selectedCount_other": "[{{count}}] Selected",
+    "reset": "Reset",
+    "bulkActions": "Bulk Actions"
+}

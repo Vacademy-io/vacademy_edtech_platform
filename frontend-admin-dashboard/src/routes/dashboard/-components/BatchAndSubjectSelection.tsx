@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import type * as z from 'zod';
-import { Loader, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { CircleNotch, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -36,6 +37,7 @@ interface BatchSubjectFormProps {
 }
 
 export default function BatchSubjectForm({ initialBatchId, courseId }: BatchSubjectFormProps) {
+    const { t } = useTranslation('dashboardBatchAndSubjectSelection');
     const form = useFormContext<z.infer<typeof inviteUsersSchema>>();
 
     const [batchSearch, setBatchSearch] = useState('');
@@ -229,23 +231,28 @@ export default function BatchSubjectForm({ initialBatchId, courseId }: BatchSubj
     }, [selectedBatches, subjectSelections, form]);
 
     if (isLoading) {
-        return <Loader className="size-6 animate-spin text-primary-500" />;
+        return <CircleNotch className="size-6 animate-spin text-primary-500" />;
     }
 
     return (
         <Card className="w-full">
             <CardHeader className="px-2 py-4">
                 <CardTitle>
-                    Select Batch and {getTerminologyPlural(ContentTerms.Subject, SystemTerms.Subject)}
+                    {t('title', {
+                        subjectPlural: getTerminologyPlural(
+                            ContentTerms.Subject,
+                            SystemTerms.Subject
+                        ),
+                    })}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 p-2">
                 {/* Batch search */}
                 <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                    <MagnifyingGlass className="absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                     <input
                         type="text"
-                        placeholder="Search batches..."
+                        placeholder={t('searchBatchesPlaceholder')}
                         value={batchSearch}
                         onChange={(e) => setBatchSearch(e.target.value)}
                         className="w-full rounded-md border border-neutral-200 py-2 pl-8 pr-8 text-sm outline-none transition-colors focus:border-primary-400"
@@ -282,7 +289,7 @@ export default function BatchSubjectForm({ initialBatchId, courseId }: BatchSubj
                             {selectedBatches.includes(batch.id) && (
                                 <div className="ml-7">
                                     {loadingSubjects[batch.id] ? (
-                                        <Loader className="size-4 animate-spin text-primary-500" />
+                                        <CircleNotch className="size-4 animate-spin text-primary-500" />
                                     ) : (
                                         <FormField
                                             control={form.control}
@@ -291,7 +298,7 @@ export default function BatchSubjectForm({ initialBatchId, courseId }: BatchSubj
                                             render={() => (
                                                 <FormItem>
                                                     <FormLabel className="text-primary-500">
-                                                        Select Subjects
+                                                        {t('selectSubjectsLabel')}
                                                     </FormLabel>
                                                     <FormControl>
                                                         <MultiSelect
@@ -300,16 +307,16 @@ export default function BatchSubjectForm({ initialBatchId, courseId }: BatchSubj
                                                             onChange={(selected) =>
                                                                 handleSubjectChange(batch.id, selected)
                                                             }
-                                                            placeholder="Select subjects"
+                                                            placeholder={t('selectSubjectsPlaceholder')}
                                                             className="mt-1"
                                                         />
                                                     </FormControl>
                                                     <FormDescription className="mt-1">
-                                                        You can select multiple subjects for this batch
+                                                        {t('selectSubjectsDescription')}
                                                     </FormDescription>
                                                     {subjectSelections[batch.id]?.length === 0 && (
                                                         <FormMessage>
-                                                            At least one subject is required
+                                                            {t('subjectRequiredError')}
                                                         </FormMessage>
                                                     )}
                                                 </FormItem>
@@ -326,14 +333,14 @@ export default function BatchSubjectForm({ initialBatchId, courseId }: BatchSubj
                 {hasNextPage && (
                     <div ref={loadMoreRef} className="flex justify-center py-2">
                         {isFetchingNextPage && (
-                            <Loader className="size-5 animate-spin text-primary-500" />
+                            <CircleNotch className="size-5 animate-spin text-primary-500" />
                         )}
                     </div>
                 )}
 
                 {sortedBatches.length === 0 && !isLoading && (
                     <div className="py-4 text-center text-muted-foreground">
-                        {debouncedSearch ? 'No matching batches' : 'No batches available'}
+                        {debouncedSearch ? t('noMatchingBatches') : t('noBatchesAvailable')}
                     </div>
                 )}
             </CardContent>

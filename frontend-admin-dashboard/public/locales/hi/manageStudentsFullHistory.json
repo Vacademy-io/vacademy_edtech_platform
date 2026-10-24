@@ -1,0 +1,42 @@
+{
+    "hero": {
+        "eyebrow": "शिक्षार्थी इतिहास",
+        "eventCount_one": "{{count}} इवेंट",
+        "eventCount_other": "{{count}} इवेंट्स"
+    },
+    "filters": {
+        "all": "सभी",
+        "admission": "प्रवेश",
+        "enrollment": "नामांकन",
+        "payment": "भुगतान",
+        "learning": "अध्ययन",
+        "communication": "संचार",
+        "ariaLabel": "श्रेणी के अनुसार इतिहास की घटनाओं को फ़िल्टर करें"
+    },
+    "buckets": {
+        "today": "आज",
+        "yesterday": "कल",
+        "thisWeek": "इस सप्ताह",
+        "earlier": "पहले"
+    },
+    "error": {
+        "title": "गतिविधि इतिहास लोड नहीं हो सका",
+        "hint": "टाइमलाइन प्राप्त करते समय कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।"
+    },
+    "empty": {
+        "title": "अभी तक कोई इतिहास नहीं",
+        "hint": "सभी चरणों की घटनाएं यहाँ दिखाई देंगी"
+    },
+    "filteredEmpty": {
+        "title": "इस फ़िल्टर से मेल खाने वाली कोई घटना नहीं",
+        "hint": "ऊपर एक अलग श्रेणी चुनकर देखें"
+    },
+    "timeline": {
+        "actorPrefix": "{{name}} द्वारा"
+    },
+    "pagination": {
+        "pageOf": "पृष्ठ {{current}} / {{total}}",
+        "previous": "पिछला",
+        "next": "अगला"
+    }
+}

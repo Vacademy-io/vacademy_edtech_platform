@@ -133,6 +133,7 @@ jobs:
             ADMIN_CORE_SERVICE_READ_DB_URL=jdbc:postgresql://pgbouncer:6432/admin_core_service_read \
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
             OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} \
+            ISOQUANT_API_KEY=${{ secrets.ISOQUANT_API_KEY }} \
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
             SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
             CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_API_TOKEN }} \
@@ -150,6 +151,7 @@ jobs:
             META_LOGIN_CONFIG_ENABLED=${{ secrets.META_LOGIN_CONFIG_ENABLED || 'false' }} \
             OAUTH_TOKEN_ENCRYPTION_KEY=${{ secrets.OAUTH_TOKEN_ENCRYPTION_KEY }} \
             AI_SERVICE_INTERNAL_TOKEN=${{ secrets.INTERNAL_SERVICE_TOKEN }} \
+            INTERNAL_SERVICE_TOKEN=${{ secrets.INTERNAL_SERVICE_TOKEN }} \
             YOUTUBE_OAUTH_CLIENT_ID=${{ secrets.ORG_YOUTUBE_OAUTH_CLIENT_ID }} \
             YOUTUBE_OAUTH_CLIENT_SECRET=${{ secrets.ORG_YOUTUBE_OAUTH_CLIENT_SECRET }} \
             YOUTUBE_OAUTH_REDIRECT_URI=${{ secrets.ORG_YOUTUBE_OAUTH_REDIRECT_URI }} \

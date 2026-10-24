@@ -1,0 +1,71 @@
+{
+  "menu": {
+    "editProfile": "تعديل عضو الفريق",
+    "changeRoleType": "تغيير نوع الدور",
+    "disableUser": "تعطيل المستخدم",
+    "enableUser": "تفعيل المستخدم",
+    "deleteUser": "حذف المستخدم"
+  },
+  "changeRoleType": {
+    "title": "تغيير الأدوار",
+    "roleTypeLabel": "نوع الدور",
+    "submit": "إرسال",
+    "validation": {
+      "roleRequired": "مطلوب نوع دور واحد على الأقل"
+    },
+    "toast": {
+      "success": "تم تغيير أدوار المستخدم بنجاح!"
+    }
+  },
+  "disableUser": {
+    "title": "تعطيل المستخدم",
+    "attention": "تنبيه",
+    "confirmPrefix": "هل أنت متأكد أنك تريد تعطيل",
+    "confirmSuffix": "؟",
+    "confirmButton": "نعم",
+    "toast": {
+      "success": "تم تعطيل المستخدم بنجاح!"
+    }
+  },
+  "enableUser": {
+    "title": "تفعيل المستخدم",
+    "attention": "تنبيه",
+    "confirmPrefix": "هل أنت متأكد أنك تريد تفعيل",
+    "confirmSuffix": "؟",
+    "confirmButton": "نعم",
+    "toast": {
+      "success": "تم تفعيل المستخدم بنجاح!"
+    }
+  },
+  "deleteUser": {
+    "title": "حذف المستخدم",
+    "attention": "تنبيه",
+    "confirmPrefix": "هل أنت متأكد أنك تريد حذف",
+    "confirmSuffix": "؟",
+    "confirmButton": "نعم",
+    "toast": {
+      "success": "تم حذف المستخدم بنجاح!"
+    }
+  },
+  "editProfile": {
+    "title": "الملف الشخصي لـ {{name}}",
+    "hint": "تظهر الصورة والمسمى الوظيفي والنبذة أينما يظهر {{name}} في أي دورة.",
+    "nameLabel": "الاسم",
+    "emailLabel": "البريد الإلكتروني",
+    "mobileNumberLabel": "رقم الجوال",
+    "photoLabel": "صورة الملف الشخصي",
+    "designationLabel": "المسمى الوظيفي",
+    "designationPlaceholder": "مثال: معلم فيزياء",
+    "bioLabel": "نبذة",
+    "bioPlaceholder": "نبذة قصيرة",
+    "cancel": "إلغاء",
+    "save": "حفظ التغييرات",
+    "saving": "جارٍ الحفظ…",
+    "toast": {
+      "notImage": "يرجى اختيار ملف صورة.",
+      "uploadFailed": "فشل رفع الصورة.",
+      "success": "تم تحديث الملف الشخصي.",
+      "error": "تعذر تحديث الملف الشخصي."
+    }
+  }
+}

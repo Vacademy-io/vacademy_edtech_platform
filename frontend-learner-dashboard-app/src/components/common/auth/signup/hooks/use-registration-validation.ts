@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
 import { z } from 'zod';
+import i18n from '@/i18n';
 
 // Validation schemas
-export const emailSchema = z.string().email("Please enter a valid email address");
-export const usernameSchema = z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be less than 30 characters");
-export const fullNameSchema = z.string().min(2, "Full name must be at least 2 characters").max(100, "Full name must be less than 100 characters");
-export const passwordSchema = z.string().min(8, "Password must be at least 8 characters").regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number");
+export const emailSchema = z.string().email(i18n.t("authExtraB:common.emailInvalid"));
+export const usernameSchema = z.string().min(3, i18n.t("authExtraB:common.usernameMinLength")).max(30, i18n.t("authExtraB:validation.usernameMaxLength"));
+export const fullNameSchema = z.string().min(2, i18n.t("authExtraB:common.fullNameMinLength")).max(100, i18n.t("authExtraB:validation.fullNameMaxLength"));
+export const passwordSchema = z.string().min(8, i18n.t("authExtraB:common.passwordMinLength")).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, i18n.t("authExtraB:validation.passwordComplexity"));
 
 // Complete registration validation schema
 export const registrationSchema = z.object({
@@ -13,7 +14,7 @@ export const registrationSchema = z.object({
   full_name: fullNameSchema,
   username: usernameSchema.optional(),
   password: passwordSchema.optional(),
-  instituteId: z.string().uuid("Invalid institute ID"),
+  instituteId: z.string().uuid(i18n.t("authExtraB:validation.instituteIdInvalid")),
 });
 
 export type RegistrationValidationData = z.infer<typeof registrationSchema>;
@@ -33,7 +34,7 @@ export function useRegistrationValidation() {
       if (error instanceof z.ZodError) {
         return { isValid: false, error: error.errors[0].message };
       }
-      return { isValid: false, error: "Invalid email format" };
+      return { isValid: false, error: i18n.t("authExtraB:validation.emailFormatError") };
     }
   }, []);
 
@@ -45,7 +46,7 @@ export function useRegistrationValidation() {
       if (error instanceof z.ZodError) {
         return { isValid: false, error: error.errors[0].message };
       }
-      return { isValid: false, error: "Invalid username format" };
+      return { isValid: false, error: i18n.t("authExtraB:validation.usernameFormatError") };
     }
   }, []);
 
@@ -57,7 +58,7 @@ export function useRegistrationValidation() {
       if (error instanceof z.ZodError) {
         return { isValid: false, error: error.errors[0].message };
       }
-      return { isValid: false, error: "Invalid full name format" };
+      return { isValid: false, error: i18n.t("authExtraB:validation.fullNameFormatError") };
     }
   }, []);
 
@@ -69,7 +70,7 @@ export function useRegistrationValidation() {
       if (error instanceof z.ZodError) {
         return { isValid: false, error: error.errors[0].message };
       }
-      return { isValid: false, error: "Invalid password format" };
+      return { isValid: false, error: i18n.t("authExtraB:validation.passwordFormatError") };
     }
   }, []);
 
@@ -78,7 +79,7 @@ export function useRegistrationValidation() {
       z.string().uuid().parse(instituteId);
       return { isValid: true };
     } catch (error) {
-      return { isValid: false, error: "Invalid institute ID format" };
+      return { isValid: false, error: i18n.t("authExtraB:validation.instituteIdFormatError") };
     }
   }, []);
 
@@ -105,7 +106,7 @@ export function useRegistrationValidation() {
       }
       return {
         isValid: false,
-        errors: { general: "Validation failed" },
+        errors: { general: i18n.t("authExtraB:validation.generalFailed") },
       };
     }
   }, []);

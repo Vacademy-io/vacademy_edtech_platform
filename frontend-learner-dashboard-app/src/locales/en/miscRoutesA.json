@@ -1,0 +1,368 @@
+{
+    "myMentors": {
+        "page": {
+            "title": "My Mentors",
+            "subtitle": "Book sessions and message your assigned mentors.",
+            "findMentor": "Find a mentor"
+        },
+        "tabs": {
+            "mine": "My mentors",
+            "sessions": "My sessions",
+            "find": "Find a mentor",
+            "requests": "My requests"
+        },
+        "rateBanner": {
+            "question": "How was your session with {{mentor}}?",
+            "helper": "A quick rating helps your institute keep mentoring useful.",
+            "cta": "Rate session"
+        },
+        "common": {
+            "yourMentor": "your mentor",
+            "yourSession": "your session",
+            "mentor": "Mentor",
+            "thisMentor": "this mentor",
+            "anyAvailableMentor": "Any available mentor",
+            "cancel": "Cancel",
+            "retry": "Retry",
+            "tryAgain": "Try Again"
+        },
+        "find": {
+            "searchPlaceholder": "Search by name or topic",
+            "askAnyTitle": "Let your {{admin}} pick a mentor for you",
+            "askAnyCta": "Not sure? Ask for any mentor",
+            "loadError": "Couldn't load mentors.",
+            "empty": {
+                "searchTitle": "No mentors match your search",
+                "noneTitle": "No mentors listed yet",
+                "searchDescription": "Try a different topic, or ask your {{admin}} to match you with any mentor.",
+                "noneDescription": "Your institute hasn't listed any mentors for browsing yet.",
+                "clearSearch": "Clear search"
+            }
+        },
+        "mine": {
+            "loadError": "Couldn't load your mentors.",
+            "empty": {
+                "title": "No mentors yet",
+                "descriptionCanFind": "Browse the mentors your institute offers and request the one that fits.",
+                "descriptionNoFind": "Once a mentor is assigned to you, they'll appear here."
+            }
+        },
+        "requests": {
+            "loadError": "Couldn't load your requests.",
+            "empty": {
+                "title": "No requests yet",
+                "description": "Ask for a mentor and you'll be able to track the request here."
+            },
+            "requestedOn": "Requested {{date}}",
+            "withdraw": "Withdraw",
+            "toast": {
+                "withdrawn": "Request withdrawn",
+                "withdrawFailed": "Couldn't withdraw the request."
+            },
+            "status": {
+                "pending": "Awaiting approval",
+                "approved": "Approved",
+                "declined": "Not approved",
+                "cancelled": "Withdrawn"
+            }
+        },
+        "requestDialog": {
+            "toast": {
+                "sent": "Request sent — your {{admin}} will confirm it shortly",
+                "sendFailed": "Couldn't send your request. Please try again."
+            },
+            "headingNamed": "Request {{mentor}}",
+            "headingAny": "Request a mentor",
+            "sending": "Sending…",
+            "sendRequest": "Send request",
+            "anyMentorHelp": "Your {{admin}} will match you with a mentor who fits what you need.",
+            "messageLabel": "What do you want help with?",
+            "messagePlaceholder": "e.g. I'm stuck on rotational motion and need a study plan before my next test",
+            "messageHelper": "Optional, but it helps your {{admin}} pair you well."
+        },
+        "rateDialog": {
+            "heading": "Rate your session",
+            "notNow": "Not now",
+            "pickStarFirst": "Pick a star rating first",
+            "saving": "Saving…",
+            "submit": "Submit feedback",
+            "question": "How was {{session}} with {{mentor}}?",
+            "starRatingAriaLabel": "Star rating",
+            "starAriaLabel_one": "{{count}} star",
+            "starAriaLabel_other": "{{count}} stars",
+            "tapToRate": "Tap a star to rate",
+            "commentLabel": "Anything you want to add?",
+            "commentPlaceholder": "What worked, and what would help next time?",
+            "commentHelper": "Optional. Shared with your institute, not other learners.",
+            "toast": {
+                "thanks": "Thanks — your feedback helps your mentor",
+                "saveFailed": "Couldn't save your feedback. Please try again."
+            },
+            "rating": {
+                "1": "Not helpful",
+                "2": "Could be better",
+                "3": "Okay",
+                "4": "Helpful",
+                "5": "Excellent"
+            }
+        },
+        "manageDialog": {
+            "toast": {
+                "cancelled": "Session cancelled",
+                "moved": "Session moved",
+                "cancelFailed": "Couldn't cancel the session.",
+                "moveFailed": "Couldn't move the session."
+            },
+            "headingCancel": "Cancel this session",
+            "headingMove": "Move this session",
+            "keepAsIs": "Keep as is",
+            "pickTimeFirst": "Pick a new time first",
+            "saving": "Saving…",
+            "cancelSession": "Cancel session",
+            "moveSession": "Move session",
+            "cancelDescription": "Your mentor is told the session is off, and the calendar entry and reminders are removed. You can book another time whenever you like.",
+            "reasonPlaceholder": "e.g. Clashes with a class",
+            "reasonLabel": "Reason (shared with your mentor)",
+            "noAvailability": "We can't show this mentor's available times right now — they may not have a booking page set up. You can cancel this session instead, or message them to agree a new time.",
+            "loadingTimes": "Loading available times…",
+            "loadAvailabilityFailed": "Couldn't load your mentor's availability."
+        },
+        "mentorCard": {
+            "chatOpenFailed": "Couldn't open the chat. Please try again.",
+            "bookSession": "Book session",
+            "message": "Message",
+            "bookingNotSetUp": "Booking not set up yet"
+        },
+        "directoryCard": {
+            "fullyBookedNow": "Fully booked right now",
+            "fullyBooked": "Fully booked",
+            "placesLeft_one": "{{count}} place left",
+            "placesLeft_other": "{{count}} places left",
+            "alreadyYourMentor": "Already your mentor",
+            "requestPending": "Request sent — waiting for approval",
+            "requestAsMentor": "Request as mentor"
+        },
+        "sessionsTab": {
+            "loadError": "Couldn't load your sessions.",
+            "empty": {
+                "title": "No sessions yet",
+                "description": "Book a 1:1 with one of your mentors and it'll show up here, with options to move or cancel it."
+            },
+            "upcoming": "Upcoming",
+            "past": "Past",
+            "nothingBooked": "Nothing booked right now.",
+            "durationMinutes": "{{count}} min",
+            "join": "Join",
+            "reschedule": "Reschedule",
+            "cancel": "Cancel",
+            "youRated": "You rated this {{rating}}/5",
+            "status": {
+                "upcoming": "Upcoming",
+                "awaitingReview": "Waiting on your mentor",
+                "completed": "Completed",
+                "noShow": "Marked as missed",
+                "cancelled": "Cancelled",
+                "rescheduled": "Moved"
+            }
+        }
+    },
+    "leaderboard": {
+        "badgesDialog": {
+            "titleNamed": "{{name}}'s badges",
+            "titleGeneric": "Badges",
+            "none": "No badges earned yet."
+        },
+        "viewBadges": "View badges",
+        "pointsSuffix": "{{points}} pts",
+        "pts": "pts",
+        "title": "Leaderboard",
+        "error": {
+            "title": "Couldn't load the leaderboard",
+            "description": "Please check the link or try again in a moment."
+        },
+        "empty": {
+            "title": "No rankings yet",
+            "description": "Learners climb the ranks as they study, attend live classes, and earn badges."
+        },
+        "footerSummary": "learners · ranked by learning activity",
+        "namesAnonymized": "Names are anonymized for privacy",
+        "poweredBy": "Powered by {{instituteName}}",
+        "allCourses": "All {{courses}}"
+    },
+    "media": {
+        "notFound": "Media Not Found",
+        "loadFailed": "The requested media could not be loaded.",
+        "video": "Video",
+        "invalidYoutubeUrl": "Invalid YouTube URL",
+        "pdfDocument": "PDF Document",
+        "image": "Image",
+        "videoNotSupported": "Your browser does not support the video tag.",
+        "unknownFile": "Unknown File",
+        "previewUnsupported": "This file type is not supported for preview",
+        "openFile": "Open File"
+    },
+    "verify": {
+        "scan": {
+            "title": "Check a certificate",
+            "description": "Scan the code on the certificate with any scanner app and paste what it gives you, or type the verification code printed beside it.",
+            "inputLabel": "Scanned code or verification link",
+            "inputPlaceholder": "e.g. EDU2026001*A1B2C3D4E5",
+            "checking": "Checking…",
+            "verify": "Verify",
+            "numberNotEnough": "The certificate number on its own is not enough to verify — it has to be the scanned code or the verification code printed with it. This is what stops anyone guessing their way through an institute's certificates.",
+            "noRecordMatch": "We have no record matching what you entered."
+        },
+        "verifiedVia": {
+            "codeEntered": "code you entered",
+            "qrCode": "QR code"
+        },
+        "certificateVerificationTitle": "Certificate verification",
+        "enterCodeInstead": "Enter the code from the certificate instead",
+        "cards": {
+            "checkingAriaLabel": "Checking certificate",
+            "checking": "Checking this certificate…",
+            "invalidTitle": "Could not verify this certificate",
+            "noRecordPrefix": "We have no record of certificate",
+            "noRecordSuffix": "with this verification link.",
+            "linksMustBeFull": "Links must be scanned or copied in full — a partial link will not verify. If you typed it by hand, scan the code on the certificate instead.",
+            "errorTitle": "Could not reach the verification service",
+            "errorDescription": "This does not mean the certificate is invalid. Check your connection and try again."
+        },
+        "certificate": {
+            "theAwardingInstitute": "the awarding institute",
+            "verifiedBy": "Verified by",
+            "genuine": "This certificate is genuine",
+            "confirmsIssued": "{{instituteName}} confirms it issued the certificate below.",
+            "checkedUsing": "Checked using the {{verifiedVia}}.",
+            "issuedTo": "Issued to",
+            "certificateNumber": "Certificate number",
+            "issuedOn": "Issued on",
+            "completion": "Completion",
+            "namePartial": "The recipient's name is shown partially to protect their privacy. It matches the name printed on the certificate."
+        }
+    },
+    "unsubscribe": {
+        "errors": {
+            "generic": "We couldn't update your preferences just yet. Please try again."
+        },
+        "generalUpdates": "General updates",
+        "yourAccount": "your account",
+        "channel": {
+            "email": "Email",
+            "whatsapp": "WhatsApp",
+            "notification": "notification"
+        },
+        "messages": {
+            "resubscribed": "You're subscribed again to the {{channel}} updates.",
+            "unsubscribed": "You've unsubscribed from the {{channel}} updates."
+        },
+        "header": {
+            "title": "Update your notifications",
+            "descriptionPrefix": "We're updating your message preference for"
+        },
+        "support": {
+            "title": "Need something else?",
+            "description": "Reach out to our support team and we'll help you adjust any of your communication preferences.",
+            "emailPrefix": "Email",
+            "emailSuffix": "and include the subject of the message you received.",
+            "retrying": "Retrying…",
+            "tryAgain": "Try again"
+        },
+        "returnToVacademy": "Return to Vacademy",
+        "invalidLink": {
+            "title": "Link unavailable",
+            "description": "This unsubscribe link is missing required information or may have expired. Reach out to our support team and we'll update your preferences manually."
+        },
+        "summary": {
+            "retrying": "Retrying…",
+            "tryAgain": "Try again",
+            "pleaseWait": "Please wait…",
+            "resubscribe": "Resubscribe",
+            "unsubscribe": "Unsubscribe"
+        },
+        "status": {
+            "updating": "Updating your preference",
+            "hangTight": "Hang tight while we update notifications for {{recipient}}.",
+            "updated": "Preference updated",
+            "couldNotUpdate": "We couldn't update this"
+        }
+    },
+    "referral": {
+        "navHeading": "My Referrals",
+        "copiedToClipboard": "{{type}} copied to clipboard",
+        "loading": "Loading...",
+        "loadError": "Error loading coupons",
+        "noDataTitle": "No Referral Data Available",
+        "noDataDescription": "No coupon and referral data found. Please contact your administrator for assistance.",
+        "hero": {
+            "titlePrefix": "Invite friends,",
+            "titleHighlight": "get rewards",
+            "description": "Share the gift of learning with your friends and earn rewards for both of you.",
+            "shareNote": "Share your referral code with friends, and both you and your friends will get exclusive referral rewards.",
+            "yourCodeTitle": "Your Referral Code",
+            "codeHelper": "Friends can enter this code to join with your referral",
+            "imageAlt": "Meditation illustration with person in lotus pose surrounded by plants"
+        },
+        "inviteCode": "Invite code",
+        "inviteLinks": {
+            "title": "Your Referral Links",
+            "inviteLinkColumn": "Invite Link",
+            "shareColumn": "Share",
+            "noInvites": "No Invites Available",
+            "unknownCourse": "Unknown {{course}}",
+            "linkCopied": "Invite link copied to clipboard",
+            "shareTitle": "Join me on this learning journey!",
+            "shareText": "I found this amazing {{course}} and thought you might be interested. Use my referral link to get started:",
+            "copyLink": "Copy link",
+            "shareLink": "Share link"
+        },
+        "table": {
+            "title": "Your Referrals",
+            "memberName": "Member Name",
+            "memberEmail": "Member Email",
+            "rewardStatus": "Reward Status",
+            "viewDetails": "View Details",
+            "viewDetailsTitle": "View referral details",
+            "yourBenefits": "Your Benefits",
+            "noBenefitLogs": "No benefit logs available",
+            "noneFound": "No referrals found yet.",
+            "noneFoundHelper": "Start inviting friends to see your referrals here!"
+        },
+        "status": {
+            "pending": "Pending"
+        },
+        "benefit": {
+            "earnedPoints": "Earned {{points}} points",
+            "receivedDays": "Received {{days}} days of free membership",
+            "percentageDiscountText": "Get a discount on your next purchase",
+            "flatDiscountText": "Get a flat off your next purchase",
+            "contentText": "Exclusive content will be delivered to you",
+            "unknown": "Unknown benefit",
+            "percentageDiscount": "Percentage Discount",
+            "flatDiscount": "Flat Discount",
+            "freeMembershipDays": "Free Membership Days",
+            "contentBenefit": "Content Benefit",
+            "rewardPoints": "Reward Points"
+        }
+    },
+    "myReports": {
+        "detail": {
+            "loadError": "Unable to load this report. Please try again.",
+            "couldNotLoad": "Could Not Load Report",
+            "reportNotFound": "Report not found.",
+            "backToReports": "Back to Reports",
+            "inProgress": "Report In Progress",
+            "generationFailed": "Report generation failed. Please contact your institute.",
+            "stillGenerating": "Your report is still being generated. Please check back shortly.",
+            "downloadPdf": "Download PDF",
+            "contentUnavailable": "Report Content Unavailable",
+            "contentUnavailableDescription": "The report content could not be loaded. Please try again later.",
+            "backToMyReports": "Back to My Reports"
+        },
+        "activity": {
+            "insightsUnavailable": "Insights Unavailable",
+            "insightsUnavailableDescription": "This report couldn't be opened. It may still be being prepared.",
+            "typeInsights": "{{type}} Insights"
+        }
+    }
+}

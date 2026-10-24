@@ -410,6 +410,14 @@ public class EngagementTemplateProposalService {
         int sv = sampleValues == null ? 0 : sampleValues.size();
         if (vn != k) return "has " + k + " placeholder(s) but " + vn + " variable name(s)";
         if (sv != k) return "has " + k + " placeholder(s) but " + sv + " sample value(s)";
+        // Variables are filled by name, so two placeholders sharing a name collapse into one value
+        // and Meta rejects the send (#132000: parameter count mismatch).
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String name : variableNames == null ? List.<String>of() : variableNames) {
+            String key = name == null ? "" : name.trim().toLowerCase();
+            if (key.isEmpty()) return "every placeholder needs a variable name";
+            if (!seen.add(key)) return "variable name '" + name.trim() + "' is used twice; each placeholder needs its own";
+        }
         return null;
     }
 

@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "overview": "अवलोकन",
+        "courses": "कोर्स",
+        "learningProgress": "प्रगति",
+        "testRecord": "परीक्षण",
+        "paymentHistory": "भुगतान इतिहास",
+        "enrollDeroll": "नामांकन / निष्कासन",
+        "membership": "सदस्यता",
+        "lead": "लीड प्रोफ़ाइल",
+        "enquiry": "पूछताछ",
+        "application": "आवेदन",
+        "notifications": "संचार",
+        "portalAccess": "पोर्टल एक्सेस",
+        "userTagging": "उपयोगकर्ता टैगिंग",
+        "badges": "बैज",
+        "files": "फ़ाइलें",
+        "parent": "अभिभावक",
+        "onboarding": "ऑनबोर्डिंग",
+        "subOrg": "सब-ऑर्ग",
+        "reports": "रिपोर्ट",
+        "fullHistory": "पूर्ण इतिहास",
+        "workflows": "वर्कफ़्लो"
+    }
+}

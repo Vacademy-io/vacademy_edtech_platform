@@ -1,0 +1,184 @@
+{
+    "nav": {
+        "title": "Recent Leads"
+    },
+    "heading": {
+        "loading": "Loading leads…",
+        "leadsCount_one": "{{count}} Lead",
+        "leadsCount_other": "{{count}} Leads"
+    },
+    "slaOptions": {
+        "all": "All action statuses",
+        "anyOverdueLabel": "Any deadline missed",
+        "anyOverdueHelper": "First contact or follow-up — whichever is overdue",
+        "firstContactMissed": "First contact missed",
+        "firstContactComingUp": "First contact coming up",
+        "followUpComingUp": "Follow-up coming up",
+        "followUpMissed": "Follow-up missed"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "Last 24 hours",
+        "last7Days": "Last 7 days",
+        "last15Days": "Last 15 days",
+        "last30Days": "Last 30 days",
+        "allTime": "All time",
+        "customRange": "Custom range"
+    },
+    "filters": {
+        "tier": {
+            "label": "All tiers",
+            "hot": "Hot",
+            "warm": "Warm",
+            "cold": "Cold"
+        },
+        "leadStatus": {
+            "label": "All leads",
+            "active": "Active (not enrolled)",
+            "converted": "Enrolled / Converted",
+            "excludeSelected": "Exclude selected"
+        },
+        "sla": {
+            "label": "All SLA states"
+        },
+        "audience": {
+            "label": "All {{term}}",
+            "untitled": "Untitled audience"
+        },
+        "campaignType": {
+            "label": "All {{term}}"
+        },
+        "customDate": {
+            "setDates": "Set dates",
+            "done": "Done",
+            "from": "From",
+            "to": "To"
+        },
+        "calledWithin": {
+            "placeholder": "Called within",
+            "any": "Called: any time"
+        },
+        "workedWithin": {
+            "placeholder": "Worked within",
+            "any": "Worked: any time"
+        }
+    },
+    "toolbar": {
+        "leadSettings": "Lead settings",
+        "showDeletedTitle": "Show deleted leads",
+        "backToActiveTitle": "Back to active leads",
+        "deletedLeadsButton": "Deleted leads",
+        "viewingDeletedButton": "Viewing deleted",
+        "exporting": "Exporting…",
+        "export": "Export",
+        "addLead": "Add New Lead",
+        "filters": "Filters",
+        "summaryShow": "Show summary",
+        "summaryHide": "Hide summary"
+    },
+    "chips": {
+        "search": "Search: {{query}}",
+        "audience": "Audience: {{names}}",
+        "campaignType": "{{term}}: {{types}}",
+        "tier": "Tier: {{tiers}}",
+        "status": "Status: {{statuses}}",
+        "sla": "SLA: {{states}}",
+        "counsellor": "Counsellor: {{names}}",
+        "source": "Source: {{source}}",
+        "customField": "{{field}}: {{value}}",
+        "dateRangeCustomWithDates": "Date: {{from}} → {{to}}",
+        "dateRangeCustomFallback": "Date: custom range",
+        "dateRangeFallback": "Date range",
+        "fallbackSelected": "Selected",
+        "fallbackField": "Field",
+        "statusActive": "Active",
+        "statusConverted": "Converted",
+        "unassigned": "Unassigned",
+        "removeAriaLabel": "Remove {{label}}",
+        "clearAll": "Clear all",
+        "calledWithin": "Called: {{window}}",
+        "workedWithin": "Worked: {{window}}",
+        "pinnedTitle": "Pinned by this tab — it cannot be removed here",
+        "statusExcluded": "Status is not: {{statuses}}"
+    },
+    "search": {
+        "placeholder": "Search leads",
+        "showing": "Showing",
+        "resultsPending": "of … results",
+        "resultsCount_one": "of {{count}} result",
+        "resultsCount_other": "of {{count}} results"
+    },
+    "bulk": {
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected",
+        "selecting": "Selecting…",
+        "selectAll_one": "Select all {{count}}",
+        "selectAll_other": "Select all {{count}}",
+        "clear": "Clear",
+        "actionsButton": "Bulk actions",
+        "assignLeads": "Assign leads",
+        "unassignLeads": "Unassign leads",
+        "restoreLeads": "Restore leads",
+        "deleteLeads": "Delete leads",
+        "moveLeads": "Move to another list",
+        "changeStatus": "Change status"
+    },
+    "emptyState": {
+        "errorTitle": "Couldn't load leads",
+        "errorDescription": "Something went wrong fetching leads. Try again."
+    },
+    "callReasons": {
+        "noSubmissionId": "Lead has no submission id",
+        "noPhone": "Lead has no phone on file",
+        "callInProgress": "Another call is starting…"
+    },
+    "export": {
+        "columns": {
+            "leadId": "Lead ID",
+            "submittedAt": "Submitted At",
+            "name": "Name",
+            "email": "Email",
+            "mobile": "Mobile",
+            "audience": "Audience",
+            "campaignType": "{{term}}",
+            "leadStatus": "Lead Status",
+            "counsellor": "Counsellor",
+            "activityNotes": "Activity & Notes",
+            "notesCount": "Notes Count",
+            "leadJourney": "Lead Journey (disposition & notes)",
+            "utmCampaign": "UTM campaign"
+        },
+        "notes": {
+            "defaultTitle": "Note",
+            "updatedBy": "updatedby - {{name}}",
+            "date": "date - {{date}}"
+        },
+        "noLeadsToExport": "No leads to export",
+        "exportedLeads_one": "Exported {{count}} lead",
+        "exportedLeads_other": "Exported {{count}} leads",
+        "exportFailed": "Failed to export recent leads"
+    },
+    "toasts": {
+        "leadRestored_one": "{{count}} lead restored",
+        "leadRestored_other": "{{count}} leads restored",
+        "restoreFailed": "Failed to restore. Please try again.",
+        "selectAllFailed": "Failed to select all leads",
+        "bulkStatusUpdated_one": "{{count}} lead moved to {{status}}",
+        "bulkStatusUpdated_other": "{{count}} leads moved to {{status}}",
+        "bulkStatusUnchanged_one": "{{count}} lead was already on that status",
+        "bulkStatusUnchanged_other": "{{count}} leads were already on that status",
+        "bulkStatusPartial": "{{failed}} could not be updated",
+        "bulkStatusFailed": "Failed to change status. Please try again."
+    },
+    "filtersPanel": {
+        "title": "Filters",
+        "active": "{{count}} active",
+        "close": "Close filters",
+        "sections": {
+            "pipeline": "Pipeline",
+            "owner": "Owner & source",
+            "activity": "Activity",
+            "campaign": "Campaign links",
+            "custom": "Custom fields"
+        }
+    }
+}

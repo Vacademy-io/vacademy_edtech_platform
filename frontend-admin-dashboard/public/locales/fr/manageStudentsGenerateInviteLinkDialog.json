@@ -1,0 +1,25 @@
+{
+    "dialogTitle": {
+        "update": "Mettre à jour le lien {{term}}",
+        "create": "Créer le lien {{term}}"
+    },
+    "inviteLink": {
+        "copyTitle": "Copier le lien d'invitation",
+        "copiedToast": "Lien d'invitation copié dans le presse-papiers"
+    },
+    "toast": {
+        "updateSuccess": "Votre lien d'invitation a été mis à jour avec succès !",
+        "createSuccess": "Votre lien d'invitation a été créé avec succès !",
+        "saveError": "Échec de l'enregistrement du lien d'invitation",
+        "unexpectedError": "Une erreur inattendue s'est produite",
+        "validationFailed": "Échec de la validation sur : {{fields}}"
+    },
+    "actions": {
+        "close": "Fermer",
+        "updating": "Mise à jour...",
+        "creating": "Création..."
+    },
+    "customField": {
+        "defaultOptionLabel": "option {{number}}"
+    }
+}

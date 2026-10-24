@@ -1,0 +1,45 @@
+{
+    "heading": "صف الأتمتة الخاصة بك",
+    "aiBadge": "ذكاء اصطناعي",
+    "intro": "أخبرني بما تريده. سأقترح خطة، ثم أطلب منك اختيار القوالب والجماهير وتعيينات المتغيرات — حتى يكون سير العمل الناتج جاهزًا للنشر.",
+    "goalPlaceholder": "مثال: بعد 3 أيام من ملء شخص لنموذج عملاء JEE المحتملين، إذا لم يسجّل، أرسل له الكتيّب عبر واتساب.",
+    "actions": {
+        "cancel": "إلغاء",
+        "planning": "جارٍ التخطيط…",
+        "replan": "إعادة التخطيط",
+        "draftWithAi": "صياغة بالذكاء الاصطناعي",
+        "building": "جارٍ الإنشاء…",
+        "buildWorkflow": "إنشاء سير العمل"
+    },
+    "plan": {
+        "defaultSummary": "سير العمل المقترح",
+        "chooseDetails": "يبدو جيدًا — اختر التفاصيل"
+    },
+    "decisions": {
+        "heading": "بعض الخيارات التي يمكنك أنت فقط اتخاذها:",
+        "allSet": "كل شيء جاهز",
+        "stillNeeded": "لا يزال مطلوبًا: {{items}}",
+        "chooseTemplateFirst": "اختر القالب أعلاه أولاً.",
+        "noVariables": "لا يحتوي هذا القالب على أي متغيرات لتعيينها — لا شيء لفعله هنا.",
+        "varMapPlaceholder": "مثال: #item['full_name'] أو قيمة ثابتة"
+    },
+    "channels": {
+        "email": "البريد الإلكتروني",
+        "whatsapp": "واتساب"
+    },
+    "templateSelect": {
+        "searchPlaceholder": "ابحث عن القوالب…",
+        "selectPlaceholder": "اختر قالبًا…",
+        "noneFoundWhatsapp": "لم يتم العثور على قوالب واتساب — أنشئ واحدًا في الإعدادات ← القوالب أولاً.",
+        "noneFoundEmail": "لم يتم العثور على قوالب بريد إلكتروني — أنشئ واحدًا في الإعدادات ← القوالب أولاً."
+    },
+    "toasts": {
+        "planFailedTitle": "تعذّر التخطيط",
+        "planningFailedTitle": "فشل التخطيط",
+        "unknownError": "خطأ غير معروف",
+        "buildFailedTitle": "تعذّر الإنشاء",
+        "noWorkflowReturned": "لم يتم إرجاع أي سير عمل",
+        "loadedWithNotesTitle": "تم التحميل مع ملاحظات",
+        "buildErrorTitle": "فشل الإنشاء"
+    }
+}

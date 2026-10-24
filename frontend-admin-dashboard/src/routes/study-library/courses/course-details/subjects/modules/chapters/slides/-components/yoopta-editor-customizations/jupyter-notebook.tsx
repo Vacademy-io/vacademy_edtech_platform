@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 
 export function JupyterNotebook({
@@ -7,6 +8,7 @@ export function JupyterNotebook({
     children,
     blockId,
 }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryJupyterNotebook');
     const editor = useYooptaEditor();
     const [projectName, setProjectName] = useState(element?.props?.projectName || '');
     const [contentUrl, setContentUrl] = useState(element?.props?.contentUrl || '');
@@ -56,7 +58,7 @@ export function JupyterNotebook({
 
     const handleDeploy = () => {
         if (!projectName || !contentUrl) {
-            alert('Please fill in Project Name and Content URL');
+            alert(t('alerts.fillRequired'));
             return;
         }
 
@@ -64,7 +66,7 @@ export function JupyterNotebook({
         // Simulate deployment process
         setTimeout(() => {
             setIsDeploying(false);
-            alert('Notebook deployed successfully!');
+            alert(t('alerts.deploySuccess'));
         }, 3000);
     };
 
@@ -121,7 +123,7 @@ export function JupyterNotebook({
                     }}
                 >
                     <h3 style={{ margin: '0', fontSize: '18px', fontWeight: '600', color: '#333' }}>
-                        📓 Jupyter Notebook Configuration
+                        📓 {t('header.configuration')}
                     </h3>
 
                     {/* Tab Navigation */}
@@ -144,7 +146,7 @@ export function JupyterNotebook({
                                 cursor: 'pointer',
                             }}
                         >
-                            Preview
+                            {t('tabs.preview')}
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
@@ -157,7 +159,7 @@ export function JupyterNotebook({
                                 cursor: 'pointer',
                             }}
                         >
-                            Settings
+                            {t('tabs.settings')}
                         </button>
                     </div>
                 </div>
@@ -184,13 +186,13 @@ export function JupyterNotebook({
                                     color: '#555',
                                 }}
                             >
-                                Project Name
+                                {t('form.projectName.label')}
                             </label>
                             <input
                                 type="text"
                                 value={projectName}
                                 onChange={(e) => setProjectName(e.target.value)}
-                                placeholder="pythoncourse"
+                                placeholder={t('form.projectName.placeholder')}
                                 style={{
                                     width: '100%',
                                     padding: '8px 12px',
@@ -214,13 +216,13 @@ export function JupyterNotebook({
                                     color: '#555',
                                 }}
                             >
-                                Content URL (Link to a Github repo that contains the notebook)
+                                {t('form.contentUrl.label')}
                             </label>
                             <input
                                 type="url"
                                 value={contentUrl}
                                 onChange={(e) => setContentUrl(e.target.value)}
-                                placeholder="https://github.com/amirtds/jupyter-notebooks"
+                                placeholder={t('form.contentUrl.placeholder')}
                                 style={{
                                     width: '100%',
                                     padding: '8px 12px',
@@ -244,7 +246,7 @@ export function JupyterNotebook({
                                     color: '#555',
                                 }}
                             >
-                                Content Branch
+                                {t('form.contentBranch.label')}
                             </label>
                             <select
                                 value={contentBranch}
@@ -277,7 +279,7 @@ export function JupyterNotebook({
                                     color: '#555',
                                 }}
                             >
-                                Notebook Location
+                                {t('form.notebookLocation.label')}
                             </label>
                             <select
                                 value={notebookLocation}
@@ -345,10 +347,10 @@ export function JupyterNotebook({
                                             animation: 'spin 1s linear infinite',
                                         }}
                                     />
-                                    Deploying notebook...
+                                    {t('deploy.deploying')}
                                 </>
                             ) : (
-                                <>🚀 Deploy Notebook</>
+                                <>🚀 {t('deploy.button')}</>
                             )}
                         </button>
                     </div>
@@ -365,8 +367,12 @@ export function JupyterNotebook({
                                 color: '#2d5a2d',
                             }}
                         >
-                            <strong>Ready to deploy:</strong> {projectName} from {contentUrl} (
-                            {contentBranch} branch, {notebookLocation} location)
+                            <strong>{t('status.readyToDeploy')}</strong> {t('status.summary', {
+                                projectName,
+                                contentUrl,
+                                contentBranch,
+                                notebookLocation,
+                            })}
                         </div>
                     )}
                 </>
@@ -388,7 +394,7 @@ export function JupyterNotebook({
                                 width="100%"
                                 height="100%"
                                 style={{ border: 'none' }}
-                                title="Jupyter Notebook Preview"
+                                title={t('preview.iframeTitle')}
                             />
                         </div>
                     ) : (
@@ -407,10 +413,10 @@ export function JupyterNotebook({
                         >
                             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📓</div>
                             <p style={{ fontSize: '16px', marginBottom: '8px' }}>
-                                No notebook configured
+                                {t('preview.notConfigured')}
                             </p>
                             <p style={{ fontSize: '14px', color: '#999' }}>
-                                Switch to Settings tab to configure your Jupyter notebook
+                                {t('preview.switchToSettingsHint')}
                             </p>
                         </div>
                     )}

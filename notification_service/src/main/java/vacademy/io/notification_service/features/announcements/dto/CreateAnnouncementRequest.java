@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vacademy.io.notification_service.features.announcements.enums.ScheduleType;
+import vacademy.io.notification_service.features.announcements.validation.FutureInScheduleZone;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -40,6 +41,10 @@ public class CreateAnnouncementRequest {
     
     @Size(max = 50, message = "Timezone must not exceed 50 characters")
     private String timezone;
+
+    /** Optional correlation: what this announcement is about ("LEAD") and which one. */
+    private String entity;
+    private String entityId;
     
     // Recipients (Inclusions)
     @NotEmpty(message = "At least one recipient is required")
@@ -201,6 +206,7 @@ public class CreateAnnouncementRequest {
     @Setter
     @AllArgsConstructor
     @NoArgsConstructor
+    @FutureInScheduleZone
     public static class SchedulingRequest {
         
         @NotNull(message = "Schedule type is required")
@@ -212,7 +218,7 @@ public class CreateAnnouncementRequest {
         @Size(max = 50, message = "Timezone must not exceed 50 characters")
         private String timezone;
         
-        @Future(message = "Start date must be in the future")
+        // Future-ness is checked in the schedule's timezone by @FutureInScheduleZone
         private LocalDateTime startDate;
         
         private LocalDateTime endDate;

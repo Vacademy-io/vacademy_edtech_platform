@@ -1,0 +1,60 @@
+{
+    "description": "चुने गए बैचों के हर सक्रिय शिक्षार्थी के लिए AI रिपोर्ट तैयार करें।",
+    "form": {
+        "startDateRequired": "आरंभ तिथि आवश्यक है",
+        "endDateRequired": "समाप्ति तिथि आवश्यक है",
+        "dateRangeTooLong": "आरंभ तिथि और समाप्ति तिथि के बीच का अंतर एक महीने से कम होना चाहिए।",
+        "errorsHeading": "कृपया निम्नलिखित त्रुटियाँ ठीक करें:",
+        "batchRequired": "कम से कम एक बैच चुनें"
+    },
+    "range": {
+        "label": "अवधि:",
+        "last7Days": "पिछले 7 दिन",
+        "hide": "छिपाएँ",
+        "change": "बदलें"
+    },
+    "actions": {
+        "loadingLearners": "शिक्षार्थी लोड हो रहे हैं…",
+        "generating": "तैयार हो रहा है…",
+        "generateReports": "AI रिपोर्ट तैयार करें",
+        "stop": "रोकें",
+        "retryFailed": "विफल पुनः प्रयास करें",
+        "view": "देखें",
+        "exportCsv": "CSV निर्यात करें"
+    },
+    "toast": {
+        "resolveBatchFailed": "कम से कम एक बैच चुनें।",
+        "noActiveLearners": "इस बैच में कोई सक्रिय शिक्षार्थी नहीं मिला।",
+        "generationFinished": "बैच रिपोर्ट तैयार करना पूर्ण हुआ।",
+        "loadLearnersFailed": "बैच के शिक्षार्थियों को लोड करने में विफल।",
+        "stopping": "वर्तमान शिक्षार्थी के बाद रोका जा रहा है…",
+        "reselectRequired": "पुनः प्रयास के लिए बैच और तिथि सीमा फिर से चुनें।",
+        "reportNotReady": "रिपोर्ट देखने के लिए अभी तैयार नहीं है।",
+        "loadReportFailed": "रिपोर्ट लोड करने में विफल।",
+        "generationStartFailed": "जनरेशन शुरू नहीं किया जा सका",
+        "generationFailedOrTimedOut": "जनरेशन विफल हुआ या समय सीमा समाप्त हो गई"
+    },
+    "progress": {
+        "doneCount": "{{done}}/{{total}} पूर्ण",
+        "completedCount_one": "{{count}} पूर्ण",
+        "completedCount_other": "{{count}} पूर्ण",
+        "failedCount_one": "{{count}} विफल",
+        "failedCount_other": "{{count}} विफल"
+    },
+    "status": {
+        "queued": "कतार में",
+        "generating": "तैयार हो रहा है",
+        "completed": "पूर्ण",
+        "failed": "विफल"
+    },
+    "csv": {
+        "fileStem": "ai-analysis-run",
+        "title": "AI रिपोर्ट निर्माण",
+        "name": "नाम",
+        "email": "ईमेल",
+        "status": "स्थिति",
+        "processId": "रिपोर्ट आईडी",
+        "error": "त्रुटि",
+        "exportSuccess": "CSV निर्यात हो गया"
+    }
+}

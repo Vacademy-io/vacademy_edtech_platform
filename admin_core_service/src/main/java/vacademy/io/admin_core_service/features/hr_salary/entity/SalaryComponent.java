@@ -52,6 +52,10 @@ public class SalaryComponent {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    /** GL account this component posts to (V484); null -> type-based default. */
+    @Column(name = "gl_account_code", length = 50)
+    private String glAccountCode;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 

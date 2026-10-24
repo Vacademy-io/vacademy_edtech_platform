@@ -2,6 +2,24 @@ import type { PlanningLog } from "../-types/types";
 import { getRelativeTimeLabel } from "../-utils/getRelativeTimeLabel";
 import TimelineLogCard from "./TimelineLogCard";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
+
+// Maps the English labels returned by getRelativeTimeLabel (used internally
+// for grouping/sorting) to translation keys for display purposes only.
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  Today: "groups.today",
+  Tomorrow: "groups.tomorrow",
+  "Past days": "groups.pastDays",
+  Later: "groups.later",
+  "Next week": "groups.nextWeek",
+  "Next month": "groups.nextMonth",
+  "Next quarter": "groups.nextQuarter",
+  "Past week": "groups.pastWeek",
+  "Past month": "groups.pastMonth",
+  "Past quarter": "groups.pastQuarter",
+};
 
 interface PlanningLogsTimelineProps {
   data: PlanningLog[];
@@ -24,6 +42,8 @@ export default function PlanningLogsTimeline({
   onViewLog,
   searchQuery = "",
 }: PlanningLogsTimelineProps) {
+  const { t } = useTranslation("planning");
+  const teachers = getTerminologyPlural(RoleTerms.Teacher, SystemTerms.Teacher);
   // Group logs by relative time
   const groupedLogs = data.reduce<GroupedLogs>((acc, log) => {
     const label = getRelativeTimeLabel(log.interval_type, log.interval_type_id);
@@ -74,10 +94,10 @@ export default function PlanningLogsTimeline({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <p className="text-lg font-medium text-muted-foreground">
-          No planning or activities shared with you yet
+          {t("table.empty.title")}
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your teachers will share planning and activities here
+          {t("table.empty.description", { teachers })}
         </p>
       </div>
     );
@@ -88,7 +108,7 @@ export default function PlanningLogsTimeline({
       {sortedGroups.map((groupLabel) => (
         <div key={groupLabel} className="space-y-3">
           <h3 className="text-lg font-semibold text-foreground">
-            {groupLabel}
+            {GROUP_LABEL_KEYS[groupLabel] ? t(GROUP_LABEL_KEYS[groupLabel]!) : groupLabel}
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
             {groupedLogs[groupLabel]?.map((log) => (
@@ -112,7 +132,7 @@ export default function PlanningLogsTimeline({
               variant="outline"
               onClick={() => onPageChange(currentPage - 1)}
             >
-              Previous Page
+              {t("timeline.previousPage")}
             </Button>
           )}
           {currentPage < totalPages - 1 && (
@@ -120,7 +140,7 @@ export default function PlanningLogsTimeline({
               variant="outline"
               onClick={() => onPageChange(currentPage + 1)}
             >
-              Load More
+              {t("timeline.loadMore")}
             </Button>
           )}
         </div>

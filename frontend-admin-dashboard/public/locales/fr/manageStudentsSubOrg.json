@@ -1,0 +1,40 @@
+{
+    "emptyState": {
+        "title": "Aucun {{term}} associé",
+        "hint": "Cet apprenant n'est associé à aucun {{term}}."
+    },
+    "picker": {
+        "label": "{{term}} pour"
+    },
+    "error": {
+        "title": "Impossible de charger les détails de {{term}}",
+        "hint": "Une erreur s'est produite lors du chargement de ce {{term}}. Veuillez réessayer.",
+        "toast": "Échec de la récupération des détails de {{term}}"
+    },
+    "role": {
+        "admin": "Administrateur",
+        "member": "Membre"
+    },
+    "actions": {
+        "openManagementPortal": "Ouvrir le portail de gestion"
+    },
+    "credentials": {
+        "heading": "Identifiants administrateur",
+        "usernameLabel": "Nom d'utilisateur",
+        "passwordLabel": "Mot de passe",
+        "usernameCopied": "Nom d'utilisateur copié !",
+        "passwordCopied": "Mot de passe copié !"
+    },
+    "members": {
+        "heading_one": "Membre géré ({{count}})",
+        "heading_many": "Membres gérés ({{count}})",
+        "heading_other": "Membres gérés ({{count}})",
+        "emptyTitle": "Aucun membre trouvé",
+        "emptyHint": "Aucun apprenant n'est actuellement géré sous ce {{term}}."
+    },
+    "admins": {
+        "heading": "Administrateurs {{term}}",
+        "emptyTitle": "Aucun administrateur trouvé",
+        "emptyHint": "Aucun administrateur n'est lié à ce {{term}}."
+    }
+}

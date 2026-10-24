@@ -1,16 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     getUserCommunications,
     type CommunicationItem,
     type StatusEvent,
 } from '@/services/communication-timeline-service';
+import {
+    fetchCallHistory,
+    type CallLogItem,
+} from '@/components/shared/leads/services/call-history';
+import { CallRecordingPlayButton } from '@/components/shared/leads/lead-call-history';
 import { useStudentSidebar } from '../../../../-context/selected-student-sidebar-context';
 import { formatDistanceToNow, format } from 'date-fns';
 import {
     ChatsCircle,
     Envelope,
     EnvelopeSimple,
+    Phone,
+    PhoneIncoming,
+    PhoneOutgoing,
+    Robot,
     WhatsappLogo,
     BellRinging,
     ChatTeardrop,
@@ -19,12 +28,30 @@ import {
     CaretDown,
     CaretUp,
     FileText,
+    ArrowClockwise,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { WhatsAppTemplateButtons } from '@/components/shared/whatsapp/whatsapp-template-buttons';
+import {
+    MessageOriginIcon,
+    messageOriginKey,
+    type MessageOrigin,
+} from '@/components/shared/whatsapp/message-origin';
 import { MyButton } from '@/components/design-system/button';
 import { IndividualSendDialog } from './individual-send-dialog';
+import {
+    ResendMessageDialog,
+    canResend,
+    resendBlockedReason,
+    showsResendControl,
+} from './resend-message-dialog';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import {
+    getDisplaySettingsFromCache,
+    getDisplaySettingsWithFallback,
+} from '@/services/display-settings';
+import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import {
     ProfileSkeleton,
     ProfileEmpty,
@@ -32,6 +59,8 @@ import {
     ProfileTimeline,
     type ProfileTimelineItem,
 } from '../profile-ui';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 // ─── HTML helpers ──────────────────────────────────────────────────────────
 // The communication-timeline service often returns the raw email HTML in
@@ -77,7 +106,11 @@ const htmlToPreviewText = (html: string, maxLen = 140): string => {
 
 // Best-effort subject extraction: prefer the document's <title>, fall back to
 // the first heading, and finally to a truncated text preview.
-const extractEmailSubject = (rawTitle: string | undefined, body?: string): string => {
+const extractEmailSubject = (
+    rawTitle: string | undefined,
+    body: string | undefined,
+    t: TFunction
+): string => {
     const candidates = [rawTitle, body].filter(Boolean) as string[];
     for (const c of candidates) {
         const titleMatch = c.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
@@ -94,102 +127,176 @@ const extractEmailSubject = (rawTitle: string | undefined, body?: string): strin
         }
     }
     if (rawTitle && !looksLikeHtml(rawTitle)) {
-        const t = rawTitle.trim();
-        if (t) return t;
+        const trimmed = rawTitle.trim();
+        if (trimmed) return trimmed;
     }
     if (body) {
         const fallback = htmlToPreviewText(body, 80);
         if (fallback) return fallback;
     }
-    return '(no subject)';
+    return t('noSubject');
 };
+
+// The subject to show — and, on a resend, to send again. Prefer the one the send actually stored
+// (notification_service reads it back off message_payload); the scrape above is the fallback for
+// rows written before it was returned.
+const emailSubjectOf = (item: CommunicationItem, t: TFunction): string =>
+    item.subject?.trim() || extractEmailSubject(item.title, item.fullBody || item.bodyPreview, t);
+
+/** Everything a row's resend needs that the row itself does not carry. */
+export interface ResendContext {
+    instituteId: string;
+    userId?: string;
+    recipientName?: string;
+    /** Role display setting — off hides the control entirely for this role. */
+    allowed: boolean;
+    /** Refetch the timeline so the resent message appears. */
+    onResent: () => void;
+}
+
+/**
+ * Whether this admin's role may resend from the timeline.
+ *
+ * Read here rather than passed in because the timeline mounts in two places (the side view and the
+ * profile overlay) and neither owns the flag. Cache-first: the side view has already loaded the
+ * same blob by the time this renders, so this is normally free.
+ *
+ * Starts null, not false: rendering the control and then pulling it away reads as a bug, and
+ * rendering nothing until the answer arrives is honest about not knowing yet.
+ */
+function useResendAllowed(): boolean | null {
+    const [allowed, setAllowed] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const resolve = async () => {
+            try {
+                const roleKey = getActiveRoleDisplaySettingsKey();
+                const settings =
+                    getDisplaySettingsFromCache(roleKey)?.studentSideView ??
+                    (await getDisplaySettingsWithFallback(roleKey)).studentSideView;
+                if (cancelled) return;
+                // Undefined = an institute that saved its settings before this flag existed. The
+                // merge has already applied the role's default, so undefined here only happens
+                // when no settings resolved at all — treat that as the admin default, on.
+                setAllowed(settings?.allowResendMessage ?? true);
+            } catch {
+                // A settings lookup that fails must not silently revoke an admin's action.
+                if (!cancelled) setAllowed(true);
+            }
+        };
+        void resolve();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    return allowed;
+}
 
 // ─── Channel Config ─────────────────────────────────────────────────────────
 // Colors use design-system semantic tokens: info for email, success for WhatsApp,
 // primary for push notifications, warning for SMS.
 
-const CHANNEL_CONFIG: Record<
+type ChannelConfig = Record<
     string,
     { icon: PhosphorIcon; pillClass: string; iconClass: string; label: string }
-> = {
+>;
+
+const buildChannelConfig = (t: TFunction): ChannelConfig => ({
     EMAIL: {
         icon: Envelope,
         pillClass: 'bg-info-50 text-info-700 ring-1 ring-info-200',
         iconClass: 'text-info-600',
-        label: 'Email',
+        label: t('channels.EMAIL'),
     },
     WHATSAPP: {
         icon: WhatsappLogo,
         pillClass: 'bg-success-50 text-success-700 ring-1 ring-success-200',
         iconClass: 'text-success-600',
-        label: 'WhatsApp',
+        label: t('channels.WHATSAPP'),
     },
     PUSH: {
         icon: BellRinging,
         pillClass: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
         iconClass: 'text-primary-600',
-        label: 'Push',
+        label: t('channels.PUSH'),
     },
     SMS: {
         icon: ChatTeardrop,
         pillClass: 'bg-warning-50 text-warning-700 ring-1 ring-warning-200',
         iconClass: 'text-warning-600',
-        label: 'SMS',
+        label: t('channels.SMS'),
     },
-};
+    // Calls come from admin_core's telephony_call_log, not notification_service.
+    // Separate databases, so this is the one channel merged client-side.
+    CALL: {
+        icon: Phone,
+        pillClass: 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200',
+        iconClass: 'text-neutral-600',
+        label: t('channels.CALL'),
+    },
+});
 
 // Status pill classes use semantic tokens only (no raw colors).
-const STATUS_CONFIG: Record<string, { pillClass: string; label: string }> = {
+type StatusConfig = Record<string, { pillClass: string; label: string }>;
+
+const buildStatusConfig = (t: TFunction): StatusConfig => ({
     PENDING: {
         pillClass: 'bg-warning-50 text-warning-700 ring-1 ring-warning-200',
-        label: 'Pending',
+        label: t('statuses.PENDING'),
     },
     SENT: {
         pillClass: 'bg-info-50 text-info-700 ring-1 ring-info-200',
-        label: 'Sent',
+        label: t('statuses.SENT'),
     },
     DELIVERED: {
         pillClass: 'bg-success-50 text-success-700 ring-1 ring-success-200',
-        label: 'Delivered',
+        label: t('statuses.DELIVERED'),
     },
     READ: {
         pillClass: 'bg-success-50 text-success-700 ring-1 ring-success-200',
-        label: 'Read',
+        label: t('statuses.READ'),
     },
     CLICKED: {
         pillClass: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
-        label: 'Clicked',
+        label: t('statuses.CLICKED'),
     },
     FAILED: {
         pillClass: 'bg-danger-50 text-danger-700 ring-1 ring-danger-200',
-        label: 'Failed',
+        label: t('statuses.FAILED'),
     },
     BOUNCED: {
         pillClass: 'bg-danger-50 text-danger-700 ring-1 ring-danger-200',
-        label: 'Bounced',
+        label: t('statuses.BOUNCED'),
     },
     COMPLAINT: {
         pillClass: 'bg-warning-50 text-warning-700 ring-1 ring-warning-200',
-        label: 'Complaint',
+        label: t('statuses.COMPLAINT'),
     },
     RECEIVED: {
         pillClass: 'bg-info-50 text-info-700 ring-1 ring-info-200',
-        label: 'Received',
+        label: t('statuses.RECEIVED'),
     },
-};
+});
 
-const FILTER_OPTIONS = [
-    { key: 'ALL', label: 'All' },
-    { key: 'EMAIL', label: 'Email' },
-    { key: 'WHATSAPP', label: 'WhatsApp' },
-    { key: 'PUSH', label: 'Push' },
-] as const;
+type ChannelFilter = 'ALL' | 'EMAIL' | 'WHATSAPP' | 'PUSH' | 'CALL';
+
+const buildFilterOptions = (t: TFunction): Array<{ key: ChannelFilter; label: string }> => [
+    { key: 'ALL', label: t('filters.all') },
+    { key: 'EMAIL', label: t('channels.EMAIL') },
+    { key: 'WHATSAPP', label: t('channels.WHATSAPP') },
+    { key: 'PUSH', label: t('channels.PUSH') },
+    { key: 'CALL', label: t('channels.CALL') },
+];
 
 // ─── Status Mini Timeline ───────────────────────────────────────────────────
 
 const STATUS_FLOW_EMAIL = ['SENT', 'DELIVERED', 'READ', 'CLICKED'];
 
 function StatusMiniTimeline({ events, status }: { events: StatusEvent[]; status: string }) {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const statusConfig = buildStatusConfig(t);
     const flow = STATUS_FLOW_EMAIL;
     const achieved = new Set(events.map((e) => e.status));
     // Also mark the current status
@@ -206,7 +313,7 @@ function StatusMiniTimeline({ events, status }: { events: StatusEvent[]; status:
                                 'size-2 rounded-full transition-colors',
                                 active ? 'bg-success-500' : 'bg-neutral-200'
                             )}
-                            title={step}
+                            title={statusConfig[step]?.label ?? step}
                         />
                         {i < flow.length - 1 && (
                             <div
@@ -240,7 +347,9 @@ function DateSeparator({ date }: { date: Date }) {
 // ─── Status Pill ─────────────────────────────────────────────────────────────
 
 function StatusPill({ statusKey }: { statusKey: string }) {
-    const cfg = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.PENDING!;
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const statusConfig = buildStatusConfig(t);
+    const cfg = statusConfig[statusKey] ?? statusConfig.PENDING!;
     return (
         <span
             className={cn(
@@ -257,13 +366,14 @@ function StatusPill({ statusKey }: { statusKey: string }) {
 // Renders the actual attachment sent in a template's media header.
 
 function TimelineHeaderMedia({ type, url }: { type?: string; url: string }) {
-    const t = (type || 'IMAGE').toUpperCase();
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const mediaKind = (type || 'IMAGE').toUpperCase();
 
-    if (t === 'VIDEO') {
+    if (mediaKind === 'VIDEO') {
         return <video src={url} controls className="mb-2 max-h-64 w-full rounded-md bg-neutral-100" />;
     }
 
-    if (t === 'DOCUMENT') {
+    if (mediaKind === 'DOCUMENT') {
         return (
             <a
                 href={url}
@@ -271,7 +381,7 @@ function TimelineHeaderMedia({ type, url }: { type?: string; url: string }) {
                 rel="noopener noreferrer"
                 className="mb-2 inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2 py-1.5 text-xs text-info-600 hover:underline"
             >
-                <FileText className="size-3.5" /> View document
+                <FileText className="size-3.5" /> {t('headerMedia.viewDocument')}
             </a>
         );
     }
@@ -281,7 +391,7 @@ function TimelineHeaderMedia({ type, url }: { type?: string; url: string }) {
         <a href={url} target="_blank" rel="noopener noreferrer">
             <img
                 src={url}
-                alt="attachment"
+                alt={t('headerMedia.attachmentAlt')}
                 loading="lazy"
                 onError={(e) => {
                     const anchor = e.currentTarget.closest('a');
@@ -293,6 +403,27 @@ function TimelineHeaderMedia({ type, url }: { type?: string; url: string }) {
     );
 }
 
+// ─── Origin ────────────────────────────────────────────────────────────────
+// Which workflow or chatbot flow sent a WhatsApp message. Renders nothing when unknown.
+
+function OriginLine({
+    origin,
+    className,
+}: {
+    origin: MessageOrigin | null | undefined;
+    className?: string;
+}) {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const key = messageOriginKey(origin);
+    if (!key || !origin) return null;
+    return (
+        <span className={cn('flex min-w-0 items-center gap-1', className)}>
+            <MessageOriginIcon type={origin.type} />
+            <span className="truncate">{t(key, { name: origin.name })}</span>
+        </span>
+    );
+}
+
 // ─── Expanded Detail Body ───────────────────────────────────────────────────
 // Rendered as the `body` slot of a ProfileTimelineItem when the item is
 // expanded.  Click propagation is stopped so expanding text-selection inside
@@ -301,14 +432,16 @@ function TimelineHeaderMedia({ type, url }: { type?: string; url: string }) {
 function ExpandedDetail({
     item,
     onCollapse,
+    onResend,
 }: {
     item: CommunicationItem;
     onCollapse: () => void;
+    /** Absent on rows that carry no resend control at all (inbound, or no institute). */
+    onResend?: () => void;
 }) {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
     const isEmail = item.channel === 'EMAIL';
-    const subject = isEmail
-        ? extractEmailSubject(item.title, item.fullBody || item.bodyPreview)
-        : item.title;
+    const subject = isEmail ? emailSubjectOf(item, t) : item.title;
 
     return (
         <div
@@ -332,7 +465,7 @@ function ExpandedDetail({
                                     className="truncate text-xs font-semibold text-neutral-800"
                                     title={item.senderInfo || undefined}
                                 >
-                                    {item.senderInfo || 'Email'}
+                                    {item.senderInfo || t('expandedDetail.senderFallback')}
                                 </span>
                                 <span className="shrink-0 text-2xs text-neutral-400">
                                     {format(new Date(item.timestamp), 'MMM d, h:mm a')}
@@ -343,7 +476,9 @@ function ExpandedDetail({
                                     className="truncate text-2xs text-neutral-500"
                                     title={item.recipientInfo}
                                 >
-                                    to {item.recipientInfo}
+                                    {t('expandedDetail.toRecipient', {
+                                        recipient: item.recipientInfo,
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -365,7 +500,7 @@ function ExpandedDetail({
                 (item.fullBody || item.headerMediaUrl) && (
                     <div className="rounded-md border border-neutral-100 bg-neutral-50 p-2.5">
                         <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                            Message
+                            {t('expandedDetail.messageHeading')}
                         </p>
                         {item.headerMediaUrl && (
                             <TimelineHeaderMedia
@@ -378,14 +513,25 @@ function ExpandedDetail({
                                 {item.fullBody}
                             </p>
                         )}
+                        {item.buttons && item.buttons.length > 0 && (
+                            <WhatsAppTemplateButtons
+                                buttons={item.buttons}
+                                className="mt-2 rounded-md border border-neutral-200 bg-white"
+                            />
+                        )}
                     </div>
                 )
             )}
 
+            {/* Who sent it: the workflow or chatbot flow behind this message */}
+            <OriginLine origin={item.origin} className="text-xs text-neutral-700" />
+
             {/* Template name */}
             {item.templateName && (
                 <div className="flex items-center gap-2 text-xs">
-                    <span className="font-medium text-neutral-500">Template:</span>
+                    <span className="font-medium text-neutral-500">
+                        {t('expandedDetail.templateLabel')}
+                    </span>
                     <span className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-neutral-700">
                         {item.templateName}
                     </span>
@@ -397,19 +543,25 @@ function ExpandedDetail({
             <div className="space-y-1 text-xs">
                 {!isEmail && item.senderInfo && (
                     <div className="flex gap-2">
-                        <span className="font-medium text-neutral-500">From:</span>
+                        <span className="font-medium text-neutral-500">
+                            {t('expandedDetail.fromLabel')}
+                        </span>
                         <span className="text-neutral-700">{item.senderInfo}</span>
                     </div>
                 )}
                 {!isEmail && item.recipientInfo && (
                     <div className="flex gap-2">
-                        <span className="font-medium text-neutral-500">To:</span>
+                        <span className="font-medium text-neutral-500">
+                            {t('expandedDetail.toLabel')}
+                        </span>
                         <span className="text-neutral-700">{item.recipientInfo}</span>
                     </div>
                 )}
                 {item.source && (
                     <div className="flex gap-2">
-                        <span className="font-medium text-neutral-500">Source:</span>
+                        <span className="font-medium text-neutral-500">
+                            {t('expandedDetail.sourceLabel')}
+                        </span>
                         <span className="text-neutral-700">{item.source}</span>
                     </div>
                 )}
@@ -418,7 +570,9 @@ function ExpandedDetail({
             {/* Status delivery timeline */}
             {item.statusTimeline && item.statusTimeline.length > 0 && (
                 <div>
-                    <p className="mb-1.5 text-xs font-medium text-neutral-500">Delivery Timeline</p>
+                    <p className="mb-1.5 text-xs font-medium text-neutral-500">
+                        {t('expandedDetail.deliveryTimelineHeading')}
+                    </p>
                     <div className="space-y-1.5">
                         {item.statusTimeline.map((event, i) => (
                             <div
@@ -436,15 +590,67 @@ function ExpandedDetail({
                 </div>
             )}
 
-            <button
-                type="button"
-                onClick={onCollapse}
-                className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
-            >
-                <CaretUp className="size-3" />
-                Collapse
-            </button>
+            <div className="flex items-center justify-between gap-2">
+                <button
+                    type="button"
+                    onClick={onCollapse}
+                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                >
+                    <CaretUp className="size-3" />
+                    {t('expandedDetail.collapse')}
+                </button>
+                {/* Repeated here on purpose: by the time an admin has read the message the header
+                    chip is scrolled out of view, and this is the moment they decide to resend. */}
+                {onResend && <ResendButton item={item} onClick={onResend} />}
+            </div>
         </div>
+    );
+}
+
+// ─── Resend control ──────────────────────────────────────────────────────────
+// Deliberately a filled chip rather than a bare icon: this is the only action on the whole tab,
+// and as grey text beside the status pill it read as a label and went unnoticed. Rows we cannot
+// replay keep the chip, disabled, with the reason on hover — silence there is indistinguishable
+// from the feature not existing.
+
+function ResendButton({
+    item,
+    onClick,
+    className,
+}: {
+    item: CommunicationItem;
+    onClick: () => void;
+    className?: string;
+}) {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const blocked = resendBlockedReason(item);
+    const enabled = canResend(item);
+    const tooltip = enabled
+        ? t('resend.buttonTooltip')
+        : t(`resend.blocked.${blocked}`, { defaultValue: t('resend.blocked.unsupportedChannel') });
+
+    return (
+        <button
+            type="button"
+            disabled={!enabled}
+            title={tooltip}
+            aria-label={tooltip}
+            // The whole card toggles expand — a resend must not also open the row.
+            onClick={(e) => {
+                e.stopPropagation();
+                if (enabled) onClick();
+            }}
+            className={cn(
+                'flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ring-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
+                enabled
+                    ? 'bg-primary-50 text-primary-600 ring-primary-200 hover:bg-primary-100'
+                    : 'cursor-not-allowed bg-neutral-100 text-neutral-400 ring-neutral-200',
+                className
+            )}
+        >
+            <ArrowClockwise className="size-3" />
+            {t('resend.button')}
+        </button>
     );
 }
 
@@ -453,10 +659,19 @@ function ExpandedDetail({
 // It provides the expand/collapse interaction with preview text and delivery
 // status dots — all behaviour the spec requires to be preserved.
 
-function CommItemBody({ item }: { item: CommunicationItem }) {
+function CommItemBody({ item, resend }: { item: CommunicationItem; resend: ResendContext }) {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const channelConfig = buildChannelConfig(t);
     const [expanded, setExpanded] = useState(false);
-    const channel = CHANNEL_CONFIG[item.channel] ?? CHANNEL_CONFIG.EMAIL!;
+    const [resendOpen, setResendOpen] = useState(false);
+    const channel = channelConfig[item.channel] ?? channelConfig.EMAIL!;
     const isInbound = item.direction === 'INBOUND';
+    // Only an outbound message we can rebuild a send from — never an inbound one, and never a
+    // free-text WhatsApp reply, which has no template for the send API to replay.
+    // Shown on every outbound row (disabled where the send cannot be replayed); hidden only on
+    // inbound ones, when the role's display settings withhold it, and when we have no institute
+    // to send on behalf of.
+    const showResend = resend.allowed && showsResendControl(item) && !!resend.instituteId;
 
     const isEmail = item.channel === 'EMAIL';
     // For emails prefer the COMPLETE fullBody — the backend's bodyPreview is often
@@ -483,11 +698,14 @@ function CommItemBody({ item }: { item: CommunicationItem }) {
                         <ArrowUp className="size-3 shrink-0 text-info-500" />
                     )}
                     <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        {isInbound ? 'Received' : 'Sent'} via {channel.label}
+                        {isInbound
+                            ? t('direction.received', { channel: channel.label })
+                            : t('direction.sent', { channel: channel.label })}
                     </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <StatusPill statusKey={item.status} />
+                    {showResend && <ResendButton item={item} onClick={() => setResendOpen(true)} />}
                     {expanded ? (
                         <CaretUp className="size-3 text-neutral-400" />
                     ) : (
@@ -501,11 +719,16 @@ function CommItemBody({ item }: { item: CommunicationItem }) {
                 <p className="line-clamp-2 text-xs text-neutral-600">{displayPreview}</p>
             )}
 
-            {/* Timestamp + mini delivery dots */}
-            <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-xs text-neutral-400">
-                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                </span>
+            {/* Timestamp (+ who sent it) + mini delivery dots */}
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="text-xs text-neutral-400">
+                        {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                    </span>
+                    {!expanded && (
+                        <OriginLine origin={item.origin} className="text-xs text-neutral-500" />
+                    )}
+                </div>
                 {item.channel === 'EMAIL' && !isInbound && (
                     <StatusMiniTimeline events={item.statusTimeline || []} status={item.status} />
                 )}
@@ -513,7 +736,25 @@ function CommItemBody({ item }: { item: CommunicationItem }) {
 
             {/* Expanded details */}
             {expanded && (
-                <ExpandedDetail item={item} onCollapse={() => setExpanded(false)} />
+                <ExpandedDetail
+                    item={item}
+                    onCollapse={() => setExpanded(false)}
+                    onResend={showResend ? () => setResendOpen(true) : undefined}
+                />
+            )}
+
+            {/* Resend confirmation. Rendered in a portal, so its clicks never reach the card. */}
+            {resendOpen && (
+                <ResendMessageDialog
+                    open={resendOpen}
+                    onOpenChange={setResendOpen}
+                    item={item}
+                    instituteId={resend.instituteId}
+                    emailSubject={emailSubjectOf(item, t)}
+                    userId={resend.userId}
+                    recipientName={resend.recipientName}
+                    onSent={resend.onResent}
+                />
             )}
         </div>
     );
@@ -521,12 +762,15 @@ function CommItemBody({ item }: { item: CommunicationItem }) {
 
 // ─── Map a CommunicationItem → ProfileTimelineItem ───────────────────────────
 
-function toTimelineItem(item: CommunicationItem): ProfileTimelineItem {
-    const channel = CHANNEL_CONFIG[item.channel] ?? CHANNEL_CONFIG.EMAIL!;
+function toTimelineItem(
+    item: CommunicationItem,
+    t: TFunction,
+    channelConfig: ChannelConfig,
+    resend: ResendContext
+): ProfileTimelineItem {
+    const channel = channelConfig[item.channel] ?? channelConfig.EMAIL!;
     const isEmail = item.channel === 'EMAIL';
-    const displayTitle = isEmail
-        ? extractEmailSubject(item.title, item.fullBody || item.bodyPreview)
-        : item.title || '(no subject)';
+    const displayTitle = isEmail ? emailSubjectOf(item, t) : item.title || t('noSubject');
 
     // Tone: direction-based — outbound=primary, inbound=success, failed/bounced=danger
     const failedStatuses = new Set(['FAILED', 'BOUNCED', 'COMPLAINT']);
@@ -547,29 +791,133 @@ function toTimelineItem(item: CommunicationItem): ProfileTimelineItem {
             </span>
         ),
         meta: formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }),
-        body: <CommItemBody item={item} />,
+        body: <CommItemBody item={item} resend={resend} />,
     };
 }
+
+// ─── Call items ─────────────────────────────────────────────────────────────
+// A call is not a message: no subject, no body, no delivery statuses. What
+// matters is who dialled whom, whether it connected, how long it ran, and the
+// recording. Rendered as a compact card so it sits alongside messages without
+// pretending to be one.
+
+const ENDED_WELL = new Set(['COMPLETED']);
+const ENDED_BADLY = new Set(['NO_ANSWER', 'BUSY', 'FAILED', 'CANCELLED']);
+
+const callStatusTone = (status: string) =>
+    ENDED_WELL.has(status) ? 'success' : ENDED_BADLY.has(status) ? 'danger' : 'primary';
+
+const callStatusPill = (status: string) =>
+    ENDED_WELL.has(status)
+        ? 'bg-success-50 text-success-700 ring-1 ring-success-200'
+        : ENDED_BADLY.has(status)
+          ? 'bg-danger-50 text-danger-700 ring-1 ring-danger-200'
+          : 'bg-info-50 text-info-700 ring-1 ring-info-200';
+
+const formatCallDuration = (t: TFunction, seconds?: number | null): string | null => {
+    if (!seconds || seconds <= 0) return null;
+    return t('call.duration', { minutes: Math.floor(seconds / 60), seconds: seconds % 60 });
+};
+
+/** Call time: startTime is the provider's answer; AI calls only set createdAt. */
+const callTimestamp = (c: CallLogItem): string =>
+    c.startTime || c.createdAt || c.endTime || new Date(0).toISOString();
+
+const CallItemBody = ({ item, instituteId }: { item: CallLogItem; instituteId: string }) => {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const duration = formatCallDuration(t, item.durationSeconds);
+    const statusLabel = t(`call.status.${item.status}`, { defaultValue: item.status });
+    return (
+        <div className="mt-1.5 rounded-md border border-neutral-200 bg-white p-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                    className={cn(
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium',
+                        callStatusPill(item.status)
+                    )}
+                >
+                    {statusLabel}
+                </span>
+                {duration && <span className="text-2xs text-neutral-500">{duration}</span>}
+                {item.aiDisposition && (
+                    <span className="text-2xs text-neutral-600">
+                        {t('call.outcome')}:{' '}
+                        <span className="font-medium">{item.aiDisposition}</span>
+                    </span>
+                )}
+                {item.aiCallRetry != null && item.aiCallRetry > 0 && (
+                    <span className="text-2xs text-neutral-400">
+                        {t('call.attempt', { n: item.aiCallRetry + 1 })}
+                    </span>
+                )}
+            </div>
+            {/* The recording is the whole reason this channel exists in the tab.
+                Presigned URL is fetched on first play, not on render — the
+                counsellor may scroll past a dozen calls without listening. */}
+            <div className="mt-2">
+                {item.hasRecording ? (
+                    <CallRecordingPlayButton callLogId={item.id} instituteId={instituteId} />
+                ) : (
+                    <span className="text-2xs text-neutral-400">{t('call.noRecording')}</span>
+                )}
+            </div>
+        </div>
+    );
+};
+
+function toCallTimelineItem(
+    item: CallLogItem,
+    t: TFunction,
+    instituteId: string
+): ProfileTimelineItem {
+    const isAi = !!item.aiDisposition || item.aiCallRetry != null;
+    const title = isAi
+        ? t('call.aiCall')
+        : item.direction === 'INBOUND'
+          ? t('call.inbound')
+          : t('call.outbound');
+    return {
+        id: `call-${item.id}`,
+        icon: isAi ? Robot : item.direction === 'INBOUND' ? PhoneIncoming : PhoneOutgoing,
+        tone: callStatusTone(item.status),
+        title: <span className="truncate font-medium text-neutral-800">{title}</span>,
+        meta: formatDistanceToNow(new Date(callTimestamp(item)), { addSuffix: true }),
+        body: <CallItemBody item={item} instituteId={instituteId} />,
+    };
+}
+
+/** One row of the merged feed — a message or a call — with the sort key hoisted. */
+type FeedEntry =
+    | { kind: 'message'; ts: string; item: CommunicationItem }
+    | { kind: 'call'; ts: string; item: CallLogItem };
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export const StudentCommunicationTimeline = () => {
+    const { t } = useTranslation('manageStudentsCommunicationTimeline');
+    const channelConfig = buildChannelConfig(t);
+    const filterOptions = buildFilterOptions(t);
     const { selectedStudent } = useStudentSidebar();
     const [page, setPage] = useState(0);
-    const [channelFilter, setChannelFilter] = useState<string>('ALL');
+    const [channelFilter, setChannelFilter] = useState<ChannelFilter>('ALL');
     const pageSize = 20;
     const { instituteDetails } = useInstituteDetailsStore();
     const instituteId = instituteDetails?.id ?? '';
     const [sendDialog, setSendDialog] = useState<'EMAIL' | 'WHATSAPP' | null>(null);
+    const resendAllowed = useResendAllowed();
 
     const email = selectedStudent?.email || undefined;
     const phone = selectedStudent?.mobile_number || undefined;
     const hasContact = !!(email || phone);
+    const userId = selectedStudent?.user_id || undefined;
 
+    // Messages come from notification_service, keyed by email/phone. Not asked
+    // for at all under the CALL chip — that channel is unknown to it.
+    const wantMessages = channelFilter !== 'CALL';
     const {
         data: timelineData,
-        isLoading,
-        error,
+        isLoading: messagesLoading,
+        error: messagesError,
         refetch,
     } = useQuery({
         queryKey: ['communication-timeline', email, phone, page, channelFilter],
@@ -581,9 +929,32 @@ export const StudentCommunicationTimeline = () => {
                 size: pageSize,
                 channels: channelFilter === 'ALL' ? undefined : [channelFilter],
             }),
-        enabled: hasContact,
+        enabled: hasContact && wantMessages,
         staleTime: 30000,
     });
+
+    // Calls come from admin_core, keyed by the learner's user id — every call
+    // to this person, whoever placed it and however (counsellor, admin, AI).
+    // Fetched under ALL and CALL; the same page index as the messages so the
+    // two paged sources interleave as evenly as two independent pages can.
+    const wantCalls = channelFilter === 'ALL' || channelFilter === 'CALL';
+    const {
+        data: callsData,
+        isLoading: callsLoading,
+        error: callsError,
+        refetch: refetchCalls,
+    } = useQuery({
+        queryKey: ['telephony-call-history', userId, instituteId, page, pageSize],
+        queryFn: () => fetchCallHistory(userId!, instituteId, page, pageSize),
+        enabled: !!userId && !!instituteId && wantCalls,
+        staleTime: 30000,
+    });
+
+    const isLoading =
+        (wantMessages && hasContact && messagesLoading) || (wantCalls && !!userId && callsLoading);
+    // Under ALL, a failed call fetch must not blank the messages — degrade to
+    // messages-only. Under CALL there is nothing else to show, so surface it.
+    const error = wantMessages ? messagesError : callsError;
 
     // ─── Guard states ────────────────────────────────────────────────────────
 
@@ -591,8 +962,8 @@ export const StudentCommunicationTimeline = () => {
         return (
             <ProfileEmpty
                 icon={Envelope}
-                title="No contact details"
-                hint="Select a student with an email or phone number to view their communications."
+                title={t('emptyStates.noContactTitle')}
+                hint={t('emptyStates.noContactHint')}
             />
         );
     }
@@ -604,29 +975,52 @@ export const StudentCommunicationTimeline = () => {
     if (error) {
         return (
             <ProfileError
-                title="Failed to load communications"
-                hint="Something went wrong while fetching messages. Please try again."
-                onRetry={() => void refetch()}
+                title={t('emptyStates.loadErrorTitle')}
+                hint={t('emptyStates.loadErrorHint')}
+                onRetry={() => {
+                    void refetch();
+                    void refetchCalls();
+                }}
             />
         );
     }
 
-    const communications = timelineData?.content || [];
+    const communications = wantMessages ? timelineData?.content || [] : [];
+    const calls = wantCalls ? callsData?.content || [] : [];
+
+    // Shared by every row's resend button — the row itself knows the message, not who owns it.
+    const resendContext: ResendContext = {
+        instituteId,
+        userId,
+        recipientName: selectedStudent?.full_name || undefined,
+        // null (still resolving) renders no control, same as an explicit false.
+        allowed: resendAllowed === true,
+        onResent: () => {
+            void refetch();
+        },
+    };
+
+    // Merge the two sources into one feed, newest first. Each is already a
+    // page from its own service; sorting the union keeps the page coherent
+    // even though the boundary between pages is only approximate.
+    const feed: FeedEntry[] = [
+        ...communications.map((item): FeedEntry => ({ kind: 'message', ts: item.timestamp, item })),
+        ...calls.map((item): FeedEntry => ({ kind: 'call', ts: callTimestamp(item), item })),
+    ].sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
     // Group by date for separators
-    const groupedItems: Array<
-        { type: 'date'; date: Date } | { type: 'item'; item: CommunicationItem }
-    > = [];
+    const groupedItems: Array<{ type: 'date'; date: Date } | { type: 'item'; entry: FeedEntry }> =
+        [];
     let lastDate: string | null = null;
 
-    for (const item of communications) {
-        const itemDate = new Date(item.timestamp);
+    for (const entry of feed) {
+        const itemDate = new Date(entry.ts);
         const dateKey = format(itemDate, 'yyyy-MM-dd');
         if (dateKey !== lastDate) {
             groupedItems.push({ type: 'date', date: itemDate });
             lastDate = dateKey;
         }
-        groupedItems.push({ type: 'item', item });
+        groupedItems.push({ type: 'item', entry });
     }
 
     // Count by channel for filter chip badges
@@ -637,6 +1031,17 @@ export const StudentCommunicationTimeline = () => {
         },
         {} as Record<string, number>
     );
+    if (calls.length > 0) channelCounts.CALL = calls.length;
+
+    // Two paged sources → the feed's page count is whichever runs longer, and
+    // its total is the sum. Good enough for a per-student view.
+    const totalPages = Math.max(
+        wantMessages ? timelineData?.totalPages ?? 0 : 0,
+        wantCalls ? callsData?.totalPages ?? 0 : 0
+    );
+    const totalElements =
+        (wantMessages ? timelineData?.totalElements ?? 0 : 0) +
+        (wantCalls ? callsData?.totalElements ?? 0 : 0);
 
     return (
         <div className="flex flex-col gap-4">
@@ -648,9 +1053,9 @@ export const StudentCommunicationTimeline = () => {
                     </span>
                     <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-semibold text-neutral-800">
-                            Send Notification
+                            {t('sendCard.heading')}
                         </h4>
-                        <p className="text-2xs text-neutral-500">Email or WhatsApp message</p>
+                        <p className="text-2xs text-neutral-500">{t('sendCard.subheading')}</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -665,7 +1070,7 @@ export const StudentCommunicationTimeline = () => {
                         className="flex flex-1 items-center justify-center gap-1.5 border-info-200 text-info-700 hover:border-info-300 hover:bg-info-50"
                     >
                         <Envelope className="size-3.5" />
-                        Email
+                        {t('channels.EMAIL')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -678,14 +1083,14 @@ export const StudentCommunicationTimeline = () => {
                         className="flex flex-1 items-center justify-center gap-1.5 border-success-200 text-success-700 hover:border-success-300 hover:bg-success-50"
                     >
                         <WhatsappLogo className="size-3.5" />
-                        WhatsApp
+                        {t('channels.WHATSAPP')}
                     </MyButton>
                 </div>
             </div>
 
             {/* ── Channel filter chips ─────────────────────────────────────── */}
             <div className="flex flex-wrap items-center gap-2">
-                {FILTER_OPTIONS.map((opt) => (
+                {filterOptions.map((opt) => (
                     <button
                         key={opt.key}
                         type="button"
@@ -706,22 +1111,29 @@ export const StudentCommunicationTimeline = () => {
                         ) : null}
                     </button>
                 ))}
-                {timelineData?.totalElements != null && (
+                {(timelineData || callsData) && (
                     <span className="ml-auto text-xs text-neutral-400">
-                        {timelineData.totalElements} total
+                        {t('totalCount', { count: totalElements })}
                     </span>
                 )}
             </div>
 
             {/* ── Timeline or empty state ──────────────────────────────────── */}
-            {communications.length === 0 ? (
+            {feed.length === 0 ? (
                 <ProfileEmpty
-                    icon={ChatsCircle}
-                    title="No communications found"
+                    icon={channelFilter === 'CALL' ? Phone : ChatsCircle}
+                    title={t('emptyStates.noCommunicationsTitle')}
                     hint={
-                        channelFilter !== 'ALL'
-                            ? `No ${channelFilter.toLowerCase()} messages yet. Try selecting "All" to see other channels.`
-                            : 'No messages have been sent to or received from this student yet.'
+                        channelFilter === 'CALL'
+                            ? t('emptyStates.noCalls')
+                            : channelFilter !== 'ALL'
+                              ? t('emptyStates.noChannelMessages', {
+                                    channel: (
+                                        channelConfig[channelFilter]?.label ?? channelFilter
+                                    ).toLowerCase(),
+                                    allLabel: t('filters.all'),
+                                })
+                              : t('emptyStates.noMessagesYet')
                     }
                     action={
                         channelFilter === 'ALL' ? (
@@ -735,7 +1147,7 @@ export const StudentCommunicationTimeline = () => {
                                 className="flex items-center gap-1.5"
                             >
                                 <Envelope className="size-3.5" />
-                                Send first message
+                                {t('emptyStates.sendFirstMessage')}
                             </MyButton>
                         ) : undefined
                     }
@@ -768,8 +1180,19 @@ export const StudentCommunicationTimeline = () => {
                                     date: entry.date,
                                     key: `date-${entry.date.toISOString()}`,
                                 });
+                            } else if (entry.entry.kind === 'call') {
+                                currentGroup.push(
+                                    toCallTimelineItem(entry.entry.item, t, instituteId)
+                                );
                             } else {
-                                currentGroup.push(toTimelineItem(entry.item));
+                                currentGroup.push(
+                                    toTimelineItem(
+                                        entry.entry.item,
+                                        t,
+                                        channelConfig,
+                                        resendContext
+                                    )
+                                );
                             }
                         }
                         if (currentGroup.length > 0) {
@@ -792,7 +1215,7 @@ export const StudentCommunicationTimeline = () => {
             )}
 
             {/* ── Pagination ───────────────────────────────────────────────── */}
-            {timelineData && timelineData.totalPages > 1 && (
+            {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-3 border-t border-neutral-200 pt-4">
                     <MyButton
                         type="button"
@@ -801,19 +1224,22 @@ export const StudentCommunicationTimeline = () => {
                         disable={page === 0}
                         onClick={() => setPage(Math.max(0, page - 1))}
                     >
-                        Previous
+                        {t('pagination.previous')}
                     </MyButton>
                     <span className="text-xs text-neutral-500">
-                        Page {page + 1} of {timelineData.totalPages}
+                        {t('pagination.pageOf', {
+                            current: page + 1,
+                            total: totalPages,
+                        })}
                     </span>
                     <MyButton
                         type="button"
                         buttonType="secondary"
                         scale="small"
-                        disable={page >= timelineData.totalPages - 1}
-                        onClick={() => setPage(Math.min(timelineData.totalPages - 1, page + 1))}
+                        disable={page >= totalPages - 1}
+                        onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                     >
-                        Next
+                        {t('pagination.next')}
                     </MyButton>
                 </div>
             )}

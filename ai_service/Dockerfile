@@ -49,6 +49,11 @@ RUN apt-get update && apt-get install -y \
 
 RUN playwright install chromium
 
+# Bake the local embedding model (fastembed / ONNX) into the image so a pod
+# never downloads from Hugging Face at request time. ~440 MB.
+ENV FASTEMBED_CACHE_PATH=/opt/fastembed
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding('BAAI/bge-base-en-v1.5', cache_dir='/opt/fastembed')"
+
 COPY . /app/ai_service
 
 EXPOSE 8077

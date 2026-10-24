@@ -1,0 +1,37 @@
+{
+    "cardTitle": "Configuration des paiements",
+    "addPaymentPlan": "Ajouter un plan de paiement",
+    "defaultCurrency": "Devise par défaut",
+    "selectCurrencyPlaceholder": "Sélectionner une devise",
+    "sections": {
+        "freeOptions": "Options gratuites",
+        "paidOptions": "Options payantes"
+    },
+    "planCount_one": "{{count}} plan",
+    "planCount_many": "{{count}} plans",
+    "planCount_other": "{{count}} plans",
+    "planPreviewTitle": "Aperçu du plan - {{name}}",
+    "intervalPlanFallback": "Plan {{value}} {{unit}}",
+    "discounts": {
+        "percentageOff": "{{amount}} % de réduction",
+        "fixedOff": "{{symbol}}{{amount}} de réduction",
+        "nameWithInterval": "{{discountLabel}} - {{intervalTitle}}"
+    },
+    "toasts": {
+        "noPaymentOptions": "Aucune option de paiement trouvée. Créez votre premier plan de paiement !",
+        "loadFailed": "Échec du chargement des options de paiement",
+        "defaultUpdated": "Plan de paiement par défaut mis à jour avec succès",
+        "feePlanCreated": "Plan de frais créé avec succès",
+        "planUpdated": "Plan de paiement mis à jour avec succès",
+        "planCreated": "Plan de paiement créé avec succès"
+    },
+    "errors": {
+        "generic": "Erreur lors de : {{operation}}"
+    },
+    "operations": {
+        "setDefaultPlan": "la définition du plan par défaut",
+        "editPlan": "la modification du plan",
+        "savePaymentPlan": "l'enregistrement du plan de paiement",
+        "previewPlan": "l'aperçu du plan"
+    }
+}

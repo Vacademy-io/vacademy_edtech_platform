@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "fetchFailed": "Failed to fetch student details: {{message}}",
+        "unknownError": "Unknown error"
+    }
+}

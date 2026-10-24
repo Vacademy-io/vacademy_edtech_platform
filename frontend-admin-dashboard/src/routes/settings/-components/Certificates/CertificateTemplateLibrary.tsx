@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, PencilSimple, Plus, Star, Trash } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export const CertificateTemplateLibrary = ({
     onAdd,
     disabled,
 }: Props) => {
+    const { t } = useTranslation('settingsCertificateTemplateLibrary');
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [draftName, setDraftName] = useState('');
 
@@ -51,11 +53,15 @@ export const CertificateTemplateLibrary = ({
         <div className="rounded-lg border bg-card p-4">
             <div className="mb-3 flex items-start justify-between gap-4">
                 <div>
-                    <h3 className="text-sm font-semibold text-neutral-800">My Templates</h3>
+                    <h3 className="text-sm font-semibold text-neutral-800">
+                        {t('header.title')}
+                    </h3>
                     <p className="text-xs text-neutral-500">
-                        Keep as many designs as you like. The one marked{' '}
-                        <span className="font-medium text-amber-700">Default</span> is the
-                        certificate learners receive.
+                        {t('header.descriptionPart1')}{' '}
+                        <span className="font-medium text-amber-700">
+                            {t('header.descriptionDefault')}
+                        </span>{' '}
+                        {t('header.descriptionPart2')}
                     </p>
                 </div>
                 <MyButton
@@ -66,16 +72,15 @@ export const CertificateTemplateLibrary = ({
                     className="shrink-0"
                 >
                     <Plus size={14} className="mr-1" />
-                    Add template
+                    {t('addTemplate')}
                 </MyButton>
             </div>
 
             {templates.length === 0 ? (
                 <div className="rounded-md border border-dashed border-neutral-300 p-6 text-center">
-                    <p className="text-sm text-neutral-600">No saved templates yet.</p>
+                    <p className="text-sm text-neutral-600">{t('emptyState.title')}</p>
                     <p className="mt-1 text-xs text-neutral-500">
-                        Pick a ready-made design below, or upload your own — it will be saved here
-                        and set as the default.
+                        {t('emptyState.description')}
                     </p>
                 </div>
             ) : (
@@ -99,7 +104,7 @@ export const CertificateTemplateLibrary = ({
                                     disabled={disabled}
                                     onClick={() => onOpen(template.id)}
                                     className="relative aspect-[1123/794] w-full bg-neutral-50"
-                                    title="Open this design in the editor"
+                                    title={t('card.openTitle')}
                                 >
                                     <img
                                         src={template.imageTemplate.imageDataUrl}
@@ -113,13 +118,13 @@ export const CertificateTemplateLibrary = ({
                                         // pale amber chip disappears into.
                                         <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-caption font-medium text-white shadow-sm">
                                             <Star size={10} weight="fill" />
-                                            Default
+                                            {t('card.defaultBadge')}
                                         </span>
                                     )}
                                     {isActive && (
                                         <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-primary-500 px-2 py-0.5 text-caption font-medium text-white">
                                             <Check size={10} weight="bold" />
-                                            Editing
+                                            {t('card.editingBadge')}
                                         </span>
                                     )}
                                 </button>
@@ -136,7 +141,7 @@ export const CertificateTemplateLibrary = ({
                                                 if (e.key === 'Escape') setRenamingId(null);
                                             }}
                                             className="w-full rounded border px-1.5 py-1 text-caption"
-                                            aria-label="Template name"
+                                            aria-label={t('card.renameInputAriaLabel')}
                                         />
                                     ) : (
                                         <button
@@ -147,7 +152,7 @@ export const CertificateTemplateLibrary = ({
                                                 setDraftName(template.name);
                                             }}
                                             className="flex items-center gap-1 truncate text-left text-caption font-semibold text-neutral-800 hover:text-primary-500"
-                                            title="Rename"
+                                            title={t('card.renameTitle')}
                                         >
                                             <span className="truncate">{template.name}</span>
                                             <PencilSimple
@@ -160,7 +165,7 @@ export const CertificateTemplateLibrary = ({
                                     <div className="flex items-center justify-between gap-1">
                                         {isDefault ? (
                                             <span className="text-caption text-neutral-400">
-                                                Issued to learners
+                                                {t('card.issuedToLearners')}
                                             </span>
                                         ) : (
                                             <button
@@ -169,7 +174,7 @@ export const CertificateTemplateLibrary = ({
                                                 onClick={() => onMakeDefault(template.id)}
                                                 className="text-caption font-medium text-primary-500 hover:underline disabled:cursor-not-allowed"
                                             >
-                                                Make default
+                                                {t('card.makeDefault')}
                                             </button>
                                         )}
                                         {/* Deleting the default would leave the
@@ -183,8 +188,10 @@ export const CertificateTemplateLibrary = ({
                                                 disabled={disabled}
                                                 onClick={() => onDelete(template.id)}
                                                 className="rounded p-1 text-neutral-400 hover:bg-danger-50 hover:text-danger-600"
-                                                title="Delete this template"
-                                                aria-label={`Delete ${template.name}`}
+                                                title={t('card.deleteTitle')}
+                                                aria-label={t('card.deleteAriaLabel', {
+                                                    name: template.name,
+                                                })}
                                             >
                                                 <Trash size={12} />
                                             </button>

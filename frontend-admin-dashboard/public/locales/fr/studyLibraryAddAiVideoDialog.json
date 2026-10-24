@@ -1,0 +1,226 @@
+{
+    "heading": "Créer une vidéo IA",
+    "steps": {
+        "teach": "Quoi enseigner",
+        "format": "Format",
+        "review": "Vérifier et créer",
+        "progress": "Étape {{current}} sur {{total}}"
+    },
+    "teach": {
+        "topic": {
+            "label": "Sujet",
+            "placeholder": "ex. : La photosynthèse"
+        },
+        "objectives": {
+            "label": "Que doivent savoir faire les élèves après la vidéo ?",
+            "placeholder": "ex. : Expliquer la phase claire et la phase sombre, et écrire l'équation bilan"
+        },
+        "audience": {
+            "label": "Pour qui ?",
+            "placeholder": "ex. : 4e, candidats au NEET, débutants"
+        },
+        "language": {
+            "label": "Langue",
+            "search": "Rechercher une langue",
+            "empty": "Aucune langue trouvée"
+        },
+        "sources": {
+            "title": "Utiliser le contenu de ce chapitre",
+            "helper": "Facultatif. La vidéo s'en tient aux diapositives et PDF choisis.",
+            "empty": "Ce chapitre ne contient encore aucun PDF, document ou vidéo publié.",
+            "draftsHidden_one": "{{count}} diapositive en brouillon n'est pas listée — publiez-la pour l'utiliser ici.",
+            "draftsHidden_other": "{{count}} diapositives en brouillon ne sont pas listées — publiez-les pour les utiliser ici.",
+            "selected": "{{count}} sélectionnée(s)",
+            "untitled": "Diapositive sans titre",
+            "kind": {
+                "pdf": "PDF",
+                "document": "Document",
+                "video": "Vidéo",
+                "ai_video": "Vidéo IA"
+            }
+        },
+        "upload": {
+            "button": "Importer un PDF",
+            "uploading": "Importation…",
+            "helper": "Jusqu'à {{max}} PDF de 20 pages chacun.",
+            "remove": "Retirer {{name}}",
+            "failed": "Impossible d'importer {{name}}. Veuillez réessayer.",
+            "notPdf": "{{name}} n'est pas un PDF.",
+            "limit": "Vous pouvez joindre jusqu'à {{max}} PDF."
+        },
+        "notes": {
+            "label": "Vos notes",
+            "placeholder": "Points clés, exemples ou erreurs fréquentes des élèves — tout ce que la vidéo doit couvrir.",
+            "helper": "Vos notes et vos sources guident le script : la vidéo enseigne à votre façon.",
+            "counter": "{{count}} / {{max}}"
+        },
+        "errors": {
+            "required": "Saisissez un sujet",
+            "tooLong": "Ne dépassez pas {{max}} caractères"
+        }
+    },
+    "format": {
+        "title": "Choisissez un format",
+        "options": {
+            "lesson_teacher": {
+                "label": "Cours avec un enseignant",
+                "bestFor": "Idéal pour les matières du collège, du lycée et du supérieur"
+            },
+            "board_explainer": {
+                "label": "Explication au tableau",
+                "bestFor": "Idéal pour les démonstrations de maths et de sciences"
+            },
+            "problem_walkthrough": {
+                "label": "Exercice corrigé",
+                "bestFor": "Idéal pour les problèmes type JEE, NEET et examens"
+            },
+            "quick_concept": {
+                "label": "Notion express",
+                "bestFor": "Idéal pour le micro-apprentissage"
+            },
+            "revision_short": {
+                "label": "Révision courte",
+                "bestFor": "Idéal pour réviser sur WhatsApp et Instagram (portrait)"
+            },
+            "storybook": {
+                "label": "Histoire illustrée",
+                "bestFor": "Idéal pour l'école primaire"
+            },
+            "conversation": {
+                "label": "Dialogue",
+                "bestFor": "Idéal pour les langues et les compétences relationnelles"
+            },
+            "code_lesson": {
+                "label": "Cours de code",
+                "bestFor": "Idéal pour la programmation"
+            }
+        },
+        "teacher": {
+            "label": "Enseignant",
+            "labelOptional": "Enseignant (facultatif)",
+            "loading": "Chargement des enseignants…",
+            "none": "Sans enseignant",
+            "noneHelper": "Tableau seul",
+            "stock": "Prêt à l'emploi",
+            "yours": "Votre avatar",
+            "empty": "Aucun avatar d'enseignant n'est encore prêt. Ajoutez-en un dans les paramètres du tuteur IA, ou choisissez un format sans enseignant.",
+            "loadFailed": "Impossible de charger les enseignants. Fermez puis rouvrez cette fenêtre pour réessayer.",
+            "notAllowed": "Les enseignants à l'écran ne sont pas activés pour votre établissement. Choisissez un autre format.",
+            "required": "Choisissez un enseignant pour ce format"
+        },
+        "layout": {
+            "label": "Position de l'enseignant",
+            "options": {
+                "corner": "Coin",
+                "bubble": "Bulle",
+                "side": "Panneau latéral",
+                "presenter": "Présentateur",
+                "board": "Tableau seul"
+            }
+        },
+        "voice": {
+            "label": "Voix",
+            "female": "Féminine",
+            "male": "Masculine"
+        },
+        "duration": {
+            "label": "Durée",
+            "notAllowed": "Plus long que ce que votre établissement autorise",
+            "options": {
+                "d1to2": "1–2 min",
+                "d2to3": "2–3 min",
+                "d3to5": "3–5 min",
+                "d5to8": "5–8 min"
+            }
+        },
+        "quality": {
+            "label": "Qualité",
+            "notAllowed": "Non activée pour votre établissement",
+            "options": {
+                "standard": {
+                    "label": "Standard",
+                    "helper": "Visuels clairs, le moins de crédits"
+                },
+                "premium": {
+                    "label": "Premium",
+                    "helper": "Script relu, visuels plus nets"
+                },
+                "ultra": {
+                    "label": "Optimale",
+                    "helper": "Toutes les améliorations, le plus de crédits"
+                }
+            }
+        },
+        "advanced": {
+            "toggle": "Options avancées",
+            "workedExample": "Inclure un exemple résolu",
+            "recap": "Terminer par un récapitulatif",
+            "captions": "Afficher les sous-titres",
+            "music": "Musique de fond",
+            "subject": {
+                "label": "Matière",
+                "placeholder": "ex. : Physique"
+            },
+            "orientation": {
+                "label": "Orientation",
+                "auto": "Automatique ({{value}})",
+                "landscape": "Paysage 16:9",
+                "portrait": "Portrait 9:16"
+            }
+        },
+        "errors": {
+            "subjectTooLong": "La matière ne doit pas dépasser {{max}} caractères"
+        }
+    },
+    "review": {
+        "submitFailed": "Impossible de créer la vidéo",
+        "summary": {
+            "title": "Votre vidéo",
+            "topic": "Sujet",
+            "sources": "Sources",
+            "sourcesValue": "{{slides}} de ce chapitre · {{files}} PDF",
+            "withNotes": "vos notes",
+            "noSources": "Sujet uniquement",
+            "language": "Langue",
+            "format": "Format",
+            "teacher": "Enseignant",
+            "teacherPicked": "Choisi",
+            "noTeacher": "Aucun",
+            "length": "Durée",
+            "edit": "Modifier"
+        },
+        "cost": {
+            "title": "Coût estimé",
+            "loading": "Calcul du coût…",
+            "failed": "Impossible d'estimer le coût.",
+            "retry": "Réessayer",
+            "range": "{{low}}–{{high}} crédits",
+            "single": "{{value}} crédits",
+            "expected": "Le plus probable : environ {{value}} crédits",
+            "balance": "Votre solde : {{value}} crédits",
+            "breakdown": "Voir le détail",
+            "note": "Vous ne payez que ce que la vidéo consomme réellement. Si elle échoue ou si vous l'annulez, les crédits non utilisés sont remboursés."
+        },
+        "blocked": "Cette vidéo ne peut pas être créée",
+        "blockedFallback": "Les paramètres vidéo IA de votre établissement n'autorisent pas cette vidéo.",
+        "warnings": "À savoir",
+        "afterCreate": "Une diapositive en brouillon est ajoutée tout de suite. La vidéo continue de se générer en arrière-plan — vous serez notifié dès qu'elle sera prête."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "back": "Retour",
+        "next": "Suivant",
+        "create": "Créer la vidéo",
+        "creating": "Lancement…",
+        "retrySlide": "Ajouter à nouveau la diapositive"
+    },
+    "errors": {
+        "generateFailed": "Impossible de lancer la vidéo. Veuillez réessayer.",
+        "slideFailed": "La vidéo est lancée, mais la diapositive n'a pas pu être ajoutée : {{detail}}",
+        "slideFailedGeneric": "La vidéo est lancée, mais la diapositive n'a pas pu être ajoutée. Veuillez réessayer."
+    },
+    "toasts": {
+        "generating": "Génération en cours — nous vous préviendrons dès qu'elle sera prête",
+        "reorderFailed": "Diapositive ajoutée, mais impossible de la placer à la fin"
+    }
+}

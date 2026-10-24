@@ -1,0 +1,67 @@
+{
+    "navHeading": "टीचिंग असिस्टेंट",
+    "greetingMorning": "सुप्रभात।",
+    "greetingMorningNamed": "सुप्रभात, {{name}}।",
+    "greetingAfternoon": "शुभ दोपहर।",
+    "greetingAfternoonNamed": "शुभ दोपहर, {{name}}।",
+    "greetingEvening": "शुभ संध्या।",
+    "greetingEveningNamed": "शुभ संध्या, {{name}}।",
+    "headerSubtitle": "आइए आपको कुछ ही क्लिक में सही टूल तक पहुँचाते हैं।",
+    "step1Heading": "आज आप यहाँ किस काम से आए हैं?",
+    "step1Subtitle": "मुख्य लक्ष्य चुनें। अगले चरण में हम विवरण तय करेंगे।",
+    "ctaOpen": "खोलें",
+    "ctaContinue": "जारी रखें",
+    "back": "वापस",
+    "step2HeadingFallback": "{{title}} — कौन सा तरीका?",
+    "step2Subtitle": "आप कैसे शुरू करना चाहते हैं, चुनें। अगली स्क्रीन विवरण पूछेगी।",
+    "recentWorkHeading": "आपका हालिया काम",
+    "viewAll": "सभी देखें",
+    "topicBasedQuestionsFallback": "विषय-आधारित प्रश्न",
+    "categories": {
+        "assessment": {
+            "title": "एक असेसमेंट बनाएं",
+            "subtitle": "प्रश्न पत्र, क्विज़ या टेस्ट — आपके पास मौजूद किसी भी स्रोत से।",
+            "step2Heading": "आप प्रश्न किस तरह बनवाना चाहेंगे?"
+        },
+        "lecture-plan": {
+            "title": "एक लेक्चर की योजना बनाएं",
+            "subtitle": "मुख्य बिंदुओं और वैकल्पिक होमवर्क के साथ समय-आधारित योजना।"
+        },
+        "lecture-review": {
+            "title": "मेरी पढ़ाने की शैली की समीक्षा करें",
+            "subtitle": "अपनी रिकॉर्ड की गई कक्षा की सौम्य और विशिष्ट समीक्षा पाएं।"
+        }
+    },
+    "subOptions": {
+        "assessment": {
+            "fromTopic": {
+                "title": "किसी विषय से",
+                "subtitle": "एक विषय लिखें, हम प्रश्न तैयार करेंगे।"
+            },
+            "fromDocument": {
+                "title": "किसी दस्तावेज़ से",
+                "subtitle": "PDF, Word या PowerPoint — इसकी सामग्री पर आधारित नए प्रश्न।"
+            },
+            "fromAudio": {
+                "title": "किसी ऑडियो रिकॉर्डिंग से",
+                "subtitle": "रिकॉर्डिंग अपलोड करें — जो कहा गया उस पर आधारित प्रश्न।"
+            },
+            "fromPhoto": {
+                "title": "किसी पेपर की फोटो से",
+                "subtitle": "प्रिंटेड पेपर की फोटो लें — उसे संपादन-योग्य प्रश्नों में बदलें।"
+            },
+            "fromExistingPaper": {
+                "title": "मौजूदा प्रश्न पत्र से",
+                "subtitle": "अपने पास पहले से मौजूद प्रश्न पत्र को डिजिटाइज़ करें।"
+            },
+            "fromQuestionBank": {
+                "title": "मेरे प्रश्न बैंक से",
+                "subtitle": "विषय अनुसार स्वतः क्रमबद्ध करें, या विशिष्ट प्रश्न चुनें।"
+            },
+            "chatWithDocument": {
+                "title": "किसी दस्तावेज़ के साथ चैट करें",
+                "subtitle": "PDF के बारे में बातचीत करें — प्रश्न या सारांश माँगें।"
+            }
+        }
+    }
+}

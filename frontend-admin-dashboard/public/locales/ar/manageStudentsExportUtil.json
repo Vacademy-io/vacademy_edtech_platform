@@ -1,0 +1,35 @@
+{
+    "columns": {
+        "learnerName": "اسم {{term}}",
+        "enrollmentNumber": "رقم التسجيل",
+        "username": "اسم المستخدم",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "gender": "الجنس",
+        "dateOfBirth": "تاريخ الميلاد",
+        "status": "الحالة",
+        "sessionExpiryDate": "تاريخ انتهاء {{term}}",
+        "address": "العنوان",
+        "city": "المدينة",
+        "state": "الولاية / المحافظة",
+        "country": "الدولة",
+        "pinCode": "الرمز البريدي",
+        "collegeSchool": "الكلية / المدرسة",
+        "fatherName": "اسم الأب / ولي الأمر",
+        "fatherMobile": "رقم جوال الأب / ولي الأمر",
+        "fatherEmail": "البريد الإلكتروني للأب / ولي الأمر",
+        "motherName": "اسم الأم / ولية الأمر",
+        "motherMobile": "رقم جوال الأم / ولية الأمر",
+        "motherEmail": "البريد الإلكتروني للأم / ولية الأمر",
+        "attendancePercent": "نسبة الحضور %",
+        "referralsCount": "عدد الإحالات",
+        "createdAt": "تاريخ الإنشاء"
+    },
+    "groups": {
+        "identity": "الهوية",
+        "contactAddress": "التواصل والعنوان",
+        "guardian": "ولي الأمر",
+        "other": "أخرى",
+        "customFields": "الحقول المخصصة"
+    }
+}

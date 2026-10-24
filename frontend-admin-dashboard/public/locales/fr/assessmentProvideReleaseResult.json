@@ -1,0 +1,11 @@
+{
+    "dialog": {
+        "heading": "Publier le résultat",
+        "confirmTextPrefix": "Voulez-vous vraiment publier le résultat pour",
+        "confirmSuffix": "sélectionné(s) ?"
+    },
+    "doneButton": "Terminé",
+    "toasts": {
+        "releaseSuccess": "Le résultat de cette évaluation a été publié pour les étudiants sélectionnés. Veuillez vérifier votre e-mail !"
+    }
+}

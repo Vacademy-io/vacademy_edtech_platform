@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "attempted": "تمت المحاولة",
+        "ongoing": "جارٍ",
+        "pending": "معلّق"
+    },
+    "participantsTabs": {
+        "internal": "المشاركون الداخليون",
+        "external": "المشاركون الخارجيون"
+    },
+    "batchSelectionTabs": {
+        "batch": "اختيار الدفعة",
+        "individual": "اختيار فردي"
+    },
+    "actions": {
+        "revaluate": "إعادة التقييم"
+    },
+    "dialogs": {
+        "revaluateResultTitle": "إعادة تقييم النتيجة"
+    },
+    "toasts": {
+        "exportPdfSuccess": "تم تصدير بيانات قائمة تسليمات الطلاب بصيغة PDF بنجاح",
+        "exportCsvSuccess": "تم تصدير بيانات قائمة تسليمات الطلاب بصيغة CSV بنجاح"
+    }
+}

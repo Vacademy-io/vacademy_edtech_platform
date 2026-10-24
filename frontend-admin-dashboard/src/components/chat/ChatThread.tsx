@@ -1,6 +1,16 @@
-import { useEffect, useRef } from 'react';
-import { Flag, ChatCircleDots, ArrowClockwise, Trash } from '@phosphor-icons/react';
+import { useEffect, useRef, useState } from 'react';
+import { Flag, ChatCircleDots, ArrowClockwise, Trash, PencilSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { isAdminForInstitute } from '@/lib/auth/roleUtils';
+import { MyButton } from '@/components/design-system/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import type {
     ChatConversationResponse,
     ChatMessageResponse,
@@ -27,9 +37,12 @@ interface ChatThreadProps {
     isLoading: boolean;
     hasMore: boolean;
     onLoadMore: () => void;
-    onReport: (message: ChatMessageResponse) => void;
+    /** Omit to hide the report affordance (e.g. surfaces with no review queue). */
+    onReport?: (message: ChatMessageResponse) => void;
     onRetry: (message: ThreadMessage) => void;
     onDelete: (message: ThreadMessage) => void;
+    /** Omit to hide the edit affordance. Resolves once the server has accepted the new text. */
+    onEdit?: (message: ThreadMessage, text: string) => Promise<void>;
 }
 
 const dayLabel = (iso: string): string => {
@@ -63,10 +76,22 @@ export function ChatThread({
     onReport,
     onRetry,
     onDelete,
+    onEdit,
 }: ChatThreadProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
+    const [deleteTarget, setDeleteTarget] = useState<ThreadMessage | null>(null);
+    const [editTarget, setEditTarget] = useState<ThreadMessage | null>(null);
+    const [editText, setEditText] = useState('');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
     const showSenderNames = conversation.type !== 'DIRECT';
-    const canModerate = MODERATOR_ROLES.has((conversation.memberRole ?? '').toUpperCase());
+    // Mirrors the server's rule exactly, so the control is never shown for an action that would 403.
+    // Two independent grants: the per-conversation member role, and the institute ADMIN role from the
+    // token. The latter is needed because an admin who is only OBSERVING a batch (surfaced by role,
+    // never joined) has no member row at all — but it does NOT extend to a DM, which stays private to
+    // its two participants with only the sender able to delete.
+    const canModerate =
+        MODERATOR_ROLES.has((conversation.memberRole ?? '').toUpperCase()) ||
+        (conversation.type !== 'DIRECT' && isAdminForInstitute(conversation.instituteId));
 
     // Auto-scroll to the newest message when the count grows.
     useEffect(() => {
@@ -122,7 +147,23 @@ export function ChatThread({
                     const isOwn = m.senderId === currentUserId;
                     // Only persisted (non-temp), non-deleted, settled messages can be deleted.
                     const isLocalOnly = m.id.startsWith('temp-') || m.pending || m.failed;
-                    const canDelete = !m.isDeleted && !isLocalOnly && (isOwn || canModerate);
+                    // Deleting your OWN message can be switched off per institute (students only);
+                    // moderation is a separate grant and is never gated by it. `!== false` so an older
+                    // backend that doesn't send the flag keeps today's behaviour.
+                    const canDeleteOwn = conversation.canDeleteOwnMessages !== false;
+                    const canDelete =
+                        !m.isDeleted && !isLocalOnly && ((isOwn && canDeleteOwn) || canModerate);
+                    // Reporting targets a persisted message id, so an optimistic bubble can't be one.
+                    const canReport = !!onReport && !isOwn && !isLocalOnly && !m.isDeleted;
+                    // Only a message of your own that still has (or can hold) a body is editable —
+                    // an edit rewrites text, so a tombstone or an unsent bubble has nothing to edit.
+                    const canEdit =
+                        !!onEdit &&
+                        isOwn &&
+                        !m.isDeleted &&
+                        !isLocalOnly &&
+                        conversation.canEditOwnMessages !== false;
+                    const hasActions = canReport || canDelete || canEdit;
                     const key = dayKey(m.createdAt);
                     const showDay = key !== lastDay;
                     lastDay = key;
@@ -131,7 +172,7 @@ export function ChatThread({
                         <div key={m.id}>
                             {showDay && (
                                 <div className="my-3 flex justify-center">
-                                    <span className="rounded-full bg-neutral-200 px-3 py-1 text-caption font-medium text-neutral-600">
+                                    <span className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-caption font-medium text-neutral-600">
                                         {dayLabel(m.createdAt)}
                                     </span>
                                 </div>
@@ -140,7 +181,14 @@ export function ChatThread({
                             <div className={cn('flex', isOwn ? 'justify-end' : 'justify-start')}>
                                 <div
                                     className={cn(
-                                        'group relative max-w-[78%] rounded-2xl px-3 py-2 shadow-sm', // design-lint-ignore: percentage bubble width has no spacing token
+                                        'group relative rounded-2xl px-3 py-2 shadow-sm',
+                                        // Below md the action rail is always visible (no hover on
+                                        // touch), so a bubble THAT HAS ONE has to leave room or the
+                                        // rail overflows the scrollport. Bubbles with no actions keep
+                                        // the full width.
+                                        hasActions
+                                            ? 'max-w-[calc(100%-4.5rem)] md:max-w-[78%]' // design-lint-ignore: percentage bubble width has no spacing token
+                                            : 'max-w-[78%]', // design-lint-ignore: percentage bubble width has no spacing token
                                         isOwn
                                             ? 'rounded-br-sm bg-primary-500 text-white'
                                             : 'rounded-bl-sm border border-neutral-200 bg-white text-neutral-700'
@@ -190,6 +238,7 @@ export function ChatThread({
                                         )}
                                     >
                                         {m.isFlagged && <Flag size={11} weight="fill" />}
+                                        {m.isEdited && !m.isDeleted && <span>edited</span>}
                                         {m.failed ? (
                                             <button
                                                 type="button"
@@ -207,28 +256,69 @@ export function ChatThread({
                                         )}
                                     </div>
 
-                                    {!isOwn && !m.pending && !m.isDeleted && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onReport(m)}
-                                            className="absolute -right-7 top-1 hidden text-neutral-300 hover:text-danger-500 group-hover:block"
-                                            aria-label="Report message"
-                                            title="Report message"
+                                    {(canReport || canDelete) && (
+                                        <div
+                                            className={cn(
+                                                // Anchored FLUSH to the bubble (right-full / left-full).
+                                                // An offset rail leaves a dead gap between bubble and
+                                                // button: the pointer stops hovering the group halfway
+                                                // across it, the control disappears, and it can never be
+                                                // clicked. Zero gap keeps the hover unbroken.
+                                                'absolute top-1/2 flex -translate-y-1/2 items-center gap-1',
+                                                'pointer-events-none opacity-0 transition-opacity',
+                                                'group-hover:pointer-events-auto group-hover:opacity-100',
+                                                'focus-within:pointer-events-auto focus-within:opacity-100',
+                                                // Touch devices never fire hover — keep the rail live.
+                                                'max-md:pointer-events-auto max-md:opacity-100',
+                                                // Own bubbles are right-aligned and sit against the
+                                                // scroll container's edge, so their rail MUST go left —
+                                                // to the right it renders outside the scrollport.
+                                                isOwn ? 'right-full pr-1.5' : 'left-full pl-1.5'
+                                            )}
                                         >
-                                            <Flag size={14} />
-                                        </button>
-                                    )}
+                                            {canEdit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditTarget(m);
+                                                        setEditText(m.content ?? '');
+                                                    }}
+                                                    className="flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-400 shadow-sm hover:border-primary-200 hover:text-primary-500"
+                                                    aria-label="Edit message"
+                                                    title="Edit message"
+                                                >
+                                                    <PencilSimple size={14} />
+                                                </button>
+                                            )}
 
-                                    {canDelete && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onDelete(m)}
-                                            className="absolute -right-7 bottom-1 hidden text-neutral-300 hover:text-danger-500 group-hover:block"
-                                            aria-label="Delete message"
-                                            title="Delete message"
-                                        >
-                                            <Trash size={14} />
-                                        </button>
+                                            {canReport && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onReport?.(m)}
+                                                    className="flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-400 shadow-sm hover:border-danger-200 hover:text-danger-500"
+                                                    aria-label="Report message"
+                                                    title="Report message"
+                                                >
+                                                    <Flag size={14} />
+                                                </button>
+                                            )}
+
+                                            {canDelete && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeleteTarget(m)}
+                                                    className="flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-400 shadow-sm hover:border-danger-200 hover:text-danger-500"
+                                                    aria-label="Delete message"
+                                                    title={
+                                                        isOwn
+                                                            ? 'Delete message'
+                                                            : 'Delete this message for everyone'
+                                                    }
+                                                >
+                                                    <Trash size={14} />
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -237,6 +327,94 @@ export function ChatThread({
                 })}
                 <div ref={bottomRef} />
             </div>
+
+            <Dialog
+                open={editTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open && !isSavingEdit) setEditTarget(null);
+                }}
+            >
+                <DialogContent className="w-full max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-semibold text-neutral-700">
+                            Edit message
+                        </DialogTitle>
+                    </DialogHeader>
+                    <Textarea
+                        aria-label="Message text"
+                        rows={4}
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        maxLength={8000}
+                        placeholder="Message"
+                    />
+                    <p className="text-xs text-neutral-400">
+                        Everyone in the conversation sees the change, marked as edited.
+                    </p>
+                    <DialogFooter>
+                        <MyButton
+                            buttonType="secondary"
+                            disabled={isSavingEdit}
+                            onClick={() => setEditTarget(null)}
+                        >
+                            Cancel
+                        </MyButton>
+                        <MyButton
+                            buttonType="primary"
+                            disabled={
+                                isSavingEdit ||
+                                !editText.trim() ||
+                                editText.trim() === (editTarget?.content ?? '').trim()
+                            }
+                            onClick={() => {
+                                const target = editTarget;
+                                if (!target || !onEdit) return;
+                                setIsSavingEdit(true);
+                                void onEdit(target, editText.trim())
+                                    .then(() => setEditTarget(null))
+                                    .finally(() => setIsSavingEdit(false));
+                            }}
+                        >
+                            {isSavingEdit ? 'Saving...' : 'Save'}
+                        </MyButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteTarget(null);
+                }}
+            >
+                <DialogContent className="w-full max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-base font-semibold text-neutral-700">
+                            Delete message
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-neutral-600">
+                        {deleteTarget && deleteTarget.senderId !== currentUserId
+                            ? `This removes ${deleteTarget.senderName || 'this member'}'s message for everyone in the conversation. It can't be undone.`
+                            : "This removes the message for everyone in the conversation. It can't be undone."}
+                    </p>
+                    <DialogFooter>
+                        <MyButton buttonType="secondary" onClick={() => setDeleteTarget(null)}>
+                            Cancel
+                        </MyButton>
+                        <MyButton
+                            buttonType="primary"
+                            onClick={() => {
+                                const target = deleteTarget;
+                                setDeleteTarget(null);
+                                if (target) onDelete(target);
+                            }}
+                        >
+                            Delete
+                        </MyButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

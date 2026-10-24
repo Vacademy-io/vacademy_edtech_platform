@@ -1,0 +1,26 @@
+{
+    "updateBatch": {
+        "successTitle": "تم بنجاح",
+        "successDescription": "تم تحديث الدفعات للطلاب المحددين بنجاح",
+        "errorTitle": "خطأ",
+        "errorDescription": "فشل تحديث الدفعات. يرجى المحاولة مرة أخرى."
+    },
+    "extendSession": {
+        "successTitle": "تم بنجاح",
+        "successDescription": "تم تمديد الجلسات للطلاب المحددين بنجاح",
+        "errorTitle": "خطأ",
+        "errorDescription": "فشل تمديد الجلسات. يرجى المحاولة مرة أخرى."
+    },
+    "terminate": {
+        "successTitle": "تم بنجاح",
+        "successDescription": "تم إنهاء تسجيل الطلاب المحددين بنجاح",
+        "errorTitle": "خطأ",
+        "errorDescription": "فشل إنهاء التسجيل. يرجى المحاولة مرة أخرى."
+    },
+    "delete": {
+        "successTitle": "تم بنجاح",
+        "successDescription": "تم حذف الطلاب المحددين بنجاح",
+        "errorTitle": "خطأ",
+        "errorDescription": "فشل حذف الطلاب. يرجى المحاولة مرة أخرى."
+    }
+}

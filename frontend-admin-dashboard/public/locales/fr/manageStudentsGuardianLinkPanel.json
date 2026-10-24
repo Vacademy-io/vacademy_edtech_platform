@@ -1,0 +1,26 @@
+{
+    "validation": {
+        "nameRequired": "Le nom est requis",
+        "invalidEmail": "Saisissez une adresse e-mail valide"
+    },
+    "tabs": {
+        "addPerson": "Ajouter {{person}}",
+        "linkExistingPerson": "Lier un(e) {{person}} existant(e)"
+    },
+    "form": {
+        "fullNameLabel": "Nom complet",
+        "fullNamePlaceholder": "Nom complet de {{person}}",
+        "emailLabel": "E-mail",
+        "emailPlaceholder": "name@example.com",
+        "mobileLabel": "Mobile (facultatif)",
+        "mobilePlaceholder": "9876543210"
+    },
+    "existing": {
+        "changeTitle": "Changer",
+        "searchPlaceholder": "Rechercher {{person}} par nom, e-mail…",
+        "searching": "Recherche en cours…",
+        "select": "+ Sélectionner",
+        "noResults": "Aucun(e) {{person}} trouvé(e) correspondant à \"{{query}}\"",
+        "minChars": "Saisissez au moins 2 caractères pour rechercher"
+    }
+}

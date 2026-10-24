@@ -1,0 +1,58 @@
+{
+    "description": "Les dépôts TDS effectués sur les retenues salariales. Le formulaire 24Q se rapproche de ces montants chaque trimestre, donc un dépôt manquant ici apparaîtra là-bas comme un écart.",
+    "recordChallan": "Enregistrer un bordereau",
+    "toast": {
+        "recorded": "Bordereau enregistré",
+        "removed": "Bordereau supprimé"
+    },
+    "errors": {
+        "record": "Impossible d'enregistrer le bordereau.",
+        "remove": "Impossible de supprimer le bordereau.",
+        "load": "Impossible de charger le registre des bordereaux."
+    },
+    "empty": {
+        "title": "Aucun bordereau enregistré",
+        "description": "Aucun dépôt effectué pour {{financialYear}} {{quarter}} pour l'instant."
+    },
+    "table": {
+        "depositDate": "Date de dépôt",
+        "bsrCode": "Code BSR",
+        "serial": "N° de série",
+        "amount": "Montant",
+        "interest": "Intérêts",
+        "fee": "Frais"
+    },
+    "removeChallanAria": "Supprimer le bordereau",
+    "totalDeposited": "Total déposé · {{financialYear}} {{quarter}}",
+    "dialog": {
+        "heading": "Enregistrer un bordereau TDS",
+        "cancel": "Annuler",
+        "save": "Enregistrer le bordereau",
+        "saving": "Enregistrement…"
+    },
+    "fields": {
+        "financialYear": "Année fiscale",
+        "financialYearPlaceholder": "2025-26",
+        "quarter": "Trimestre",
+        "depositDate": "Date de dépôt",
+        "amountDeposited": "Montant déposé",
+        "bsrCode": "Code BSR",
+        "bsrCodePlaceholder": "Code de l'agence bancaire",
+        "challanSerial": "N° de série du bordereau",
+        "interest": "Intérêts",
+        "fee": "Frais",
+        "notes": "Notes"
+    },
+    "deleteDialog": {
+        "title": "Supprimer ce bordereau ?",
+        "description": "{{amount}} déposé le {{date}} ne comptera plus dans le rapprochement du formulaire 24Q.",
+        "unknownDate": "une date inconnue",
+        "keepIt": "Le conserver",
+        "remove": "Supprimer"
+    },
+    "validation": {
+        "financialYearFormat": "Utilisez le format 2025-26",
+        "depositDateRequired": "La date de dépôt est requise",
+        "amountPositive": "Le montant doit être supérieur à zéro"
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "filters": {
+        "noPlanOption": "لا توجد خطة",
+        "searchAriaLabel": "بحث",
+        "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني أو الهاتف",
+        "clearSearchAriaLabel": "مسح البحث",
+        "search": "بحث",
+        "status": "الحالة",
+        "statusSearchPlaceholder": "البحث عن حالة…",
+        "city": "المدينة",
+        "citySearchPlaceholder": "البحث عن مدينة…",
+        "state": "الولاية",
+        "stateSearchPlaceholder": "البحث عن ولاية…",
+        "pincodeAriaLabel": "الرمز البريدي",
+        "pincodePlaceholder": "الرمز البريدي",
+        "clearAll": "مسح الكل"
+    },
+    "actions": {
+        "export": "تصدير",
+        "create": "إنشاء {{term}}"
+    },
+    "toasts": {
+        "inviteLinkCopied": "تم نسخ رابط الدعوة",
+        "nothingToExport": "لا يوجد شيء للتصدير.",
+        "exported_zero": "لم يتم تصدير أي {{term}}.",
+        "exported_one": "تم تصدير {{term}} واحد.",
+        "exported_two": "تم تصدير {{term}} اثنين.",
+        "exported_few": "تم تصدير {{count}} {{term}}.",
+        "exported_many": "تم تصدير {{count}} {{term}}.",
+        "exported_other": "تم تصدير {{count}} {{term}}."
+    },
+    "summary": {
+        "filteredCount": "{{filtered}} من {{total}} {{term}}"
+    },
+    "error": {
+        "title": "تعذّر تحميل {{term}}",
+        "forbidden": "دورك لا يملك صلاحية الوصول إلى هذه البيانات. اطلب من مسؤول المؤسسة مراجعة إعدادات العرض لدورك.",
+        "generic": "حدث خطأ ما أثناء جلب القائمة. يرجى المحاولة مرة أخرى بعد قليل."
+    },
+    "empty": {
+        "filtered": "لا يوجد {{term}} يطابق عوامل التصفية.",
+        "none": "لم يتم العثور على {{term}}."
+    },
+    "table": {
+        "sortBy": "الترتيب حسب {{label}}"
+    },
+    "planCounts": {
+        "all": "All"
+    }
+}

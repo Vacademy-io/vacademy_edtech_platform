@@ -1,0 +1,27 @@
+{
+    "noSessionsFound": "No sessions found",
+    "noCourseDialog": {
+        "type": "Adding Sessions",
+        "content": "You need to create a course before"
+    },
+    "export": "Export",
+    "fetchError": "Could not load the list. Please refresh the page.",
+    "csv": {
+        "status": "Status",
+        "startDate": "Start date",
+        "levelStatus": "Batch status"
+    },
+    "view": {
+        "cards": "Cards",
+        "matrix": "{{course}} × {{session}}"
+    },
+    "searchPlaceholder": "Search {{session}}, {{course}} or {{level}}",
+    "noMatches": "No {{sessions}} match these filters.",
+    "clearFilters": "Clear filters",
+    "deleteNote": "Deleting a {{session}} removes all its {{batches}}. To pause one level only, edit the {{session}} and untick it — that hides it and keeps its data.",
+    "matrix": {
+        "active": "Active",
+        "hidden": "Hidden",
+        "foot": "Hidden = the level was unticked in that session; its learners and content are kept and it can be shown again from Edit."
+    }
+}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     CircleNotch,
     Copy,
@@ -71,30 +73,37 @@ const LINK_STATUS_VALUES = ['ACTIVE', 'INACTIVE'];
 const LINK_TYPE_VALUES = ['PAID', 'FREE'];
 
 // MyDropdown works on display strings — first option clears the filter.
-const ALL_STATUSES = 'All statuses';
-const ALL_TYPES = 'All types';
-const LINK_STATUS_LABELS = [ALL_STATUSES, ...LINK_STATUS_VALUES.map(humanizeStatus)];
-const LINK_TYPE_LABELS = [ALL_TYPES, ...LINK_TYPE_VALUES.map(humanizeStatus)];
-const DIALOG_STATUS_LABELS = [ALL_STATUSES, ...REGISTRATION_STATUS_VALUES.map(humanizeStatus)];
+const buildLinkStatusLabels = (t: TFunction) => [
+    t('filters.allStatuses'),
+    ...LINK_STATUS_VALUES.map(humanizeStatus),
+];
+const buildLinkTypeLabels = (t: TFunction) => [
+    t('filters.allTypes'),
+    ...LINK_TYPE_VALUES.map(humanizeStatus),
+];
+const buildDialogStatusLabels = (t: TFunction) => [
+    t('filters.allStatuses'),
+    ...REGISTRATION_STATUS_VALUES.map(humanizeStatus),
+];
 
-const REGISTRATIONS_CSV_HEADERS = [
-    'Organization',
-    'Admin',
-    'Email',
-    'Phone',
-    'City',
-    'State',
-    'Pincode',
-    'Seats Used',
-    'Seats Total',
-    'Status',
-    'KYC',
-    'Registered On',
-] as const;
+const buildRegistrationsCsvHeaders = (t: TFunction) => [
+    t('csv.organization'),
+    t('csv.admin'),
+    t('csv.email'),
+    t('csv.phone'),
+    t('csv.city'),
+    t('csv.state'),
+    t('csv.pincode'),
+    t('csv.seatsUsed'),
+    t('csv.seatsTotal'),
+    t('csv.status'),
+    t('csv.kyc'),
+    t('csv.registeredOn'),
+];
 
-const buildRegistrationsCsv = (rows: SubOrgRegistrationRow[]): string =>
+const buildRegistrationsCsv = (t: TFunction, rows: SubOrgRegistrationRow[]): string =>
     buildCsv(
-        REGISTRATIONS_CSV_HEADERS,
+        buildRegistrationsCsvHeaders(t),
         rows.map((r) => [
             r.org_name,
             r.admin_name,
@@ -112,6 +121,7 @@ const buildRegistrationsCsv = (rows: SubOrgRegistrationRow[]): string =>
     );
 
 export function RegistrationLinksTab() {
+    const { t } = useTranslation('manageCustomTeamsRegistrationLinksTab');
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
     const subOrgTermPlural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
@@ -147,8 +157,8 @@ export function RegistrationLinksTab() {
         onSuccess: (data) => {
             toast.success(
                 data.status === 'ACTIVE'
-                    ? 'Registration link activated'
-                    : 'Registration link deactivated'
+                    ? t('toast.linkActivated')
+                    : t('toast.linkDeactivated')
             );
             queryClient.invalidateQueries({
                 queryKey: ['sub-org-registration-templates', instituteId],
@@ -157,7 +167,7 @@ export function RegistrationLinksTab() {
         onError: (error: unknown) => {
             const message =
                 (error as { response?: { data?: { message?: string } } })?.response?.data
-                    ?.message || 'Failed to update status';
+                    ?.message || t('toast.updateStatusFailed');
             toast.error(message);
         },
     });
@@ -174,7 +184,7 @@ export function RegistrationLinksTab() {
         onError: (error: unknown) => {
             const message =
                 (error as { response?: { data?: { message?: string } } })?.response?.data
-                    ?.message || 'Failed to load registration link details';
+                    ?.message || t('toast.loadDetailFailed');
             toast.error(message);
         },
     });
@@ -185,22 +195,24 @@ export function RegistrationLinksTab() {
             instituteDetails?.learner_portal_base_url
         );
         navigator.clipboard.writeText(url);
-        toast.success('Registration link copied');
+        toast.success(t('toast.linkCopied'));
     };
 
     const q = linkSearch.trim().toLowerCase();
-    const filteredTemplates = templates.filter((t) => {
-        if (linkStatusFilter !== 'ALL' && t.status !== linkStatusFilter) return false;
+    const filteredTemplates = templates.filter((tpl) => {
+        if (linkStatusFilter !== 'ALL' && tpl.status !== linkStatusFilter) return false;
         if (linkTypeFilter !== 'ALL') {
-            const paid = isPaidTemplate(t);
+            const paid = isPaidTemplate(tpl);
             if (linkTypeFilter === 'PAID' && !paid) return false;
             if (linkTypeFilter === 'FREE' && paid) return false;
         }
-        if (q && !(t.name || '').toLowerCase().includes(q)) return false;
+        if (q && !(tpl.name || '').toLowerCase().includes(q)) return false;
         return true;
     });
     const hasLinkFilters =
         !!q || linkStatusFilter !== 'ALL' || linkTypeFilter !== 'ALL';
+    const linkStatusLabels = buildLinkStatusLabels(t);
+    const linkTypeLabels = buildLinkTypeLabels(t);
 
     if (isLoading) {
         return (
@@ -226,19 +238,19 @@ export function RegistrationLinksTab() {
                         <Input
                             value={linkSearch}
                             onChange={(e) => setLinkSearch(e.target.value)}
-                            placeholder="Search by link name"
+                            placeholder={t('filters.searchPlaceholder')}
                             className="h-9 pl-8"
                         />
                     </div>
                     <MyDropdown
                         currentValue={
                             linkStatusFilter === 'ACTIVE'
-                                ? 'Active'
+                                ? t('filters.active')
                                 : linkStatusFilter === 'INACTIVE'
-                                  ? 'Inactive'
-                                  : ALL_STATUSES
+                                  ? t('filters.inactive')
+                                  : t('filters.allStatuses')
                         }
-                        dropdownList={LINK_STATUS_LABELS}
+                        dropdownList={linkStatusLabels}
                         handleChange={(l) =>
                             setLinkStatusFilter(
                                 (LINK_STATUS_VALUES.find((v) => humanizeStatus(v) === l) as
@@ -252,12 +264,12 @@ export function RegistrationLinksTab() {
                     <MyDropdown
                         currentValue={
                             linkTypeFilter === 'PAID'
-                                ? 'Paid'
+                                ? t('filters.paid')
                                 : linkTypeFilter === 'FREE'
-                                  ? 'Free'
-                                  : ALL_TYPES
+                                  ? t('filters.free')
+                                  : t('filters.allTypes')
                         }
-                        dropdownList={LINK_TYPE_LABELS}
+                        dropdownList={linkTypeLabels}
                         handleChange={(l) =>
                             setLinkTypeFilter(
                                 (LINK_TYPE_VALUES.find((v) => humanizeStatus(v) === l) as
@@ -276,7 +288,7 @@ export function RegistrationLinksTab() {
                     }}
                 >
                     <Plus className="mr-2 size-4" />
-                    Create Registration Link
+                    {t('actions.createLink')}
                 </MyButton>
             </div>
 
@@ -284,12 +296,12 @@ export function RegistrationLinksTab() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Link</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Registrations</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>{t('table.name')}</TableHead>
+                            <TableHead>{t('table.link')}</TableHead>
+                            <TableHead>{t('table.status')}</TableHead>
+                            <TableHead>{t('table.registrations')}</TableHead>
+                            <TableHead>{t('table.created')}</TableHead>
+                            <TableHead className="text-right">{t('table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -299,14 +311,14 @@ export function RegistrationLinksTab() {
                                     <div className="flex flex-col items-center justify-center gap-2 text-neutral-500">
                                         <LinkSimple className="size-8 opacity-50" />
                                         {hasLinkFilters ? (
-                                            <p>No registration links match your filters.</p>
+                                            <p>{t('empty.noMatchFilters')}</p>
                                         ) : (
                                             <>
-                                                <p>No registration links yet.</p>
+                                                <p>{t('empty.noLinksYet')}</p>
                                                 <p className="text-xs text-neutral-400">
-                                                    Create one to let organizations register
-                                                    themselves as{' '}
-                                                    {subOrgTermPlural.toLowerCase()}.
+                                                    {t('empty.createOneHint', {
+                                                        term: subOrgTermPlural.toLowerCase(),
+                                                    })}
                                                 </p>
                                             </>
                                         )}
@@ -334,14 +346,16 @@ export function RegistrationLinksTab() {
                                                             : 'text-muted-foreground'
                                                     }
                                                 >
-                                                    {isPaidTemplate(template) ? 'Paid' : 'Free'}
+                                                    {isPaidTemplate(template)
+                                                        ? t('filters.paid')
+                                                        : t('filters.free')}
                                                 </Badge>
                                                 {hasKycStep(template) && (
                                                     <Badge
                                                         variant="outline"
                                                         className="text-muted-foreground"
                                                     >
-                                                        KYC
+                                                        {t('badge.kyc')}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -352,7 +366,7 @@ export function RegistrationLinksTab() {
                                                     type="button"
                                                     onClick={() => copyLink(template.invite_code)}
                                                     className="flex items-center gap-1 text-sm text-primary-500 hover:underline"
-                                                    title="Copy registration link"
+                                                    title={t('link.copyTitle')}
                                                 >
                                                     <LinkSimple className="size-3.5" />
                                                     <span className="max-w-24 truncate">
@@ -377,7 +391,9 @@ export function RegistrationLinksTab() {
                                                             status: checked ? 'ACTIVE' : 'INACTIVE',
                                                         })
                                                     }
-                                                    aria-label={`Toggle ${template.name} status`}
+                                                    aria-label={t('link.toggleStatusAria', {
+                                                        name: template.name,
+                                                    })}
                                                 />
                                                 <Badge
                                                     variant={
@@ -395,7 +411,9 @@ export function RegistrationLinksTab() {
                                                 {template.completed_count ?? 0}
                                                 {template.max_registrations
                                                     ? ` / ${template.max_registrations}`
-                                                    : ` (${template.total_attempts ?? 0} attempts)`}
+                                                    : ` (${t('table.attemptsSuffix', {
+                                                          count: template.total_attempts ?? 0,
+                                                      })})`}
                                             </span>
                                         </TableCell>
                                         <TableCell>{formatDate(template.created_at)}</TableCell>
@@ -414,7 +432,7 @@ export function RegistrationLinksTab() {
                                                     ) : (
                                                         <PencilSimple className="mr-1 size-3.5" />
                                                     )}
-                                                    Edit
+                                                    {t('actions.edit')}
                                                 </MyButton>
                                                 <MyButton
                                                     buttonType="secondary"
@@ -424,7 +442,7 @@ export function RegistrationLinksTab() {
                                                     }
                                                 >
                                                     <UsersThree className="mr-1 size-3.5" />
-                                                    View
+                                                    {t('actions.view')}
                                                 </MyButton>
                                             </div>
                                         </TableCell>
@@ -465,6 +483,7 @@ function RegistrationsDialog({
     template: RegistrationTemplateListItem | null;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('manageCustomTeamsRegistrationLinksTab');
     const instituteId = getCurrentInstituteId();
 
     // Free-text search is debounced; the discrete selectors (status + City/State/Pincode
@@ -594,14 +613,14 @@ function RegistrationsDialog({
                 customFieldFilters: filters.customFieldFilters,
             });
             if (rows.length === 0) {
-                toast.info('No registrations to export.');
+                toast.info(t('toast.noRegistrationsToExport'));
                 return;
             }
             const safeName = (template.name || 'registrations').replace(/[^\w.-]+/g, '_');
-            downloadCsv(buildRegistrationsCsv(rows), `${safeName}_registrations.csv`);
-            toast.success(`Exported ${rows.length} registration${rows.length === 1 ? '' : 's'}.`);
+            downloadCsv(buildRegistrationsCsv(t, rows), `${safeName}_registrations.csv`);
+            toast.success(t('toast.exportedCount', { count: rows.length }));
         } catch {
-            toast.error('Failed to export registrations.');
+            toast.error(t('toast.exportFailed'));
         } finally {
             setIsExporting(false);
         }
@@ -609,7 +628,11 @@ function RegistrationsDialog({
 
     return (
         <MyDialog
-            heading={template ? `Registrations — ${template.name}` : 'Registrations'}
+            heading={
+                template
+                    ? t('dialog.heading', { name: template.name })
+                    : t('dialog.headingDefault')
+            }
             open={!!template}
             onOpenChange={(open) => {
                 if (!open) onClose();
@@ -628,13 +651,15 @@ function RegistrationsDialog({
                             <Input
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
-                                placeholder="Search org, admin or email"
+                                placeholder={t('dialog.searchPlaceholder')}
                                 className="h-9 pl-8"
                             />
                         </div>
                         <MyDropdown
-                            currentValue={statusFilter ? humanizeStatus(statusFilter) : ALL_STATUSES}
-                            dropdownList={DIALOG_STATUS_LABELS}
+                            currentValue={
+                                statusFilter ? humanizeStatus(statusFilter) : t('filters.allStatuses')
+                            }
+                            dropdownList={buildDialogStatusLabels(t)}
                             handleChange={(l) => {
                                 const val = REGISTRATION_STATUS_VALUES.find(
                                     (v) => humanizeStatus(v) === l
@@ -645,32 +670,32 @@ function RegistrationsDialog({
                         />
                         {cityOptions.length > 0 && (
                             <MultiSelectFilter
-                                label="City"
+                                label={t('dialog.cityLabel')}
                                 icon={<MapPin className="size-4 text-neutral-400" />}
                                 options={cityOptions}
                                 selected={cityFilter}
                                 onChange={setCityFilter}
-                                placeholder="Search city…"
+                                placeholder={t('dialog.searchCityPlaceholder')}
                                 widthClass="w-36"
                             />
                         )}
                         {stateOptions.length > 0 && (
                             <MultiSelectFilter
-                                label="State"
+                                label={t('dialog.stateLabel')}
                                 options={stateOptions}
                                 selected={stateFilter}
                                 onChange={setStateFilter}
-                                placeholder="Search state…"
+                                placeholder={t('dialog.searchStatePlaceholder')}
                                 widthClass="w-36"
                             />
                         )}
                         {pincodeOptions.length > 0 && (
                             <MultiSelectFilter
-                                label="Pincode"
+                                label={t('dialog.pincodeLabel')}
                                 options={pincodeOptions}
                                 selected={pincodeFilter}
                                 onChange={setPincodeFilter}
-                                placeholder="Search pincode…"
+                                placeholder={t('dialog.searchPincodePlaceholder')}
                                 widthClass="w-36"
                             />
                         )}
@@ -681,21 +706,23 @@ function RegistrationsDialog({
                                 options={toFilterOptions(field.values)}
                                 selected={customFieldFilters[field.id] ?? []}
                                 onChange={(values) => setCustomFieldSelection(field.id, values)}
-                                placeholder={`Search ${field.label.toLowerCase()}…`}
+                                placeholder={t('dialog.searchFieldPlaceholder', {
+                                    field: field.label.toLowerCase(),
+                                })}
                                 widthClass="w-40"
                             />
                         ))}
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                         <p className="text-xs text-muted-foreground">
-                            {totalElements} registration{totalElements === 1 ? '' : 's'}
-                            {hasActiveFilters ? ' · filtered' : ''}
+                            {t('dialog.registrationCount', { count: totalElements })}
+                            {hasActiveFilters ? t('dialog.filteredSuffix') : ''}
                         </p>
                         <div className="flex items-center gap-2">
                             {hasActiveFilters && (
                                 <MyButton buttonType="secondary" scale="small" onClick={clearFilters}>
                                     <X className="mr-1 size-3.5" />
-                                    Clear
+                                    {t('dialog.clear')}
                                 </MyButton>
                             )}
                             <MyButton
@@ -709,7 +736,7 @@ function RegistrationsDialog({
                                 ) : (
                                     <DownloadSimple className="mr-1 size-3.5" />
                                 )}
-                                Export CSV
+                                {t('dialog.exportCsv')}
                             </MyButton>
                         </div>
                     </div>
@@ -726,8 +753,8 @@ function RegistrationsDialog({
                         <UsersThree className="size-8 opacity-50" />
                         <p className="text-sm">
                             {hasActiveFilters
-                                ? 'No registrations match these filters.'
-                                : 'No registrations through this link yet.'}
+                                ? t('dialog.noMatchFilters')
+                                : t('dialog.noRegistrationsYet')}
                         </p>
                     </div>
                 ) : (
@@ -736,17 +763,17 @@ function RegistrationsDialog({
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Organization</TableHead>
-                                        <TableHead>Admin</TableHead>
-                                        <TableHead>Email</TableHead>
-                                        <TableHead>Phone</TableHead>
-                                        <TableHead>City</TableHead>
-                                        <TableHead>State</TableHead>
-                                        <TableHead>Pincode</TableHead>
-                                        <TableHead>Seats</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>KYC</TableHead>
-                                        <TableHead>Date</TableHead>
+                                        <TableHead>{t('dialog.table.organization')}</TableHead>
+                                        <TableHead>{t('dialog.table.admin')}</TableHead>
+                                        <TableHead>{t('dialog.table.email')}</TableHead>
+                                        <TableHead>{t('dialog.table.phone')}</TableHead>
+                                        <TableHead>{t('dialog.table.city')}</TableHead>
+                                        <TableHead>{t('dialog.table.state')}</TableHead>
+                                        <TableHead>{t('dialog.table.pincode')}</TableHead>
+                                        <TableHead>{t('dialog.table.seats')}</TableHead>
+                                        <TableHead>{t('dialog.table.status')}</TableHead>
+                                        <TableHead>{t('dialog.table.kyc')}</TableHead>
+                                        <TableHead>{t('dialog.table.date')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

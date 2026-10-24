@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { RouteMatcher } from "../../-services/route-matcher";
 import { useNavigate, useLocation } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import {
@@ -138,6 +140,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
   tagName,
   globalSettings,
 }) => {
+  const { t } = useTranslation("coursePlayerB");
   const navigate = useNavigate();
   const location = useLocation();
   const { addItem, getItemByEnrollInviteId, updateQuantity, getCartMode, syncCart } =
@@ -430,7 +433,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
 
       result.push({
         ...c,
-        title: c.package_name || "Untitled Book",
+        title: c.package_name || t("bookCatalogue.untitledBook"),
         description: textContent,
         thumbnail: c.course_banner_media_id || "/api/placeholder/300/400",
         price: c.min_plan_actual_price || 0,
@@ -452,7 +455,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
       });
     }
     return result;
-  }, [data]);
+  }, [data, t]);
 
   const totalBooks = data?.pages[0]?.totalElements ?? 0;
 
@@ -490,7 +493,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
     if (book.available_slots !== undefined) searchParams.set("available_slots", book.available_slots.toString());
 
     navigate({
-      to: `/${tagName}/${book.id}`,
+      to: `${RouteMatcher.basePath(tagName)}/${book.id}`,
       search: searchParams.toString() ? Object.fromEntries(searchParams) : {},
     });
   };
@@ -525,7 +528,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search books..."
+                  placeholder={t("bookCatalogue.searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -540,12 +543,12 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                       // ignore storage errors (private mode etc)
                     }
                   }}
-                  className="w-full ps-10 pe-10 py-2 border border-catalogue-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 bg-catalogue-bg text-catalogue-text-primary shadow-md"
+                  className="w-full ps-10 pe-10 py-2 border border-catalogue-border rounded-catalogue-md focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 bg-catalogue-bg text-catalogue-text-primary shadow-md"
                 />
                 {searchTerm && (
                   <button
                     onClick={clearSearch}
-                    aria-label="Clear search"
+                    aria-label={t("common.clearSearch")}
                     className="absolute end-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     type="button"
                   >
@@ -566,7 +569,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
             <div className="pt-3 pb-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Store
+                  {t("bookCatalogue.store")}
                 </span>
                 <div className="relative">
                   <button
@@ -579,13 +582,13 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                    {storeFilter ? activeStoreName || "Selected store" : "All stores"}
+                    {storeFilter ? activeStoreName || t("bookCatalogue.selectedStore") : t("bookCatalogue.allStores")}
                     <CaretDown className={`h-3.5 w-3.5 transition-transform ${storeMenuOpen ? "rotate-180" : ""}`} />
                   </button>
                   {storeMenuOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setStoreMenuOpen(false)} />
-                      <div className="absolute start-0 z-50 mt-2 min-w-44 rounded-lg border border-catalogue-border bg-catalogue-bg py-1 shadow-md">
+                      <div className="absolute start-0 z-50 mt-2 min-w-44 rounded-catalogue-md border border-catalogue-border bg-catalogue-bg py-1 shadow-md">
                         {cartMode !== "rent" && (
                           <button
                             onClick={() => {
@@ -596,7 +599,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                               !storeFilter ? "bg-primary-50 text-primary-500 font-semibold" : "text-catalogue-text-secondary"
                             }`}
                           >
-                            All stores
+                            {t("bookCatalogue.allStores")}
                           </button>
                         )}
                         {storeList.map((s) => (
@@ -619,12 +622,12 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                 </div>
                 {cartMode === "rent" && !storeFilter && (
                   <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                    Pick a store to browse rental inventory
+                    {t("bookCatalogue.pickStoreRentHint")}
                   </span>
                 )}
                 {cartMode !== "rent" && !storeFilter && (
                   <span className="text-xs text-gray-500">
-                    Showing best price across all stores
+                    {t("bookCatalogue.bestPriceHint")}
                   </span>
                 )}
               </div>
@@ -637,10 +640,10 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
               <div className="flex font-bold flex-col gap-1">
                 <div className="flex items-center justify-between ">
                   <h2 className="text-lg font-bold text-catalogue-text-primary tracking-tight flex items-center gap-2 flex-wrap">
-                    <span>Browse by Genre</span>
+                    <span>{t("bookCatalogue.browseByGenre")}</span>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-500 border border-primary-200 shadow-sm">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-                      {cartMode === 'rent' ? 'Rent Mode' : 'Buy Mode'}
+                      {cartMode === 'rent' ? t("bookCatalogue.rentMode") : t("bookCatalogue.buyMode")}
                     </span>
                   </h2>
                   {selectedGenres.length > 0 && (
@@ -648,7 +651,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                       onClick={() => setSelectedGenres([])}
                       className="text-sm font-medium text-primary-500 hover:text-primary-400 transition-colors"
                     >
-                      Clear all
+                      {t("bookCatalogue.clearAll")}
                     </button>
                   )}
                 </div>
@@ -662,7 +665,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                         style={{ touchAction: "manipulation" }}
                         className={`
                           group relative flex items-center gap-2 whitespace-nowrap
-                          px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300
+                          px-3 py-2 rounded-catalogue-lg text-sm font-bold transition-all duration-300
                           border cursor-pointer
                           ${isSelected
                             ? "bg-primary-500 border-primary-500 shadow-md text-white active:bg-primary-400 active:scale-95"
@@ -689,12 +692,11 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
       {/* 3. Book Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         {rentRequiresStorePick ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-stack py-16 text-center">
             <ShoppingBag className="h-10 w-10 text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-700">Pick a store to browse rentals</h3>
+            <h3 className="text-lg font-semibold text-gray-700">{t("bookCatalogue.pickStoreTitle")}</h3>
             <p className="text-sm text-gray-500 max-w-md">
-              Rental books are picked up at a store, so inventory is store-specific.
-              Choose a store above to see what's available.
+              {t("bookCatalogue.pickStoreDescription")}
             </p>
             {storeList.length > 0 && (
               <div className="flex flex-wrap gap-2 justify-center mt-1">
@@ -713,11 +715,11 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
         ) : isInitialLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="aspect-[9/16] catalogue-skeleton-shimmer rounded-2xl" />
+              <div key={i} className="aspect-[9/16] catalogue-skeleton-shimmer rounded-catalogue-lg" />
             ))}
           </div>
         ) : displayedCourses.length === 0 ? (
-          <div className="text-catalogue-text-muted text-xl font-medium mb-4">No books found matching your criteria.</div>
+          <div className="text-catalogue-text-muted text-xl font-medium mb-4">{t("bookCatalogue.noBooksFound")}</div>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-y-4 gap-x-4">
@@ -726,14 +728,14 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                 return (
                   <div
                     key={book.id}
-                    className="group relative isolate flex flex-col cursor-pointer perspective-1000   rounded-xl"
+                    className="group relative isolate flex flex-col cursor-pointer perspective-1000   rounded-catalogue-lg"
 
                     onClick={() => handleBookClick(book)}
                   >
                     {/* Book Cover */}
-                    <div className="relative aspect-[9/16] rounded-xl overflow-hidden shadow-lg transition-all duration-500 ease-out md:group-hover:-translate-y-2 ring-1 ring-black/5 bg-gradient-to-br from-amber-50 via-white to-amber-100">
+                    <div className="relative aspect-[9/16] rounded-catalogue-lg overflow-hidden shadow-lg transition-all duration-500 ease-out md:group-hover:-translate-y-2 ring-1 ring-black/5 bg-gradient-to-br from-warning-50 via-white to-warning-100">
                       {/* Decorative frame inner shadow - desktop only (mobile has no hover so shows expanded state) */}
-                      <div className="absolute inset-0 shadow-card-inset opacity-0 md:opacity-100 md:group-hover:opacity-0 transition-opacity duration-500 ease-out pointer-events-none rounded-xl" />
+                      <div className="absolute inset-0 shadow-card-inset opacity-0 md:opacity-100 md:group-hover:opacity-0 transition-opacity duration-500 ease-out pointer-events-none rounded-catalogue-lg" />
 
                       {/* Padded image wrapper - mobile always expanded; desktop: p-4 default, collapses to p-0 on hover */}
                       <div className="absolute inset-0 p-0 md:p-4 md:group-hover:p-0 transition-[padding] duration-500 ease-out">
@@ -744,26 +746,26 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                       <div className="absolute top-2 start-2 z-20 flex flex-col items-start gap-1">
                         <OfferBadge actual={book.price} elevated={book.elevatedPrice} />
                         {!storeFilter && (book.storeCount ?? 0) > 1 ? (
-                          <div className="px-2 py-1 rounded-lg text-caption font-bold bg-white/90 backdrop-blur-sm shadow-sm flex items-center gap-1.5 border border-white/20">
+                          <div className="px-2 py-1 rounded-catalogue-md text-caption font-bold bg-white/90 backdrop-blur-sm shadow-sm flex items-center gap-1.5 border border-white/20">
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            <span className="text-blue-700 uppercase tracking-wider">Available at {book.storeCount} stores</span>
+                            <span className="text-blue-700 uppercase tracking-wider">{t("bookCatalogue.availableAtStores", { count: book.storeCount })}</span>
                           </div>
                         ) : book.available_slots !== undefined && (
-                          <div className="px-2 py-1 rounded-lg text-caption font-bold bg-white/90 backdrop-blur-sm shadow-sm flex items-center gap-1.5 border border-white/20">
+                          <div className="px-2 py-1 rounded-catalogue-md text-caption font-bold bg-white/90 backdrop-blur-sm shadow-sm flex items-center gap-1.5 border border-white/20">
                             {book.available_slots > 5 ? (
                               <>
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-glow-live-green" />
-                                <span className="text-green-700 uppercase tracking-wider">In Stock</span>
+                                <span className="text-green-700 uppercase tracking-wider">{t("common.inStock")}</span>
                               </>
                             ) : book.available_slots > 0 ? (
                               <>
                                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse shadow-glow-live-orange" />
-                                <span className="text-orange-700 uppercase tracking-wider">Only {book.available_slots} Left</span>
+                                <span className="text-orange-700 uppercase tracking-wider">{t("common.onlyLeft", { count: book.available_slots })}</span>
                               </>
                             ) : (
                               <>
                                 <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                <span className="text-gray-600 uppercase tracking-wider">Out of Stock</span>
+                                <span className="text-gray-600 uppercase tracking-wider">{t("common.outOfStock")}</span>
                               </>
                             )}
                           </div>
@@ -801,11 +803,11 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                                 if (isBuyMode) {
                                   return (
                                     <div className="flex items-center gap-1.5 w-full min-w-0 justify-center">
-                                      <div className="flex items-center border border-gray-200 rounded-lg bg-white shadow-xl flex-shrink-0">
+                                      <div className="flex items-center border border-gray-200 rounded-catalogue-md bg-white shadow-xl flex-shrink-0">
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-7 w-7 hover:bg-catalogue-interactive-hover active:bg-catalogue-interactive-active rounded-s-lg transition-all duration-150"
+                                          className="h-7 w-7 hover:bg-catalogue-interactive-hover active:bg-catalogue-interactive-active rounded-s-catalogue-md transition-all duration-150"
                                           onClick={async () => {
                                             if (book.enrollInviteId) {
                                               await updateQuantity(book.enrollInviteId, existingItem.quantity - 1);
@@ -820,7 +822,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-7 w-7 hover:bg-catalogue-interactive-hover active:bg-catalogue-interactive-active rounded-e-lg transition-all duration-150"
+                                          className="h-7 w-7 hover:bg-catalogue-interactive-hover active:bg-catalogue-interactive-active rounded-e-catalogue-md transition-all duration-150"
                                           onClick={async () => {
                                             if (book.enrollInviteId) {
                                               await updateQuantity(book.enrollInviteId, existingItem.quantity + 1);
@@ -834,11 +836,11 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                                       </div>
                                       {/* Go to Cart button */}
                                       <Button
-                                        className="h-7 px-2 bg-primary-400 hover:bg-primary-500 text-white text-caption font-semibold rounded-lg shadow-md flex items-center gap-1 flex-shrink-0 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                                        onClick={() => navigate({ to: `/${tagName}/cart` })}
+                                        className="h-7 px-2 bg-primary-400 hover:bg-primary-500 text-white text-caption font-semibold rounded-catalogue-md shadow-md flex items-center gap-1 flex-shrink-0 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                        onClick={() => navigate({ to: `${RouteMatcher.basePath(tagName)}/cart` })}
                                       >
                                         <ShoppingBag className="h-3 w-3" />
-                                        Cart
+                                        {t("bookCatalogue.cart")}
                                       </Button>
                                     </div>
                                   );
@@ -848,21 +850,21 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                                 return (
                                   <div className="flex items-center gap-1.5 w-full min-w-0">
                                     <Button
-                                      className="flex-1 min-w-0 px-2 h-8 bg-red-50 hover:bg-red-100 text-red-600 text-caption font-semibold shadow-md rounded-lg border border-red-200 flex items-center justify-center gap-1 transition-all duration-200 active:scale-[0.98]"
+                                      className="flex-1 min-w-0 px-2 h-8 bg-red-50 hover:bg-red-100 text-red-600 text-caption font-semibold shadow-md rounded-catalogue-md border border-red-200 flex items-center justify-center gap-1 transition-all duration-200 active:scale-[0.98]"
                                       onClick={async () => {
                                         if (book.enrollInviteId) {
                                           await updateQuantity(book.enrollInviteId, 0);
                                           window.dispatchEvent(new CustomEvent('cartUpdated'));
-                                          toast.success("Removed from cart", { duration: 2000 });
+                                          toast.success(t("bookCatalogue.toast.removedFromCart"), { duration: 2000 });
                                         }
                                       }}
                                     >
                                       <Trash className="h-3 w-3 flex-shrink-0" />
-                                      <span className="truncate">Remove</span>
+                                      <span className="truncate">{t("common.remove")}</span>
                                     </Button>
                                     <Button
-                                      className="h-8 px-2 bg-primary-400 hover:bg-primary-500 text-white text-caption font-semibold rounded-lg shadow-md flex items-center gap-1 flex-shrink-0 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                                      onClick={() => navigate({ to: `/${tagName}/cart` })}
+                                      className="h-8 px-2 bg-primary-400 hover:bg-primary-500 text-white text-caption font-semibold rounded-catalogue-md shadow-md flex items-center gap-1 flex-shrink-0 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                      onClick={() => navigate({ to: `${RouteMatcher.basePath(tagName)}/cart` })}
                                     >
                                       <ShoppingBag className="h-3 w-3" />
                                       Cart
@@ -874,7 +876,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                               // Show Add to Cart button
                               return (
                                 <Button
-                                  className="px-6 w-full bg-white text-gray-900 text-sm font-medium shadow-xl hover:bg-primary-50 hover:text-primary-500 active:bg-primary-100 active:scale-95 transition-all duration-300 transform py-2 rounded-lg border border-gray-200"
+                                  className="px-6 w-full bg-white text-gray-900 text-sm font-medium shadow-xl hover:bg-primary-50 hover:text-primary-500 active:bg-primary-100 active:scale-95 transition-all duration-300 transform py-2 rounded-catalogue-md border border-gray-200"
                                   onClick={async () => {
                                     if (book.enrollInviteId) {
                                       await addItem({
@@ -894,14 +896,14 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                                       });
                                       // Dispatch event to update cart count in header
                                       window.dispatchEvent(new CustomEvent('cartUpdated'));
-                                      toast.success("Added to cart", { duration: 2000 });
+                                      toast.success(t("bookCatalogue.toast.addedToCart"), { duration: 2000 });
                                     }
                                   }}
                                   disabled={!book.enrollInviteId || book.available_slots === 0}
                                   style={{ touchAction: "manipulation" }}
                                 >
                                   <ShoppingCart className="h-4 w-4 me-2" />
-                                  {book.available_slots === 0 ? "Out of Stock" : "Add to Cart"}
+                                  {book.available_slots === 0 ? t("common.outOfStock") : t("common.addToCart")}
                                 </Button>
                               );
                             })()}
@@ -925,14 +927,14 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                           />
                           {!storeFilter && book.sessionName && (
                             <p className="text-caption text-gray-500 mt-0.5">
-                              from <span className="font-medium text-gray-700">{book.sessionName}</span>
-                              {(book.storeCount ?? 0) > 1 ? " — lowest price" : ""}
+                              {t("bookCatalogue.fromPrefix")} <span className="font-medium text-gray-700">{book.sessionName}</span>
+                              {(book.storeCount ?? 0) > 1 ? ` ${t("bookCatalogue.lowestPriceSuffix")}` : ""}
                             </p>
                           )}
                         </div>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 line-clamp-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-catalogue-xs text-xs font-medium bg-gray-100 text-gray-600 line-clamp-1">
                           {(() => {
                             const htmlContent = book.course_html_description_html || "";
                             if (!htmlContent) return "";
@@ -954,7 +956,7 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
                             {book.comma_separeted_tags && (
                               <div className="flex flex-wrap justify-end gap-1 max-w-32">
                                 {book.comma_separeted_tags.split(',').filter(t => t.trim()).slice(0, 2).map((tag, i) => (
-                                  <span key={i} className="text-caption font-medium text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 line-clamp-1">
+                                  <span key={i} className="text-caption font-medium text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded-catalogue-xs border border-gray-100 line-clamp-1">
                                     {tag.trim()}
                                   </span>
                                 ))}
@@ -972,19 +974,19 @@ export const BookCatalogueComponent: React.FC<BookCatalogueProps> = ({
             {/* Infinite Scroll Loading Indicator */}
             <div ref={loadMoreRef} className="mt-8 flex justify-center items-center min-h-24">
               {isFetchingNextPage && (
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-stack">
                   <div className="flex gap-2">
                     <div className="w-3 h-3 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <div className="w-3 h-3 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <div className="w-3 h-3 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">Loading more books...</p>
+                  <p className="text-sm text-gray-500 font-medium">{t("bookCatalogue.loadingMoreBooks")}</p>
                 </div>
               )}
               {!hasNextPage && !isFetching && displayedCourses.length > PAGE_SIZE && (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 font-medium">You've reached the end of the catalogue</p>
-                  <p className="text-sm text-catalogue-text-muted mt-1">Showing all {totalBooks} books</p>
+                  <p className="text-gray-500 font-medium">{t("bookCatalogue.endOfCatalogue")}</p>
+                  <p className="text-sm text-catalogue-text-muted mt-1">{t("bookCatalogue.showingAllBooks", { total: totalBooks })}</p>
                 </div>
               )}
             </div>

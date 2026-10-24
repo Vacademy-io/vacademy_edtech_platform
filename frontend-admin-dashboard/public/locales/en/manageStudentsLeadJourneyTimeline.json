@@ -1,0 +1,96 @@
+{
+    "actionConfig": {
+        "leadSubmitted": "Lead Submitted",
+        "counselorAssigned": "Counselor Assigned",
+        "statusChanged": "Status Changed",
+        "scoreUpdated": "Score Updated",
+        "manualScoreUpdate": "Manual Score",
+        "followup": "Follow-up",
+        "reachout": "Reachout",
+        "leadConverted": "Converted",
+        "leadLost": "Lead Lost",
+        "duplicateMerged": "Duplicate Merged",
+        "paymentReceived": "Payment Received",
+        "enrollmentCompleted": "Enrolled",
+        "note": "Note",
+        "call": "Call",
+        "callMade": "Outbound Call",
+        "walkInNote": "Walk-in Note",
+        "followupScheduled": "Follow-up Scheduled",
+        "statusChange": "Status Changed",
+        "fallback": "Event",
+        "reEnquiry": "Contacted Again",
+        "reattempt": "Reattempt"
+    },
+    "statusChangeMeta": {
+        "previous": "Previous"
+    },
+    "counselorMeta": {
+        "unknown": "Unknown",
+        "autoPool": "Auto (pool)",
+        "manual": "Manual"
+    },
+    "callStatus": {
+        "connected": "Connected",
+        "noAnswer": "No answer",
+        "busy": "Busy",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "inProgress": "In progress",
+        "ringing": "Ringing",
+        "queued": "Queued"
+    },
+    "callOutcome": {
+        "connected": "Connected",
+        "noAnswer": "No answer",
+        "busy": "Busy",
+        "leftVoicemail": "Left voicemail",
+        "callBackLater": "Call back later",
+        "notReachable": "Not reachable",
+        "switchedOff": "Switched off",
+        "wrongNumber": "Wrong number",
+        "interested": "Interested",
+        "notInterested": "Not interested",
+        "followUpScheduled": "Follow-up scheduled",
+        "demoScheduled": "Demo scheduled",
+        "converted": "Converted",
+        "doNotCall": "Do not call"
+    },
+    "duration": {
+        "zero": "0s",
+        "secondsOnly_one": "{{count}}s",
+        "secondsOnly_other": "{{count}}s",
+        "minutesSeconds": "{{minutes}}m {{seconds}}s"
+    },
+    "callRecording": {
+        "from": "· from {{caller}}",
+        "download": "Download",
+        "loading": "Loading…",
+        "playRecording": "Play recording",
+        "addNote": "Add note"
+    },
+    "emptyState": {
+        "title": "No events yet",
+        "description": "Events appear here as the lead progresses — submissions, scores, notes, and more"
+    },
+    "noProfileLinked": "No lead profile linked",
+    "errorState": {
+        "title": "Failed to load events",
+        "retry": "Retry"
+    },
+    "eventRow": {
+        "byPrefix": "by",
+        "system": "System",
+        "activity": "Activity"
+    },
+    "pagination": {
+        "pageOf": "{{current}} / {{total}}",
+        "prev": "Prev",
+        "next": "Next"
+    },
+    "header": {
+        "title": "Lead Journey",
+        "refresh": "Refresh",
+        "refreshAria": "Refresh journey events"
+    }
+}

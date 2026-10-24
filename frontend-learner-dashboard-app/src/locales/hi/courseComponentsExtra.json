@@ -1,0 +1,263 @@
+{
+    "common": {
+        "somethingWentWrong": "कुछ गड़बड़ हो गई",
+        "recommendedSteps": "सुझाए गए कदम",
+        "errorDetailsDevOnly": "एरर विवरण (केवल डेवलपमेंट)",
+        "returnHome": "होम पर वापस जाएं",
+        "goBack": "वापस जाएं",
+        "reportIssue": "समस्या की रिपोर्ट करें",
+        "signOut": "साइन आउट करें",
+        "tryAgain": "फिर से कोशिश करें",
+        "cancel": "रद्द करें",
+        "refresh": "रीफ़्रेश करें",
+        "loading": "लोड हो रहा है...",
+        "loadMore": "और लोड करें",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "errorTitle": "एरर",
+    "loading": "{{type}} लोड हो रहा है...",
+    "noFrameContent": "इस फ़्रेम के लिए कोई कॉन्टेंट उपलब्ध नहीं है",
+    "interactHint": "ऊपर दिए गए कॉन्टेंट के साथ इंटरैक्ट करें",
+    "progressOfTotal": "{{label}} {{current}}/{{total}}",
+    "frameLayerTitle": "AI वीडियो लेयर {{id}}",
+    "contentType": {
+        "VIDEO": "वीडियो",
+        "QUIZ": "क्विज़",
+        "STORYBOOK": "कहानी की किताब",
+        "INTERACTIVE_GAME": "गेम",
+        "PUZZLE_BOOK": "पहेलियां",
+        "SIMULATION": "सिमुलेशन",
+        "FLASHCARDS": "फ़्लैशकार्ड",
+        "MAP_EXPLORATION": "मानचित्र",
+        "WORKSHEET": "वर्कशीट",
+        "CODE_PLAYGROUND": "कोड",
+        "TIMELINE": "टाइमलाइन",
+        "CONVERSATION": "बातचीत"
+    },
+    "entryLabel": {
+        "VIDEO": "सेगमेंट",
+        "QUIZ": "प्रश्न",
+        "STORYBOOK": "पेज",
+        "INTERACTIVE_GAME": "गेम",
+        "PUZZLE_BOOK": "पहेली",
+        "SIMULATION": "सिमुलेशन",
+        "FLASHCARDS": "कार्ड",
+        "MAP_EXPLORATION": "स्थान",
+        "WORKSHEET": "अभ्यास",
+        "CODE_PLAYGROUND": "अभ्यास",
+        "TIMELINE": "घटना",
+        "CONVERSATION": "संवाद"
+    },
+    "mcq": {
+        "quickCheck": "क्विक चेक",
+        "skip": "छोड़ें",
+        "explanationLabel": "व्याख्या: ",
+        "continue": "जारी रखें"
+    },
+    "controls": {
+        "printWorksheetTitle": "वर्कशीट प्रिंट करें",
+        "print": "प्रिंट करें",
+        "rewind10": "10 सेकंड पीछे जाएं",
+        "forward10": "10 सेकंड आगे जाएं",
+        "play": "प्ले करें",
+        "pause": "पॉज़ करें",
+        "resetToBeginning": "शुरुआत से रीसेट करें",
+        "reset": "रीसेट करें",
+        "mute": "म्यूट करें",
+        "unmute": "अनम्यूट करें",
+        "playbackSpeed": "प्लेबैक स्पीड",
+        "disableQuiz": "क्विज़ प्रश्न बंद करें",
+        "enableQuiz": "क्विज़ प्रश्न चालू करें",
+        "quizOn": "क्विज़ ऑन",
+        "quizOff": "क्विज़ ऑफ़",
+        "exitFullscreen": "फ़ुलस्क्रीन से बाहर निकलें",
+        "enterFullscreen": "फ़ुलस्क्रीन में जाएं",
+        "previous": "पिछला",
+        "next": "अगला",
+        "sourceVideoAudio": "सोर्स वीडियो का ऑडियो"
+    },
+    "errors": {
+        "failedToLoadTimeline": "टाइमलाइन लोड नहीं हो सकी",
+        "failedToLoadAudio": "ऑडियो लोड नहीं हो सका",
+        "audioLoadingAborted": "ऑडियो लोडिंग रद्द हो गई",
+        "audioNetworkError": "ऑडियो लोड करते समय नेटवर्क एरर आई। CORS सेटिंग्स जांचें।",
+        "audioDecodeError": "ऑडियो डिकोड करने में एरर",
+        "audioFormatNotSupported": "ऑडियो फ़ॉर्मेट सपोर्टेड नहीं है",
+        "failedToPlayAudio": "ऑडियो चलाया नहीं जा सका"
+    },
+    "dripConditions": {
+        "common": {
+            "locked": "लॉक"
+        },
+        "unlockRequirements": {
+            "title": "अनलॉक करने की शर्तें"
+        },
+        "counts": {
+            "accessible": "{{count}} {{term}}",
+            "locked": "{{count}} लॉक",
+            "hidden": "{{count}} छिपे हुए"
+        }
+    },
+    "systemAlertsBar": {
+        "priority": {
+            "high": "उच्च प्राथमिकता",
+            "medium": "मध्यम प्राथमिकता",
+            "low": "कम प्राथमिकता",
+            "normal": "सामान्य प्राथमिकता"
+        },
+        "byAuthor": "{{name}} द्वारा",
+        "title": "सिस्टम अलर्ट",
+        "clearAllTitle": "सभी सूचनाएं साफ़ करें",
+        "clearAllDescription_one": "क्या आप वाकई {{count}} सूचना को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+        "clearAllDescription_other": "क्या आप वाकई सभी {{count}} सूचनाओं को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+        "loadingAlerts": "अलर्ट लोड हो रहे हैं...",
+        "noAlerts": "कोई सिस्टम अलर्ट नहीं है"
+    },
+    "appOverlayHost": {
+        "announcement": "घोषणा",
+        "from": "{{name}} की ओर से",
+        "gotIt": "समझ गया",
+        "progressOfTotal": "{{current}}/{{total}}"
+    },
+    "packageSessionMessages": {
+        "discussion": "चर्चा",
+        "close": "बंद करें",
+        "writeReplyPlaceholder": "जवाब लिखें...",
+        "replyVisibilityNotice": "आपका जवाब सभी प्रतिभागियों को दिखेगा",
+        "posting": "पोस्ट हो रहा है...",
+        "postReply": "जवाब पोस्ट करें",
+        "repliesWillAppearHere": "जवाब यहां दिखाई देंगे",
+        "courseDiscussion": "{{course}} चर्चा",
+        "loadingStreamMessages": "स्ट्रीम मैसेज लोड हो रहे हैं...",
+        "noStreamMessages": "कोई स्ट्रीम मैसेज नहीं है",
+        "repliesCount_one": "{{count}} जवाब",
+        "repliesCount_other": "{{count}} जवाब"
+    },
+    "dashboardPinsPanel": {
+        "priority": {
+            "high": "उच्च",
+            "medium": "मध्यम",
+            "low": "कम",
+            "normal": "सामान्य"
+        },
+        "timeRemaining": {
+            "days_one": "{{count}} दिन शेष",
+            "days_other": "{{count}} दिन शेष",
+            "hours_one": "{{count}} घंटा शेष",
+            "hours_other": "{{count}} घंटे शेष",
+            "lessThanHour": "1 घंटे से कम समय शेष"
+        },
+        "importantUpdates": "महत्वपूर्ण अपडेट",
+        "clearAllTitle": "सभी पिन साफ़ करें",
+        "clearAllDescription_one": "क्या आप वाकई {{count}} पिन को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+        "clearAllDescription_other": "क्या आप वाकई सभी {{count}} पिन को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+        "loadingPins": "पिन लोड हो रहे हैं...",
+        "viewAll": "सभी देखें (कुल {{count}})",
+        "byAuthor": "{{name}} द्वारा",
+        "pinExpires": "यह पिन {{time}} में समाप्त हो जाएगा"
+    },
+    "genericErrorPage": {
+        "title": "कुछ गड़बड़ हो गई",
+        "description": "एक अनपेक्षित एरर आई है। हमने इस समस्या को सुरक्षित रूप से लॉग कर लिया है और हमारी टीम इसकी जांच कर रही है।",
+        "step1": "पेज को रीफ़्रेश करें या होम डैशबोर्ड पर वापस जाएं।",
+        "step2Prefix": "अगर समस्या बनी रहे, तो",
+        "step2Emphasis": "साइन आउट करके फिर से साइन इन करें",
+        "step2Suffix": "ताकि आपका सेशन रीसेट हो जाए।"
+    },
+    "runtimeErrorPage": {
+        "applicationError": "एप्लिकेशन एरर",
+        "systemCrashed": "सिस्टम क्रैश हो गया",
+        "description": "एप्लिकेशन में एक अनपेक्षित एरर आई है। हमारी इंजीनियरिंग टीम को सूचित कर दिया गया है और वे इसे ठीक करने पर काम कर रहे हैं।",
+        "step1": "पेज को फिर से लोड करें या होम डैशबोर्ड पर वापस जाएं।",
+        "reloadPage": "पेज फिर से लोड करें"
+    },
+    "networkErrorPage": {
+        "underMaintenance": "मेंटेनेंस जारी है",
+        "title": "हम जल्द ही वापस आएंगे",
+        "description": "हमारी टीम आपको बेहतर अनुभव देने के लिए फ़िलहाल प्लेटफ़ॉर्म को अपग्रेड कर रही है। असुविधा के लिए हमें खेद है।"
+    },
+    "offlineErrorPage": {
+        "noConnection": "कोई कनेक्शन नहीं",
+        "youAreOffline": "आप ऑफ़लाइन हैं",
+        "description": "लगता है आपका इंटरनेट कनेक्शन कट गया है। कृपया अपनी नेटवर्क सेटिंग्स जांचें और फिर से कनेक्ट करने की कोशिश करें।"
+    },
+    "smartErrorPage": {
+        "updatingApplication": "एप्लिकेशन अपडेट हो रहा है..."
+    },
+    "defaultNotFound": {
+        "pageTitle": "पेज नहीं मिला (404)",
+        "metaDescription": "पेज नहीं मिला। हमें आपके द्वारा खोजा गया पेज नहीं मिला। कृपया URL जांचें या फिर से खोजने की कोशिश करें।",
+        "heading": "उफ़! पेज नहीं मिला",
+        "descriptionLine1": "हमें वह पेज नहीं मिला जिसे आप खोलने की कोशिश कर रहे थे।",
+        "descriptionLine2": "यह टाइपिंग की गलती, कोई अस्थायी समस्या, या पेज हटाए जाने की वजह से हो सकता है।"
+    },
+    "defaultPending": {
+        "pageTitle": "पेज लोड हो रहा है...",
+        "metaDescription": "कृपया थोड़ी देर प्रतीक्षा करें जब तक हम पेज तैयार करते हैं। आपका अनुभव बस आने ही वाला है!"
+    },
+    "inlineErrorBoundary": {
+        "defaultTitle": "यह सेक्शन दिखाया नहीं जा सका",
+        "defaultDescription": "इसे लोड करते समय कुछ गड़बड़ हो गई। आपके जवाब और टाइमर पर कोई असर नहीं पड़ा है।"
+    },
+    "errorFeedbackDialog": {
+        "description": "विवरण देकर हमें बेहतर बनाने में मदद करें। संदर्भ अपने आप शामिल हो जाता है।",
+        "nameLabel": "नाम (वैकल्पिक)",
+        "namePlaceholder": "आपका नाम",
+        "emailLabel": "ईमेल (वैकल्पिक)",
+        "emailPlaceholder": "फ़ॉलो-अप के लिए आपका ईमेल",
+        "whatWentWrongLabel": "क्या गड़बड़ हुई?",
+        "descriptionPlaceholder": "बताएं कि एरर आने पर आप क्या कर रहे थे...",
+        "attachments": "अटैचमेंट",
+        "filesSelected_one": "{{count}} फ़ाइल चुनी गई",
+        "filesSelected_other": "{{count}} फ़ाइलें चुनी गईं",
+        "sending": "भेजा जा रहा है...",
+        "sendReport": "रिपोर्ट भेजें",
+        "submitSuccess": "धन्यवाद! आपकी रिपोर्ट भेज दी गई है।",
+        "submitFailure": "रिपोर्ट सबमिट नहीं हो सकी। कृपया फिर से कोशिश करें।"
+    },
+    "dashboardLoader": {
+        "errorBoundaryDescription": "इस कॉन्टेंट को लोड करते समय एक अनपेक्षित एरर आई। यह किसी अस्थायी समस्या या अपर्याप्त अनुमतियों के कारण हो सकता है।",
+        "errorDetailsDev": "एरर विवरण (डेवलपमेंट)",
+        "loading": "लोड हो रहा है",
+        "logoAlt": "लोगो"
+    },
+    "submitModal": {
+        "title": "असेसमेंट सबमिट करें",
+        "description": "सबमिट करने के बाद आप पेपर पर वापस नहीं जा सकेंगे। सुनिश्चित करें कि आपने अपने सबसे अच्छे जवाब दिए हैं।",
+        "descriptionWithUnanswered": "{{total}} में से {{unanswered}} प्रश्नों के जवाब अभी बाकी हैं। सबमिट करने के बाद आप पेपर पर वापस नहीं जा सकेंगे।",
+        "answered": "जवाब दिया गया",
+        "unanswered": "जवाब नहीं दिया गया",
+        "markedForReview": "समीक्षा के लिए चिह्नित",
+        "notVisited": "देखा नहीं गया",
+        "totalQuestions": "कुल प्रश्न",
+        "submitting": "सबमिट हो रहा है...",
+        "submit": "सबमिट करें"
+    },
+    "timesUpModal": {
+        "title": "समय समाप्त हो गया!",
+        "description": "असेसमेंट का समय समाप्त हो गया है। अपने जवाब सबमिट करने के लिए क्लिक करें।",
+        "finish": "समाप्त करें"
+    },
+    "helpModal": {
+        "titles": {
+            "instructions": "असेसमेंट निर्देश",
+            "alerts": "असेसमेंट अलर्ट",
+            "reattempt": "फिर से प्रयास का अनुरोध करें",
+            "time": "अतिरिक्त समय का अनुरोध करें"
+        },
+        "noActiveAlerts": "इस समय कोई सक्रिय अलर्ट नहीं है।",
+        "reasonPromptPrefix": "कृपया",
+        "reattemptWord": "फिर से प्रयास",
+        "timeExtensionWord": "अतिरिक्त समय",
+        "reasonPromptSuffix": "का अनुरोध करने का कारण बताएं, जिसे एडमिन को भेजा जाएगा।",
+        "requestAlreadySent": "अनुरोध पहले ही भेजा जा चुका है",
+        "requestUnderReview": "आपके इंस्टिट्यूट को यह मिल गया है और वे इसकी समीक्षा कर रहे हैं। जवाब मिलते ही आपको सूचित किया जाएगा।",
+        "quotedReason": "“{{reason}}”",
+        "reasonPlaceholder": "यहां अपना कारण लिखें",
+        "sending": "भेजा जा रहा है...",
+        "submit": "सबमिट करें",
+        "requestSentConfirmation": "आपका अनुरोध आपके इंस्टिट्यूट को भेज दिया गया है। उन्हें सूचित कर दिया गया है और समीक्षा होते ही आपको जवाब मिलेगा।",
+        "couldNotIdentifyAssessment": "इस असेसमेंट की पहचान नहीं हो सकी।",
+        "sendRequestFailed": "हम आपका अनुरोध नहीं भेज सके। कृपया फिर से कोशिश करें।"
+    }
+}

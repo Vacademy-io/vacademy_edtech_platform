@@ -13,8 +13,10 @@ import vacademy.io.admin_core_service.features.audience.repository.UserLeadProfi
 import vacademy.io.admin_core_service.features.telephony.core.AiCallNodeDispatcher;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallOutcomeProcessor;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallingSettingsService;
+import vacademy.io.admin_core_service.features.telephony.core.CallingWindowUtil;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
+import vacademy.io.admin_core_service.features.telephony.enums.CallTrigger;
 import vacademy.io.admin_core_service.features.workflow.entity.NodeTemplate;
 import vacademy.io.admin_core_service.features.workflow.entity.WorkflowExecutionState;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowExecutionStatus;
@@ -27,7 +29,6 @@ import java.util.Collection;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,7 @@ public class CallAiNodeHandler implements NodeHandler {
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
 
     private final AiCallNodeDispatcher aiCallDispatcher;
+    private final vacademy.io.admin_core_service.features.telephony.queue.AiCallQueueService aiCallQueueService;
     private final AiCallingSettingsService settingsService;
     private final UserLeadProfileRepository userLeadProfileRepository;
     private final WorkflowExecutionStateRepository executionStateRepository;
@@ -116,6 +118,13 @@ public class CallAiNodeHandler implements NodeHandler {
         // falls back to the institute's AI_CALLING_SETTING default). Lets one builder pick
         // the provider for this node without touching global settings.
         String provider = firstNonBlank(readConfig(nodeConfigJson, "provider"), str(context.get("provider")));
+        // Opt-in escape from the already-assigned guard. OFF by default: automation that
+        // re-dials leads a counsellor already owns is exactly what the guard exists to stop.
+        // Turned ON only for graphs deliberately built to target owned leads — the canonical
+        // case being "a counsellor manually called and dispositioned this lead DNP, now let
+        // the bot try again", where the lead is assigned BY DEFINITION and the guard would
+        // silently stop every dial. The daily cap and duplicate window still apply.
+        boolean ignoreAssignedGuard = readConfigBool(nodeConfigJson, "ignoreAssignedGuard");
         // Arbitrary call metadata handed to the AI agent (e.g. studentName, sessionName,
         // courseName — whatever the conversation needs). Static keys come from the node
         // config's "metadata" object; dynamic per-run values from the context's
@@ -136,23 +145,59 @@ public class CallAiNodeHandler implements NodeHandler {
         // Cancel→resume bridge: the outcome processor resumed this paused state with a
         // terminal disposition injected (callOutcome). Short-circuit OUT of the node —
         // route to the next node via normal traversal — without re-dialing or pausing.
-        // CONSUME the one-shot bridge keys immediately (remove from the live context) so
-        // they can NEVER persist into a later pause/resume: otherwise a re-entry (a
-        // downstream DELAY pause, or a graph that loops back to CALL_AI) would re-read the
-        // stale callOutcome and short-circuit again with no new call — silently killing
-        // the retry loop. remove() not null-put: a "null" round-trips to the String "null".
+        // The bridge keys (callOutcome / callDisposition / callConnected / callAnswers)
+        // are LEFT in the live context: the nodes after this one are exactly what reads
+        // them (the template's CONDITION "#ctx['callOutcome'] == 'ASSIGN'"), and the
+        // engine runs them on this same map. Removing them here made that branch
+        // unreachable — every lead landed on the "false" leg.
+        //
+        // The one-shot guarantee is enforced by aiCallDone instead: it is set true by
+        // this short-circuit and reset to false the moment the node dials again, so a
+        // graph that loops back to CALL_AI after a terminal outcome sees the stale
+        // callOutcome but is NOT short-circuited by it — the stale keys are dropped and
+        // a fresh dial is planned. remove() not null-put: a "null" round-trips to the
+        // String "null".
         String callOutcome = str(context.get("callOutcome"));
-        context.remove("callOutcome");
-        context.remove("callDisposition");
-        context.remove("callConnected");
-        if ("ASSIGN".equals(callOutcome) || "STOP".equals(callOutcome)) {
+        boolean outcomeAlreadyConsumed = "true".equalsIgnoreCase(str(context.get("aiCallDone")));
+        if (("ASSIGN".equals(callOutcome) || "STOP".equals(callOutcome)) && !outcomeAlreadyConsumed) {
             out.put("aiCallDone", true);
             out.put("aiCallStopReason", "disposition_terminal");
             log.info("CALL_AI node: terminal disposition ({}) for lead {} — routing out without re-dial", callOutcome, userId);
             return out;   // routes to next node via normal traversal; does NOT pause/dial; does NOT call giveUpAfterRetries
         }
+        // Not a terminal resume: anything still under the bridge keys is left over from
+        // an earlier call (loop-back / a second CALL_AI node) — drop it so no downstream
+        // node reads the previous call's outcome as this call's. Reset aiCallDone on the
+        // LIVE context too (not only on `out`): the DIAL/DEFER paths below snapshot
+        // `context` into the paused state, and that snapshot is what the webhook bridge
+        // resumes — a stale true there would make the next terminal outcome look
+        // already-consumed and re-dial an interested lead.
+        context.remove("callOutcome");
+        context.remove("callDisposition");
+        context.remove("callConnected");
+        context.remove("callAnswers");
+        context.put("aiCallDone", false);
+        out.put("aiCallDone", false);
 
-        Plan plan = plan(instituteId, userId, attempts, callsToday, callsDay, provider);
+        // The previous attempt may not have become a call yet: the queue can be paused,
+        // out of credits, outside calling hours, or simply deep. Counting those as
+        // attempts is how a lead gets declared unreachable while its call is still
+        // sitting in the queue — and how pausing the queue silently burns a campaign's
+        // retries. Wait for the call to actually happen before spending the attempt.
+        String waitingSubject = firstNonBlank(userId, subjectId, responseId, phone);
+        if (waitingSubject != null
+                && aiCallQueueService.hasCallWaiting(instituteId, provider, waitingSubject)) {
+            Instant recheck = Instant.now().plus(
+                    Math.max(1, settingsService.get(instituteId).getRecheckMinutes()), ChronoUnit.MINUTES);
+            pauseWorkflow(context, recheck, "AI_CALL_AWAITING_DIAL", out);
+            log.info("CALL_AI node: lead {} still has a call waiting in the queue — deferring to {} "
+                    + "without spending attempt {} of {}", userId, recheck, attempts + 1,
+                    settingsService.get(instituteId).getMaxRetries());
+            out.put("aiCallAwaitingDial", true);
+            return out;
+        }
+
+        Plan plan = plan(instituteId, userId, attempts, callsToday, callsDay, provider, ignoreAssignedGuard);
 
         switch (plan.action()) {
             case STOP -> {
@@ -184,7 +229,11 @@ public class CallAiNodeHandler implements NodeHandler {
                 req.setSubjectId(subjectId);
                 if (!callMetadata.isEmpty()) req.setMetadata(callMetadata);
 
-                aiCallDispatcher.enqueue(req); // paced; placeCall guards already-assigned leads
+                // paced; placeCall re-applies the same guards server-side. The trigger must
+                // match the decision plan() just made, or placeCall would refuse a dial the
+                // node already counted as an attempt.
+                aiCallDispatcher.enqueue(req, ignoreAssignedGuard
+                        ? CallTrigger.WORKFLOW_EXPLICIT : CallTrigger.AUTOMATION);
 
                 int newAttempts = attempts + 1;
                 String today = LocalDate.now(IST).toString();
@@ -245,6 +294,19 @@ public class CallAiNodeHandler implements NodeHandler {
             return v == null || v.isNull() ? null : v.asText();
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /** Read a boolean flag from the node config; absent / unparseable ⇒ false. */
+    private boolean readConfigBool(String json, String key) {
+        if (json == null || json.isBlank()) return false;
+        try {
+            JsonNode v = mapper.readTree(json).get(key);
+            // asBoolean() also accepts the string "true", which is what the builder's
+            // config panel writes for a checkbox.
+            return v != null && !v.isNull() && v.asBoolean(false);
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -392,10 +454,12 @@ public class CallAiNodeHandler implements NodeHandler {
     private record Plan(Action action, Instant resumeAt, String reason) {}
 
     private Plan plan(String instituteId, String userId, int attempts, int callsToday, String callsDay,
-                      String provider) {
+                      String provider, boolean ignoreAssignedGuard) {
         AiCallingSettingsPojo s = settingsService.get(instituteId);
         if (s == null || !s.isEnabled()) return new Plan(Action.STOP, null, "ai_calling_disabled");
-        if (leadAlreadyAssigned(userId, instituteId)) return new Plan(Action.STOP, null, "assigned");
+        if (!ignoreAssignedGuard && leadAlreadyAssigned(userId, instituteId)) {
+            return new Plan(Action.STOP, null, "assigned");
+        }
         if (attempts >= Math.max(1, s.getMaxRetries())) return new Plan(Action.STOP, null, "exhausted");
 
         ZoneId tz = resolveZone(s.getTimezone());
@@ -443,66 +507,33 @@ public class CallAiNodeHandler implements NodeHandler {
                 .isPresent();
     }
 
+    // The four shift helpers below moved to CallingWindowUtil unchanged, so the AI call
+    // queue's drainer can apply the SAME window rule when it dispatches an item that has
+    // been waiting (dialing used to be immediate, so only this node could ever land
+    // outside a shift). These remain as thin delegates: every call site in this file, and
+    // its behaviour, is untouched.
+
     /** Inside any [start,end] shift (institute tz); handles windows wrapping midnight. */
     private boolean withinAnyShift(Instant now, List<AiCallingSettingsPojo.Shift> shifts, ZoneId tz) {
-        if (shifts == null || shifts.isEmpty()) return true;
-        LocalTime t = LocalTime.ofInstant(now, tz);
-        for (AiCallingSettingsPojo.Shift sh : shifts) {
-            LocalTime start = parseTime(sh.getStart());
-            LocalTime end = parseTime(sh.getEnd());
-            if (start == null || end == null) continue;
-            if (start.equals(end)) return true; // 24h
-            boolean within = start.isBefore(end)
-                    ? (!t.isBefore(start) && !t.isAfter(end))
-                    : (!t.isBefore(start) || !t.isAfter(end));
-            if (within) return true;
-        }
-        return false;
+        return CallingWindowUtil.withinAnyShift(now, shifts, tz);
     }
 
     /**
      * Earliest upcoming shift-open instant in the institute tz: the smallest shift
      * start that is still ahead of {@code now} today; if none remain today, the
      * smallest shift start tomorrow. Returns null if no usable shift starts (caller
-     * falls back to the recheck time). Uses the same parse/tz helpers as
-     * {@link #withinAnyShift}.
+     * falls back to the recheck time).
      */
     private Instant nextShiftOpen(Instant now, List<AiCallingSettingsPojo.Shift> shifts, ZoneId tz) {
-        if (shifts == null || shifts.isEmpty()) return null;
-        LocalDate today = LocalDate.now(tz);
-        LocalTime nowT = LocalTime.ofInstant(now, tz);
-
-        LocalTime earliestToday = null; // smallest start still ahead today
-        LocalTime earliestOverall = null; // smallest start of the day (for tomorrow)
-        for (AiCallingSettingsPojo.Shift sh : shifts) {
-            LocalTime start = parseTime(sh.getStart());
-            if (start == null) continue;
-            if (earliestOverall == null || start.isBefore(earliestOverall)) earliestOverall = start;
-            if (start.isAfter(nowT) && (earliestToday == null || start.isBefore(earliestToday))) {
-                earliestToday = start;
-            }
-        }
-        if (earliestToday != null) return today.atTime(earliestToday).atZone(tz).toInstant();
-        if (earliestOverall != null) return today.plusDays(1).atTime(earliestOverall).atZone(tz).toInstant();
-        return null;
+        return CallingWindowUtil.nextShiftOpen(now, shifts, tz);
     }
 
     private LocalTime parseTime(String hhmm) {
-        if (isBlank(hhmm)) return null;
-        try {
-            return LocalTime.parse(hhmm.trim());
-        } catch (DateTimeParseException e) {
-            return null;
-        }
+        return CallingWindowUtil.parseTime(hhmm);
     }
 
     private ZoneId resolveZone(String tz) {
-        if (isBlank(tz)) return IST;
-        try {
-            return ZoneId.of(tz.trim());
-        } catch (Exception e) {
-            return IST;
-        }
+        return CallingWindowUtil.resolveZone(tz);
     }
 
     private boolean isBlank(String s) {

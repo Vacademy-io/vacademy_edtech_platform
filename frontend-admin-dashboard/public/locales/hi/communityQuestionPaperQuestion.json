@@ -1,0 +1,7 @@
+{
+    "questionNumber": "प्रश्न {{number}}",
+    "questionImageAlt": "प्रश्न की छवि {{number}}",
+    "marksCount_one": "{{count}} अंक",
+    "marksCount_other": "{{count}} अंक",
+    "minLabel": "मिनट"
+}

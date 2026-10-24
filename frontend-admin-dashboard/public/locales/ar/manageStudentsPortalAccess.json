@@ -1,0 +1,43 @@
+{
+    "batchPicker": {
+        "openPortalForLabel": "فتح البوابة لـ"
+    },
+    "credentials": {
+        "title": "بيانات اعتماد الحساب",
+        "edit": "تعديل",
+        "share": "مشاركة",
+        "usernameLabel": "اسم المستخدم:",
+        "passwordLabel": "كلمة المرور:",
+        "usernameFieldName": "اسم المستخدم",
+        "passwordFieldName": "كلمة المرور",
+        "usernameNotFound": "غير متوفر",
+        "loadingPlaceholder": "جارٍ التحميل...",
+        "notFoundPlaceholder": "كلمة المرور غير موجودة"
+    },
+    "actions": {
+        "learnerPortal": {
+            "title": "بوابة المتعلم",
+            "description": "الوصول إلى بوابة المتعلم مباشرة",
+            "button": "الوصول إلى بوابة المتعلم"
+        },
+        "resetPassword": {
+            "title": "إعادة تعيين كلمة المرور",
+            "description": "إرسال بريد إعادة تعيين كلمة المرور",
+            "button": "إرسال بريد إعادة تعيين كلمة المرور"
+        }
+    },
+    "emptyState": {
+        "title": "لا توجد ميزات وصول إلى البوابة مفعّلة",
+        "description": "تواصل مع المسؤول لتفعيل إعدادات الوصول إلى البوابة"
+    },
+    "toast": {
+        "copiedToClipboard": "تم نسخ {{field}} إلى الحافظة!",
+        "copyFailed": "فشل نسخ {{field}}",
+        "studentUserIdNotFound": "لم يتم العثور على معرّف مستخدم الطالب",
+        "studentPackageIdNotFound": "لم يتم العثور على معرّف باقة الطالب",
+        "accessingPortal": "جارٍ الوصول إلى بوابة المتعلم...",
+        "portalOpened": "تم فتح بوابة المتعلم في علامة تبويب جديدة",
+        "noRedirectUrl": "لم يتم استلام رابط إعادة التوجيه",
+        "accessPortalFailed": "فشل الوصول إلى بوابة المتعلم. يرجى المحاولة مرة أخرى."
+    }
+}

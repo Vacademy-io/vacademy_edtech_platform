@@ -16,7 +16,21 @@
         "loadMore": "और लोड करें",
         "announcementsErrorTitle": "घोषणाएं लोड नहीं हो सकीं",
         "announcementsEmptyTitle": "अभी तक कोई घोषणा नहीं",
-        "announcementsEmptyDescription": "आपके संस्थान की घोषणाएं यहां दिखाई देंगी।"
+        "announcementsEmptyDescription": "आपके संस्थान की घोषणाएं यहां दिखाई देंगी।",
+        "receivedTimes": "{{count}} बार प्राप्त हुई",
+        "noContent": "इस सूचना में कोई अतिरिक्त विवरण नहीं है।",
+        "close": "बंद करें",
+        "openLink": "लिंक खोलें",
+        "unreadSummary_one": "आपके पास {{count}} अपठित सूचना है",
+        "unreadSummary_other": "आपके पास {{count}} अपठित सूचनाएं हैं",
+        "clear": "हटाएं",
+        "clearOne": "सूचना हटाएं: {{title}}",
+        "clearAll": "सभी हटाएं",
+        "clearing": "हटाया जा रहा है...",
+        "clearAllTitle": "सभी सूचनाएं हटाएं?",
+        "cancel": "रद्द करें",
+        "clearAllDescription_one": "इससे आपके इनबॉक्स से {{count}} सूचना हट जाएगी। इसे पूर्ववत नहीं किया जा सकता।",
+        "clearAllDescription_other": "इससे आपके इनबॉक्स से सभी {{count}} सूचनाएं हट जाएंगी। इसे पूर्ववत नहीं किया जा सकता।"
     },
     "hero": {
         "greeting": {
@@ -25,7 +39,8 @@
             "evening": "शुभ संध्या",
             "morningWithName": "सुप्रभात, {{name}}",
             "afternoonWithName": "नमस्कार, {{name}}",
-            "eveningWithName": "शुभ संध्या, {{name}}"
+            "eveningWithName": "शुभ संध्या, {{name}}",
+            "welcomeBackFallback": "वापसी पर स्वागत है"
         },
         "pickUpWhereLeftOff": "जहां छोड़ा था वहीं से शुरू करें",
         "yourFirstSlide": "आपका पहला {{slide}}",
@@ -73,6 +88,13 @@
         "renewPromptNoDate": "एक बार भुगतान करें और आपकी सदस्यता चलती रहेगी।",
         "reactivatePrompt": "इस सदस्यता को फिर से सक्रिय करें — वही प्लान, वही कोर्स, दोबारा नामांकन की ज़रूरत नहीं।",
         "alsoEnableAutopay": "भविष्य के नवीनीकरण के लिए ऑटो-पे फिर से चालू करें — एक ही मंज़ूरी से अभी भुगतान होगा और आगे के लिए सेट हो जाएगा।",
+        "mandateMethod": {
+            "heading": "ऑटो-पे कैसे सेट करें?",
+            "upiLabel": "UPI ऑटोपे",
+            "upiHint": "GPay, PhonePe, Paytm",
+            "cardLabel": "कार्ड",
+            "cardHint": "डेबिट / क्रेडिट कार्ड"
+        },
         "payToContinue": "जारी रखने के लिए {{amount}} भुगतान करें",
         "startingPayment": "भुगतान शुरू हो रहा है...",
         "unavailable": "सदस्यता की जानकारी अभी उपलब्ध नहीं है।",
@@ -88,7 +110,37 @@
         "tryAgain": "कृपया कुछ देर बाद फिर कोशिश करें।",
         "paymentReceivedToast": "भुगतान प्राप्त हुआ!",
         "paymentReceivedToastBody": "आपकी सदस्यता फिर से सक्रिय की जा रही है — इसमें कुछ सेकंड लगेंगे।",
-        "paymentNotCompletedToast": "भुगतान पूरा नहीं हुआ"
+        "paymentNotCompletedToast": "भुगतान पूरा नहीं हुआ",
+        "changePlan": "Change plan",
+        "completeEnrollmentPrompt": "यह सदस्यता कभी सक्रिय नहीं हुई — आपका साइन अप पूरा नहीं हुआ था। कक्षाएँ शुरू करने के लिए नामांकन पूरा करें।",
+        "completeEnrollmentCta": "अपना नामांकन पूरा करें",
+        "changePlanTitle": "Change your plan",
+        "changePlanSubtitle": "You're on {{plan}}. Pick what you'd like to move to.",
+        "changePlanSubtitleNoPlan": "Pick the plan you'd like to move to.",
+        "changePlanLoadFailed": "We couldn't load the available plans. Please try again in a moment.",
+        "changePlanNoOptions": "There aren't any other plans you can switch to right now.",
+        "planChangeUpgrade": "Upgrade",
+        "planChangeDowngrade": "Downgrade",
+        "planChangeCadence": "{{price}} every {{days}} days",
+        "planChangePayNow": "Pay {{amount}} now — starts immediately",
+        "planChangeFreeOn": "Free — starts {{date}}",
+        "planChangeFreeAtCycleEnd": "Free — starts at the end of your current period",
+        "planChangeCredit": "आपके मौजूदा प्लान का {{amount}} क्रेडिट शामिल — {{days}} दिन जुड़ेंगे",
+        "planChangeFullPrice": "नए प्लान का पूरा मूल्य — {{days}} दिन की सदस्यता",
+        "planChangeMandateReauth": "You'll be asked to re-approve auto-pay for the new amount.",
+        "planChangeAutopayRequired": "Re-approve auto-pay so future renewals keep working",
+        "planChangeCancel": "Cancel",
+        "planChangeConfirmPay": "Pay {{amount}}",
+        "planChangeConfirmSchedule": "Schedule this change",
+        "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+        "planChangeScheduledNoDate": "Moving to {{plan}} at the end of your current period.",
+        "planChangeCancelScheduled": "Cancel this change",
+        "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+        "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+        "planChangeCompletePayment": "Complete payment",
+        "planChangeDiscard": "Discard this change",
+        "planChangeScheduledToast": "Plan change scheduled",
+        "planChangeScheduledToastBody": "You'll move to {{plan}} on {{date}}. Nothing changes until then."
     },
     "books": {
         "title": "पुस्तकें",
@@ -204,6 +256,197 @@
         "awardedTooltip": "{{name}} — आपके संस्थान द्वारा प्रदान किया गया",
         "awardedTooltipWithReason": "{{name}} — आपके संस्थान द्वारा प्रदान किया गया: {{reason}}",
         "unlockedCount": "{{unlocked}}/{{total}} अनलॉक",
-        "emptyPrompt": "बैज अनलॉक करने के लिए अपना पहला {{slide}} पूरा करें"
+        "emptyPrompt": "बैज अनलॉक करने के लिए अपना पहला {{slide}} पूरा करें",
+        "manualLockedHint": "आपके संस्थान द्वारा प्रदान किया जाता है — अपने आप अनलॉक नहीं होता",
+        "manualLockedTooltip": "{{name}} — आपके संस्थान द्वारा प्रदान किया जाता है, अपने आप अनलॉक नहीं होता",
+        "celebrateTitle": "नया बैज अनलॉक हुआ!",
+        "celebrateAwardedTitle": "आपके संस्थान ने आपको एक बैज प्रदान किया"
+    },
+    "tnc": {
+        "title": "नियम और शर्तें स्वीकार करें",
+        "description": "अपने डैशबोर्ड तक पहुंचने से पहले आपको अपने संस्थान के नियम और शर्तें पढ़नी और स्वीकार करनी होंगी।",
+        "scrollToRead": "पढ़ने के लिए स्क्रॉल करें",
+        "readAgree": "मैंने नियम और शर्तें पढ़ ली हैं और सहमत हूं",
+        "digitalSignature": "डिजिटल हस्ताक्षर",
+        "namePlaceholder": "अपना पूरा कानूनी नाम दर्ज करें",
+        "signaturePrefilled": "आपका पंजीकृत नाम ऊपर दिखाया गया है। \"स्वीकार करें\" पर क्लिक करके, आप इस दस्तावेज़ पर डिजिटल हस्ताक्षर कर रहे हैं।",
+        "signatureManual": "अपना नाम दर्ज करके और \"स्वीकार करें\" पर क्लिक करके, आप इस दस्तावेज़ पर डिजिटल हस्ताक्षर कर रहे हैं।",
+        "accepting": "स्वीकार किया जा रहा है...",
+        "acceptButton": "मैं स्वीकार करता हूं और जारी रखता हूं",
+        "toast": {
+            "needConfirmRead": "कृपया पुष्टि करें कि आपने नियम और शर्तें पढ़ ली हैं और सहमत हैं",
+            "needName": "स्वीकार करने के लिए कृपया अपना पूरा नाम दर्ज करें",
+            "success": "नियम और शर्तें सफलतापूर्वक स्वीकार की गईं",
+            "failure": "नियम और शर्तें स्वीकार करने में विफल। कृपया फिर से प्रयास करें।"
+        }
+    },
+    "achievements": {
+        "title": "आपकी उपलब्धियां",
+        "xpToNextLevel": "स्तर {{level}} के लिए {{xp}} XP",
+        "badgesUnlocked": "बैज · {{unlocked}}/{{total}} अनलॉक"
+    },
+    "attendance": {
+        "title": "उपस्थिति",
+        "period7d": "7 दिन",
+        "period30d": "30 दिन",
+        "period90d": "3 महीने",
+        "dayStatus": {
+            "present": "उपस्थित",
+            "absent": "अनुपस्थित",
+            "noClass": "कोई कक्षा नहीं",
+            "notMarked": "अभी तक दर्ज नहीं"
+        },
+        "emptyTitleWithStreak": "लगातार उपस्थिति शुरू करने के लिए आज {{liveClass}} में शामिल हों",
+        "emptyTitleNoStreak": "उपस्थिति ट्रैक करना शुरू करने के लिए आज {{liveClass}} में शामिल हों",
+        "emptyBodyWithStreak": "आपकी उपस्थिति के आंकड़े और साप्ताहिक स्ट्रीक यहां दिखाई देंगे।",
+        "emptyBodyNoStreak": "इस सप्ताह के आपकी उपस्थिति के आंकड़े यहां दिखाई देंगे।",
+        "viewDetailsAria": "उपस्थिति का विवरण देखें",
+        "coverageNote_one": "{{date}} से {{count}} {{liveClass}} दिन",
+        "coverageNote_other": "{{date}} से {{count}} {{liveClass}} दिन",
+        "overall": "कुल",
+        "streak": "स्ट्रीक",
+        "daysPresent": "उपस्थित दिन",
+        "thisWeek": "इस सप्ताह"
+    },
+    "continueLearning": {
+        "startLearningTitle": "सीखना शुरू करें",
+        "allCaughtUpTitle": "सब पूरा हो गया!",
+        "browsePrompt": "{{courses}} देखें और {{slide}} से शुरुआत करें।",
+        "allCompletePrompt": "अभी और {{slides}} बाकी नहीं हैं। बहुत बढ़िया, यूं ही जारी रखें।",
+        "startFirstSlideButton": "{{slide}} से शुरुआत करें",
+        "exploreContentButton": "सामग्री देखें",
+        "title": "सीखना जारी रखें",
+        "slidesInProgress": "{{count}} {{slide}} प्रगति पर",
+        "continueFromWhereLeftOff": "जहां छोड़ा था वहीं से जारी रखें",
+        "resumeLearningButton": "सीखना फिर से शुरू करें"
+    },
+    "enrolledCourses": {
+        "viewAll": "सभी {{courses}} देखें",
+        "emptyTitle": "आपने अभी तक किसी {{courses}} में नामांकन नहीं किया है",
+        "browse": "{{courses}} देखें",
+        "cta": {
+            "continue": "जारी रखें",
+            "start": "शुरू करें",
+            "review": "दोहराएँ"
+        },
+        "cardAria": "{{course}}, {{percent}}% पूर्ण। {{action}}"
+    },
+    "dashboardHero": {
+        "loadingAria": "लोड हो रहा है",
+        "liveNow": "अभी लाइव",
+        "startsInMinutes": "{{minutes}} मिनट में शुरू",
+        "joinAria": "{{title}} से जुड़ें",
+        "welcomeWithName": "स्वागत है, {{name}}",
+        "welcome": "स्वागत है",
+        "getStartedTitle": "चलिए शुरुआत करते हैं",
+        "getStartedSubtitle": "आपकी पढ़ाई का पूरा लाभ उठाने के लिए कुछ आसान कदम।",
+        "browseCoursesLabel": "{{courses}} देखें",
+        "browseCoursesHint": "एक विषय खोलें और {{slide}} से शुरुआत करें",
+        "tryAssessmentLabel": "एक असेसमेंट आज़माएं",
+        "tryAssessmentHint": "एक क्विक क्विज़ से अपनी जानकारी जांचें",
+        "completeProfileLabel": "अपनी प्रोफ़ाइल पूरी करें",
+        "completeProfileHint": "सीखने को व्यक्तिगत बनाने के लिए अपना विवरण जोड़ें"
+    },
+    "activityChart": {
+        "emptyMessage": "आपकी गतिविधि सीखते ही यहां दिखाई देगी।",
+        "title": "सीखने की प्रगति का रुझान",
+        "subtitle": "साप्ताहिक सीखने की गतिविधि की तुलना",
+        "status": {
+            "justStarting": "अभी शुरुआत हो रही है",
+            "excellent": "उत्कृष्ट",
+            "onTrack": "सही राह पर",
+            "needsFocus": "ध्यान देने की ज़रूरत"
+        },
+        "avgLabel": "औसत: {{time}}",
+        "yourStudyTime": "आपका अध्ययन समय",
+        "batchAverage": "{{batch}} औसत",
+        "realTimeData": "रीयल-टाइम डेटा",
+        "performanceVsBatch": "{{batch}} की तुलना में प्रदर्शन:",
+        "above": "↗ ऊपर",
+        "below": "↘ नीचे",
+        "activeDays": "{{active}}/{{total}} सक्रिय दिन",
+        "peakDay": "सर्वश्रेष्ठ दिन",
+        "vsBatch": "{{batch}} की तुलना में",
+        "percentDifference": "{{percent}}% अंतर",
+        "yourTime": "आपका समय"
+    },
+    "learningInsights": {
+        "title": "सीखने की प्रगति",
+        "subtitle": "पिछले 7 दिनों की गतिविधि बनाम {{batch}} औसत",
+        "avgLabel": "औसत",
+        "sessionsLabel": "सत्र",
+        "streakLabel_one": "दिन की स्ट्रीक",
+        "streakLabel_other": "दिनों की स्ट्रीक",
+        "chartViewTitle": "चार्ट व्यू",
+        "tableViewTitle": "टेबल व्यू",
+        "loadError": "आपकी सीखने की गतिविधि लोड नहीं हो सकी।",
+        "tryAgain": "फिर से प्रयास करें"
+    },
+    "mentors": {
+        "title": "मेरे मेंटर",
+        "emptyStateTitle": "मेंटरशिप",
+        "emptyStateBody": "व्यक्तिगत मार्गदर्शन पाएं — अपने संस्थान के मेंटर देखें और जो आपके काम के लिए सही हो उसका अनुरोध करें।",
+        "findMentorButton": "मेंटर खोजें",
+        "viewAll": "सभी देखें",
+        "nextSession": "अगला सत्र",
+        "mentorSessionFallback": "मेंटर सत्र",
+        "linkPendingTooltip": "आपके मेंटर का मीटिंग लिंक अभी बन रहा है। कृपया थोड़ी देर बाद देखें।",
+        "linkComingSoon": "लिंक जल्द आ रहा है",
+        "mentorFallbackName": "मेंटर",
+        "chatOpenError": "चैट नहीं खुल सकी। कृपया फिर से प्रयास करें।"
+    },
+    "onboardingGate": {
+        "finishSetupWithName": "{{name}} का खाता सेट करना पूरा करें",
+        "finishSetupGeneric": "अपना खाता सेट करना पूरा करें",
+        "completeStepsPrompt": "अपने डैशबोर्ड पर जाने के लिए नीचे दिए गए चरण पूरे करें।",
+        "progressLabel": "प्रगति",
+        "waitingOnAdminSuffix": "आपके स्कूल के एडमिन द्वारा देखा जा रहा है — आपको यहां कुछ करने की ज़रूरत नहीं है।"
+    },
+    "dashboardPage": {
+        "pageTitle": "डैशबोर्ड",
+        "metaDescription": "एंटरप्राइज़ डैशबोर्ड - लर्निंग मैनेजमेंट सिस्टम",
+        "yogaGreeting": "आज की योग यात्रा के लिए तैयार हैं?",
+        "classesToday": "आज {{count}} {{liveClass}}",
+        "attendanceStreakFact": "{{count}} दिन की उपस्थिति स्ट्रीक",
+        "statCard": {
+            "coursesEmptyAction": "{{courses}} देखें",
+            "liveClassesEmptyAction": "{{liveClasses}} देखें",
+            "assessmentsTitle": "असेसमेंट",
+            "assessmentsEmptyAction": "असेसमेंट देखें"
+        },
+        "customWidgetFallbackTitle": "कस्टम विजेट",
+        "openButton": "खोलें",
+        "devTesting": {
+            "title": "डेवलपर टेस्टिंग",
+            "description": "पुश नोटिफिकेशन फ़ंक्शन का परीक्षण करें"
+        },
+        "exploreMembershipsButton": "मेंबरशिप देखें",
+        "exploreBooksButton": "किताबें देखें",
+        "toast": {
+            "attendanceMarkFailed": "उपस्थिति दर्ज करने में विफल"
+        },
+        "holistic": {
+            "yogaIllustrationAlt": "योग चित्रण",
+            "thisWeekTitle": "इस सप्ताह",
+            "referFriendTitle": "दोस्त को रेफ़र करें",
+            "referFriendSubtitle": "यात्रा साझा करें",
+            "inviteButton": "आमंत्रित करें",
+            "myClassesTitle": "मेरी कक्षाएं",
+            "liveBadge": "लाइव",
+            "joinNowButton": "अभी जुड़ें",
+            "noLiveClassesScheduled": "कोई {{liveClasses}} शेड्यूल नहीं",
+            "checkBackLater": "आगामी लाइव कक्षाओं के लिए बाद में देखें",
+            "viewAllClassesButton": "सभी कक्षाएं देखें",
+            "dateAtTime": "{{date}} को {{time}} बजे"
+        }
+    },
+    "getApp": {
+        "title": "ऐप डाउनलोड करें",
+        "subtitle": "सहज अनुभव के लिए हमारे ऐप्स डाउनलोड करें।",
+        "android": "एंड्रॉइड ऐप",
+        "ios": "iPhone और iPad ऐप",
+        "windows": "विंडोज ऐप",
+        "mac": "मैक ऐप",
+        "webPortal": "वेब पोर्टल"
     }
 }

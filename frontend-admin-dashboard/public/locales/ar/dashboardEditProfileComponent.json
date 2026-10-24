@@ -1,0 +1,73 @@
+{
+    "trigger": {
+        "editInstitute": "تعديل المؤسسة",
+        "addDetails": "إضافة التفاصيل"
+    },
+    "dialog": {
+        "title": "تعديل المؤسسة"
+    },
+    "logoAlt": "الشعار",
+    "fields": {
+        "instituteName": {
+            "label": "اسم المؤسسة",
+            "placeholder": "اسم المؤسسة"
+        },
+        "instituteType": {
+            "label": "نوع المؤسسة"
+        },
+        "instituteEmail": {
+            "label": "البريد الإلكتروني للمؤسسة",
+            "placeholder": "البريد الإلكتروني للمؤسسة"
+        },
+        "institutePhoneNumber": {
+            "label": "رقم هاتف المؤسسة",
+            "placeholder": "123 456 7890"
+        },
+        "instituteWebsite": {
+            "label": "الموقع الإلكتروني للمؤسسة",
+            "placeholder": "الموقع الإلكتروني للمؤسسة"
+        },
+        "instituteAddress": {
+            "label": "العنوان",
+            "placeholder": "سطر العنوان 1"
+        },
+        "instituteCity": {
+            "label": "المدينة/القرية",
+            "placeholder": "اختر المدينة/القرية"
+        },
+        "instituteState": {
+            "label": "الولاية",
+            "placeholder": "اختر الولاية"
+        },
+        "instituteCountry": {
+            "label": "الدولة",
+            "placeholder": "اختر الدولة"
+        },
+        "institutePinCode": {
+            "label": "الرمز البريدي",
+            "placeholder": "أدخل الرمز البريدي"
+        }
+    },
+    "sections": {
+        "contactInformation": "معلومات الاتصال",
+        "locationDetails": "تفاصيل الموقع",
+        "instituteTheme": "سمة المؤسسة"
+    },
+    "theme": {
+        "current": "الحالي",
+        "changeTheme": "تغيير السمة"
+    },
+    "actions": {
+        "saveChanges": "حفظ التغييرات",
+        "cancel": "إلغاء"
+    },
+    "toast": {
+        "updateSuccess": "تم تحديث بياناتك بنجاح!"
+    },
+    "validation": {
+        "instituteNameRequired": "اسم المؤسسة مطلوب",
+        "instituteTypeRequired": "الرجاء اختيار نوع المؤسسة",
+        "invalidEmail": "عنوان البريد الإلكتروني غير صالح",
+        "invalidWebsite": "رابط الموقع الإلكتروني غير صالح"
+    }
+}

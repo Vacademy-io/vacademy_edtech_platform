@@ -3,10 +3,13 @@ package vacademy.io.admin_core_service.features.audience.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.audience.dto.*;
@@ -15,6 +18,7 @@ import vacademy.io.admin_core_service.features.audience.entity.Audience;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
 import vacademy.io.admin_core_service.features.audience.enums.CampaignStatusEnum;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceRepository;
+import vacademy.io.admin_core_service.features.audience.util.AudienceTagsUtil;
 import vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository;
 import vacademy.io.admin_core_service.features.audience.entity.LeadScore;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceCommunication;
@@ -76,9 +80,11 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityLeadRecorder;
 
 /**
  * Service for Audience Management
@@ -91,6 +97,21 @@ public class AudienceService {
 
     @Autowired
     private AudienceRepository audienceRepository;
+
+    // Repositories only (never CounselorPoolService) — the pool service already
+    // depends on this one, so injecting it back would close a bean cycle.
+    @Autowired
+    private vacademy.io.admin_core_service.features.counselor_pool.repository.CounselorPoolAudienceRepository counselorPoolAudienceRepository;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.counselor_pool.repository.CounselorPoolRepository counselorPoolRepository;
+
+
+    @Autowired
+    private LiveActivityLeadRecorder liveActivityLeadRecorder;
+
+    @Autowired
+    private LeadTierService leadTierService;
 
     @Autowired
     private AudienceRoleAccessService audienceRoleAccessService;
@@ -114,6 +135,15 @@ public class AudienceService {
     private vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver customFieldListFilterResolver;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver utmListFilterResolver;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.utm_attribution.repository.UtmAttributionRepository utmAttributionRepository;
+
+    @Autowired
+    private vacademy.io.admin_core_service.features.utm_attribution.service.UtmAttributionService utmAttributionService;
+
+    @Autowired
     private AuthService authService;
 
     @Autowired
@@ -131,6 +161,9 @@ public class AudienceService {
     @Autowired
     private WorkflowTriggerService workflowTriggerService;
 
+    @Autowired
+    private LeadMoveWorkflowAsyncHelper leadMoveWorkflowAsyncHelper;
+
 
     /** Resolves caller + user-to-user descendants in the leads team. */
     @Autowired
@@ -139,6 +172,10 @@ public class AudienceService {
     /** Resolves a sub-org admin's lead scope (their sub-org's members) — see getLeads. */
     @Autowired
     private vacademy.io.admin_core_service.features.suborg.service.SubOrgLeadScopeService subOrgLeadScopeService;
+
+    /** Caller lead visibility for getLeads — shared with the lead-scope endpoint. */
+    @Autowired
+    private LeadVisibilityResolver leadVisibilityResolver;
 
     @Autowired
     private InstituteCustomFieldRepository instituteCustomFieldRepository;
@@ -283,9 +320,11 @@ public class AudienceService {
             audienceDTO.setStatus("ACTIVE");
         }
 
+        assertCampaignNameFree(audienceDTO.getInstituteId(), audienceDTO.getCampaignName(), null);
+
         // 1. Create and save audience entity
         Audience audienceToSave = new Audience(audienceDTO);
-        final Audience savedAudience = audienceRepository.save(audienceToSave);
+        final Audience savedAudience = saveCampaign(audienceToSave);
 
         logger.info("Saved audience with ID: {}", savedAudience.getId());
 
@@ -313,6 +352,9 @@ public class AudienceService {
 
         // Update fields
         if (StringUtils.hasText(audienceDTO.getCampaignName())) {
+            if (!audienceDTO.getCampaignName().equals(audience.getCampaignName())) {
+                assertCampaignNameFree(audience.getInstituteId(), audienceDTO.getCampaignName(), audienceId);
+            }
             audience.setCampaignName(audienceDTO.getCampaignName());
         }
         if (StringUtils.hasText(audienceDTO.getDescription())) {
@@ -350,8 +392,13 @@ public class AudienceService {
         audience.setToNotify(audienceDTO.getToNotify());
         audience.setSendRespondentEmail(audienceDTO.getSendRespondentEmail());
         audience.setCampaignObjective(audienceDTO.getCampaignObjective());
+        // Tags: null = leave the saved tags alone (older clients do not send them); an empty
+        // map clears them; anything else replaces them after validation.
+        if (audienceDTO.getTags() != null) {
+            audience.setTagsJson(AudienceTagsUtil.toJson(AudienceTagsUtil.normalize(audienceDTO.getTags())));
+        }
 
-        Audience updated = audienceRepository.save(audience);
+        Audience updated = saveCampaign(audience);
 
         // Update custom fields — admin's full picked list, including any toggled-off
         // entries which will be soft-deleted by the unified sync.
@@ -360,6 +407,45 @@ public class AudienceService {
 
         logger.info("Updated audience: {}", updated.getId());
         return updated.getId();
+    }
+
+    /**
+     * Campaign names are unique per institute (unique_institute_campaign), and a deleted
+     * campaign keeps its row and name. Without this check a clash reached the admin as the
+     * raw Postgres batch error. Exact match, like the constraint: "Testing" and "testing"
+     * may coexist.
+     */
+    private void assertCampaignNameFree(String instituteId, String campaignName, String excludeAudienceId) {
+        audienceRepository.findByInstituteIdAndCampaignNameIgnoreCase(instituteId, campaignName).stream()
+                .filter(existing -> campaignName.equals(existing.getCampaignName()))
+                .filter(existing -> !existing.getId().equals(excludeAudienceId))
+                .findFirst()
+                .ifPresent(existing -> {
+                    throw new ConflictException(duplicateCampaignNameMessage(campaignName,
+                            CampaignStatusEnum.DELETED.name().equals(existing.getStatus())));
+                });
+    }
+
+    /**
+     * Flushes so a name clash the check above could not see (a double-clicked submit, two
+     * admins at once) is caught here and answered like the check, not as a 511 at commit.
+     */
+    private Audience saveCampaign(Audience audience) {
+        try {
+            return audienceRepository.saveAndFlush(audience);
+        } catch (DataIntegrityViolationException e) {
+            if (String.valueOf(e.getMessage()).contains("unique_institute_campaign")) {
+                throw new ConflictException(duplicateCampaignNameMessage(audience.getCampaignName(), false));
+            }
+            throw e;
+        }
+    }
+
+    private static String duplicateCampaignNameMessage(String campaignName, boolean deleted) {
+        return deleted
+                ? "A deleted campaign is still using the name \"" + campaignName
+                        + "\". Please choose a different name."
+                : "A campaign named \"" + campaignName + "\" already exists. Please choose a different name.";
     }
 
     /**
@@ -445,6 +531,9 @@ public class AudienceService {
                 restrictByList,
                 pageable);
 
+        Map<String, vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool> poolByAudienceId =
+                resolvePoolsForPage(audiences.getContent());
+
         return audiences.map(audience -> AudienceDTO.builder()
                 .id(audience.getId())
                 .instituteId(audience.getInstituteId())
@@ -463,7 +552,141 @@ public class AudienceService {
                 .defaultInitialScore(audience.getDefaultInitialScore())
                 .subOrgId(audience.getSubOrgId())
                 .createdByUserId(audience.getCreatedByUserId())
+                .poolId(poolByAudienceId.containsKey(audience.getId())
+                        ? poolByAudienceId.get(audience.getId()).getId() : null)
+                .poolName(poolByAudienceId.containsKey(audience.getId())
+                        ? poolByAudienceId.get(audience.getId()).getName() : null)
+                .tags(AudienceTagsUtil.fromJson(audience.getTagsJson()))
                 .build());
+    }
+
+    // ── Lead list tags ────────────────────────────────────────────────────
+
+    /**
+     * The saved tags of one list. The list must belong to {@code instituteId}; a caller whose
+     * campaign access is limited to a set of lists (AUDIENCE_LIST mode) may only read those.
+     */
+    @Transactional(readOnly = true)
+    public AudienceTagsResponseDTO getCampaignTags(String audienceId, String instituteId, CustomUserDetails user) {
+        Audience audience = findTaggableAudience(audienceId, instituteId, user);
+        return new AudienceTagsResponseDTO(audience.getId(), AudienceTagsUtil.fromJson(audience.getTagsJson()));
+    }
+
+    /**
+     * Replaces a list's tags with {@code tags} (validated and canonicalised by
+     * {@link AudienceTagsUtil}); a null or empty map clears them. Same list checks as
+     * {@link #getCampaignTags}. Only the tags column is written.
+     */
+    @Transactional
+    public AudienceTagsResponseDTO setCampaignTags(String audienceId, String instituteId,
+                                                   Map<String, String> tags, CustomUserDetails user) {
+        SortedMap<String, String> normalized = AudienceTagsUtil.normalize(tags);
+        Audience audience = findTaggableAudience(audienceId, instituteId, user);
+        audienceRepository.updateTagsJson(audience.getId(), instituteId, AudienceTagsUtil.toJson(normalized));
+        return new AudienceTagsResponseDTO(audience.getId(), normalized);
+    }
+
+    /**
+     * Tag keys in use across the institute's lists, each with its distinct values and the
+     * number of lists carrying that value — for tag autocomplete. Keys are sorted
+     * alphabetically, values by list count (most used first) then alphabetically. Scoped like
+     * {@link #getCampaigns}: an AUDIENCE_LIST caller only sees the tags of lists they can see.
+     */
+    @Transactional(readOnly = true)
+    public List<CampaignTagSummaryDTO> getCampaignTagSummary(String instituteId, CustomUserDetails user) {
+        EffectiveAccess access = audienceRoleAccessService.resolveForCaller(user, instituteId);
+        Set<String> allowedIds = null;
+        if (access.getMode() == Mode.AUDIENCE_LIST) {
+            List<String> allowed = access.getAllowedAudienceIds();
+            if (allowed == null || allowed.isEmpty()) {
+                return Collections.emptyList();
+            }
+            allowedIds = new HashSet<>(allowed);
+        }
+
+        Map<String, Map<String, Long>> countsByKey = new TreeMap<>();
+        for (Object[] row : audienceRepository.findIdAndTagsJsonByInstituteId(instituteId)) {
+            String id = (String) row[0];
+            if (allowedIds != null && !allowedIds.contains(id)) {
+                continue;
+            }
+            AudienceTagsUtil.fromJson((String) row[1]).forEach((key, value) ->
+                    countsByKey.computeIfAbsent(key, k -> new HashMap<>()).merge(value, 1L, Long::sum));
+        }
+
+        List<CampaignTagSummaryDTO> summary = new ArrayList<>();
+        countsByKey.forEach((key, counts) -> {
+            List<CampaignTagSummaryDTO.ValueCount> values = counts.entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed()
+                            .thenComparing(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER)))
+                    .map(e -> new CampaignTagSummaryDTO.ValueCount(e.getKey(), e.getValue()))
+                    .collect(Collectors.toList());
+            summary.add(new CampaignTagSummaryDTO(key, values));
+        });
+        return summary;
+    }
+
+    private Audience findTaggableAudience(String audienceId, String instituteId, CustomUserDetails user) {
+        Audience audience = audienceRepository.findByIdAndInstituteId(audienceId, instituteId)
+                .filter(a -> !CampaignStatusEnum.DELETED.name().equals(a.getStatus()))
+                .orElseThrow(() -> new ResourceNotFoundException("Lead list not found"));
+        EffectiveAccess access = audienceRoleAccessService.resolveForCaller(user, instituteId);
+        if (access.getMode() == Mode.AUDIENCE_LIST) {
+            List<String> allowed = access.getAllowedAudienceIds();
+            if (allowed == null || !allowed.contains(audience.getId())) {
+                throw new ForbiddenException("You do not have access to this lead list");
+            }
+        }
+        return audience;
+    }
+
+    /**
+     * Which counsellor pool (if any) each audience on this page feeds, so the lead-list
+     * header can say so without the admin going to Pools to find out.
+     *
+     * <p>Two batched queries for the whole page rather than a lookup per row: the campaigns
+     * grid renders 20+ lists at a time and a per-row resolve would be a 40-query N+1.</p>
+     *
+     * <p>Best-effort — a pool-lookup failure returns an empty map and the lists simply render
+     * without the pool chip, rather than failing the campaigns page.</p>
+     */
+    private Map<String, vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool>
+            resolvePoolsForPage(List<Audience> audiences) {
+        if (audiences == null || audiences.isEmpty()) return Collections.emptyMap();
+        try {
+            List<String> audienceIds = audiences.stream()
+                    .map(Audience::getId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (audienceIds.isEmpty()) return Collections.emptyMap();
+
+            List<vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPoolAudience> links =
+                    counselorPoolAudienceRepository.findByAudienceIdIn(audienceIds);
+            if (links.isEmpty()) return Collections.emptyMap();
+
+            Map<String, vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool> poolsById =
+                    counselorPoolRepository.findAllById(links.stream()
+                            .map(vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPoolAudience::getPoolId)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .collect(Collectors.toList()))
+                    .stream()
+                    .collect(Collectors.toMap(
+                            vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool::getId,
+                            Function.identity(), (a, b) -> a));
+
+            Map<String, vacademy.io.admin_core_service.features.counselor_pool.entity.CounselorPool> byAudience =
+                    new HashMap<>();
+            for (var link : links) {
+                var pool = poolsById.get(link.getPoolId());
+                if (pool != null) byAudience.put(link.getAudienceId(), pool);
+            }
+            return byAudience;
+        } catch (Exception ex) {
+            logger.warn("Failed to resolve counsellor pools for campaigns page: {}", ex.getMessage());
+            return Collections.emptyMap();
+        }
     }
 
     /** Campaign name used for the auto-provisioned per-institute catalogue lead audience. */
@@ -490,14 +713,30 @@ public class AudienceService {
      * since this is a same-bean self-invocation.)
      */
     public String submitCatalogueLead(CatalogueLeadRequestDTO dto) {
+        return submitCatalogueLead(dto, false);
+    }
+
+    /**
+     * {@link #submitCatalogueLead(CatalogueLeadRequestDTO)}, optionally accepting a lead with a
+     * phone number and no email (the Site Assistant contact card, where a visitor often leaves
+     * only a number). Such a lead's auth user is keyed on the same deterministic, non-deliverable
+     * placeholder that Meta/Google webhook leads and phone-only bulk rows already use
+     * ({@link PlaceholderEmailService}, suppressed by every send path); the lead row itself keeps
+     * {@code parent_email} NULL and gets no email custom field, exactly like an inbound-call lead.
+     * The public catalogue form keeps requiring an email (allowPhoneOnly=false).
+     */
+    public String submitCatalogueLead(CatalogueLeadRequestDTO dto, boolean allowPhoneOnly) {
         if (dto == null || !StringUtils.hasText(dto.getInstituteId())) {
             throw new VacademyException("instituteId is required");
         }
         // submitLeadV2 builds the lead's user from the email; without an email it
         // saves nothing and returns an error sentinel. The catalogue form already
         // makes email mandatory, so require it here too rather than silently drop.
-        if (!StringUtils.hasText(dto.getEmail())) {
-            throw new VacademyException("Email is required to capture a lead");
+        boolean hasEmail = StringUtils.hasText(dto.getEmail());
+        if (!hasEmail && !(allowPhoneOnly && StringUtils.hasText(dto.getMobileNumber()))) {
+            throw new VacademyException(allowPhoneOnly
+                    ? "An email or a phone number is required to capture a lead"
+                    : "Email is required to capture a lead");
         }
 
         // Destination routing: a website capture point (contact form, newsletter,
@@ -522,7 +761,8 @@ public class AudienceService {
 
         UserDTO userDTO = UserDTO.builder()
                 .fullName(dto.getFullName())
-                .email(dto.getEmail())
+                .email(hasEmail ? dto.getEmail()
+                        : placeholderEmailService.synthesize(dto.getFullName(), dto.getMobileNumber(), null))
                 .mobileNumber(dto.getMobileNumber())
                 .build();
 
@@ -615,7 +855,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
                 audience.getCampaignName());
-        applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId());
+        recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
+                dto.getEmail(), dto.getMobileNumber(),
+                createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
+        applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId(), savedResponse,
+                dto.getEmail(), dto.getMobileNumber());
 
         return savedResponse.getId();
     }
@@ -822,7 +1066,11 @@ public class AudienceService {
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
                 audience.getCampaignName());
-        applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId());
+        recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
+                email, mobileNumber,
+                createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
+        applyRepeatLeadStatus(repeatLeadSettings, userId, audience.getInstituteId(), savedResponse,
+                email, mobileNumber);
 
         return savedResponse.getId();
     }
@@ -1074,6 +1322,154 @@ public class AudienceService {
         return new InboundCallLeadRef(saved.getId(), userId, audience.getId());
     }
 
+    // ==================== WhatsApp chatbot flow leads ====================
+
+    /** Source type stamped on leads captured by a WhatsApp chatbot flow (also the list's campaign type). */
+    public static final String WHATSAPP_FLOW_SOURCE_TYPE = "WHATSAPP_FLOW";
+    private static final String WHATSAPP_LEADS_AUDIENCE_NAME = "WhatsApp Leads";
+
+    /**
+     * Create a lead for a WhatsApp chatbot conversation in the institute's auto-provisioned
+     * "WhatsApp Leads" list. The caller ({@code WhatsAppFlowLeadService}) has already
+     * established that this phone is not a lead anywhere in the institute and holds the
+     * per-phone lock inside its transaction, so this method does no de-dup of its own.
+     * Same intake steps as the other captured-lead channels: timeline, score, counsellor.
+     */
+    public InboundCallLeadRef createWhatsAppFlowLead(String instituteId, String userId, String phone,
+            String name, String flowId) {
+        Audience audience = getOrCreateWhatsAppLeadsAudience(instituteId);
+        String display = StringUtils.hasText(name) ? name.trim() : phone;
+        AudienceResponse saved = audienceResponseRepository.save(AudienceResponse.builder()
+                .audienceId(audience.getId())
+                .sourceType(WHATSAPP_FLOW_SOURCE_TYPE)
+                .sourceId(StringUtils.hasText(flowId) ? flowId : WHATSAPP_FLOW_SOURCE_TYPE)
+                .userId(userId)
+                .parentName(display)
+                .parentMobile(truncateForParentMobileColumn(phone))
+                .workflowActivateDayAt(calculateWorkflowActivateDayAt(audience))
+                .initialScore(audience.getDefaultInitialScore())
+                .build());
+
+        try {
+            logLeadSubmitted(saved);
+        } catch (Exception e) {
+            logger.error("WhatsApp flow lead {}: logLeadSubmitted failed: {}", saved.getId(), e.getMessage());
+        }
+        try {
+            leadScoringService.calculateAndSaveScore(saved.getId(), saved.getAudienceId(),
+                    instituteId, saved.getSourceType(), saved.getEnquiryId());
+        } catch (Exception e) {
+            logger.error("WhatsApp flow lead {}: score failed: {}", saved.getId(), e.getMessage());
+        }
+        // Swallows its own failures — assignment must never break intake.
+        autoAssignCounsellorOnIntake(saved, userId, instituteId, null, null, display, audience.getCampaignName());
+
+        logger.info("WhatsApp flow lead captured: response={} user={} inst={} flow={}",
+                saved.getId(), userId, instituteId, flowId);
+        return new InboundCallLeadRef(saved.getId(), userId, audience.getId());
+    }
+
+    /**
+     * Resolve the per-institute "WhatsApp Leads" list, creating it on first use. Found by
+     * campaign type rather than name so a renamed list keeps receiving leads. The create
+     * path takes an institute-wide advisory lock and re-checks, so two first leads arriving
+     * together cannot create two lists. Must run inside a transaction (the lock is
+     * transaction-scoped).
+     */
+    private Audience getOrCreateWhatsAppLeadsAudience(String instituteId) {
+        Optional<Audience> existing = audienceRepository
+                .findFirstByInstituteIdAndCampaignTypeAndStatusOrderByCreatedAtAsc(
+                        instituteId, WHATSAPP_FLOW_SOURCE_TYPE, "ACTIVE");
+        if (existing.isPresent()) return existing.get();
+
+        audienceResponseRepository.acquireTransactionLock("whatsapp-leads-list:" + instituteId);
+        return audienceRepository
+                .findFirstByInstituteIdAndCampaignTypeAndStatusOrderByCreatedAtAsc(
+                        instituteId, WHATSAPP_FLOW_SOURCE_TYPE, "ACTIVE")
+                .orElseGet(() -> {
+                    Audience audience = Audience.builder()
+                            .id(UUID.randomUUID().toString())
+                            .instituteId(instituteId)
+                            .campaignName(WHATSAPP_LEADS_AUDIENCE_NAME)
+                            .campaignType(WHATSAPP_FLOW_SOURCE_TYPE)
+                            .campaignObjective("LEAD_GENERATION")
+                            .description("Leads captured from WhatsApp chatbot flows")
+                            .status("ACTIVE")
+                            .defaultInitialScore(0)
+                            .build();
+                    Audience saved = audienceRepository.save(audience);
+                    logger.info("Auto-provisioned WhatsApp Leads audience {} for institute {}",
+                            saved.getId(), instituteId);
+                    return saved;
+                });
+    }
+
+    /**
+     * Attach a custom field to a lead list's form schema (idempotent) so a value saved
+     * against it shows as a column. Public entry to {@link #ensureAudienceFormField} for the
+     * WhatsApp chatbot capture path.
+     */
+    public void attachFieldToLeadList(String instituteId, String audienceId, String customFieldId, int order) {
+        ensureAudienceFormField(instituteId, audienceId, customFieldId, order);
+    }
+
+    /**
+     * Fire AUDIENCE_LEAD_SUBMISSION for a lead captured by a WhatsApp chatbot flow, once its
+     * answers are saved. The context carries the same keys as the form paths (user, audience,
+     * customFields, responseId, phone …) so existing workflow node configs work unchanged.
+     * No respondent/admin email requests are built: the lead came in over WhatsApp and has
+     * no real email, and the chatbot flow already replied to them.
+     */
+    public void fireLeadSubmissionWorkflow(String responseId) {
+        AudienceResponse response = audienceResponseRepository.findById(responseId).orElse(null);
+        if (response == null) return;
+        Audience audience = audienceRepository.findById(response.getAudienceId()).orElse(null);
+        if (audience == null) return;
+        String instituteId = audience.getInstituteId();
+
+        UserDTO user = UserDTO.builder()
+                .id(response.getUserId())
+                .fullName(response.getParentName())
+                .email(response.getParentEmail())
+                .mobileNumber(response.getParentMobile())
+                .build();
+        AudienceDTO audienceDTO = AudienceDTO.builder()
+                .id(audience.getId())
+                .campaignName(audience.getCampaignName())
+                .instituteId(instituteId)
+                .status(audience.getStatus())
+                .toNotify(audience.getToNotify())
+                .sendRespondentEmail(audience.getSendRespondentEmail())
+                .build();
+        String submissionTime = java.time.ZonedDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm a z"));
+
+        Map<String, Object> contextData = new HashMap<>();
+        contextData.put("user", user);
+        contextData.put("audience", audienceDTO);
+        contextData.put("audienceId", audience.getId());
+        contextData.put("instituteId", instituteId);
+        contextData.put("instituteName",
+                instituteRepository.findById(instituteId).map(Institute::getInstituteName).orElse(""));
+        contextData.put("customFields", buildCustomFieldMapForEmail(responseId));
+        contextData.put("submissionTime", submissionTime);
+        contextData.put("responseId", responseId);
+        contextData.put("userId", response.getUserId());
+        contextData.put("leadUserId", response.getUserId());
+        contextData.put("phone", response.getParentMobile());
+        contextData.put("parentMobile", response.getParentMobile());
+        contextData.put("campaignName", audience.getCampaignName());
+        contextData.put("sendRespondentEmail", false);
+        contextData.put("respondentEmailRequests", new ArrayList<Map<String, Object>>());
+        contextData.put("adminEmailRequests", new ArrayList<Map<String, Object>>());
+
+        workflowTriggerService.handleTriggerEvents(
+                WorkflowTriggerEvent.AUDIENCE_LEAD_SUBMISSION.name(),
+                audience.getId(),
+                instituteId,
+                contextData);
+    }
+
     /**
      * Submit a lead from website form
      * Automatically creates/fetches user from auth_service
@@ -1139,11 +1535,8 @@ public class AudienceService {
             if (userDTO != null && StringUtils.hasText(userDTO.getEmail())) {
                 // Call auth_service to create or fetch existing user
                 // sendCred = false (no email notification)
-                createdUser = authService.createUserFromAuthService(
-                        userDTO,
-                        audience.getInstituteId(),
-                        false // Don't send credentials email
-                );
+                createdUser = resolveLeadUser(userDTO, audience.getInstituteId(),
+                        requestDTO.getAudienceId(), repeatLeadSettings != null, requestDTO.getCounsellorId());
                 userId = createdUser.getId();
                 // Prepare effectively final variables for lambda
                 final UserDTO userForNotification = createdUser;
@@ -1173,6 +1566,7 @@ public class AudienceService {
                         .parentMobile(truncateForParentMobileColumn(userDTO.getMobileNumber()))
                         .workflowActivateDayAt(calculateWorkflowActivateDayAt(audience))
                         .initialScore(audience.getDefaultInitialScore())
+                        .createdByUserId(requestDTO.getCreatedByUserId())
                         .build();
 
                 AudienceResponse savedResponse = audienceResponseRepository.save(response);
@@ -1214,7 +1608,11 @@ public class AudienceService {
                 applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
                         userForNotification.getFullName(), audience.getCampaignName());
-                applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId);
+                recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                        userDTO.getEmail(), userDTO.getMobileNumber(),
+                        userForNotification.getFullName(), audience.getCampaignName());
+                applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
+                        userDTO.getEmail(), userDTO.getMobileNumber());
 
                 // 4. Build custom field map for email
                 Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -1476,6 +1874,13 @@ public class AudienceService {
      */
     private void assignManualCounsellor(String leadUserId, String instituteId,
             String counsellorId, String counsellorName, String leadName, String campaignName) {
+        assignManualCounsellor(leadUserId, instituteId, counsellorId, counsellorName, leadName, campaignName, true);
+    }
+
+    /** As above; {@code notify} false skips the new-lead bell. */
+    private void assignManualCounsellor(String leadUserId, String instituteId,
+            String counsellorId, String counsellorName, String leadName, String campaignName,
+            boolean notify) {
         if (!StringUtils.hasText(leadUserId) || !StringUtils.hasText(counsellorId)) {
             return;
         }
@@ -1496,7 +1901,9 @@ public class AudienceService {
         // Bell notification to the new owner — mirrors the pool auto-assign
         // alert so a bulk-imported lead owner hears about their lead too.
         // Best-effort inside the notifier; never fails the import row.
-        leadAssignmentNotifier.notifyAssigned(instituteId, counsellorId, leadName, campaignName);
+        if (notify) {
+            leadAssignmentNotifier.notifyAssigned(instituteId, counsellorId, leadName, campaignName, leadUserId);
+        }
     }
 
     /**
@@ -1505,8 +1912,9 @@ public class AudienceService {
      * form webhooks incl. Facebook/Meta) calls, so a new lead channel only has to invoke this
      * one method to get an owner. A manually supplied counsellor wins; otherwise we fall back
      * to the campaign's counselor pool (ROUND_ROBIN / TIME_BASED). Audiences not in any pool,
-     * or MANUAL pools, leave the lead unassigned. All failures are swallowed — assignment must
-     * never break lead intake.
+     * MANUAL pools, or lists set to on-demand assignment ({@code assign_on_intake=false}, the
+     * AI-first case where the bot must call before anyone owns the lead) leave the lead
+     * unassigned. All failures are swallowed — assignment must never break lead intake.
      *
      * NOTE: enquiry / walk-in leads use a SEPARATE assignment system ({@code linkCounsellorToEnquiry}
      * → LinkedUsers + enquiry flag) and must NOT call this, or they'd be double-assigned.
@@ -1533,7 +1941,7 @@ public class AudienceService {
         // Pool auto-assignment. The name lookup mirrors the manual-assign UI so the Counsellor
         // column renders a name (an id without a name shows up as Unassigned).
         try {
-            counselorAssignmentService.assignCounselorForLead(savedResponse.getAudienceId())
+            counselorAssignmentService.assignCounselorOnIntake(savedResponse.getAudienceId())
                     .ifPresent(counselorUserId -> {
                         String counselorName = null;
                         try {
@@ -1589,9 +1997,8 @@ public class AudienceService {
                             leadUserId, e.getMessage());
                 }
             }
-            case SAME_AS_PREVIOUS -> {
-                // No-op by design — leave whatever counsellor the lead already had untouched.
-            }
+            case SAME_AS_PREVIOUS -> assignPreviousCounsellor(savedResponse, leadUserId, instituteId,
+                    leadFullName, campaignName, !repeatLeadSettings.reattempt().notifyOwner());
             case SPECIFIC -> autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId,
                     repeatLeadSettings.specificCounsellorId(), repeatLeadSettings.specificCounsellorName(),
                     leadFullName, campaignName);
@@ -1601,16 +2008,171 @@ public class AudienceService {
     }
 
     /**
+     * The lead's person record. Under phone dedup with "Allow & reassign" and the Lead
+     * Settings switch repeatLead.samePersonByPhone on, a repeat joins the person who already
+     * holds this phone: auth_service matches people by email, so a repeat
+     * with a new email would otherwise become a second person, a second lead and often a
+     * second owner. The submission's own name, email and phone are kept on the returned DTO,
+     * so this request's notifications go where they always did.
+     *
+     * <p>Kept exactly as before (create or fetch by email, no credentials email) when it is
+     * not such a repeat, the lookup fails, the person already has a lead in this same list
+     * (a repeat there still comes in as its own lead), or the request names a counsellor
+     * other than the person's current owner (so intake never moves an owned lead).
+     */
+    private UserDTO resolveLeadUser(UserDTO userDTO, String instituteId, String audienceId,
+            boolean repeatLead, String requestedCounsellorId) {
+        if (repeatLead && userDTO != null) {
+            try {
+                String existingId = leadDeduplicationService
+                        .findExistingLeadUserIdByPhone(instituteId, audienceId, userDTO.getMobileNumber())
+                        .orElse(null);
+                if (existingId != null && canJoinExistingPerson(existingId, instituteId, audienceId,
+                        requestedCounsellorId)) {
+                    List<UserDTO> found = authService.getUsersFromAuthServiceByUserIds(List.of(existingId));
+                    UserDTO existing = found == null ? null : found.stream()
+                            .filter(u -> u != null && existingId.equals(u.getId()))
+                            .findFirst().orElse(null);
+                    if (existing != null) {
+                        if (StringUtils.hasText(userDTO.getEmail())) existing.setEmail(userDTO.getEmail());
+                        if (StringUtils.hasText(userDTO.getFullName())) existing.setFullName(userDTO.getFullName());
+                        if (StringUtils.hasText(userDTO.getMobileNumber())) {
+                            existing.setMobileNumber(userDTO.getMobileNumber());
+                        }
+                        logger.info("Repeat lead for audience {} joins existing person {} by phone",
+                                audienceId, existingId);
+                        return existing;
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Repeat lead for audience {}: person lookup by phone failed, creating by email: {}",
+                        audienceId, e.getMessage());
+            }
+        }
+        return authService.createUserFromAuthService(userDTO, instituteId, false);
+    }
+
+    /**
+     * Whether a repeat may join {@code existingId}: not when that person already has a lead
+     * in this list, and not when the request names a counsellor other than their owner.
+     */
+    private boolean canJoinExistingPerson(String existingId, String instituteId, String audienceId,
+            String requestedCounsellorId) {
+        if (audienceResponseRepository.existsByAudienceIdAndUserId(audienceId, existingId)) {
+            return false;
+        }
+        if (!StringUtils.hasText(requestedCounsellorId)) {
+            return true;
+        }
+        String owner = userLeadProfileRepository.findByUserIdAndInstituteId(existingId, instituteId)
+                .map(p -> p.getAssignedCounselorId())
+                .orElse(null);
+        return !StringUtils.hasText(owner) || owner.equals(requestedCounsellorId);
+    }
+
+    /**
+     * Repeat-lead SAME_AS_PREVIOUS: the repeat goes to the counsellor who owned the matched
+     * earlier lead.
+     * <ul>
+     *   <li>Same person record that already has an owner (repeat with the same email) —
+     *       left untouched, as before.</li>
+     *   <li>Otherwise (typically a phone match carrying a new email, which creates a new
+     *       user with an ownerless profile) — copy the owner of the most recent matched
+     *       lead, as long as they are still an active counsellor.</li>
+     *   <li>No usable previous owner — fall back to the list's pool, so a repeat lead never
+     *       arrives unowned.</li>
+     * </ul>
+     * Failures are swallowed like every other assignment step.
+     */
+    private void assignPreviousCounsellor(AudienceResponse savedResponse, String leadUserId,
+            String instituteId, String leadFullName, String campaignName, boolean notifyNewLead) {
+        try {
+            boolean alreadyOwned = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                    .map(p -> StringUtils.hasText(p.getAssignedCounselorId()))
+                    .orElse(false);
+            if (alreadyOwned) {
+                return;
+            }
+        } catch (Exception e) {
+            // Can't tell whether the lead is already owned, so don't risk replacing an owner.
+            logger.error("Repeat lead {}: profile lookup failed, leaving the counsellor untouched: {}",
+                    savedResponse.getId(), e.getMessage());
+            return;
+        }
+        String previousCounsellorId = null;
+        try {
+            previousCounsellorId = leadDeduplicationService.findPreviousCounsellorId(instituteId,
+                    savedResponse.getAudienceId(), savedResponse.getParentEmail(),
+                    savedResponse.getParentMobile(), savedResponse.getId()).orElse(null);
+            if (previousCounsellorId != null) {
+                // An owner whose counsellor role was removed would make the lead invisible to
+                // every counsellor. An empty roster means the lookup failed, so trust the owner.
+                List<String> activeCounsellors = counsellorScopeService.allCounsellorUserIds(instituteId);
+                if (!activeCounsellors.isEmpty() && !activeCounsellors.contains(previousCounsellorId)) {
+                    logger.info("Repeat lead {}: previous counsellor {} is no longer active, using the pool",
+                            savedResponse.getId(), previousCounsellorId);
+                    previousCounsellorId = null;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: previous counsellor lookup failed: {}",
+                    savedResponse.getId(), e.getMessage());
+            previousCounsellorId = null;
+        }
+        if (previousCounsellorId != null && !notifyNewLead) {
+            // The owner hears about this lead from the reattempt bell (recordReattempt), so no
+            // "new lead" bell for a lead that is not new to them.
+            try {
+                assignManualCounsellor(leadUserId, instituteId, previousCounsellorId, null,
+                        leadFullName, campaignName, false);
+            } catch (Exception e) {
+                logger.error("Repeat lead {}: failed to assign previous counsellor {}: {}",
+                        savedResponse.getId(), previousCounsellorId, e.getMessage());
+            }
+            return;
+        }
+        autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId, previousCounsellorId, null,
+                leadFullName, campaignName);
+    }
+
+    /**
      * Repeat-lead status handling (LEAD_SETTING.data.dedup.repeatLead.statusMode).
      * KEEP_EXISTING (or no repeat-lead settings) does nothing — status is never touched.
      * RESET_TO_NEW resets the lead's profile-level conversion status back to "LEAD" (the
      * platform's default/new-lead status), which mirrors onto every audience_response row
      * for that user via {@link UserLeadProfileService#updateConversionStatus}.
+     * RESET_CLOSED_TO_NEW resets only when the lead this enquiry repeats is closed (converted
+     * or LOST) or no active one is left; a lead still being worked keeps its status. A
+     * failed lookup leaves the status untouched.
+     *
+     * @param savedResponse the repeat enquiry, excluded from the "lead it repeats" lookup
+     * @param email the submission's email, as passed to the dedup check
+     * @param phone the submission's phone, as passed to the dedup check
      */
     private void applyRepeatLeadStatus(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
-            String leadUserId, String instituteId) {
-        if (repeatLeadSettings == null
-                || repeatLeadSettings.statusMode() != LeadDedupSettingService.StatusMode.RESET_TO_NEW) {
+            String leadUserId, String instituteId, AudienceResponse savedResponse, String email, String phone) {
+        if (repeatLeadSettings == null) {
+            return;
+        }
+        LeadDedupSettingService.StatusMode mode = repeatLeadSettings.statusMode();
+        if (mode == LeadDedupSettingService.StatusMode.RESET_CLOSED_TO_NEW) {
+            if (savedResponse == null || savedResponse.getId() == null) {
+                return;
+            }
+            try {
+                boolean earlierLeadOpen = leadDeduplicationService.findPrimaryLead(instituteId,
+                                savedResponse.getAudienceId(), email, phone, savedResponse.getId())
+                        .map(p -> isOpenLeadStatus(p.getStatusKey()))
+                        .orElse(false);
+                if (earlierLeadOpen) {
+                    return;
+                }
+            } catch (Exception e) {
+                logger.error("Repeat lead {}: could not tell whether the earlier lead is open, status kept: {}",
+                        savedResponse.getId(), e.getMessage());
+                return;
+            }
+        } else if (mode != LeadDedupSettingService.StatusMode.RESET_TO_NEW) {
             return;
         }
         try {
@@ -1618,6 +2180,184 @@ public class AudienceService {
         } catch (Exception e) {
             logger.error("Failed to reset repeat-lead status for user {}: {}", leadUserId, e.getMessage());
         }
+    }
+
+    /**
+     * What a repeat enquiry leaves behind (LEAD_SETTING.data.dedup.repeatLead.reattempt),
+     * each part behind its own switch: flag this enquiry as a duplicate of the lead it
+     * repeats, a "Reattempt" entry in that lead's journey, a bell to the counsellor who owns
+     * it (not when that counsellor added the enquiry themselves), the lead's tier set to the
+     * configured one (e.g. Very Hot), and a priority follow-up for the counsellor that the
+     * Follow-ups page lists first. Does nothing for a first-time lead, with every switch off,
+     * or when no active lead is found to repeat. Callers run it before the repeat-lead status
+     * reset, so "is the earlier lead still open" reads its status from before this enquiry.
+     * Best-effort like the other intake steps: a failure is logged and never fails intake.
+     *
+     * @param email the submission's email, as passed to the dedup check
+     * @param phone the submission's phone, as passed to the dedup check
+     */
+    private void recordReattempt(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
+            AudienceResponse savedResponse, String leadUserId, String instituteId, String email,
+            String phone, String leadName, String campaignName) {
+        if (repeatLeadSettings == null || savedResponse == null || savedResponse.getId() == null) {
+            return;
+        }
+        LeadDedupSettingService.ReattemptSettings reattempt = repeatLeadSettings.reattempt();
+        if (!reattempt.anyIntakeAction()) {
+            return;
+        }
+        AudienceResponseRepository.PrimaryLeadRow primary;
+        try {
+            primary = leadDeduplicationService.findPrimaryLead(instituteId, savedResponse.getAudienceId(),
+                    email, phone, savedResponse.getId()).orElse(null);
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: lookup of the lead it repeats failed: {}",
+                    savedResponse.getId(), e.getMessage());
+            return;
+        }
+        if (primary == null || !StringUtils.hasText(primary.getResponseId())) {
+            return;
+        }
+        String sourceLabel = reattemptSourceLabel(savedResponse.getSourceType());
+
+        if (reattempt.markDuplicate() && (!reattempt.duplicateOpenOnly() || isOpenLeadStatus(primary.getStatusKey()))) {
+            try {
+                audienceResponseRepository.markDuplicateOf(savedResponse.getId(), primary.getResponseId());
+            } catch (Exception e) {
+                logger.error("Repeat lead {}: failed to flag as duplicate of {}: {}",
+                        savedResponse.getId(), primary.getResponseId(), e.getMessage());
+            }
+        }
+        if (reattempt.journeyEntry()) {
+            try {
+                leadDeduplicationService.logReattempt(primary, savedResponse, sourceLabel, campaignName);
+            } catch (Exception e) {
+                logger.error("Repeat lead {}: failed to log the reattempt on {}: {}",
+                        savedResponse.getId(), primary.getResponseId(), e.getMessage());
+            }
+        }
+        if (reattempt.tier() != null) {
+            applyReattemptTier(reattempt.tier(), savedResponse.getId(), instituteId, primary.getUserId(), leadUserId);
+        }
+
+        // The counsellor who owns the repeat after assignment (the previous owner under
+        // SAME_AS_PREVIOUS); the lead it repeats' owner when that lookup has nothing.
+        String ownerId = null;
+        if (reattempt.notifyOwner() || reattempt.followUp()) {
+            try {
+                if (StringUtils.hasText(leadUserId)) {
+                    ownerId = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                            .map(p -> p.getAssignedCounselorId())
+                            .filter(StringUtils::hasText)
+                            .orElse(null);
+                }
+            } catch (Exception e) {
+                logger.error("Repeat lead {}: owner lookup failed: {}", savedResponse.getId(), e.getMessage());
+            }
+            if (ownerId == null && StringUtils.hasText(primary.getCounsellorId())) {
+                ownerId = primary.getCounsellorId();
+            }
+        }
+
+        if (reattempt.followUp()) {
+            openReattemptFollowUp(primary.getResponseId(), instituteId, ownerId, sourceLabel, campaignName,
+                    savedResponse.getId());
+        }
+
+        if (reattempt.notifyOwner() && ownerId != null && !ownerId.equals(savedResponse.getCreatedByUserId())) {
+            try {
+                leadAssignmentNotifier.notifyReattempt(instituteId, ownerId, leadName, sourceLabel,
+                        campaignName, leadUserId);
+            } catch (Exception e) {
+                logger.error("Repeat lead {}: failed to notify the owner: {}",
+                        savedResponse.getId(), e.getMessage());
+            }
+        }
+    }
+
+    /** A lead still being worked: not converted and not LOST (Discarded). */
+    static boolean isOpenLeadStatus(String statusKey) {
+        if (!StringUtils.hasText(statusKey)) return true;
+        String key = statusKey.trim().toUpperCase();
+        return !"CONVERTED".equals(key) && !"LOST".equals(key);
+    }
+
+    /**
+     * Sets the reattempt tier (Interest Level) on the person behind the lead it repeats and,
+     * when the repeat came in as a different person, on that one too. An unknown or deleted
+     * tier key is skipped up front: updateLeadTier would throw inside the intake transaction.
+     */
+    private void applyReattemptTier(String tier, String repeatResponseId, String instituteId,
+            String primaryUserId, String leadUserId) {
+        try {
+            if (!leadTierService.isKnownTier(instituteId, tier)) {
+                logger.warn("Repeat lead {}: reattempt tier {} is not a tier of institute {}, skipped",
+                        repeatResponseId, tier, instituteId);
+                return;
+            }
+            Set<String> userIds = new LinkedHashSet<>();
+            if (StringUtils.hasText(primaryUserId)) userIds.add(primaryUserId);
+            if (StringUtils.hasText(leadUserId)) userIds.add(leadUserId);
+            for (String userId : userIds) {
+                userLeadProfileService.updateLeadTier(userId, instituteId, tier);
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to set tier {}: {}", repeatResponseId, tier, e.getMessage());
+        }
+    }
+
+    /**
+     * A follow-up due now on the lead a repeat enquiry repeats, for its counsellor, flagged
+     * priority so the Follow-ups page lists the lead first. One open priority follow-up per
+     * lead: a second reattempt before it is closed adds nothing.
+     */
+    private void openReattemptFollowUp(String primaryResponseId, String instituteId, String ownerId,
+            String sourceLabel, String campaignName, String repeatResponseId) {
+        try {
+            if (leadFollowupRepository.existsByAudienceResponseIdAndIsClosedFalseAndIsPriorityTrue(primaryResponseId)) {
+                return;
+            }
+            StringBuilder content = new StringBuilder("Reattempt: enquired again");
+            if (StringUtils.hasText(sourceLabel)) content.append(" via ").append(sourceLabel);
+            if (StringUtils.hasText(campaignName)) content.append(" · ").append(campaignName);
+            leadFollowupRepository.save(LeadFollowup.builder()
+                    .audienceResponseId(primaryResponseId)
+                    .instituteId(instituteId)
+                    .createdBy(ownerId)
+                    .scheduleTime(new Timestamp(System.currentTimeMillis()))
+                    .content(content.toString())
+                    .isPriority(true)
+                    .build());
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: failed to open the priority follow-up on {}: {}",
+                    repeatResponseId, primaryResponseId, e.getMessage());
+        }
+    }
+
+    /**
+     * Lead-list duplicate filter from the sidebar route: EXCLUDE hides enquiries flagged as
+     * duplicates (so a repeat does not add to All Leads), ONLY lists just them (a Duplicate
+     * Leads tab). Anything else is no filter.
+     */
+    static String normalizeDuplicateFilter(String duplicateFilter) {
+        if (!StringUtils.hasText(duplicateFilter)) return null;
+        String value = duplicateFilter.trim().toUpperCase();
+        return "EXCLUDE".equals(value) || "ONLY".equals(value) ? value : null;
+    }
+
+    /** Readable channel name for a lead's source_type, for reattempt journey and bell text. */
+    static String reattemptSourceLabel(String sourceType) {
+        if (!StringUtils.hasText(sourceType)) return null;
+        return switch (sourceType.trim().toUpperCase()) {
+            case "META_LEAD_ADS", "FACEBOOK", "FACEBOOK_LEAD_ADS" -> "Meta Lead Ads";
+            case "GOOGLE_LEAD_ADS", "GOOGLE_ADS" -> "Google Ads";
+            case "AUDIENCE_CAMPAIGN", "WEBSITE" -> "website form";
+            case "WALK_IN" -> "manual entry";
+            default -> {
+                String words = sourceType.trim().replace('_', ' ').toLowerCase();
+                yield Character.toUpperCase(words.charAt(0)) + words.substring(1);
+            }
+        };
     }
 
     /**
@@ -1680,11 +2420,8 @@ public class AudienceService {
 
                 // Call auth_service to create or fetch existing user
                 // sendCred = false (no email notification)
-                createdUser = authService.createUserFromAuthService(
-                        userDTO,
-                        audience.getInstituteId(),
-                        false // Don't send credentials email
-                );
+                createdUser = resolveLeadUser(userDTO, audience.getInstituteId(),
+                        requestDTO.getAudienceId(), repeatLeadSettings != null, requestDTO.getCounsellorId());
                 userId = createdUser.getId();
 
                 // Duplicate submission guard: same audience + same user
@@ -1742,7 +2479,11 @@ public class AudienceService {
                 applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
                         createdUser.getFullName(), audience.getCampaignName());
-                applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId);
+                recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                        userDTO.getEmail(), userDTO.getMobileNumber(),
+                        createdUser.getFullName(), audience.getCampaignName());
+                applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
+                        userDTO.getEmail(), userDTO.getMobileNumber());
 
                 // 4. Build custom field map for email (to pass to workflow)
                 Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -1958,7 +2699,7 @@ public class AudienceService {
                     return LeadScoreDTO.builder()
                             .audienceResponseId(responseId)
                             .rawScore(score.getRawScore())
-                            .tier(score.getTier())
+                            .tier(leadTierService.deriveTier(score.getInstituteId(), score.getRawScore()))
                             .percentileRank(score.getPercentileRank())
                             .scoringFactors(factors)
                             .lastCalculatedAt(score.getLastCalculatedAt())
@@ -1968,7 +2709,13 @@ public class AudienceService {
                 .orElse(LeadScoreDTO.builder()
                         .audienceResponseId(responseId)
                         .rawScore(0)
-                        .tier("COLD")
+                        .tier(leadTierService.deriveTier(
+                                audienceResponseRepository.findById(responseId)
+                                        .map(AudienceResponse::getAudienceId)
+                                        .flatMap(audienceRepository::findById)
+                                        .map(Audience::getInstituteId)
+                                        .orElse(null),
+                                0))
                         .build());
     }
 
@@ -2296,7 +3043,8 @@ public class AudienceService {
         }
 
         linkCounsellorToEnquiry(instituteId, requestDTO.getAudienceId(), enquiry, requestDTO.getCounsellorId());
-        applyRepeatLeadStatus(repeatLeadSettings, parentUserId, instituteId);
+        applyRepeatLeadStatus(repeatLeadSettings, parentUserId, instituteId, savedResponse,
+                requestDTO.getParentEmail(), requestDTO.getParentMobile());
 
         // STEP 6: Build custom field map for email
         Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -2449,6 +3197,9 @@ public class AudienceService {
                     String campaignName = audienceId != null
                             ? audienceRepository.findById(audienceId).map(Audience::getCampaignName).orElse(null)
                             : null;
+                    // Left as an ordinary dismissible alert: an enquiry is not a lead
+                    // user, so there is no id here that a timeline event would ever
+                    // match, and a correlation that never clears is worse than none.
                     leadAssignmentNotifier.notifyAssigned(instituteId, finalCounsellorId, null, campaignName);
                 } catch (Exception e) {
                     logger.warn("Failed to notify counsellor {} for enquiry {}: {}",
@@ -2800,125 +3551,33 @@ public class AudienceService {
                     .ifPresent(filterDTO::setInstituteId);
         }
 
-        // Caller-level access scoping driven by the institute's
-        // AUDIENCE_ROLE_ACCESS setting. Admin / root resolve to DEFAULT;
-        // pure counselors are auto-scoped; AUDIENCE_LIST roles are restricted
-        // to their granted audience ids.
-        EffectiveAccess access = audienceRoleAccessService.resolveForCaller(
-                user, filterDTO.getInstituteId());
-
-        // RBAC narrowing for the CRM Leads tab. When the caller holds the
-        // COUNSELLOR role and NOT the ADMIN role, we restrict the visible
-        // leads to their hierarchy scope: themselves + every counsellor-role
-        // user reporting up to them through parent_user_id chains in any org
-        // team they belong to. A team head sees their whole downstream; a
-        // mid-level manager sees their reports; a leaf member sees only their
-        // own leads. ADMIN outranks COUNSELLOR — a dual-role caller stays
-        // institute-wide (isScopedCaller(instituteId, user) below resolves
-        // this via the caller's authenticated authorities, not a raw JWT
-        // decode, so it can't miss ADMIN for a dual-role account). Computed
-        // as a CSV that the native query plugs into a
-        // `STRING_TO_ARRAY(...) = ANY` predicate alongside the single-id
-        // filter — so a manager can still drill into a specific report by
-        // sending assignedCounselorId.
-        String assignedCounselorIdsCsv = null;
-        boolean rbacApplied = false;
-
-        // Sub-org admin scoping (highest precedence). A sub-org admin is ALSO
-        // granted the parent institute's ADMIN role, so without this they'd
-        // resolve to DEFAULT above and see the entire parent lead pool. Detection
-        // is by ACTIVE SUB_ORG FSPSSM linkage (SubOrgLeadScopeService) — the only
-        // reliable fingerprint, since by role they're indistinguishable from a
-        // true institute admin. We hard-scope their visible leads to the members
-        // of the sub-org(s) they administer, reusing the same assignedCounselorIdsCsv
-        // filter the counsellor-hierarchy RBAC below uses. The member set always
-        // includes the admin themselves, so a non-empty result also means "is a
-        // sub-org admin"; an empty result means a normal admin/user and this
-        // branch is a no-op that preserves the pre-existing behaviour exactly.
-        boolean subOrgScopeApplied = false;
-        if (user != null && user.getUserId() != null
-                && filterDTO.getInstituteId() != null
-                && !filterDTO.getInstituteId().isBlank()) {
-            List<String> subOrgScope = subOrgLeadScopeService
-                    .subOrgScopedCounsellorUserIds(user.getUserId());
-            if (!subOrgScope.isEmpty()) {
-                assignedCounselorIdsCsv = String.join(",", subOrgScope);
-                rbacApplied = true;
-                subOrgScopeApplied = true;
-            }
-        }
-
-        if (!subOrgScopeApplied && user != null && user.getUserId() != null
-                && filterDTO.getInstituteId() != null
-                && !filterDTO.getInstituteId().isBlank()) {
-            String instituteId = filterDTO.getInstituteId();
-            if (counsellorScopeService.isScopedCaller(instituteId, user)) {
-                List<String> scope = counsellorScopeService
-                        .scopedCounsellorUserIds(instituteId, user.getUserId());
-                if (!scope.isEmpty()) {
-                    assignedCounselorIdsCsv = String.join(",", scope);
-                    rbacApplied = true;
-                }
-            }
-        }
-
-        if (access.getMode() == Mode.COUNSELOR && user != null && user.getUserId() != null
-                && !rbacApplied) {
-            // Force-scope: ignore whatever assignedCounselorId the request
-            // body sent — counselors with no leads-team mapping only see
-            // leads they're directly linked to.
-            //
-            // When RBAC applied above, we let the broader subtree filter
-            // win (a manager in the leads team should see their reports'
-            // leads, not just their own).
-            filterDTO.setAssignedCounselorId(user.getUserId());
-        }
-
-        // AUDIENCE_LIST + "only my assigned leads": the granted lists still bound
-        // WHICH campaigns are readable (allowedAudienceIdsCsv below); this narrows
-        // the rows inside them to the leads the caller owns. access.isAssignedOnly()
-        // is already pool-gated by AudienceRoleAccessService — it can only be true
-        // when the institute has no counsellor pool.
+        // Caller-level lead visibility — sub-org admin scope, counsellor-hierarchy
+        // RBAC and the institute's AUDIENCE_ROLE_ACCESS modes — resolved by
+        // LeadVisibilityResolver (shared with GET /v1/audience/lead-scope, so the
+        // scope reported there is exactly the one applied here).
         //
-        // Two halves, because the counsellor-hierarchy RBAC above has usually
-        // already done half the work: any COUNSELLOR-role non-admin is a scoped
-        // caller, and a leaf counsellor's scope is exactly [themselves]. So the
-        // force-scope below is only needed for callers RBAC didn't touch — a role
-        // that isn't on the counsellor roster at all (a custom role granted
-        // AUDIENCE_LIST, say), which would otherwise still see every lead in the
-        // granted lists. What RBAC never does is drop the shared unassigned pool;
-        // that half applies to every assigned-only caller (see includeUnassigned).
-        //
-        // A leads-team manager keeps their subtree, exactly as in COUNSELOR mode —
-        // "assigned to the role" means the caller's scope, not a hard self-only
-        // filter that would blind a manager to their own reports' leads.
-        boolean assignedOnlyApplied = access.getMode() == Mode.AUDIENCE_LIST
-                && access.isAssignedOnly()
-                && user != null && user.getUserId() != null;
-        if (assignedOnlyApplied && !rbacApplied) {
-            filterDTO.setAssignedCounselorId(user.getUserId());
+        // The owner scope (sub-org members / counsellor subtree) is a CSV the
+        // native query plugs into a `STRING_TO_ARRAY(...) = ANY` predicate
+        // alongside the single-id filter — so a manager can still drill into a
+        // specific report by sending assignedCounselorId.
+        LeadVisibility visibility = leadVisibilityResolver.resolve(user, filterDTO.getInstituteId());
+        String assignedCounselorIdsCsv = visibility.scopeOwnerIdsCsv();
+
+        // COUNSELOR mode / AUDIENCE_LIST "only my assigned leads" with no
+        // hierarchy scope: ignore whatever assignedCounselorId the request body
+        // sent — the caller only sees leads they're directly linked to.
+        if (visibility.forcedOwnerId() != null) {
+            filterDTO.setAssignedCounselorId(visibility.forcedOwnerId());
         }
 
-        // "Only leads assigned to COUNSELLOR" display setting enforcement. The
-        // leads themselves stay RBAC-scoped (subtree visibility is preserved);
-        // this setting governs ONLY the shared unassigned pool. In COUNSELOR mode
-        // we drop unassigned leads (no counsellor on either linked_users or
-        // user_lead_profile) from the result; any other mode keeps them visible
-        // to anyone in scope, as before.
-        // A sub-org admin sees ONLY leads assigned to their sub-org's members;
-        // the shared unassigned pool belongs to the parent institute, so it is
-        // excluded from their view alongside the COUNSELOR-mode exclusion.
-        // assignedOnlyApplied excludes the shared pool for the same reason COUNSELOR
-        // mode does: an unassigned lead is by definition not "assigned to me". This
-        // is the half that applies even to RBAC-scoped callers — without it a leaf
-        // counsellor would still see the whole unclaimed pool of their granted lists.
-        boolean includeUnassigned = access.getMode() != Mode.COUNSELOR && !subOrgScopeApplied
-                && !assignedOnlyApplied;
+        // Whether the shared unassigned pool (no counsellor on either
+        // linked_users or user_lead_profile) stays visible inside the owner scope.
+        boolean includeUnassigned = visibility.includeUnassigned();
 
         String allowedAudienceIdsCsv = null;
-        if (access.getMode() == Mode.AUDIENCE_LIST) {
-            List<String> allowed = access.getAllowedAudienceIds();
-            if (allowed == null || allowed.isEmpty()) {
+        List<String> allowed = visibility.allowedAudienceIds();
+        if (allowed != null) {
+            if (allowed.isEmpty()) {
                 // Admin granted no lists → user sees nothing (intentional lock-out).
                 return Page.empty(pageable);
             }
@@ -2969,17 +3628,19 @@ public class AudienceService {
             }
         }
 
-        // Resolve the institute's tatHours up-front so the SLA-state filter can derive
-        // the deadline live as `submitted_at + tatHours`. Needs to happen BEFORE the
-        // repo call because the predicate is bound at query time. Returns null when
-        // the institute hasn't enabled TAT — SQL guards with `:tatHours IS NOT NULL`.
-        Integer filterTatHours = resolveFilterTatHours(
+        // Resolve the institute's TAT (minutes + working-hours rule) up-front so the SLA-state
+        // filter can derive the deadline live via lead_sla_due_at(). Needs to happen BEFORE the
+        // repo call because the predicate is bound at query time. Null when the institute
+        // hasn't enabled TAT — SQL guards with `:tatMinutes IS NOT NULL`.
+        vacademy.io.admin_core_service.features.audience.dto.LeadSlaConfigDTO.TatReminder filterTat = resolveFilterTat(
                 filterDTO.getInstituteId() != null && !filterDTO.getInstituteId().isBlank()
                         ? filterDTO.getInstituteId()
                         : (filterDTO.getAudienceId() != null
                             ? audienceRepository.findById(filterDTO.getAudienceId())
                                     .map(Audience::getInstituteId).orElse(null)
                             : null));
+        Integer filterTatMinutes = filterTat != null ? filterTat.getTatMinutes() : null;
+        String filterTatRule = filterTat != null ? filterTat.getWorkingHoursRule() : null;
 
         // Pre-resolve the custom-field filters into matching audience_response IDs
         // using one indexed lookup per field (intersected across fields). This
@@ -2993,6 +3654,44 @@ public class AudienceService {
         if (cfResolution.shortCircuitsToEmpty()) {
             return Page.empty(pageable);
         }
+        // Campaign (UTM) filter rides the same matched-id channel: resolve the
+        // touches into response ids and AND them with the custom-field set, so
+        // neither native query needs to know attribution exists.
+        if (vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver
+                .hasFilter(filterDTO.getUtmFilters())) {
+            cfResolution = cfResolution.and(utmListFilterResolver.resolve(
+                    filterDTO.getUtmFilters(),
+                    vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Surface.RESPONSE,
+                    filterDTO.getInstituteId()));
+            if (cfResolution.shortCircuitsToEmpty()) {
+                return Page.empty(pageable);
+            }
+        }
+        // Follow-ups page interest filter rides the same channel: the leads whose
+        // open follow-up carries one of the chosen interest levels.
+        String followUpInterestLevels = LeadFollowupService.joinInterestLevels(
+                filterDTO.getFollowUpInterestLevels());
+        if (followUpInterestLevels != null) {
+            // The per-campaign path may carry no institute id; take it from the
+            // campaign, so the lookup never scans every institute's follow-ups.
+            String interestInstituteId = StringUtils.hasText(filterDTO.getInstituteId())
+                    ? filterDTO.getInstituteId()
+                    : (StringUtils.hasText(filterDTO.getAudienceId())
+                            ? audienceRepository.findById(filterDTO.getAudienceId())
+                                    .map(Audience::getInstituteId).orElse(null)
+                            : null);
+            if (!StringUtils.hasText(interestInstituteId)) {
+                return Page.empty(pageable);
+            }
+            cfResolution = cfResolution.and(
+                    new vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution(
+                            new java.util.HashSet<>(leadFollowupRepository.findOpenResponseIdsByInterestLevels(
+                                    interestInstituteId, followUpInterestLevels)),
+                            null));
+            if (cfResolution.shortCircuitsToEmpty()) {
+                return Page.empty(pageable);
+            }
+        }
         String customFieldMatchedIdsCsv = cfResolution.matchedIdsCsv();
         String customFieldExcludedIdsCsv = cfResolution.excludedIdsCsv();
 
@@ -3003,9 +3702,21 @@ public class AudienceService {
                 || filterDTO.getAudienceId().isBlank();
         if (crossAudience && filterDTO.getInstituteId() != null
                 && !filterDTO.getInstituteId().isBlank()) {
+            // The route's duplicates= wins. With none, "Show duplicates only in Duplicate
+            // Leads" (Lead Settings) hides them here; off = no filter, as before.
+            String duplicateFilter = normalizeDuplicateFilter(filterDTO.getDuplicateFilter());
+            if (duplicateFilter == null
+                    && leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId())) {
+                duplicateFilter = "EXCLUDE";
+            }
             Page<AudienceResponse> all = audienceResponseRepository.findInstituteLeadsWithFilters(
                     filterDTO.getInstituteId(),
                     filterDTO.getLeadStatusId(),
+                    filterDTO.getLeadStatusExcludeId(),
+                    filterDTO.getFollowUpPending(),
+                    filterDTO.getFollowUpFrom(),
+                    filterDTO.getFollowUpTo(),
+                    duplicateFilter,
                     filterDTO.getSubmittedFromLocal(),
                     filterDTO.getSubmittedToLocal(),
                     filterDTO.getSearchQuery(),
@@ -3020,7 +3731,8 @@ public class AudienceService {
                     conversionStatusFilter,
                     audienceStatusFilter,
                     filterDTO.getSlaFilter(),
-                    filterTatHours,
+                    filterTatMinutes,
+                    filterTatRule,
                     customFieldMatchedIdsCsv,
                     customFieldExcludedIdsCsv,
                     filterDTO.getCallHistoryFilter(),
@@ -3028,6 +3740,10 @@ public class AudienceService {
                     filterDTO.getSortBy(),
                     filterDTO.getSortDirection(),
                     filterDTO.getSortCustomFieldId(),
+                    filterDTO.getCalledFromLocal(),
+                    filterDTO.getCalledToLocal(),
+                    filterDTO.getActivityFromLocal(),
+                    filterDTO.getActivityToLocal(),
                     pageable);
             return mapResponsesToLeadDetails(all, filterDTO.getInstituteId());
         }
@@ -3035,6 +3751,11 @@ public class AudienceService {
         Page<AudienceResponse> responses = audienceResponseRepository.findLeadsWithFilters(
                 filterDTO.getAudienceId(),
                 filterDTO.getLeadStatusId(),
+                filterDTO.getLeadStatusExcludeId(),
+                filterDTO.getFollowUpPending(),
+                filterDTO.getFollowUpFrom(),
+                filterDTO.getFollowUpTo(),
+                normalizeDuplicateFilter(filterDTO.getDuplicateFilter()),
                 filterDTO.getSourceType(),
                 filterDTO.getSourceId(),
                 filterDTO.getSubmittedFromLocal(),
@@ -3057,10 +3778,15 @@ public class AudienceService {
                 conversionStatusFilter,
                 audienceStatusFilter,
                 filterDTO.getSlaFilter(),
-                filterTatHours,
+                filterTatMinutes,
+                filterTatRule,
                 filterDTO.getSortBy(),
                 filterDTO.getSortDirection(),
                 filterDTO.getSortCustomFieldId(),
+                filterDTO.getCalledFromLocal(),
+                filterDTO.getCalledToLocal(),
+                filterDTO.getActivityFromLocal(),
+                filterDTO.getActivityToLocal(),
                 pageable);
 
         // Resolve the institute for SLA-deadline computation: the filter usually
@@ -3116,22 +3842,23 @@ public class AudienceService {
     }
 
     /**
-     * Reads the institute's TAT hours from LEAD_SETTING for use in the SLA-state filter
-     * (the predicate derives `tat_due_at = submitted_at + tatHours` live so it matches
-     * the row-level badge regardless of scheduler timing). Returns null when the institute
-     * has no setting, TAT is disabled, or any read failure — the SQL guards with
-     * `:tatHours IS NOT NULL` so a null safely turns the predicate off.
+     * Reads the institute's TAT config (minutes + working-hours rule) from lead_sla_config for
+     * the SLA-state filter (the predicate derives the deadline live via lead_sla_due_at() so
+     * it matches the row-level badge regardless of scheduler timing). Returns null when the
+     * institute has no setting, TAT is disabled, or any read failure — the SQL guards with
+     * `:tatMinutes IS NOT NULL` so a null safely turns the predicate off.
      */
-    private Integer resolveFilterTatHours(String instituteId) {
+    private vacademy.io.admin_core_service.features.audience.dto.LeadSlaConfigDTO.TatReminder resolveFilterTat(
+            String instituteId) {
         if (instituteId == null || instituteId.isBlank()) return null;
         try {
             vacademy.io.admin_core_service.features.audience.dto.LeadSlaConfigDTO sla =
                     leadSlaConfigService.getSchedulerConfig(instituteId);
             if (sla != null && sla.getTatReminder() != null && sla.getTatReminder().isEnabled()) {
-                return sla.getTatReminder().getTatHours();
+                return sla.getTatReminder();
             }
         } catch (Exception ex) {
-            logger.warn("Failed to read TAT hours for SLA filter (institute={}): {}", instituteId, ex.getMessage());
+            logger.warn("Failed to read TAT for SLA filter (institute={}): {}", instituteId, ex.getMessage());
         }
         return null;
     }
@@ -3154,44 +3881,49 @@ public class AudienceService {
         Map<String, LeadScore> scoreByResponseId = leadScoreRepository.findByAudienceResponseIdIn(responseIds).stream()
                 .collect(Collectors.toMap(LeadScore::getAudienceResponseId, s -> s, (a, b) -> a));
 
-        // SLA deadlines: read the institute's TAT / follow-up config once. tatHours /
-        // followUpSlaHours
+        // SLA deadlines: read the institute's TAT / follow-up config once. tatMinutes /
+        // followUpSlaMinutes
         // stay null when the institute hasn't enabled that SLA, so we don't show a
         // meaningless deadline.
-        Integer tatHours = null;
-        Integer followUpSlaHours = null;
+        Integer tatMinutes = null;
+        String tatRule = null;
+        Integer followUpSlaMinutes = null;
         if (instituteId != null && !instituteId.isBlank()) {
             try {
                 vacademy.io.admin_core_service.features.audience.dto.LeadSlaConfigDTO sla = leadSlaConfigService
                         .getSchedulerConfig(instituteId);
                 if (sla != null) {
                     if (sla.getTatReminder() != null && sla.getTatReminder().isEnabled()) {
-                        tatHours = sla.getTatReminder().getTatHours();
+                        tatMinutes = sla.getTatReminder().getTatMinutes();
+                        tatRule = sla.getTatReminder().getWorkingHoursRule();
                     }
                     if (sla.getFollowUp() != null && sla.getFollowUp().isEnabled()) {
-                        followUpSlaHours = sla.getFollowUp().getFollowUpSlaHours();
+                        followUpSlaMinutes = sla.getFollowUp().getFollowUpSlaMinutes();
                     }
                 }
             } catch (Exception ex) {
                 logger.warn("Failed to read SLA config for institute {}: {}", instituteId, ex.getMessage());
             }
         }
-        // Counsellor activity drives BOTH TAT and follow-up displays — single source of
-        // truth.
-        // firstActionAt = MIN(timeline_event by assigned counsellor) → "Reach out by →
-        // ✓ Responded"
-        // lastActionAt = MAX(timeline_event by assigned counsellor) → follow-up
-        // deadline
-        // TAT is now strictly "time the counsellor took to log their first
-        // note/call/activity";
-        // status changes by admins no longer count. Fetch when
-        // EITHER TAT or follow-up SLA is on.
-        final Integer followUpSlaHoursFinal = followUpSlaHours;
-        final Integer tatHoursFinal = tatHours;
-        final List<vacademy.io.admin_core_service.features.audience.dto.LeadLastActionProjection> counselorActions = ((tatHours != null
-                || followUpSlaHours != null) && !responseIds.isEmpty())
-                        ? audienceResponseRepository.findCounselorActionsByResponseIds(responseIds)
+        // Response events drive BOTH TAT and follow-up displays — single source of truth,
+        // shared with the reports and the SLA scheduler (see the RESPONSE EVENT definition on
+        // AudienceResponseRepository.findCounselorActionsByResponseIds).
+        // firstActionAt = MIN(response event) → "Reach out by → ✓ Responded"
+        // lastActionAt  = MAX(response event) → follow-up deadline
+        // Fetch when EITHER TAT or follow-up SLA is on.
+        final Integer tatMinutesFinal = tatMinutes;
+        final List<vacademy.io.admin_core_service.features.audience.dto.LeadLastActionProjection> counselorActions = ((tatMinutes != null
+                || followUpSlaMinutes != null) && !responseIds.isEmpty())
+                        ? audienceResponseRepository.findCounselorActionsByResponseIds(responseIds, tatMinutes, tatRule)
                         : Collections.emptyList();
+        // Effective TAT deadline per lead, computed in SQL (admin override, else lead_sla_due_at —
+        // working-hours aware) so the badge matches the SLA filter and the reports exactly.
+        final Map<String, Timestamp> tatDueByResponseId = counselorActions.stream()
+                .filter(p -> p.getLeadId() != null && p.getTatDueAt() != null)
+                .collect(Collectors.toMap(
+                        vacademy.io.admin_core_service.features.audience.dto.LeadLastActionProjection::getLeadId,
+                        vacademy.io.admin_core_service.features.audience.dto.LeadLastActionProjection::getTatDueAt,
+                        (a, b) -> a));
         final Map<String, Timestamp> firstActionByResponseId = counselorActions.stream()
                 .filter(p -> p.getLeadId() != null && p.getFirstActionAt() != null)
                 .collect(Collectors.toMap(
@@ -3209,13 +3941,34 @@ public class AudienceService {
         // column. We pick the earliest OPEN row per lead — that is the next callback the counsellor
         // promised. If nothing is scheduled, we fall back to lastAction + followUpSlaHours (and
         // ultimately to null → the cell shows the em-dash placeholder).
-        final Map<String, Timestamp> scheduledFollowupByResponseId = !responseIds.isEmpty()
-                ? leadFollowupRepository.findOpenByAudienceResponseIds(responseIds).stream()
+        // Keep the whole row, not just its schedule time: the follow-up's own notes
+        // (content / student response / mode / next action) ride along on the DTO so a
+        // CSV export of a follow-up queue can carry what the counsellor wrote without a
+        // second request per lead. Same row either way, so this costs nothing extra.
+        final List<LeadFollowup> openFollowups = !responseIds.isEmpty()
+                ? leadFollowupRepository.findOpenByAudienceResponseIds(responseIds)
+                : Collections.emptyList();
+        final Map<String, LeadFollowup> scheduledFollowupByResponseId = openFollowups.stream()
+                .collect(Collectors.toMap(
+                        LeadFollowup::getAudienceResponseId,
+                        f -> f,
+                        (a, b) -> a.getScheduleTime().before(b.getScheduleTime()) ? a : b));
+        // Leads with an open priority follow-up (repeat-lead reattempt) — the Follow-ups page
+        // lists them first.
+        final Set<String> priorityFollowupResponseIds = openFollowups.stream()
+                .filter(f -> Boolean.TRUE.equals(f.getIsPriority()))
+                .map(LeadFollowup::getAudienceResponseId)
+                .collect(Collectors.toSet());
+        // Live duplicates per lead, only with "Show duplicates only in Duplicate Leads" on: the
+        // lists hide duplicates then, so the lead they repeat carries the badge instead.
+        final Map<String, Integer> duplicateCountByResponseId = responseIds.isEmpty()
+                || !leadDeduplicationService.duplicatesTabOnly(instituteId) ? Collections.emptyMap()
+                : audienceResponseRepository.countActiveDuplicatesOf(responseIds).stream()
+                        .filter(r -> r.getPrimaryResponseId() != null && r.getDuplicateCount() != null)
                         .collect(Collectors.toMap(
-                                LeadFollowup::getAudienceResponseId,
-                                LeadFollowup::getScheduleTime,
-                                (a, b) -> a.before(b) ? a : b))
-                : Collections.emptyMap();
+                                AudienceResponseRepository.DuplicateCountRow::getPrimaryResponseId,
+                                r -> r.getDuplicateCount().intValue(),
+                                (a, b) -> a));
 
         // Batch fetch counselor assignments (enquiry_id → counselor userId)
         List<String> enquiryIds = content.stream()
@@ -3271,6 +4024,13 @@ public class AudienceService {
                                 vacademy.io.admin_core_service.features.audience.entity.LeadStatus::getStatusKey,
                                 vacademy.io.admin_core_service.features.audience.entity.LeadStatus::getLabel,
                                 (a, b) -> a));
+        // id → status_key (leadStatusIdToKey above actually carries labels): decides whether a
+        // lead is closed (LOST / CONVERTED) and therefore off the SLA clock.
+        Map<String, String> leadStatusIdToStatusKey = fetchedStatuses.stream()
+                        .collect(Collectors.toMap(
+                                vacademy.io.admin_core_service.features.audience.entity.LeadStatus::getId,
+                                vacademy.io.admin_core_service.features.audience.entity.LeadStatus::getStatusKey,
+                                (a, b) -> a));
 
         // Batch fetch all custom field values for these responses
         List<CustomFieldValues> allCfValues = customFieldValuesRepository
@@ -3305,9 +4065,27 @@ public class AudienceService {
                 .map(AudienceResponse::getAudienceId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Map<String, String> audienceIdToName = audienceIds.isEmpty() ? Collections.emptyMap()
+        // Keep the whole Audience, not just its name: the leads table also shows the
+        // campaign type (the channel a lead came in through), and reusing this one
+        // fetch keeps that free.
+        Map<String, Audience> audienceById = audienceIds.isEmpty() ? Collections.emptyMap()
                 : audienceRepository.findAllById(audienceIds).stream()
-                        .collect(Collectors.toMap(Audience::getId, Audience::getCampaignName, (a, b) -> a));
+                        .collect(Collectors.toMap(Audience::getId, a -> a, (a, b) -> a));
+
+        // Latest UTM tagging per lead — one query for the whole page, not one per row.
+        // Keyed by user_id because that is what utm_attribution carries.
+        Map<String, String[]> utmByUserId = new HashMap<>();
+        if (StringUtils.hasText(instituteId) && !userIds.isEmpty()) {
+            try {
+                for (Object[] row : utmAttributionRepository.findLatestForUsers(instituteId, userIds)) {
+                    utmByUserId.put((String) row[0],
+                            new String[] { (String) row[1], (String) row[2] });
+                }
+            } catch (Exception e) {
+                // UTM is decoration on this screen; never fail the leads list for it.
+                logger.warn("Could not load UTM attribution for the leads page: {}", e.getMessage());
+            }
+        }
 
         return responses.map(response -> {
             // Build custom field values map from batch-fetched data
@@ -3337,13 +4115,11 @@ public class AudienceService {
                     ? enquiryIdToCounselor.get(response.getEnquiryId())
                     : null;
 
-            // Reach-out deadline = submitted_at + tatHours (computed live when TAT is on;
-            // else the
-            // scheduler-stamped value, which may be null). Follow-up deadline = last
-            // counselor action
-            // + followUpSlaHours (null until the counselor has acted at least once).
-            Timestamp computedTatDueAt = (tatHoursFinal != null && response.getSubmittedAt() != null)
-                    ? Timestamp.from(response.getSubmittedAt().toInstant().plusSeconds(tatHoursFinal * 3600L))
+            // Reach-out deadline = the effective TAT deadline from SQL when TAT is on (admin
+            // override, else working-hours aware); else the scheduler-stamped value, which may
+            // be null.
+            Timestamp computedTatDueAt = tatMinutesFinal != null && tatDueByResponseId.containsKey(response.getId())
+                    ? tatDueByResponseId.get(response.getId())
                     : response.getTatDueAt();
             Timestamp lastAction = lastActionByResponseId.get(response.getId());
             // "Follow up at" = ONLY a counsellor-explicitly-scheduled callback (a row in
@@ -3351,20 +4127,35 @@ public class AudienceService {
             // followUpSlaHours) — the cell is about "when did the counsellor promise to call
             // back", not "when does the SLA reminder fire". The SLA breach is surfaced
             // separately via tat_reminder_stage / follow_up_overdue.
-            Timestamp computedFollowUpDueAt = scheduledFollowupByResponseId.get(response.getId());
+            LeadFollowup scheduledFollowup = scheduledFollowupByResponseId.get(response.getId());
+            Timestamp computedFollowUpDueAt = scheduledFollowup != null
+                    ? scheduledFollowup.getScheduleTime()
+                    : null;
             // First-response timestamp powers the "Reach out by → ✓ Responded" display.
-            // Strict TAT definition: first counsellor activity (timeline_event by assigned
-            // counsellor)
-            // minus submitted_at. Status changes by admins do NOT count — only real
-            // activity.
+            // TAT definition: first response event on the lead minus submitted_at.
             vacademy.io.admin_core_service.features.audience.entity.UserLeadProfile profile = response
                     .getUserId() != null ? userIdToProfile.get(response.getUserId()) : null;
             Timestamp firstResponseAt = firstActionByResponseId.get(response.getId());
+            // Same COALESCE as the status column: per-response status first, else the profile's.
+            // A Lost / Converted lead is off the SLA clock — no Pending / Overdue badge.
+            String effectiveStatusKey = response.getLeadStatusId() != null
+                    && leadStatusIdToStatusKey.containsKey(response.getLeadStatusId())
+                            ? leadStatusIdToStatusKey.get(response.getLeadStatusId())
+                            : (profile != null ? profile.getConversionStatus() : null);
+            boolean slaClosed = "LOST".equals(effectiveStatusKey) || "CONVERTED".equals(effectiveStatusKey);
+            String slaStage = slaClosed ? null : response.getTatReminderStage();
 
             return LeadDetailDTO.builder()
                     .responseId(response.getId())
                     .audienceId(response.getAudienceId())
-                    .campaignName(audienceIdToName.get(response.getAudienceId()))
+                    .campaignName(Optional.ofNullable(audienceById.get(response.getAudienceId()))
+                            .map(Audience::getCampaignName).orElse(null))
+                    .campaignType(Optional.ofNullable(audienceById.get(response.getAudienceId()))
+                            .map(Audience::getCampaignType).orElse(null))
+                    .utmSource(Optional.ofNullable(utmByUserId.get(response.getUserId()))
+                            .map(u -> u[0]).orElse(null))
+                    .utmCampaign(Optional.ofNullable(utmByUserId.get(response.getUserId()))
+                            .map(u -> u[1]).orElse(null))
                     .userId(response.getUserId())
                     .studentUserId(response.getStudentUserId())
                     .user(StringUtils.hasText(response.getUserId()) ? userIdToUser.get(response.getUserId()) : null)
@@ -3375,6 +4166,8 @@ public class AudienceService {
                     .customFieldMetadata(customFieldMetadata)
                     .isDuplicate(response.getIsDuplicate())
                     .primaryResponseId(response.getPrimaryResponseId())
+                    .duplicateCount(duplicateCountByResponseId.get(response.getId()))
+                    .followUpPriority(priorityFollowupResponseIds.contains(response.getId()))
                     .overallStatus(response.getOverallStatus())
                     .conversionStatus(response.getConversionStatus())
                     .enquiryId(response.getEnquiryId())
@@ -3391,23 +4184,44 @@ public class AudienceService {
                     .parentEmail(response.getParentEmail())
                     .parentMobile(response.getParentMobile())
                     .leadScore(score != null ? score.getRawScore() : null)
-                    .leadTier(score != null ? score.getTier() : null)
+                    // Stored tier wins over the one derived from the score - see the field
+                    // doc on LeadDetailDTO.
+                    .leadTier(profile != null && StringUtils.hasText(profile.getLeadTier())
+                            ? profile.getLeadTier()
+                            : (score != null
+                                    ? leadTierService.deriveTier(instituteId, score.getRawScore())
+                                    : null))
                     .percentileRank(score != null && score.getPercentileRank() != null
                             ? score.getPercentileRank().doubleValue()
                             : null)
-                    .assignedCounselorId(counselorId)
+                    // A lead with no linked enquiry (every CRM-imported one) carries its
+                    // counsellor only on the profile, so the enquiry lookup alone returned
+                    // null for all of them.
+                    .assignedCounselorId(StringUtils.hasText(counselorId)
+                            ? counselorId
+                            : (profile != null ? profile.getAssignedCounselorId() : null))
+                    .assignedCounselorName(profile != null ? profile.getAssignedCounselorName() : null)
+                    .followUpContent(scheduledFollowup != null ? scheduledFollowup.getContent() : null)
+                    .followUpStudentResponse(
+                            scheduledFollowup != null ? scheduledFollowup.getStudentResponse() : null)
+                    .followUpMode(scheduledFollowup != null ? scheduledFollowup.getFollowUpMode() : null)
+                    .followUpNextAction(scheduledFollowup != null ? scheduledFollowup.getNextAction() : null)
+                    .followUpInterestLevel(
+                            scheduledFollowup != null ? scheduledFollowup.getInterestLevel() : null)
                     .sourceAudienceName("OPT_OUT".equals(response.getSourceType())
                             ? sourceAudienceIdToName.get(response.getSourceId())
                             : null)
                     .tatDueAt(computedTatDueAt)
+                    .tatDueOverridden(response.getTatDueOverrideAt() != null)
                     .firstResponseAt(firstResponseAt)
                     .followUpDueAt(computedFollowUpDueAt)
-                    .tatReminderStage(response.getTatReminderStage())
-                    .tatOverdue(LeadTriggerContextBuilder.STAGE_TAT_OVERDUE.equals(response.getTatReminderStage()))
+                    .tatReminderStage(slaStage)
+                    .tatOverdue(LeadTriggerContextBuilder.STAGE_TAT_OVERDUE.equals(slaStage))
                     .followUpOverdue(
-                            LeadTriggerContextBuilder.STAGE_FOLLOW_UP_OVERDUE.equals(response.getTatReminderStage()))
-                    .tatDueSoon(LeadTriggerContextBuilder.STAGE_TAT_BEFORE.equals(response.getTatReminderStage())
-                            || LeadTriggerContextBuilder.STAGE_FOLLOW_UP_DUE.equals(response.getTatReminderStage()))
+                            LeadTriggerContextBuilder.STAGE_FOLLOW_UP_OVERDUE.equals(slaStage))
+                    .tatDueSoon(LeadTriggerContextBuilder.STAGE_TAT_BEFORE.equals(slaStage)
+                            || LeadTriggerContextBuilder.STAGE_FOLLOW_UP_DUE.equals(slaStage))
+                    .slaClosed(slaClosed)
                     .build();
         });
     }
@@ -3473,6 +4287,7 @@ public class AudienceService {
                 .responseId(response.getId())
                 .audienceId(response.getAudienceId())
                 .campaignName(audience.getCampaignName())
+                .campaignType(audience.getCampaignType())
                 .userId(response.getUserId())
                 .studentUserId(response.getStudentUserId())
                 .user(user)
@@ -3645,6 +4460,413 @@ public class AudienceService {
 
     private String resolveScope(LeadDeleteRequestDTO request) {
         return StringUtils.hasText(request.getScope()) ? request.getScope().toUpperCase() : "RESPONSE";
+    }
+
+    /**
+     * Chunk size for the {@code lead_score} lookup a migration does, keeping that IN-list well
+     * under Postgres' bind-parameter limit however many leads are moved at once.
+     */
+    private static final int MIGRATE_BATCH_SIZE = 500;
+
+    /**
+     * Move leads from one lead list to another. ADMIN only.
+     *
+     * <p>A list is an {@code audience} and a lead is an {@code audience_response}, attached by a
+     * plain {@code audience_id} column — so the move itself is one column update. Everything keyed
+     * by response id (status history, follow-ups, timeline, calls, engagement) follows the row with
+     * no work. Two things do not, because they denormalise the audience:</p>
+     * <ul>
+     *   <li>{@code lead_score.audience_id} — updated here, or scores stay attributed to the old
+     *       list.</li>
+     *   <li>{@code audience_response.initial_score} — a snapshot of the SOURCE list's
+     *       {@code default_initial_score} taken at creation. Deliberately kept: re-snapshotting
+     *       would silently rescore historical leads as a side effect of an admin tidying up.</li>
+     * </ul>
+     *
+     * <p>Partial success: colliding leads are skipped and reported. Merging two lists collides by
+     * definition, and an all-or-nothing batch would be unusable at the sizes this runs at.</p>
+     *
+     * @return counts plus the per-lead skip reasons.
+     */
+    @Transactional
+    public MigrateLeadsResponseDTO migrateLeads(MigrateLeadsRequestDTO request, CustomUserDetails actor) {
+        if (request == null || CollectionUtils.isEmpty(request.getResponseIds())) {
+            throw new InvalidRequestException("At least one response id is required");
+        }
+        if (!StringUtils.hasText(request.getInstituteId())) {
+            throw new InvalidRequestException("instituteId is required");
+        }
+        if (!StringUtils.hasText(request.getTargetAudienceId())) {
+            throw new InvalidRequestException("targetAudienceId is required");
+        }
+        if (!hasAdminRole(actor, request.getInstituteId())) {
+            throw new ForbiddenException("Only an admin can move a lead to another list");
+        }
+
+        String instituteId = request.getInstituteId();
+        String targetAudienceId = request.getTargetAudienceId();
+
+        // SECURITY: resolve the TARGET through the institute too. The ADMIN check above only proves
+        // the caller administers the institute they named, and resolveMigrateTargets below only
+        // proves the SOURCE rows belong to it — neither says anything about the destination. Without
+        // this, a legitimate admin could move their own institute's leads into another tenant's list
+        // by passing its id. The vague not-found mirrors the delete path: naming the mismatch would
+        // confirm the existence of a list the caller is not entitled to see.
+        Audience targetAudience = audienceRepository.findById(targetAudienceId)
+                .filter(a -> instituteId.equals(a.getInstituteId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Lead list not found"));
+
+        // CONSENT: the opt-out list is not an ordinary list. Opting out moves the person's response
+        // into it and leaves the OPTED_OUT flag on the row it replaced — so the row sitting IN the
+        // opt-out list carries no flag of its own. Moving those rows out would re-subscribe people
+        // who explicitly asked not to be contacted, past every suppression predicate in the system.
+        // Moving INTO it is equally wrong: AudienceOptOutService also copies custom fields and fires
+        // the opt-out workflow, none of which a bare column update would do.
+        String optOutAudienceId = audienceRepository.findOptOutAudienceByInstituteId(instituteId)
+                .map(Audience::getId)
+                .orElse(null);
+        if (targetAudienceId.equals(optOutAudienceId)) {
+            throw new InvalidRequestException(
+                    "Leads cannot be moved into the opt-out list. Use the opt-out action instead.");
+        }
+
+        MigrateLeadsRequestDTO.WorkflowAnchorMode anchorMode = resolveWorkflowAnchorMode(request);
+
+        List<AudienceResponse> targets = resolveMigrateTargets(request, actor);
+
+        List<MigrateLeadsResponseDTO.SkippedLead> skipped = new ArrayList<>();
+        List<AudienceResponse> movable = new ArrayList<>();
+        // Users already holding a response in the target list. Seeded from the DB, then extended as
+        // this batch moves people in — otherwise two selected responses for the SAME person would
+        // both pass the check and land in the target together, creating exactly the duplicate the
+        // one-response-per-person-per-list invariant forbids.
+        Set<String> usersInTarget = new HashSet<>();
+
+        for (AudienceResponse response : targets) {
+            String leadUserId = response.getUserId() != null ? response.getUserId() : response.getStudentUserId();
+
+            if (targetAudienceId.equals(response.getAudienceId())) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.ALREADY_IN_TARGET_LIST,
+                        "Already in this lead list."));
+                continue;
+            }
+            if (optOutAudienceId != null && optOutAudienceId.equals(response.getAudienceId())) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.IN_OPT_OUT_LIST,
+                        "This lead has opted out and cannot be moved out of the opt-out list."));
+                continue;
+            }
+            if ("OPTED_OUT".equalsIgnoreCase(response.getOverallStatus())) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.OPTED_OUT,
+                        "This lead has opted out of contact."));
+                continue;
+            }
+            if (AudienceStatusEnum.INACTIVE.name().equalsIgnoreCase(response.getAudienceStatus())) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.LEAD_DELETED,
+                        "This lead is deleted. Restore it before moving it."));
+                continue;
+            }
+            if (leadUserId != null && isConverted(leadUserId, instituteId)) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.LEAD_CONVERTED,
+                        "This lead has already converted."));
+                continue;
+            }
+            if (StringUtils.hasText(leadUserId)
+                    && (usersInTarget.contains(leadUserId)
+                            || audienceResponseRepository.existsByAudienceIdAndUserId(targetAudienceId, leadUserId))) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.DUPLICATE_USER_IN_TARGET,
+                        "This person already has a lead in the target list."));
+                continue;
+            }
+
+            // The institute's dedup rule, evaluated against the TARGET list — dedup is scoped per
+            // list, so a lead that is unique where it sits can still collide once moved. Excluding
+            // this row keeps it from matching itself under INSTITUTE scope.
+            //
+            // LIMITATION: this reads the row's own parent_email / parent_mobile, whereas intake
+            // passes the incoming USER's email/mobile. Leads created through the simple submit flow
+            // keep their contact details only on the auth user, leaving parent_* blank — and
+            // checkDuplicate no-ops on a blank field, so those leads move without a dedup check.
+            // It fails OPEN, matching what intake itself does when the field is blank, and the
+            // same-person case is still caught by the DUPLICATE_USER_IN_TARGET guard above; what
+            // slips through is only a DIFFERENT user record sharing an email/phone. Closing it
+            // properly means resolving the moved set through auth_service first.
+            Optional<LeadDeduplicationService.DuplicateMatch> dupMatch = leadDeduplicationService.checkDuplicate(
+                    instituteId, targetAudienceId, response.getParentEmail(), response.getParentMobile(),
+                    response.getId());
+            if (dupMatch.isPresent()
+                    && dupMatch.get().action() == LeadDedupSettingService.DedupAction.REJECT) {
+                skipped.add(skip(response, MigrateLeadsResponseDTO.SkipReason.DUPLICATE_IN_TARGET,
+                        dupMatch.get().rejectionMessage()));
+                continue;
+            }
+
+            movable.add(response);
+            if (StringUtils.hasText(leadUserId)) {
+                usersInTarget.add(leadUserId);
+            }
+        }
+
+        // Recomputed once, not per lead: it derives from the target audience alone.
+        Timestamp resetAnchor = anchorMode == MigrateLeadsRequestDTO.WorkflowAnchorMode.RESET_TO_TARGET
+                ? calculateWorkflowActivateDayAt(targetAudience)
+                : null;
+
+        int migrated = 0;
+        for (AudienceResponse response : movable) {
+            String fromAudienceId = response.getAudienceId();
+
+            // Written once and never overwritten, so it keeps pointing at where the lead STARTED
+            // however many times it is moved afterwards.
+            if (!StringUtils.hasText(response.getOriginalAudienceId()) && StringUtils.hasText(fromAudienceId)) {
+                response.setOriginalAudienceId(fromAudienceId);
+            }
+            response.setAudienceId(targetAudienceId);
+            if (resetAnchor != null) {
+                response.setWorkflowActivateDayAt(resetAnchor);
+            }
+            migrated++;
+
+            logLeadListChangeEvent(response, actor, fromAudienceId, targetAudience, anchorMode, instituteId);
+        }
+        // These entities came from a repository query inside this transaction, so they are managed:
+        // the field writes above are already dirty-checked and flushed at commit. saveAll() here is
+        // explicitness, not a second write.
+        //
+        // NOTE: this is one transaction, and the persistence context holds every moved row for its
+        // duration. That is fine at the sizes the UI can select, but it is NOT the batched,
+        // per-chunk-commit write path a true bulk move needs — that work is tracked separately
+        // alongside the same problem in deleteLeads and CounsellorReassignService.
+        audienceResponseRepository.saveAll(movable);
+
+        // lead_score denormalises audience_id (NOT NULL), so it has to follow the row or the score
+        // stays attributed to the list the lead just left. Chunked read/write over the moved ids
+        // rather than a lookup per lead.
+        syncLeadScoreAudience(movable, targetAudienceId);
+
+        logger.info("Migrated {} lead(s) into audience {} (skipped {}, anchor={}) by user {}",
+                migrated, targetAudienceId, skipped.size(), anchorMode, actor.getUserId());
+
+        // Run the target list's event-driven automations on the moved leads, exactly as if each
+        // had just been submitted there. "Start the new list's automation from day one"
+        // (RESET_TO_TARGET) means the whole of it: the scheduled drip re-anchored above AND the
+        // Lead-Submitted workflows (AI call, instant WhatsApp/email) — an admin picking it is
+        // asking for the lead to be treated as new, and the dialog promises exactly that. The
+        // explicit flag is kept for API callers who want the event workflows without touching
+        // the drip anchor. PRESERVE + no flag = pure bookkeeping, nothing fires. Contexts are
+        // built now (inside the transaction, reads only) but fired only after commit — a
+        // workflow that dials or messages must see the lead already in its new list, and a
+        // rollback must fire nothing.
+        boolean runAutomations = Boolean.TRUE.equals(request.getRunDestinationAutomations())
+                || anchorMode == MigrateLeadsRequestDTO.WorkflowAnchorMode.RESET_TO_TARGET;
+        if (runAutomations && !movable.isEmpty()) {
+            scheduleDestinationAutomations(movable, targetAudience, instituteId);
+        }
+
+        return MigrateLeadsResponseDTO.builder()
+                .migrated(migrated)
+                .skipped(skipped)
+                .build();
+    }
+
+    /**
+     * Build one AUDIENCE_LEAD_SUBMISSION context per moved lead and hand the batch to
+     * {@link LeadMoveWorkflowAsyncHelper} once the move commits. Skipped silently when the
+     * target list has no ACTIVE lead-submission trigger — nothing would run, so nothing to build.
+     *
+     * <p>The context mirrors {@link #submitLead}'s so the same workflow nodes work unchanged
+     * (CALL_AI reads responseId / userId / phone; SEND_WHATSAPP reads user + customFields).
+     * Two deliberate differences: {@code leadSource = "LEAD_MOVED"} (+ {@code fromAudienceId})
+     * so a workflow can branch on it, and the respondent/admin email request lists are EMPTY —
+     * the person did not just fill a form, so a "thank you for submitting" email would be wrong.
+     */
+    private void scheduleDestinationAutomations(List<AudienceResponse> moved, Audience targetAudience,
+            String instituteId) {
+        String targetAudienceId = targetAudience.getId();
+        boolean triggerExists = workflowTriggerService
+                .findByInstituteIdEventNameAndEventId(instituteId,
+                        WorkflowTriggerEvent.AUDIENCE_LEAD_SUBMISSION.name(), targetAudienceId)
+                .isPresent();
+        if (!triggerExists) {
+            logger.info("Moved-lead automations requested but audience {} has no active lead-submission trigger — nothing to run",
+                    targetAudienceId);
+            return;
+        }
+
+        // One auth round-trip for every moved lead's user, not one per lead.
+        List<String> userIds = moved.stream()
+                .map(r -> r.getUserId() != null ? r.getUserId() : r.getStudentUserId())
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        Map<String, UserDTO> usersById = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            try {
+                for (UserDTO u : authService.getUsersFromAuthServiceByUserIds(userIds)) {
+                    if (u != null && u.getId() != null) usersById.put(u.getId(), u);
+                }
+            } catch (Exception e) {
+                logger.warn("Could not fetch users for moved-lead automations: {}", e.getMessage());
+            }
+        }
+
+        AudienceDTO audienceDTO = AudienceDTO.builder()
+                .id(targetAudience.getId())
+                .campaignName(targetAudience.getCampaignName())
+                .instituteId(targetAudience.getInstituteId())
+                .status(targetAudience.getStatus())
+                .toNotify(targetAudience.getToNotify())
+                .sendRespondentEmail(targetAudience.getSendRespondentEmail())
+                .build();
+        String instituteName = instituteRepository.findById(instituteId)
+                .map(Institute::getInstituteName).orElse("");
+        String submissionTime = java.time.ZonedDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm a z"));
+
+        List<Map<String, Object>> contexts = new ArrayList<>();
+        for (AudienceResponse response : moved) {
+            String leadUserId = response.getUserId() != null ? response.getUserId() : response.getStudentUserId();
+            Map<String, Object> ctx = new HashMap<>();
+            ctx.put("user", usersById.get(leadUserId));
+            ctx.put("audience", audienceDTO);
+            ctx.put("audienceId", targetAudienceId);
+            ctx.put("instituteId", instituteId);
+            ctx.put("instituteName", instituteName);
+            ctx.put("customFields", buildCustomFieldMapForEmail(response.getId()));
+            ctx.put("submissionTime", submissionTime);
+            ctx.put("responseId", response.getId());
+            ctx.put("userId", leadUserId);
+            ctx.put("leadUserId", leadUserId);
+            ctx.put("phone", response.getParentMobile());
+            ctx.put("parentMobile", response.getParentMobile());
+            ctx.put("campaignName", targetAudience.getCampaignName());
+            ctx.put("sendRespondentEmail", false);
+            ctx.put("respondentEmailRequests", new ArrayList<>());
+            ctx.put("adminEmailRequests", new ArrayList<>());
+            ctx.put("leadSource", "LEAD_MOVED");
+            ctx.put("fromAudienceId", response.getOriginalAudienceId());
+            contexts.add(ctx);
+        }
+
+        Runnable fire = () -> leadMoveWorkflowAsyncHelper
+                .fireDestinationLeadSubmission(targetAudienceId, instituteId, contexts);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    fire.run();
+                }
+            });
+        } else {
+            fire.run();
+        }
+    }
+
+    private MigrateLeadsResponseDTO.SkippedLead skip(AudienceResponse response,
+            MigrateLeadsResponseDTO.SkipReason reason, String detail) {
+        return MigrateLeadsResponseDTO.SkippedLead.builder()
+                .responseId(response.getId())
+                .reason(reason.name())
+                .detail(detail)
+                .build();
+    }
+
+    private MigrateLeadsRequestDTO.WorkflowAnchorMode resolveWorkflowAnchorMode(MigrateLeadsRequestDTO request) {
+        if (!StringUtils.hasText(request.getWorkflowAnchor())) {
+            return MigrateLeadsRequestDTO.WorkflowAnchorMode.PRESERVE;
+        }
+        try {
+            return MigrateLeadsRequestDTO.WorkflowAnchorMode.valueOf(
+                    request.getWorkflowAnchor().trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // Fail closed. An unrecognised value must not fall through to the mode that sends
+            // messages.
+            throw new InvalidRequestException(
+                    "workflow_anchor must be PRESERVE or RESET_TO_TARGET");
+        }
+    }
+
+    /**
+     * Keep {@code lead_score.audience_id} in step with the rows that just moved. Batched over the
+     * moved responses; leads with no score row simply have nothing to update.
+     */
+    private void syncLeadScoreAudience(List<AudienceResponse> moved, String targetAudienceId) {
+        List<String> responseIds = moved.stream()
+                .map(AudienceResponse::getId)
+                .filter(StringUtils::hasText)
+                .toList();
+        for (int start = 0; start < responseIds.size(); start += MIGRATE_BATCH_SIZE) {
+            List<String> batch = responseIds.subList(
+                    start, Math.min(start + MIGRATE_BATCH_SIZE, responseIds.size()));
+            List<LeadScore> scores = leadScoreRepository.findByAudienceResponseIdIn(batch);
+            if (scores.isEmpty()) {
+                continue;
+            }
+            scores.forEach(s -> s.setAudienceId(targetAudienceId));
+            leadScoreRepository.saveAll(scores);
+        }
+    }
+
+    /**
+     * Resolve the rows a migration acts on, enforcing the ADMIN check and institute ownership —
+     * the same shape as {@link #resolveDeleteTargets}, and for the same reason: resolving by raw id
+     * would let an admin pass their own institute_id together with another tenant's response ids.
+     */
+    private List<AudienceResponse> resolveMigrateTargets(MigrateLeadsRequestDTO request, CustomUserDetails actor) {
+        List<AudienceResponse> found = audienceResponseRepository
+                .findAllByInstituteAndIds(request.getInstituteId(), request.getResponseIds());
+        if (found.size() != new HashSet<>(request.getResponseIds()).size()) {
+            throw new ResourceNotFoundException("Lead not found");
+        }
+
+        String scope = StringUtils.hasText(request.getScope()) ? request.getScope().toUpperCase() : "RESPONSE";
+        if (!"USER".equalsIgnoreCase(scope)) {
+            return found;
+        }
+
+        List<String> userIds = found.stream()
+                .map(r -> r.getUserId() != null ? r.getUserId() : r.getStudentUserId())
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        if (userIds.isEmpty()) {
+            return found;
+        }
+        return audienceResponseRepository.findAllByInstituteAndUserIds(request.getInstituteId(), userIds);
+    }
+
+    /** Best-effort audit trail for a list change — a move must be attributable, but must not fail
+     *  over logging. */
+    private void logLeadListChangeEvent(AudienceResponse response, CustomUserDetails actor,
+            String fromAudienceId, Audience targetAudience,
+            MigrateLeadsRequestDTO.WorkflowAnchorMode anchorMode, String instituteId) {
+        String leadUserId = response.getUserId() != null ? response.getUserId() : response.getStudentUserId();
+        if (!StringUtils.hasText(leadUserId)) {
+            return;
+        }
+        try {
+            String fromName = fromAudienceId == null ? null
+                    : audienceRepository.findById(fromAudienceId).map(Audience::getCampaignName).orElse(null);
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("response_id", response.getId());
+            metadata.put("from_audience_id", fromAudienceId != null ? fromAudienceId : "");
+            metadata.put("from_campaign_name", fromName != null ? fromName : "");
+            metadata.put("to_audience_id", targetAudience.getId());
+            metadata.put("to_campaign_name",
+                    targetAudience.getCampaignName() != null ? targetAudience.getCampaignName() : "");
+            metadata.put("workflow_anchor", anchorMode.name());
+            metadata.put("actor", actor.getUsername() != null ? actor.getUsername() : "");
+            String typeId = userLeadProfileService.resolveProfileId(leadUserId, instituteId);
+            timelineEventService.logJourneyEvent(
+                    "USER_LEAD_PROFILE", typeId, LeadJourneyActionType.LEAD_LIST_CHANGED,
+                    "ADMIN", actor.getUserId(), actor.getUsername(),
+                    "Lead list changed",
+                    "Moved from " + (fromName != null ? fromName : "another list")
+                            + " to " + targetAudience.getCampaignName(),
+                    metadata, leadUserId);
+        } catch (Exception e) {
+            logger.warn("Failed to log LEAD_LIST_CHANGED event for response {}: {}",
+                    response.getId(), e.getMessage());
+        }
     }
 
     /** True when this user's lead profile at this institute is marked CONVERTED. */
@@ -4485,6 +5707,19 @@ public class AudienceService {
                     formProvider, audienceId, email);
         }
 
+        // Campaign the lead arrived on (Google Lead Forms send utm_* built from the campaign /
+        // ad group ids). Read up front because a REPEAT lead keeps it too: one lead form runs
+        // in several campaigns, and a person already in this audience who submits again via a
+        // second campaign must still show up under that campaign, even though no new lead row
+        // is created. record() never throws, no-ops when untagged, and skips the same
+        // campaign seen again within its dedupe window (e.g. a Google retry).
+        Map<String, String> webhookMetadata = processedData.getMetadata() != null
+                ? processedData.getMetadata() : Map.of();
+        Map<String, String> webhookUtm = new HashMap<>();
+        webhookMetadata.forEach((key, value) -> {
+            if (key.startsWith("utm_")) webhookUtm.put(key, value);
+        });
+
         // Institute-configured dedup (LEAD_SETTING.data.dedup) — checked against the lead's
         // real (pre-synthesis) email/phone, before creating the auth user, so a REJECTed lead
         // never creates an orphan account. ALLOW_REASSIGN lets it through with repeat-lead settings.
@@ -4493,6 +5728,9 @@ public class AudienceService {
                 .checkDuplicate(instituteId, audienceId, processedData.getEmail(), processedData.getPhone());
         if (dupMatch.isPresent()) {
             if (dupMatch.get().action() == LeadDedupSettingService.DedupAction.REJECT) {
+                // No user id without creating an account; the touch is keyed on the typed
+                // email / phone, which is what the campaign filters match on as well.
+                recordWebhookCampaignTouch(webhookUtm, instituteId, null, processedData, audienceId);
                 return dupMatch.get().rejectionMessage();
             }
             repeatLeadSettings = dupMatch.get().repeatLeadSettings();
@@ -4505,7 +5743,7 @@ public class AudienceService {
                 .mobileNumber(processedData.getPhone())
                 .build();
 
-        UserDTO createdUser = authService.createUserFromAuthService(userDTO, instituteId, false);
+        UserDTO createdUser = resolveLeadUser(userDTO, instituteId, audienceId, repeatLeadSettings != null, null);
         String userId = createdUser.getId();
 
         // Ensure mobile number from form is preserved (auth service might return
@@ -4525,16 +5763,24 @@ public class AudienceService {
             // the Meta/Zoho/Google form webhooks, so it's the most likely to re-deliver a lead
             // an admin has since deleted.
             reactivateSoftDeletedLeads(audienceId, userId);
+            recordWebhookCampaignTouch(webhookUtm, instituteId, userId, processedData, audienceId);
             return "You have already submitted your response for this campaign";
         }
 
         // 2. Create audience response with calculated workflowActivateDayAt
         Timestamp workflowActivateDayAt = calculateWorkflowActivateDayAt(audience);
 
+        // Ad-platform webhooks pass the campaign that produced the lead as source_id
+        // (Google Lead Forms: campaign_id) — the column's documented purpose, and what
+        // the leads list's sourceId filter matches. Everything else keeps the old marker.
+        String webhookSourceId = StringUtils.hasText(webhookMetadata.get("source_id"))
+                ? webhookMetadata.get("source_id")
+                : formProvider + "_WEBHOOK";
+
         AudienceResponse response = AudienceResponse.builder()
                 .audienceId(audienceId)
                 .sourceType(formProvider) // ZOHO_FORMS, GOOGLE_FORMS, etc.
-                .sourceId(formProvider + "_WEBHOOK")
+                .sourceId(webhookSourceId.length() > 100 ? webhookSourceId.substring(0, 100) : webhookSourceId)
                 .userId(userId)
                 .parentEmail(processedData.getEmail())
                 .parentMobile(truncateForParentMobileColumn(processedData.getPhone()))
@@ -4546,6 +5792,8 @@ public class AudienceService {
         logger.info("Saved audience response: responseId={}, userId={}", savedResponse.getId(), userId);
         logLeadSubmitted(savedResponse);
 
+        recordWebhookCampaignTouch(webhookUtm, instituteId, userId, processedData, audienceId);
+
         // 3. Map field_name to custom_field_id and save custom field values
         if (processedData.getFormFields() != null && !processedData.getFormFields().isEmpty()) {
             saveCustomFieldValuesByFieldName(
@@ -4555,13 +5803,28 @@ public class AudienceService {
                     audienceId);
         }
 
+        // 3a. Initial lead score (real-time), after custom fields so the completeness factor
+        // sees them — same as every other intake path. This is also what creates the user's
+        // lead profile; without it a webhook lead that the pool doesn't assign has no profile,
+        // so its status, interest level and owner all render blank until someone opens it.
+        try {
+            leadScoringService.calculateAndSaveScore(savedResponse.getId(), savedResponse.getAudienceId(),
+                    instituteId, savedResponse.getSourceType(), savedResponse.getEnquiryId());
+        } catch (Exception e) {
+            logger.error("Form webhook lead {}: lead score failed: {}", savedResponse.getId(), e.getMessage());
+        }
+
         // 3b. Pool auto-assignment. Webhook leads (Facebook/Meta Lead Ads, Google Lead Forms,
         // Zoho, etc.) carry no counsellor, so absent a repeat-lead policy this routes purely
         // through the campaign's counselor pool. Runs before the workflow trigger so
         // downstream workflow nodes see an owned lead.
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                 null, null, createdUser.getFullName(), audience.getCampaignName());
-        applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId);
+        recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
+                processedData.getEmail(), processedData.getPhone(),
+                createdUser.getFullName(), audience.getCampaignName());
+        applyRepeatLeadStatus(repeatLeadSettings, userId, instituteId, savedResponse,
+                processedData.getEmail(), processedData.getPhone());
 
         // 4. Build custom field map for workflow
         Map<String, String> customFieldsForEmail = buildCustomFieldMapForEmail(savedResponse.getId());
@@ -4682,6 +5945,14 @@ public class AudienceService {
                 customFieldsForEmail, contextData);
 
         return savedResponse.getId();
+    }
+
+    /** utm_attribution touch for a tagged webhook lead (new or repeat); no-op when untagged. */
+    private void recordWebhookCampaignTouch(Map<String, String> webhookUtm, String instituteId, String userId,
+            ProcessedFormDataDTO processedData, String audienceId) {
+        if (webhookUtm.isEmpty()) return;
+        utmAttributionService.record(instituteId, userId, processedData.getEmail(),
+                processedData.getPhone(), "AUDIENCE", audienceId, webhookUtm);
     }
 
     private void saveCustomFieldValuesByFieldName(String responseId, Map<String, String> fieldNameValues,
@@ -4834,6 +6105,15 @@ public class AudienceService {
                 : leadScoreRepository.findByAudienceResponseIdIn(responseIds).stream()
                         .collect(Collectors.toMap(LeadScore::getAudienceResponseId, ls -> ls, (a, b) -> a));
 
+        // Admin-set tier per (user, institute): wins over the score band, the same rule as the
+        // leads list and the side view, so a Hot / Warm / Cold pick shows here too.
+        Map<String, String> explicitTierByUserInstitute = userIds.isEmpty() ? Collections.emptyMap()
+                : userLeadProfileRepository.findByUserIdIn(new ArrayList<>(userIds)).stream()
+                        .filter(p -> StringUtils.hasText(p.getLeadTier()))
+                        .collect(Collectors.toMap(p -> p.getUserId() + "|" + p.getInstituteId(),
+                                vacademy.io.admin_core_service.features.audience.entity.UserLeadProfile::getLeadTier,
+                                (a, b) -> a));
+
         // Batch fetch assigned counsellors from linked_users table
         Map<String, String> enquiryToCounsellorMap = enquiryIds.isEmpty() ? Collections.emptyMap()
                 : linkedUsersRepository.findBySourceAndSourceIdIn("ENQUIRY", enquiryIds)
@@ -4915,7 +6195,11 @@ public class AudienceService {
                             .primaryResponseId(audienceResponse.getPrimaryResponseId())
                             // Lead score
                             .leadScore(leadScore != null ? leadScore.getRawScore() : null)
-                            .leadTier(leadScore != null ? leadScore.getTier() : null)
+                            .leadTier(leadScore != null
+                                    ? explicitTierByUserInstitute.getOrDefault(
+                                            audienceResponse.getUserId() + "|" + leadScore.getInstituteId(),
+                                            leadTierService.deriveTier(leadScore.getInstituteId(), leadScore.getRawScore()))
+                                    : null)
                             .percentileRank(leadScore != null && leadScore.getPercentileRank() != null
                                     ? leadScore.getPercentileRank().doubleValue()
                                     : null)
@@ -4928,16 +6212,15 @@ public class AudienceService {
         String leadTier = filterDTO.getLeadTier();
         List<EnquiryWithResponseDTO> filteredDtos = dtos;
         if (leadTier != null && !leadTier.isBlank()) {
+            // Compare against the tier already resolved on the DTO (institute catalog aware)
+            // instead of re-deriving with fixed thresholds. Accepts a comma-separated list.
+            Set<String> wanted = Arrays.stream(leadTier.split(","))
+                    .map(String::trim).filter(v -> !v.isEmpty()).map(String::toUpperCase)
+                    .collect(Collectors.toSet());
             filteredDtos = dtos.stream().filter(dto -> {
-                Integer score = dto.getLeadScore();
-                if (score == null)
+                if (dto.getLeadScore() == null || dto.getLeadTier() == null)
                     return false;
-                return switch (leadTier.toUpperCase()) {
-                    case "HOT" -> score >= 80;
-                    case "WARM" -> score >= 50 && score < 80;
-                    case "COLD" -> score < 50;
-                    default -> true;
-                };
+                return wanted.contains(dto.getLeadTier().toUpperCase());
             }).collect(Collectors.toList());
         }
 
@@ -5275,7 +6558,11 @@ public class AudienceService {
                                     "Counselor manually reassigned",
                                     Map.of("counselor_id", updatedCounsellorId,
                                             "assignment_source", "MANUAL"),
-                                    null);
+                                    // Link to the lead so a manual reassignment counts as a
+                                    // response for TAT (the intake auto-assignment event in
+                                    // linkCounsellorToEnquiry deliberately stays unlinked).
+                                    response.getUserId() != null ? response.getUserId()
+                                            : response.getStudentUserId());
                         } catch (Exception e) {
                             logger.warn("Failed to log COUNSELOR_ASSIGNED journey event for enquiry {}: {}",
                                     response.getEnquiryId(), e.getMessage());
@@ -5697,6 +6984,21 @@ public class AudienceService {
             throw new VacademyException("No leads found for audience: " + request.getAudienceId());
         }
 
+        // 2b. Narrow to the rows the caller ticked in the lead table, if any. Filtering the
+        // audience's own ACTIVE list (rather than looking the ids up directly) keeps both
+        // invariants: a response id from another audience or a soft-deleted one can never
+        // be smuggled into a send. No ids supplied → the whole audience, as before.
+        if (!CollectionUtils.isEmpty(request.getResponseIds())) {
+            Set<String> wanted = new HashSet<>(request.getResponseIds());
+            allResponses = allResponses.stream()
+                    .filter(r -> wanted.contains(r.getId()))
+                    .collect(Collectors.toList());
+            if (allResponses.isEmpty()) {
+                throw new VacademyException(
+                        "None of the selected leads belong to audience: " + request.getAudienceId());
+            }
+        }
+
         String channel = request.getChannel();
 
         // Resolve once whether this institute's numbers should default to India
@@ -5798,8 +7100,17 @@ public class AudienceService {
             UserDTO userDTO = StringUtils.hasText(resp.getUserId()) ? userMap.get(resp.getUserId()) : null;
             Map<String, String> cfForResp = customFieldMap.getOrDefault(resp.getId(), Collections.emptyMap());
 
-            // Resolve template variables
+            // Resolve template variables. The recipient's own identity is always available
+            // as {{name}} / {{first_name}} / {{email}} without the caller having to map it —
+            // the unified aliases derive first/last name from "name". A send that relied on
+            // an explicit mapping the caller forgot went out reading "Hi {{first_name}},".
             Map<String, String> resolvedVars = new HashMap<>();
+            String builtinName = userDTO != null && StringUtils.hasText(userDTO.getFullName())
+                    ? userDTO.getFullName() : resp.getParentName();
+            String builtinEmail = userDTO != null && StringUtils.hasText(userDTO.getEmail())
+                    ? userDTO.getEmail() : resp.getParentEmail();
+            if (StringUtils.hasText(builtinName)) resolvedVars.put("name", builtinName.trim());
+            if (StringUtils.hasText(builtinEmail)) resolvedVars.put("email", builtinEmail.trim());
             if (variableMapping != null) {
                 for (Map.Entry<String, String> entry : variableMapping.entrySet()) {
                     String templateVar = entry.getKey();
@@ -6304,5 +7615,12 @@ public class AudienceService {
             logger.warn("Failed to log LEAD_SUBMITTED journey event for response {}: {}",
                     savedResponse.getId(), e.getMessage(), e);
         }
+
+        // Live activity feed. Hooked here rather than inside logJourneyEvent above: that
+        // method is REQUIRES_NEW, so a recorder running within it sits in its own
+        // transaction and cannot see this still-uncommitted audience_response row. The
+        // first version did exactly that and silently dropped every lead. Passing the
+        // saved entity removes the read altogether.
+        liveActivityLeadRecorder.recordLeadSubmitted(savedResponse);
     }
 }

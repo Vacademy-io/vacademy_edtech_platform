@@ -1,0 +1,41 @@
+{
+    "systemFields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "username": "Username",
+        "userId": "User ID",
+        "dateOfBirth": "Date of Birth",
+        "gender": "Gender",
+        "address": "Address",
+        "city": "City",
+        "region": "Region / State",
+        "pinCode": "Pin Code"
+    },
+    "sources": {
+        "systemField": "System Field",
+        "customField": "Custom Field",
+        "session": "Session Variable",
+        "context": "Context (phone, instituteId, …)",
+        "fixed": "Fixed Value"
+    },
+    "emptyState": "No mappings yet. Add one to resolve a {{placeholder}} from user data with a fallback default.",
+    "placeholderName": "placeholderName",
+    "remove": "Remove",
+    "selectSystemField": "— Select system field —",
+    "selectCustomField": "— Select custom field —",
+    "loadingCustomFields": "Loading…",
+    "customFieldOption": "{{name}} ({{type}})",
+    "noCustomFieldsFound": "No custom fields found for this institute.",
+    "loadError": "Error: {{message}}",
+    "retry": "Retry",
+    "fieldPlaceholder": {
+        "fixed": "Literal value",
+        "context": "phone | instituteId | userId | messageText",
+        "session": "session variable key"
+    },
+    "defaultValuePlaceholder": "Default (used when value is missing)",
+    "addVariable": "Add Variable",
+    "noInstituteId": "No instituteId available",
+    "loadCustomFieldsFailed": "Failed to load custom fields"
+}

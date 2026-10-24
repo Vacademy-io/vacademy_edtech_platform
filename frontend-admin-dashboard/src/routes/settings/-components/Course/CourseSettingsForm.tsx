@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -19,8 +20,18 @@ import {
     EnrollmentNotificationsSettings,
     OfferPricingSettings,
 } from '@/types/course-settings';
-import { BookOpen, Eye, Users, Save, Image, Play, List, Layers, RotateCcw } from 'lucide-react';
-import { Bell } from '@phosphor-icons/react';
+import {
+    BookOpen,
+    Eye,
+    Users,
+    FloppyDisk,
+    Image,
+    Play,
+    List,
+    Stack,
+    ArrowCounterClockwise,
+    Bell,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Separator } from '@/components/ui/separator';
 import { DripConditionsCard } from './DripConditionsCard';
@@ -51,6 +62,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
     onSave,
     isSaving,
 }) => {
+    const { t } = useTranslation('settingsCourseForm');
     const [formData, setFormData] = useState<CourseSettingsData>(settings);
     const [hasChanges, setHasChanges] = useState(false);
 
@@ -225,16 +237,16 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={resetAllToDefault} disabled={isSaving}>
-                        <RotateCcw className="mr-2 size-4" />
-                        Reset All
+                        <ArrowCounterClockwise className="me-2 size-4" />
+                        {t('actions.resetAll')}
                     </Button>
                     <MyButton
                         onClick={handleSave}
                         disabled={isSaving || !hasChanges}
                         className="bg-primary-500"
                     >
-                        <Save className="mr-2 size-4" />
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                        <FloppyDisk className="me-2 size-4" />
+                        {isSaving ? t('actions.saving') : t('actions.saveChanges')}
                     </MyButton>
                 </div>
             </div>
@@ -242,9 +254,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
             {/* Unsaved Changes Warning */}
             {hasChanges && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-sm text-amber-800">
-                        You have unsaved changes. Don&apos;t forget to save your updates.
-                    </p>
+                    <p className="text-sm text-amber-800">{t('unsavedChanges')}</p>
                 </div>
             )}
 
@@ -254,7 +264,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <BookOpen className="size-5 text-blue-600" />
-                            Course Information Requirements
+                            {t('courseInformation.heading')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -264,7 +274,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="description-required"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Description Required</span>
+                                    <span>{t('courseInformation.descriptionRequired')}</span>
                                 </Label>
                                 <Switch
                                     id="description-required"
@@ -277,7 +287,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
 
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="popular-topics" className="flex items-center gap-2">
-                                    <span>Enable Popular Topics</span>
+                                    <span>{t('courseInformation.enablePopularTopics')}</span>
                                 </Label>
                                 <Switch
                                     id="popular-topics"
@@ -293,7 +303,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="learner-outcomes"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Learner Outcomes Required</span>
+                                    <span>{t('courseInformation.learnerOutcomesRequired')}</span>
                                 </Label>
                                 <Switch
                                     id="learner-outcomes"
@@ -306,7 +316,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
 
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="about-course" className="flex items-center gap-2">
-                                    <span>About Course Required</span>
+                                    <span>{t('courseInformation.aboutCourseRequired')}</span>
                                 </Label>
                                 <Switch
                                     id="about-course"
@@ -322,7 +332,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="target-audience"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Target Audience Required</span>
+                                    <span>{t('courseInformation.targetAudienceRequired')}</span>
                                 </Label>
                                 <Switch
                                     id="target-audience"
@@ -336,7 +346,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="preview-image" className="flex items-center gap-2">
                                     <Image className="size-4" />
-                                    <span>Preview Image Required</span>
+                                    <span>{t('courseInformation.previewImageRequired')}</span>
                                 </Label>
                                 <Switch
                                     id="preview-image"
@@ -350,7 +360,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="banner-enabled" className="flex items-center gap-2">
                                     <Image className="size-4" />
-                                    <span>Enable Banner Image</span>
+                                    <span>{t('courseInformation.enableBannerImage')}</span>
                                 </Label>
                                 <Switch
                                     id="banner-enabled"
@@ -367,7 +377,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     className="flex items-center gap-2"
                                 >
                                     <Image className="size-4" />
-                                    <span>Banner Image Required</span>
+                                    <span>{t('courseInformation.bannerImageRequired')}</span>
                                 </Label>
                                 <Switch
                                     id="banner-required"
@@ -382,7 +392,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="course-media" className="flex items-center gap-2">
                                     <Play className="size-4" />
-                                    <span>Enable Course Media</span>
+                                    <span>{t('courseInformation.enableCourseMedia')}</span>
                                 </Label>
                                 <Switch
                                     id="course-media"
@@ -400,14 +410,14 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Layers className="size-5 text-green-600" />
-                            Course Structure Configuration
+                            <Stack className="size-5 text-green-600" />
+                            {t('courseStructure.heading')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="default-depth">Default Course Depth</Label>
+                                <Label htmlFor="default-depth">{t('courseStructure.defaultDepth')}</Label>
                                 <Select
                                     value={formData.courseStructure.defaultDepth.toString()}
                                     onValueChange={(value) =>
@@ -418,17 +428,25 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="2">2 Levels</SelectItem>
-                                        <SelectItem value="3">3 Levels</SelectItem>
-                                        <SelectItem value="4">4 Levels</SelectItem>
-                                        <SelectItem value="5">5 Levels</SelectItem>
+                                        <SelectItem value="2">
+                                            {t('courseStructure.depthOption', { count: 2 })}
+                                        </SelectItem>
+                                        <SelectItem value="3">
+                                            {t('courseStructure.depthOption', { count: 3 })}
+                                        </SelectItem>
+                                        <SelectItem value="4">
+                                            {t('courseStructure.depthOption', { count: 4 })}
+                                        </SelectItem>
+                                        <SelectItem value="5">
+                                            {t('courseStructure.depthOption', { count: 5 })}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="fix-depth" className="flex items-center gap-2">
-                                    <span>Fix Course Depth</span>
+                                    <span>{t('courseStructure.fixCourseDepth')}</span>
                                 </Label>
                                 <Switch
                                     id="fix-depth"
@@ -444,7 +462,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="enable-sessions"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Enable Sessions</span>
+                                    <span>{t('courseStructure.enableSessions')}</span>
                                 </Label>
                                 <Switch
                                     id="enable-sessions"
@@ -457,7 +475,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
 
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="enable-levels" className="flex items-center gap-2">
-                                    <span>Enable Levels</span>
+                                    <span>{t('courseStructure.enableLevels')}</span>
                                 </Label>
                                 <Switch
                                     id="enable-levels"
@@ -476,13 +494,13 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <List className="size-5 text-purple-600" />
-                            Catalogue & Publishing Settings
+                            {t('catalogueSettings.heading')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="catalogue-mode">Catalogue Mode</Label>
+                                <Label htmlFor="catalogue-mode">{t('catalogueSettings.catalogueMode')}</Label>
                                 <Select
                                     value={formData.catalogueSettings.catalogueMode}
                                     onValueChange={(value) =>
@@ -493,16 +511,16 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ask">Ask Before Publishing</SelectItem>
-                                        <SelectItem value="auto">Auto Publish</SelectItem>
-                                        <SelectItem value="manual">Manual Only</SelectItem>
+                                        <SelectItem value="ask">{t('catalogueSettings.modeAsk')}</SelectItem>
+                                        <SelectItem value="auto">{t('catalogueSettings.modeAuto')}</SelectItem>
+                                        <SelectItem value="manual">{t('catalogueSettings.modeManual')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="auto-publish" className="flex items-center gap-2">
-                                    <span>Auto Publish to Catalogue</span>
+                                    <span>{t('catalogueSettings.autoPublish')}</span>
                                 </Label>
                                 <Switch
                                     id="auto-publish"
@@ -520,12 +538,10 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                             <div className="flex items-center justify-between gap-4">
                                 <div className="space-y-1">
                                     <Label htmlFor="filter-wizard-enabled">
-                                        Course Filter Wizard (Learner Catalogue)
+                                        {t('catalogueSettings.filterWizard.heading')}
                                     </Label>
                                     <p className="text-caption text-neutral-500">
-                                        The first time a learner opens the course catalogue, ask
-                                        them to pick filters step by step, then show only the
-                                        matching courses.
+                                        {t('catalogueSettings.filterWizard.description')}
                                     </p>
                                 </div>
                                 <Switch
@@ -538,7 +554,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                             {formData.catalogueSettings.filterWizard?.enabled && (
                                 <div className="space-y-4 rounded-lg border border-neutral-200 p-3">
                                     <div className="space-y-2">
-                                        <Label>Steps to ask</Label>
+                                        <Label>{t('catalogueSettings.filterWizard.stepsToAsk')}</Label>
                                         <div className="flex flex-wrap gap-4">
                                             {(['level', 'session', 'tag'] as const).map((step) => {
                                                 const [contentTerm, systemTerm] =
@@ -567,13 +583,20 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                             })}
                                         </div>
                                         <p className="text-xs text-muted-foreground">
-                                            Learners are asked in this fixed order —{' '}
-                                            {getTerminology(ContentTerms.Level, SystemTerms.Level)},
-                                            then{' '}
-                                            {getTerminology(ContentTerms.Session, SystemTerms.Session)},
-                                            then{' '}
-                                            {getTerminology(ContentTerms.PopularTag, SystemTerms.PopularTag)}{' '}
-                                            — skipping any step left unchecked.
+                                            {t('catalogueSettings.filterWizard.order', {
+                                                level: getTerminology(
+                                                    ContentTerms.Level,
+                                                    SystemTerms.Level
+                                                ),
+                                                session: getTerminology(
+                                                    ContentTerms.Session,
+                                                    SystemTerms.Session
+                                                ),
+                                                tag: getTerminology(
+                                                    ContentTerms.PopularTag,
+                                                    SystemTerms.PopularTag
+                                                ),
+                                            })}
                                         </p>
                                     </div>
 
@@ -582,7 +605,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                             htmlFor="filter-wizard-mandatory"
                                             className="flex items-center gap-2"
                                         >
-                                            <span>Require completion (no skip)</span>
+                                            <span>{t('catalogueSettings.filterWizard.requireCompletion')}</span>
                                         </Label>
                                         <Switch
                                             id="filter-wizard-mandatory"
@@ -606,13 +629,13 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Eye className="size-5 text-orange-600" />
-                            Course View & Display Settings
+                            {t('viewSettings.heading')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="default-view">Default View Mode</Label>
+                                <Label htmlFor="default-view">{t('viewSettings.defaultViewMode')}</Label>
                                 <Select
                                     value={formData.courseViewSettings.defaultViewMode}
                                     onValueChange={(value) =>
@@ -626,16 +649,18 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="outline">Outline Mode</SelectItem>
+                                        <SelectItem value="outline">
+                                            {t('viewSettings.outlineMode')}
+                                        </SelectItem>
                                         <SelectItem value="structure">
-                                            Course Structure Mode
+                                            {t('viewSettings.structureMode')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="outline-state">Default Outline State</Label>
+                                <Label htmlFor="outline-state">{t('viewSettings.defaultOutlineState')}</Label>
                                 <Select
                                     value={formData.outlineSettings.defaultState}
                                     onValueChange={(value) =>
@@ -649,15 +674,19 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="expanded">Expanded</SelectItem>
-                                        <SelectItem value="collapsed">Collapsed</SelectItem>
+                                        <SelectItem value="expanded">
+                                            {t('viewSettings.expanded')}
+                                        </SelectItem>
+                                        <SelectItem value="collapsed">
+                                            {t('viewSettings.collapsed')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="copied-slide-status">
-                                    Publish Status for Copied Slides
+                                    {t('viewSettings.copiedSlideStatus')}
                                 </Label>
                                 <Select
                                     value={formData.copiedSlideStatus ?? 'KEEP_DRAFT'}
@@ -670,20 +699,18 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="KEEP_DRAFT">
-                                            Keep as Draft (default)
+                                            {t('viewSettings.keepDraft')}
                                         </SelectItem>
                                         <SelectItem value="INHERIT_SOURCE">
-                                            Match the original slide
+                                            {t('viewSettings.inheritSource')}
                                         </SelectItem>
                                         <SelectItem value="ALWAYS_PUBLISHED">
-                                            Always publish
+                                            {t('viewSettings.alwaysPublished')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className="text-caption text-neutral-500">
-                                    When a slide is copied to another course, choose whether the
-                                    copy stays a draft, matches the original&apos;s published state,
-                                    or is always published. Draft copies are not visible to learners.
+                                    {t('viewSettings.copiedSlideDescription')}
                                 </p>
                             </div>
                         </div>
@@ -691,12 +718,10 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                         <div className="flex items-center justify-between gap-4">
                             <div className="space-y-1">
                                 <Label htmlFor="show-content-descriptions">
-                                    Show Module &amp; Chapter Descriptions
+                                    {t('viewSettings.showContentDescriptions')}
                                 </Label>
                                 <p className="text-caption text-neutral-500">
-                                    Display the description entered for a module or chapter under
-                                    its title on the content cards — in Course Details and in the
-                                    learner app. Turn off to keep those cards title-only.
+                                    {t('viewSettings.showContentDescriptionsHint')}
                                 </p>
                             </div>
                             <Switch
@@ -717,7 +742,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Users className="size-5 text-red-600" />
-                            User Permissions & Access Control
+                            {t('permissions.heading')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -727,7 +752,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="learners-create"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Allow Learners to Create Courses</span>
+                                    <span>{t('permissions.allowLearnersCreate')}</span>
                                 </Label>
                                 <Switch
                                     id="learners-create"
@@ -740,7 +765,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
 
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="payment-change" className="flex items-center gap-2">
-                                    <span>Allow Payment Option Changes</span>
+                                    <span>{t('permissions.allowPaymentChange')}</span>
                                 </Label>
                                 <Switch
                                     id="payment-change"
@@ -756,7 +781,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="discount-change"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Allow Discount Option Changes</span>
+                                    <span>{t('permissions.allowDiscountChange')}</span>
                                 </Label>
                                 <Switch
                                     id="discount-change"
@@ -772,7 +797,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="referral-change"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Allow Referral Option Changes</span>
+                                    <span>{t('permissions.allowReferralChange')}</span>
                                 </Label>
                                 <Switch
                                     id="referral-change"
@@ -788,7 +813,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="course-filter-type"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Default Course Filter (Explore Courses)</span>
+                                    <span>{t('permissions.defaultCourseFilter')}</span>
                                 </Label>
                                 <Select
                                     value={
@@ -809,21 +834,20 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     }}
                                 >
                                     <SelectTrigger id="course-filter-type" className="w-full max-w-xs">
-                                        <SelectValue placeholder="Select default filter" />
+                                        <SelectValue placeholder={t('permissions.selectDefaultFilter')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="ALL">Show all (no default filter)</SelectItem>
+                                        <SelectItem value="ALL">{t('permissions.filterAll')}</SelectItem>
                                         <SelectItem value="PARENTS_ONLY">
-                                            Only parent batches (PARENTS_ONLY)
+                                            {t('permissions.filterParentsOnly')}
                                         </SelectItem>
                                         <SelectItem value="CHILDREN_ONLY">
-                                            Only child batches (CHILDREN_ONLY)
+                                            {t('permissions.filterChildrenOnly')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className="text-xs text-muted-foreground">
-                                    Controls whether Explore Courses shows only parent batches, only child
-                                    batches, or all batches by default.
+                                    {t('permissions.filterHint')}
                                 </p>
                             </div>
                         </div>
@@ -847,15 +871,12 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Bell size={20} weight="duotone" className="text-primary-500" />
-                            Enrollment Notifications
+                            {t('enrollmentNotifications.heading')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            Controls which notification toggles admins see in the bulk enrollment
-                            dialog. When a toggle is turned off here, the corresponding option is
-                            hidden in the dialog AND forced to off in the API request — so no
-                            emails go out by accident.
+                            {t('enrollmentNotifications.description')}
                         </p>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="flex items-center justify-between">
@@ -863,7 +884,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="show-notify-learners"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Show &ldquo;Notify Learners&rdquo; in bulk enroll</span>
+                                    <span>{t('enrollmentNotifications.showNotifyLearners')}</span>
                                 </Label>
                                 <Switch
                                     id="show-notify-learners"
@@ -882,7 +903,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
                                     htmlFor="show-send-credentials"
                                     className="flex items-center gap-2"
                                 >
-                                    <span>Show &ldquo;Send Credentials&rdquo; in bulk enroll</span>
+                                    <span>{t('enrollmentNotifications.showSendCredentials')}</span>
                                 </Label>
                                 <Switch
                                     id="show-send-credentials"
@@ -907,8 +928,7 @@ export const CourseSettingsForm: React.FC<CourseSettingsFormProps> = ({
 
             <div className="text-sm text-muted-foreground">
                 <p>
-                    <strong>Note:</strong> Changes will be applied across your entire institute once
-                    saved. All course creation flows will use these updated settings.
+                    <strong>{t('footerNote.label')}</strong> {t('footerNote.text')}
                 </p>
             </div>
         </div>

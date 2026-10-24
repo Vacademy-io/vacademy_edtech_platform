@@ -14,6 +14,8 @@ from decimal import Decimal
 from functools import lru_cache
 from datetime import datetime
 
+from .model_defaults import GLM_DEFAULT, NON_GLM_FALLBACK
+
 logger = logging.getLogger(__name__)
 
 
@@ -268,9 +270,31 @@ def _get_fallback_models() -> List[ModelInfo]:
     """Fallback hardcoded models for when database is unavailable.
     Only top-quality models from major providers."""
     return [
+        # Platform default (ai_model_defaults has GLM as the default for every
+        # chat use case). Live Isoquant price, the primary route for this model.
+        ModelInfo(
+            id=GLM_DEFAULT,
+            name="GLM 5.3 Flash",
+            provider="Z.ai",
+            category="general",
+            tier="standard",
+            is_free=False,
+            credit_multiplier=1.0,
+            input_price_per_1m=0.027,
+            output_price_per_1m=0.49,
+            supports_streaming=True,
+            supports_images=True,
+            supports_function_calling=True,
+            supports_json_mode=True,
+            quality_score=4,
+            speed_score=4,
+            is_default=True,
+            description="Platform default — reasoning model, served via Isoquant",
+        ),
+
         # Standard tier
         ModelInfo(
-            id="google/gemini-2.5-flash",
+            id=NON_GLM_FALLBACK,
             name="Gemini 2.5 Flash",
             provider="Google",
             category="general",
@@ -287,7 +311,6 @@ def _get_fallback_models() -> List[ModelInfo]:
             supports_json_mode=True,
             quality_score=4,
             speed_score=5,
-            is_default=True,
             description="Fast and affordable — great for most tasks",
         ),
 
@@ -357,31 +380,6 @@ def _get_fallback_models() -> List[ModelInfo]:
         ModelInfo(
             id="anthropic/claude-opus-4",
             name="Claude Opus 4",
-            provider="Anthropic",
-            category="general",
-            tier="ultra",
-            is_free=False,
-            credit_multiplier=5.0,
-            input_price_per_1m=15.0,
-            output_price_per_1m=75.0,
-            max_tokens=32000,
-            context_window=200000,
-            supports_streaming=True,
-            supports_images=True,
-            supports_function_calling=True,
-            supports_json_mode=True,
-            quality_score=5,
-            speed_score=3,
-            description="Anthropic's most capable model — highest quality",
-        ),
-        # Fallback pricing row for the concept/hero model used by the video
-        # tiers (QUALITY_TIERS concept_model / hero_shot_model). get_model_by_id
-        # is exact-match — without this row the best-of-N cost cap and credit
-        # attribution priced Opus 4.8 tokens as unknown/free when the DB
-        # registry was unavailable.
-        ModelInfo(
-            id="anthropic/claude-opus-4-8",
-            name="Claude Opus 4.8",
             provider="Anthropic",
             category="general",
             tier="ultra",
@@ -489,6 +487,39 @@ def get_default_free_model() -> Optional[ModelInfo]:
     return free_models[0] if free_models else None
 
 
+# Per-process cache of ai_model_defaults: (rows, loaded_at). A failed read is
+# cached too (as {}), so a DB outage costs one slow query per TTL, not one per call.
+_use_case_defaults_cache: Optional[tuple] = None
+_USE_CASE_DEFAULTS_TTL_SECONDS = 60
+
+
+def get_use_case_default_model(use_case: str, fallback: str = GLM_DEFAULT) -> str:
+    """The `ai_model_defaults` default model for a use case, or `fallback`
+    when the row is missing or the read fails. For direct `post_chat` callers
+    that have no DB session of their own."""
+    global _use_case_defaults_cache
+    now = datetime.utcnow()
+    cached = _use_case_defaults_cache
+    if cached is None or (now - cached[1]).total_seconds() >= _USE_CASE_DEFAULTS_TTL_SECONDS:
+        cached = (_get_use_case_defaults_from_db(), now)
+        _use_case_defaults_cache = cached
+    row = cached[0].get(use_case) or {}
+    return row.get("default") or fallback
+
+
+def get_use_case_model_chain(use_case: str, model: Optional[str] = None) -> List[str]:
+    """[primary, NON_GLM_FALLBACK], de-duplicated, for a caller that retries
+    once on a different vendor. The primary is `model` when given, else the
+    use case's ai_model_defaults default, else DEFAULT_MODEL (GLM). Never raises."""
+    primary = model
+    if not primary:
+        try:
+            primary = get_use_case_default_model(use_case, DEFAULT_MODEL)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"'{use_case}' default model lookup failed: {e}")
+    return list(dict.fromkeys([primary or DEFAULT_MODEL, NON_GLM_FALLBACK]))
+
+
 def get_model_pricing(model_id: str) -> Optional[Dict[str, float]]:
     """Get pricing information for a model."""
     model = get_model_by_id(model_id)
@@ -522,7 +553,11 @@ def get_credit_multiplier(model_id: str) -> float:
 # Default Model IDs (for backward compatibility)
 # ============================================================================
 
-DEFAULT_MODEL = "google/gemini-2.5-flash"
+# The model-less fallback for direct callers (intent router, video-type
+# classifier, reference-file description). They resolve the 'video' use case
+# first via get_use_case_default_model(); this is what they use when that read
+# fails.
+DEFAULT_MODEL = GLM_DEFAULT
 VIDEO_GENERATION_DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free"
 
 
@@ -569,6 +604,8 @@ __all__ = [
     "get_models_for_use_case",
     "get_default_model",
     "get_default_free_model",
+    "get_use_case_default_model",
+    "get_use_case_model_chain",
     "get_model_pricing",
     "get_credit_multiplier",
     "refresh_models_cache",

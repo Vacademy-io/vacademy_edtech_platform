@@ -2,6 +2,8 @@ import { MyButton } from '@/components/design-system/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { handleGetListIndividualTopics } from '../-services/ai-center-service';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import AIQuestionsPreview from './AIQuestionsPreview';
@@ -25,10 +27,10 @@ import {
 } from '@phosphor-icons/react';
 import {
     FileFamily,
+    buildSourceLabel,
     classifyFile,
     friendlyHeading,
     relativeTime,
-    sourceLabel,
     statusLabel,
     statusStyles,
     taskDisplayName,
@@ -48,15 +50,27 @@ const FamilyIcon = ({ family }: { family: FileFamily }) => {
 
 type StatusFilter = 'all' | 'COMPLETED' | 'PROGRESS' | 'FAILED';
 
-const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
-    { value: 'all', label: 'All' },
-    { value: 'COMPLETED', label: 'Ready' },
-    { value: 'PROGRESS', label: 'In progress' },
-    { value: 'FAILED', label: 'Failed' },
+// value is the internal filter identifier used for logic/equality; label is the
+// only user-facing part, so it's built from `t` rather than hardcoded.
+const buildStatusFilters = (t: TFunction): Array<{ value: StatusFilter; label: string }> => [
+    { value: 'all', label: t('statusFilters.all') },
+    { value: 'COMPLETED', label: t('statusFilters.ready') },
+    { value: 'PROGRESS', label: t('statusFilters.inProgress') },
+    { value: 'FAILED', label: t('statusFilters.failed') },
 ];
 
+// These identifiers double as record keys (see bucketForDate/groupedTasks below),
+// so they stay as fixed English strings for logic; DATE_BUCKET_LABEL_KEYS maps
+// each one to the translation key used only when rendering the bucket heading.
 const DATE_BUCKETS = ['Today', 'Yesterday', 'Earlier this week', 'Older'] as const;
 type DateBucket = (typeof DATE_BUCKETS)[number];
+
+const DATE_BUCKET_LABEL_KEYS: Record<DateBucket, string> = {
+    Today: 'dateBuckets.today',
+    Yesterday: 'dateBuckets.yesterday',
+    'Earlier this week': 'dateBuckets.earlierThisWeek',
+    Older: 'dateBuckets.older',
+};
 
 const bucketForDate = (iso: string): DateBucket => {
     const today = new Date();
@@ -106,6 +120,7 @@ type TaskCardProps = {
     pollGenerateQuestionsFromAudio?: (data: QuestionsFromTextData, taskId: string) => void;
     sectionsForm?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
+    allowSectionSplit?: boolean;
 };
 
 const TaskCard = ({
@@ -119,9 +134,13 @@ const TaskCard = ({
     pollGenerateQuestionsFromAudio,
     sectionsForm,
     currentSectionIndex,
+    allowSectionSplit,
 }: TaskCardProps) => {
+    const { t } = useTranslation('aiCenterAITasksList');
+    const { t: tFormat } = useTranslation('aiCenterFormat');
     const family = classifyFile(task.file_detail?.file_type);
-    const display = taskDisplayName(task);
+    const sourceLabel = buildSourceLabel(tFormat);
+    const display = taskDisplayName(task, tFormat);
 
     // Each card derives its own open state from the parent's openedTaskId so only
     // the clicked card's preview auto-fetches — without this, every visible card's
@@ -143,7 +162,7 @@ const TaskCard = ({
                         {display}
                     </span>
                     <span className="text-xs text-neutral-500">
-                        {sourceLabel[family]} · {relativeTime(task.updated_at)}
+                        {sourceLabel[family]} · {relativeTime(task.updated_at, tFormat)}
                     </span>
                 </div>
                 <span
@@ -151,7 +170,7 @@ const TaskCard = ({
                         task.status
                     )}`}
                 >
-                    {statusLabel(task.status)}
+                    {statusLabel(task.status, tFormat)}
                 </span>
             </div>
 
@@ -194,6 +213,7 @@ const TaskCard = ({
                             setOpenQuestionsPreview={setIsOpen}
                             sectionsForm={sectionsForm}
                             currentSectionIndex={currentSectionIndex}
+                            allowSectionSplit={allowSectionSplit}
                         />
                     )}
                 {task.file_detail && (
@@ -212,7 +232,7 @@ const TaskCard = ({
                         className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100"
                     >
                         <DownloadSimple size={14} />
-                        Download
+                        {t('taskCard.download')}
                     </button>
                 )}
             </div>
@@ -230,6 +250,7 @@ const AITasksList = ({
     pollGenerateQuestionsFromAudio,
     sectionsForm,
     currentSectionIndex,
+    allowSectionSplit,
 }: {
     heading: string;
     enableDialog?: boolean;
@@ -244,8 +265,13 @@ const AITasksList = ({
     pollGenerateQuestionsFromAudio?: (data: QuestionsFromTextData, taskId: string) => void;
     sectionsForm?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
+    allowSectionSplit?: boolean;
 }) => {
+    const { t } = useTranslation('aiCenterAITasksList');
+    const { t: tFormat } = useTranslation('aiCenterFormat');
     const { isAIQuestionDialog9, setIsAIQuestionDialog9 } = useAIQuestionDialogStore();
+
+    const STATUS_FILTERS = useMemo(() => buildStatusFilters(t), [t]);
 
     const [openedTaskId, setOpenedTaskId] = useState<string | null>(null);
     const [allTasks, setAllTasks] = useState<AITaskIndividualListInterface[]>([]);
@@ -318,26 +344,26 @@ const AITasksList = ({
         setEnableDialog?.(false);
     };
 
-    const friendly = friendlyHeading(heading);
+    const friendly = friendlyHeading(heading, tFormat);
     const isLoadingState =
         getAITasksIndividualListMutation.status === 'pending' || isLoading;
 
     const filteredTasks = useMemo(() => {
         let result = allTasks;
         if (statusFilter !== 'all') {
-            result = result.filter((t) => t.status === statusFilter);
+            result = result.filter((task) => task.status === statusFilter);
         }
         const q = searchQuery.trim().toLowerCase();
         if (q) {
-            result = result.filter((t) => {
-                const display = taskDisplayName(t).toLowerCase();
-                const name = (t.task_name || '').toLowerCase();
-                const file = (t.file_detail?.file_name || '').toLowerCase();
+            result = result.filter((task) => {
+                const display = taskDisplayName(task, tFormat).toLowerCase();
+                const name = (task.task_name || '').toLowerCase();
+                const file = (task.file_detail?.file_name || '').toLowerCase();
                 return display.includes(q) || name.includes(q) || file.includes(q);
             });
         }
         return result;
-    }, [allTasks, statusFilter, searchQuery]);
+    }, [allTasks, statusFilter, searchQuery, tFormat]);
 
     const sortedFiltered = useMemo(
         () =>
@@ -409,7 +435,7 @@ const AITasksList = ({
                         buttonType="secondary"
                         className="border-none font-normal !text-blue-600 shadow-none hover:bg-transparent focus:bg-transparent focus:outline-none focus:ring-0 active:bg-transparent"
                     >
-                        View all
+                        {t('dialog.viewAll')}
                     </MyButton>
                 </DialogTrigger>
             )}
@@ -424,8 +450,8 @@ const AITasksList = ({
                             {!isLoadingState && (
                                 <p className="text-xs text-neutral-500">
                                     {allTasks.length === 0
-                                        ? 'Nothing here yet'
-                                        : `${allTasks.length} ${allTasks.length === 1 ? 'item' : 'items'}`}
+                                        ? t('emptyState.nothingHereYet')
+                                        : t('dialog.itemCount', { count: allTasks.length })}
                                 </p>
                             )}
                         </div>
@@ -436,7 +462,7 @@ const AITasksList = ({
                                     handleRefreshList(getTaskTypeFromFeature(heading))
                                 }
                                 className="rounded-lg border border-neutral-200 p-2 text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-700"
-                                aria-label="Refresh"
+                                aria-label={t('dialog.refresh')}
                             >
                                 <ArrowCounterClockwise size={16} />
                             </button>
@@ -444,7 +470,7 @@ const AITasksList = ({
                                 type="button"
                                 onClick={handleCloseListDialog}
                                 className="rounded-lg border border-neutral-200 p-2 text-neutral-500 transition-colors hover:bg-neutral-50 hover:text-neutral-700"
-                                aria-label="Close"
+                                aria-label={t('dialog.close')}
                             >
                                 <X size={16} />
                             </button>
@@ -461,7 +487,7 @@ const AITasksList = ({
                                 <input
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search by name or filename…"
+                                    placeholder={t('dialog.searchPlaceholder')}
                                     className="w-full rounded-lg border border-neutral-200 bg-white py-2 pl-9 pr-9 text-sm placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
                                 />
                                 {searchQuery && (
@@ -469,7 +495,7 @@ const AITasksList = ({
                                         type="button"
                                         onClick={() => setSearchQuery('')}
                                         className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
-                                        aria-label="Clear search"
+                                        aria-label={t('dialog.clearSearch')}
                                     >
                                         <X size={12} />
                                     </button>
@@ -513,17 +539,21 @@ const AITasksList = ({
                 ) : !hasAnyTasks ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                         <Sparkle size={28} weight="fill" className="text-primary-300" />
-                        <p className="text-sm font-medium text-gray-900">Nothing here yet</p>
+                        <p className="text-sm font-medium text-gray-900">
+                            {t('emptyState.nothingHereYet')}
+                        </p>
                         <p className="max-w-xs text-xs text-neutral-500">
-                            Anything you draft with this tool will show up here.
+                            {t('emptyState.nothingHereYetDescription')}
                         </p>
                     </div>
                 ) : !hasAnyResult ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
                         <MagnifyingGlass size={24} className="text-neutral-300" />
-                        <p className="text-sm font-medium text-gray-900">No matches</p>
+                        <p className="text-sm font-medium text-gray-900">
+                            {t('emptyState.noMatches')}
+                        </p>
                         <p className="max-w-xs text-xs text-neutral-500">
-                            Try a different search term or filter.
+                            {t('emptyState.noMatchesDescription')}
                         </p>
                         {(searchQuery || statusFilter !== 'all') && (
                             <button
@@ -534,7 +564,7 @@ const AITasksList = ({
                                 }}
                                 className="mt-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
                             >
-                                Clear filters
+                                {t('emptyState.clearFilters')}
                             </button>
                         )}
                     </div>
@@ -547,7 +577,7 @@ const AITasksList = ({
                                 <section key={bucket} className="flex flex-col gap-3">
                                     <div className="flex items-baseline gap-2">
                                         <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                            {bucket}
+                                            {t(DATE_BUCKET_LABEL_KEYS[bucket])}
                                         </h3>
                                         <span className="text-caption text-neutral-400">
                                             {tasks.length}
@@ -575,6 +605,7 @@ const AITasksList = ({
                                                 }
                                                 sectionsForm={sectionsForm}
                                                 currentSectionIndex={currentSectionIndex}
+                                                allowSectionSplit={allowSectionSplit}
                                             />
                                         ))}
                                     </div>
@@ -586,7 +617,11 @@ const AITasksList = ({
                 {hasAnyResult && totalPages > 1 && (
                     <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t border-neutral-200 bg-white px-5 py-3">
                         <span className="text-xs text-neutral-500">
-                            Showing {rangeStart}–{rangeEnd} of {sortedFiltered.length}
+                            {t('pagination.showingRange', {
+                                start: rangeStart,
+                                end: rangeEnd,
+                                total: sortedFiltered.length,
+                            })}
                         </span>
                         <div className="flex items-center gap-1">
                             <button
@@ -596,10 +631,10 @@ const AITasksList = ({
                                 className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <CaretLeft size={12} weight="bold" />
-                                Prev
+                                {t('pagination.prev')}
                             </button>
                             <span className="px-2 text-xs text-neutral-600">
-                                Page {safePage} of {totalPages}
+                                {t('pagination.pageOf', { current: safePage, total: totalPages })}
                             </span>
                             <button
                                 type="button"
@@ -607,7 +642,7 @@ const AITasksList = ({
                                 disabled={safePage === totalPages}
                                 className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                Next
+                                {t('pagination.next')}
                                 <CaretRight size={12} weight="bold" />
                             </button>
                         </div>

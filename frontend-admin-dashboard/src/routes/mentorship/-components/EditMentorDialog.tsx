@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { UploadSimple, UserCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -29,6 +30,7 @@ export function EditMentorDialog({
     open,
     onOpenChange,
 }: EditMentorDialogProps) {
+    const { t } = useTranslation('mentorshipEditMentorDialog');
     const [displayName, setDisplayName] = useState('');
     const [title, setTitle] = useState('');
     const [bio, setBio] = useState('');
@@ -91,7 +93,7 @@ export function EditMentorDialog({
             reportApiError(error, {
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'upload-mentor-photo' },
-                fallbackMessage: 'Photo upload failed',
+                fallbackMessage: t('photoUploadFailed'),
             });
         } finally {
             setUploadingPhoto(false);
@@ -116,14 +118,14 @@ export function EditMentorDialog({
                     is_discoverable: profile.isDiscoverable,
                 },
             });
-            toast.success('Mentor updated');
+            toast.success(t('mentorUpdated'));
             onOpenChange(false);
         } catch (error) {
             reportApiError(error, {
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'update-mentor' },
                 extra: { mentorId: mentor.id },
-                fallbackMessage: 'Failed to update mentor',
+                fallbackMessage: t('updateFailed'),
             });
         } finally {
             setSubmitting(false);
@@ -134,7 +136,9 @@ export function EditMentorDialog({
 
     return (
         <MyDialog
-            heading={`Edit ${mentor.display_name || mentor.name || 'mentor'}`}
+            heading={t('editMentorHeading', {
+                name: mentor.display_name || mentor.name || t('defaultMentorName'),
+            })}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-lg"
@@ -146,7 +150,7 @@ export function EditMentorDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -155,20 +159,22 @@ export function EditMentorDialog({
                         onClick={submit}
                         disable={submitting || uploadingPhoto}
                     >
-                        {submitting ? 'Saving…' : 'Save changes'}
+                        {submitting ? t('saving') : t('saveChanges')}
                     </MyButton>
                 </div>
             }
         >
             <div className="flex flex-col gap-4">
-                <p className="text-body text-neutral-600">
-                    How this mentor appears to learners. Their account and role are unchanged.
-                </p>
+                <p className="text-body text-neutral-600">{t('description')}</p>
 
                 <div className="flex items-center gap-4">
                     <div className="flex size-16 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
                         {photoUrl ? (
-                            <img src={photoUrl} alt="Mentor" className="size-full object-cover" />
+                            <img
+                                src={photoUrl}
+                                alt={t('mentorAlt')}
+                                className="size-full object-cover"
+                            />
                         ) : (
                             <UserCircle size={40} className="text-neutral-300" />
                         )}
@@ -183,14 +189,12 @@ export function EditMentorDialog({
                         >
                             <UploadSimple size={16} />{' '}
                             {uploadingPhoto
-                                ? 'Uploading…'
+                                ? t('uploading')
                                 : photoUrl
-                                  ? 'Change photo'
-                                  : 'Upload photo'}
+                                  ? t('changePhoto')
+                                  : t('uploadPhoto')}
                         </MyButton>
-                        <span className="text-caption text-neutral-400">
-                            Shown on their directory card and in My Mentors.
-                        </span>
+                        <span className="text-caption text-neutral-400">{t('photoHelp')}</span>
                     </div>
                     <input
                         ref={fileInputRef}
@@ -207,8 +211,8 @@ export function EditMentorDialog({
                         setDisplayName(e.target.value)
                     }
                     inputType="text"
-                    inputPlaceholder={mentor.name || 'Display name'}
-                    label="Display name"
+                    inputPlaceholder={mentor.name || t('displayNamePlaceholder')}
+                    label={t('displayNameLabel')}
                     className="sm:w-full"
                 />
                 <MyInput
@@ -217,8 +221,8 @@ export function EditMentorDialog({
                         setTitle(e.target.value)
                     }
                     inputType="text"
-                    inputPlaceholder="e.g. Senior Career Mentor"
-                    label="Title"
+                    inputPlaceholder={t('titlePlaceholder')}
+                    label={t('titleLabel')}
                     className="sm:w-full"
                 />
                 <MyInput
@@ -227,8 +231,8 @@ export function EditMentorDialog({
                         setBio(e.target.value)
                     }
                     inputType="text"
-                    inputPlaceholder="Short bio shown to learners"
-                    label="Bio"
+                    inputPlaceholder={t('bioPlaceholder')}
+                    label={t('bioLabel')}
                     className="sm:w-full"
                 />
 

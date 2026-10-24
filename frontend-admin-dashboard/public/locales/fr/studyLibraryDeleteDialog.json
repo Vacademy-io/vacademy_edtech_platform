@@ -1,0 +1,15 @@
+{
+    "delete": "Supprimer",
+    "deletingEllipsis": "Suppression…",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet élément ?",
+    "alsoDeleteAssessmentPrefix": "Supprimer aussi cette évaluation de l'",
+    "assessmentsTab": "onglet Évaluations",
+    "otherSlidesWarning_one": "Cette évaluation soutient également {{count}} autre diapositive (issue d'un chapitre ou d'un cours copié). La supprimer cassera aussi cette diapositive.",
+    "otherSlidesWarning_many": "Cette évaluation soutient également {{count}} d'autres diapositives (issues d'un chapitre ou d'un cours copié). La supprimer cassera aussi ces diapositives.",
+    "otherSlidesWarning_other": "Cette évaluation soutient également {{count}} autres diapositives (issues d'un chapitre ou d'un cours copié). La supprimer cassera aussi ces diapositives.",
+    "assessmentStaysLive": "L'évaluation reste active pour les apprenants dans l'onglet Évaluations.",
+    "slideAndAssessmentDeleted": "Diapositive et évaluation supprimées avec succès !",
+    "assessmentDeleteFailed": "Diapositive supprimée, mais l'évaluation n'a pas pu être retirée de l'onglet Évaluations.",
+    "slideDeleted": "Diapositive supprimée avec succès !",
+    "slideDeleteFailed": "Échec de la suppression de la diapositive"
+}

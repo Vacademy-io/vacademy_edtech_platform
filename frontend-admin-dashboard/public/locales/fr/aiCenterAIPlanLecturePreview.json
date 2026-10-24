@@ -1,0 +1,10 @@
+{
+    "failedDialog": {
+        "title": "Échec du chargement des questions",
+        "message": "Cliquez <retryLink>ici</retryLink> pour réessayer"
+    },
+    "retryButton": "Réessayer",
+    "viewPlanButton": "Voir le plan",
+    "loading": "Chargement…",
+    "noDataToast": "Aucune donnée disponible !"
+}

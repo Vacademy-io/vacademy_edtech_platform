@@ -39,6 +39,20 @@ public class DoubtsDto {
     private String contentType;
     private String htmlText;
     private String status;
+    /**
+     * Response: the doubt's effective workflow status key (never null for top-level doubts).
+     * Request (update): set to move the doubt to that status; the coarse {@link #status} is derived
+     * from the status's kind. Echoing the current value back is a no-op.
+     */
+    private String workflowStatus;
+    /**
+     * Request only: an optional note recorded in the activity trail — attached to the status change
+     * when {@link #workflowStatus} moves, otherwise logged as a standalone remark on the current
+     * status. Visible to admins/teachers only.
+     */
+    private String remark;
+    /** Response only: what the learner should see for this doubt's status. */
+    private DoubtStatusDto learnerStatus;
     private String parentId;
     private Integer parentLevel;
     private List<String> doubtAssigneeRequestUserIds = new ArrayList<>();

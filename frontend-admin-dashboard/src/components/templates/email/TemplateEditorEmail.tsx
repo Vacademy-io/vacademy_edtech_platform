@@ -12,6 +12,7 @@ import {
     getMessageTemplate,
 } from '@/services/message-template-service';
 import { templateCacheService } from '@/services/template-cache-service';
+import { EmailBrandSettings, getEmailBrandSettings } from '@/services/email-brand-settings';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import './email-editor.css';
@@ -30,6 +31,12 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
     const [template, setTemplate] = useState<MessageTemplate | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    // Brand kit must be in hand before the builder mounts — its initial page data is built once.
+    const [brand, setBrand] = useState<EmailBrandSettings | null>(null);
+
+    useEffect(() => {
+        getEmailBrandSettings().then(setBrand);
+    }, []);
 
     // Load template if editing
     useEffect(() => {
@@ -116,7 +123,7 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
         navigate({ to: '/settings', search: { selectedTab: 'templates' } });
     };
 
-    if (isLoading) {
+    if (isLoading || !brand) {
         return (
             <div className="flex h-screen w-screen items-center justify-center bg-background">
                 <Loader2 className="size-6 animate-spin" />
@@ -143,6 +150,7 @@ export const TemplateEditorEmail: React.FC<TemplateEditorEmailProps> = ({ templa
                     onBack={handleBack}
                     onSave={handleSave}
                     isSaving={isSaving}
+                    brand={brand}
                     initialTemplateType={
                         initialType === 'INVOICE' ||
                         initialType === 'INVOICE_EMAIL' ||

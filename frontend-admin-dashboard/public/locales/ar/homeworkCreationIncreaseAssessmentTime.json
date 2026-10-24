@@ -1,0 +1,23 @@
+{
+    "dialog": {
+        "heading": "زيادة وقت التقييم"
+    },
+    "assessment": {
+        "title": "التقييم بالكامل",
+        "increaseByLabel": "زيادة بمقدار",
+        "selectSectionPlaceholder": "اختر القسم",
+        "doneButton": "تم"
+    },
+    "section": {
+        "title": "القسم {{index}}",
+        "increaseByLabel": "زيادة بمقدار",
+        "selectSectionPlaceholder": "اختر القسم",
+        "doneButton": "تم"
+    },
+    "question": {
+        "title": "السؤال {{index}}",
+        "increaseByLabel": "زيادة بمقدار",
+        "selectSectionPlaceholder": "اختر القسم",
+        "doneButton": "تم"
+    }
+}

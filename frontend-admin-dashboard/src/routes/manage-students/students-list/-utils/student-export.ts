@@ -16,6 +16,7 @@ import { getCustomFieldSettingsFromCache } from '@/services/custom-field-setting
 import { formatCustomFieldValue } from '@/components/design-system/utils/constants/custom-field-columns';
 import { getSystemFieldColumnVisibility } from '@/components/design-system/utils/constants/system-field-columns';
 import { convertToUpperCase } from '@/utils/customFields';
+import type { TFunction } from 'i18next';
 
 export interface ExportContext {
     /** Resolve a package_session_id to its batch (course/level/session) details. */
@@ -44,8 +45,13 @@ const formatDate = (value: unknown): string => {
 /**
  * Build the full list of selectable export columns. Headers use the institute's
  * custom terminology and the list ends with one column per custom field.
+ *
+ * Takes the translation function rather than importing the i18next singleton —
+ * this is called from a single dialog component (export-columns-dialog.tsx),
+ * which already loads the 'manageStudentsExportUtil' namespace via useTranslation
+ * and owns the render that consumes these labels.
  */
-export const getStudentExportColumns = (): ExportColumn[] => {
+export const getStudentExportColumns = (t: TFunction): ExportColumn[] => {
     const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
     const levelTerm = getTerminology(ContentTerms.Level, SystemTerms.Level);
     const sessionTerm = getTerminology(ContentTerms.Session, SystemTerms.Session);
@@ -56,50 +62,50 @@ export const getStudentExportColumns = (): ExportColumn[] => {
         // Identity
         {
             id: 'full_name',
-            label: `${learnerTerm} Name`,
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.learnerName', { term: learnerTerm }),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.full_name),
         },
         {
             id: 'institute_enrollment_number',
-            label: 'Enrollment Number',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.enrollmentNumber'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.institute_enrollment_number ?? s.institute_enrollment_id),
         },
         {
             id: 'username',
-            label: 'Username',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.username'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.username),
         },
         {
             id: 'email',
-            label: 'Email',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.email'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.email),
         },
         {
             id: 'mobile_number',
-            label: 'Mobile Number',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.mobileNumber'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.mobile_number),
         },
         {
             id: 'gender',
-            label: 'Gender',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.gender'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: true,
             getValue: (s) => str(s.gender),
         },
         {
             id: 'date_of_birth',
-            label: 'Date of Birth',
-            group: 'Identity',
+            label: t('manageStudentsExportUtil:columns.dateOfBirth'),
+            group: t('manageStudentsExportUtil:groups.identity'),
             defaultSelected: false,
             getValue: (s) => str(s.date_of_birth),
         },
@@ -127,14 +133,14 @@ export const getStudentExportColumns = (): ExportColumn[] => {
         },
         {
             id: 'status',
-            label: 'Status',
+            label: t('manageStudentsExportUtil:columns.status'),
             group: `${courseTerm} / ${levelTerm} / ${sessionTerm}`,
             defaultSelected: true,
             getValue: (s) => str(s.status),
         },
         {
             id: 'expiry_date',
-            label: `${sessionTerm} Expiry Date`,
+            label: t('manageStudentsExportUtil:columns.sessionExpiryDate', { term: sessionTerm }),
             group: `${courseTerm} / ${levelTerm} / ${sessionTerm}`,
             defaultSelected: false,
             getValue: (s) => formatDate(s.expiry_date),
@@ -149,108 +155,108 @@ export const getStudentExportColumns = (): ExportColumn[] => {
         // Contact & address
         {
             id: 'address_line',
-            label: 'Address',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.address'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.address_line),
         },
         {
             id: 'city',
-            label: 'City',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.city'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.city),
         },
         {
             id: 'region',
-            label: 'State',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.state'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.region),
         },
         {
             id: 'country',
-            label: 'Country',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.country'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.country),
         },
         {
             id: 'pin_code',
-            label: 'Pin Code',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.pinCode'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.pin_code),
         },
         {
             id: 'linked_institute_name',
-            label: 'College / School',
-            group: 'Contact & Address',
+            label: t('manageStudentsExportUtil:columns.collegeSchool'),
+            group: t('manageStudentsExportUtil:groups.contactAddress'),
             defaultSelected: false,
             getValue: (s) => str(s.linked_institute_name),
         },
         // Guardian
         {
             id: 'fathers_name',
-            label: "Father / Male Guardian's Name",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.fatherName'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.fathers_name),
         },
         {
             id: 'parents_mobile_number',
-            label: "Father / Male Guardian's Mobile",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.fatherMobile'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.parents_mobile_number),
         },
         {
             id: 'parents_email',
-            label: "Father / Male Guardian's Email",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.fatherEmail'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.parents_email),
         },
         {
             id: 'mothers_name',
-            label: "Mother / Female Guardian's Name",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.motherName'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.mothers_name),
         },
         {
             id: 'parents_to_mother_mobile_number',
-            label: "Mother / Female Guardian's Mobile",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.motherMobile'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.parents_to_mother_mobile_number),
         },
         {
             id: 'parents_to_mother_email',
-            label: "Mother / Female Guardian's Email",
-            group: 'Guardian',
+            label: t('manageStudentsExportUtil:columns.motherEmail'),
+            group: t('manageStudentsExportUtil:groups.guardian'),
             defaultSelected: false,
             getValue: (s) => str(s.parents_to_mother_email),
         },
         // Other
         {
             id: 'attendance_percent',
-            label: 'Attendance %',
-            group: 'Other',
+            label: t('manageStudentsExportUtil:columns.attendancePercent'),
+            group: t('manageStudentsExportUtil:groups.other'),
             defaultSelected: false,
             getValue: (s) => str(s.attendance_percent),
         },
         {
             id: 'referral_count',
-            label: 'Referrals Count',
-            group: 'Other',
+            label: t('manageStudentsExportUtil:columns.referralsCount'),
+            group: t('manageStudentsExportUtil:groups.other'),
             defaultSelected: false,
             getValue: (s) => str(s.referral_count),
         },
         {
             id: 'created_at',
-            label: 'Created At',
-            group: 'Other',
+            label: t('manageStudentsExportUtil:columns.createdAt'),
+            group: t('manageStudentsExportUtil:groups.other'),
             defaultSelected: false,
             getValue: (s) => formatDate(s.created_at),
         },
@@ -275,7 +281,7 @@ export const getStudentExportColumns = (): ExportColumn[] => {
             columns.push({
                 id: `custom_${field.id}`,
                 label: convertToUpperCase(field.name),
-                group: 'Custom Fields',
+                group: t('manageStudentsExportUtil:groups.customFields'),
                 defaultSelected: true,
                 getValue: (s) =>
                     formatCustomFieldValue(str(s.custom_fields?.[field.id]), field.type),

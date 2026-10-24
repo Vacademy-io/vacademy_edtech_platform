@@ -104,6 +104,11 @@ public class AiAgent {
     @Column(name = "temperature")
     private Double temperature;
 
+    /** Pitch-range expansion applied by the bot to the voice AUDIO, engine-agnostic
+     *  (V504): 1.0 = off, 1.6 = conversational, 2.5 max; null = bot's global default. */
+    @Column(name = "voice_modulation")
+    private Double voiceModulation;
+
     // Optional: a booking_page this agent auto-books on when a call yields a meeting
     // request (see AiCallOutcomeProcessor). Null = agent never books.
     @Column(name = "booking_page_id", length = 36)

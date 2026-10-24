@@ -54,7 +54,10 @@ public class ParentPortalDetailController {
     public ResponseEntity<List<InvoiceDTO>> invoices(
             @PathVariable String childUserId,
             @RequestAttribute("user") CustomUserDetails user) {
-        return ResponseEntity.ok(detailService.invoices(user, childUserId));
+        // Parent-facing: drop the admin's internal discount notes.
+        return ResponseEntity.ok(detailService.invoices(user, childUserId).stream()
+                .map(InvoiceDTO::withoutInternalDiscountNotes)
+                .toList());
     }
 
     @GetMapping("/badges")

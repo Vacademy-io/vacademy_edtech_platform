@@ -1,0 +1,12 @@
+{
+    "columns": {
+        "name": "Name",
+        "enrollmentNumber": "Enrollment Number",
+        "collegeSchool": "College/School",
+        "gender": "Gender",
+        "mobileNumber": "Mobile Number",
+        "emailId": "Email ID",
+        "city": "City",
+        "state": "State"
+    }
+}

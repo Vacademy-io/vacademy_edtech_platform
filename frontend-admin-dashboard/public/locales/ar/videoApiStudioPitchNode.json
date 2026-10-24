@@ -1,0 +1,15 @@
+{
+    "headerRefs_zero": "{{count}} مرجع",
+    "headerRefs_one": "مرجع واحد ({{count}})",
+    "headerRefs_two": "مرجعان ({{count}})",
+    "headerRefs_few": "{{count}} مراجع",
+    "headerRefs_many": "{{count}} مرجعًا",
+    "headerRefs_other": "{{count}} مرجع",
+    "briefLabel": "الموجز",
+    "referencesAttached_zero": "{{count}} مرجع مرفق",
+    "referencesAttached_one": "مرجع واحد مرفق ({{count}})",
+    "referencesAttached_two": "مرجعان مرفقان ({{count}})",
+    "referencesAttached_few": "{{count}} مراجع مرفقة",
+    "referencesAttached_many": "{{count}} مرجعًا مرفقًا",
+    "referencesAttached_other": "{{count}} مرجع مرفق"
+}

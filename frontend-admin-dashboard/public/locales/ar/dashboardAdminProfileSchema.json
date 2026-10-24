@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "nameRequired": "الاسم مطلوب",
+        "invalidEmail": "عنوان البريد الإلكتروني غير صالح"
+    }
+}

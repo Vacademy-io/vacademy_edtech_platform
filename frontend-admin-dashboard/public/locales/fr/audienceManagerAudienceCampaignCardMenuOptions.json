@@ -1,0 +1,37 @@
+{
+    "menu": {
+        "openMenu": "Ouvrir le menu",
+        "edit": "Modifier",
+        "addResponse": "Ajouter une réponse",
+        "bulkImportCsv": "Importer un CSV en masse",
+        "sendMessage": "Envoyer un message",
+        "configureWorkflow": "Configurer le flux de travail",
+        "viewLinkedWorkflows": "Voir les flux de travail liés",
+        "bookingSettings": "Paramètres de réservation",
+        "shareQrCode": "Partager le code QR",
+        "copyShortLink": "Copier le lien court",
+        "apiIntegration": "Intégration API",
+        "getEmbedCode": "Obtenir le code d'intégration",
+        "delete": "Supprimer"
+    },
+    "deleteDialog": {
+        "title": "Supprimer {{term}}",
+        "description": "Voulez-vous vraiment supprimer la campagne « {{campaignName}} » ? Cette action est irréversible.",
+        "cancel": "Annuler",
+        "deleting": "Suppression en cours...",
+        "confirm": "Supprimer"
+    },
+    "toast": {
+        "deleteSuccess": "Campagne supprimée avec succès",
+        "deleteError": "Échec de la suppression de la campagne",
+        "editComingSoon": "La fonctionnalité de modification de campagne arrive bientôt",
+        "campaignIdMissing": "L'identifiant de la campagne est manquant",
+        "shortLinkCopied": "Lien court copié",
+        "shortLinkCopyFailed": "Lien court créé, mais la copie a échoué",
+        "shortLinkFailed": "Impossible de créer un lien court"
+    },
+    "defaults": {
+        "campaignName": "Campagne",
+        "thisCampaign": "cette campagne"
+    }
+}

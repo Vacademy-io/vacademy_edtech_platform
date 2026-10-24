@@ -1,0 +1,33 @@
+{
+    "heading": "Publish to library",
+    "description": "Describe a knowledge base and publish it so every institute can unlock and use it. Publishing makes it read-only to them — only this institute can keep editing the material.",
+    "notDescribedYet": "Not described yet",
+    "withdrawNotice": "Withdrawing a library removes it from the catalogue but never revokes access an institute has already paid for.",
+    "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "withdrawn": "Withdrawn"
+    },
+    "actions": {
+        "knowledgeBase": "Knowledge Base",
+        "backToKnowledgeBase": "Back to Knowledge Base",
+        "edit": "Edit",
+        "describe": "Describe",
+        "publish": "Publish",
+        "withdraw": "Withdraw"
+    },
+    "emptyState": {
+        "title": "No knowledge bases in this institute yet",
+        "description": "Create one and add its material first, then come back to describe it."
+    },
+    "forbidden": {
+        "title": "This institute cannot publish to the library",
+        "description": "Libraries are published from one internal Vacademy institute."
+    },
+    "toast": {
+        "published": "Live in the library",
+        "withdrawn": "Withdrawn. Institutes that already unlocked it keep their access.",
+        "returnedToDraft": "Returned to draft",
+        "statusChangeFailed": "Could not change the status"
+    }
+}

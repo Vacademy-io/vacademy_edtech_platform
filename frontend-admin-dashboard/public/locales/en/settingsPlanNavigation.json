@@ -1,0 +1,12 @@
+{
+    "buttons": {
+        "saving": "Saving...",
+        "createPlan": "Create Plan",
+        "next": "Next",
+        "createPaymentPlan": "Create Payment Plan",
+        "back": "Back",
+        "hidePreview": "Hide Preview",
+        "previewPlans": "Preview Plans",
+        "cancel": "Cancel"
+    }
+}

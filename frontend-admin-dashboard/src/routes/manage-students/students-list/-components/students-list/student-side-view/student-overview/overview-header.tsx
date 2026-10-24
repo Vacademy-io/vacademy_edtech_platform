@@ -9,6 +9,7 @@ import {
     Target,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface OverviewHeaderProps {
     student: StudentTable | null;
@@ -45,6 +46,8 @@ export const OverviewHeader = ({
     outstandingAmount,
     leadScore,
 }: OverviewHeaderProps) => {
+    const { t } = useTranslation('manageStudentsOverviewHeader');
+
     if (!student) return null;
 
     // Only show stat tiles we actually have data for. An empty/all-undefined
@@ -58,7 +61,7 @@ export const OverviewHeader = ({
     }> = [];
     if (progressPercent != null) {
         tiles.push({
-            label: 'Course Progress',
+            label: t('tiles.courseProgress.label'),
             icon: GraduationCap,
             value: `${Math.round(progressPercent)}%`,
             tone:
@@ -69,15 +72,15 @@ export const OverviewHeader = ({
                       : 'danger',
             hint:
                 progressPercent >= 75
-                    ? 'On track'
+                    ? t('tiles.courseProgress.hint.onTrack')
                     : progressPercent >= 25
-                      ? 'Pace check needed'
-                      : 'Behind schedule',
+                      ? t('tiles.courseProgress.hint.paceCheckNeeded')
+                      : t('tiles.courseProgress.hint.behindSchedule'),
         });
     }
     if (attendancePercent != null) {
         tiles.push({
-            label: 'Attendance',
+            label: t('tiles.attendance.label'),
             icon: Clock,
             value: `${Math.round(attendancePercent)}%`,
             tone:
@@ -88,39 +91,44 @@ export const OverviewHeader = ({
                       : 'danger',
             hint:
                 attendancePercent >= 75
-                    ? 'Above target'
+                    ? t('tiles.attendance.hint.aboveTarget')
                     : attendancePercent >= 50
-                      ? 'Watch list'
-                      : 'Below target',
+                      ? t('tiles.attendance.hint.watchList')
+                      : t('tiles.attendance.hint.belowTarget'),
         });
     }
     if (testsAttempted) {
         tiles.push({
-            label: 'Tests',
+            label: t('tiles.tests.label'),
             icon: Exam,
             value: `${testsAttempted.attempted}/${testsAttempted.total}`,
             tone: 'neutral',
             hint:
                 testsAttempted.total > 0 && testsAttempted.attempted < testsAttempted.total
-                    ? `${testsAttempted.total - testsAttempted.attempted} pending`
+                    ? t('tiles.tests.hint.pending', {
+                          count: testsAttempted.total - testsAttempted.attempted,
+                      })
                     : undefined,
         });
     }
     if (outstandingAmount != null) {
         tiles.push({
-            label: 'Outstanding',
+            label: t('tiles.outstanding.label'),
             icon: Wallet,
             value:
                 outstandingAmount > 0
                     ? `₹${outstandingAmount.toLocaleString('en-IN')}`
                     : '₹0',
             tone: outstandingAmount > 0 ? 'danger' : 'success',
-            hint: outstandingAmount > 0 ? 'Action required' : 'Paid in full',
+            hint:
+                outstandingAmount > 0
+                    ? t('tiles.outstanding.hint.actionRequired')
+                    : t('tiles.outstanding.hint.paidInFull'),
         });
     }
     if (leadScore != null) {
         tiles.push({
-            label: 'Lead Score',
+            label: t('tiles.leadScore.label'),
             icon: Target,
             value: `${Math.round(leadScore)} / 100`,
             tone:
@@ -130,7 +138,11 @@ export const OverviewHeader = ({
                       ? 'warning'
                       : 'danger',
             hint:
-                leadScore >= 70 ? 'Hot lead' : leadScore >= 40 ? 'Nurture' : 'Cold',
+                leadScore >= 70
+                    ? t('tiles.leadScore.hint.hotLead')
+                    : leadScore >= 40
+                      ? t('tiles.leadScore.hint.nurture')
+                      : t('tiles.leadScore.hint.cold'),
         });
     }
 

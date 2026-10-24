@@ -1,4 +1,5 @@
-import { COMPONENT_VARIANTS } from '../-utils/component-variants';
+import { getComponentVariants } from '../-utils/component-variants';
+import { lookForBlock } from '../-utils/design-pattern-presets';
 
 interface VariantSwitcherProps {
     componentType: string;
@@ -11,7 +12,7 @@ interface VariantSwitcherProps {
  * Clicking a variant deep-merges its props into the current component props.
  */
 export const VariantSwitcher = ({ componentType, currentProps, onApply }: VariantSwitcherProps) => {
-    const variants = COMPONENT_VARIANTS[componentType];
+    const variants = getComponentVariants(componentType);
     if (!variants || variants.length === 0) return null;
 
     // Deep merge helper — only merges one level deep (enough for our variant props)
@@ -49,11 +50,12 @@ export const VariantSwitcher = ({ componentType, currentProps, onApply }: Varian
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Layout Preset</p>
             <div className="flex flex-wrap gap-2">
                 {variants.map((variant) => {
-                    const active = isActive(variant.props);
+                    const look = lookForBlock(componentType, currentProps, variant.props);
+                    const active = isActive(look);
                     return (
                         <button
                             key={variant.id}
-                            onClick={() => onApply(deepMerge(currentProps, variant.props))}
+                            onClick={() => onApply(deepMerge(currentProps, look))}
                             title={variant.description}
                             className={`flex flex-col items-center rounded border px-3 py-2 text-xs transition-colors ${
                                 active
@@ -61,7 +63,7 @@ export const VariantSwitcher = ({ componentType, currentProps, onApply }: Varian
                                     : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50'
                             }`}
                         >
-                            <span className="text-[10px] font-mono whitespace-pre leading-tight text-gray-400 mb-1 hidden">
+                            <span className="text-2xs font-mono whitespace-pre leading-tight text-gray-400 mb-1 hidden">
                                 {variant.thumbnail}
                             </span>
                             {variant.label}

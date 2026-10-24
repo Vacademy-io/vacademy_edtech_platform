@@ -54,16 +54,20 @@ public class ReportRenderer {
      * remote images by default, and an icon that vanishes takes its meaning with it,
      * whereas an emoji is text and always arrives.
      */
-    private static final java.util.Map<String, String> ICONS = java.util.Map.of(
-            "inactivity", "🌙",
-            "live_attendance", "🎥",
-            "learner_engagement", "📈",
-            "doubts", "❓",
-            "session_feedback", "⭐",
-            "payments", "💳",
-            "ai_assistant", "🤖",
-            "ai_spend", "⚡",
-            "assessments", "📝");
+    // Map.ofEntries, not Map.of: the latter is capped at ten key-value pairs and
+    // this list has already reached it.
+    private static final java.util.Map<String, String> ICONS = java.util.Map.ofEntries(
+            java.util.Map.entry("inactivity", "🌙"),
+            java.util.Map.entry("live_attendance", "🎥"),
+            java.util.Map.entry("learner_engagement", "📈"),
+            java.util.Map.entry("doubts", "❓"),
+            java.util.Map.entry("session_feedback", "⭐"),
+            java.util.Map.entry("payments", "💳"),
+            java.util.Map.entry("ai_assistant", "🤖"),
+            java.util.Map.entry("ai_spend", "⚡"),
+            java.util.Map.entry("assessments", "📝"),
+            java.util.Map.entry("admissions", "🎯"),
+            java.util.Map.entry("calling", "📞"));
 
     private static final String GOOD = "#12996b";
     private static final String WARN = "#b4690e";

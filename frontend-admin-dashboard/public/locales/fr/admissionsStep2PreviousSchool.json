@@ -1,0 +1,71 @@
+{
+    "previousSchool": {
+        "heading": "Détails de l'école précédente",
+        "schoolName": {
+            "label": "Nom de l'école",
+            "placeholder": "Entrez le nom de l'école précédente"
+        },
+        "previousClass": {
+            "label": "Classe précédente",
+            "placeholder": "Sélectionner la classe"
+        },
+        "board": {
+            "label": "Conseil scolaire",
+            "placeholder": "Sélectionner le conseil scolaire"
+        },
+        "yearOfPassing": {
+            "label": "Année d'obtention",
+            "placeholder": "AAAA"
+        },
+        "percentage": {
+            "label": "Pourcentage",
+            "placeholder": "%"
+        },
+        "percentageScience": {
+            "label": "Pourcentage en sciences",
+            "placeholder": "%"
+        },
+        "percentageMaths": {
+            "label": "Pourcentage en mathématiques",
+            "placeholder": "%"
+        },
+        "previousAdmissionNo": {
+            "label": "Numéro d'admission précédent",
+            "placeholder": "Entrez le numéro"
+        }
+    },
+    "otherDetails": {
+        "heading": "Autres détails",
+        "religion": {
+            "label": "Religion",
+            "placeholder": "Entrez la religion"
+        },
+        "caste": {
+            "label": "Caste",
+            "placeholder": "Entrez la caste"
+        },
+        "motherTongue": {
+            "label": "Langue maternelle",
+            "placeholder": "Entrez la langue maternelle"
+        },
+        "bloodGroup": {
+            "label": "Groupe sanguin",
+            "placeholder": "Sélectionner le groupe"
+        },
+        "nationality": {
+            "label": "Nationalité",
+            "placeholder": "ex. Indien"
+        },
+        "howDidYouKnow": {
+            "label": "Comment avez-vous entendu parler de nous",
+            "placeholder": "Sélectionner une option",
+            "options": {
+                "socialMedia": "Réseaux sociaux",
+                "friendsFamily": "Amis/Famille",
+                "advertisement": "Publicité",
+                "website": "Site web",
+                "other": "Autre"
+            }
+        }
+    }
+}

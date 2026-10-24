@@ -1,0 +1,263 @@
+{
+    "common": {
+        "somethingWentWrong": "Something went wrong",
+        "recommendedSteps": "Recommended Steps",
+        "errorDetailsDevOnly": "Error Details (Development Only)",
+        "returnHome": "Return Home",
+        "goBack": "Go Back",
+        "reportIssue": "Report Issue",
+        "signOut": "Sign out",
+        "tryAgain": "Try Again",
+        "cancel": "Cancel",
+        "refresh": "Refresh",
+        "loading": "Loading...",
+        "loadMore": "Load More",
+        "clearAll": "Clear All"
+    },
+    "errorTitle": "Error",
+    "loading": "Loading {{type}}...",
+    "noFrameContent": "No frame content available",
+    "interactHint": "Interact with the content above",
+    "progressOfTotal": "{{label}} {{current}} of {{total}}",
+    "frameLayerTitle": "AI Video Layer {{id}}",
+    "contentType": {
+        "VIDEO": "Video",
+        "QUIZ": "Quiz",
+        "STORYBOOK": "Storybook",
+        "INTERACTIVE_GAME": "Game",
+        "PUZZLE_BOOK": "Puzzles",
+        "SIMULATION": "Simulation",
+        "FLASHCARDS": "Flashcards",
+        "MAP_EXPLORATION": "Map",
+        "WORKSHEET": "Worksheet",
+        "CODE_PLAYGROUND": "Code",
+        "TIMELINE": "Timeline",
+        "CONVERSATION": "Conversation"
+    },
+    "entryLabel": {
+        "VIDEO": "segment",
+        "QUIZ": "question",
+        "STORYBOOK": "page",
+        "INTERACTIVE_GAME": "game",
+        "PUZZLE_BOOK": "puzzle",
+        "SIMULATION": "simulation",
+        "FLASHCARDS": "card",
+        "MAP_EXPLORATION": "location",
+        "WORKSHEET": "exercise",
+        "CODE_PLAYGROUND": "exercise",
+        "TIMELINE": "event",
+        "CONVERSATION": "exchange"
+    },
+    "mcq": {
+        "quickCheck": "Quick Check",
+        "skip": "Skip",
+        "explanationLabel": "Explanation: ",
+        "continue": "Continue"
+    },
+    "controls": {
+        "printWorksheetTitle": "Print Worksheet",
+        "print": "Print",
+        "rewind10": "Rewind 10 seconds",
+        "forward10": "Forward 10 seconds",
+        "play": "Play",
+        "pause": "Pause",
+        "resetToBeginning": "Reset to beginning",
+        "reset": "Reset",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "playbackSpeed": "Playback speed",
+        "disableQuiz": "Disable quiz questions",
+        "enableQuiz": "Enable quiz questions",
+        "quizOn": "Quiz ON",
+        "quizOff": "Quiz OFF",
+        "exitFullscreen": "Exit Fullscreen",
+        "enterFullscreen": "Enter Fullscreen",
+        "previous": "Previous",
+        "next": "Next",
+        "sourceVideoAudio": "Source video audio"
+    },
+    "errors": {
+        "failedToLoadTimeline": "Failed to load timeline",
+        "failedToLoadAudio": "Failed to load audio",
+        "audioLoadingAborted": "Audio loading aborted",
+        "audioNetworkError": "Network error loading audio. Check CORS settings.",
+        "audioDecodeError": "Audio decode error",
+        "audioFormatNotSupported": "Audio format not supported",
+        "failedToPlayAudio": "Failed to play audio"
+    },
+    "dripConditions": {
+        "common": {
+            "locked": "Locked"
+        },
+        "unlockRequirements": {
+            "title": "Unlock Requirements"
+        },
+        "counts": {
+            "accessible": "{{count}} {{term}}",
+            "locked": "{{count}} locked",
+            "hidden": "{{count}} hidden"
+        }
+    },
+    "systemAlertsBar": {
+        "priority": {
+            "high": "High Priority",
+            "medium": "Medium Priority",
+            "low": "Low Priority",
+            "normal": "Normal Priority"
+        },
+        "byAuthor": "By {{name}}",
+        "title": "System Alerts",
+        "clearAllTitle": "Clear All Notifications",
+        "clearAllDescription_one": "Are you sure you want to dismiss all {{count}} notification? This action cannot be undone.",
+        "clearAllDescription_other": "Are you sure you want to dismiss all {{count}} notifications? This action cannot be undone.",
+        "loadingAlerts": "Loading alerts...",
+        "noAlerts": "No system alerts"
+    },
+    "appOverlayHost": {
+        "announcement": "Announcement",
+        "from": "From {{name}}",
+        "gotIt": "Got it",
+        "progressOfTotal": "{{current}} of {{total}}"
+    },
+    "packageSessionMessages": {
+        "discussion": "Discussion",
+        "close": "Close",
+        "writeReplyPlaceholder": "Write a reply...",
+        "replyVisibilityNotice": "Your reply will be visible to all participants",
+        "posting": "Posting...",
+        "postReply": "Post Reply",
+        "repliesWillAppearHere": "Replies will appear here",
+        "courseDiscussion": "{{course}} Discussion",
+        "loadingStreamMessages": "Loading stream messages...",
+        "noStreamMessages": "No stream messages",
+        "repliesCount_one": "{{count}} reply",
+        "repliesCount_other": "{{count}} replies"
+    },
+    "dashboardPinsPanel": {
+        "priority": {
+            "high": "High",
+            "medium": "Medium",
+            "low": "Low",
+            "normal": "Normal"
+        },
+        "timeRemaining": {
+            "days_one": "{{count}} day left",
+            "days_other": "{{count}} days left",
+            "hours_one": "{{count}} hour left",
+            "hours_other": "{{count}} hours left",
+            "lessThanHour": "Less than 1 hour left"
+        },
+        "importantUpdates": "Important Updates",
+        "clearAllTitle": "Clear All Pins",
+        "clearAllDescription_one": "Are you sure you want to dismiss all {{count}} pin? This action cannot be undone.",
+        "clearAllDescription_other": "Are you sure you want to dismiss all {{count}} pins? This action cannot be undone.",
+        "loadingPins": "Loading pins...",
+        "viewAll": "View All ({{count}} total)",
+        "byAuthor": "By {{name}}",
+        "pinExpires": "This pin expires {{time}}"
+    },
+    "genericErrorPage": {
+        "title": "Something went wrong",
+        "description": "An unexpected error occurred. We've securely logged the issue and our team is investigating it.",
+        "step1": "Try refreshing the page or returning to the home dashboard.",
+        "step2Prefix": "If the error persists,",
+        "step2Emphasis": "log out and log back in",
+        "step2Suffix": "to reset your session."
+    },
+    "runtimeErrorPage": {
+        "applicationError": "Application Error",
+        "systemCrashed": "System Crashed",
+        "description": "An unexpected error occurred in the application. Our engineering team has been notified and is working on a fix.",
+        "step1": "Try reloading the page or returning to the home dashboard.",
+        "reloadPage": "Reload Page"
+    },
+    "networkErrorPage": {
+        "underMaintenance": "Under Maintenance",
+        "title": "We'll be right back",
+        "description": "Our team is currently upgrading the platform to bring you an even better experience. We apologize for the interruption."
+    },
+    "offlineErrorPage": {
+        "noConnection": "No Connection",
+        "youAreOffline": "You are offline",
+        "description": "It looks like you've lost your connection to the internet. Please check your network settings and try reconnecting."
+    },
+    "smartErrorPage": {
+        "updatingApplication": "Updating application..."
+    },
+    "defaultNotFound": {
+        "pageTitle": "Page Not Found (404)",
+        "metaDescription": "Page not found. We couldn't find the page you were looking for. Please check the URL or try searching.",
+        "heading": "Oops! Page Not Found",
+        "descriptionLine1": "We couldn't find the page you were trying to access.",
+        "descriptionLine2": "This might be due to a typing error, a temporary issue, or the page may have been removed."
+    },
+    "defaultPending": {
+        "pageTitle": "Page Loading...",
+        "metaDescription": "Please wait a moment while we prepare the page. Your experience is just around the corner!"
+    },
+    "inlineErrorBoundary": {
+        "defaultTitle": "This section couldn't be shown",
+        "defaultDescription": "Something went wrong while loading it. Your answers and the timer are unaffected."
+    },
+    "errorFeedbackDialog": {
+        "description": "Help us improve by providing details. Context is automatically included.",
+        "nameLabel": "Name (Optional)",
+        "namePlaceholder": "Your name",
+        "emailLabel": "Email (Optional)",
+        "emailPlaceholder": "Your email for follow-up",
+        "whatWentWrongLabel": "What went wrong?",
+        "descriptionPlaceholder": "Please describe what you were doing when the error occurred...",
+        "attachments": "Attachments",
+        "filesSelected_one": "{{count}} file selected",
+        "filesSelected_other": "{{count}} files selected",
+        "sending": "Sending...",
+        "sendReport": "Send Report",
+        "submitSuccess": "Thank you! Your report has been sent.",
+        "submitFailure": "Failed to submit report. Please try again."
+    },
+    "dashboardLoader": {
+        "errorBoundaryDescription": "We encountered an unexpected error while loading this content. This might be due to a temporary issue or insufficient permissions.",
+        "errorDetailsDev": "Error Details (Development)",
+        "loading": "Loading",
+        "logoAlt": "Logo"
+    },
+    "submitModal": {
+        "title": "Submit Assessment",
+        "description": "You cannot return to the paper after submitting. Make sure you have given your best responses.",
+        "descriptionWithUnanswered": "{{unanswered}} of {{total}} questions are still unanswered. You cannot return to the paper after submitting.",
+        "answered": "Answered",
+        "unanswered": "Unanswered",
+        "markedForReview": "Marked for review",
+        "notVisited": "Not visited",
+        "totalQuestions": "Total questions",
+        "submitting": "Submitting...",
+        "submit": "Submit"
+    },
+    "timesUpModal": {
+        "title": "Time is up!",
+        "description": "Time for the Assessment has ended. Click to submit your responses.",
+        "finish": "Finish"
+    },
+    "helpModal": {
+        "titles": {
+            "instructions": "Assessment Instructions",
+            "alerts": "Assessment Alerts",
+            "reattempt": "Request Reattempt",
+            "time": "Request Time Increase"
+        },
+        "noActiveAlerts": "No active alerts at this time.",
+        "reasonPromptPrefix": "Please provide a reason for requesting a",
+        "reattemptWord": "reattempt",
+        "timeExtensionWord": "time extension",
+        "reasonPromptSuffix": "for the Assessment to submit to the admin.",
+        "requestAlreadySent": "Request already sent",
+        "requestUnderReview": "Your institute has it and is reviewing it. You'll be notified as soon as they respond.",
+        "quotedReason": "“{{reason}}”",
+        "reasonPlaceholder": "Type your reason here",
+        "sending": "Sending...",
+        "submit": "Submit",
+        "requestSentConfirmation": "Your request has been sent to your institute. They have been notified and you'll hear back as soon as they review it.",
+        "couldNotIdentifyAssessment": "Could not identify this assessment.",
+        "sendRequestFailed": "We could not send your request. Please try again."
+    }
+}

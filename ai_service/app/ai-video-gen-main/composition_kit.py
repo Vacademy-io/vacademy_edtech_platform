@@ -276,6 +276,10 @@ SHOT_TYPE_COMPOSITION_DEFAULT: Dict[str, str] = {
     "IMAGE_HERO": "bottom_anchor",
     "VIDEO_HERO": "full_bleed_overlay",
     "SOURCE_CLIP": "full_bleed_overlay",
+    # IMAGE_CLIP embeds the user's screenshot full-frame in its own HTML and
+    # annotates on top. A column composition would fight that <img>, so it
+    # takes the same frame as SOURCE_CLIP.
+    "IMAGE_CLIP": "full_bleed_overlay",
     "AI_VIDEO_HERO": "full_bleed_overlay",
     "PRODUCT_HERO": "bottom_anchor",
     "DEVICE_MOCKUP": "stacked_offset",
@@ -483,9 +487,26 @@ COMPOSITION_CSS = """
 /* min-width:0 lets a grid item shrink below min-content, which is what allows
    long labels to wrap. Keep it off text-bearing flex rows: those must overflow
    or shrink their type, never collapse to a one-character column. */
-.comp > * { min-width: 0; min-height: 0; }
-.comp .spine > *,
-.comp-spine .spine > * { min-width: min-content; }
+.comp > *, [class*="comp-"] > * { min-width: min-content; min-height: 0; }
+/* min-height:0 is for the frame's grid CELLS (.comp-stack, .comp-col ...),
+   which may be shorter than their content and let it overflow. The items
+   INSIDE a cell's flex column — heading, rule, sub-line — must keep their
+   content height. With 0 a heading in a column too short for it collapsed to
+   a sliver while its lines still painted, and the sub-line laid out on top
+   of them: "Recruiters prefer short resumes" printed across "PAGE, TWO MAX."
+   (ITRC lesson, 2026-10-22). Now they overflow the cell instead of stacking. */
+.comp > [class*="comp-"] > *,
+[class*="comp-"] > [class*="comp-"] > * { min-height: auto; }
+/* min-width:0 belongs to things that CAN shrink without becoming unreadable —
+   media. Applied to a text-bearing grid child it permits the item to shrink
+   below its content width, all the way to one character per line, which is
+   exactly the failure it was meant to prevent. A real run collapsed a
+   pipeline-authored `comp comp-spine` frame this way: the container was
+   correct, the children were simply allowed to vanish. The floor is the
+   longest word — text still wraps, it can no longer collapse. */
+.comp img, .comp video, .comp svg, .comp canvas,
+[class*="comp-"] img, [class*="comp-"] video,
+[class*="comp-"] svg, [class*="comp-"] canvas { min-width: 0; }
 
 /* centred — calm and declarative; rationed by assign_compositions() */
 .comp-center .comp-main {
@@ -998,9 +1019,31 @@ COMPOSITION_GUIDELINE_BANS: Sequence[str] = (
 )
 
 
+# Shot types whose own html_template encodes a contract the pipeline depends on,
+# not merely a layout suggestion. Swapping in a composition exemplar drops that
+# contract silently:
+#   IMAGE_CLIP  — `{{IMAGE_URL}}` is the placeholder the pipeline rewrites to the
+#                 user's uploaded image. Without it the model never learns an
+#                 image belongs in the shot, so it designs around empty space and
+#                 the injected fallback <img> ends up behind an opaque panel.
+#   SOURCE_CLIP — the template mandates a #000000 background because black is
+#                 keyed out when the source footage is composited behind it. Any
+#                 exemplar with a painted background hides the footage entirely.
+# Both already ARE full-bleed compositions, so the exemplar adds nothing they
+# don't have and costs them the one line that matters.
+CONTRACT_BEARING_SHOT_TYPES: frozenset = frozenset({"IMAGE_CLIP", "SOURCE_CLIP"})
+
+
 def exemplar_for(composition: str, shot_type: str = "") -> Dict[str, str] | None:
     """Composition-specific exemplar, or None to keep the card's own."""
+    if str(shot_type or "").strip().upper() in CONTRACT_BEARING_SHOT_TYPES:
+        return None
     return EXEMPLARS.get(normalize(composition, shot_type))
 
 
-__all__ += ["EXEMPLARS", "COMPOSITION_GUIDELINE_BANS", "exemplar_for"]
+__all__ += [
+    "EXEMPLARS",
+    "COMPOSITION_GUIDELINE_BANS",
+    "exemplar_for",
+    "CONTRACT_BEARING_SHOT_TYPES",
+]

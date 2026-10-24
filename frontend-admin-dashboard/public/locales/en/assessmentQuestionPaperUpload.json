@@ -1,0 +1,47 @@
+{
+    "formatGuide": {
+        "title": "Expected document formatting",
+        "description": "Each question is read from these markers, one per line. Answer, explanation and tags are optional — you can tag each question with a subject/topic.",
+        "questionLabel": "Question:",
+        "optionsLabel": "Options:",
+        "answerLabel": "Answer:",
+        "answerHint": "— the correct option's letter (Ans: (A) also works)",
+        "explanationLabel": "Explanation:",
+        "tagsLabel": "Tags:",
+        "tagsHint": "— optional, comma-separated",
+        "variationsPart1": "Minor variations are also accepted — e.g.",
+        "variationsPart2": "options, and a singular",
+        "variationsPart3": "line. Lines that don't match are flagged after upload so you can fix or skip them."
+    },
+    "docxHelp": {
+        "part1": "If you are having a problem while uploading docx file then please convert your file in html",
+        "linkText": "here",
+        "part2": "and try to re-upload.",
+        "step1": "Step 1 - Go to this website",
+        "step2": "Step 2 - Enable embed image",
+        "step3": "Step 3 - Download your html file after converting",
+        "imageAlt": "logo"
+    },
+    "upload": {
+        "processing": "Processing…",
+        "processingHint": "Server is parsing your document. Larger files may take up to a minute."
+    },
+    "fields": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "Enter Title"
+    },
+    "buttons": {
+        "loading": "Loading...",
+        "preview": "Preview",
+        "addQuestions": "Add Questions",
+        "done": "Done"
+    },
+    "toasts": {
+        "questionPaperAdded": "Question Paper added successfully",
+        "incompleteQuestions": "some of your questions are incomplete or needs attentions!",
+        "addedAndSkipped_one": "Added {{count}} question; skipped {{skipped}} with issues.",
+        "addedAndSkipped_other": "Added {{count}} questions; skipped {{skipped}} with issues.",
+        "loadedAll_one": "Loaded all {{count}} question. {{flagged}} need editing before you can save.",
+        "loadedAll_other": "Loaded all {{count}} questions. {{flagged}} need editing before you can save."
+    }
+}

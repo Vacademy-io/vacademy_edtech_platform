@@ -29,6 +29,9 @@ import { whatsappTemplateService } from '@/services/whatsapp-template-service';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { fetchEmailTemplates } from '@/routes/calling/ai-agents/-services/ai-agents';
 import type { AiCallActionRule } from '@/routes/settings/-components/AiAgentsCard';
+import type { MetaWhatsAppTemplate } from '@/types/message-template-types';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 type TriggerKind = 'promised' | 'declined' | 'custom' | 'disposition' | 'meeting' | 'extracted';
 
@@ -74,7 +77,10 @@ function triggerKindOf(rule: AiCallActionRule): TriggerKind {
  * the admin saw a configured rule, the agent offered the link on a live call, and
  * nothing was ever sent.
  */
-function ruleProblems(rule: AiCallActionRule): string[] {
+function ruleProblems(
+    rule: AiCallActionRule,
+    templates: MetaWhatsAppTemplate[] = []
+): string[] {
     const problems: string[] = [];
     if (!rule.artefact || !rule.artefact.trim()) {
         problems.push('Give this rule a name — the AI needs one to refer to it.');
@@ -98,6 +104,46 @@ function ruleProblems(rule: AiCallActionRule): string[] {
         problems.push('Choose an approved WhatsApp template.');
     } else if (rule.channel === 'EMAIL' && !rule.messageBody) {
         problems.push('Write the email message.');
+    }
+    // Rules saved BEFORE the swap handler cleared stale params still carry the wrong
+    // count, and nothing on screen says so — the editor renders the current template's
+    // blanks while the rule holds the old array. Meta rejects that send outright, so
+    // surface it here rather than letting it fail silently on a live call.
+    if (rule.actionType !== 'BOOK_MEETING' && rule.channel === 'WHATSAPP' && rule.template) {
+        const chosen = templates.find((t) => t.name === rule.template);
+        if (chosen) {
+            // A media-header template renders a file above the body and is rejected
+            // outright without one — Meta answers 132012, "header: Format mismatch,
+            // expected IMAGE, received UNKNOWN". That is what sn_unlockx did on every
+            // Shikshanation call once its body parameters were fixed.
+            //
+            // Image and document travel as the _headerUrl variable, which
+            // UnifiedSendService reads per recipient. Video does NOT: it needs
+            // options.headerType="video" on the send request, and the AI-call dispatcher
+            // sets only source and sourceId — so a video template cannot work here.
+            const headerFormat = chosen.components?.find((c) => c.type === 'HEADER')?.format;
+            if (headerFormat === 'VIDEO') {
+                problems.push(
+                    `"${rule.template}" has a video header, which an AI call cannot attach — Meta rejects the send. Choose a template with an image, document or text header.`
+                );
+            } else if (
+                (headerFormat === 'IMAGE' || headerFormat === 'DOCUMENT') &&
+                !(rule.templateHeaderUrl || '').trim()
+            ) {
+                problems.push(
+                    `"${rule.template}" shows ${headerFormat === 'IMAGE' ? 'an image' : 'a document'} above the message, so it needs a link to that file — Meta rejects the send without one.`
+                );
+            }
+            const need = templateParamCount(chosen);
+            const have = (rule.templateParams || []).length;
+            if (have !== need) {
+                problems.push(
+                    need === 0
+                        ? `"${rule.template}" takes no variables, but ${have} value${have === 1 ? '' : 's'} from a previous template ${have === 1 ? 'is' : 'are'} still saved. Pick the template again to clear them.`
+                        : `"${rule.template}" needs exactly ${need} value${need === 1 ? '' : 's'}, but ${have} ${have === 1 ? 'is' : 'are'} saved. Pick the template again to reset them.`
+                );
+            }
+        }
     }
     // The question IS the trigger for a "caller says yes" rule: with no question the
     // agent never offers it, so nothing can be agreed to and the rule sits idle.
@@ -131,6 +177,18 @@ function templatePlaceholders(bodyText: string): number {
         m = re.exec(bodyText || '');
     }
     return found.size;
+}
+
+/** How many values the chosen template needs. 0 when we cannot see its body. */
+function templateParamCount(t?: MetaWhatsAppTemplate): number {
+    const body = t?.components?.find((c) => c.type === 'BODY')?.text || '';
+    return templatePlaceholders(body);
+}
+
+/** IMAGE / DOCUMENT / VIDEO when the template shows a file above the body, else undefined. */
+function mediaHeaderFormat(t?: MetaWhatsAppTemplate): 'IMAGE' | 'DOCUMENT' | 'VIDEO' | undefined {
+    const f = t?.components?.find((c) => c.type === 'HEADER')?.format;
+    return f === 'IMAGE' || f === 'DOCUMENT' || f === 'VIDEO' ? f : undefined;
 }
 
 /** The variables a call can always fill, offered as a hint next to each parameter. */
@@ -262,7 +320,7 @@ export function SendRulesEditor({
                             />
                             <Input
                                 className="h-8 flex-1"
-                                placeholder="Name this rule, e.g. Course brochure"
+                                placeholder={`Name this rule, e.g. ${getTerminology(ContentTerms.Course, SystemTerms.Course)} brochure`}
                                 value={rule.label || ''}
                                 onChange={(e) => {
                                     const label = e.target.value;
@@ -474,9 +532,51 @@ export function SendRulesEditor({
                                         value={rule.template || ''}
                                         onValueChange={(v) => {
                                             const t = templates.find((x) => x.name === v);
+                                            // Meta parameters are positional and the count must
+                                            // match EXACTLY, so the params belong to the template
+                                            // that is chosen now — not to the one it replaced.
+                                            // Leaving them behind is silent: the editor renders
+                                            // the new template's blanks (or "takes no variables")
+                                            // while the rule still carries the old array, and the
+                                            // mismatch only surfaces mid-call, as Meta error 132000.
+                                            // Shikshanation's quiz rule kept two params from
+                                            // hello_utility_confirmation after being pointed at
+                                            // sn_unlockx, which declares none, and every send
+                                            // failed. Values for positions the new template still
+                                            // has are kept, so swapping between two 2-variable
+                                            // templates does not make the admin retype them.
+                                            const count = templateParamCount(t);
+                                            const prev = rule.templateParams || [];
                                             update(i, {
                                                 template: v,
                                                 templateLanguage: t?.language || undefined,
+                                                templateParams:
+                                                    count === 0
+                                                        ? []
+                                                        : Array.from(
+                                                              { length: count },
+                                                              (_x, k) => prev[k] || ''
+                                                          ),
+                                                // The header file belongs to the old template's
+                                                // header, so it is dropped unless the new one
+                                                // also shows one. Same staleness trap as the
+                                                // params, with a worse failure: a leftover link
+                                                // on a text-header template is sent as a header
+                                                // Meta is not expecting.
+                                                templateHeaderUrl: mediaHeaderFormat(t)
+                                                    ? rule.templateHeaderUrl
+                                                    : undefined,
+                                                // Derived, never typed. The send has to say
+                                                // whether the file is an image or a document —
+                                                // WhatsAppService treats anything that is not
+                                                // literally "image" as a document — and the
+                                                // template already declares which it is.
+                                                templateHeaderType:
+                                                    mediaHeaderFormat(t) === 'IMAGE'
+                                                        ? 'image'
+                                                        : mediaHeaderFormat(t) === 'DOCUMENT'
+                                                          ? 'document'
+                                                          : undefined,
                                             });
                                         }}
                                     >
@@ -554,6 +654,44 @@ Namaste {{name}}, ...`}
                                 )}
                             </div>
                         </div>
+
+                        {isWhatsApp &&
+                            rule.template &&
+                            (() => {
+                                const chosen = templates.find((t) => t.name === rule.template);
+                                const fmt = mediaHeaderFormat(chosen);
+                                if (!chosen || !fmt) return null;
+                                if (fmt === 'VIDEO') {
+                                    return (
+                                        <p className="text-caption text-warning-600">
+                                            This template has a video header, which an AI call
+                                            cannot attach. Pick one with an image, document or text
+                                            header.
+                                        </p>
+                                    );
+                                }
+                                return (
+                                    <div className="space-y-1.5">
+                                        <Label className="text-caption">
+                                            Link to the {fmt === 'IMAGE' ? 'image' : 'document'}{' '}
+                                            shown above the message
+                                        </Label>
+                                        <Input
+                                            className="h-8"
+                                            placeholder="https://… — a public link to the file"
+                                            value={rule.templateHeaderUrl || ''}
+                                            onChange={(e) =>
+                                                update(i, { templateHeaderUrl: e.target.value })
+                                            }
+                                        />
+                                        <p className="text-caption text-neutral-500">
+                                            This template shows{' '}
+                                            {fmt === 'IMAGE' ? 'an image' : 'a document'} above the
+                                            text. Meta rejects the send without one.
+                                        </p>
+                                    </div>
+                                );
+                            })()}
 
                         {isWhatsApp && rule.template && (() => {
                             const chosen = templates.find((t) => t.name === rule.template);
@@ -641,9 +779,9 @@ Namaste {{name}}, ...`}
                             <div />
                         </div>
 
-                        {ruleProblems(rule).length > 0 && (
+                        {ruleProblems(rule, templates).length > 0 && (
                             <div className="rounded-md bg-warning-50 p-2">
-                                {ruleProblems(rule).map((problem) => (
+                                {ruleProblems(rule, templates).map((problem) => (
                                     <p key={problem} className="text-caption text-warning-600">
                                         {problem}
                                     </p>

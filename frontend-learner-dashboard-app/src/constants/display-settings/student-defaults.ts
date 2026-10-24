@@ -118,12 +118,51 @@ function defaultDashboardWidgets(): StudentDashboardWidgetConfig[] {
     // Bottom-of-page commerce CTAs.
     { id: "exploreMemberships", visible: true },
     { id: "exploreBooks", visible: true },
+    // Declared LAST on purpose — see FRACTIONAL_ORDERS below.
+    { id: "enrolledCourses", visible: true },
+    // On by default. It self-hides for any institute with no app link on its
+    // domain-routing row, so the only institutes it reaches are the ones that
+    // actually ship an app. Note this means those institutes advertise the
+    // downloads twice until they turn `sidebar.appLinks` off.
+    { id: "getApp", visible: true },
+    // Today's teacher-scheduled tasks. Declared last and given a fractional
+    // order, like enrolledCourses above. Renders nothing without a plan.
+    { id: "todayTasks", visible: true },
   ];
-  return defaults.map((w, idx) => ({ ...w, order: idx + 1 }));
+  // Widgets added after this list shipped cannot simply be spliced in: order
+  // comes from the array index, and an institute that saved earlier already
+  // holds orders 1..15. Inserting mid-list would renumber the defaults and
+  // hand the new widget an order a saved widget occupies — and the settings
+  // screen reorders by SWAPPING two rows' order values, so a tie leaves both
+  // rows' arrows permanently inert and writes the duplicate back on save.
+  //
+  // So the new id is declared last (every pre-existing widget keeps its exact
+  // original order) and given a FRACTIONAL order instead: 2.5 sorts between
+  // continueLearning (2) and coursesStat (3), which is where the widget
+  // belongs, and can never equal an integer order a saved institute holds.
+  // Swapping preserves the set of orders, so reordering cannot create a
+  // duplicate either.
+  // `getApp` is a rail widget. 12.5 puts it last in the rail — after
+  // upcomingLiveClasses (10), myMentors (11) and thisWeekAttendance (12) —
+  // without colliding with gamification (13) in the main column.
+  // `todayTasks` sits in whichever column the screen width picks (the rail at
+  // lg and up, else the main column right under the hero). 0.5 sorts it first
+  // in both, ahead of every order a saved institute can hold (the lowest ever
+  // written is 1 — some institutes saved a stat card there), so an institute
+  // that saved before this widget existed still gets it right under the hero.
+  const FRACTIONAL_ORDERS: Record<string, number> = {
+    enrolledCourses: 2.5,
+    getApp: 12.5,
+    todayTasks: 0.5,
+  };
+  return defaults.map((w, idx) => ({
+    ...w,
+    order: FRACTIONAL_ORDERS[w.id] ?? idx + 1,
+  }));
 }
 
 export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
-  sidebar: { visible: true, tabs: defaultSidebarTabs() },
+  sidebar: { visible: true, tabs: defaultSidebarTabs(), appLinks: true },
   dashboard: { widgets: defaultDashboardWidgets() },
   ui: { type: "default" },
   signup: {
@@ -162,10 +201,11 @@ export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
     outlineMode: "expanded",
     ratingsAndReviewsVisible: true,
     hideAuthorName: false,
-    // Teachers/Instructors section hidden by default; admins opt-in to show it.
+    // Full teacher roster is opt-in; the first author always shows.
     showInstructors: false,
     // New defaults
     showCourseConfiguration: true,
+    hideTags: false,
     showCourseContentPrefixes: true,
     courseOverview: { visible: true, showSlidesData: true },
     slidesView: {
@@ -187,6 +227,12 @@ export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
     quiz: {
       moveOnlyOnCorrectAnswer: true,
       celebrateOnQuizComplete: true,
+      // Matches the admin default and the quiz viewer's `?? true` fallback.
+      showReportAndCorrectAnswers: true,
+    },
+    assignment: {
+      hideAttemptsAllowed: false,
+      hideRepeatedTitle: false,
     },
   },
   allCourses: {
@@ -197,6 +243,8 @@ export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
     ],
     defaultTab: "InProgress",
     hideInstructorName: false,
+    pageSize: 10,
+    showAllEnrolledOnDashboard: false,
   },
   notifications: {
     allowSystemAlerts: true,

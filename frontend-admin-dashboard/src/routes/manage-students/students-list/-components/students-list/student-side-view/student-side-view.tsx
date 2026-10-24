@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { getActiveRoleDisplaySettingsKey, getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { Sidebar, SidebarContent, SidebarHeader } from '@/components/ui/sidebar';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -29,9 +30,11 @@ import { StudentEnquiry } from './student-enquiry/student-enquiry';
 import { StudentApplication } from './student-application/student-application';
 import { StudentLeadProfile } from './student-lead-profile/student-lead-profile';
 import { StudentFullHistory } from './student-full-history/student-full-history';
+import { StudentWorkflows } from './student-workflows/student-workflows';
 import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
 import { LeadFormResponseCard } from '@/routes/audience-manager/list/-components/campaign-users/lead-form-response-card';
+import { StudentAttribution } from './student-attribution/student-attribution';
 import { LeadMeetingsSection } from '@/components/shared/leads/lead-meetings-section';
 import { useLeadSettings } from '@/hooks/use-lead-settings';
 import { useParentSettings } from '@/hooks/use-parent-settings';
@@ -91,6 +94,7 @@ function orderedVisibleTabIds(settings: StudentSideViewSettings): StudentSideVie
         'application',
         'lead',
         'fullHistory',
+        'workflows',
         'parent',
         'onboarding',
     ];
@@ -131,6 +135,7 @@ export const StudentSidebar = ({
     /** Open the Lead Profile tab by default each time a lead is opened (lead lists). */
     defaultLeadProfile?: boolean;
 }) => {
+    const { t } = useTranslation('manageStudentsSideView');
     const { state, setOpen, setOpenMobile } = useSidebar();
     const { isCompact } = useCompactMode();
     const assistDockVisible = useAssistDockVisible();
@@ -396,7 +401,7 @@ export const StudentSidebar = ({
                                 ) : imageUrl ? (
                                     <img
                                         src={imageUrl}
-                                        alt={selectedStudent?.full_name || 'Profile'}
+                                        alt={selectedStudent?.full_name || t('profile.avatarAlt')}
                                         className="size-full object-cover"
                                     />
                                 ) : (
@@ -414,7 +419,7 @@ export const StudentSidebar = ({
                                     )}
                                     title={selectedStudent?.full_name}
                                 >
-                                    {selectedStudent?.full_name || 'Unknown'}
+                                    {selectedStudent?.full_name || t('profile.unknownName')}
                                 </h2>
                                 {selectedStudent?.status && (
                                     <div className="shrink-0">
@@ -424,9 +429,9 @@ export const StudentSidebar = ({
                                 {isCancelledMember && (
                                     <span
                                         className="shrink-0 whitespace-nowrap rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-600 ring-1 ring-danger-200"
-                                        title="Membership cancelled — access continues until the plan expires"
+                                        title={t('status.cancelledMemberTooltip')}
                                     >
-                                        Cancelled Member
+                                        {t('status.cancelledMember')}
                                     </span>
                                 )}
                             </div>
@@ -445,8 +450,8 @@ export const StudentSidebar = ({
                                 <button
                                     onClick={() => setDeleteOpen(true)}
                                     className="flex size-9 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-danger-50 hover:text-danger-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-400"
-                                    aria-label="Delete lead"
-                                    title="Delete lead"
+                                    aria-label={t('actions.deleteLead')}
+                                    title={t('actions.deleteLead')}
                                 >
                                     <Trash className="size-5" />
                                 </button>
@@ -455,8 +460,8 @@ export const StudentSidebar = ({
                                 <button
                                     onClick={() => openOverlay()}
                                     className="flex size-9 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-primary-50 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
-                                    aria-label="Open full profile"
-                                    title="Open full profile"
+                                    aria-label={t('actions.openFullProfile')}
+                                    title={t('actions.openFullProfile')}
                                 >
                                     <ArrowsOutSimple className="size-5" />
                                 </button>
@@ -464,7 +469,7 @@ export const StudentSidebar = ({
                             <button
                                 onClick={closeSidebar}
                                 className="flex size-9 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
-                                aria-label="Close panel"
+                                aria-label={t('actions.closePanel')}
                             >
                                 <X className="size-5" />
                             </button>
@@ -511,9 +516,9 @@ export const StudentSidebar = ({
                                             const r = role.trim().toUpperCase();
                                             const label =
                                                 r === 'ADMIN'
-                                                    ? 'Practice Admin'
+                                                    ? t('roles.admin')
                                                     : r === 'LEARNER'
-                                                      ? 'Practice Staff'
+                                                      ? t('roles.learner')
                                                       : role.trim().toLowerCase().replace(/_/g, ' ');
                                             // Role badges keep their normal amber look, and only
                                             // turn red once the member has gone inactive.
@@ -545,7 +550,7 @@ export const StudentSidebar = ({
                                 <div
                                     ref={tabContainerRef}
                                     role="tablist"
-                                    aria-label="Profile sections"
+                                    aria-label={t('tabBar.ariaLabel')}
                                     className="scrollbar-hide flex gap-1 overflow-x-auto scroll-smooth pr-6"
                                 >
                                     {orderedVisibleTabIds(tabSettings).map((tabId) => {
@@ -625,7 +630,7 @@ export const StudentSidebar = ({
                                 {tabCanScrollLeft && (
                                     <button
                                         type="button"
-                                        aria-label="Scroll tabs left"
+                                        aria-label={t('tabBar.scrollLeft')}
                                         onClick={() => scrollTabs(-1)}
                                         className="absolute inset-y-0 left-0 flex items-center bg-gradient-to-r from-white via-white to-transparent pr-5 text-neutral-500 transition-colors hover:text-primary-600"
                                     >
@@ -635,7 +640,7 @@ export const StudentSidebar = ({
                                 {tabCanScrollRight && (
                                     <button
                                         type="button"
-                                        aria-label="Scroll tabs right"
+                                        aria-label={t('tabBar.scrollRight')}
                                         onClick={() => scrollTabs(1)}
                                         className="absolute inset-y-0 right-0 flex items-center bg-gradient-to-l from-white via-white to-transparent pl-5 text-neutral-500 transition-colors hover:text-primary-600"
                                     >
@@ -719,6 +724,18 @@ export const StudentSidebar = ({
                         row (campaign-users / recent-leads); manage-students
                         rows don't carry the attached metadata. */}
                     {category === 'lead' && <LeadFormResponseCard />}
+                    {/* Where this lead came from. The campaign lives in utm_attribution,
+                        not in the form answers, so the card above cannot show it — without
+                        this the Lead tab has no campaign anywhere on it. Renders nothing
+                        when the lead arrived untagged, same as on the learner Overview. */}
+                    {category === 'lead' && (
+                        <StudentAttribution
+                            userId={selectedStudent?.user_id}
+                            instituteId={instituteDetails?.id}
+                            email={selectedStudent?.email}
+                            mobileNumber={selectedStudent?.mobile_number}
+                        />
+                    )}
                     {/* Meetings linked to this lead (by response id / user id / email) —
                         renders alongside the form-response card on the Lead tab. */}
                     {category === 'lead' && <LeadMeetingsSection className="my-3" />}
@@ -809,6 +826,20 @@ export const StudentSidebar = ({
                             !isEnrollRequestStudentList &&
                             selectedStudent?.user_id && (
                                 <StudentFullHistory studentUserId={selectedStudent.user_id} />
+                            )}
+                        {/* Workflows — the automations that ran for this person, each
+                            with a Retry. Gated only on its own visibility flag: it has
+                            nothing to do with the lead system, so an institute that
+                            never turned leads on still gets it. */}
+                        {category === 'workflows' &&
+                            tabSettings?.workflowsTab &&
+                            !isEnrollRequestStudentList &&
+                            selectedStudent?.user_id &&
+                            currentInstituteId && (
+                                <StudentWorkflows
+                                    userId={selectedStudent.user_id}
+                                    instituteId={currentInstituteId}
+                                />
                             )}
                         {category === 'parent' &&
                             tabSettings?.parentTab &&

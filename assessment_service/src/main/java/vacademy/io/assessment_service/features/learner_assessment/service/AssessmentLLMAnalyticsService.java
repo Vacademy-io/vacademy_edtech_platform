@@ -2,6 +2,7 @@ package vacademy.io.assessment_service.features.learner_assessment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.client.AdminCoreServiceClient;
@@ -23,9 +24,12 @@ public class AssessmentLLMAnalyticsService {
     private final AssessmentDataEnrichmentService enrichmentService;
 
     /**
-     * Send assessment submission data to admin core service for LLM analysis (Sync)
-     * This is fire-and-forget - failures won't impact the assessment submission
-     * flow
+     * Send assessment submission data to admin core service for LLM analysis.
+     * Truly async since 2026-08-27 (it was named Async but ran on the Tomcat
+     * thread; at the 1000-VU load test that serialized the submit wave).
+     * Fire-and-forget - failures won't impact the assessment submission flow.
+     * Safe off-thread: the entity's registration/assessment relations are
+     * EAGER (already hydrated), everything else is fresh repository queries.
      *
      * @param studentAttempt  The student's completed attempt
      * @param assessmentId    The assessment ID
@@ -34,6 +38,7 @@ public class AssessmentLLMAnalyticsService {
      * @param durationMinutes The assessment duration
      * @param totalMarks      The total marks for the assessment
      */
+    @Async("assessmentAnalyticsExecutor")
     public void sendAssessmentDataForAnalysisAsync(
             StudentAttempt studentAttempt,
             String assessmentId,

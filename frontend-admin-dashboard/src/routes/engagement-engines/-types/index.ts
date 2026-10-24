@@ -78,6 +78,8 @@ export interface EngineDetail {
     activeMembers: number;
     prompt: EngagementPromptVersion | null;
     approvedSends?: number;
+    /** Approved human sends per channel; graduation to auto-send is per channel. */
+    approvedSendsByChannel?: Record<string, number>;
     effectiveFirstN?: number;
 }
 
@@ -93,6 +95,8 @@ export interface DataPointSpec {
     description?: string;
     sensitivity?: 'LOW' | 'MEDIUM' | 'HIGH';
     cost?: 'IN_PROCESS' | 'HTTP';
+    /** Read for every engine; not a choice in the wizard. */
+    alwaysOn?: boolean;
 }
 
 export interface CreateEngineRequest {

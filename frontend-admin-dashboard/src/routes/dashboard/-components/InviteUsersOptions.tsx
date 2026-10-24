@@ -24,13 +24,19 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { getInstituteId } from '@/constants/helper';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-export const inviteUsersSchema = z.object({
-    name: z.string().min(1, 'Full name is required'),
-    email: z.string().min(1, 'Email is required').email('Invalid email format'),
-    roleType: z.array(z.string()).min(1, 'At least one role type is required'),
-});
-type FormValues = z.infer<typeof inviteUsersSchema>;
+export const buildInviteUsersSchema = (t: TFunction) =>
+    z.object({
+        name: z.string().min(1, t('editUser.validation.nameRequired')),
+        email: z
+            .string()
+            .min(1, t('editUser.validation.emailRequired'))
+            .email(t('editUser.validation.emailInvalid')),
+        roleType: z.array(z.string()).min(1, t('editUser.validation.roleRequired')),
+    });
+type FormValues = z.infer<ReturnType<typeof buildInviteUsersSchema>>;
 
 interface EditComponentProps {
     student: UserRolesDataEntry;
@@ -39,11 +45,17 @@ interface EditComponentProps {
     availableRoles?: { id: string; name: string }[];
 }
 
-const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetchData, availableRoles }) => {
+const EditComponent: React.FC<EditComponentProps> = ({
+    student,
+    onClose,
+    refetchData,
+    availableRoles,
+}) => {
+    const { t } = useTranslation('dashboardInviteUsersOptions');
     const roleOptions = availableRoles || RoleType;
     const instituteId = getInstituteId();
     const form = useForm<FormValues>({
-        resolver: zodResolver(inviteUsersSchema),
+        resolver: zodResolver(buildInviteUsersSchema(t)),
         defaultValues: {
             name: '',
             email: '',
@@ -66,13 +78,13 @@ const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetch
             student,
         }: {
             instituteId: string | undefined;
-            data: z.infer<typeof inviteUsersSchema>;
+            data: FormValues;
             student: UserRolesDataEntry;
         }) => handleUpdateUserInvitation(instituteId, data, student),
         onSuccess: () => {
             onClose();
             refetchData();
-            toast.success('Invitation for this user has been updated successfully!', {
+            toast.success(t('editUser.toast.success'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -100,7 +112,9 @@ const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetch
 
     return (
         <DialogContent className="flex w-96 flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Edit</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('editUser.title')}
+            </h1>
             <FormProvider {...form}>
                 <form className="flex flex-col items-start justify-center gap-4 px-4">
                     <FormField
@@ -111,13 +125,13 @@ const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetch
                                 <FormControl>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Full name (First and Last)"
+                                        inputPlaceholder={t('editUser.namePlaceholder')}
                                         input={value}
                                         onChangeFunction={onChange}
                                         required={true}
                                         error={form.formState.errors.name?.message}
                                         size="large"
-                                        label="Full Name"
+                                        label={t('editUser.nameLabel')}
                                         {...field}
                                         className="w-96"
                                     />
@@ -133,13 +147,13 @@ const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetch
                                 <FormControl>
                                     <MyInput
                                         inputType="email"
-                                        inputPlaceholder="Enter Email"
+                                        inputPlaceholder={t('editUser.emailPlaceholder')}
                                         input={value}
                                         onChangeFunction={onChange}
                                         required={true}
                                         error={form.formState.errors.email?.message}
                                         size="large"
-                                        label="Email"
+                                        label={t('editUser.emailLabel')}
                                         {...field}
                                         className="w-96"
                                     />
@@ -149,7 +163,7 @@ const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetch
                     />
                     <MultiSelectDropdown
                         form={form}
-                        label="Role Type"
+                        label={t('editUser.roleTypeLabel')}
                         name="roleType"
                         options={roleOptions.map((option, index) => ({
                             value: option.name,
@@ -170,7 +184,7 @@ const EditComponent: React.FC<EditComponentProps> = ({ student, onClose, refetch
                             disable={!isValid}
                             onClick={form.handleSubmit(onSubmit)}
                         >
-                            Edit User
+                            {t('editUser.submit')}
                         </MyButton>
                     </div>
                 </form>
@@ -190,12 +204,13 @@ const ResendInviteComponent: React.FC<ResendInviteComponentProps> = ({
     onClose,
     refetchData,
 }) => {
+    const { t } = useTranslation('dashboardInviteUsersOptions');
     const handleResendUserMutation = useMutation({
         mutationFn: ({ userId }: { userId: string }) => handleResendUserInvitation(userId),
         onSuccess: () => {
             onClose();
             refetchData();
-            toast.success('Invitation for this user has been resend successfully!', {
+            toast.success(t('resendInvite.toast.success'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -212,15 +227,18 @@ const ResendInviteComponent: React.FC<ResendInviteComponentProps> = ({
     };
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Resend Invite</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('resendInvite.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('resendInvite.attention')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to resend invite to{' '}
-                    <span className="text-primary-500">{student.full_name}</span>?
+                    {t('resendInvite.confirmPrefix')}{' '}
+                    <span className="text-primary-500">{student.full_name}</span>
+                    {t('resendInvite.confirmSuffix')}
                 </h1>
                 <div className="flex justify-end">
                     <MyButton
@@ -230,7 +248,7 @@ const ResendInviteComponent: React.FC<ResendInviteComponentProps> = ({
                         className="mt-4 font-medium"
                         onClick={handlResendUser} // Close the dialog when clicked
                     >
-                        Yes
+                        {t('resendInvite.confirmButton')}
                     </MyButton>
                 </div>
             </div>
@@ -249,6 +267,7 @@ const CancelInviteComponent: React.FC<CancelInviteComponentProps> = ({
     onClose,
     refetchData,
 }) => {
+    const { t } = useTranslation('dashboardInviteUsersOptions');
     const instituteId = getInstituteId();
     const handleDisableUserMutation = useMutation({
         mutationFn: ({
@@ -263,7 +282,7 @@ const CancelInviteComponent: React.FC<CancelInviteComponentProps> = ({
         onSuccess: () => {
             onClose();
             refetchData();
-            toast.success('Invitation for this user has been cancelled successfully!', {
+            toast.success(t('cancelInvite.toast.success'), {
                 className: 'success-toast',
                 duration: 2000,
             });
@@ -282,15 +301,18 @@ const CancelInviteComponent: React.FC<CancelInviteComponentProps> = ({
     };
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Cancel Invite</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('cancelInvite.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('cancelInvite.attention')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to cancel invite for{' '}
-                    <span className="text-primary-500">{student.full_name}</span>?
+                    {t('cancelInvite.confirmPrefix')}{' '}
+                    <span className="text-primary-500">{student.full_name}</span>
+                    {t('cancelInvite.confirmSuffix')}
                 </h1>
                 <div className="flex justify-end">
                     <MyButton
@@ -300,13 +322,17 @@ const CancelInviteComponent: React.FC<CancelInviteComponentProps> = ({
                         className="mt-4 font-medium"
                         onClick={handlCancelInviteUser} // Close the dialog when clicked
                     >
-                        Yes
+                        {t('cancelInvite.confirmButton')}
                     </MyButton>
                 </div>
             </div>
         </DialogContent>
     );
 };
+
+// Internal action codes for the options menu — used for dispatch/comparison
+// only, never rendered directly (the visible labels are translated separately).
+type MenuAction = 'editUser' | 'resendInvite' | 'cancelInvite';
 
 const InviteUsersOptions = ({
     user,
@@ -317,10 +343,14 @@ const InviteUsersOptions = ({
     refetchData: () => void;
     availableRoles?: { id: string; name: string }[];
 }) => {
+    const { t } = useTranslation('dashboardInviteUsersOptions');
     const [openDialog, setOpenDialog] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    // Internal action codes used for dispatch/comparison only — never rendered.
+    // Kept separate from the translated menu labels shown below so switching
+    // locale can never break which dialog opens.
+    const [selectedOption, setSelectedOption] = useState<MenuAction | null>(null);
 
-    const handleDropdownMenuClick = (value: string) => {
+    const handleDropdownMenuClick = (value: MenuAction) => {
         setOpenDialog(true);
         setSelectedOption(value);
     };
@@ -333,19 +363,19 @@ const InviteUsersOptions = ({
                     </p>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleDropdownMenuClick('Edit')}>
-                        Edit
+                    <DropdownMenuItem onClick={() => handleDropdownMenuClick('editUser')}>
+                        {t('menu.editUser')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDropdownMenuClick('Resend Invite')}>
-                        Resend Invite
+                    <DropdownMenuItem onClick={() => handleDropdownMenuClick('resendInvite')}>
+                        {t('menu.resendInvite')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDropdownMenuClick('Cancel Invite')}>
-                        Cancel Invite
+                    <DropdownMenuItem onClick={() => handleDropdownMenuClick('cancelInvite')}>
+                        {t('menu.cancelInvite')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                {selectedOption === 'Edit' && (
+                {selectedOption === 'editUser' && (
                     <EditComponent
                         student={user}
                         onClose={() => setOpenDialog(false)}
@@ -353,14 +383,14 @@ const InviteUsersOptions = ({
                         availableRoles={availableRoles}
                     />
                 )}
-                {selectedOption === 'Resend Invite' && (
+                {selectedOption === 'resendInvite' && (
                     <ResendInviteComponent
                         student={user}
                         onClose={() => setOpenDialog(false)}
                         refetchData={refetchData}
                     />
                 )}
-                {selectedOption === 'Cancel Invite' && (
+                {selectedOption === 'cancelInvite' && (
                     <CancelInviteComponent
                         student={user}
                         onClose={() => setOpenDialog(false)}

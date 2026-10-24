@@ -1,0 +1,51 @@
+{
+    "dialogTitle": "إرسال رسالة واتساب",
+    "cancel": "إلغاء",
+    "sending": "جارٍ الإرسال...",
+    "sendButton_zero": "إرسال إلى {{count}} مستلم",
+    "sendButton_one": "إرسال إلى مستلم واحد ({{count}})",
+    "sendButton_two": "إرسال إلى مستلمَين ({{count}})",
+    "sendButton_few": "إرسال إلى {{count}} مستلمين",
+    "sendButton_many": "إرسال إلى {{count}} مستلمًا",
+    "sendButton_other": "إرسال إلى {{count}} مستلم",
+    "selectTemplateNotice_zero": "اختر قالبًا للإرسال؛ لا يوجد طلاب ({{count}}).",
+    "selectTemplateNotice_one": "اختر قالبًا للإرسال إلى طالب واحد ({{count}}).",
+    "selectTemplateNotice_two": "اختر قالبًا للإرسال إلى طالبين ({{count}}).",
+    "selectTemplateNotice_few": "اختر قالبًا للإرسال إلى {{count}} طلاب.",
+    "selectTemplateNotice_many": "اختر قالبًا للإرسال إلى {{count}} طالبًا.",
+    "selectTemplateNotice_other": "اختر قالبًا للإرسال إلى {{count}} طالب.",
+    "templateLabel": "قالب الرسالة",
+    "selectTemplatePlaceholder": "اختر قالبًا",
+    "previewLabel": "معاينة:",
+    "sendingProgress": "تقدم الإرسال ({{done}}/{{total}}):",
+    "defaultCustomMessage": "يرجى مراجعة لوحة التحكم الخاصة بك للحصول على التحديثات.",
+    "status": {
+        "pending": "قيد الانتظار...",
+        "sent": "تم الإرسال",
+        "failed": "فشل"
+    },
+    "toasts": {
+        "noTemplateOrStudents": "لم يتم اختيار قالب أو لا يوجد طلاب متاحون.",
+        "templateNotFound": "القالب المحدد غير موجود.",
+        "startingSend": "بدء إرسال الرسائل...",
+        "finished": "انتهى: تم إرسال {{sent}}، وفشل {{failed}}."
+    },
+    "templates": {
+        "welcome": {
+            "name": "رسالة ترحيب",
+            "content": "مرحبًا {{name}}! أهلاً بك في منصتنا التعليمية."
+        },
+        "sessionReminder": {
+            "name": "تذكير بالجلسة",
+            "content": "مرحبًا {{name}}، هذا تذكير بجلستك القادمة."
+        },
+        "assignmentDue": {
+            "name": "موعد تسليم الواجب",
+            "content": "مرحبًا {{name}}، موعد تسليم واجبك يقترب. يرجى إكماله في الوقت المحدد."
+        },
+        "custom": {
+            "name": "رسالة مخصصة",
+            "content": "مرحبًا {{name}}، {{custom_message_text}}"
+        }
+    }
+}

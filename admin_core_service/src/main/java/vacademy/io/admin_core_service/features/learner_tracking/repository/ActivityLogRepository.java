@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.learner_reports.dto.ChapterSlideP
 import vacademy.io.admin_core_service.features.learner_reports.dto.LearnerActivityDataProjection;
 import vacademy.io.admin_core_service.features.learner_reports.dto.SubjectProgressProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.DailyTimeSpentProjection;
+import vacademy.io.admin_core_service.features.points_ledger.dto.DailyActivityProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.LearnerActivityProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.entity.ActivityLog;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogProcessingProjection;
@@ -26,6 +27,65 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, String> {
+
+    /**
+     * Learner-days with real activity for one institute, in the institute's own
+     * timezone — the input to ACTIVITY points accrual.
+     *
+     * Deliberately lean: the per-learner daily query above joins slide, module,
+     * subject and session to scope by content, which is far too heavy to run across
+     * a whole institute every night. Membership alone is enough here, and the
+     * GROUP BY is on (user, local date) so a learner in several batches still earns
+     * one day's points, not one per batch.
+     *
+     * <p>Two Postgres/Hibernate traps are designed around here, both of which only
+     * surface when the query actually RUNS — it compiles and the service boots clean
+     * either way:
+     * <ul>
+     *   <li>The cast is CAST(... AS bigint), never '::bigint'. Hibernate reads a
+     *       leading ':' as a named parameter and rewrites '::bigint' to ':bigint',
+     *       which reaches Postgres as a syntax error.</li>
+     *   <li>The local-date expression is computed ONCE in a subquery rather than
+     *       repeated in SELECT and GROUP BY. A named parameter used twice is rendered
+     *       as two separate placeholders, so Postgres cannot see the two expressions
+     *       as identical and rejects the GROUP BY.</li>
+     * </ul>
+     */
+    @Query(value = """
+            SELECT t.user_id AS userId,
+                   t.activity_date AS activityDate,
+                   CAST(SUM(t.ms) AS bigint) AS millis
+            FROM (
+                SELECT al.user_id,
+                       DATE(al.created_at AT TIME ZONE 'UTC' AT TIME ZONE :zone) AS activity_date,
+                       COALESCE(
+                           al.engaged_ms,
+                           CASE
+                               WHEN al.end_time IS NOT NULL AND al.start_time IS NOT NULL
+                                   THEN EXTRACT(EPOCH FROM (al.end_time - al.start_time)) * 1000
+                               ELSE 0
+                           END
+                       ) AS ms
+                FROM activity_log al
+                WHERE al.created_at >= :from
+                  AND al.created_at < :to
+                  AND al.user_id IN (
+                      SELECT DISTINCT ssigm.user_id
+                      FROM student_session_institute_group_mapping ssigm
+                      WHERE ssigm.institute_id = :instituteId
+                        AND ssigm.status IN (:learnerStatuses)
+                  )
+            ) t
+            GROUP BY t.user_id, t.activity_date
+            HAVING SUM(t.ms) > 0
+            """, nativeQuery = true)
+    List<DailyActivityProjection> findDailyActivityForInstitute(
+            @Param("instituteId") String instituteId,
+            @Param("zone") String zone,
+            @Param("from") Timestamp from,
+            @Param("to") Timestamp to,
+            @Param("learnerStatuses") List<String> learnerStatuses);
+
     // Merged-union coverage, matching the live write path
     // (LearnerTrackingAsyncService.getUniqueWatchedDurationMillis). The old
     // MAX(end)-MIN(start) span silently inflated the batch/trigger recompute:
@@ -2250,6 +2310,37 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
             @Param("endDate") java.sql.Timestamp endDate);
 
     /**
+     * Student report raw detail: what the learner studied in a window, one row per slide —
+     * [slide_id, title, slide_type, visits, engaged_minutes, max_percentage_watched,
+     * first_seen, last_seen], most time first. The llm_* analytics rows are not study time
+     * and are left out. READ-ONLY.
+     */
+    @Query(value = """
+            SELECT a.slide_id,
+                   s.title,
+                   s.source_type,
+                   COUNT(*) AS visits,
+                   COALESCE(SUM(a.engaged_ms), 0) / 60000.0 AS engaged_minutes,
+                   MAX(a.percentage_watched) AS max_percentage_watched,
+                   MIN(a.created_at) AS first_seen,
+                   MAX(a.created_at) AS last_seen
+            FROM activity_log a
+            LEFT JOIN slide s ON s.id = a.slide_id
+            WHERE a.user_id = :userId
+              AND a.slide_id IS NOT NULL
+              AND a.created_at BETWEEN :startDate AND :endDate
+              AND (a.source_type IS NULL OR a.source_type NOT LIKE 'llm\\_%')
+            GROUP BY a.slide_id, s.title, s.source_type
+            ORDER BY engaged_minutes DESC, last_seen DESC
+            LIMIT :maxRows
+            """, nativeQuery = true)
+    List<Object[]> findSlideActivityForUserInRange(
+            @Param("userId") String userId,
+            @Param("startDate") java.sql.Timestamp startDate,
+            @Param("endDate") java.sql.Timestamp endDate,
+            @Param("maxRows") int maxRows);
+
+    /**
      * Find processed activity logs by user_id and slide_id
      * Used by LLM analytics API to fetch processed data for specific slide
      */
@@ -2257,6 +2348,29 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, String
     List<ActivityLog> findByUserIdAndSlideIdAndStatusProcessed(
             @Param("userId") String userId,
             @Param("slideId") String slideId);
+
+    /**
+     * Every learner's LATEST processed analysis for one source (an assessment).
+     *
+     * <p>Backs the class-level AI report: rather than spending a fresh LLM call
+     * per assessment, that report aggregates the per-learner analyses already
+     * generated here — topics, Bloom's levels and shared misconceptions — so it
+     * costs no additional AI credits.
+     *
+     * <p>DISTINCT ON keeps one row per learner: a re-attempted assessment leaves
+     * several processed rows behind, and counting them all would weight those
+     * learners twice in every class average.
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (a.user_id) a.*
+            FROM activity_log a
+            WHERE a.source_id = :sourceId
+              AND a.source_type = 'llm_assessment'
+              AND a.status = 'processed'
+              AND a.processed_json IS NOT NULL
+            ORDER BY a.user_id, a.created_at DESC
+            """, nativeQuery = true)
+    List<ActivityLog> findProcessedBySourceId(@Param("sourceId") String sourceId);
 
     /**
      * Find processed activity logs by user_id and source_id

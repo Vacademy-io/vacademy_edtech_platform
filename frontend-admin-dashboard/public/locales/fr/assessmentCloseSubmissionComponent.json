@@ -1,0 +1,7 @@
+{
+    "dialog": {
+        "heading": "Clôturer la soumission",
+        "confirmMessagePrefix": "Êtes-vous sûr de vouloir clôturer la soumission pour",
+        "doneButton": "Terminé"
+    }
+}

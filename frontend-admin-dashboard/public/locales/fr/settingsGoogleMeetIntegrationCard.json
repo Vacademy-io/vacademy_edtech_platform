@@ -1,0 +1,18 @@
+{
+    "title": "Intégration Google Meet",
+    "description": "Connectez un compte Google Workspace pour que les administrateurs puissent créer des sessions Google Meet directement depuis l'assistant de cours en direct. Les apprenants rejoignent en ouvrant le lien Meet (Google Meet n'a pas d'intégration dans l'application).",
+    "connectButton": "Connecter Google Workspace",
+    "retry": "Réessayer",
+    "errors": {
+        "loadAccounts": "Échec du chargement des comptes Google.",
+        "connectionFailed": "Échec de la connexion Google ({{errorCode}}).",
+        "connectionFailedWithReason": "Échec de la connexion Google ({{errorCode}}) : {{reason}}.",
+        "connectionStartFailed": "Impossible de démarrer la connexion Google. Veuillez réessayer."
+    },
+    "toasts": {
+        "connected": "Google Workspace connecté avec succès."
+    },
+    "recordingNotice": {
+        "text": "Cela nécessite un compte <strong>Google Workspace</strong> — la connexion, la création de réunions et l'accès des apprenants/hôtes fonctionnent sur <strong>tout plan Workspace</strong> (un compte personnel gratuit @gmail.com ne peut pas utiliser l'API Meet). L'<strong>enregistrement automatique</strong> est la seule fonctionnalité payante : elle nécessite Business Standard+, Enterprise ou Education Plus, ainsi qu'un enseignant connecté au Workspace. Si vous l'activez sur un plan qui ne peut pas enregistrer, nous créons quand même la réunion (sans enregistrement) et désactivons à nouveau l'option. Les enregistrements arrivent dans le Google Drive du compte connecté (côté administrateur)."
+    }
+}

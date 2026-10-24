@@ -59,6 +59,7 @@ import { useWebAudioMixer } from './hooks/useWebAudioMixer';
 import { useSoundScheduler, collectCuesFromEntries } from './hooks/useSoundScheduler';
 import { CaptionDisplay, CaptionSettingsPopover } from './components';
 import '@/components/ai-course-builder/components/styles/AIVideoComponents.css';
+import { canvasBackground, entryBoxStyle, fillSceneGaps } from './entry-layout';
 
 /**
  * ScaleCalculator - Calculates scale to fit video in container
@@ -391,7 +392,11 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                 await initializeLibraries(loadedMeta.content_type);
 
                 setMeta(loadedMeta);
-                setEntries(loadedEntries);
+                setEntries(
+                    loadedMeta.navigation === 'time_driven'
+                        ? fillSceneGaps(loadedEntries)
+                        : loadedEntries
+                );
 
                 // Set duration
                 if (loadedMeta.total_duration && loadedMeta.total_duration > 0) {
@@ -1370,6 +1375,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                                 left: '50%',
                                 marginTop: `-${effectiveHeight / 2}px`,
                                 marginLeft: `-${effectiveWidth / 2}px`,
+                                background: canvasBackground(meta.palette),
                             }}
                             className="frame-wrapper"
                         >
@@ -1379,13 +1385,11 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                                     ref={index === 0 ? contentIframeRef : undefined}
                                     srcDoc={entry.processedHtml}
                                     style={{
-                                        width: '100%',
-                                        height: '100%',
                                         border: 'none',
-                                        background: index === 0 ? '#ffffff' : 'transparent',
+                                        background:
+                                            index === 0 ? canvasBackground(meta.palette) : 'transparent',
                                         position: 'absolute',
-                                        top: 0,
-                                        left: 0,
+                                        ...entryBoxStyle(entry, effectiveWidth, effectiveHeight),
                                         zIndex: entry.z ?? 0,
                                         pointerEvents:
                                             entry.id?.startsWith('branding-watermark') ||

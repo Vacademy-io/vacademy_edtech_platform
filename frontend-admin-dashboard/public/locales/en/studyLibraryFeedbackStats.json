@@ -1,0 +1,10 @@
+{
+    "learnerFeedbackStats": "Learner Feedback Stats",
+    "totalResponsesCollected_one": "{{count}} total response collected",
+    "totalResponsesCollected_other": "{{count}} total responses collected",
+    "ratingsCount_one": "{{count}} rating",
+    "ratingsCount_other": "{{count}} ratings",
+    "lowRatingsCount_one": "{{count}} low (< 3)",
+    "lowRatingsCount_other": "{{count}} low (< 3)",
+    "noWrittenResponsesYet": "No written responses yet."
+}

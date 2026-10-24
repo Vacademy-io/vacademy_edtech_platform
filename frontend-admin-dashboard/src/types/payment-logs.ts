@@ -1,7 +1,8 @@
 export interface PaymentLog {
     id: string;
     status: string;
-    payment_status: 'PAID' | 'FAILED' | 'PAYMENT_PENDING' | null;
+    /** VOIDED: an admin voided a payment recorded by mistake (listing reports it as CANCELLED). */
+    payment_status: 'PAID' | 'FAILED' | 'PAYMENT_PENDING' | 'VOIDED' | null;
     user_id: string;
     vendor: string;
     vendor_id: string;
@@ -16,6 +17,13 @@ export interface PaymentLog {
     tracking_id?: string | null;
     tracking_source?: string | null;
     order_status?: string | null;
+    /** Offline payments only: how it was paid, as recorded by an admin (V577). */
+    payment_mode?: string | null;
+    payment_sub_mode?: string | null;
+    payment_reference?: string | null;
+    /** JSON: mode_label, sub_mode_label, notes, proof_file_id, cheque_date, bank_name, payer_name. */
+    payment_details_json?: string | null;
+    recorded_by_user_id?: string | null;
 }
 
 export interface EnrollInvite {
@@ -118,10 +126,18 @@ export interface PaymentLogEntry {
     /** Null on rows that ARE an invoice rather than a payment — those have no plan. */
     user_plan: UserPlan;
     /**
-     * PAID | FAILED | PAYMENT_PENDING | NOT_INITIATED, or CANCELLED for a voided invoice —
+     * PAID | FAILED | PAYMENT_PENDING | NOT_INITIATED; ABANDONED for a PAYMENT_PENDING row too
+     * old to complete (server-derived, never persisted); or CANCELLED for a voided invoice —
      * which is shown but never counted toward collected or due.
      */
-    current_payment_status: 'PAID' | 'FAILED' | 'NOT_INITIATED' | 'CANCELLED' | string;
+    current_payment_status:
+        | 'PAID'
+        | 'FAILED'
+        | 'PAYMENT_PENDING'
+        | 'NOT_INITIATED'
+        | 'ABANDONED'
+        | 'CANCELLED'
+        | string;
     user: User;
     /**
      * Set only when this row IS an invoice that has been raised but never paid against (no
@@ -129,6 +145,18 @@ export interface PaymentLogEntry {
      * the separate bulk lookup.
      */
     invoice?: PaymentLogInvoiceRow | null;
+    /**
+     * When the learner joined the batch this payment's plan is for — the stored enrolled_date
+     * ("2026-09-28"), shown on renewal attempts too. Null for invoice rows and for someone never
+     * enrolled there.
+     */
+    enrolled_date?: string | null;
+    /**
+     * When the plan's next payment falls due: a plain day for an instalment or an unpaid invoice,
+     * or a UTC instant for a subscription renewal. Null when nothing is due (plan not active,
+     * one-time or free, or fully paid). Read it with parsePlanDate.
+     */
+    next_due_on?: string | null;
 }
 
 /** The invoice carried inline on an invoice-backed row. Mirrors PaymentLogInvoiceDTO. */
@@ -173,6 +201,10 @@ export interface PaymentLogsResponse {
 }
 
 export interface PaymentLogsRequest {
+    /** Plan names to keep. Invoice rows carry no plan, so any value here drops them. */
+    payment_plan_names?: string[];
+    /** Which KPI tile the table is showing: total | paid | pending | abandoned | failed. */
+    status_bucket?: string;
     institute_id: string;
     user_id?: string;
     start_date_in_utc?: string;
@@ -185,6 +217,8 @@ export interface PaymentLogsRequest {
     payment_types?: string[]; // High-level payment type filter (SUB_ORG_ADMIN, LIVE_CLASS, CPO, USER_INVOICE, ...)
     search_string?: string; // Free-text search across user name/email/phone (via auth) and amount
     sort_columns?: Record<string, string>;
+    /** Fill enrolled_date / next_due_on on each row (only while those columns are shown). */
+    include_plan_dates?: boolean;
 }
 
 export interface PackageSession {

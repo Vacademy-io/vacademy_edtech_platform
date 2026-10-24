@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from '@tanstack/react-router';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MyInput } from '@/components/design-system/input';
@@ -19,9 +21,10 @@ import { handleLoginFlow, navigateFromLoginFlow } from '@/lib/auth/loginFlowHand
 import { trackEvent } from '@/lib/amplitude';
 import { getCachedInstituteBranding } from '@/services/domain-routing';
 
-const emailSchema = z.object({
-    email: z.string().email({ message: 'Invalid email address' }),
-});
+const buildEmailSchema = (t: TFunction) =>
+    z.object({
+        email: z.string().email({ message: t('invalidEmail') }),
+    });
 
 const otpSchema = z.object({
     otp: z
@@ -30,7 +33,7 @@ const otpSchema = z.object({
         .transform((val) => val.join('')),
 });
 
-type EmailFormValues = z.infer<typeof emailSchema>;
+type EmailFormValues = { email: string };
 type OtpFormValues = { otp: string[] };
 
 export function EmailLogin({
@@ -44,6 +47,7 @@ export function EmailLogin({
     allowUsernamePasswordAuth?: boolean;
     allowPhoneAuth?: boolean;
 }) {
+    const { t } = useTranslation('loginEmailOtpForm');
     const [isOtpSent, setIsOtpSent] = useState(false);
     const [email, setEmail] = useState('');
     const [timer, setTimer] = useState(0);
@@ -57,7 +61,7 @@ export function EmailLogin({
     const [allowPhoneAuth, setAllowPhoneAuth] = useState(false);
 
     const emailForm = useForm<EmailFormValues>({
-        resolver: zodResolver(emailSchema),
+        resolver: zodResolver(buildEmailSchema(t)),
         defaultValues: {
             email: '',
         },
@@ -126,12 +130,12 @@ export function EmailLogin({
             setIsLoading(false);
             setIsOtpSent(true);
             startTimer();
-            toast.success('OTP sent successfully');
+            toast.success(t('toast.otpSent'));
         },
         onError: () => {
             setIsLoading(false);
-            toast.error('This email is not registered', {
-                description: 'Please try again with a registered email',
+            toast.error(t('toast.emailNotRegistered'), {
+                description: t('toast.emailNotRegisteredDescription'),
                 duration: 3000,
             });
         },
@@ -179,8 +183,8 @@ export function EmailLogin({
             }
         },
         onError: () => {
-            toast.error('Invalid OTP', {
-                description: 'Please check your OTP and try again',
+            toast.error(t('toast.invalidOtp'), {
+                description: t('toast.invalidOtpDescription'),
                 duration: 3000,
             });
             otpForm.reset();
@@ -201,7 +205,7 @@ export function EmailLogin({
             });
         } else {
             setIsLoading(false);
-            toast.error('Please fill all OTP fields');
+            toast.error(t('toast.fillAllOtpFields'));
         }
     };
 
@@ -287,7 +291,7 @@ export function EmailLogin({
                                                 <FormControl>
                                                     <MyInput
                                                         inputType="email"
-                                                        inputPlaceholder="Enter your email address"
+                                                        inputPlaceholder={t('emailPlaceholder')}
                                                         input={field.value}
                                                         onChangeFunction={field.onChange}
                                                         error={
@@ -296,7 +300,7 @@ export function EmailLogin({
                                                         }
                                                         required={true}
                                                         size="large"
-                                                        label="Email Address"
+                                                        label={t('emailLabel')}
                                                         // Real login identifier
                                                         // — keep browser fill.
                                                         autoComplete="email"
@@ -329,13 +333,13 @@ export function EmailLogin({
                                                 >
                                                     <RefreshCw className="size-4" />
                                                 </motion.div>
-                                                <span className="text-sm">Sending code...</span>
+                                                <span className="text-sm">{t('sendingCode')}</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-center space-x-2">
                                                 <Mail className="size-4" />
                                                 <span className="text-sm">
-                                                    Send Verification Code
+                                                    {t('sendVerificationCode')}
                                                 </span>
                                                 <ArrowRight className="size-3" />
                                             </div>
@@ -362,10 +366,10 @@ export function EmailLogin({
                             className="mb-6 text-center"
                         >
                             <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                                Check your email
+                                {t('checkYourEmail')}
                             </h3>
                             <p className="text-sm text-gray-600">
-                                We&apos;ve sent a 6-digit code to{' '}
+                                {t('codeSentTo')}{' '}
                                 <span className="font-medium text-gray-800">{email}</span>
                             </p>
                         </motion.div>
@@ -408,7 +412,7 @@ export function EmailLogin({
                                     </div>
                                     {otpForm.formState.errors.otp && (
                                         <div className="text-center text-sm text-red-600">
-                                            Please enter a valid 6-digit verification code
+                                            {t('validOtpRequired')}
                                         </div>
                                     )}
                                 </div>
@@ -437,12 +441,12 @@ export function EmailLogin({
                                                 >
                                                     <RefreshCw className="size-4" />
                                                 </motion.div>
-                                                <span className="text-sm">Verifying...</span>
+                                                <span className="text-sm">{t('verifying')}</span>
                                             </div>
                                         ) : (
                                             <div className="flex items-center justify-center space-x-2">
                                                 <Shield className="size-4" />
-                                                <span className="text-sm">Verify & Sign In</span>
+                                                <span className="text-sm">{t('verifyAndSignIn')}</span>
                                                 <ArrowRight className="size-3" />
                                             </div>
                                         )}
@@ -454,7 +458,7 @@ export function EmailLogin({
                                             onClick={handleBackToEmail}
                                             className="hover:text-primary-600 text-primary-500 transition-colors"
                                         >
-                                            Back to email
+                                            {t('backToEmail')}
                                         </button>
                                         <div className="h-3 w-px bg-gray-300"></div>
                                         <button
@@ -469,9 +473,9 @@ export function EmailLogin({
                                             disabled={timer > 0}
                                         >
                                             {timer > 0 ? (
-                                                <span>Resend in {timer}s</span>
+                                                <span>{t('resendIn', { count: timer })}</span>
                                             ) : (
-                                                <span>Resend code</span>
+                                                <span>{t('resendCode')}</span>
                                             )}
                                         </button>
                                     </div>
@@ -489,7 +493,7 @@ export function EmailLogin({
                         className="hover:text-primary-600 text-sm text-primary-500 transition-colors"
                         onClick={onSwitchToUsername}
                     >
-                        Prefer username login?
+                        {t('preferUsernameLogin')}
                     </button>
                 </div>
             )}
@@ -501,7 +505,7 @@ export function EmailLogin({
                         className="hover:text-primary-600 text-sm text-primary-500 transition-colors"
                         onClick={onSwitchToPhone}
                     >
-                        Use Phone OTP Instead?
+                        {t('usePhoneOtpInstead')}
                     </button>
                 </div>
             )}
@@ -509,12 +513,12 @@ export function EmailLogin({
             {allowSignup && (
                 <div className="mt-4 text-center">
                     <p className="text-sm">
-                        Don&apos;t have an account?&nbsp;&nbsp;
+                        {t('noAccount')}&nbsp;&nbsp;
                         <span
                             className="cursor-pointer text-primary-500"
                             onClick={() => navigate({ to: '/signup' })}
                         >
-                            Create One
+                            {t('createOne')}
                         </span>
                     </p>
                 </div>

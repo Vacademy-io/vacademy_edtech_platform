@@ -8,8 +8,12 @@
  *
  * Data: GET /v1/reports/leads/summary (read-only — purely visual aggregation).
  */
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useLeadTiers } from '@/hooks/use-lead-tiers';
+import { PerLeadExports } from './per-lead-exports';
+import { useTranslation } from 'react-i18next';
 import {
     CaretRight,
     ChartLineUp,
@@ -51,7 +55,14 @@ export function OverviewTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerOverviewTab');
     const navigate = useNavigate();
+    // Tier labels + colours from the institute catalog (custom tiers included).
+    const tierCatalog = useLeadTiers();
+    const tierLabels: Record<string, string> = useMemo(
+        () => Object.fromEntries(tierCatalog.tiers.map((tier) => [tier.tier_key, tier.label])),
+        [tierCatalog.tiers]
+    );
 
     const summaryQuery = useQuery({
         queryKey: [
@@ -89,14 +100,27 @@ export function OverviewTab({
 
     return (
         <div className="flex flex-col gap-6">
+            {/* Per-lead TAT / SLA exports — only for institutes that turned them on. */}
+            <PerLeadExports
+                kinds={['tat', 'sla']}
+                instituteId={instituteId}
+                fromDate={fromDate}
+                toDate={toDate}
+                teamId={teamId}
+                counsellorUserId={counsellorUserId}
+                audienceId={audienceId}
+            />
             {/* KPI cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
-                    label="Total Leads"
+                    label={t('kpi.totalLeads.label')}
                     value={fmtNumber(summary?.totals.total_leads)}
                     sub={
                         summary
-                            ? `${summary.totals.active_leads} active · ${summary.totals.lost_leads} lost`
+                            ? t('kpi.totalLeads.sub', {
+                                  active: summary.totals.active_leads,
+                                  lost: summary.totals.lost_leads,
+                              })
                             : undefined
                     }
                     icon={<Users size={20} weight="bold" />}
@@ -119,11 +143,14 @@ export function OverviewTab({
                     }
                 />
                 <KpiCard
-                    label="Conversion Rate"
+                    label={t('kpi.conversionRate.label')}
                     value={fmtPct(summary?.totals.conversion_rate)}
                     sub={
                         summary
-                            ? `${summary.totals.converted_leads} of ${summary.totals.total_leads} converted`
+                            ? t('kpi.conversionRate.sub', {
+                                  converted: summary.totals.converted_leads,
+                                  total: summary.totals.total_leads,
+                              })
                             : undefined
                     }
                     icon={<CheckCircle size={20} weight="bold" />}
@@ -131,11 +158,13 @@ export function OverviewTab({
                     loading={isLoading && !summary}
                 />
                 <KpiCard
-                    label="Avg Response Time"
+                    label={t('kpi.avgResponseTime.label')}
                     value={fmtMinutes(summary?.totals.avg_response_minutes)}
                     sub={
                         summary
-                            ? `${summary.totals.responded_leads ?? 0} leads responded`
+                            ? t('kpi.avgResponseTime.sub', {
+                                  count: summary.totals.responded_leads ?? 0,
+                              })
                             : undefined
                     }
                     icon={<ClockCounterClockwise size={20} weight="bold" />}
@@ -143,12 +172,12 @@ export function OverviewTab({
                     loading={isLoading && !summary}
                 />
                 <KpiCard
-                    label="TAT Met"
+                    label={t('kpi.tatMet.label')}
                     value={fmtPct(summary?.totals.tat_met_rate)}
                     sub={
                         summary?.totals.tat_met_count != null
-                            ? `${summary.totals.tat_met_count} within TAT`
-                            : 'TAT disabled in settings'
+                            ? t('kpi.tatMet.subCount', { count: summary.totals.tat_met_count })
+                            : t('kpi.tatMet.subDisabled')
                     }
                     icon={<Funnel size={20} weight="bold" />}
                     tone={
@@ -164,13 +193,13 @@ export function OverviewTab({
                 />
             </div>
 
-            {/* Status donut + Daily trend side by side */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <section className="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+            {/* Status donut + Daily trend side by side; each card keeps its own height. */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
+                <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center gap-2">
                         <Funnel size={18} className="text-neutral-500" />
                         <h2 className="text-base font-semibold text-neutral-900">
-                            Status distribution
+                            {t('status.title')}
                         </h2>
                     </div>
                     {summary && summary.by_status.length > 0 ? (
@@ -194,15 +223,17 @@ export function OverviewTab({
                         <div className="flex items-center gap-2">
                             <ChartLineUp size={18} className="text-neutral-500" />
                             <h2 className="text-base font-semibold text-neutral-900">
-                                Daily trend
+                                {t('trend.title')}
                             </h2>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-neutral-600">
                             <span className="flex items-center gap-1">
-                                <span className="size-2 rounded-full bg-blue-500" /> Submitted
+                                <span className="size-2 rounded-full bg-blue-500" />{' '}
+                                {t('trend.submittedLegend')}
                             </span>
                             <span className="flex items-center gap-1">
-                                <span className="size-2 rounded-full bg-green-600" /> Converted
+                                <span className="size-2 rounded-full bg-green-600" />{' '}
+                                {t('trend.convertedLegend')}
                             </span>
                         </div>
                     </div>
@@ -212,7 +243,7 @@ export function OverviewTab({
 
             {/* Source + Tier breakdowns */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <BreakdownCard title="By Source" icon={<Megaphone size={16} />}>
+                <BreakdownCard title={t('breakdown.bySource')} icon={<Megaphone size={16} />}>
                     {summary && summary.by_source.length > 0 ? (
                         summary.by_source.map((b) => (
                             <BreakdownBar
@@ -234,14 +265,18 @@ export function OverviewTab({
                         <EmptyHint />
                     )}
                 </BreakdownCard>
-                <BreakdownCard title="By Tier" icon={<Flame size={16} />}>
+                <BreakdownCard title={t('breakdown.byTier')} icon={<Flame size={16} />}>
                     {summary && summary.by_tier.length > 0 ? (
                         summary.by_tier.map((b) => (
                             <BreakdownBar
                                 key={b.tier}
-                                label={b.tier.charAt(0) + b.tier.slice(1).toLowerCase()}
+                                label={
+                                    tierLabels[b.tier] ??
+                                    b.tier.charAt(0) + b.tier.slice(1).toLowerCase()
+                                }
                                 count={b.count}
                                 total={summary.totals.total_leads}
+                                colorHex={tierCatalog.byKey(b.tier)?.color}
                                 colorClass={tierBgClass(b.tier)}
                             />
                         ))
@@ -262,7 +297,17 @@ interface StatusDonutProps {
     /** Drill-through — legend rows navigate to the filtered Recent Leads list. */
     onSelectStatus?: (statusKey: string) => void;
 }
+/** Legend rows shown before "Show all": the biggest statuses. */
+const LEGEND_COLLAPSED = 6;
+
 function StatusDonut({ data, total, onSelectStatus }: StatusDonutProps) {
+    const { t } = useTranslation('audienceManagerOverviewTab');
+    const { t: tCrm } = useTranslation('crmDashboard');
+    const [expanded, setExpanded] = useState(false);
+    // Biggest first, so the collapsed legend shows what most leads are in.
+    const legend = useMemo(() => [...data].sort((a, b) => b.count - a.count), [data]);
+    const collapsible = legend.length > LEGEND_COLLAPSED;
+    const shownLegend = collapsible && !expanded ? legend.slice(0, LEGEND_COLLAPSED) : legend;
     const SIZE = 180;
     const THICKNESS = 26;
     const RADIUS = (SIZE - THICKNESS) / 2;
@@ -279,13 +324,13 @@ function StatusDonut({ data, total, onSelectStatus }: StatusDonutProps) {
     });
 
     return (
-        <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-start lg:gap-6">
+        <div className="flex flex-col items-center gap-4">
             <div className="relative shrink-0">
                 <svg
                     viewBox={`0 0 ${SIZE} ${SIZE}`}
                     className="size-44"
                     role="img"
-                    aria-label="Status distribution donut"
+                    aria-label={t('status.donutAriaLabel')}
                 >
                     {/* Track */}
                     <circle
@@ -331,11 +376,11 @@ function StatusDonut({ data, total, onSelectStatus }: StatusDonutProps) {
                 </svg>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-2xl font-bold text-neutral-900">{fmtNumber(total)}</span>
-                    <span className="text-xs text-neutral-500">leads</span>
+                    <span className="text-xs text-neutral-500">{t('status.totalUnit')}</span>
                 </div>
             </div>
-            <ul className="flex w-full flex-col gap-1">
-                {data.map((d) => {
+            <ul className="flex w-full min-w-0 flex-col gap-1">
+                {shownLegend.map((d) => {
                     const pct = total > 0 ? (d.count / total) * 100 : 0;
                     return (
                         <li key={d.status_key}>
@@ -373,6 +418,19 @@ function StatusDonut({ data, total, onSelectStatus }: StatusDonutProps) {
                     );
                 })}
             </ul>
+            {collapsible && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    className="self-start font-medium text-primary-600 hover:text-primary-700"
+                >
+                    <span className="text-caption">
+                        {expanded
+                            ? tCrm('pipeline.showLess')
+                            : tCrm('pipeline.showAll', { count: legend.length })}
+                    </span>
+                </button>
+            )}
         </div>
     );
 }
@@ -383,10 +441,11 @@ interface TrendChartProps {
     points: Array<{ date: string; submitted: number; converted: number }>;
 }
 function TrendChart({ points }: TrendChartProps) {
+    const { t } = useTranslation('audienceManagerOverviewTab');
     if (points.length === 0) {
         return (
             <div className="flex h-40 items-center justify-center text-sm text-neutral-400">
-                No data
+                {t('trend.noData')}
             </div>
         );
     }
@@ -412,7 +471,7 @@ function TrendChart({ points }: TrendChartProps) {
                 className="h-44 w-full"
                 preserveAspectRatio="none"
                 role="img"
-                aria-label="Daily submitted and converted leads"
+                aria-label={t('trend.ariaLabel')}
             >
                 {/* gridlines */}
                 <line

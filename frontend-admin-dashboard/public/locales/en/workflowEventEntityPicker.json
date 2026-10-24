@@ -1,0 +1,39 @@
+{
+    "unknown": "Unknown",
+    "untitledSession": "Untitled Session",
+    "codeLabel": "Code: {{code}}",
+    "typeLabels": {
+        "packageSession": "Batch / Package Session",
+        "audience": "Audience / Campaign",
+        "liveSession": "Live Session",
+        "enrollInvite": "Enrollment Invite",
+        "institute": "Institute",
+        "assessment": "Assessment",
+        "userPlan": "Membership / User Plan",
+        "payment": "Payment"
+    },
+    "institute": {
+        "appliesToWhole": "This trigger applies to the entire institute. No specific entity selection needed."
+    },
+    "manual": {
+        "restrictLabel": "Restrict to specific {{type}}(s) (optional)",
+        "pickFromList": "Pick from list",
+        "placeholder": "Enter {{type}} ID(s), comma-separated, or leave empty for all",
+        "willFireForAll": "Leave empty and the workflow fires for every {{type}} in your institute.",
+        "willFireForSelected_one": "This workflow will fire for {{count}} selected {{type}}.",
+        "willFireForSelected_other": "This workflow will fire for {{count}} selected {{type}}(s)."
+    },
+    "checklist": {
+        "selectLabel": "Select {{type}}(s) — leave unchecked for all",
+        "enterIdManually": "Enter ID manually",
+        "loading": "Loading...",
+        "noneFound": "No {{type}}s found",
+        "summaryNone": "No selection — the workflow fires for every {{type}} in your institute.",
+        "summarySelected_one": "Workflow fires only for the selected {{type}}.",
+        "summarySelected_other": "Workflow fires for {{count}} selected {{type}}(s). One trigger row will be created per selection.",
+        "searchPlaceholder": "Search {{type}}s...",
+        "noMatches": "Nothing matches “{{search}}”.",
+        "hiddenBySearch_one": "{{count}} selected item is hidden by the search",
+        "hiddenBySearch_other": "{{count}} selected items are hidden by the search"
+    }
+}

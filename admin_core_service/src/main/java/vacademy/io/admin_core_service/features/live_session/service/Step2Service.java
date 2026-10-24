@@ -82,6 +82,9 @@ public class Step2Service {
     @Autowired
     private LiveSessionPaymentService liveSessionPaymentService;
 
+    @Autowired
+    private LiveSessionInstructorService instructorService;
+
     public Boolean step2AddService(LiveSessionStep2RequestDTO request, CustomUserDetails user) {
         LiveSession session = getSessionOrThrow(request.getSessionId());
 
@@ -91,6 +94,9 @@ public class Step2Service {
 
         updateSessionAccessLevel(session, request);
         linkParticipants(request);
+        // Null means "client didn't send instructors" and is a no-op inside the
+        // service, so pre-V524 clients keep the creator seeded at step 1.
+        instructorService.syncInstructors(session.getId(), resolveInstructorUserIds(request, session));
         processNotificationActions(request, session.getId(), isEdit);
         processCustomFields(request, session);
         liveSessionPaymentService.upsertPaymentConfig(session, request.getPaymentConfig());
@@ -102,6 +108,39 @@ public class Step2Service {
         sessionRepository.save(session);
 
         return true;
+    }
+
+    /**
+     * The instructor id list to reconcile to: explicit ids, plus any
+     * human-typed identifiers (email / username) resolved against the institute
+     * directory.
+     *
+     * <p>Returns null — a no-op for the sync — when the client sent neither
+     * field, which is what keeps pre-V524 clients unaffected. Unresolvable
+     * identifiers are dropped with a log line here; the bulk endpoint resolves
+     * them up front instead so it can report them per row.
+     */
+    private List<String> resolveInstructorUserIds(LiveSessionStep2RequestDTO request, LiveSession session) {
+        List<String> explicitIds = request.getInstructorUserIds();
+        List<String> identifiers = request.getInstructorIdentifiers();
+        if (explicitIds == null && identifiers == null) {
+            return null;
+        }
+
+        List<String> merged = new ArrayList<>();
+        if (explicitIds != null) {
+            merged.addAll(explicitIds);
+        }
+        if (identifiers != null && !identifiers.isEmpty()) {
+            LiveSessionInstructorService.ResolvedIdentifiers resolved =
+                    instructorService.resolveIdentifiers(session.getInstituteId(), identifiers);
+            resolved.userIds().stream().filter(id -> !merged.contains(id)).forEach(merged::add);
+            if (!resolved.unresolved().isEmpty()) {
+                log.warn("live_session.instructors.unresolved sessionId={} identifiers={}",
+                        session.getId(), resolved.unresolved());
+            }
+        }
+        return merged;
     }
 
     private LiveSession getSessionOrThrow(String sessionId) {

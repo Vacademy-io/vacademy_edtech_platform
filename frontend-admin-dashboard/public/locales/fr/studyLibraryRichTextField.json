@@ -1,0 +1,12 @@
+{
+    "toolbar": {
+        "bold": "Gras",
+        "italic": "Italique",
+        "underline": "Souligné",
+        "bulletList": "Liste à puces",
+        "numberedList": "Liste numérotée",
+        "insertLink": "Insérer un lien",
+        "insertImage": "Insérer une image",
+        "linkPrompt": "URL du lien :"
+    }
+}

@@ -21,6 +21,8 @@ interface TestContent {
     updated_at: string;
     join_link: string;
     subject_id: string;
+    /** 'API' for exams created through the AI Evaluation API; NULL/other = dashboard. */
+    source?: string | null;
 }
 
 export interface ScheduleTestTab {

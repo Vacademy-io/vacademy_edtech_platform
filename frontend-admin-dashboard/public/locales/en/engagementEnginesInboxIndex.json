@@ -1,0 +1,79 @@
+{
+    "helmetTitle": "Engagement task inbox",
+    "heading": "Task inbox",
+    "subheading": "Every message the engines drafted, ranked by priority. Review, edit, and send.",
+    "allEngines": "All engines",
+    "filters": {
+        "needsAction": "Needs action",
+        "sent": "Sent",
+        "failed": "Failed",
+        "handled": "Handled",
+        "dryRun": "Dry run"
+    },
+    "errors": {
+        "loadFailed": "Could not load tasks."
+    },
+    "emptyState": "Nothing here right now.",
+    "noDraft": "(no draft)",
+    "priority": "priority {{value}}",
+    "kind": {
+        "reply": "Reply",
+        "autoSend": "Auto-send",
+        "task": "Task"
+    },
+    "actions": {
+        "reviewAndSend": "Review & send",
+        "acknowledge": "Acknowledge",
+        "handledElsewhere": "Handled elsewhere",
+        "dismiss": "Dismiss",
+        "reopen": "Reopen",
+        "cancel": "Cancel"
+    },
+    "sendDialog": {
+        "heading": "Review & send",
+        "fixedTemplateNotice": "This is a fixed Meta-approved WhatsApp template. The text can't be edited — only its variables. This is exactly what will be sent:",
+        "variables": "Variables",
+        "editableNotice": "Edit before sending if you like — your edit is what goes out.",
+        "sending": "Sending…",
+        "sendNow": "Send now"
+    },
+    "needsTemplate": "WhatsApp can only send an approved template, and this task has none. Handle it another way, or dismiss it.",
+    "toolbar": {
+        "search": "Search drafts, reasons, engines or templates",
+        "allEngines": "All engines",
+        "allChannels": "All channels",
+        "allKinds": "All kinds",
+        "kindTask": "Tasks only",
+        "kindReply": "Replies only",
+        "kindSend": "Auto-sends only",
+        "sortPriority": "Priority first",
+        "sortOldest": "Oldest first",
+        "sortNewest": "Newest first",
+        "pageNote": "Search and filters apply to the tasks on this page."
+    },
+    "filteredEmpty": "No tasks on this page match these filters.",
+    "priorityShort": "P{{value}}",
+    "age": {
+        "minutes": "{{count}}m",
+        "hours": "{{count}}h",
+        "days": "{{count}}d"
+    },
+    "detail": {
+        "why": "Why the AI picked this",
+        "draft": "Draft",
+        "sentMessage": "Sent message",
+        "callBrief": "Call brief",
+        "template": "Template {{name}}",
+        "simulated": "Dry-run draft — nothing was sent",
+        "timing": "Timing",
+        "created": "Drafted",
+        "scheduledFor": "Scheduled for",
+        "expiresAt": "Expires",
+        "dispatchedAt": "Dispatched",
+        "completedAt": "Completed",
+        "outcome": "Outcome",
+        "openEngine": "Open engine",
+        "draftedAgo": "Drafted {{age}} ago"
+    },
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent."
+}

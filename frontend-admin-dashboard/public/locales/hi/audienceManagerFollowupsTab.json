@@ -1,0 +1,40 @@
+{
+    "buckets": {
+        "dueToday": "आज देय",
+        "overdue1to3": "1–3 दिन बकाया",
+        "overdue3to7": "3–7 दिन बकाया",
+        "overdue7plus": "7+ दिन बकाया",
+        "upcoming": "आगामी"
+    },
+    "section": {
+        "agingByCounsellor": "काउंसलर के अनुसार एजिंग",
+        "closureReasons": "समापन के कारण (पिछले 30 दिन)"
+    },
+    "table": {
+        "headers": {
+            "counsellor": "काउंसलर",
+            "dueToday": "आज देय",
+            "days1to3": "1–3 दिन",
+            "days3to7": "3–7 दिन",
+            "days7plus": "7+ दिन",
+            "upcoming": "आगामी",
+            "oldestOverdue": "सबसे पुराना बकाया"
+        },
+        "oldestOverdueValue": "{{count}} दिन"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "काउंसलर",
+            "dueToday": "आज देय",
+            "overdue1to3": "1-3 दिन बकाया",
+            "overdue3to7": "3-7 दिन बकाया",
+            "overdue7plus": "7+ दिन बकाया",
+            "upcoming": "आगामी",
+            "oldestOverdueDays": "सबसे पुराना बकाया (दिन)"
+        }
+    },
+    "empty": {
+        "noOpenFollowups": "अभी कोई खुला फॉलो-अप नहीं है।",
+        "noClosures": "पिछले 30 दिनों में कोई फॉलो-अप बंद नहीं हुआ।"
+    }
+}

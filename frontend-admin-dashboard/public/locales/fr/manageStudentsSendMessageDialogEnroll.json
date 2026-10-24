@@ -1,0 +1,45 @@
+{
+    "dialogTitle": "Envoyer un message WhatsApp",
+    "cancel": "Annuler",
+    "sending": "Envoi en cours...",
+    "sendButton_one": "Envoyer à {{count}}",
+    "sendButton_many": "Envoyer à {{count}}",
+    "sendButton_other": "Envoyer à {{count}}",
+    "selectTemplateNotice_one": "Sélectionnez un modèle à envoyer à {{count}} étudiant.",
+    "selectTemplateNotice_many": "Sélectionnez un modèle à envoyer à {{count}} étudiants.",
+    "selectTemplateNotice_other": "Sélectionnez un modèle à envoyer à {{count}} étudiants.",
+    "templateLabel": "Modèle de message",
+    "selectTemplatePlaceholder": "Sélectionnez un modèle",
+    "previewLabel": "Aperçu :",
+    "sendingProgress": "Progression de l'envoi ({{done}}/{{total}}) :",
+    "defaultCustomMessage": "Veuillez consulter votre tableau de bord pour les mises à jour.",
+    "status": {
+        "pending": "En attente...",
+        "sent": "Envoyé",
+        "failed": "Échec"
+    },
+    "toasts": {
+        "noTemplateOrStudents": "Aucun modèle sélectionné ou aucun étudiant disponible.",
+        "templateNotFound": "Modèle sélectionné introuvable.",
+        "startingSend": "Début de l'envoi des messages...",
+        "finished": "Terminé : {{sent}} envoyé(s), {{failed}} échoué(s)."
+    },
+    "templates": {
+        "welcome": {
+            "name": "Message de bienvenue",
+            "content": "Bonjour {{name}} ! Bienvenue sur notre plateforme d'apprentissage."
+        },
+        "sessionReminder": {
+            "name": "Rappel de session",
+            "content": "Bonjour {{name}}, ceci est un rappel concernant votre prochaine session."
+        },
+        "assignmentDue": {
+            "name": "Devoir à rendre",
+            "content": "Bonjour {{name}}, votre devoir arrive bientôt à échéance. Merci de le terminer à temps."
+        },
+        "custom": {
+            "name": "Message personnalisé",
+            "content": "Bonjour {{name}}, {{custom_message_text}}"
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "filesStaged": "{{count}} fichier(s) en attente",
+    "prompts": {
+        "youtubeUrl": "Saisissez l'URL YouTube",
+        "externalLinkUrl": "Saisissez l'URL du lien externe",
+        "embedUrl": "Saisissez l'URL à intégrer"
+    },
+    "defaultTitles": {
+        "youtubeVideo": "Vidéo YouTube",
+        "link": "Lien",
+        "codeEditor": "Éditeur de code",
+        "jupyterNotebook": "Notebook Jupyter",
+        "presentation": "Présentation",
+        "untitledDocument": "Document sans titre",
+        "embeddedUrl": "URL intégrée"
+    },
+    "bubbles": {
+        "uploadFiles": "Téléverser des fichiers",
+        "emptyDoc": "Document vide",
+        "youtube": "YouTube",
+        "externalLink": "Lien externe",
+        "embedUrl": "Intégrer une URL",
+        "pdf": "PDF",
+        "doc": "Doc",
+        "ppt": "PPT",
+        "presentation": "Présentation",
+        "code": "Code",
+        "jupyter": "Jupyter",
+        "image": "Image",
+        "audio": "Audio",
+        "html": "HTML"
+    },
+    "noItemsToAdd": "Aucun élément à ajouter",
+    "addedSlides": "{{count}} diapositive(s) ajoutée(s)",
+    "addFailed": "Échec de l'ajout des diapositives",
+    "heading": "Ajout rapide de diapositives",
+    "close": "Fermer",
+    "publishAll": "Publier tou(te)s les {{term}}",
+    "stagedItems": "Éléments en attente ({{count}})",
+    "emptyState": "Rien en attente pour le moment. Utilisez les actions rapides ci-dessus pour en ajouter.",
+    "adding": "Ajout en cours...",
+    "done": "Terminé",
+    "failed": "Échec",
+    "failedWithReason": "Échec : {{reason}}",
+    "editTitle": "Modifier le titre",
+    "remove": "Retirer"
+}

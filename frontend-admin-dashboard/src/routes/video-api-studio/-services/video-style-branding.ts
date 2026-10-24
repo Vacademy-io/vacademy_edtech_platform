@@ -1,4 +1,5 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import type { TFunction } from 'i18next';
 import {
     GET_VIDEO_BRANDING,
     UPDATE_VIDEO_BRANDING,
@@ -6,6 +7,8 @@ import {
     UPDATE_VIDEO_STYLE,
     GET_VIDEO_TEMPLATES,
 } from '@/constants/urls';
+
+const NS = 'videoApiStudioVideoStyleBranding';
 
 export interface VideoIntroOutroConfig {
     enabled: boolean;
@@ -56,7 +59,7 @@ export const DEFAULT_VIDEO_BRANDING: VideoBrandingConfig = {
 
 export const DEFAULT_VIDEO_STYLE: VideoStyleConfig = {
     background_type: 'white',
-    primary_color: '#6366f1',
+    primary_color: '#6366f1', // design-lint-ignore: functional hex default for the branding API's primary_color / native color-input value, not a CSS class
     heading_font: 'Inter',
     body_font: 'Inter',
     layout_theme: '',
@@ -73,12 +76,21 @@ export const FONT_OPTIONS = [
     'Source Serif 4',
 ] as const;
 
-export const WATERMARK_POSITIONS: ReadonlyArray<{ value: WatermarkPosition; label: string }> = [
-    { value: 'top-left', label: 'Top Left' },
-    { value: 'top-right', label: 'Top Right' },
-    { value: 'bottom-left', label: 'Bottom Left' },
-    { value: 'bottom-right', label: 'Bottom Right' },
-];
+/**
+ * Watermark position options, with translated labels. Call once per render
+ * with the caller's `t` (the `videoApiStudioVideoStyleBranding` namespace
+ * must be loaded by the caller, e.g. via `useTranslation([..., NS])`).
+ */
+export function buildWatermarkPositions(
+    t: TFunction
+): ReadonlyArray<{ value: WatermarkPosition; label: string }> {
+    return [
+        { value: 'top-left', label: t(`${NS}:watermarkPositions.topLeft`) },
+        { value: 'top-right', label: t(`${NS}:watermarkPositions.topRight`) },
+        { value: 'bottom-left', label: t(`${NS}:watermarkPositions.bottomLeft`) },
+        { value: 'bottom-right', label: t(`${NS}:watermarkPositions.bottomRight`) },
+    ];
+}
 
 export async function fetchVideoStyle(instituteId: string): Promise<VideoStyleConfig> {
     try {

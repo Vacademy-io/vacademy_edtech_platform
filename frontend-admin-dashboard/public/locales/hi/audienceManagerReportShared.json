@@ -1,0 +1,28 @@
+{
+    "emptyHint": {
+        "default": "इस अवधि में कोई डेटा नहीं है।"
+    },
+    "skeleton": {
+        "ariaLabel": "रिपोर्ट लोड हो रही है"
+    },
+    "errorState": {
+        "deployPendingTitle": "इस रिपोर्ट के लिए नवीनतम बैकएंड चाहिए — डिप्लॉय लंबित है",
+        "genericTitle": "यह रिपोर्ट लोड नहीं हो सकी",
+        "deployPendingBody": "इस टैब को चलाने वाला एंडपॉइंट अभी इस वातावरण में उपलब्ध नहीं है। अगले बैकएंड डिप्लॉय के बाद यह अपने आप सक्रिय हो जाएगा।",
+        "genericBody": "डेटा लाते समय कुछ गड़बड़ हो गई। अपना कनेक्शन जाँचें और फिर से प्रयास करें।",
+        "retry": "फिर से प्रयास करें"
+    },
+    "export": {
+        "defaultLabel": "CSV निर्यात करें",
+        "dialogTitle": "निर्यात के लिए कॉलम चुनें",
+        "selectAll": "सभी चुनें",
+        "deselectAll": "सभी हटाएं",
+        "columnsSelected": "{{selected}} / {{total}} कॉलम",
+        "cancel": "रद्द करें",
+        "export": "निर्यात करें"
+    },
+    "breakdownBar": {
+        "converted_one": "({{count}} रूपांतरित)",
+        "converted_other": "({{count}} रूपांतरित)"
+    }
+}

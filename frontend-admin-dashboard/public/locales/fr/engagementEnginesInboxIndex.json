@@ -1,0 +1,79 @@
+{
+    "helmetTitle": "Boîte de réception des tâches d'engagement",
+    "heading": "Boîte de réception des tâches",
+    "subheading": "Chaque message rédigé par les moteurs, classé par priorité. Vérifiez, modifiez et envoyez.",
+    "allEngines": "Tous les moteurs",
+    "filters": {
+        "needsAction": "Action requise",
+        "sent": "Envoyé",
+        "failed": "Échoué",
+        "handled": "Traité",
+        "dryRun": "Essai"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les tâches."
+    },
+    "emptyState": "Rien à afficher pour le moment.",
+    "noDraft": "(aucun brouillon)",
+    "priority": "priorité {{value}}",
+    "kind": {
+        "reply": "Réponse",
+        "autoSend": "Envoi auto",
+        "task": "Task"
+    },
+    "actions": {
+        "reviewAndSend": "Vérifier et envoyer",
+        "acknowledge": "Accuser réception",
+        "handledElsewhere": "Traité ailleurs",
+        "dismiss": "Ignorer",
+        "reopen": "Rouvrir",
+        "cancel": "Annuler"
+    },
+    "sendDialog": {
+        "heading": "Vérifier et envoyer",
+        "fixedTemplateNotice": "Ceci est un modèle WhatsApp fixe, approuvé par Meta. Le texte ne peut pas être modifié — seules ses variables le peuvent. Voici exactement ce qui sera envoyé :",
+        "variables": "Variables",
+        "editableNotice": "Modifiez avant l'envoi si vous le souhaitez — votre modification sera envoyée telle quelle.",
+        "sending": "Envoi en cours…",
+        "sendNow": "Envoyer maintenant"
+    },
+    "needsTemplate": "WhatsApp ne peut envoyer qu’un modèle approuvé, et cette tâche n’en a pas. Traitez-la autrement ou ignorez-la.",
+    "toolbar": {
+        "search": "Search drafts, reasons, engines or templates",
+        "allEngines": "All engines",
+        "allChannels": "All channels",
+        "allKinds": "All kinds",
+        "kindTask": "Tasks only",
+        "kindReply": "Replies only",
+        "kindSend": "Auto-sends only",
+        "sortPriority": "Priority first",
+        "sortOldest": "Oldest first",
+        "sortNewest": "Newest first",
+        "pageNote": "Search and filters apply to the tasks on this page."
+    },
+    "filteredEmpty": "No tasks on this page match these filters.",
+    "priorityShort": "P{{value}}",
+    "age": {
+        "minutes": "{{count}}m",
+        "hours": "{{count}}h",
+        "days": "{{count}}d"
+    },
+    "detail": {
+        "why": "Why the AI picked this",
+        "draft": "Draft",
+        "sentMessage": "Sent message",
+        "callBrief": "Call brief",
+        "template": "Template {{name}}",
+        "simulated": "Dry-run draft — nothing was sent",
+        "timing": "Timing",
+        "created": "Drafted",
+        "scheduledFor": "Scheduled for",
+        "expiresAt": "Expires",
+        "dispatchedAt": "Dispatched",
+        "completedAt": "Completed",
+        "outcome": "Outcome",
+        "openEngine": "Open engine",
+        "draftedAgo": "Drafted {{age}} ago"
+    },
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent."
+}

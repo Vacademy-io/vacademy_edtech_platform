@@ -1,0 +1,126 @@
+{
+    "languages": {
+        "en": "अंग्रेज़ी",
+        "en_US": "अंग्रेज़ी (US)",
+        "hi": "हिंदी",
+        "es": "स्पेनिश",
+        "pt_BR": "पुर्तगाली (BR)",
+        "ar": "अरबी",
+        "fr": "फ़्रेंच",
+        "de": "जर्मन",
+        "id": "इंडोनेशियाई",
+        "it": "इतालवी",
+        "ja": "जापानी",
+        "ko": "कोरियाई",
+        "zh_CN": "चीनी (सरलीकृत)"
+    },
+    "toast": {
+        "maxButtons": "अधिकतम 3 बटन",
+        "multipleProblems_one": "इसे सहेजने से पहले {{count}} चीज़ ठीक करनी होगी — ऊपर दी गई सूची देखें।",
+        "multipleProblems_other": "इसे सहेजने से पहले {{count}} चीज़ें ठीक करनी होंगी — ऊपर दी गई सूची देखें।",
+        "draftSaved": "ड्राफ्ट सहेजा गया",
+        "saveDraftFailed": "ड्राफ्ट सहेजा नहीं जा सका।",
+        "saveTemplateFailed": "टेम्पलेट सहेजा नहीं जा सका।",
+        "approvedByMeta": "टेम्पलेट Meta द्वारा स्वीकृत हो गया है और उपयोग के लिए तैयार है।",
+        "submittedToMeta": "टेम्पलेट अनुमोदन के लिए Meta को सबमिट किया गया।",
+        "metaRejected": "Meta ने टेम्पलेट को अस्वीकार कर दिया। आपका ड्राफ्ट सहेज लिया गया है।",
+        "draftSavedRetry": "आपका ड्राफ्ट सहेजा गया है — ऊपर बताई गई समस्या ठीक करें और फिर से सबमिट करें।",
+        "sampleUploaded": "सैंपल {{kind}} अपलोड हो गया — सार्वजनिक URL भर दिया गया है।",
+        "sampleUploadFailed": "सैंपल {{kind}} अपलोड नहीं हो सका।",
+        "sampleWrongType": "यह फ़ाइल समर्थित {{kind}} नहीं है। {{formats}} का उपयोग करें।",
+        "sampleTooLarge": "यह फ़ाइल बहुत बड़ी है। {{formats}} का उपयोग करें।"
+    },
+    "problemsBanner": {
+        "single": "इस टेम्पलेट में एक सुधार चाहिए",
+        "multiple_one": "{{count}} चीज़ ठीक करनी है",
+        "multiple_other": "{{count}} चीज़ें ठीक करनी हैं"
+    },
+    "header": {
+        "edit": "टेम्पलेट संपादित करें",
+        "create": "टेम्पलेट बनाएं",
+        "saveDraft": "ड्राफ्ट सहेजें",
+        "submitting": "सबमिट हो रहा है...",
+        "submitForApproval": "अनुमोदन के लिए सबमिट करें",
+        "back": "टेम्पलेट पर वापस जाएँ",
+        "subtitleCreate": "टेम्पलेट बनाएँ और Meta को सबमिट करें। स्वीकृति में आमतौर पर कुछ मिनट, अधिकतम 24 घंटे लगते हैं।",
+        "subtitleEdit": "{{name}} · चिह्नित समस्याएँ ठीक करें और फिर से सबमिट करें।"
+    },
+    "fields": {
+        "templateName": "टेम्पलेट नाम",
+        "templateNameHint": "केवल लोअरकेस, अंडरस्कोर",
+        "category": "श्रेणी",
+        "categoryMarketing": "मार्केटिंग",
+        "categoryUtility": "यूटिलिटी",
+        "categoryAuthentication": "प्रमाणीकरण",
+        "language": "भाषा",
+        "header": "हेडर",
+        "headerNone": "कोई नहीं",
+        "headerText": "टेक्स्ट",
+        "headerImage": "छवि",
+        "headerVideo": "वीडियो",
+        "headerDocument": "दस्तावेज़",
+        "headerTextPlaceholder": "हेडर टेक्स्ट (अधिकतम 60 अक्षर)",
+        "headerSampleValuePlaceholder": "हेडर वेरिएबल के लिए सैंपल मान (जैसे अक्टूबर)",
+        "headerSampleUrlPlaceholder": "सैंपल {{kind}} URL (Meta अनुमोदन के लिए)",
+        "bodyText": "बॉडी टेक्स्ट",
+        "addVariable": "वेरिएबल जोड़ें",
+        "charCount": "{{count}}/1024 अक्षर",
+        "variableConfiguration": "वेरिएबल कॉन्फ़िगरेशन:",
+        "variableNamePlaceholder": "वेरिएबल नाम (जैसे name, course)",
+        "sampleValuePlaceholder": "सैंपल मान (जैसे John)",
+        "apiNamedParamsHint": "वेरिएबल नाम आपको API में नामित पैरामीटर उपयोग करने देते हैं: {\"name\": \"John\"} की जगह {\"1\": \"John\"}",
+        "footer": "फ़ुटर (वैकल्पिक)",
+        "footerPlaceholder": "आपके व्यवसाय के लिए धन्यवाद!",
+        "buttons": "बटन (अधिकतम 3)",
+        "buttonTextPlaceholder": "बटन टेक्स्ट",
+        "buttonUrlSamplePlaceholder": "सैंपल पूरा URL (जैसे https://example.com/track/A123)",
+        "buttonPhonePlaceholder": "+919876543210",
+        "addQuickReply": "+ त्वरित उत्तर",
+        "addUrlButton": "+ URL बटन",
+        "addPhone": "+ फ़ोन",
+        "headerSampleUpload": "अपलोड करें",
+        "headerSampleUploading": "अपलोड हो रहा है…",
+        "headerSampleUrlHint": "फ़ाइल अपलोड करें या सार्वजनिक URL पेस्ट करें — Meta समीक्षा के लिए इसे डाउनलोड करता है। {{formats}}।",
+        "headerSampleFormats": {
+            "image": "JPG या PNG, अधिकतम 5 MB",
+            "video": "MP4, अधिकतम 16 MB",
+            "document": "PDF, अधिकतम 100 MB"
+        }
+    },
+    "headerKind": {
+        "image": "छवि",
+        "video": "वीडियो",
+        "document": "दस्तावेज़"
+    },
+    "preview": {
+        "title": "WhatsApp पूर्वावलोकन",
+        "headerTextFallback": "हेडर टेक्स्ट",
+        "imageFallback": "📷 छवि",
+        "videoFallback": "🎬 वीडियो",
+        "documentFallback": "📄 दस्तावेज़",
+        "bodyFallback": "आपका संदेश यहाँ दिखाई देगा...",
+        "buttonFallback": "बटन {{n}}",
+        "category": "श्रेणी:",
+        "language": "भाषा:",
+        "placeholders": "प्लेसहोल्डर:",
+        "buttonsCount": "बटन:"
+    },
+    "sections": {
+        "basics": {
+            "title": "बुनियादी जानकारी",
+            "description": "नाम, श्रेणी और भाषा तय करते हैं कि Meta टेम्पलेट की समीक्षा और मूल्य कैसे तय करेगा।"
+        },
+        "header": {
+            "description": "वैकल्पिक। संदेश के ऊपर दिखने वाली बोल्ड पंक्ति, या इमेज, वीडियो या दस्तावेज़।"
+        },
+        "body": {
+            "description": "प्राप्तकर्ता क्या पढ़ेगा। वेरिएबल क्रम से {{first}}, {{second}} आदि क्रमांकित होते हैं।"
+        },
+        "footer": {
+            "description": "वैकल्पिक, संदेश के नीचे छोटी धूसर पंक्ति। इसमें वेरिएबल नहीं होते।"
+        },
+        "buttons": {
+            "description": "वैकल्पिक, अधिकतम 3। {{used}}/3 उपयोग हुए।"
+        }
+    }
+}

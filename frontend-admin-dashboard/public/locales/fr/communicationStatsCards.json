@@ -1,0 +1,43 @@
+{
+    "couldNotLoad": "Impossible de charger les statistiques de notification.",
+    "emailStats": {
+        "sent": "E-mails envoyés",
+        "delivered": "Livrés",
+        "opened": "Ouverts",
+        "clicked": "Cliqués",
+        "bounced": "Rejetés",
+        "inbound": "Réponses entrantes",
+        "complaints": "Plaintes"
+    },
+    "waStats": {
+        "out": "WhatsApp sortants",
+        "in": "WhatsApp entrants"
+    },
+    "sections": {
+        "email": "E-mail",
+        "whatsapp": "WhatsApp"
+    },
+    "emailSubtitle": {
+        "notConfigured": "Aucun e-mail expéditeur configuré pour cet établissement.",
+        "fullyConfigured": "Expéditeur + boîte de réception entrante configurés.",
+        "senderOnly": "Expéditeur configuré. Réponses entrantes pas encore activées."
+    },
+    "waSubtitle": {
+        "connected": "Canal professionnel WhatsApp connecté.",
+        "notConfigured": "Aucun canal WhatsApp associé à cet établissement."
+    },
+    "activeBatches": "Lots actifs",
+    "batchesCompleted_one": "Lots terminés ({{count}} j)",
+    "batchesCompleted_many": "Lots terminés ({{count}} j)",
+    "batchesCompleted_other": "Lots terminés ({{count}} j)",
+    "viewStat": "Voir {{label}}",
+    "rates": {
+        "ofSent": "{{rate}} des envois",
+        "open": "{{rate}} taux d'ouverture",
+        "click": "{{rate}} taux de clic",
+        "bounce": "{{rate}} taux de rebond",
+        "complaints": "Signalés comme spam"
+    },
+    "windowLabel_one": "Dernières 24 heures",
+    "windowLabel_other": "{{count}} derniers jours"
+}

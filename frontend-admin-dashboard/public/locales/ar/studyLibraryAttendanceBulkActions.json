@@ -1,0 +1,14 @@
+{
+    "options": {
+        "sendWhatsApp": "إرسال رسالة واتساب",
+        "sendEmail": "إرسال بريد إلكتروني"
+    },
+    "studentsSelected_zero": "لا طلاب محددون",
+    "studentsSelected_one": "طالب واحد محدد",
+    "studentsSelected_two": "طالبان محددان",
+    "studentsSelected_few": "{{count}} طلاب محددون",
+    "studentsSelected_many": "{{count}} طالبًا محددًا",
+    "studentsSelected_other": "{{count}} طالب محدد",
+    "clearSelection": "مسح التحديد",
+    "bulkActions": "إجراءات جماعية"
+}

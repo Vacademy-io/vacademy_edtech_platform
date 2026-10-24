@@ -1,0 +1,11 @@
+{
+    "previewQuestions_one": "Preview {{count}} Question",
+    "previewQuestions_other": "Preview {{count}} Questions",
+    "allQuestionsRemoved": "All questions removed. Close this dialog to go back.",
+    "questionsWillBeAdded_one": "{{count}} question will be added to the quiz",
+    "questionsWillBeAdded_other": "{{count}} questions will be added to the quiz",
+    "cancel": "Cancel",
+    "adding": "Adding…",
+    "addQuestionsToQuiz_one": "Add {{count}} Question to Quiz",
+    "addQuestionsToQuiz_other": "Add {{count}} Questions to Quiz"
+}

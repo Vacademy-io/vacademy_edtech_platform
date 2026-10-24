@@ -1,0 +1,38 @@
+{
+    "viewAssessmentDetails": "View Assessment Details",
+    "deleteAssessment": "Delete Assessment",
+    "open": "Open",
+    "attention": "Attention",
+    "sendReminder": "Send Reminder",
+    "reminderBody": {
+        "prefix": "A Assessment reminder will be sent to all",
+        "participantCount_one": "{{count}} participant",
+        "participantCount_other": "{{count}} participants",
+        "suffix": "who have not yet appeared from the assigned batches."
+    },
+    "send": "Send",
+    "toasts": {
+        "slideDeleteFailed": "Assessment deleted, but its course slides could not be removed.",
+        "deleteSuccess": "Assessment has been deleted successfully!"
+    },
+    "deleteConfirm": {
+        "prefix": "Are you sure you want to delete"
+    },
+    "delete": "Delete",
+    "pauseLiveStatus": "Pause Live Status",
+    "date": "Date",
+    "pauseUntil": "Pause Until",
+    "time": "Time",
+    "pause": "Pause",
+    "resumeLiveStatus": "Resume Live Status",
+    "resumeConfirm": {
+        "prefix": "Do you want to resume your Live assessment",
+        "assessmentName": "The Human Eye and The Colourful World"
+    },
+    "resume": "Resume",
+    "reopenAssessment": "Reopen Assessment",
+    "selectReopenDateTime": "Select assessment reopening date and time",
+    "startDateTime": "Start Date & Time",
+    "endDateTime": "End Date & Time",
+    "reopen": "Reopen"
+}

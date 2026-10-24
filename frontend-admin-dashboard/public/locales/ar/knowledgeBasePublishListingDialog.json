@@ -1,0 +1,50 @@
+{
+    "validation": {
+        "titleRequired": "أعط هذه المكتبة عنوانًا",
+        "summaryRequired": "اكتب سطرًا واحدًا يصف هذا المحتوى",
+        "summaryMax": "اجعل الملخص أقل من 280 حرفًا",
+        "subjectRequired": "المادة مطلوبة للتصفية",
+        "levelRequired": "الصف أو الامتحان مطلوب للتصفية"
+    },
+    "toast": {
+        "identifyFailed": "تعذر التعرف عليك. يرجى تسجيل الدخول مرة أخرى.",
+        "uploadFailed": "تعذر رفع هذه الصورة. يرجى المحاولة مرة أخرى.",
+        "saveSuccess": "تم حفظ تفاصيل المكتبة",
+        "saveFailed": "تعذر حفظ هذه التفاصيل"
+    },
+    "heading": {
+        "edit": "تعديل تفاصيل المكتبة",
+        "create": "صف هذه المكتبة"
+    },
+    "cancel": "إلغاء",
+    "save": "حفظ التفاصيل",
+    "saving": "جارٍ الحفظ…",
+    "intro": "هذا ما تقرأه المؤسسة عند اتخاذ قرار إنفاق الأرصدة. اكتبه لشخص لم يرَ هذه المادة من قبل.",
+    "cover": {
+        "defaultTitle": "المكتبة",
+        "replace": "استبدال الغلاف",
+        "add": "إضافة صورة غلاف",
+        "remove": "إزالة",
+        "altLabel": "صف الغلاف",
+        "altPlaceholder": "مثال: غلاف كتاب فيزياء NCERT للصف 11",
+        "altHint": "يُقرأ بصوت عالٍ لأي شخص يستخدم قارئ الشاشة، ويُعرض إذا تعذر تحميل الصورة."
+    },
+    "fields": {
+        "titleLabel": "العنوان",
+        "titlePlaceholder": "مثال: فيزياء NCERT — الصف 11",
+        "summaryLabel": "ملخص من سطر واحد",
+        "summaryPlaceholder": "مثال: المنهج الكامل، كلا الجزأين، مع أمثلة محلولة",
+        "descriptionLabel": "الوصف الكامل",
+        "descriptionPlaceholder": "ما الذي يغطيه، ولمن يناسب، وأي شيء يجب أن يعرفه المعلم قبل استخدامه.",
+        "subjectLabel": "المادة",
+        "subjectPlaceholder": "الفيزياء",
+        "levelLabel": "الصف أو الامتحان",
+        "levelPlaceholder": "الصف 11",
+        "boardLabel": "المجلس",
+        "boardPlaceholder": "CBSE",
+        "languageLabel": "اللغة",
+        "languagePlaceholder": "الإنجليزية",
+        "tagsLabel": "الوسوم",
+        "tagsPlaceholder": "الميكانيكا، الديناميكا الحرارية، أمثلة محلولة"
+    }
+}

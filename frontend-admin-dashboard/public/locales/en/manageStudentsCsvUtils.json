@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "required": "{{field}} is required",
+        "requiredResolution": "Please provide a value for {{field}}",
+        "usernameNoSpaces": "Username cannot contain spaces",
+        "usernameNoSpacesResolution": "Remove the spaces from the username",
+        "usernameNoSpacesFormat": "No spaces allowed",
+        "invalidValue": "Invalid value for {{field}}",
+        "invalidValueResolution": "Value must be one of: {{options}}",
+        "invalidDateFormat": "Invalid date format for {{field}}",
+        "invalidDateFormatResolution": "Date must be in format: {{format}}",
+        "invalidFormat": "Invalid format for {{field}}",
+        "checkFormat": "Please check the format"
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "dimensions": {
+        "source": "مصدر UTM",
+        "medium": "وسيط UTM",
+        "campaign": "حملة UTM",
+        "content": "محتوى UTM",
+        "term": "مصطلح UTM",
+        "sourceType": "قناة UTM"
+    },
+    "sourceTypes": {
+        "audience": "نموذج الجمهور",
+        "liveSession": "حصة مباشرة",
+        "assessment": "تقييم",
+        "enrollInvite": "دعوة تسجيل",
+        "productPage": "صفحة المنتج",
+        "catalogue": "موقع الكتالوج",
+        "custom": "صفحة أخرى"
+    },
+    "untagged": "بدون حملة (غير موسوم)",
+    "searchPlaceholder": "ابحث في {{dimension}}…",
+    "chip": "{{dimension}}: {{value}}"
+}

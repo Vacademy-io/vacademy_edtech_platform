@@ -3,6 +3,7 @@ import { AxiosError } from "axios";
 import { LIVE_SESSION_MARK_ATTENDANCE_FOR_GUEST } from "@/constants/urls";
 import { toast } from "sonner";
 import { guestAxiosInstance } from "@/lib/auth/axiosInstance";
+import { useTranslation } from "react-i18next";
 
 interface MarkAttendancePayload {
   sessionId: string;
@@ -13,6 +14,7 @@ interface MarkAttendancePayload {
 }
 
 export const useMarkAttendance = () => {
+  const { t } = useTranslation("liveClassGuest");
   return useMutation({
     mutationFn: async (payload: MarkAttendancePayload) => {
       const response = await guestAxiosInstance.post(LIVE_SESSION_MARK_ATTENDANCE_FOR_GUEST, payload);
@@ -30,7 +32,7 @@ export const useMarkAttendance = () => {
         return;
       }
 
-      toast.error("Failed to mark attendance");
+      toast.error(t("common.markAttendanceFailed"));
     },
   });
 };

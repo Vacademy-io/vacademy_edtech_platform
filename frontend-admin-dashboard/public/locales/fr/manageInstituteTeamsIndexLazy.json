@@ -1,0 +1,39 @@
+{
+    "navHeading": "Équipes",
+    "tabs": {
+        "instituteUsers": "Utilisateurs de l'établissement",
+        "invites": "Invitations",
+        "orgChart": "Organigramme"
+    },
+    "search": {
+        "placeholder": "Rechercher par nom, e-mail..."
+    },
+    "filters": {
+        "roleType": "Type de rôle",
+        "status": "Statut",
+        "subOrg": "Sous-organisation",
+        "applyFilters": "Appliquer les filtres",
+        "clearAll": "Tout effacer",
+        "clearAllFilters": "Effacer tous les filtres"
+    },
+    "columns": {
+        "name": "Nom",
+        "email": "E-mail",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "phone": "Téléphone",
+        "roles": "Rôles",
+        "subOrgs": "Sous-organisations",
+        "actions": "Actions"
+    },
+    "subOrgColumn": {
+        "assignedTooltip": "Attribué à cette personne",
+        "grantedByRoleTooltip": "Accordé par le rôle de cette personne",
+        "viaRole": "via le rôle"
+    },
+    "assignSubOrgs": "Attribuer {{term}}",
+    "emptyState": {
+        "title": "Aucun membre d'équipe trouvé",
+        "body": "Nous n'avons trouvé aucun membre d'équipe correspondant à votre recherche ou à vos filtres actuels. Ajustez-les ou invitez de nouveaux utilisateurs."
+    }
+}

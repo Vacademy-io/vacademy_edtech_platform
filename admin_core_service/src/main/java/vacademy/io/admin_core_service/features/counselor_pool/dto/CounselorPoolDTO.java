@@ -42,6 +42,10 @@ public class CounselorPoolDTO {
     @JsonProperty("shift_aware")
     private Boolean shiftAware;
 
+    /** Rotation follows one pool-wide order; per-campaign orders are ignored. */
+    @JsonProperty("unified_rotation_order")
+    private Boolean unifiedRotationOrder;
+
     @JsonProperty("created_by")
     private String createdBy;
 

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
     Table,
     TableBody,
@@ -25,11 +26,10 @@ import { useSubmissionsBulkActionsDialogStoreOngoing } from './bulk-actions-zust
 import { IncreaseAssessmentTimeDialog } from './assessment-menu-options-ongoing-bulk/increase-assessment-time-component';
 import { CloseSubmissionDialog } from './assessment-menu-options-ongoing-bulk/close-submission-component';
 import { useSubmissionsBulkActionsDialogStorePending } from './bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStorePending';
-import { SendReminderDialog } from './assessment-menu-options-pending-bulk/send-reminder-component';
 import { RemoveParticipantsDialog } from './assessment-menu-options-pending-bulk/remove-participants-component';
 
-const headerTextCss = 'p-3 border-r border-neutral-300';
-const cellCommonCss = 'p-3';
+const headerTextCss = 'px-3 py-2.5';
+const cellCommonCss = 'px-3 py-3';
 
 export interface TableData<T> {
     content: T[];
@@ -61,12 +61,14 @@ export function AssessmentSubmissionsStudentTable<T>({
     columnWidths,
     rowSelection,
     onRowSelectionChange,
+    currentPage,
 }: MyTableProps<T>) {
+    const { t } = useTranslation('assessmentSubmissionsStudentTable');
     const table = useReactTable({
         data: data?.content || [],
         columns,
         getCoreRowModel: getCoreRowModel(),
-        meta: { onSort },
+        meta: { onSort, pageOffset: currentPage * (data?.page_size ?? 10) },
         state: {
             rowSelection,
         },
@@ -102,30 +104,73 @@ export function AssessmentSubmissionsStudentTable<T>({
         closeAllDialogs: closeAllDialogsOngoing,
     } = useSubmissionsBulkActionsDialogStoreOngoing();
 
-    const {
-        sendReminder,
-        removeParticipants,
-        closeAllDialogs: closeAllDialogsPending,
-    } = useSubmissionsBulkActionsDialogStorePending();
+    const { removeParticipants, closeAllDialogs: closeAllDialogsPending } =
+        useSubmissionsBulkActionsDialogStorePending();
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error loading data</div>;
     if (!data) return null;
     if (!table) return <DashboardLoader />;
 
+    const rows = table.getRowModel().rows;
+    const leafColumns = table.getAllLeafColumns();
+    const skeletonRowCount = data.page_size || 10;
+
+    // Loading, error and empty all render INSIDE the table body rather than in place of
+    // the whole table. Returning a bare <div>Loading...</div> tore the column headers off
+    // the screen and back on again on every page change, filter and sub-tab switch — and
+    // an empty result set previously rendered a header row over nothing at all, with no
+    // indication that the filters simply matched no one.
+    const bodyState = () => {
+        if (error) {
+            return (
+                <TableRow className="hover:bg-white">
+                    <TableCell colSpan={leafColumns.length} className="p-8 text-center">
+                        <p className="text-subtitle font-semibold text-danger-600">
+                            {t('states.error')}
+                        </p>
+                        <p className="text-body text-neutral-500">{t('states.errorHint')}</p>
+                    </TableCell>
+                </TableRow>
+            );
+        }
+        if (isLoading) {
+            return Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+                <TableRow key={`skeleton-${rowIndex}`} className="hover:bg-white">
+                    {leafColumns.map((column) => (
+                        <TableCell key={column.id} className={cellCommonCss}>
+                            <div className="h-4 w-full animate-pulse rounded bg-neutral-100" />
+                        </TableCell>
+                    ))}
+                </TableRow>
+            ));
+        }
+        return (
+            <TableRow className="hover:bg-white">
+                <TableCell colSpan={leafColumns.length} className="p-8 text-center">
+                    <p className="text-subtitle font-semibold text-neutral-600">
+                        {t('states.emptyTitle')}
+                    </p>
+                    <p className="text-body text-neutral-500">{t('states.emptyHint')}</p>
+                </TableCell>
+            </TableRow>
+        );
+    };
+
     return (
-        <div className="h-auto w-full overflow-visible rounded-lg border">
-            <div className="max-w-full overflow-visible rounded-lg">
-                <Table className="rounded-lg">
-                    <TableHeader className="relative bg-primary-200">
+        <div className="h-auto w-full overflow-visible rounded-xl border border-neutral-200">
+            <div className="max-w-full overflow-visible rounded-xl">
+                <Table className="rounded-xl">
+                    <TableHeader className="relative bg-neutral-50">
                         {table &&
                             table?.getHeaderGroups()?.length > 0 &&
                             table?.getHeaderGroups()?.map((headerGroup) => (
-                                <TableRow key={headerGroup.id} className="hover:bg-primary-200">
+                                <TableRow
+                                    key={headerGroup.id}
+                                    className="border-b border-neutral-200 hover:bg-neutral-50"
+                                >
                                     {headerGroup.headers.map((header) => (
                                         <TableHead
                                             key={header.id}
-                                            className={`${headerTextCss} overflow-visible bg-primary-100 text-subtitle font-semibold text-neutral-600 ${
+                                            className={`${headerTextCss} overflow-visible whitespace-nowrap bg-neutral-50 text-caption font-semibold text-neutral-500 ${
                                                 columnWidths?.[header.column.id] || ''
                                             }`}
                                         >
@@ -139,20 +184,28 @@ export function AssessmentSubmissionsStudentTable<T>({
                             ))}
                     </TableHeader>
                     <TableBody>
-                        {table.getRowModel().rows.map((row) => (
-                            <TableRow key={row.id} className="hover:bg-white">
-                                {row.getVisibleCells().map((cell) => (
-                                    <TableCell
-                                        key={cell.id}
-                                        className={`${cellCommonCss} z-10 bg-white text-body font-regular text-neutral-600 ${
-                                            columnWidths?.[cell.column.id] || ''
-                                        }`}
-                                    >
-                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
+                        {rows.length > 0 && !isLoading && !error
+                            ? rows.map((row) => (
+                                  <TableRow
+                                      key={row.id}
+                                      className="group border-b border-neutral-100"
+                                  >
+                                      {row.getVisibleCells().map((cell) => (
+                                          <TableCell
+                                              key={cell.id}
+                                              className={`${cellCommonCss} z-10 bg-white text-body font-regular text-neutral-600 transition-colors group-hover:bg-neutral-50 ${
+                                                  columnWidths?.[cell.column.id] || ''
+                                              }`}
+                                          >
+                                              {flexRender(
+                                                  cell.column.columnDef.cell,
+                                                  cell.getContext()
+                                              )}
+                                          </TableCell>
+                                      ))}
+                                  </TableRow>
+                              ))
+                            : bodyState()}
                     </TableBody>
                 </Table>
             </div>
@@ -202,14 +255,6 @@ export function AssessmentSubmissionsStudentTable<T>({
                 open={closeSubmission}
                 onOpenChange={(open) => {
                     if (!open) closeAllDialogsOngoing();
-                }}
-            />
-
-            <SendReminderDialog
-                trigger={null}
-                open={sendReminder}
-                onOpenChange={(open) => {
-                    if (!open) closeAllDialogsPending();
                 }}
             />
 

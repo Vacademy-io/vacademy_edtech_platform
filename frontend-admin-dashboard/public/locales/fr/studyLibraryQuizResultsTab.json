@@ -1,0 +1,9 @@
+{
+    "byLearner": "Par apprenant",
+    "byLearnerCaption": "Une ligne par apprenant. Cliquez sur un apprenant pour voir tous les quiz qu'il a passés, ses réponses, ses notes et ses tentatives.",
+    "byQuiz": "Par quiz",
+    "byQuizCaption": "Une ligne par quiz. Cliquez sur un quiz pour voir qui l'a passé, ses résultats et les questions ratées par la classe.",
+    "selectBatchTitle": "Sélectionnez un groupe pour voir les résultats des quiz",
+    "selectBatchSubtitle": "Les résultats des quiz sont rapportés par groupe, car une même diapositive de quiz peut être partagée entre plusieurs groupes.",
+    "quizResultViewsAriaLabel": "Vues des résultats des quiz"
+}

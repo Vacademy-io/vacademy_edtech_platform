@@ -1,0 +1,28 @@
+{
+    "channelSelect": {
+        "metaDirect": "Meta Direct",
+        "allProviders": "All Providers"
+    },
+    "settingsButton": {
+        "title": "Flow settings — including who is notified when the bot hands over",
+        "label": "Settings"
+    },
+    "saveButton": {
+        "saving": "Saving...",
+        "dirty": "Save *",
+        "default": "Save"
+    },
+    "activateButton": {
+        "deactivate": "Deactivate",
+        "activate": "Activate"
+    },
+    "toast": {
+        "saveSuccess": "Flow saved successfully",
+        "activeSaveBlocked": "Cannot save an active flow. Deactivate it first, then save.",
+        "saveFailed": "Failed to save flow",
+        "saveFlowFirst": "Save the flow first",
+        "deactivated": "Flow deactivated",
+        "activated": "Flow activated",
+        "validationFailed": "Validation failed"
+    }
+}

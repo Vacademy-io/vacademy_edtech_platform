@@ -1,0 +1,81 @@
+{
+    "filters": {
+        "everyone": "Everyone",
+        "hasAttempted": "Has attempted",
+        "notStarted": "Not started",
+        "atRisk": "At risk"
+    },
+    "sorts": {
+        "lowestAverage": "Lowest average",
+        "highestAverage": "Highest average",
+        "nameAz": "Name (A–Z)",
+        "mostQuizzesDone": "Most quizzes done",
+        "fewestQuizzesDone": "Fewest quizzes done",
+        "mostRecentActivity": "Most recent activity"
+    },
+    "csv": {
+        "name": "Name",
+        "email": "Email",
+        "mobile": "Mobile",
+        "quizzesAttempted": "Quizzes attempted",
+        "quizzesInCourse": "Quizzes in course",
+        "totalAttempts": "Total attempts",
+        "marksObtained": "Marks obtained",
+        "maxMarksAttempted": "Max marks (attempted)",
+        "maxMarksCourse": "Max marks (course)",
+        "averagePercent": "Average %",
+        "bestPercent": "Best %",
+        "lowestPercent": "Lowest %",
+        "correct": "Correct",
+        "wrong": "Wrong",
+        "skipped": "Skipped",
+        "quizzesPassed": "Quizzes passed",
+        "lastActivity": "Last activity"
+    },
+    "table": {
+        "learner": "Learner",
+        "quizzesDone": "Quizzes done",
+        "averageScore": "Average score",
+        "notStarted": "Not started",
+        "passed": "Passed",
+        "noPassMark": "No pass mark",
+        "attempts": "Attempts",
+        "lastActivity": "Last activity"
+    },
+    "stats": {
+        "learners": "Learners",
+        "quizzesInCourse_one": "{{count}} quiz in this course",
+        "quizzesInCourse_other": "{{count}} quizzes in this course",
+        "haveAttempted": "Have attempted",
+        "haveNotStarted_one": "{{count}} has not started",
+        "haveNotStarted_other": "{{count}} have not started",
+        "classAverage": "Class average",
+        "ofLearnersWhoStarted": "Of learners who started",
+        "atRisk": "At risk",
+        "averagingUnder50": "Averaging under 50%"
+    },
+    "searchPlaceholder": "Search learners",
+    "filterLearnersAriaLabel": "Filter learners",
+    "actions": {
+        "exportCsv": "Export CSV",
+        "refreshAriaLabel": "Refresh learner results",
+        "clearFilters": "Clear filters",
+        "retry": "Retry"
+    },
+    "truncatedNotice": "This batch has more learners than the report returns at once — the list below is capped.",
+    "empty": {
+        "noneEnrolledTitle": "No learners enrolled in this batch yet",
+        "noneEnrolledSubtitle": "Once learners are enrolled, their quiz progress shows up here.",
+        "noMatchTitle": "No learners match these filters",
+        "noMatchSubtitle": "Try a different search term or clear the filters."
+    },
+    "errors": {
+        "couldNotLoad": "Could not load learner results",
+        "couldNotLoadSubtitle": "The request failed. Check your connection and try again."
+    },
+    "toast": {
+        "nothingToExport": "Nothing to export with these filters.",
+        "exported_one": "Exported {{count}} learner",
+        "exported_other": "Exported {{count}} learners"
+    }
+}

@@ -43,6 +43,7 @@ public final class CombotWebhookKeys {
     public static final String LIST_REPLY = "list_reply";
     public static final String BUTTON_REPLY = "button_reply";
     public static final String TITLE = "title";
+    public static final String CAPTION = "caption";
     
     // ========== Status Keys ==========
     public static final String STATUSES = "statuses";

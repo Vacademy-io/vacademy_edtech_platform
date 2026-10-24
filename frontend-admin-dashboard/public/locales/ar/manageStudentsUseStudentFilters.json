@@ -1,0 +1,25 @@
+{
+    "sessionSelector": {
+        "allOption": "جميع {{term}}"
+    },
+    "filterOptions": {
+        "sessionExpiryDays_zero": "{{count}} يوم",
+        "sessionExpiryDays_one": "{{count}} يوم",
+        "sessionExpiryDays_two": "{{count}} يومان",
+        "sessionExpiryDays_few": "{{count}} أيام",
+        "sessionExpiryDays_many": "{{count}} يومًا",
+        "sessionExpiryDays_other": "{{count}} يوم",
+        "paymentStatus": {
+            "paid": "مدفوع",
+            "failed": "فشل",
+            "paymentFailed": "فشل الدفع"
+        },
+        "approvalStatus": {
+            "pending": "بانتظار الموافقة",
+            "invited": "مدعو"
+        },
+        "learnerType": {
+            "abandonedCart": "سلة متروكة"
+        }
+    }
+}

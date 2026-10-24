@@ -1,0 +1,8 @@
+{
+    "success": {
+        "updateCampaign": "सफलतापूर्वक अपडेट किया गया"
+    },
+    "errors": {
+        "updateCampaign": "अभियान को अपडेट करने में विफल"
+    }
+}

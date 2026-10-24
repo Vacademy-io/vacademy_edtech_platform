@@ -1,0 +1,59 @@
+{
+    "header": {
+        "title": "إعدادات واتساب",
+        "subtitle": "قم بإعداد مزودي واتساب والتبديل بينهم لمؤسستك"
+    },
+    "loading": "جارٍ تحميل إعدادات واتساب...",
+    "errors": {
+        "loadStatus": "فشل تحميل إعدادات مزود واتساب",
+        "switchProvider": "فشل تبديل المزود",
+        "saveCredentials": "فشل حفظ بيانات الاعتماد",
+        "fillAllFields": "يرجى ملء جميع الحقول"
+    },
+    "toasts": {
+        "switchedProvider": "تم تبديل المزود النشط إلى {{provider}}",
+        "credentialsSaved": "تم حفظ بيانات اعتماد {{provider}}"
+    },
+    "banner": {
+        "activeProviderLabel": "المزود النشط:",
+        "activeProviderDescription": "يتم توجيه جميع رسائل واتساب الصادرة عبر هذا المزود"
+    },
+    "providers": {
+        "COMBOT": {
+            "name": "Combot",
+            "description": "مزود Com.bot لواجهة WhatsApp Business API"
+        },
+        "WATI": {
+            "name": "WATI",
+            "description": "مزود WATI لواجهة WhatsApp Business API"
+        },
+        "META": {
+            "name": "Meta",
+            "description": "واجهة Meta WhatsApp Cloud API المباشرة"
+        }
+    },
+    "card": {
+        "radio": {
+            "configureFirst": "قم بإعداد بيانات الاعتماد أولاً",
+            "currentlyActive": "نشط حالياً",
+            "switchTo": "التبديل إلى {{provider}}"
+        },
+        "badge": {
+            "active": "نشط",
+            "configured": "تم الإعداد",
+            "notConfigured": "لم يتم الإعداد"
+        },
+        "configure": "إعداد",
+        "credentialsTitle": "بيانات اعتماد المزود",
+        "edit": "تعديل"
+    },
+    "editMode": {
+        "updateDescription": "قم بتحديث بيانات اعتماد المزود أدناه.",
+        "enterDescription": "أدخل بيانات اعتماد المزود لإعداد هذا المزود.",
+        "cancel": "إلغاء",
+        "saveCredentials": "حفظ بيانات الاعتماد"
+    },
+    "info": {
+        "note": "<0>ملاحظة:</0> يؤدي تبديل المزود النشط إلى توجيه جميع رسائل واتساب الصادرة فوراً عبر المزود المحدد. تأكد من وجود نفس قوالب الرسائل لدى المزود الجديد قبل التبديل. يتم التعامل مع الرسائل الواردة (ردود المستخدمين) تلقائياً عبر نظام الاحتياط الذكي."
+    }
+}

@@ -1,0 +1,153 @@
+---
+title: "API reference"
+description: "Base URL, authentication and the conventions every Evalezy endpoint follows."
+icon: "code"
+---
+
+The Evalezy API is a JSON REST API. You create an exam, submit each candidate's scanned copy or typed answers, and read question-wise marks with feedback. Every endpoint in this tab is generated from these docs' copy of the OpenAPI document, which adds descriptions and examples to the one the API serves at [`/v1/openapi.json`](https://api.evalezy.com/v1/openapi.json). Each endpoint page shows the request, the response and ready-to-run code samples.
+
+<Warning>
+Every call is live and billable, and there is no sandbox. Run the samples from your own server or terminal with a small test exam. Don't paste your API key into a web page.
+</Warning>
+
+## Base URL
+
+```text
+https://api.evalezy.com/v1
+```
+
+There is one environment. There is no sandbox or test mode: every key is live and every graded copy is billed. To try things out, use a small exam with one or two short copies.
+
+## Authentication
+
+Send your institute's API key in the `X-API-Key` header on every request.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/me \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+import os
+import requests
+
+resp = requests.get(
+    "https://api.evalezy.com/v1/me",
+    headers={"X-API-Key": os.environ["EVALEZY_API_KEY"]},
+    timeout=30,
+)
+resp.raise_for_status()
+print(resp.json()["scopes"])
+```
+
+```javascript Node
+const resp = await fetch("https://api.evalezy.com/v1/me", {
+  headers: { "X-API-Key": process.env.EVALEZY_API_KEY },
+});
+if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+console.log((await resp.json()).scopes);
+```
+
+</CodeGroup>
+
+Keys look like `vak_eval_` followed by 48 hex characters. Each key has scopes: `evaluation:read`, `evaluation:write`, `evaluation:review` and `evaluation:finalize`. New keys get read and write by default. Every endpoint page lists the scope it needs. A missing key returns `401`; a key without the scope an endpoint needs returns `403 insufficient_scope`.
+
+<Warning>
+Call the API only from your servers. Never put a key in a browser, a mobile app or a public repository. Anyone holding the key can spend your institute's credits.
+</Warning>
+
+See [Authentication](/authentication) for how to get a key, rotate it and revoke it.
+
+## Conventions
+
+<AccordionGroup>
+  <Accordion title="JSON and naming" icon="brackets-curly">
+    Request and response bodies are JSON. Send `Content-Type: application/json`; any other content type returns `415 unsupported_media_type`. Field names are `snake_case`. Unknown fields are ignored on create and action endpoints. `PATCH` endpoints refuse unknown fields with `422 validation_failed` (field code `unknown_field`), so a typo never looks like a successful edit.
+  </Accordion>
+  <Accordion title="IDs" icon="fingerprint">
+    Evalezy ids (exams, questions, candidates, uploads, submissions) are UUID strings. You can also attach your own ids: `external_ref` on exams and `external_id` on candidates. Both are unique within your institute, and you can look records up by them with [Find exams by external_ref](/api-reference/exams/search) and [Find candidates by external_id](/api-reference/candidates/search). Your own ids go in request bodies, never in URLs.
+  </Accordion>
+  <Accordion title="Dates and times" icon="clock">
+    Timestamps are ISO 8601 in UTC, for example `2026-10-14T05:30:12Z`. Dates such as `conducted_on` are `YYYY-MM-DD`. Filters such as `updated_since` take the same UTC timestamp format.
+  </Accordion>
+  <Accordion title="Marks" icon="pen-nib">
+    A question's `max_marks` and teacher overrides are numbers in steps of 0.5. A question's `max_marks` is greater than 0 and at most 1000. Rubric criterion marks may be other positive values; they are accepted with a `rubric_marks_not_half_step` warning.
+  </Accordion>
+  <Accordion title="Plain text" icon="font">
+    All text you send is treated as plain text, never HTML. A NUL character (U+0000) anywhere in a body returns `422 validation_failed` with field code `invalid_characters`. Short identifiers and names (exam title, question and option labels, section names, candidate names and roll numbers) cannot contain `<` or `>`.
+  </Accordion>
+  <Accordion title="Your data only" icon="lock">
+    A key sees only its own institute's API exams. An id that belongs to another institute returns `404`, the same as an id that does not exist. Exams created in the dashboard are not visible to API keys, while exams created through the API do appear in the dashboard, tagged Source: API, so teachers can review them there.
+  </Accordion>
+</AccordionGroup>
+
+## Status codes
+
+| Code | Meaning |
+| --- | --- |
+| `200` | OK. |
+| `201` | Created: exams, questions, uploads. |
+| `202` | Accepted: a submission or re-evaluation is queued for grading. |
+| `400` | Malformed JSON or an invalid `cursor`. |
+| `401` | Missing or invalid API key. |
+| `402` | Not enough credits for this evaluation. |
+| `403` | The key lacks a scope, or the Evaluation API is not enabled for the institute. |
+| `404` | Not found, or not yours. |
+| `409` | Conflicts with the current state, for example `submission_exists` or `submission_finalized`. |
+| `412` | `If-Match` rubric version is out of date. |
+| `422` | Valid JSON that breaks a rule, for example `validation_failed` or `too_many_pages`. |
+| `429` | Rate limit or daily quota reached. Wait for the time in `Retry-After`. |
+| `5xx` | A problem on our side. Retry with backoff and the same `Idempotency-Key`. |
+
+Every error has the same envelope:
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "max_marks must be a multiple of 0.5.",
+    "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f",
+    "details": {
+      "errors": [
+        { "field": "questions[1].max_marks", "code": "invalid_step", "message": "max_marks must be a multiple of 0.5." }
+      ]
+    }
+  }
+}
+```
+
+Branch on `error.code`, not on the message. The full list is in [Errors](/platform/errors).
+
+## Lists
+
+List endpoints return `{"data": [...], "next_cursor": "...", "has_more": true}`, ordered by `(updated_at, id)`. Pass `next_cursor` back as `cursor` for the next page. `limit` is 1 to 200 (default 50); exam results are heavier, so [List an exam's results](/api-reference/results/list-exam-results) takes 1 to 50 (default 20). See [Pagination](/platform/pagination).
+
+## Retries and idempotency
+
+Every `POST` that creates or changes something (exams, open, questions, candidates, uploads, submissions, re-evaluate, cancel, approve, finalize, unfinalize) accepts an optional `Idempotency-Key` header. Retrying with the same key within 48 hours returns the first response with `Idempotent-Replayed: true` instead of creating a second exam or a second submission. See [Idempotency](/platform/idempotency).
+
+## Useful response headers
+
+| Header | When |
+| --- | --- |
+| `X-Request-Id` | On every response. Quote it when you contact support. |
+| `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` | On API responses. See [Rate limits](/platform/rate-limits). |
+| `Retry-After` | On `429` and `503`: seconds to wait. |
+| `Idempotent-Replayed` | `true` when the response is a replay of an earlier call with the same `Idempotency-Key`. |
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Grade your first handwritten copy end to end.
+  </Card>
+  <Card title="Errors" icon="triangle-exclamation" href="/platform/errors">
+    Every error code and what to do about it.
+  </Card>
+  <Card title="Pagination" icon="list" href="/platform/pagination">
+    Cursors, `updated_since` and sync loops.
+  </Card>
+  <Card title="Idempotency" icon="rotate" href="/platform/idempotency">
+    Safe retries for every POST.
+  </Card>
+</CardGroup>

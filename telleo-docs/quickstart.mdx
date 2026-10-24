@@ -1,0 +1,114 @@
+---
+title: "Quickstart"
+description: "Create a key, find your agent, place a test call, then a real one."
+---
+
+<Steps>
+  <Step title="Create an API key">
+    In the dashboard, open **CRM → Calling → AI Calling Settings → API & webhooks** and click **Create key** ([details](/getting-api-access)). Give it a name you will recognise later (for example `Our CRM`) and copy the key. It starts with `vak_call_` and is shown **only once**.
+
+    Keep the key on your server, for example in an environment variable:
+
+    ```bash
+    export TELLEO_API_KEY="vak_call_…"
+    ```
+
+    <Warning>Never put the key in a web page, a mobile app or a public repository. Anyone holding it can place calls on your account.</Warning>
+  </Step>
+
+  <Step title="Find your agent's id">
+    ```bash
+    curl https://api.telleo.ai/v1/agents \
+      -H "X-API-Key: $TELLEO_API_KEY"
+    ```
+
+    ```json
+    {
+      "object": "list",
+      "data": [
+        {
+          "id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+          "object": "agent",
+          "name": "Riya – admissions",
+          "language": "en-IN",
+          "uses_contact_name": true,
+          "variables": ["course"]
+        }
+      ],
+      "has_more": false
+    }
+    ```
+
+    `uses_contact_name` and `variables` tell you what this agent's script expects: here, the contact's name and a `course`. The same ids are listed in the dashboard card.
+  </Step>
+
+  <Step title="Place a test call">
+    `"test": true` runs the whole flow without dialling anyone and without using credits. The call completes at once with a sample outcome (the answers are placeholders, not your agent's questions).
+
+    ```bash
+    curl https://api.telleo.ai/v1/calls \
+      -H "X-API-Key: $TELLEO_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+        "phone_number": "+919876543210",
+        "contact": {"name": "Asha Verma", "external_id": "lead-8812"},
+        "variables": {"course": "NEET 2027"},
+        "test": true
+      }'
+    ```
+
+    The response is the call. Keep its `id`:
+
+    ```json
+    {
+      "id": "call_6f1d2c9a8b7e4f3a2d1c0b9a",
+      "object": "call",
+      "status": "completed",
+      "test": true,
+      "duration_seconds": 97,
+      "outcome": {
+        "disposition": "Completed",
+        "summary": null,
+        "answers": { "mock": true, "feedbackRating": 4, "comments": "Good content; would like more practice problems.", "wouldRecommend": true },
+        "lead_rating": null,
+        "callback_requested": false,
+        "transcript": []
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Receive results on a webhook">
+    In the same dashboard card, enter your endpoint's HTTPS address under **Webhook** and save. Copy the **webhook secret** shown once: your server uses it to check that each delivery really came from Telleo ([how](/webhooks/verify-signatures)).
+
+    Click **Send test event** to check that your endpoint answers `2xx`. From now on every call that ends is posted there as `call.completed` or `call.not_connected`.
+
+    <Tip>No public endpoint yet? Use a request inspector such as webhook.site while you build, then switch to your real URL.</Tip>
+  </Step>
+
+  <Step title="Place a real call">
+    Remove `"test": true` and use a phone number you can answer. Add an `Idempotency-Key` so a retried request never calls twice:
+
+    ```bash
+    curl https://api.telleo.ai/v1/calls \
+      -H "X-API-Key: $TELLEO_API_KEY" \
+      -H "Content-Type: application/json" \
+      -H "Idempotency-Key: lead-8812" \
+      -d '{
+        "agent_id": "17ea33d2-5b6c-4c1e-9a1f-2d4e6f8a9b0c",
+        "phone_number": "+919876543210",
+        "contact": {"name": "Asha Verma", "external_id": "lead-8812"},
+        "variables": {"course": "NEET 2027"}
+      }'
+    ```
+
+    The call comes back `queued` or `dialing`. Your phone rings within seconds if a line is free and you are inside your calling hours; otherwise `status_reason` and `scheduled_for` say what it is waiting for. When you hang up, the outcome reaches your webhook, usually within a minute.
+  </Step>
+</Steps>
+
+## Next
+
+- [Connect your CRM](/guides/crm-integration): the end-to-end pattern.
+- [Calls](/concepts/calls): every status and what it means.
+- [Outcomes](/concepts/outcomes): what the agent sends back.

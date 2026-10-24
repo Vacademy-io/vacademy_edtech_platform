@@ -1,0 +1,53 @@
+{
+    "dialog": {
+        "title": "Select a Payment Plan",
+        "description": "Choose a payment plan for this course"
+    },
+    "sections": {
+        "freePlans": "Free Plans",
+        "paidPlans": "Paid Plans"
+    },
+    "badge": {
+        "default": "Default",
+        "cpo": "CPO"
+    },
+    "common": {
+        "currency": "Currency: {{currency}}"
+    },
+    "cpo": {
+        "totalAmount": "Total Amount: {{amount}}",
+        "installmentsLabel": "Installments",
+        "installmentsLoading": "loading…"
+    },
+    "donation": {
+        "suggestedAmounts": "Suggested Amounts: {{amount}}",
+        "minimumAmount": "Minimum Amount: {{amount}}"
+    },
+    "freePlan": {
+        "days_one": "Free for {{count}} day",
+        "days_other": "Free for {{count}} days"
+    },
+    "upfront": {
+        "fullPrice": "Full Price: {{amount}}"
+    },
+    "actions": {
+        "addNewPaymentPlan": "+ Add New Payment Plan"
+    },
+    "search": {
+        "placeholder": "Search plans by name…",
+        "noResults": "No plans match your search or filter.",
+        "clear": "Clear"
+    },
+    "filters": {
+        "all": "All",
+        "FREE": "Free",
+        "ONE_TIME": "One-time",
+        "DONATION": "Donation",
+        "SUBSCRIPTION": "Subscription",
+        "CPO": "CPO"
+    },
+    "meta": {
+        "created": "Created {{date}}",
+        "createdBy": "by {{name}}"
+    }
+}

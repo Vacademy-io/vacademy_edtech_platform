@@ -1,0 +1,8 @@
+{
+    "qrCodeNotFound": "क्यूआर कोड नहीं मिला!",
+    "defaultRegistrationFields": {
+        "fullName": "पूरा नाम",
+        "email": "ईमेल",
+        "phoneNumber": "फ़ोन नंबर"
+    }
+}

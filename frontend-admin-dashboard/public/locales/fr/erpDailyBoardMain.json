@@ -1,0 +1,52 @@
+{
+    "unnamedEmployee": "Employé sans nom",
+    "heading": "Tableau du jour",
+    "subtitle": "Toutes les personnes actives le {{date}}, y compris celles sans enregistrement pour la journée — sélectionnez-les et marquez la journée en une seule fois.",
+    "stats": {
+        "presentThisMonth": "Présents ce mois-ci",
+        "absent": "Absents",
+        "onLeave": "En congé",
+        "halfDays": "Demi-journées",
+        "unmarkedToday": "Non marqués aujourd'hui",
+        "everyoneHasRecord": "Chaque employé a un enregistrement"
+    },
+    "dateLabel": "Date",
+    "findEmployeeLabel": "Rechercher un employé",
+    "findEmployeePlaceholder": "Nom ou code",
+    "backToToday": "Revenir à aujourd'hui",
+    "freezeExplanation": "L'assiduité d'un mois se fige dès que la paie de ce mois a été traitée — les chiffres ont déjà servi de base au paiement. Le marquage est alors refusé, et le message reçu indique ce qu'il faut annuler dans ERP → Paie avant de pouvoir modifier la journée.",
+    "dayLevelExplanation": "Cet établissement gère l'assiduité en mode journalier : les employés ne pointent pas à l'arrivée ni au départ, ces colonnes sont donc masquées. Modifiez cela sous Équipes et jours fériés → Configuration.",
+    "notSavedTitle": "L'assiduité n'a pas été enregistrée",
+    "dismissAria": "Fermer",
+    "bulkBar": {
+        "markAs_one": "Marquer {{count}} employé comme",
+        "markAs_many": "Marquer {{count}} employés comme",
+        "markAs_other": "Marquer {{count}} employés comme",
+        "remarksPlaceholder": "Remarques (facultatif)",
+        "marking": "Marquage…",
+        "applyTo": "Appliquer à {{count}}",
+        "clearSelection": "Effacer la sélection"
+    },
+    "loadError": "Impossible de charger l'assiduité du jour.",
+    "noSearchMatchTitle": "Aucun employé ne correspond à cette recherche",
+    "noSearchMatchDescription": "Effacez la recherche pour voir tout le monde actif ce jour-là.",
+    "clearSearch": "Effacer la recherche",
+    "noActiveEmployeesTitle": "Aucun employé actif à marquer",
+    "noActiveEmployeesDescription": "L'assiduité est enregistrée par rapport aux profils employés RH. Ajoutez d'abord des personnes sous ERP → Personnel.",
+    "viewOnlyNote": "Vous pouvez consulter l'assiduité mais pas la modifier — marquer une journée nécessite le rôle Administrateur RH dans cet établissement.",
+    "markSuccess_one": "{{count}} employé marqué {{status}}",
+    "markSuccess_many": "{{count}} employés marqués {{status}}",
+    "markSuccess_other": "{{count}} employés marqués {{status}}",
+    "markError": "Impossible de marquer l'assiduité de cette journée.",
+    "selectAllAria": "Sélectionner tous les employés",
+    "selectEmployeeAria": "Sélectionner {{name}}",
+    "columns": {
+        "employee": "Employé",
+        "status": "Statut",
+        "checkIn": "Arrivée",
+        "checkOut": "Départ",
+        "hours": "Heures",
+        "source": "Source",
+        "remarks": "Remarques"
+    }
+}

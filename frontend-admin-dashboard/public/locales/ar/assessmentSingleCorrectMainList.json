@@ -1,0 +1,14 @@
+{
+    "questionsSettings": "إعدادات الأسئلة",
+    "questionType": "نوع السؤال",
+    "comprehensionText": "نص الفهم",
+    "comprehensionTextPlaceholder": "أدخل نص الفهم",
+    "questionNumber": "السؤال {{number}}",
+    "writeTheQuestion": "اكتب السؤال",
+    "answer": "الإجابة:",
+    "optionPlaceholder": "الخيار {{letter}}",
+    "removeOption": "إزالة الخيار",
+    "addOption": "إضافة خيار",
+    "explanation": "الشرح:",
+    "explanationPlaceholder": "الشرح"
+}

@@ -1,0 +1,40 @@
+{
+    "view": {
+        "website": "Website",
+        "websiteTitle": "Exactly what visitors will see, with your unsaved changes",
+        "structure": "Structure",
+        "structureTitle": "Every block of this page as a list — reorder them or pick one to edit"
+    },
+    "toolbar": {
+        "desktop": "Desktop",
+        "tablet": "Tablet (768px)",
+        "mobile": "Mobile (375px)",
+        "untitled": "Untitled",
+        "viewLive": "View live",
+        "viewLiveDraft": "View live (draft)",
+        "viewLiveTitle": "View the live page",
+        "unpublishedTitle": "This page is unpublished — visitors won’t see it yet"
+    },
+    "structure": {
+        "intro": "The blocks of this page, top to bottom. Click a block to edit it; drag it by its handle to move it. Switch to Website to see the page as visitors do.",
+        "noPage": "Select a page from the bottom bar to start editing",
+        "empty": "This page is empty. Drag a block from the left, or click one to add it.",
+        "blockCount_one": "{{count}} block",
+        "blockCount_other": "{{count}} blocks",
+        "header": "Site header",
+        "footer": "Site footer",
+        "everyPage": "On every page",
+        "hidden": "Hidden",
+        "hiddenTitle": "Visitors don't see this block. Show it again from Layers or its settings.",
+        "noHeading": "No heading",
+        "dragHandle": "Move {{name}}: drag, or press the up and down arrow keys",
+        "columns_one": "{{count}} column",
+        "columns_other": "{{count}} columns",
+        "column": "Column {{index}}",
+        "emptyColumn": "Empty — drag a block here",
+        "dropHere": "Drop here to add the block at the end of the page",
+        "showPreviews": "Show previews",
+        "showPreviewsTitle": "Draw a simple picture of each block in its row. The Website view shows the real page.",
+        "previewsAuto": "The Website view can’t load for this site here, so each block shows a simple preview. It is close to, but not exactly, what visitors see."
+    }
+}

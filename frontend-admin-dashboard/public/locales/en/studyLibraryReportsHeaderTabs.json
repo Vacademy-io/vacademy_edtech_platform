@@ -1,0 +1,21 @@
+{
+    "tabs": {
+        "batch": "Batch",
+        "liveClasses": "Live Classes",
+        "leaderboard": "Leaderboard"
+    },
+    "reportSettings": "Report Settings",
+    "reportsSettingsHeading": "Reports Settings",
+    "generateTypeReports": "Generate {{type}} reports",
+    "sendReportsToStudentViaMail": "Send Reports to Student via mail",
+    "sendReportsToStudentViaWhatsapp": "Send Reports to Student via whatsapp",
+    "sendReportsToParentViaMail": "Send Reports to Parent/Guardian via mail",
+    "sendReportsToParentViaWhatsapp": "Send Reports to Parent/Guardian via whatsapp",
+    "studentLearningProgressReport": "Student Learning Progress Report",
+    "batchLearningProgressReport": "Batch Learning Progress Report",
+    "saveChanges": "Save Changes",
+    "toast": {
+        "settingsUpdated": "Settings updated!",
+        "updateFailed": "Failed to update"
+    }
+}

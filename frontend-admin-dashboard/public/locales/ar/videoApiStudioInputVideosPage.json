@@ -1,0 +1,54 @@
+{
+    "header": {
+        "title": "مقاطع الفيديو المُدخلة",
+        "subtitle": "قم بتحميل مقاطع الفيديو للفهرسة بالذكاء الاصطناعي (النص المكتوب، البيانات الوصفية المرئية، استخراج المتحدث)",
+        "refreshButton": "تحديث"
+    },
+    "uploadVideoButton": "تحميل فيديو",
+    "noApiKey": {
+        "message": "لم يتم العثور على مفتاح API. أنشئ واحدًا في استوديو Video API أولاً.",
+        "goToApiKeysButton": "الانتقال إلى مفاتيح API"
+    },
+    "table": {
+        "columnName": "الاسم",
+        "columnMode": "الوضع",
+        "columnStatus": "الحالة",
+        "columnDuration": "المدة",
+        "columnCreated": "تاريخ الإنشاء",
+        "columnOutputs": "المخرجات",
+        "deleteTooltip": "حذف",
+        "noValue": "-",
+        "processingProgress": "{{percent}}٪",
+        "durationSeconds_zero": "أقل من {{count}} ثانية",
+        "durationSeconds_one": "{{count}} ثانية",
+        "durationSeconds_two": "{{count}} ثانيتين",
+        "durationSeconds_few": "{{count}} ثوانٍ",
+        "durationSeconds_many": "{{count}} ثانية",
+        "durationSeconds_other": "{{count}} ثانية"
+    },
+    "empty": {
+        "loading": "جارٍ التحميل...",
+        "title": "لا توجد مقاطع فيديو مُدخلة بعد",
+        "subtitle": "قم بتحميل تسجيل بودكاست أو عرض توضيحي للبدء"
+    },
+    "status": {
+        "PENDING": "قيد الانتظار",
+        "QUEUED": "في قائمة الانتظار",
+        "PROCESSING": "قيد المعالجة",
+        "COMPLETED": "مكتمل",
+        "FAILED": "فشل"
+    },
+    "mode": {
+        "podcast": "بودكاست",
+        "demo": "عرض توضيحي"
+    },
+    "deleteConfirm": {
+        "message": "حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "toast": {
+        "apiKeysLoadError": "فشل تحميل مفاتيح API",
+        "videosLoadError": "فشل تحميل مقاطع الفيديو المُدخلة",
+        "deleteSuccess": "تم الحذف",
+        "deleteError": "فشل الحذف"
+    }
+}

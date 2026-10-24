@@ -1,0 +1,16 @@
+{
+    "noQuestionsAvailable": "لا توجد أسئلة متاحة.",
+    "questionFallback": "السؤال {{number}}",
+    "correctAnswer_zero": "الإجابة الصحيحة: {{answers}}",
+    "correctAnswer_one": "الإجابة الصحيحة: {{answers}}",
+    "correctAnswer_two": "الإجابتان الصحيحتان: {{answers}}",
+    "correctAnswer_few": "الإجابات الصحيحة: {{answers}}",
+    "correctAnswer_many": "الإجابات الصحيحة: {{answers}}",
+    "correctAnswer_other": "الإجابات الصحيحة: {{answers}}",
+    "explanation": "الشرح: {{text}}",
+    "defaultTitle": "تقييم",
+    "invalidQuestion": "سؤال غير صالح",
+    "optionA": "الخيار أ",
+    "questionParsingFailed": "فشل تحليل السؤال",
+    "questionCouldNotBeParsed": "تعذر تحليل السؤال"
+}

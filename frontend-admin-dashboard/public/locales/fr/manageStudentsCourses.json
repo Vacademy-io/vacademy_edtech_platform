@@ -1,0 +1,48 @@
+{
+    "noStudentSelected": {
+        "title": "Détails de l'étudiant indisponibles",
+        "hint": "Aucun apprenant n'est sélectionné ou l'établissement n'a pas pu être déterminé."
+    },
+    "emptyState": {
+        "title": "Aucun {{term}} attribué",
+        "hint": "Attribuez un programme pour commencer."
+    },
+    "actions": {
+        "assignToCourse": "+ Attribuer à {{term}}",
+        "removeFromCourse": "Retirer de {{term}}",
+        "manageAccess": "Gérer l'accès",
+        "filter": "Filtrer",
+        "filterCount": "Filtrer ({{count}})",
+        "allLevels": "Tous"
+    },
+    "heroStats": {
+        "inProgress": "En cours",
+        "completed": "Terminé",
+        "past": "Passé"
+    },
+    "sections": {
+        "inProgressTitle": "{{term}} en cours",
+        "completedTitle": "{{term}} terminés",
+        "pastTitle": "{{term}} passés",
+        "noneInProgress": "Aucun {{term}} en cours",
+        "noneCompleted": "Aucun {{term}} terminé",
+        "nonePast": "Aucun {{term}} passé",
+        "completedBadge": "Terminé"
+    },
+    "course": {
+        "unnamed": "Cours sans nom",
+        "sessionLabel": "{{term}} : {{name}}"
+    },
+    "accessWindow": {
+        "unlimited": "Accès : illimité",
+        "expired": "Accès expiré le {{date}}",
+        "daysLeft_one": "Accès jusqu'au {{date}} · {{count}} jour restant",
+        "daysLeft_many": "Accès jusqu'au {{date}} · {{count}} jours restants",
+        "daysLeft_other": "Accès jusqu'au {{date}} · {{count}} jours restants"
+    },
+    "pagination": {
+        "prev": "Précédent",
+        "next": "Suivant"
+    },
+    "fallbackStudentName": "Étudiant"
+}

@@ -1,0 +1,25 @@
+{
+    "toasts": {
+        "createdAndAutoPublished": "تم إنشاء الشريحة ونشرها تلقائيًا للمراجعة",
+        "assignmentPublished": "تم نشر شريحة الواجب بنجاح",
+        "questionPublished": "تم نشر شريحة السؤال بنجاح",
+        "quizPublished": "تم نشر شريحة الاختبار بنجاح",
+        "videoPublished": "تم نشر شريحة الفيديو بنجاح",
+        "videoDataMissing": "بيانات شريحة الفيديو مفقودة",
+        "audioPublished": "تم نشر شريحة الصوت بنجاح",
+        "audioDataMissing": "بيانات شريحة الصوت مفقودة",
+        "presentationPublished": "تم نشر العرض التقديمي بنجاح",
+        "slidePublished": "تم نشر الشريحة بنجاح",
+        "saveFailed": "فشل حفظ الشريحة",
+        "alreadyUpToDate": "{{slideType}} محدّثة بالفعل!"
+    },
+    "slideTypes": {
+        "codeEditor": "محرر الكود",
+        "jupyterNotebook": "دفتر Jupyter",
+        "scratchProject": "مشروع Scratch",
+        "interactiveSlide": "شريحة تفاعلية"
+    },
+    "confirm": {
+        "unsavedChanges": "لديك تغييرات غير محفوظة في \"{{slideTitle}}\". هل تريد حفظها؟"
+    }
+}

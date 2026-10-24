@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { removeTokensAndLogout } from "@/lib/auth/sessionUtility";
 import { pushNotificationService } from "@/services/push-notifications/push-notification-service";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/logout/")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation("miscRoutesB");
   const domainRouting = useDomainRouting();
   const { redirect } = Route.useSearch();
   const { clearAll } = useDripConditionStore();
@@ -52,5 +54,5 @@ function RouteComponent() {
     window.location.assign(domainRouting.redirectPath || "/login");
   }, [cleared, redirect, domainRouting.isLoading, domainRouting.redirectPath]);
 
-  return <div>Loging out ....</div>;
+  return <div>{t("logout.loggingOut")}</div>;
 }

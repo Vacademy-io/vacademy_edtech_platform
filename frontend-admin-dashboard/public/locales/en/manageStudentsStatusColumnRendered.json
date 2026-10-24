@@ -1,0 +1,10 @@
+{
+    "apiStatus": {
+        "uploadFailed": "Upload failed",
+        "errorResolution": "Check the error details for more information",
+        "unknownError": "Unknown error"
+    },
+    "validationErrors": {
+        "errorsButton": "Errors ({{count}})"
+    }
+}

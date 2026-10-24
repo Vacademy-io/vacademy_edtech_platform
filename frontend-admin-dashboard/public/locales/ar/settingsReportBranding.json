@@ -1,0 +1,80 @@
+{
+    "colors": {
+        "title": "ألوان التقرير",
+        "description": "حدد اللونين الأساسي والثانوي المستخدمين في ملف PDF لتقرير التقييم وواجهة المستخدم.",
+        "primaryColor": "اللون الأساسي",
+        "secondaryColor": "اللون الثانوي"
+    },
+    "logoLetterhead": {
+        "title": "الشعار والترويسة",
+        "description": "يظهر شعار مؤسستك وترويستها أدناه. يمكنك تغييرهما أو تحميل شعار وترويسة جديدين.",
+        "logo": {
+            "label": "إظهار الشعار في الرأس",
+            "hint": "عرض شعار المؤسسة أعلى التقرير",
+            "imageAlt": "الشعار",
+            "none": "لا يوجد شعار",
+            "change": "تغيير",
+            "upload": "تحميل الشعار"
+        },
+        "letterhead": {
+            "label": "إظهار خلفية الترويسة",
+            "hint": "استخدام صورة ترويسة بحجم الصفحة كاملة كخلفية للتقرير",
+            "imageAlt": "الترويسة",
+            "none": "لا توجد ترويسة",
+            "change": "تغيير",
+            "upload": "تحميل الترويسة",
+            "crop": "قص"
+        }
+    },
+    "watermark": {
+        "title": "العلامة المائية",
+        "description": "أضف نص علامة مائية قطرية عبر كل صفحة من صفحات التقرير.",
+        "enable": "تفعيل العلامة المائية",
+        "textLabel": "نص العلامة المائية",
+        "textPlaceholder": "مثال: سري أو اسم مؤسستك",
+        "opacity": "الشفافية ({{percent}}%)"
+    },
+    "headerFooter": {
+        "title": "الرأس والتذييل",
+        "description": {
+            "prefix": "HTML مخصص لرأس التقرير وتذييله. تظهر هذه العناصر في كل صفحة. استخدم",
+            "suffix": "كعنصر نائب — سيتم استبداله باسم التقييم الفعلي في التقرير."
+        },
+        "footerText": {
+            "label": "نص التذييل",
+            "placeholder": "نص التذييل المعروض أسفل التقرير"
+        },
+        "headerHtml": {
+            "label": "HTML مخصص للرأس",
+            "placeholder": "<div style=\"text-align:center;\">{{assessment_name}}</div>"
+        },
+        "footerHtml": {
+            "label": "HTML مخصص للتذييل",
+            "placeholder": "<div style=\"text-align:center; font-size:10px; color:#999;\">Powered by MyInstitute</div>"
+        }
+    },
+    "preview": {
+        "title": "معاينة",
+        "showButton": "إظهار المعاينة",
+        "hideButton": "إخفاء المعاينة",
+        "sample": {
+            "assessmentName": "اختبار رياضيات نموذجي",
+            "subtitle": "تحليل أداء الطالب",
+            "score": "الدرجة",
+            "rank": "الترتيب",
+            "percentile": "النسبة المئوية",
+            "sectionPerformance": "الأداء حسب القسم",
+            "sectionTablePlaceholder": "معاينة جدول بيانات القسم"
+        }
+    },
+    "cropper": {
+        "titleLogo": "قص الشعار",
+        "titleLetterhead": "قص الترويسة",
+        "confirmLabel": "قص وتحميل"
+    },
+    "toasts": {
+        "logoUploaded": "تم تحميل الشعار",
+        "letterheadUploaded": "تم تحميل الترويسة",
+        "uploadFailed": "فشل التحميل"
+    }
+}

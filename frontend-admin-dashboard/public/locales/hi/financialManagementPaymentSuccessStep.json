@@ -1,0 +1,34 @@
+{
+    "paymentSubmitted": "भुगतान सबमिट हो गया",
+    "paymentRecordedFor": "इनके लिए भुगतान दर्ज किया गया",
+    "receiptWillBeGenerated": "रसीद स्वतः बनाई और भेजी जाएगी।",
+    "amountPaidNow": "अभी भुगतान की गई राशि",
+    "downloadReceipt": "रसीद डाउनलोड करें",
+    "payForAnotherStudent": "किसी अन्य छात्र के लिए भुगतान करें",
+    "receipt": {
+        "receiptNo": "रसीद संख्या",
+        "date": "तारीख़",
+        "studentLabel": "छात्र:",
+        "modeLabel": "तरीका:",
+        "txnIdLabel": "लेनदेन आईडी:"
+    },
+    "table": {
+        "feeType": "शुल्क प्रकार",
+        "dueDate": "देय तिथि",
+        "expected": "अपेक्षित",
+        "adjustment": "समायोजन",
+        "paid": "भुगतान किया गया",
+        "outstanding": "बकाया",
+        "status": "स्थिति"
+    },
+    "adjustmentType": {
+        "concession": "रियायत",
+        "penalty": "जुर्माना"
+    },
+    "totals": {
+        "totalExpected": "कुल अपेक्षित",
+        "totalPaid": "कुल भुगतान",
+        "totalConcession": "कुल रियायत",
+        "totalPenalty": "कुल जुर्माना"
+    }
+}

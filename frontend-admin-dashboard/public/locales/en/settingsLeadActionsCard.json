@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Lead Actions",
+        "description": "Control what this role can do on the leads pages."
+    },
+    "rows": {
+        "showAddLead": {
+            "label": "Show \"Add New Lead\" on All Leads",
+            "hint": "Pick a campaign type and an audience, then fill that audience's form. A counsellor's lead is assigned to themselves; an admin chooses the counsellor. Off for every role by default."
+        }
+    }
+}

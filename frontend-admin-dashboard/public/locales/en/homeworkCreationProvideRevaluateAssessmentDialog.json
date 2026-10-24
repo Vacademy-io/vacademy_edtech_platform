@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "heading": "Revaluate Assessment",
+        "confirmMessage": "Are you sure you want to revaluate assessment for selected <highlight>{{name}}</highlight>?"
+    },
+    "doneButton": "Done",
+    "toasts": {
+        "revaluateSuccess": "Your attempt for this assessment has been revaluated for the selected students. Please check your email!"
+    }
+}

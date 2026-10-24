@@ -16,13 +16,7 @@ import { ChipsWrapper } from '@/components/design-system/chips';
 import { useCompactMode } from '@/hooks/use-compact-mode';
 import { cn } from '@/lib/utils';
 import { fetchLeadCustomFieldValues } from '@/routes/audience-manager/list/-services/get-lead-custom-field-values';
-import {
-    EMPTY_SENTINEL,
-    NOT_EMPTY_SENTINEL,
-    encodeContains,
-    isSentinelValue,
-    sentinelLabel,
-} from './custom-field-filter-encoding';
+import { encodeContains, isSentinelValue, sentinelLabel } from './custom-field-filter-encoding';
 
 const PAGE_SIZE = 20;
 
@@ -137,9 +131,15 @@ export function CustomFieldMultiSelectFilter({
         return [...selectedNotShown, ...fetchedValues];
     }, [selected, fetchedValues]);
 
-    // Pinned typed-operator rows: "contains <search>" while the admin is
-    // typing, plus Empty / Not-empty. Selecting one adds a sentinel-encoded
-    // value; the payload builders decode sentinels into operator entries.
+    // Pinned typed-operator row: "contains <search>", offered only while the admin
+    // is actually typing. Selecting it adds a sentinel-encoded value; the payload
+    // builders decode sentinels into operator entries.
+    //
+    // Empty / Not-empty are deliberately NOT offered here. On a field with a
+    // handful of real values (Branch has two) they read as two more values rather
+    // than as operators, which is what admins kept taking them for. The sentinels
+    // themselves still work — a selection restored from a URL renders through
+    // selectedSentinels below and can be cleared — they are just not suggested.
     const containsSentinel = debouncedSearch ? encodeContains(debouncedSearch) : null;
     const pinnedOptions = useMemo(() => {
         const pinned: Array<{ value: string; label: string }> = [];
@@ -149,8 +149,6 @@ export function CustomFieldMultiSelectFilter({
                 label: `Contains "${debouncedSearch}"`,
             });
         }
-        pinned.push({ value: EMPTY_SENTINEL, label: 'Empty (no value)' });
-        pinned.push({ value: NOT_EMPTY_SENTINEL, label: 'Has any value' });
         return pinned;
     }, [containsSentinel, debouncedSearch, selected]);
 
@@ -263,36 +261,40 @@ export function CustomFieldMultiSelectFilter({
                                         Clear selection
                                     </CommandItem>
                                 )}
-                                <CommandGroup>
-                                    {selectedSentinels.map((value) => (
-                                        <CommandItem
-                                            key={value}
-                                            value={value}
-                                            onSelect={() => toggle(value)}
-                                            className="cursor-pointer"
-                                        >
-                                            <Check className="mr-2 size-4 opacity-100" />
-                                            <span className="truncate italic text-neutral-600">
-                                                {sentinelLabel(value)}
-                                            </span>
-                                        </CommandItem>
-                                    ))}
-                                    {pinnedOptions
-                                        .filter((opt) => !selected.includes(opt.value))
-                                        .map((opt) => (
+                                {(selectedSentinels.length > 0 || pinnedOptions.length > 0) && (
+                                    <CommandGroup>
+                                        {selectedSentinels.map((value) => (
                                             <CommandItem
-                                                key={opt.value}
-                                                value={opt.value}
-                                                onSelect={() => toggle(opt.value)}
+                                                key={value}
+                                                value={value}
+                                                onSelect={() => toggle(value)}
                                                 className="cursor-pointer"
                                             >
-                                                <Check className="mr-2 size-4 opacity-0" />
+                                                <span className="mr-2 flex size-4 shrink-0 items-center justify-center rounded border border-primary-500 bg-primary-500 text-white">
+                                                    <Check className="size-3" />
+                                                </span>
                                                 <span className="truncate italic text-neutral-600">
-                                                    {opt.label}
+                                                    {sentinelLabel(value)}
                                                 </span>
                                             </CommandItem>
                                         ))}
-                                </CommandGroup>
+                                        {pinnedOptions
+                                            .filter((opt) => !selected.includes(opt.value))
+                                            .map((opt) => (
+                                                <CommandItem
+                                                    key={opt.value}
+                                                    value={opt.value}
+                                                    onSelect={() => toggle(opt.value)}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <span className="mr-2 size-4 shrink-0 rounded border border-neutral-300" />
+                                                    <span className="truncate italic text-neutral-600">
+                                                        {opt.label}
+                                                    </span>
+                                                </CommandItem>
+                                            ))}
+                                    </CommandGroup>
+                                )}
                                 <CommandGroup>
                                     {orderedValues.map((value) => (
                                         <CommandItem

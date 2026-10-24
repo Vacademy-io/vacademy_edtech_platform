@@ -2,6 +2,7 @@ import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { DotsThree } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,6 +19,7 @@ export const OneWordQuestionPaperTemplatePPTView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentOneWordPPTList');
     const { control, getValues, setValue } = form;
 
     const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to track dropdown visibility
@@ -84,10 +86,10 @@ export const OneWordQuestionPaperTemplatePPTView = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mt-1">
                             <DropdownMenuItem onClick={handleDuplicateSlide}>
-                                Duplicate Slide
+                                {t('duplicateSlide')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteSlide}>
-                                Delete Slide
+                                {t('deleteSlide')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

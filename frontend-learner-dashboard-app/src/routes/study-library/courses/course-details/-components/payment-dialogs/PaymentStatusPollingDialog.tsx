@@ -6,6 +6,8 @@ import { MyButton } from "@/components/design-system/button";
 import { fetchUserPlanStatus } from "@/services/payment-status-api";
 import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface PaymentStatusPollingDialogProps {
   open: boolean;
@@ -210,7 +212,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           {/* Error Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-danger-100 to-danger-200 rounded-full flex items-center justify-center shadow-lg">
                 <XCircle className="w-10 h-10 text-red-600" />
               </div>
               <div className="absolute -top-1 -end-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
@@ -230,7 +232,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           </div>
 
           {/* Error Details */}
-          <div className="mt-8 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
+          <div className="mt-8 bg-gradient-to-r from-danger-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
@@ -271,7 +273,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           {/* Animated Processing Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-info-100 to-info-200 rounded-full flex items-center justify-center shadow-lg">
                 <SpinnerGap className="w-10 h-10 text-blue-600 animate-spin" />
               </div>
               <div className="absolute -top-1 -end-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -288,7 +290,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           </div>
 
           {/* Processing Card */}
-          <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+          <div className="mt-8 bg-gradient-to-r from-info-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
@@ -297,8 +299,8 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
                   </svg>
                 </div>
               </div>
-              <div className="flex-1 text-start">
-                <h4 className="text-sm font-semibold text-gray-900 mb-1">
+              <div className="flex-1 text-start space-y-1">
+                <h4 className="text-sm font-semibold text-gray-900">
                   Payment in Progress
                 </h4>
                 <p className="text-sm text-gray-700 leading-relaxed">
@@ -329,7 +331,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-success-100 to-success-200 rounded-full flex items-center justify-center shadow-lg">
                 <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
               <div className="absolute -top-1 -end-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -349,7 +351,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           </div>
           
           {approvalRequired ? (
-            <div className="mt-8 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6 shadow-sm">
+            <div className="mt-8 bg-gradient-to-r from-warning-50 to-primary-50 border border-yellow-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -361,7 +363,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
                     Admin Approval Required
                   </h4>
                   <p className="text-sm text-yellow-800 mb-3">
-                    Your payment was successful and the course requires admin approval.
+                    Your payment was successful and the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} requires admin approval.
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2 text-sm text-yellow-700">
@@ -374,26 +376,26 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-yellow-700">
                       <div className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></div>
-                      <span>Course access will be granted automatically</span>
+                      <span>{getTerminology(ContentTerms.Course, SystemTerms.Course)} access will be granted automatically</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 shadow-sm">
+            <div className="mt-8 bg-gradient-to-r from-success-50 to-success-50 border border-green-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <div className="flex-1 text-start">
-                  <h4 className="text-sm font-semibold text-green-900 mb-1">
+                <div className="flex-1 text-start space-y-1">
+                  <h4 className="text-sm font-semibold text-green-900">
                     Ready to Explore!
                   </h4>
                   <p className="text-sm text-green-800">
-                    You can now access the course content and start learning.
+                    You can now access the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} content and start learning.
                   </p>
                 </div>
               </div>
@@ -407,7 +409,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
               onClick={handleClose}
               className="w-full h-12 text-base font-semibold"
             >
-              {approvalRequired ? 'Close' : 'Explore Course'}
+              {approvalRequired ? 'Close' : `Explore ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`}
             </MyButton>
           </div>
         </div>
@@ -420,7 +422,7 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           {/* Error Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-danger-100 to-danger-200 rounded-full flex items-center justify-center shadow-lg">
                 <XCircle className="w-10 h-10 text-red-600" />
               </div>
               <div className="absolute -top-1 -end-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
@@ -441,15 +443,15 @@ export const PaymentStatusPollingDialog: React.FC<PaymentStatusPollingDialogProp
           </div>
 
           {/* Action Card */}
-          <div className="mt-8 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
+          <div className="mt-8 bg-gradient-to-r from-danger-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
                   <XCircle className="w-4 h-4 text-white" />
                 </div>
               </div>
-              <div className="flex-1 text-start">
-                <h4 className="text-sm font-semibold text-red-900 mb-2">
+              <div className="flex-1 text-start space-y-2">
+                <h4 className="text-sm font-semibold text-red-900">
                   What to do next?
                 </h4>
                 <div className="space-y-2">

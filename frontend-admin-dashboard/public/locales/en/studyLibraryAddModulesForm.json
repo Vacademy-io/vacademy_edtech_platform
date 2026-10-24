@@ -1,0 +1,20 @@
+{
+    "validation": {
+        "moduleNameRequired": "Module name is required",
+        "descriptionMaxLength": "Description must be {{max}} characters or fewer"
+    },
+    "moduleNameLabel": "{{term}} Name",
+    "moduleNamePlaceholder": "Enter {{term}} name",
+    "descriptionLabel": "Description (Optional)",
+    "descriptionPlaceholder": "Enter module description",
+    "descriptionHint": "Shown on the {{term}} card — {{count}}/{{max}} characters",
+    "thumbnailImage": "Thumbnail Image",
+    "loadingThumbnail": "Loading thumbnail...",
+    "thumbnailPreviewAlt": "Module thumbnail preview",
+    "uploadThumbnail": "Upload Thumbnail",
+    "uploadThumbnailHint": "PNG, JPG · 16:9 recommended",
+    "uploading": "Uploading...",
+    "saveChanges": "Save Changes",
+    "add": "Add",
+    "cropModuleThumbnail": "Crop Module Thumbnail"
+}

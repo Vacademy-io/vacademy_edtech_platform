@@ -7,22 +7,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vacademy.io.admin_core_service.features.institute.dto.settings.GenericSettingRequest;
-import vacademy.io.admin_core_service.features.institute.enums.SettingKeyEnums;
-import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
-import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
+import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiAgentDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallActionRule;
 import vacademy.io.admin_core_service.features.telephony.enums.ProviderType;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.AiAgent;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.AiAgentRepository;
+import vacademy.io.admin_core_service.features.telephony.queue.repository.AiCallQueueItemRepository;
 import vacademy.io.common.exceptions.VacademyException;
-import vacademy.io.common.institute.entity.Institute;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -43,9 +37,9 @@ public class AiAgentService {
     private static final Logger log = LoggerFactory.getLogger(AiAgentService.class);
 
     private final AiAgentRepository repo;
-    private final InstituteRepository instituteRepository;
-    private final InstituteSettingService instituteSettingService;
     private final AiAgentSpeechWarmer speechWarmer;
+    private final AiCallQueueItemRepository queueRepository;
+    private final AiCallingSettingsMutator settingsMutator;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -60,7 +54,43 @@ public class AiAgentService {
     }
 
     @Transactional
+    /** Re-warm one agent's speech cache (after a super-admin switches its tier). Fire-and-forget. */
+    public void warmSpeechCache(String agentId) {
+        repo.findById(agentId).ifPresent(a -> {
+            try {
+                speechWarmer.warm(toDto(a));
+            } catch (Exception e) {
+                log.warn("ai agent speech warm dispatch failed agent={}: {}", agentId, e.getMessage());
+            }
+        });
+    }
+
+    /** What a save did besides storing the agent: calls cancelled because it was turned off. */
+    public record SaveResult(AiAgentDTO agent, int cancelledCalls) {
+    }
+
+    static final String CANCEL_REASON_DISABLED = "The AI agent was turned off, so this call was not placed.";
+
     public AiAgentDTO save(AiAgentDTO dto) {
+        return saveWithResult(dto).agent();
+    }
+
+    /**
+     * Create or replace an agent. Turning an enabled agent off also cancels every call still
+     * waiting for it in the AI call queue (any trigger: workflow, bulk, manual, API), with a
+     * reason on each item: those calls would otherwise reach the contact with the generic
+     * built-in persona. The drain job refuses them at dial time as well (same rule: the
+     * agent exists and is off), for items that reach it through the institute default.
+     */
+    public SaveResult saveWithResult(AiAgentDTO dto) {
+        return saveWithResult(dto, null);
+    }
+
+    /**
+     * As {@link #saveWithResult(AiAgentDTO)}, recording {@code actorId} (e.g. "api:&lt;keyId&gt;")
+     * as who changed the settings bridge; null = the signed-in user of the request.
+     */
+    public SaveResult saveWithResult(AiAgentDTO dto, String actorId) {
         if (dto.getInstituteId() == null || dto.getInstituteId().isBlank()) {
             throw new VacademyException("instituteId is required");
         }
@@ -72,6 +102,7 @@ public class AiAgentService {
                 ? repo.findByIdAndInstituteId(dto.getId(), dto.getInstituteId())
                         .orElseThrow(() -> new VacademyException("Agent not found"))
                 : new AiAgent();
+        boolean wasEnabled = agent.getId() != null && Boolean.TRUE.equals(agent.getEnabled());
         agent.setInstituteId(dto.getInstituteId());
         agent.setName(dto.getName().trim());
         agent.setEnabled(dto.getEnabled() == null ? Boolean.TRUE : dto.getEnabled());
@@ -88,8 +119,11 @@ public class AiAgentService {
         // an out-of-range value to the TTS (pace 0.5–2.0, temperature 0.01–2.0).
         agent.setPace(clamp(dto.getPace(), 0.5, 2.0));
         agent.setTemperature(clamp(dto.getTemperature(), 0.01, 2.0));
+        // V504: the bot clamps to the same range (prosody.clamp_expand); 1.0 = off.
+        agent.setVoiceModulation(clamp(dto.getVoiceModulation(), 1.0, 2.5));
         agent.setSpeechCacheMode(normalizeSpeechCacheMode(dto.getSpeechCacheMode(),
-                agent.getSpeechCacheMode()));
+                agent.getSpeechCacheMode() != null ? agent.getSpeechCacheMode()
+                        : defaultSpeechCacheMode(dto)));
         agent.setBookingPageId(blankToNull(dto.getBookingPageId()));
         // Rules are OMITTED, not empty, by an older client that predates them. Writing null
         // on omission would silently wipe an institute's whole send configuration on the next
@@ -100,74 +134,112 @@ public class AiAgentService {
         }
         AiAgent saved = repo.save(agent);
 
-        bridgeIntoSettings(saved, /* remove= */ !Boolean.TRUE.equals(saved.getEnabled()));
+        // Stamps updated_at (no trigger, read-only in the entity) and, by clearing the
+        // persistence context, makes the next read return the database's created_at /
+        // updated_at instead of the nulls a just-inserted entity carries.
+        try {
+            repo.touchUpdatedAt(saved.getId());
+        } catch (RuntimeException e) {
+            log.debug("ai-agent {}: could not stamp updated_at: {}", saved.getId(), e.getMessage());
+        }
+        boolean enabledNow = Boolean.TRUE.equals(saved.getEnabled());
+        int cancelled = wasEnabled && !enabledNow
+                ? cancelWaitingCalls(saved, CANCEL_REASON_DISABLED) : 0;
+
+        bridgeIntoSettings(saved, /* remove= */ !enabledNow, actorId);
         AiAgentDTO out = toDto(saved);
         // Pre-render this agent's fixed lines into the voice bot's speech cache so
         // they are served from cache on call #1 instead of being learned slowly.
         // Fire-and-forget by contract: a warm that fails just means the first calls
-        // pay the vendor, which is exactly today's behaviour.
-        try {
-            speechWarmer.warm(out);
-        } catch (Exception e) {
-            log.warn("ai agent speech warm dispatch failed agent={}: {}",
-                    saved.getId(), e.getMessage());
+        // pay the vendor, which is exactly today's behaviour. A disabled agent places
+        // no calls, so warming it only spends vendor characters.
+        if (enabledNow) {
+            try {
+                speechWarmer.warm(out);
+            } catch (Exception e) {
+                log.warn("ai agent speech warm dispatch failed agent={}: {}",
+                        saved.getId(), e.getMessage());
+            }
         }
-        return out;
+        return new SaveResult(out, cancelled);
+    }
+
+    /**
+     * Deletes the agent. Waiting calls are NOT cancelled here: once the agent is gone, a
+     * workflow / bulk / manual call that named it dials with the fallback persona exactly as
+     * before v1.3 (see AiCallQueueDrainJob.agentRefusal), and a public API call naming it is
+     * cancelled by the drain job at dial time, as since v1.1. Returns 0 (kept for callers).
+     */
+    @Transactional
+    public int delete(String agentId, String instituteId) {
+        return delete(agentId, instituteId, null);
     }
 
     @Transactional
-    public void delete(String agentId, String instituteId) {
+    public int delete(String agentId, String instituteId, String actorId) {
         AiAgent agent = repo.findByIdAndInstituteId(agentId, instituteId)
                 .orElseThrow(() -> new VacademyException("Agent not found"));
         repo.delete(agent);
-        bridgeIntoSettings(agent, /* remove= */ true);
+        bridgeIntoSettings(agent, /* remove= */ true, actorId);
+        return 0;
+    }
+
+    /** The wire shape of a stored agent (lists parsed, rules read), for a caller that merges into it. */
+    public AiAgentDTO dtoOf(AiAgent agent) {
+        return toDto(agent);
+    }
+
+    /** Cancel the QUEUED calls for this agent (by id, or by name for a name-only item). */
+    public int cancelWaitingCalls(AiAgent agent, String reason) {
+        try {
+            int n = queueRepository.cancelQueuedForAgent(agent.getInstituteId(), agent.getId(), agent.getName(), reason);
+            if (n > 0) {
+                log.info("ai-agent {}: cancelled {} waiting call(s): {}", agent.getId(), n, reason);
+            }
+            return n;
+        } catch (RuntimeException e) {
+            // The drain job refuses these at dial time anyway; never fail the save for it.
+            log.warn("ai-agent {}: could not cancel waiting calls: {}", agent.getId(), e.getMessage());
+            return 0;
+        }
     }
 
     /**
      * Upsert/remove the agent's campaign entry inside the raw AI_CALLING_SETTING
      * data map. Best-effort: a bridge failure must not roll back the agent save —
      * the registry row is the source of truth and the bridge can be re-run.
+     * Written through {@link AiCallingSettingsMutator}: under a row lock, from a fresh
+     * read, touching only {@code campaigns}, so it cannot undo a concurrent change to
+     * another field (e.g. the default agent set through the public API).
      */
-    @SuppressWarnings("unchecked")
-    private void bridgeIntoSettings(AiAgent agent, boolean remove) {
+    private void bridgeIntoSettings(AiAgent agent, boolean remove, String actorId) {
         try {
-            Institute institute = instituteRepository.findById(agent.getInstituteId())
-                    .orElseThrow(() -> new VacademyException("Institute not found"));
-            Object raw = instituteSettingService.getSettingData(
-                    institute, SettingKeyEnums.AI_CALLING_SETTING.name());
-
-            Map<String, Object> data = raw instanceof Map
-                    ? new LinkedHashMap<>((Map<String, Object>) raw)
-                    : new LinkedHashMap<>();
-            List<Map<String, Object>> campaigns = new ArrayList<>();
-            Object rawCampaigns = data.get("campaigns");
-            if (rawCampaigns instanceof List) {
-                for (Object c : (List<Object>) rawCampaigns) {
-                    if (c instanceof Map) campaigns.add(new LinkedHashMap<>((Map<String, Object>) c));
+            InstituteSettingWriter.Actor actor = actorId == null
+                    ? InstituteSettingWriter.Actor.fromRequest() : InstituteSettingWriter.Actor.tenant(actorId);
+            settingsMutator.update(agent.getInstituteId(), data -> {
+                com.fasterxml.jackson.databind.node.ArrayNode out = mapper.createArrayNode();
+                com.fasterxml.jackson.databind.JsonNode existing = data.get("campaigns");
+                if (existing != null && existing.isArray()) {
+                    for (com.fasterxml.jackson.databind.JsonNode c : existing) {
+                        if (!c.isObject()) continue;
+                        com.fasterxml.jackson.databind.JsonNode id = c.get("campaignId");
+                        if (id != null && agent.getId().equals(id.asText())) continue;
+                        out.add(c);
+                    }
                 }
-            }
-
-            campaigns.removeIf(c -> agent.getId().equals(String.valueOf(c.get("campaignId"))));
-            if (!remove) {
-                // "BOTH" registers as OUTBOUND for the campaigns registry (its
-                // direction field is binary); inbound detection for BOTH agents
-                // comes via the IVR path, which stamps direction itself.
-                String direction = "INBOUND".equals(agent.getDirection()) ? "INBOUND" : "OUTBOUND";
-                Map<String, Object> entry = new LinkedHashMap<>();
-                entry.put("campaignId", agent.getId());
-                entry.put("name", agent.getName());
-                entry.put("direction", direction);
-                entry.put("provider", ProviderType.VACADEMY_AI);
-                campaigns.add(entry);
-            }
-            data.put("campaigns", campaigns);
-
-            instituteSettingService.saveGenericSetting(
-                    institute, SettingKeyEnums.AI_CALLING_SETTING.name(),
-                    GenericSettingRequest.builder()
-                            .settingName("AI Calling Settings")
-                            .settingData(data)
-                            .build());
+                if (!remove) {
+                    // "BOTH" registers as OUTBOUND for the campaigns registry (its
+                    // direction field is binary); inbound detection for BOTH agents
+                    // comes via the IVR path, which stamps direction itself.
+                    String direction = "INBOUND".equals(agent.getDirection()) ? "INBOUND" : "OUTBOUND";
+                    com.fasterxml.jackson.databind.node.ObjectNode entry = out.addObject();
+                    entry.put("campaignId", agent.getId());
+                    entry.put("name", agent.getName());
+                    entry.put("direction", direction);
+                    entry.put("provider", ProviderType.VACADEMY_AI);
+                }
+                data.set("campaigns", out);
+            }, actor);
         } catch (Exception e) {
             log.error("ai-agent: settings bridge failed for agent {} (institute {})",
                     agent.getId(), agent.getInstituteId(), e);
@@ -266,6 +338,21 @@ public class AiAgentService {
      * than to OFF for the same reason: a typo should not quietly change what a
      * caller hears, and the DB CHECK constraint would reject it anyway.
      */
+    /**
+     * The tier a NEW agent starts on when the client sends none. A scripted agent
+     * (a real authored prompt) on Smallest starts on FULL: its script repeats
+     * across calls — Shreya's last 7 days, 312 calls: 65% of the characters she
+     * spoke were sentences already spoken before — and FULL is the tier that
+     * learns them. Smallest is the only engine FULL's render parity has been
+     * checked on (TTS_SPEECH_CACHE.md §11); everything else starts OFF as before.
+     */
+    static String defaultSpeechCacheMode(AiAgentDTO dto) {
+        String model = dto.getTtsModel() == null ? "" : dto.getTtsModel().trim().toLowerCase();
+        int promptLen = dto.getSystemPrompt() == null ? 0 : dto.getSystemPrompt().length();
+        return (model.startsWith("smallest") || model.startsWith("lightning")) && promptLen >= 2000
+                ? "FULL" : "OFF";
+    }
+
     private String normalizeSpeechCacheMode(String incoming, String stored) {
         if (incoming == null || incoming.isBlank()) {
             return stored == null ? "OFF" : stored;
@@ -293,6 +380,7 @@ public class AiAgentService {
                 .maxCallMinutes(a.getMaxCallMinutes())
                 .pace(a.getPace())
                 .temperature(a.getTemperature())
+                .voiceModulation(a.getVoiceModulation())
                 .ttsModel(a.getTtsModel())
                 .speechCacheMode(a.getSpeechCacheMode() == null
                         ? "OFF" : a.getSpeechCacheMode())

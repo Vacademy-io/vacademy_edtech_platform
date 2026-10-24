@@ -1,0 +1,12 @@
+{
+    "detailsReportTitle": "{{term}} Details Report",
+    "learner": "Learner",
+    "termColonName": "{{term}}: {{name}}",
+    "studySlide": "Study Slide",
+    "type": "Type",
+    "concentration": "Concentration",
+    "batchConcentrationAvg": "{{batchTerm}} Concentration (Avg)",
+    "timeSpent": "Time Spent",
+    "lastActive": "Last Active",
+    "notAvailable": "N/A"
+}

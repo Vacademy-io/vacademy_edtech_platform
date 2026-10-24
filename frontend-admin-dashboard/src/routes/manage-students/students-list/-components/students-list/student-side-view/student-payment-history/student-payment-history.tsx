@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { OfflinePaymentFields } from '@/components/common/payments/OfflinePaymentFields';
+import { toOfflinePaymentDetailsPayload, type OfflinePaymentDetails } from '@/services/offline-payment-modes';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStudentSidebar } from '../../../../-context/selected-student-sidebar-context';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -20,6 +22,7 @@ import {
     DownloadSimple,
     Eye,
     PencilSimple,
+    CaretDown,
     CaretLeft,
     CaretRight,
     Receipt,
@@ -29,10 +32,22 @@ import {
     ArrowCircleUp,
     ArrowCircleDown,
     XCircle,
+    Trash,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { isDeletablePayment, isVoidablePayment } from '@/services/payment-logs';
+import {
+    VoidPaymentDialog,
+    type VoidPaymentTarget,
+} from '@/routes/manage-payments/-components/VoidPaymentDialog';
+import {
+    PermanentDeleteDialog,
+    type PermanentDeleteTarget,
+} from '@/routes/manage-payments/-components/PermanentDeleteDialog';
+import { useCanDeletePayments } from '@/routes/manage-payments/-hooks/useCanDeletePayments';
 import { CpoInstallmentsEditor } from './cpo-installments-editor';
 import { CreateInvoiceDialog } from './create-invoice-dialog';
+import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import { ProfileSectionCard, ProfileEmpty, ProfileMiniBar } from '../profile-ui';
 import { useUserCpoUserPlans } from '../../../../-services/cpoSideViewService';
 import type { CpoUserPlanSummary } from '../../../../-types/cpo-side-view-types';
@@ -56,8 +71,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { getCurrencySymbol } from '@/constants/currencies';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 const INVOICES_PER_PAGE = 10;
 
@@ -74,10 +92,31 @@ function formatDate(dateStr: string | null | undefined): string {
     }
 }
 
+/**
+ * Symbol for a currency code. Goes through the platform-wide CURRENCIES table rather
+ * than an inline ternary: this tab used to know only USD and EUR and fell through to
+ * ₹ for everything else, so an AUD institute saw its invoices priced in rupees.
+ * Unknown codes render as the code itself, never as a wrong symbol.
+ */
+function symbolFor(currency?: string | null): string {
+    return getCurrencySymbol((currency || 'INR').toUpperCase());
+}
+
+/**
+ * Amount grouped per the *currency's* locale, not always en-IN — en-IN lakh/crore
+ * grouping ("A$12,34,567.00") is wrong for every non-INR currency.
+ */
+function formatAmount(amount: number | null | undefined, currency?: string | null, minimumFractionDigits = 2): string {
+    const code = (currency || 'INR').toUpperCase();
+    return Number(amount || 0).toLocaleString(code === 'INR' ? 'en-IN' : 'en-US', {
+        minimumFractionDigits,
+        maximumFractionDigits: 2,
+    });
+}
+
 function formatCurrency(amount: number | null | undefined, currency?: string): string {
     if (amount == null) return '—';
-    const sym = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₹';
-    return `${sym}${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${symbolFor(currency)}${formatAmount(amount, currency)}`;
 }
 
 /**
@@ -97,7 +136,23 @@ function shortInvoiceLabel(invoiceNumber: string | null | undefined, fallbackId:
     return raw;
 }
 
-function getStatusBadge(status: string) {
+/**
+ * Display labels for invoice status codes. The Record keys are the raw
+ * backend enum values used for style lookup and MUST NOT be translated —
+ * only the rendered `label` text below changes per-locale.
+ */
+function buildInvoiceStatusLabels(t: TFunction): Record<string, string> {
+    return {
+        GENERATED: t('invoiceStatus.generated'),
+        SENT: t('invoiceStatus.sent'),
+        VIEWED: t('invoiceStatus.viewed'),
+        PENDING_PAYMENT: t('invoiceStatus.pendingPayment'),
+        PAID: t('invoiceStatus.paid'),
+        REJECTED: t('invoiceStatus.rejected'),
+    };
+}
+
+function getStatusBadge(status: string, label: string) {
     const styles: Record<string, string> = {
         GENERATED: 'bg-blue-50 text-blue-700 border-blue-200',
         SENT: 'bg-green-50 text-green-700 border-green-200',
@@ -108,7 +163,7 @@ function getStatusBadge(status: string) {
     };
     return (
         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-            {status}
+            {label}
         </span>
     );
 }
@@ -121,27 +176,31 @@ function getStatusBadge(status: string) {
  * plan identity (matches the per-plan card pattern in CpoInstallmentsEditor).
  */
 const FeePlanSummaryCard = ({ summary }: { summary: CpoUserPlanSummary }) => {
+    const { t } = useTranslation('manageStudentsPaymentHistory');
     const net = summary.net_total ?? 0;
     const paid = summary.paid_total ?? 0;
     const pct = net > 0 ? Math.round((paid / net) * 100) : 0;
-    const planLabel = summary.cpo_name || summary.payment_option_name || 'Fee Plan';
+    const planLabel = summary.cpo_name || summary.payment_option_name || t('feePlan.planLabelFallback');
     return (
-        <ProfileSectionCard icon={Wallet} heading="Fee Plan">
+        <ProfileSectionCard icon={Wallet} heading={t('feePlan.heading')}>
             <div className="flex flex-wrap items-center gap-4">
                 <div className="min-w-0 flex-1">
                     <div className="text-subtitle font-bold text-card-foreground">
-                        {planLabel} · {summary.installment_count} installments
+                        {planLabel} · {t('feePlan.installments', { count: summary.installment_count })}
                     </div>
                     <div className="mt-0.5 text-caption text-muted-foreground">
-                        Net {formatCurrency(net)} · Paid {formatCurrency(paid)}
+                        {t('feePlan.netPaid', {
+                            net: formatCurrency(net, summary.currency ?? undefined),
+                            paid: formatCurrency(paid, summary.currency ?? undefined),
+                        })}
                     </div>
                 </div>
                 <div className="text-right">
                     <div className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
-                        Outstanding
+                        {t('feePlan.outstanding')}
                     </div>
                     <div className="text-h2 font-bold leading-tight text-danger-600">
-                        {formatCurrency(summary.outstanding_total ?? 0)}
+                        {formatCurrency(summary.outstanding_total ?? 0, summary.currency ?? undefined)}
                     </div>
                 </div>
             </div>
@@ -152,21 +211,20 @@ const FeePlanSummaryCard = ({ summary }: { summary: CpoUserPlanSummary }) => {
     );
 };
 
-/** Account summary grid — shows total accrued, paid, balance, overdue from the ledger. */
+/** Account summary grid — shows total accrued, paid and balance from the ledger. */
 const AccountSummaryGrid = ({ summary }: { summary: UserAccountSummaryDTO }) => {
-    const sym = summary.currency === 'USD' ? '$' : summary.currency === 'EUR' ? '€' : '₹';
-    const fmt = (v: number) =>
-        `${sym}${Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    const { t } = useTranslation('manageStudentsPaymentHistory');
+    const sym = symbolFor(summary.currency);
+    const fmt = (v: number) => `${sym}${formatAmount(v, summary.currency, 0)}`;
     return (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {[
-                { label: 'Total accrued', value: fmt(summary.total_accrued), tone: 'neutral' },
-                { label: 'Total paid', value: fmt(summary.total_paid), tone: 'success' },
-                { label: 'Due', value: fmt(summary.balance), tone: summary.balance > 0 ? 'danger' : 'neutral' },
-                { label: 'Past Due', value: fmt(summary.overdue), tone: summary.overdue > 0 ? 'danger' : 'neutral' },
+                { label: t('accountSummary.totalAccrued'), value: fmt(summary.total_accrued), tone: 'neutral' },
+                { label: t('accountSummary.totalPaid'), value: fmt(summary.total_paid), tone: 'success' },
+                { label: t('accountSummary.due'), value: fmt(summary.balance), tone: summary.balance > 0 ? 'danger' : 'neutral' },
             ].map(({ label, value, tone }) => (
                 <div key={label} className="rounded-lg border border-neutral-200 bg-white p-3">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+                    <p className="text-2xs uppercase tracking-wider text-muted-foreground">{label}</p>
                     <p className={`mt-0.5 text-sm font-bold ${tone === 'danger' ? 'text-danger-600' : tone === 'success' ? 'text-success-600' : 'text-neutral-900'}`}>
                         {value}
                     </p>
@@ -190,55 +248,70 @@ const StudentMarkPaidDialog = ({
     invoiceNumber?: string;
     onSuccess?: () => void;
 }) => {
-    const [txnId, setTxnId] = useState('');
+    const { t } = useTranslation('manageStudentsPaymentHistory');
+    const [details, setDetails] = useState<OfflinePaymentDetails>({});
+    const [detailsError, setDetailsError] = useState<string | null>(null);
     const [notes, setNotes] = useState('');
+    // Start fresh for each invoice: this dialog stays mounted between invoices.
+    useEffect(() => {
+        if (!open) return;
+        setDetails({});
+        setNotes('');
+    }, [open, invoiceId]);
     const mutation = useMutation({
         mutationFn: () =>
             markInvoicePaidManual(invoiceId, {
-                transaction_id: txnId.trim() || undefined,
+                transaction_id: details.reference?.trim() || undefined,
                 notes: notes.trim() || undefined,
+                payment_details: toOfflinePaymentDetailsPayload(details),
             }),
         onSuccess: () => {
-            toast.success(`Invoice ${invoiceNumber || invoiceId} marked as paid`);
+            toast.success(t('markPaidDialog.successToast', { invoice: invoiceNumber || invoiceId }));
             onSuccess?.();
             onOpenChange(false);
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.message || 'Failed to mark as paid');
+            toast.error(err?.response?.data?.message || t('markPaidDialog.errorToast'));
         },
     });
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[400px]">
+            <DialogContent className="sm:max-w-sm">
                 <DialogHeader>
-                    <DialogTitle>Mark invoice paid</DialogTitle>
+                    <DialogTitle>{t('markPaidDialog.title')}</DialogTitle>
                     <DialogDescription>
-                        Records an offline payment against{' '}
-                        {invoiceNumber ? <strong>{invoiceNumber}</strong> : 'this invoice'}.
+                        {invoiceNumber ? (
+                            <>
+                                {t('markPaidDialog.descriptionPrefix')} <strong>{invoiceNumber}</strong>.
+                            </>
+                        ) : (
+                            t('markPaidDialog.descriptionFallback')
+                        )}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3 py-1">
+                    {/* How it was paid: mode, option (e.g. PhonePe), reference, proof. */}
+                    <OfflinePaymentFields value={details} onChange={setDetails} onErrorChange={setDetailsError} />
                     <div className="space-y-1">
-                        <Label>Transaction reference</Label>
-                        <Input value={txnId} onChange={(e) => setTxnId(e.target.value)} placeholder="cheque #, UPI ref, receipt no." />
-                    </div>
-                    <div className="space-y-1">
-                        <Label>Notes</Label>
-                        <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional note" />
+                        <Label>{t('markPaidDialog.notes')}</Label>
+                        <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('markPaidDialog.notesPlaceholder')} />
                     </div>
                 </div>
                 <DialogFooter className="gap-2">
                     <MyButton type="button" buttonType="secondary" scale="small" onClick={() => onOpenChange(false)} disable={mutation.isPending}>
-                        Cancel
+                        {t('markPaidDialog.cancel')}
                     </MyButton>
-                    <MyButton type="button" buttonType="primary" scale="small" onClick={() => mutation.mutate()} disable={mutation.isPending}>
-                        {mutation.isPending ? <><Loader2 className="size-4 animate-spin" /> Saving…</> : 'Mark as paid'}
+                    <MyButton type="button" buttonType="primary" scale="small" onClick={() => mutation.mutate()} disable={mutation.isPending || !!detailsError}>
+                        {mutation.isPending ? <><CircleNotch className="size-4 animate-spin" /> {t('markPaidDialog.saving')}</> : t('markPaidDialog.submit')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 };
+
+/** Discount reasons longer than this are cut short with a More toggle. */
+const REASON_PREVIEW_CHARS = 60;
 
 /** Invoice list with client-side pagination + source-based actions. */
 const InvoicesList = ({
@@ -253,6 +326,8 @@ const InvoicesList = ({
     /** Opens the Create-Invoice dialog in edit mode for an unpaid admin invoice. */
     onEdit?: (invoiceId: string) => void;
 }) => {
+    const { t } = useTranslation('manageStudentsPaymentHistory');
+    const statusLabels = buildInvoiceStatusLabels(t);
     const [page, setPage] = useState(0);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [markPaidTarget, setMarkPaidTarget] = useState<{ id: string; number?: string } | null>(null);
@@ -262,8 +337,29 @@ const InvoicesList = ({
     const [cancellingId, setCancellingId] = useState<string | null>(null);
     // Inline PDF preview — view an invoice without downloading it first.
     const [previewTarget, setPreviewTarget] = useState<InvoiceDTO | null>(null);
+    // Permanent delete — only offered when the role has the Display Settings permission.
+    const canDeletePayments = useCanDeletePayments();
+    const [deleteTarget, setDeleteTarget] = useState<PermanentDeleteTarget | null>(null);
     const totalPages = Math.ceil(invoices.length / INVOICES_PER_PAGE);
     const paged = invoices.slice(page * INVOICES_PER_PAGE, (page + 1) * INVOICES_PER_PAGE);
+    // Names of the admins who granted a discount on the visible invoices (one batched lookup).
+    const grantedByIds = Array.from(
+        new Set(paged.map((inv) => inv.discount_granted_by_user_id).filter((id): id is string => !!id))
+    );
+    const { data: grantedByUsers } = useGetUserBasicDetails(grantedByIds);
+    // Compact rows: details (amount breakdown, discount, actions) open per invoice on "More".
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+    const [expandedReasons, setExpandedReasons] = useState<Set<string>>(new Set());
+    const toggleIn = (set: Set<string>, id: string) => {
+        const next = new Set(set);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+    };
+    const toggleExpanded = (id: string) => setExpandedIds((s) => toggleIn(s, id));
+    const toggleReason = (id: string) => setExpandedReasons((s) => toggleIn(s, id));
+    const grantedByName = (id?: string | null) =>
+        id ? grantedByUsers?.find((u) => u.id === id)?.name : undefined;
 
     // Voids a mistaken PENDING_PAYMENT invoice. Mirrors the Reject action in
     // manage-suborg-teams/sub-org-analytics-panel — same endpoint, same terminal semantics.
@@ -272,13 +368,13 @@ const InvoicesList = ({
         onMutate: (invoiceId) => setCancellingId(invoiceId),
         onSettled: () => setCancellingId(null),
         onSuccess: () => {
-            toast.success('Invoice cancelled');
+            toast.success(t('invoicesList.cancelSuccessToast'));
             onRefresh?.();
         },
         onError: (err: unknown) => {
             const message = (err as { response?: { data?: { message?: string } } })?.response?.data
                 ?.message;
-            toast.error(message || 'Could not cancel invoice');
+            toast.error(message || t('invoicesList.cancelErrorToast'));
         },
     });
 
@@ -290,10 +386,10 @@ const InvoicesList = ({
         try {
             await navigator.clipboard.writeText(link);
             setCopiedId(invoiceId);
-            toast.success('Payment link copied');
+            toast.success(t('invoicesList.copyLinkSuccessToast'));
             window.setTimeout(() => setCopiedId((p) => (p === invoiceId ? null : p)), 2000);
         } catch {
-            toast.error('Could not copy to clipboard');
+            toast.error(t('invoicesList.copyLinkErrorToast'));
         }
     };
 
@@ -301,8 +397,8 @@ const InvoicesList = ({
         return (
             <ProfileEmpty
                 icon={FileText}
-                title="No invoices yet"
-                hint="Invoices generated for this learner will appear here."
+                title={t('invoicesList.emptyTitle')}
+                hint={t('invoicesList.emptyHint')}
             />
         );
     }
@@ -312,7 +408,6 @@ const InvoicesList = ({
             <div className="overflow-hidden rounded-lg border border-neutral-200">
                 <ul className="divide-y divide-neutral-100">
                     {paged.map((inv) => {
-                        const canDownload = !!(inv.pdf_url || inv.pdf_file_id);
                         const status = String(inv.status || '').toUpperCase();
                         const isPending = status === 'PENDING_PAYMENT' || status === 'GENERATED' || status === 'SENT';
                         const isAdminManual = inv.source === 'ADMIN_MANUAL';
@@ -321,12 +416,41 @@ const InvoicesList = ({
                         // outright, so offering it on GENERATED/SENT would only ever 400.
                         const canCancel = isAdminManual && status === 'PENDING_PAYMENT';
                         const paymentLink = inv.payment_link;
+                        // Only a real invoice row: the list also carries synthetic per-installment
+                        // rows ("DUE-…", "PAID-…", ids "sfp:…") that are not invoices at all, and a
+                        // live-class invoice is tied to its registration.
+                        // A part-paid installment keeps its own label but carries its receipt's
+                        // id, so view/download still open that receipt.
+                        const placeholderLabel = /^(PAID|PARTIAL|DUE|OVERDUE|WAIVED)-/i.test(
+                            inv.invoice_number || ''
+                        );
+                        const isSyntheticRow =
+                            String(inv.id || '').startsWith('sfp:') ||
+                            (placeholderLabel && !inv.receipt_number);
+                        const amountText = formatCurrency(inv.total_amount, inv.currency);
+                        const paidText = inv.amount_paid
+                            ? formatCurrency(inv.amount_paid, inv.currency)
+                            : null;
+                        // A paid invoice has a live payment behind it; the server refuses those, so the
+                        // button is not offered (delete or void the payment first).
+                        // A real invoice can always be rendered: /invoices/{id}/download
+                        // regenerates and stores the PDF when none exists yet. Gating this on
+                        // pdf_file_id hid both buttons for every invoice that had never been
+                        // opened, so the one action that would have created the PDF was the one
+                        // action the row would not offer. Synthetic per-installment rows have no
+                        // invoice behind them, so they still need a stored file.
+                        const canDownload = !isSyntheticRow || !!(inv.pdf_url || inv.pdf_file_id);
+                        const canDeleteInvoice =
+                            canDeletePayments &&
+                            !isSyntheticRow &&
+                            inv.source !== 'LIVE_SESSION' &&
+                            status !== 'PAID';
+                        const hasDiscount = (inv.discount_amount ?? 0) > 0;
+                        const isExpanded = expandedIds.has(inv.id);
                         return (
-                            <li
-                                key={inv.id}
-                                className="flex flex-col gap-2 px-3 py-2.5 transition-colors hover:bg-neutral-50"
-                            >
-                                <div className="flex items-center gap-3">
+                            <li key={inv.id} className="px-3 py-2.5 transition-colors hover:bg-neutral-50">
+                                {/* Compact row: number, status, date, amount. Everything else is under More. */}
+                                <div className="flex items-center gap-2">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex min-w-0 items-center gap-2">
                                             <span
@@ -335,7 +459,7 @@ const InvoicesList = ({
                                             >
                                                 {shortInvoiceLabel(inv.invoice_number, inv.id)}
                                             </span>
-                                            <span className="shrink-0">{getStatusBadge(inv.status)}</span>
+                                            <span className="shrink-0">{getStatusBadge(inv.status, statusLabels[inv.status] ?? inv.status)}</span>
                                             {/* A proforma is not a tax invoice yet — it holds a
                                                 number from the separate PRO- series and gets a real
                                                 invoice number only once it is paid. Worth calling
@@ -343,18 +467,81 @@ const InvoicesList = ({
                                             {inv.proforma && (
                                                 <span
                                                     className="inline-flex shrink-0 items-center rounded-full border border-neutral-300 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-neutral-600"
-                                                    title="Proforma — becomes a numbered invoice when paid"
+                                                    title={t('invoicesList.proformaTitle')}
                                                 >
-                                                    PROFORMA
+                                                    {t('invoicesList.proforma')}
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral-500">
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-neutral-500">
                                             <span>{formatDate(inv.due_date || inv.invoice_date)}</span>
                                             <span aria-hidden>·</span>
-                                            {/* Discounted invoice: show gross struck through so the
-                                                coupon's effect is visible next to the charged amount. */}
-                                            {(inv.discount_amount ?? 0) > 0 && (
+                                            <span className="font-medium text-neutral-700">
+                                                {paidText
+                                                    ? t('invoicesList.left', { amount: amountText })
+                                                    : amountText}
+                                            </span>
+                                            {paidText && (
+                                                <>
+                                                    <span aria-hidden>·</span>
+                                                    <span className="text-success-700">
+                                                        {inv.receipt_number
+                                                            ? t('invoicesList.paidWithReceipt', {
+                                                                  amount: paidText,
+                                                                  receipt: inv.receipt_number,
+                                                              })
+                                                            : t('invoicesList.paidSoFar', {
+                                                                  amount: paidText,
+                                                              })}
+                                                    </span>
+                                                </>
+                                            )}
+                                            {hasDiscount && (
+                                                <span className="text-success-700">
+                                                    −{formatCurrency(inv.discount_amount, inv.currency)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {canDownload && (
+                                        <>
+                                            <button
+                                                onClick={() => setPreviewTarget(inv)}
+                                                className="inline-flex shrink-0 items-center rounded-md border border-neutral-300 bg-white p-1.5 text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
+                                                title={t('invoicesList.previewTitle')}
+                                                aria-label={t('invoicesList.preview')}
+                                            >
+                                                <Eye className="size-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => void handleDownload(inv)}
+                                                className="inline-flex shrink-0 items-center rounded-md border border-neutral-300 bg-white p-1.5 text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
+                                                title={t('invoicesList.downloadTitle')}
+                                                aria-label={t('invoicesList.download')}
+                                            >
+                                                <DownloadSimple className="size-3.5" />
+                                            </button>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => toggleExpanded(inv.id)}
+                                        className="inline-flex shrink-0 items-center gap-0.5 rounded-md px-1.5 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50"
+                                        aria-expanded={isExpanded}
+                                    >
+                                        {isExpanded
+                                            ? t('invoicesList.less', { defaultValue: 'Less' })
+                                            : t('invoicesList.more', { defaultValue: 'More' })}
+                                        <CaretDown
+                                            className={`size-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+                                </div>
+
+                                {isExpanded && (
+                                    <div className="mt-2 flex flex-col gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-2.5 text-xs">
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-neutral-600">
+                                            {/* Discounted invoice: gross struck through next to what was charged. */}
+                                            {hasDiscount && (
                                                 <span className="text-neutral-400 line-through">
                                                     {formatCurrency(
                                                         (inv.total_amount ?? 0) + (inv.discount_amount ?? 0),
@@ -362,114 +549,146 @@ const InvoicesList = ({
                                                     )}
                                                 </span>
                                             )}
-                                            <span className="font-medium text-neutral-700">
+                                            <span className="font-medium text-neutral-800">
                                                 {formatCurrency(inv.total_amount, inv.currency)}
                                             </span>
-                                            {(inv.discount_amount ?? 0) > 0 &&
-                                                (() => {
-                                                    const couponItem = inv.line_items?.find(
-                                                        (li) =>
-                                                            li.item_type?.includes('COUPON') ||
-                                                            li.item_type?.includes('DISCOUNT') ||
-                                                            li.item_type?.includes('REFERRAL')
-                                                    );
-                                                    const label = couponItem?.description || 'Discount';
-                                                    return (
-                                                        <span
-                                                            className="inline-flex shrink-0 items-center rounded border border-success-200 bg-success-50 px-1.5 py-0.5 text-caption font-medium text-success-700"
-                                                            title={`${label}: ${formatCurrency(inv.discount_amount, inv.currency)} off`}
-                                                        >
-                                                            {label} −
-                                                            {formatCurrency(inv.discount_amount, inv.currency)}
-                                                        </span>
-                                                    );
-                                                })()}
                                             {inv.source && (() => {
                                                 const srcMeta: Record<string, { label: string; cls: string }> = {
-                                                    ADMIN_MANUAL: { label: 'Admin Invoice', cls: 'bg-purple-50 text-purple-700 border-purple-200' },
-                                                    USER_PLAN: { label: 'Subscription', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-                                                    STUDENT_FEE_PAYMENT: { label: 'Fee Payment', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+                                                    ADMIN_MANUAL: { label: t('invoicesList.sourceAdminInvoice'), cls: 'bg-purple-50 text-purple-700 border-purple-200' },
+                                                    USER_PLAN: { label: t('invoicesList.sourceSubscription'), cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+                                                    STUDENT_FEE_PAYMENT: { label: t('invoicesList.sourceFeePayment'), cls: 'bg-amber-50 text-amber-700 border-amber-200' },
                                                 };
                                                 const m = srcMeta[inv.source] || { label: inv.source.replace(/_/g, ' '), cls: 'bg-gray-50 text-gray-600 border-gray-200' };
                                                 return (
-                                                    <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${m.cls}`}>
+                                                    <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-2xs font-medium ${m.cls}`}>
                                                         {m.label}
                                                     </span>
                                                 );
                                             })()}
                                         </div>
-                                    </div>
-                                    {canDownload && (
-                                        <>
-                                            <button
-                                                onClick={() => setPreviewTarget(inv)}
-                                                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
-                                                title="Preview the invoice PDF without downloading it"
-                                            >
-                                                <Eye className="size-3.5" />
-                                                Preview
-                                            </button>
-                                            <button
-                                                onClick={() => void handleDownload(inv)}
-                                                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50"
-                                                title="Download Invoice PDF"
-                                            >
-                                                <DownloadSimple className="size-3.5" />
-                                                Download
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                                {/* Action row: payment link + mark paid for actionable invoices */}
-                                {(paymentLink || (isAdminManual && isPending) || canCancel) && (
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {paymentLink && (
-                                            <button
-                                                onClick={() => handleCopyLink(inv.id, paymentLink)}
-                                                className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-2xs uppercase tracking-wide text-neutral-600 hover:bg-neutral-50"
-                                                title="Copy payment link to share with learner"
-                                            >
-                                                {copiedId === inv.id ? (
-                                                    <><Check className="size-3 text-success-600" /> Copied</>
-                                                ) : (
-                                                    <><Copy className="size-3" /> Copy Payment Link</>
+
+                                        {hasDiscount && (() => {
+                                            const discountItem = inv.line_items?.find(
+                                                (li) =>
+                                                    li.item_type?.includes('COUPON') ||
+                                                    li.item_type?.includes('DISCOUNT') ||
+                                                    li.item_type?.includes('REFERRAL')
+                                            );
+                                            const label = discountItem?.description || t('invoicesList.discountFallback');
+                                            const grantedBy = inv.discount_granted_by_user_id
+                                                ? grantedByName(inv.discount_granted_by_user_id) ||
+                                                  t('invoicesList.anAdmin', { defaultValue: 'an admin' })
+                                                : null;
+                                            const reason = inv.discount_reason?.trim() || '';
+                                            const longReason = reason.length > REASON_PREVIEW_CHARS;
+                                            const showFullReason = expandedReasons.has(inv.id);
+                                            return (
+                                                <div className="rounded border border-success-200 bg-success-50 px-2 py-1.5 text-success-800">
+                                                    <div className="font-medium">
+                                                        {label} −{formatCurrency(inv.discount_amount, inv.currency)}
+                                                    </div>
+                                                    {grantedBy && (
+                                                        <div className="mt-0.5 text-success-700">
+                                                            {t('invoicesList.discountGivenBy', {
+                                                                defaultValue: 'Given by {{name}}',
+                                                                name: grantedBy,
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                    {reason && (
+                                                        <div className="mt-0.5 text-success-700">
+                                                            <span className="font-medium">
+                                                                {t('invoicesList.discountReason', { defaultValue: 'Reason' })}:
+                                                            </span>{' '}
+                                                            <span className="break-words">
+                                                                {longReason && !showFullReason
+                                                                    ? `${reason.slice(0, REASON_PREVIEW_CHARS)}…`
+                                                                    : reason}
+                                                            </span>
+                                                            {longReason && (
+                                                                <button
+                                                                    onClick={() => toggleReason(inv.id)}
+                                                                    className="ms-1 font-medium text-primary-600 hover:underline"
+                                                                >
+                                                                    {showFullReason
+                                                                        ? t('invoicesList.less', { defaultValue: 'Less' })
+                                                                        : t('invoicesList.more', { defaultValue: 'More' })}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Action row: payment link + mark paid for actionable invoices */}
+                                        {(paymentLink || (isAdminManual && isPending) || canCancel || canDeleteInvoice) && (
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {paymentLink && (
+                                                    <button
+                                                        onClick={() => handleCopyLink(inv.id, paymentLink)}
+                                                        className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-2xs uppercase tracking-wide text-neutral-600 hover:bg-neutral-50"
+                                                        title={t('invoicesList.copyPaymentLinkTitle')}
+                                                    >
+                                                        {copiedId === inv.id ? (
+                                                            <><Check className="size-3 text-success-600" /> {t('invoicesList.copied')}</>
+                                                        ) : (
+                                                            <><Copy className="size-3" /> {t('invoicesList.copyPaymentLink')}</>
+                                                        )}
+                                                    </button>
                                                 )}
-                                            </button>
-                                        )}
-                                        {isAdminManual && isPending && onEdit && (
-                                            <button
-                                                onClick={() => onEdit(inv.id)}
-                                                className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-2xs uppercase tracking-wide text-neutral-600 hover:bg-neutral-50"
-                                                title="Edit this unpaid invoice — keeps the same invoice number"
-                                            >
-                                                <PencilSimple className="size-3" />
-                                                Edit
-                                            </button>
-                                        )}
-                                        {isAdminManual && isPending && (
-                                            <button
-                                                onClick={() => setMarkPaidTarget({ id: inv.id, number: inv.invoice_number || inv.id })}
-                                                className="inline-flex items-center gap-1 rounded border border-primary-300 bg-primary-50 px-2 py-1 text-2xs uppercase tracking-wide text-primary-700 hover:bg-primary-100"
-                                                title="Record an offline / manual payment"
-                                            >
-                                                Mark Paid
-                                            </button>
-                                        )}
-                                        {canCancel && (
-                                            <button
-                                                onClick={() =>
-                                                    setCancelTarget({
-                                                        id: inv.id,
-                                                        number: inv.invoice_number || inv.id,
-                                                    })
-                                                }
-                                                disabled={cancellingId === inv.id}
-                                                className="inline-flex items-center gap-1 rounded border border-danger-300 bg-danger-50 px-2 py-1 text-2xs uppercase tracking-wide text-danger-700 hover:bg-danger-100 disabled:opacity-50"
-                                                title="Void this invoice — the payment link stops working"
-                                            >
-                                                <XCircle className="size-3" />
-                                                {cancellingId === inv.id ? 'Cancelling…' : 'Cancel'}
-                                            </button>
+                                                {isAdminManual && isPending && onEdit && (
+                                                    <button
+                                                        onClick={() => onEdit(inv.id)}
+                                                        className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-white px-2 py-1 text-2xs uppercase tracking-wide text-neutral-600 hover:bg-neutral-50"
+                                                        title={t('invoicesList.editTitle')}
+                                                    >
+                                                        <PencilSimple className="size-3" />
+                                                        {t('invoicesList.edit')}
+                                                    </button>
+                                                )}
+                                                {isAdminManual && isPending && (
+                                                    <button
+                                                        onClick={() => setMarkPaidTarget({ id: inv.id, number: inv.invoice_number || inv.id })}
+                                                        className="inline-flex items-center gap-1 rounded border border-primary-300 bg-primary-50 px-2 py-1 text-2xs uppercase tracking-wide text-primary-700 hover:bg-primary-100"
+                                                        title={t('invoicesList.markPaidTitle')}
+                                                    >
+                                                        {t('invoicesList.markPaid')}
+                                                    </button>
+                                                )}
+                                                {canCancel && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setCancelTarget({
+                                                                id: inv.id,
+                                                                number: inv.invoice_number || inv.id,
+                                                            })
+                                                        }
+                                                        disabled={cancellingId === inv.id}
+                                                        className="inline-flex items-center gap-1 rounded border border-danger-300 bg-danger-50 px-2 py-1 text-2xs uppercase tracking-wide text-danger-700 hover:bg-danger-100 disabled:opacity-50"
+                                                        title={t('invoicesList.cancelInvoiceTitle')}
+                                                    >
+                                                        <XCircle className="size-3" />
+                                                        {cancellingId === inv.id ? t('invoicesList.cancelling') : t('invoicesList.cancelAction')}
+                                                    </button>
+                                                )}
+                                                {canDeleteInvoice && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setDeleteTarget({
+                                                                kind: 'invoice',
+                                                                id: inv.id,
+                                                                label: inv.invoice_number || inv.id,
+                                                            })
+                                                        }
+                                                        className="inline-flex items-center gap-1 rounded border border-danger-300 bg-white px-2 py-1 text-2xs uppercase tracking-wide text-danger-700 hover:bg-danger-50"
+                                                        title={t('permanentDelete.action')}
+                                                    >
+                                                        <Trash className="size-3" />
+                                                        {t('permanentDelete.action')}
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -480,7 +699,11 @@ const InvoicesList = ({
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between border-t border-neutral-200 bg-neutral-50 px-3 py-2">
                         <span className="text-xs text-neutral-500">
-                            {page * INVOICES_PER_PAGE + 1}–{Math.min((page + 1) * INVOICES_PER_PAGE, invoices.length)} of {invoices.length}
+                            {t('invoicesList.paginationRange', {
+                                from: page * INVOICES_PER_PAGE + 1,
+                                to: Math.min((page + 1) * INVOICES_PER_PAGE, invoices.length),
+                                total: invoices.length,
+                            })}
                         </span>
                         <div className="flex gap-1">
                             <button
@@ -516,15 +739,13 @@ const InvoicesList = ({
             <AlertDialog open={!!cancelTarget} onOpenChange={(o) => !o && setCancelTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel invoice {cancelTarget?.number}?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('invoicesList.cancelDialog.title', { number: cancelTarget?.number })}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This voids the invoice permanently — the payment link stops working and
-                            it can never be marked paid. This cannot be undone. To correct a
-                            mistake, raise a new invoice afterwards.
+                            {t('invoicesList.cancelDialog.description')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Keep Invoice</AlertDialogCancel>
+                        <AlertDialogCancel>{t('invoicesList.cancelDialog.keep')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 if (cancelTarget) cancelMutation.mutate(cancelTarget.id);
@@ -532,7 +753,7 @@ const InvoicesList = ({
                             }}
                             className="bg-danger-600 hover:bg-danger-700"
                         >
-                            Cancel Invoice
+                            {t('invoicesList.cancelDialog.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -540,6 +761,11 @@ const InvoicesList = ({
             <InvoicePreviewDialog
                 invoice={previewTarget}
                 onClose={() => setPreviewTarget(null)}
+            />
+            <PermanentDeleteDialog
+                target={deleteTarget}
+                onOpenChange={(o) => !o && setDeleteTarget(null)}
+                onDeleted={() => onRefresh?.()}
             />
         </>
     );
@@ -551,17 +777,25 @@ const InvoicesList = ({
  * obligation that was raised in error, so painting it green like a real payment would
  * read as money received.
  */
-const LEDGER_EVENT_META: Record<
-    string,
-    { label: string; cls: string; isCredit: boolean; neutral?: boolean }
-> = {
-    DEBIT_ACCRUAL:     { label: 'Invoice raised',    cls: 'bg-red-50 text-red-700 border-red-200',          isCredit: false },
-    CREDIT_PAYMENT:    { label: 'Payment received',  cls: 'bg-green-50 text-green-700 border-green-200',    isCredit: true  },
-    CREDIT_WAIVER:     { label: 'Waiver',            cls: 'bg-blue-50 text-blue-700 border-blue-200',       isCredit: true  },
-    CREDIT_ADJUSTMENT: { label: 'Adjustment',        cls: 'bg-amber-50 text-amber-700 border-amber-200',    isCredit: true  },
-    DEBIT_PENALTY:     { label: 'Penalty',           cls: 'bg-orange-50 text-orange-700 border-orange-200', isCredit: false },
-    DEBIT_REVERSAL:    { label: 'Invoice cancelled', cls: 'bg-gray-50 text-gray-600 border-gray-200',       isCredit: true, neutral: true },
-};
+/**
+ * Display metadata for ledger event types. Record keys are the raw backend
+ * `event_type` enum values used to look up the entry's meta — they MUST NOT
+ * be translated, only the rendered `label` text changes per-locale.
+ */
+function buildLedgerEventMeta(
+    t: TFunction
+): Record<string, { label: string; cls: string; isCredit: boolean; neutral?: boolean }> {
+    return {
+        DEBIT_ACCRUAL:     { label: t('transactionHistory.event.debitAccrual'),     cls: 'bg-red-50 text-red-700 border-red-200',          isCredit: false },
+        CREDIT_PAYMENT:    { label: t('transactionHistory.event.creditPayment'),    cls: 'bg-green-50 text-green-700 border-green-200',    isCredit: true  },
+        CREDIT_WAIVER:     { label: t('transactionHistory.event.creditWaiver'),     cls: 'bg-blue-50 text-blue-700 border-blue-200',       isCredit: true  },
+        CREDIT_ADJUSTMENT: { label: t('transactionHistory.event.creditAdjustment'), cls: 'bg-amber-50 text-amber-700 border-amber-200',    isCredit: true  },
+        DEBIT_PENALTY:     { label: t('transactionHistory.event.debitPenalty'),     cls: 'bg-orange-50 text-orange-700 border-orange-200', isCredit: false },
+        DEBIT_REVERSAL:    { label: t('transactionHistory.event.debitReversal'),    cls: 'bg-gray-50 text-gray-600 border-gray-200',       isCredit: true, neutral: true },
+        // A payment recorded by mistake and voided: takes it back out of Total Paid.
+        CREDIT_REVERSAL:   { label: t('transactionHistory.event.creditReversal'),   cls: 'bg-gray-50 text-gray-600 border-gray-200',       isCredit: false, neutral: true },
+    };
+}
 
 const TransactionHistory = ({
     userId,
@@ -570,8 +804,13 @@ const TransactionHistory = ({
     userId: string;
     instituteId: string;
 }) => {
+    const { t } = useTranslation('manageStudentsPaymentHistory');
+    const ledgerEventMeta = buildLedgerEventMeta(t);
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 10;
+    const [voidTarget, setVoidTarget] = useState<VoidPaymentTarget | null>(null);
+    const canDeletePayments = useCanDeletePayments();
+    const [deleteTarget, setDeleteTarget] = useState<PermanentDeleteTarget | null>(null);
 
     const { data, isLoading } = useQuery({
         queryKey: ['user-account-ledger', userId, instituteId, page],
@@ -587,14 +826,14 @@ const TransactionHistory = ({
         return (
             <div className="flex items-center justify-center p-4">
                 <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
-                <span className="ml-2 text-xs text-muted-foreground">Loading transactions…</span>
+                <span className="ms-2 text-xs text-muted-foreground">{t('transactionHistory.loading')}</span>
             </div>
         );
     }
 
     if (!isLoading && entries.length === 0) {
         return (
-            <p className="text-xs text-muted-foreground">No transaction history yet.</p>
+            <p className="text-xs text-muted-foreground">{t('transactionHistory.empty')}</p>
         );
     }
 
@@ -602,22 +841,33 @@ const TransactionHistory = ({
         <div className="space-y-2">
             <ul className="divide-y divide-neutral-100 overflow-hidden rounded-lg border border-neutral-200">
                 {entries.map((entry) => {
-                    const meta = LEDGER_EVENT_META[entry.event_type] ?? {
+                    const meta = ledgerEventMeta[entry.event_type] ?? {
                         label: entry.event_type,
                         cls: 'bg-gray-50 text-gray-600 border-gray-200',
                         isCredit: false,
                         neutral: false,
                     };
-                    const sym = entry.currency === 'USD' ? '$' : entry.currency === 'EUR' ? '€' : '₹';
-                    const amtStr = `${sym}${Number(entry.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+                    const sym = symbolFor(entry.currency);
+                    const amtStr = `${sym}${formatAmount(entry.amount, entry.currency)}`;
                     // Discounted accrual: backend sends the list price (gross_amount)
                     // alongside the net amount — render it struck through so the
                     // coupon's effect is visible on the transaction line itself.
                     const gross = Number(entry.gross_amount || 0);
                     const grossStr =
                         gross > Number(entry.amount || 0)
-                            ? `${sym}${gross.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                            ? `${sym}${formatAmount(gross, entry.currency)}`
                             : null;
+                    // The payment behind a credit line: voided ones are labelled, and an offline /
+                    // manual one can be voided from here (a gateway payment is refunded instead).
+                    const isPaymentLine = entry.event_type === 'CREDIT_PAYMENT' && !!entry.reference_id;
+                    const isVoidedPayment =
+                        isPaymentLine && (entry.payment_status || '').toUpperCase() === 'VOIDED';
+                    const canVoid =
+                        isPaymentLine && isVoidablePayment(entry.payment_vendor, entry.payment_status);
+                    const canDelete =
+                        canDeletePayments &&
+                        isPaymentLine &&
+                        isDeletablePayment(entry.payment_vendor, entry.payment_status);
                     return (
                         <li key={entry.id} className="flex items-start gap-2.5 px-3 py-2 hover:bg-neutral-50">
                             <span className="mt-0.5 shrink-0">
@@ -628,16 +878,21 @@ const TransactionHistory = ({
                             </span>
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${meta.cls}`}>
+                                    <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-2xs font-medium ${meta.cls}`}>
                                         {meta.label}
                                     </span>
+                                    {isVoidedPayment && (
+                                        <span className="inline-flex items-center rounded border border-danger-200 bg-danger-50 px-1.5 py-0.5 text-2xs font-medium text-danger-700">
+                                            {t('voidPayment.voidedTag')}
+                                        </span>
+                                    )}
                                     {entry.remarks && (
-                                        <span className="truncate text-[11px] text-muted-foreground" title={entry.remarks}>
+                                        <span className="truncate text-2xs text-muted-foreground" title={entry.remarks}>
                                             {entry.remarks}
                                         </span>
                                     )}
                                 </div>
-                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                <p className="mt-0.5 text-2xs text-muted-foreground">
                                     {formatDate(entry.created_at)}
                                     {entry.source_type && <> · {entry.source_type.replace(/_/g, ' ')}</>}
                                 </p>
@@ -648,9 +903,41 @@ const TransactionHistory = ({
                                         {grossStr}
                                     </span>
                                 )}
-                                <span className={`text-sm font-semibold tabular-nums ${meta.neutral ? 'text-neutral-500' : meta.isCredit ? 'text-green-700' : 'text-red-600'}`}>
+                                <span className={`text-sm font-semibold tabular-nums ${isVoidedPayment ? 'text-neutral-400 line-through' : meta.neutral ? 'text-neutral-500' : meta.isCredit ? 'text-green-700' : 'text-red-600'}`}>
                                     {meta.isCredit ? '+' : '-'}{amtStr}
                                 </span>
+                                {canVoid && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setVoidTarget({
+                                                paymentLogId: entry.reference_id as string,
+                                                amount: entry.amount,
+                                                currency: entry.currency,
+                                            })
+                                        }
+                                        className="mt-1 block w-full text-right text-2xs font-medium text-danger-600 hover:text-danger-700"
+                                        title={t('voidPayment.actionTitle')}
+                                    >
+                                        {t('voidPayment.action')}
+                                    </button>
+                                )}
+                                {canDelete && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setDeleteTarget({
+                                                kind: 'payment',
+                                                id: entry.reference_id as string,
+                                                label: amtStr,
+                                            })
+                                        }
+                                        className="mt-1 block w-full text-right text-2xs font-medium text-danger-600 hover:text-danger-700"
+                                        title={t('permanentDelete.action')}
+                                    >
+                                        {t('permanentDelete.action')}
+                                    </button>
+                                )}
                             </span>
                         </li>
                     );
@@ -659,7 +946,7 @@ const TransactionHistory = ({
             {totalPages > 1 && (
                 <div className="flex items-center justify-between px-1">
                     <span className="text-xs text-muted-foreground">
-                        Page {page + 1} of {totalPages}
+                        {t('transactionHistory.pageOf', { page: page + 1, total: totalPages })}
                     </span>
                     <div className="flex gap-1">
                         <button
@@ -679,11 +966,14 @@ const TransactionHistory = ({
                     </div>
                 </div>
             )}
+            <VoidPaymentDialog target={voidTarget} onOpenChange={(o) => !o && setVoidTarget(null)} />
+            <PermanentDeleteDialog target={deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} />
         </div>
     );
 };
 
 export const StudentPaymentHistory = () => {
+    const { t } = useTranslation('manageStudentsPaymentHistory');
     const { selectedStudent } = useStudentSidebar();
     const instituteDetails = useInstituteDetailsStore((state) => state.instituteDetails);
     const queryClient = useQueryClient();
@@ -696,7 +986,7 @@ export const StudentPaymentHistory = () => {
             setEditSource(await fetchInvoiceById(invoiceId));
             setCreateInvoiceOpen(true);
         } catch {
-            toast.error('Could not load invoice to edit');
+            toast.error(t('main.loadInvoiceError'));
         }
     };
 
@@ -770,8 +1060,8 @@ export const StudentPaymentHistory = () => {
         return (
             <ProfileEmpty
                 icon={Wallet}
-                title="No learner selected"
-                hint="Select a learner to view their payment history."
+                title={t('main.noLearnerTitle')}
+                hint={t('main.noLearnerHint')}
             />
         );
     }
@@ -784,7 +1074,7 @@ export const StudentPaymentHistory = () => {
                 before the migration writes ledger rows). Hidden only when there
                 are no invoices at all. */}
             {effectiveSummary && (
-                <ProfileSectionCard icon={Wallet} heading="Account Summary">
+                <ProfileSectionCard icon={Wallet} heading={t('accountSummary.heading')}>
                     <AccountSummaryGrid summary={effectiveSummary} />
                 </ProfileSectionCard>
             )}
@@ -801,7 +1091,7 @@ export const StudentPaymentHistory = () => {
                 Renamed from 'Fee Plan & Installments' so the new Fee Plan
                 summary card above owns plan-level identity, and given the
                 Receipt icon to differentiate from the wallet headline. */}
-            <ProfileSectionCard icon={Receipt} heading="Installments">
+            <ProfileSectionCard icon={Receipt} heading={t('main.installmentsHeading')}>
                 <CpoInstallmentsEditor userId={selectedStudent.user_id} />
             </ProfileSectionCard>
 
@@ -811,8 +1101,8 @@ export const StudentPaymentHistory = () => {
                 icon={FileText}
                 heading={
                     invoicesData && invoicesData.length > 0
-                        ? `Invoices (${invoicesData.length})`
-                        : 'Invoices'
+                        ? t('main.invoicesHeadingCount', { count: invoicesData.length })
+                        : t('main.invoicesHeading')
                 }
                 action={
                     <MyButton
@@ -821,7 +1111,7 @@ export const StudentPaymentHistory = () => {
                         onClick={() => setCreateInvoiceOpen(true)}
                     >
                         <Plus className="mr-1 size-3.5" />
-                        Create Invoice
+                        {t('main.createInvoice')}
                     </MyButton>
                 }
             >
@@ -842,7 +1132,7 @@ export const StudentPaymentHistory = () => {
                 {isLoadingInvoices ? (
                     <div className="flex items-center justify-center rounded-lg border border-border bg-muted p-6">
                         <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-card-foreground" />
-                        <span className="ml-2 text-sm text-muted-foreground">Loading invoices...</span>
+                        <span className="ms-2 text-sm text-muted-foreground">{t('main.loadingInvoices')}</span>
                     </div>
                 ) : (
                     <InvoicesList
@@ -858,7 +1148,7 @@ export const StudentPaymentHistory = () => {
                 Shows every debit (invoice raised, penalty) and credit (payment, waiver,
                 adjustment) with sign-coded colours. Newest-first, server-paginated. */}
             {selectedStudent?.user_id && instituteDetails?.id && (
-                <ProfileSectionCard icon={ClockCounterClockwise} heading="Transaction History">
+                <ProfileSectionCard icon={ClockCounterClockwise} heading={t('transactionHistory.heading')}>
                     <TransactionHistory
                         userId={selectedStudent.user_id}
                         instituteId={instituteDetails.id}

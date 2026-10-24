@@ -1,0 +1,123 @@
+{
+    "sections": {
+        "basicInformation": "Informations de base",
+        "demographics": "Données démographiques",
+        "identification": "Identification",
+        "healthInformation": "Informations de santé"
+    },
+    "fields": {
+        "fullName": {
+            "label": "Nom complet",
+            "hint": "(selon l'acte de naissance)",
+            "placeholder": "Saisissez le nom complet de l'élève"
+        },
+        "dateOfBirth": {
+            "label": "Date de naissance"
+        },
+        "gender": {
+            "label": "Sexe"
+        },
+        "nationality": {
+            "label": "Nationalité",
+            "placeholder": "Sélectionner la nationalité"
+        },
+        "religion": {
+            "label": "Religion",
+            "placeholder": "Sélectionner"
+        },
+        "category": {
+            "label": "Catégorie",
+            "placeholder": "Sélectionner"
+        },
+        "bloodGroup": {
+            "label": "Groupe sanguin",
+            "placeholder": "Sélectionner"
+        },
+        "motherTongue": {
+            "label": "Langue maternelle",
+            "placeholder": "Sélectionner"
+        },
+        "languagesKnown": {
+            "label": "Langues connues",
+            "placeholder": "Ex. : anglais, hindi, marathi"
+        },
+        "idType": {
+            "label": "Type de pièce d'identité",
+            "placeholder": "Sélectionner le type de pièce d'identité"
+        },
+        "idNumber": {
+            "label": "Numéro de pièce d'identité",
+            "placeholder": "Saisissez le numéro de pièce d'identité"
+        },
+        "aadhaarNumber": "Numéro Aadhaar",
+        "medicalConditions": {
+            "label": "Problèmes médicaux / allergies (le cas échéant)",
+            "placeholder": "Ex. : asthme, diabète, allergies alimentaires, etc."
+        },
+        "dietaryRestrictions": {
+            "label": "Restrictions alimentaires",
+            "placeholder": "Ex. : végétarien, sans fruits à coque, etc."
+        }
+    },
+    "genderLabels": {
+        "male": "Masculin",
+        "female": "Féminin",
+        "other": "Autre"
+    },
+    "nationalityOptions": {
+        "indian": "Indienne",
+        "other": "Autre"
+    },
+    "religionOptions": {
+        "hindu": "Hindou",
+        "muslim": "Musulman",
+        "christian": "Chrétien",
+        "sikh": "Sikh",
+        "jain": "Jaïn",
+        "buddhist": "Bouddhiste",
+        "other": "Autre"
+    },
+    "categoryOptions": {
+        "general": "Général",
+        "obc": "OBC",
+        "sc": "SC",
+        "st": "ST",
+        "ews": "EWS"
+    },
+    "bloodGroupOptions": {
+        "aPositive": "A+",
+        "aNegative": "A-",
+        "bPositive": "B+",
+        "bNegative": "B-",
+        "oPositive": "O+",
+        "oNegative": "O-",
+        "abPositive": "AB+",
+        "abNegative": "AB-"
+    },
+    "motherTongueOptions": {
+        "hindi": "Hindi",
+        "english": "Anglais",
+        "gujarati": "Gujarati",
+        "marathi": "Marathi",
+        "tamil": "Tamoul",
+        "telugu": "Télougou",
+        "kannada": "Kannada",
+        "bengali": "Bengali",
+        "malayalam": "Malayalam",
+        "punjabi": "Pendjabi",
+        "odia": "Odia",
+        "urdu": "Ourdou",
+        "other": "Autre"
+    },
+    "checkboxLanguages": {
+        "hindi": "Hindi",
+        "english": "Anglais",
+        "regional": "Régional"
+    },
+    "idTypeOptions": {
+        "aadhaarCard": "Carte Aadhaar",
+        "birthCertificate": "Acte de naissance",
+        "passport": "Passeport",
+        "other": "Autre"
+    }
+}

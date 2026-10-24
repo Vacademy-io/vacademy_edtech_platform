@@ -45,7 +45,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
      * BEFORE the LLM call). Counts by subject (user or lead), not by member row, so three
      * engines sharing a learner share the cap.
      */
-    // SIMULATED excluded: a DRY_RUN never consumes the real cadence cap. NULL subject params
+    // SIMULATED excluded: a DRY_RUN never consumes the real cadence cap. FAILED counts: it is the
+    // unknown-outcome status (the message may have landed), so leaving it out let a delivered
+    // message go uncounted and the person get more than the cap. NULL subject params
     // are CAST so Postgres can infer the type (an un-cast null bind → "could not determine
     // data type of parameter" at runtime — a compile-clean, run-fatal trap on this hot path).
     @Query(value = """
@@ -53,7 +55,7 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             JOIN engagement_member m ON m.id = a.member_id
             WHERE a.institute_id = :instituteId
               AND a.kind IN ('TASK', 'SEND', 'REPLY')
-              AND a.status NOT IN ('DISMISSED', 'EXPIRED', 'FAILED', 'SIMULATED')
+              AND a.status NOT IN ('DISMISSED', 'EXPIRED', 'SIMULATED')
               AND a.created_at >= :since
               AND ((CAST(:userId AS varchar) IS NOT NULL AND m.user_id = CAST(:userId AS varchar))
                    OR (CAST(:audienceResponseId AS varchar) IS NOT NULL
@@ -120,6 +122,25 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                AND outcome IN ('ACCEPTED', 'EDITED')
             """, nativeQuery = true)
     long countApprovedSends(@Param("engineId") String engineId);
+
+    /**
+     * Approved human sends per channel. Graduation is per channel: five reviewed in-app notes are
+     * no evidence the engine writes WhatsApp or email a human would send. Rows: [channel, count].
+     */
+    @Query(value = """
+            SELECT channel, count(*) FROM engagement_action
+             WHERE engine_id = :engineId AND kind = 'TASK' AND status = 'SENT'
+               AND outcome IN ('ACCEPTED', 'EDITED') AND channel IS NOT NULL
+             GROUP BY channel
+            """, nativeQuery = true)
+    List<Object[]> countApprovedSendsByChannel(@Param("engineId") String engineId);
+
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE engine_id = :engineId AND kind = 'TASK' AND status = 'SENT'
+               AND outcome IN ('ACCEPTED', 'EDITED') AND channel = :channel
+            """, nativeQuery = true)
+    long countApprovedSendsForChannel(@Param("engineId") String engineId, @Param("channel") String channel);
 
     /**
      * Autonomous sends that are DUE: a proactive SEND the decision service scheduled, now ready to
@@ -223,15 +244,48 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     int reapStuckDispatching(@Param("staleBefore") Instant staleBefore);
 
-    /** Human reopens a FAILED task after confirming it did NOT land (correlation lookup). */
+    /**
+     * Human reopens a FAILED task after confirming it did NOT land (correlation lookup). A failed
+     * autonomous SEND comes back as a copilot TASK: left as SEND/OPEN, the dispatch job re-sent it
+     * within minutes with no review, a duplicate whenever the first attempt had in fact landed.
+     * The expiry is pushed out so the reaper doesn't expire the reopened task straight away.
+     */
     @Modifying
     @Transactional
     @Query(value = """
             UPDATE engagement_action
-               SET status = 'OPEN', error_message = NULL, outcome = NULL, updated_at = :now
+               SET status = 'OPEN', error_message = NULL, outcome = NULL, updated_at = :now,
+                   kind = CASE WHEN kind = 'SEND' THEN 'TASK' ELSE kind END,
+                   expires_at = CASE WHEN expires_at IS NULL OR expires_at < :expiresAt
+                                     THEN :expiresAt ELSE expires_at END
              WHERE id = :id AND institute_id = :instituteId AND status = 'FAILED'
             """, nativeQuery = true)
-    int reopenFailed(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
+    int reopenFailed(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now,
+                     @Param("expiresAt") Instant expiresAt);
+
+    /**
+     * Withdraw a due autonomous SEND that must not go out any more (the person opted out or left
+     * the audience after the decision). EXPIRED, not a TASK: a human must not be invited to send it.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE id = :id AND kind = 'SEND' AND status = 'OPEN'
+            """, nativeQuery = true)
+    int withdrawDueSend(@Param("id") String id, @Param("reason") String reason, @Param("now") Instant now);
+
+    /** Move a due autonomous SEND out of quiet hours instead of firing it now. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET scheduled_for = :scheduledFor, updated_at = :now
+             WHERE id = :id AND kind = 'SEND' AND status = 'OPEN'
+            """, nativeQuery = true)
+    int rescheduleDueSend(@Param("id") String id, @Param("scheduledFor") Instant scheduledFor,
+                          @Param("now") Instant now);
 
     /** Dismissal-rate alarm input (design §7): if this exceeds ~80%, the labels are worthless. */
     @Query(value = """

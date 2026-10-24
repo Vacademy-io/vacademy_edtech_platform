@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 import { UploadFileInS3, getPublicUrl } from '@/services/upload_file';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
@@ -7,6 +8,7 @@ import SimplePDFViewer from '@/components/common/simple-pdf-viewer';
 
 export function PdfViewerBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
     const editor = useYooptaEditor();
+    const { t } = useTranslation('studyLibraryPdfViewer');
     const [pdfUrl, setPdfUrl] = useState(element?.props?.pdfUrl || '');
     const [title, setTitle] = useState(element?.props?.title || '');
     const [isUploading, setIsUploading] = useState(false);
@@ -39,7 +41,7 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
 
     const handleFileUpload = async (file: File) => {
         if (file.type !== 'application/pdf') {
-            alert('Please select a PDF file');
+            alert(t('alerts.selectPdfFile'));
             return;
         }
 
@@ -84,7 +86,7 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
             if (nextTitle !== title) setTitle(nextTitle);
         } catch (error) {
             console.error('PDF upload failed:', error);
-            alert('Failed to upload PDF file');
+            alert(t('alerts.uploadFailed'));
         } finally {
             setIsUploading(false);
         }
@@ -129,7 +131,7 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
                 }}
             >
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>
-                    PDF Viewer
+                    {t('header')}
                 </span>
                 {pdfUrl && (
                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -148,7 +150,7 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
                                 textDecoration: 'none',
                             }}
                         >
-                            Open
+                            {t('actions.open')}
                         </a>
                         <button
                             onClick={() => fileInputRef.current?.click()}
@@ -162,7 +164,7 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
                                 cursor: 'pointer',
                             }}
                         >
-                            Replace
+                            {t('actions.replace')}
                         </button>
                     </div>
                 )}
@@ -184,7 +186,9 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
                         }}
                     >
                         {isUploading ? (
-                            <div style={{ fontSize: '14px', color: '#666' }}>Uploading...</div>
+                            <div style={{ fontSize: '14px', color: '#666' }}>
+                                {t('dropzone.uploading')}
+                            </div>
                         ) : (
                             <>
                                 <div style={{ marginBottom: '8px' }}>
@@ -196,10 +200,10 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
                                     </svg>
                                 </div>
                                 <div style={{ fontSize: '14px', color: '#666' }}>
-                                    Click or drag PDF file here
+                                    {t('dropzone.dragHint')}
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-                                    Only .pdf files are supported
+                                    {t('dropzone.onlyPdf')}
                                 </div>
                             </>
                         )}
@@ -211,7 +215,7 @@ export function PdfViewerBlock({ element, attributes, children, blockId }: Plugi
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             onKeyDown={handleInputKeyDown}
-                            placeholder="PDF title (optional)"
+                            placeholder={t('titlePlaceholder')}
                             style={{
                                 width: '100%',
                                 padding: '6px 10px',

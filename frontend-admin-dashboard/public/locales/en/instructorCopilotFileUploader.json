@@ -1,0 +1,19 @@
+{
+    "defaultAcceptMsg": "Supported formats: MP3, WAV, M4A, OGG",
+    "dropHere": "Drop the file here",
+    "dragDrop": "Drag & drop a file here",
+    "clickToBrowse": "or click to browse",
+    "formatsAndMaxSize": "{{formats}} (Max {{maxSize}}MB)",
+    "uploading": "Uploading... {{percent}}%",
+    "units": {
+        "bytes": "Bytes",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+    },
+    "errors": {
+        "fileTooLarge": "File is too large. Maximum size is {{maxSize}}MB.",
+        "invalidFileType": "Invalid file type. {{formats}}",
+        "uploadFailed": "Failed to upload file. Please try again."
+    }
+}

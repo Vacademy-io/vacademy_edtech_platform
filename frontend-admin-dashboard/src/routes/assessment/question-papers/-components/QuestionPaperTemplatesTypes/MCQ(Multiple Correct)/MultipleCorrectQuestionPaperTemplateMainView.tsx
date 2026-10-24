@@ -5,6 +5,7 @@ import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-t
 import { formatStructure } from '../../../-utils/helper';
 import { Badge } from '@/components/ui/badge';
 import { AnswerOptionsEditor, QuestionSectionHeader } from '../QuestionEditorParts';
+import { useTranslation } from 'react-i18next';
 
 export const MultipleCorrectQuestionPaperTemplateMainView = ({
     form,
@@ -14,6 +15,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
     examType,
     enableOptionModalCompose = false,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentMultipleCorrectMainQP');
     const { control, getValues } = form;
     const answersType = getValues('answersType') || 'Answer';
     const explanationsType = getValues('explanationsType') || 'Explanation';
@@ -27,9 +29,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <p className="text-body text-neutral-500">
-                    Please add a question to show question details
-                </p>
+                <p className="text-body text-neutral-500">{t('emptyState')}</p>
             </div>
         );
     }
@@ -38,7 +38,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
         <div className={className}>
             {getValues(`questions.${currentQuestionIndex}.parentRichTextContent`) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
-                    <QuestionSectionHeader title="Comprehension text" />
+                    <QuestionSectionHeader title={t('comprehensionText')} />
                     <FormField
                         control={control}
                         name={`questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -50,7 +50,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                                         onBlur={field.onBlur}
                                         onChange={field.onChange}
                                         minHeight={100}
-                                        placeholder="Comprehension text"
+                                        placeholder={t('comprehensionText')}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -61,15 +61,15 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
             )}
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
-                    title={`Question${
+                    title={
                         showQuestionNumber
-                            ? ` ${
-                                  questionsType
+                            ? t('questionLabelNumbered', {
+                                  number: questionsType
                                       ? formatStructure(questionsType, currentQuestionIndex + 1)
-                                      : currentQuestionIndex + 1
-                              }`
-                            : ''
-                    }`}
+                                      : currentQuestionIndex + 1,
+                              })
+                            : t('questionLabel')
+                    }
                     action={level ? <Badge variant="outline">{level}</Badge> : undefined}
                 />
                 <FormField
@@ -83,7 +83,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={100}
-                                    placeholder="Write the question"
+                                    placeholder={t('questionPlaceholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -113,7 +113,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
                     title={explanationsType}
-                    hint="Shown to learners with their result."
+                    hint={t('explanationHint')}
                 />
                 <FormField
                     control={control}
@@ -126,7 +126,7 @@ export const MultipleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={80}
-                                    placeholder="Explanation"
+                                    placeholder={t('explanationPlaceholder')}
                                 />
                             </FormControl>
                             <FormMessage />

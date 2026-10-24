@@ -1,0 +1,333 @@
+{
+    "toasts": {
+        "noInstituteSelected": "Aucun établissement sélectionné",
+        "styleSaved": "Style vidéo enregistré",
+        "styleSaveFailed": "Échec de l'enregistrement du style vidéo",
+        "brandingSaved": "Identité visuelle enregistrée",
+        "brandingSaveFailed": "Échec de l'enregistrement de l'identité visuelle"
+    },
+    "tabs": {
+        "output": "Sortie",
+        "voice": "Voix",
+        "host": "Présentateur",
+        "visuals": "Identité visuelle",
+        "advanced": "Avancé"
+    },
+    "output": {
+        "contentType": { "label": "Type de contenu" },
+        "orientation": {
+            "label": "Orientation",
+            "landscape": "Paysage",
+            "portrait": "Portrait"
+        },
+        "duration": { "label": "Durée" },
+        "qualityTier": { "label": "Niveau de qualité" },
+        "modelOverride": {
+            "label": "Modèle personnalisé",
+            "helper": "Fixé automatiquement selon le niveau ; à modifier seulement si nécessaire.",
+            "placeholder": "Automatique (recommandé)",
+            "freeBadge": "Gratuit"
+        }
+    },
+    "voice": {
+        "language": { "label": "Langue" },
+        "voiceGender": { "label": "Genre de la voix" },
+        "audioQuality": { "label": "Qualité audio" },
+        "voiceList": {
+            "label": "Voix",
+            "noVoices": "Aucune voix disponible pour cette combinaison.",
+            "providerSarvam": "Sarvam",
+            "providerGoogle": "Google",
+            "providerEdge": "Edge",
+            "playPreviewAria": "Écouter l'extrait de {{name}}",
+            "stopPreviewAria": "Arrêter l'extrait de {{name}}",
+            "playPreviewTitle": "Écouter l'extrait vocal",
+            "stopPreviewTitle": "Arrêter l'extrait"
+        },
+        "audience": { "label": "Public visé" }
+    },
+    "visuals": {
+        "visualQuality": {
+            "label": "Qualité visuelle",
+            "classic": "Classique",
+            "advanced": "Avancée"
+        },
+        "captions": { "label": "Sous-titres" },
+        "brandKit": {
+            "label": "Kit de marque",
+            "helper": "Remplace la palette, les polices, la mise en page, l'intro / l'outro et le filigrane pour cette génération."
+        },
+        "style": {
+            "title": "Style",
+            "background": { "label": "Arrière-plan", "light": "Clair", "dark": "Sombre" },
+            "layoutTheme": {
+                "label": "Thème de mise en page",
+                "defaultLabel": "Par défaut",
+                "defaultDescription": "Aucun modèle — style minimal"
+            },
+            "primaryColor": "Couleur principale",
+            "heading": "Titres",
+            "body": "Texte courant",
+            "saveStyle": "Enregistrer le style"
+        },
+        "branding": {
+            "title": "Intro · Outro · Filigrane",
+            "watermark": "Filigrane",
+            "editLink": "Modifier le contenu de l'intro / l'outro / le filigrane",
+            "saveBranding": "Enregistrer l'identité visuelle"
+        }
+    },
+    "themeCard": {
+        "minimalStyling": "Style minimal"
+    },
+    "introOutro": {
+        "intro": "Intro",
+        "outro": "Outro",
+        "duration": "Durée",
+        "seconds": "secondes"
+    },
+    "advanced": {
+        "expBadge": "Exp.",
+        "reviewMode": {
+            "label": "Relire le script d'abord",
+            "helper": "Modifiez le script généré par l'IA avant la création de l'audio et des visuels."
+        },
+        "subShots": {
+            "label": "Découpage en sous-plans",
+            "helper": "Découpe les plans denses et riches en mouvement en 2 sous-plans avant la génération HTML. Meilleure précision visuelle ; léger coût LLM supplémentaire."
+        },
+        "dialogueScenes": {
+            "label": "Scènes de dialogue narratives",
+            "helper": "Les personnages jouent les moments clés dans des clips générés par IA, avec des voix cohérentes (synchronisation labiale). Coût de génération supplémentaire par scène."
+        },
+        "dialogueMode": {
+            "storybook": {
+                "label": "Conte illustré",
+                "description": "Le narrateur porte la vidéo ; 1 à 4 scènes de dialogue aux moments clés."
+            },
+            "drama": {
+                "label": "Drame",
+                "description": "Film entièrement en dialogue — chaque plan est une scène, sans narrateur, sans musique. Budget de plans plus élevé."
+            }
+        },
+        "dialogueClipModel": {
+            "seedance": {
+                "label": "Seedance 2.0",
+                "description": "Voix verrouillée : les personnages sont synchronisés sur notre synthèse vocale — mêmes voix à chaque scène et suite. ~0,30 $/s, plans jusqu'à 15 s."
+            },
+            "omniFlash": {
+                "label": "Omni Flash",
+                "description": "Gemini Omni prononce lui-même les répliques — environ 2x moins cher (~0,13 $/s) mais les voix peuvent varier d'une scène à l'autre. Plans jusqu'à 10 s."
+            }
+        },
+        "castPicker": {
+            "noSavedCasts": "Nouveaux personnages pour cette vidéo. Terminez une histoire, puis « Enregistrer la distribution » pour les réutiliser dans la prochaine.",
+            "label": "Distribution",
+            "savedCastAria": "Distribution enregistrée",
+            "newCast": "Nouvelle distribution pour cette vidéo",
+            "characterCount_one": "{{count}} personnage",
+            "characterCount_many": "{{count}} personnages",
+            "characterCount_other": "{{count}} personnages"
+        }
+    },
+    "aiVideo": {
+        "label": "Génération vidéo par IA",
+        "betaBadge": "Bêta",
+        "enableAria": "Activer la vidéo générée par IA",
+        "tierLocked": "Disponible uniquement sur les niveaux Ultra et Super Ultra. Changez de niveau ci-dessus pour l'activer.",
+        "description": "Génère des plans cinématographiques avec fal.ai Veo. ≈{{minCredits}}–{{maxCredits}} crédits par plan, plafonné à {{capCredits}} par vidéo. Le réalisateur choisit selon le contenu.",
+        "modelLabel": "Modèle",
+        "veoAudioLabel": "Audio Veo",
+        "veoAudioAria": "Activer l'audio Veo",
+        "audioCostNote": "Lorsque activé, les plans vidéo IA diffusent leur propre audio. La narration principale est coupée durant ces plans. Le coût passe de {{offRate}} crédits/s à {{onRate}} crédits/s."
+    },
+    "visualPreferences": {
+        "label": "Mix visuel",
+        "activeBadge": "Actif",
+        "reset": "Réinitialiser",
+        "hint": "De simples indications. Les expressions libres dans votre texte (ex. « plus de diagrammes SVG ») priment sur celles-ci.",
+        "directorHint": " En <tier>{{tierLabel}}</tier>, le biais par famille est appliqué via le script. Le biais au niveau réalisateur commence à partir de Premium.",
+        "familyBias": {
+            "avoid": "Éviter",
+            "auto": "Auto",
+            "prefer": "Préférer"
+        },
+        "visualStyleLabel": "Style visuel",
+        "visualStyle": {
+            "auto": {
+                "label": "Auto",
+                "description": "Détecté selon le sujet — marketing paraît premium, les cours restent sobres."
+            },
+            "educational": {
+                "label": "Épuré",
+                "description": "Look tableau blanc plat. Idéal pour les cours et explications."
+            },
+            "marketing": {
+                "label": "Premium",
+                "description": "Look film de marque moderne : profondeur, mouvement, finitions, texte minimal."
+            },
+            "bold": {
+                "label": "Percutant",
+                "description": "Premium + style publicité sociale à haute énergie."
+            }
+        },
+        "textDensityLabel": "Texte à l'écran",
+        "textDensity": {
+            "minimal": { "label": "Minimal", "description": "Titre seul sur les accroches. Aucun texte de corps." },
+            "low": { "label": "Faible", "description": "Titres courts. Supprime les lignes de sous-titre." },
+            "auto": { "label": "Auto", "description": "Réglage par défaut du pipeline — texte modéré." },
+            "rich": { "label": "Riche", "description": "Titres complets + libellés d'appoint." }
+        },
+        "captionsHint": "Les sous-titres sont <strong>recommandés</strong> à cette densité — votre vidéo reposera sur la narration pour transmettre le sens."
+    },
+    "host": {
+        "locked": {
+            "title": "Le présentateur à l'écran nécessite Ultra",
+            "description": "La fonction Présentateur (narrateur avatar IA) est disponible uniquement sur les niveaux <ultra>Ultra</ultra> et <superUltra>Super Ultra</superUltra>. Changez le niveau de qualité dans l'onglet Sortie pour l'activer."
+        },
+        "staleConfig": {
+            "title": "La configuration du présentateur enregistrée sera ignorée",
+            "description": "Vous avez une configuration de présentateur enregistrée depuis un niveau supérieur. Cela fera échouer cette génération à moins de revenir à Ultra ou de l'effacer maintenant.",
+            "clearButton": "Effacer la configuration du présentateur"
+        },
+        "enableToggle": {
+            "label": "Activer le présentateur à l'écran",
+            "helper": "Un présentateur en plan rapproché apparaît dans certains plans et narre à la première personne. Coûte {{rate}} crédits/s de séquences de présentateur en plus de la vidéo de base."
+        },
+        "hostType": {
+            "label": "Type de présentateur",
+            "avatar": "Avatar IA",
+            "raw": "Séquences réelles",
+            "soonBadge": "Bientôt"
+        },
+        "avatarPicker": {
+            "label": "Avatar du présentateur",
+            "helper": "Choisissez parmi vos présentateurs enregistrés. Les avatars du catalogue intégré (Argil / VEED) verrouillent le modèle à leur service."
+        },
+        "useSavedVoice": {
+            "label": "Utiliser la voix enregistrée de l'avatar",
+            "helper": "Activé : la voix / langue / genre de l'avatar enregistré remplacent l'onglet Voix. Désactivé : conserve les réglages de l'onglet Voix."
+        },
+        "details": {
+            "label": "Détails du présentateur (tenue, personnalité)",
+            "helper": "Texte libre. Intégré à chaque invite d'image d'avatar par plan pour assurer la cohérence.",
+            "placeholder": "ex. blazer marine, arrière-plan de bureau neutre, attitude professionnelle"
+        },
+        "avatarModel": {
+            "label": "Modèle d'avatar",
+            "creditsPerSec": "{{credits}} cr/s"
+        },
+        "faceUpload": {
+            "label": "Image du visage du présentateur",
+            "helper": "Portrait net, de face. Utilisé comme référence d'identité pour chaque plan.",
+            "faceAlt": "Visage du présentateur",
+            "replace": "Remplacer",
+            "uploading": "Envoi en cours…",
+            "dropHint": "Cliquez ou déposez une photo de visage (PNG / JPG, ≤10 Mo)",
+            "errors": {
+                "invalidType": "Veuillez choisir un fichier image (PNG / JPG).",
+                "tooLarge": "L'image doit faire moins de 10 Mo.",
+                "uploadFailed": "Échec de l'envoi",
+                "noPublicUrl": "Impossible d'obtenir l'URL publique",
+                "toast": "Échec de l'envoi de l'image du visage : {{message}}"
+            }
+        },
+        "quality": {
+            "label": "Qualité de l'avatar",
+            "helper": "Même prix à la seconde ; le 720p produit un fichier plus lourd."
+        },
+        "fps": {
+            "label": "Images par seconde",
+            "helper": "Des ips plus élevées = mouvement plus fluide et coût par seconde plus élevé. LTX 2.3 uniquement.",
+            "value": "{{fps}} ips"
+        },
+        "percentage": {
+            "label": "Présentateur à l'écran — {{percent}} %",
+            "helper": "Le réalisateur choisit les plans montrant le présentateur (accroche, récapitulatif, appel à l'action et moments à forte intensité sont priorisés). La narration audio continue en permanence.",
+            "tip": "Astuce : en dessous d'environ 25 %, le présentateur apparaît à peine — désactivez-le plutôt pour économiser sur les coûts de synthèse d'avatar."
+        }
+    },
+    "brandOverride": {
+        "title": "Personnalisation pour cette vidéo",
+        "intro": "Ajustements ponctuels pour cette génération uniquement — ils ne modifient pas le kit et sont réinitialisés après la génération.",
+        "directorInstructions": {
+            "label": "Instructions de réalisation",
+            "placeholderReplace": "Remplacer les instructions du kit pour cette vidéo…",
+            "placeholderDefault": "ex. Rendez-le plus percutant et mettez l'offre en avant.",
+            "helper": "Remplace les instructions du kit pour cette vidéo uniquement."
+        },
+        "colors": {
+            "label": "Couleurs",
+            "primary": "Principale",
+            "secondary": "Secondaire",
+            "accent": "Accent",
+            "background": "Arrière-plan"
+        },
+        "overrideIntro": "Personnaliser l'intro",
+        "overrideOutro": "Personnaliser l'outro",
+        "overrideWatermark": "Personnaliser le filigrane",
+        "show": "Afficher",
+        "introPlaceholder": "<div>…HTML de l'intro…</div>",
+        "outroPlaceholder": "<div>…HTML de l'outro…</div>",
+        "watermarkPlaceholder": "<img src=\"https://…\" />",
+        "clearAll": "Effacer toutes les personnalisations"
+    },
+    "modelOverrides": {
+        "label": "Modèles IA personnalisés",
+        "description": "Choisissez un modèle pour les étapes LLM de cette exécution. Laissez vide pour utiliser les réglages système par défaut. La revue visuelle et les petites invites utilitaires utilisent toujours les réglages par défaut pour préserver la qualité et le coût.",
+        "defaultModelLabel": "Modèle par défaut",
+        "systemDefault": "Utiliser les réglages système",
+        "advancedToggle": "Personnaliser par étape (avancé)",
+        "inheritsDefault": "Hérite du modèle par défaut ({{model}})",
+        "inheritsSystemDefault": "Hérite du réglage système par défaut"
+    },
+    "sheet": {
+        "triggerTitle": "Réglages de génération",
+        "triggerLabel": "Réglages",
+        "title": "Réglages de génération",
+        "resetToDefaults": "Réinitialiser les réglages",
+        "resetTitle": "Réinitialise tous les réglages par défaut (le texte et les pièces jointes sont conservés)"
+    },
+    "lesson": {
+        "toggle": {
+            "label": "Mode leçon",
+            "helper": "Enseignez comme en classe : rythme de leçon, voix d’enseignant et, en option, un enseignant à côté du tableau."
+        },
+        "teacher": {
+            "label": "Enseignant à l’écran",
+            "loading": "Chargement des enseignants…",
+            "none": "Aucun enseignant",
+            "noneHelper": "Tableau seul — la leçon est narrée, personne à l’écran",
+            "stock": "Enseignant standard",
+            "yours": "Votre enseignant",
+            "empty": "Aucun avatar d’enseignant pour l’instant. Ajoutez-en un dans les réglages du tuteur IA (Teacher presence).",
+            "cost": "L’enseignant coûte 8 crédits par minute de vidéo."
+        },
+        "layout": {
+            "label": "Disposition de l’enseignant",
+            "options": {
+                "auto": "Auto — selon la section",
+                "presenter": "Présentateur — tiers droit, pour l’intro",
+                "side": "Panneau latéral — fin, quart droit",
+                "corner": "Coin — petite découpe, en bas à droite",
+                "bubble": "Bulle — ronde, en bas à droite",
+                "board": "Tableau seul — enseignant masqué"
+            },
+            "help": {
+                "auto": "Introduction avec l’enseignant en grand, explications et récapitulatif à côté du tableau, étapes denses avec l’enseignant dans le coin.",
+                "presenter": "L’enseignant est dans un panneau sur le tiers droit ; le tableau montre un titre et une ligne clé.",
+                "side": "Le tableau occupe les trois quarts de l’image ; l’enseignant est dans un panneau fin à droite.",
+                "corner": "Le tableau occupe toute l’image ; l’enseignant est une petite découpe en bas à droite.",
+                "bubble": "Le tableau occupe toute l’image ; l’enseignant apparaît dans une bulle ronde en bas à droite.",
+                "board": "Pas d’enseignant à l’écran ; la narration reste celle d’un enseignant."
+            }
+        },
+        "subject": {
+            "label": "Matière (facultatif)",
+            "placeholder": "p. ex. Mathématiques, Physique, Biologie"
+        },
+        "workedExample": "Inclure un exemple résolu",
+        "recap": "Terminer par un récapitulatif",
+        "hostDisabled": "Le mode leçon a son propre enseignant, l’animateur à l’écran est donc désactivé. Désactivez le mode leçon dans l’onglet Sortie pour utiliser un animateur."
+    }
+}

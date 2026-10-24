@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -52,6 +53,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useServerTime, getServerTime } from "@/hooks/use-server-time";
+import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { format, parseISO } from "date-fns";
 
 /** Returns an SVG icon string based on file extension / MIME type */
@@ -224,6 +226,7 @@ const AssignmentWindowBadge = ({
   endDate?: string | null;
   now: number;
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   const liveTs = parseAssignmentDate(liveDate);
   const endTs = parseAssignmentDate(endDate);
   if (liveTs == null && endTs == null) return null;
@@ -237,7 +240,7 @@ const AssignmentWindowBadge = ({
         "bg-blue-50 text-blue-700"
       )}>
         <Clock className="size-3.5" weight="duotone" />
-        Opens in {formatCountdown(remaining)}
+        {t("assignmentSlide.opensInCountdown", { countdown: formatCountdown(remaining) })}
       </span>
     );
   }
@@ -255,7 +258,7 @@ const AssignmentWindowBadge = ({
         !isCritical && !isWarning && "bg-emerald-50 text-emerald-700"
       )}>
         <Hourglass className="size-3.5" weight="duotone" />
-        Closes in {formatCountdown(remaining)}
+        {t("assignmentSlide.closesInCountdown", { countdown: formatCountdown(remaining) })}
       </span>
     );
   }
@@ -268,7 +271,7 @@ const AssignmentWindowBadge = ({
         "bg-amber-50 text-amber-700"
       )}>
         <WarningCircle className="size-3.5" weight="duotone" />
-        Closed {formatCountdown(now - endTs)} ago — late submissions accepted
+        {t("assignmentSlide.closedAgoLateAccepted", { ago: formatCountdown(now - endTs) })}
       </span>
     );
   }
@@ -280,7 +283,7 @@ const AssignmentWindowBadge = ({
       "bg-emerald-50 text-emerald-700"
     )}>
       <Hourglass className="size-3.5" weight="duotone" />
-      Open
+      {t("assignmentSlide.openBadge")}
     </span>
   );
 };
@@ -299,7 +302,8 @@ const FILE_EXT_PATTERN =
  *  attachment list. Runs at render time, not via DOM mutation — reliable even
  *  when the legacy HtmlWithKatex enhancement fails. */
 const extractAndStripAttachments = (
-  html: string
+  html: string,
+  attachmentFallbackName: string
 ): { cleanHtml: string; attachments: RichTextAttachment[] } => {
   if (!html || typeof DOMParser === "undefined") {
     return { cleanHtml: html, attachments: [] };
@@ -328,7 +332,7 @@ const extractAndStripAttachments = (
         seen.add(href);
         attachments.push({
           url: href,
-          fileName: name || href.split("/").pop() || "Attachment",
+          fileName: name || href.split("/").pop() || attachmentFallbackName,
           mimeType: type,
         });
       }
@@ -364,6 +368,7 @@ const AttachmentPreview = ({
   onPreviewPdf: (req: PreviewRequest) => void;
   tone?: "neutral" | "graded";
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   const [url, setUrl] = useState<string | null>(directUrl || null);
   const [loading, setLoading] = useState(!directUrl);
   const [error, setError] = useState(false);
@@ -438,7 +443,7 @@ const AttachmentPreview = ({
   const mimeExt = mimeType?.toLowerCase().includes("pdf") ? "pdf" : "";
   const ext = mimeExt || (url ? extFromName(url) || extFromName(fallbackLabel) : extFromName(fallbackLabel));
   const fileName = explicitFileName || (url ? fileNameFromUrl(url, fallbackLabel) : fallbackLabel);
-  const typeLabel = ext ? ext.toUpperCase() : "FILE";
+  const typeLabel = ext ? ext.toUpperCase() : t("assignmentSlide.genericFileType");
   const canPreview = !!url && isPdfExt(ext);
 
   const triggerDownload = () => {
@@ -486,7 +491,7 @@ const AttachmentPreview = ({
             )}
             title={fileName}
           >
-            {loading ? "Loading attachment…" : error ? "Attachment unavailable" : fileName}
+            {loading ? t("assignmentSlide.loadingAttachment") : error ? t("assignmentSlide.attachmentUnavailable") : fileName}
           </p>
           <p
             className={cn(
@@ -494,7 +499,7 @@ const AttachmentPreview = ({
               isGraded ? "text-emerald-700" : "text-gray-500"
             )}
           >
-            {error ? "Could not load file" : `${typeLabel} document`}
+            {error ? t("assignmentSlide.couldNotLoadFile") : t("assignmentSlide.typeDocument", { type: typeLabel })}
           </p>
         </div>
       </div>
@@ -509,7 +514,7 @@ const AttachmentPreview = ({
             className="h-9"
           >
             <Eye className="me-1.5 size-4" />
-            Preview
+            {t("assignmentSlide.preview")}
           </Button>
         )}
         <Button
@@ -522,7 +527,7 @@ const AttachmentPreview = ({
           className="h-9"
         >
           <ArrowSquareOut className="me-1.5 size-4" />
-          Open
+          {t("assignmentSlide.open")}
         </Button>
         {allowDownload && (
           <Button
@@ -533,7 +538,7 @@ const AttachmentPreview = ({
             className="h-9"
           >
             <DownloadSimple className="me-1.5 size-4" />
-            Download
+            {t("common.download")}
           </Button>
         )}
       </div>
@@ -551,6 +556,7 @@ const HtmlWithKatex = ({
   className?: string;
   onPreviewPdf?: (req: PreviewRequest) => void;
 }) => {
+  const { t } = useTranslation("libraryCommonA");
   const ref = useRef<HTMLDivElement>(null);
   const previewRef = useRef(onPreviewPdf);
   useEffect(() => {
@@ -611,12 +617,12 @@ const HtmlWithKatex = ({
         fileName,
         "</span>",
         `<span style="font-size: 12px; color: ${mutedText};">`,
-        `${typeLabel} Document`,
+        t("assignmentSlide.typeDocument", { type: typeLabel }),
         "</span>",
         "</span>",
         `<span style="flex-shrink: 0; display: flex; align-items: center; gap: 6px; background: ${btnBg}; color: ${btnText}; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">`,
         downloadIconSvg.replace('stroke="#6b7280"', `stroke="${btnText}"`), // design-lint-ignore: SVG string attribute replacement
-        "Download",
+        t("common.download"),
         "</span>",
       ].join("");
       anchor.addEventListener("mouseenter", () => {
@@ -708,7 +714,7 @@ const HtmlWithKatex = ({
         try {
           const url = await getPublicUrl(fileId);
           if (!url) {
-            toast.error("Could not load file URL");
+            toast.error(t("assignmentSlide.couldNotLoadFileUrlToast"));
             return;
           }
           const isPdf = /\.pdf$/i.test(displayName);
@@ -718,7 +724,7 @@ const HtmlWithKatex = ({
             window.open(url, "_blank", "noopener,noreferrer");
           }
         } catch {
-          toast.error("Failed to download file");
+          toast.error(t("assignmentSlide.failedToDownloadFileToast"));
         }
       });
 
@@ -805,6 +811,7 @@ const AssignmentSlide = ({
   onUpload,
   isUploading,
 }: AssignmentSlideProps) => {
+  const { t } = useTranslation("libraryCommonA");
   const { activeItem } = useContentStore();
   const resolvePackageSessionId = useResolvedPackageSessionId();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -817,6 +824,26 @@ const AssignmentSlide = ({
     Record<string, string>
   >({});
   const [pdfPreview, setPdfPreview] = useState<PreviewRequest | null>(null);
+  // Student Display Settings → Course settings → Assignment (both off by default).
+  const [assignmentDisplay, setAssignmentDisplay] = useState({
+    hideAttemptsAllowed: false,
+    hideRepeatedTitle: false,
+  });
+  useEffect(() => {
+    let alive = true;
+    getStudentDisplaySettings(false)
+      .then((s) => {
+        if (!alive) return;
+        setAssignmentDisplay({
+          hideAttemptsAllowed: s?.courseSettings?.assignment?.hideAttemptsAllowed === true,
+          hideRepeatedTitle: s?.courseSettings?.assignment?.hideRepeatedTitle === true,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
   // Real time the learner has had this slide open (mount → submit) so the
   // reported "Time Spent" reflects actual engagement, not a fake 1 minute.
   const activityStartRef = useRef<number>(Date.now());
@@ -842,9 +869,10 @@ const AssignmentSlide = ({
   const richTextProcessed = useMemo(
     () =>
       extractAndStripAttachments(
-        assignmentData.parent_rich_text?.content || ""
+        assignmentData.parent_rich_text?.content || "",
+        t("assignmentSlide.attachmentFallbackName")
       ),
-    [assignmentData.parent_rich_text?.content]
+    [assignmentData.parent_rich_text?.content, t]
   );
 
   const mediaIdsField = assignmentData.comma_separated_media_ids || "";
@@ -948,17 +976,17 @@ const AssignmentSlide = ({
   const getQuestionTypeDisplay = (type: string) => {
     switch (type) {
       case "MCQS":
-        return "Multiple Choice (Single Answer)";
+        return t("assignmentSlide.questionType.mcqs");
       case "MCQM":
-        return "Multiple Choice (Multiple Answers)";
+        return t("assignmentSlide.questionType.mcqm");
       case "ONE_WORD":
-        return "One Word Answer";
+        return t("assignmentSlide.questionType.oneWord");
       case "LONG_ANSWER":
-        return "Long Answer";
+        return t("assignmentSlide.questionType.longAnswer");
       case "NUMERIC":
-        return "Numeric Answer";
+        return t("assignmentSlide.questionType.numeric");
       case "TRUE_FALSE":
-        return "True/False";
+        return t("assignmentSlide.questionType.trueFalse");
       default:
         return type;
     }
@@ -1101,7 +1129,7 @@ const AssignmentSlide = ({
       );
     },
     onSuccess: () => {
-      toast.success("Assignment submitted successfully!");
+      toast.success(t("assignmentSlide.toast.submitSuccess"));
       queryClient.invalidateQueries({ queryKey: ['ASSIGNMENT_GRADING_RESULTS'] });
       // Reconcile progress UI (chapter/module/course %) after the async
       // completion cascade lands. chapterId comes from the slide route URL,
@@ -1119,7 +1147,7 @@ const AssignmentSlide = ({
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message;
       const fallbackMsg = (error as Error)?.message;
-      toast.error(axiosMsg || fallbackMsg || "Failed to submit assignment");
+      toast.error(axiosMsg || fallbackMsg || t("assignmentSlide.toast.submitFailed"));
     },
     onSettled: () => {
       setIsSubmitting(false);
@@ -1134,7 +1162,7 @@ const AssignmentSlide = ({
   const handleSubmit = async () => {
     const status = await Network.getStatus();
     if (!status.connected) {
-      toast.error("Needs internet to submit this assignment. Please reconnect and try again.");
+      toast.error(t("assignmentSlide.toast.needsInternet"));
       return;
     }
     setIsSubmitting(true);
@@ -1215,9 +1243,9 @@ const AssignmentSlide = ({
           </h3>
           {qType && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 sm:ms-4 sm:min-w-fit sm:flex-col sm:items-end sm:gap-y-0 sm:text-sm">
-              <span>Type: {getQuestionTypeDisplay(qType)}</span>
+              <span>{t("assignmentSlide.typeLabel", { type: getQuestionTypeDisplay(qType) })}</span>
               {question.re_attempt_count != null && (
-                <span>Attempts: {question.re_attempt_count || "Unlimited"}</span>
+                <span>{t("assignmentSlide.attemptsLabel", { value: question.re_attempt_count || t("assignmentSlide.unlimited") })}</span>
               )}
             </div>
           )}
@@ -1243,7 +1271,7 @@ const AssignmentSlide = ({
                     onChangeFunction={(e) =>
                       handleResponseChange(question.id, e.target.value, qType)
                     }
-                    inputPlaceholder="Type your one-word answer"
+                    inputPlaceholder={t("assignmentSlide.placeholder.oneWord")}
                     className="text-xl py-4 font-medium w-full"
                     onCopy={(e) => e.preventDefault()}
                     onCut={(e) => e.preventDefault()}
@@ -1260,7 +1288,7 @@ const AssignmentSlide = ({
                     onChange={(e) =>
                       handleResponseChange(question.id, e.target.value, qType)
                     }
-                    placeholder="Type your answer..."
+                    placeholder={t("assignmentSlide.placeholder.longAnswer")}
                     className="min-h-reg-200 text-base"
                     onCopy={(e) => e.preventDefault()}
                     onCut={(e) => e.preventDefault()}
@@ -1280,7 +1308,7 @@ const AssignmentSlide = ({
                         handleNumericChange(question.id, e.target.value)
                       }
                       inputPlaceholder={
-                        isDecimal ? "Enter decimal value" : "Enter integer value"
+                        isDecimal ? t("assignmentSlide.placeholder.decimal") : t("assignmentSlide.placeholder.integer")
                       }
                       inputMode="numeric"
                       className="text-xl py-4 font-medium w-full max-w-md"
@@ -1291,7 +1319,7 @@ const AssignmentSlide = ({
                   </div>
 
                   <Card className="mx-auto hidden max-w-md sm:block">
-                    <CardContent className="p-4">
+                    <CardContent className="p-card">
                       <div className="grid grid-cols-3 gap-2">
                         {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((num) => (
                           <Button
@@ -1334,7 +1362,7 @@ const AssignmentSlide = ({
                           className="h-14"
                           onClick={() => handleKeyPress(question.id, "clear")}
                         >
-                          Clear
+                          {t("assignmentSlide.clear")}
                         </Button>
                       </div>
                     </CardContent>
@@ -1352,13 +1380,31 @@ const AssignmentSlide = ({
     );
   };
 
+  // The card title is the assignment's own title text, else the slide name —
+  // which the slide header above already shows. hideRepeatedTitle drops it
+  // only in that repeat case; a title with text of its own always shows.
+  const cardTitleHtml = assignmentData.text_data?.content || activeItem?.title || "";
+  const plainOf = (html: string) =>
+    html
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  const titleRepeatsSlideName =
+    !plainOf(assignmentData.text_data?.content || "") ||
+    plainOf(cardTitleHtml) === plainOf(activeItem?.title || "");
+  const showCardTitle = !(assignmentDisplay.hideRepeatedTitle && titleRepeatsSlideName);
+
   return (
     <div className="w-full max-w-none mx-auto px-2 sm:px-4">
       <Card className="mb-4 sm:mb-6 bg-white shadow-sm">
         <CardHeader className="space-y-2">
-          <CardTitle className="text-lg sm:text-xl font-medium text-gray-900">
-            <HtmlWithKatex html={assignmentData.text_data?.content || activeItem?.title || ""} />
-          </CardTitle>
+          {showCardTitle && (
+            <CardTitle className="text-lg sm:text-xl font-medium text-gray-900">
+              <HtmlWithKatex html={cardTitleHtml} />
+            </CardTitle>
+          )}
           <CardDescription className="text-sm sm:text-base text-gray-600">
             <div className="mt-2 flex flex-col gap-2">
               {(assignmentData.live_date || assignmentData.end_date) && (
@@ -1371,20 +1417,22 @@ const AssignmentSlide = ({
               <div className="flex flex-col space-y-1">
                 {assignmentData.live_date && (
                   <span>
-                    <strong className="font-medium">Start:</strong>{" "}
+                    <strong className="font-medium">{t("assignmentSlide.startLabel")}</strong>{" "}
                     {formatDateTime(assignmentData.live_date)}
                   </span>
                 )}
                 {assignmentData.end_date && (
                   <span>
-                    <strong className="font-medium">Due:</strong>{" "}
+                    <strong className="font-medium">{t("assignmentSlide.dueLabel")}</strong>{" "}
                     {formatDateTime(assignmentData.end_date)}
                   </span>
                 )}
-                <span>
-                  <strong className="font-medium">Attempts Allowed:</strong>{" "}
-                  {assignmentData.re_attempt_count || "Unlimited"}
-                </span>
+                {!assignmentDisplay.hideAttemptsAllowed && (
+                  <span>
+                    <strong className="font-medium">{t("assignmentSlide.attemptsAllowedLabel")}</strong>{" "}
+                    {assignmentData.re_attempt_count || t("assignmentSlide.unlimited")}
+                  </span>
+                )}
               </div>
             </div>
           </CardDescription>
@@ -1405,7 +1453,7 @@ const AssignmentSlide = ({
       {isGraded && (
         <Card className="mb-4 sm:mb-6 overflow-hidden border-2 border-emerald-200 bg-white shadow-md">
           {/* Hero strip */}
-          <div className="bg-gradient-to-r from-emerald-50 to-white px-4 sm:px-6 py-4 border-b border-emerald-100">
+          <div className="bg-gradient-to-r from-success-50 to-white px-4 sm:px-6 py-4 border-b border-emerald-100">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1415,10 +1463,10 @@ const AssignmentSlide = ({
               </div>
               <div>
                 <p className="text-2xs font-semibold uppercase tracking-wide text-emerald-600">
-                  Reviewed by {teacherTerm}
+                  {t("assignmentSlide.reviewedBy", { teacher: teacherTerm })}
                 </p>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Your Assignment Has Been Graded
+                  {t("assignmentSlide.gradedHeading")}
                 </h2>
               </div>
             </div>
@@ -1428,13 +1476,13 @@ const AssignmentSlide = ({
             {/* Score row — pill drops below the score on very narrow screens */}
             <div className="flex flex-col items-start gap-2 xs:flex-row xs:flex-wrap xs:items-end xs:gap-4">
               <div className="flex flex-col">
-                <span className="text-xs font-medium text-gray-500">Your Score</span>
+                <span className="text-xs font-medium text-gray-500">{t("assignmentSlide.yourScoreLabel")}</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-3xl sm:text-4xl font-bold text-gray-900">
                     {gradedMarks}
                   </span>
                   {totalMarks != null && (
-                    <span className="text-lg text-gray-400">/ {totalMarks}</span>
+                    <span className="text-lg text-gray-400">{t("assignmentSlide.totalMarksSuffix", { total: totalMarks })}</span>
                   )}
                 </div>
               </div>
@@ -1449,12 +1497,12 @@ const AssignmentSlide = ({
                   {isPassed ? (
                     <>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                      Passed
+                      {t("assignmentSlide.passed")}
                     </>
                   ) : (
                     <>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                      Not Passed
+                      {t("assignmentSlide.notPassed")}
                     </>
                   )}
                 </span>
@@ -1463,14 +1511,14 @@ const AssignmentSlide = ({
 
             {/* Feedback */}
             {gradedFeedback && (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="mb-2 flex items-center gap-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2">
+                <div className="flex items-center gap-2">
                   {/* design-lint-ignore: inline SVG illustration with fixed stroke color */}
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                   <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    {teacherTerm}'s Feedback
+                    {t("assignmentSlide.teacherFeedbackLabel", { teacher: teacherTerm })}
                   </span>
                 </div>
                 <p className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
@@ -1481,13 +1529,13 @@ const AssignmentSlide = ({
 
             {/* Checked Answer Copy */}
             {checkedFileId && (
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Checked Answer Copy
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {t("assignmentSlide.checkedAnswerCopyLabel")}
                 </p>
                 <AttachmentPreview
                   fileId={checkedFileId}
-                  fallbackLabel={`Marked copy from your ${teacherTerm.toLowerCase()}`}
+                  fallbackLabel={t("assignmentSlide.markedCopyFallback", { teacher: teacherTerm.toLowerCase() })}
                   onPreviewPdf={setPdfPreview}
                   tone="graded"
                 />
@@ -1503,19 +1551,19 @@ const AssignmentSlide = ({
         <Card className="mb-4 sm:mb-6 bg-white shadow-sm">
           <CardHeader className="space-y-1">
             <CardTitle className="text-lg sm:text-xl font-medium text-gray-900">
-              Assignment Files
+              {t("assignmentSlide.filesHeading")}
             </CardTitle>
             <CardDescription className="text-sm sm:text-base text-gray-600">
-              Tap a PDF to preview it in-app
+              {t("assignmentSlide.tapPdfHint")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-stack">
               {idAttachments.map((fileId, idx) => (
                 <AttachmentPreview
                   key={`id-${fileId}`}
                   fileId={fileId}
-                  fallbackLabel={`Document ${idx + 1}`}
+                  fallbackLabel={t("assignmentSlide.documentFallback", { number: idx + 1 })}
                   onPreviewPdf={setPdfPreview}
                 />
               ))}
@@ -1525,7 +1573,7 @@ const AssignmentSlide = ({
                   directUrl={att.url}
                   fileName={att.fileName}
                   mimeType={att.mimeType}
-                  fallbackLabel={att.fileName || `Attachment ${idx + 1}`}
+                  fallbackLabel={att.fileName || t("assignmentSlide.attachmentFallbackNumbered", { number: idx + 1 })}
                   onPreviewPdf={setPdfPreview}
                 />
               ))}
@@ -1539,10 +1587,10 @@ const AssignmentSlide = ({
         <Card className="mb-4 sm:mb-6 bg-white shadow-sm">
           <CardHeader className="space-y-1">
             <CardTitle className="text-lg sm:text-xl font-medium text-gray-900">
-              Questions
+              {t("assignmentSlide.questionsHeading")}
             </CardTitle>
             <CardDescription className="text-sm sm:text-base text-gray-600">
-              Please answer all questions below
+              {t("assignmentSlide.answerAllHint")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1565,25 +1613,25 @@ const AssignmentSlide = ({
         <Card className="mb-4 sm:mb-6 bg-white shadow-sm">
           <CardHeader className="space-y-1">
             <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl font-medium text-gray-900">
-              Submitted Files
+              {t("assignmentSlide.submittedFilesHeading")}
               {previousSubmissionLate && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                   <WarningCircle className="size-3.5" weight="duotone" />
-                  Late
+                  {t("assignmentSlide.lateBadge")}
                 </span>
               )}
             </CardTitle>
             <CardDescription className="text-sm sm:text-base text-gray-600">
-              Files from your previous submission
+              {t("assignmentSlide.previousSubmissionHint")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-stack">
               {previousFileIds.map((fileId: string, idx: number) => (
                 <AttachmentPreview
                   key={fileId}
                   fileId={fileId}
-                  fallbackLabel={`Submission file ${idx + 1}`}
+                  fallbackLabel={t("assignmentSlide.submissionFileFallback", { number: idx + 1 })}
                   onPreviewPdf={setPdfPreview}
                 />
               ))}
@@ -1597,7 +1645,7 @@ const AssignmentSlide = ({
         <Card className="mb-4 sm:mb-6 bg-white shadow-sm">
           <CardContent className="py-6">
             <p className="text-center text-sm text-gray-500">
-              Maximum attempts reached ({submissionCount}/{maxAttempts})
+              {t("assignmentSlide.maxAttemptsReached", { count: submissionCount, max: maxAttempts })}
             </p>
           </CardContent>
         </Card>
@@ -1606,10 +1654,10 @@ const AssignmentSlide = ({
           <CardContent className="py-6 text-center">
             <Clock className="mx-auto mb-2 size-6 text-blue-600" weight="duotone" />
             <p className="text-sm font-medium text-blue-900">
-              This assignment opens on {formatDateTime(assignmentData.live_date)}
+              {t("assignmentSlide.opensOn", { date: formatDateTime(assignmentData.live_date) })}
             </p>
             <p className="mt-1 text-xs text-blue-700">
-              Opens in {formatCountdown(liveTs! - windowNow)}
+              {t("assignmentSlide.opensInCountdown", { countdown: formatCountdown(liveTs! - windowNow) })}
             </p>
           </CardContent>
         </Card>
@@ -1622,20 +1670,20 @@ const AssignmentSlide = ({
           )}>
             <CardHeader className="space-y-1">
               <CardTitle className="text-lg sm:text-xl font-medium text-gray-900">
-                Upload Files
+                {t("assignmentSlide.uploadFilesHeading")}
               </CardTitle>
               <CardDescription className="text-sm sm:text-base text-gray-600">
-                Upload any required files for this assignment
+                {t("assignmentSlide.uploadHint")}
                 {maxAttempts > 0 && (
                   <span className="ms-1">
-                    (Attempt {submissionCount + 1} of {maxAttempts})
+                    {t("assignmentSlide.attemptOfMax", { current: submissionCount + 1, max: maxAttempts })}
                   </span>
                 )}
               </CardDescription>
               {isLate && (
                 <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800">
                   <WarningCircle className="size-4" weight="duotone" />
-                  Submission window closed on {formatDateTime(assignmentData.end_date)}. Your submission will be marked late.
+                  {t("assignmentSlide.lateWindowNotice", { date: formatDateTime(assignmentData.end_date) })}
                 </p>
               )}
             </CardHeader>
@@ -1666,7 +1714,7 @@ const AssignmentSlide = ({
             <button
               onClick={handleSubmit}
               disabled={isSubmitting || isUploading || uploadedFileIds.length === 0}
-              title={uploadedFileIds.length === 0 ? "Upload at least one file before submitting" : undefined}
+              title={uploadedFileIds.length === 0 ? t("assignmentSlide.uploadAtLeastOneFile") : undefined}
               className={cn(
                 "w-full rounded-md px-6 py-3 text-sm font-medium transition-colors sm:w-auto sm:py-2.5 sm:text-base",
                 isSubmitting || isUploading || uploadedFileIds.length === 0
@@ -1676,7 +1724,7 @@ const AssignmentSlide = ({
                     : "bg-gray-900 text-white hover:bg-gray-800"
               )}
             >
-              {isSubmitting ? "Submitting..." : isLate ? "Submit Late" : "Submit Assignment"}
+              {isSubmitting ? t("assignmentSlide.submitting") : isLate ? t("assignmentSlide.submitLate") : t("assignmentSlide.submitAssignment")}
             </button>
           </div>
         </>
@@ -1700,7 +1748,7 @@ const AssignmentSlide = ({
               at top-right, so we leave the right side padded for it. */}
           <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 pe-12">
             <DialogTitle className="truncate text-sm font-medium text-gray-900 sm:text-base">
-              {pdfPreview?.fileName || "Document preview"}
+              {pdfPreview?.fileName || t("assignmentSlide.documentPreviewTitle")}
             </DialogTitle>
             {pdfPreview?.url && (
               <Button
@@ -1712,7 +1760,7 @@ const AssignmentSlide = ({
                 className="h-9 shrink-0"
               >
                 <ArrowSquareOut className="me-1.5 size-4" />
-                <span className="hidden sm:inline">Open in new tab</span>
+                <span className="hidden sm:inline">{t("assignmentSlide.openInNewTab")}</span>
               </Button>
             )}
           </div>

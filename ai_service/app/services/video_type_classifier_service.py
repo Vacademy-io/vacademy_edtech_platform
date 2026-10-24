@@ -10,20 +10,32 @@ was added.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
+from .llm_router import post_chat
 
-from ..constants.models import DEFAULT_MODEL as _DEFAULT_MODEL
+from ..constants.model_defaults import NON_GLM_FALLBACK
+from ..constants.models import get_use_case_model_chain
 from ..schemas.routing import VideoTypePlan
 
 logger = logging.getLogger(__name__)
 
 
 _OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# The whole classification, both legs. The primary (GLM) leg gets at most
+# _PRIMARY_TIMEOUT_S so the one retry on NON_GLM_FALLBACK still fits.
 _HTTP_TIMEOUT_S = 20.0
+_PRIMARY_TIMEOUT_S = 13.0
+# The answer is ~80 tokens; GLM's reasoning counts against max_tokens, and at
+# 250 a thinking model can stop at the length limit with no content.
+_MAX_TOKENS = 2000
+# Sent explicitly so the OpenRouter failover leg does not think at GLM's
+# heavy default.
+_REASONING = {"effort": "low"}
 
 _SYSTEM_PROMPT = """You are a Video Type Classifier for an AI video generation pipeline.
 
@@ -155,8 +167,9 @@ Return ONLY the JSON object. No prose, no markdown fences.
 class VideoTypeClassifierService:
     """Single LLM call → structured VideoTypePlan."""
 
-    def __init__(self, openrouter_key: str, model: str = _DEFAULT_MODEL):
+    def __init__(self, openrouter_key: str, model: Optional[str] = None):
         self._openrouter_key = openrouter_key
+        # None = the ai_model_defaults 'video' default, read per call.
         self._model = model
 
     async def classify(
@@ -198,42 +211,48 @@ class VideoTypeClassifierService:
             f"  - target_duration: {target_duration}\n"
         )
 
-        payload = {
-            "model": self._model,
-            "messages": [
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_msg},
-            ],
-            "temperature": 0.1,
-            "max_tokens": 250,
-            "response_format": {"type": "json_object"},
-        }
-        headers = {
-            "Authorization": f"Bearer {self._openrouter_key}",
-            "Content-Type": "application/json",
-        }
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": user_msg},
+        ]
 
-        try:
-            async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT_S) as client:
-                resp = await client.post(_OPENROUTER_URL, headers=headers, json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-        except Exception as e:
-            logger.warning(f"[VideoTypeClassifier] LLM call failed (using defaults): {e}")
-            return _default_plan(prompt, urls_in_prompt, input_video_count, orientation, target_duration)
+        # Primary model, then ONE retry on the non-GLM fallback when the first
+        # leg times out, errors, or returns content that is not a valid plan.
+        chain = get_use_case_model_chain("video", self._model)
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + _HTTP_TIMEOUT_S
+        plan: Optional[VideoTypePlan] = None
+        for i, model in enumerate(chain):
+            budget = deadline - loop.time()
+            if i == 0 and len(chain) > 1:
+                budget = min(budget, _PRIMARY_TIMEOUT_S)
+            if budget <= 0:
+                break
+            payload: Dict[str, Any] = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.1,
+                "max_tokens": _MAX_TOKENS,
+                "response_format": {"type": "json_object"},
+            }
+            if model != NON_GLM_FALLBACK:
+                # The Gemini Flash fallback leg sends none, as before: an
+                # effort would turn its thinking on and slow the retry.
+                payload["reasoning"] = dict(_REASONING)
+            try:
+                content = await asyncio.wait_for(self._post(payload, budget), timeout=budget)
+            except Exception as e:
+                logger.warning(f"[VideoTypeClassifier] LLM call on {model} failed: {e!r}")
+                continue
+            plan = _parse_plan(content)
+            if plan is not None:
+                if i > 0:
+                    logger.info(f"[VideoTypeClassifier] Plan came from fallback model {model}")
+                break
+            logger.warning(f"[VideoTypeClassifier] Parse failed on {model}; raw={content[:300]!r}")
 
-        content_clean = content.strip()
-        if content_clean.startswith("```"):
-            content_clean = content_clean.strip("`")
-            if content_clean.lower().startswith("json"):
-                content_clean = content_clean[4:].strip()
-
-        try:
-            raw = json.loads(content_clean)
-            plan = VideoTypePlan.model_validate(raw)
-        except Exception as e:
-            logger.warning(f"[VideoTypeClassifier] Parse failed (using defaults): {e}; raw={content[:300]!r}")
+        if plan is None:
+            logger.warning("[VideoTypeClassifier] No usable plan from %s (using defaults)", chain)
             return _default_plan(prompt, urls_in_prompt, input_video_count, orientation, target_duration)
 
         logger.info(
@@ -242,10 +261,36 @@ class VideoTypeClassifierService:
         )
         return plan
 
+    async def _post(self, payload: Dict[str, Any], timeout_s: float) -> str:
+        """One chat completion → the message content (raises on any failure)."""
+        async with httpx.AsyncClient(timeout=timeout_s) as client:
+            resp = await post_chat(client, payload, self._openrouter_key)
+            resp.raise_for_status()
+            data = resp.json()
+        content = data["choices"][0]["message"]["content"]
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError(
+                f"empty content (finish={data['choices'][0].get('finish_reason')})"
+            )
+        return content
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _parse_plan(content: str) -> Optional[VideoTypePlan]:
+    """The model's JSON → VideoTypePlan, or None when it does not parse."""
+    content_clean = content.strip()
+    if content_clean.startswith("```"):
+        content_clean = content_clean.strip("`")
+        if content_clean.lower().startswith("json"):
+            content_clean = content_clean[4:].strip()
+    try:
+        return VideoTypePlan.model_validate(json.loads(content_clean))
+    except Exception:
+        return None
 
 
 def _default_plan(

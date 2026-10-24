@@ -1,0 +1,15 @@
+{
+    "fieldRow": {
+        "copyAriaLabel": "نسخ {{label}}"
+    },
+    "error": {
+        "defaultTitle": "تعذر تحميل هذا القسم",
+        "defaultHint": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "retry": "إعادة المحاولة"
+    },
+    "quickContact": {
+        "email": "البريد الإلكتروني",
+        "call": "اتصال",
+        "whatsapp": "واتساب"
+    }
+}

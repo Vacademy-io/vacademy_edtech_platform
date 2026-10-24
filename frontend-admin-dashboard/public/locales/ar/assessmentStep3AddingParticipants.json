@@ -1,0 +1,82 @@
+{
+    "toasts": {
+        "updateSuccess": "تم تحديث بيانات الخطوة 3 بنجاح!",
+        "createSuccess": "تم حفظ بيانات الخطوة 3 بنجاح!",
+        "saveFailed": "فشل حفظ المشاركين."
+    },
+    "header": {
+        "title": "إضافة مشاركين",
+        "description": "حدد من يمكنه المشاركة في هذا التقييم. أضف الطلاب من الدفعات، بشكل فردي، أو عبر التسجيل المفتوح.",
+        "updateButton": "تحديث",
+        "nextButton": "التالي"
+    },
+    "accessSettings": {
+        "cardTitle": "إعدادات وصول المشاركين",
+        "cardDescription": "اختر كيف يحصل المتعلمون على إمكانية الوصول إلى هذا التقييم.",
+        "closedTest": {
+            "label": "اختبار مغلق",
+            "descriptionSurvey": "قصر الاستبيان على مشاركين محددين بتعيينه لدفعات المؤسسة أو باختيار {{term}} بشكل فردي.",
+            "descriptionAssessment": "قصر التقييم على مشاركين محددين بتعيينه لدفعات المؤسسة أو باختيار {{term}} بشكل فردي."
+        },
+        "openTest": {
+            "label": "اختبار مفتوح",
+            "descriptionSurvey": "اسمح لأي شخص بالتسجيل في هذا الاستبيان عبر رابط مشترك. يمكن أيضًا تسجيل {{term}} المؤسسة مسبقًا.",
+            "descriptionAssessment": "اسمح لأي شخص بالتسجيل في هذا التقييم عبر رابط مشترك. يمكن أيضًا تسجيل {{term}} المؤسسة مسبقًا."
+        }
+    },
+    "registration": {
+        "titleSurvey": "تسجيل الاستبيان",
+        "titleAssessment": "تسجيل التقييم",
+        "aboutTitleSurvey": "حول تسجيل الاستبيان",
+        "aboutTitleAssessment": "حول تسجيل التقييم",
+        "instructionsPlaceholder": "تعليمات التسجيل",
+        "startDateLabel": "تاريخ ووقت البدء",
+        "endDateLabel": "تاريخ ووقت الانتهاء",
+        "formFieldsTitle": "حقول نموذج التسجيل",
+        "formFieldsSubtitle": "اسحب لإعادة ترتيب الحقول وتخصيصها",
+        "addFieldHint": "استخدم الأزرار أدناه لإضافة حقل",
+        "addGender": "إضافة الجنس",
+        "addState": "إضافة الولاية/المحافظة",
+        "addCity": "إضافة المدينة",
+        "addSchoolCollege": "إضافة المدرسة/الكلية",
+        "addCustomField": "إضافة حقل مخصص",
+        "previewButton": "معاينة نموذج التسجيل",
+        "previewDialogTitle": "معاينة نموذج التسجيل",
+        "registerNowButton": "سجّل الآن"
+    },
+    "shareAccess": {
+        "cardTitle": "مشاركة الوصول",
+        "cardDescription": "شارك رابط الانضمام أو رمز QR مع المشاركين.",
+        "joinLinkLabel": "رابط الانضمام",
+        "joinLinkPlaceholder": "رابط الانضمام",
+        "copyJoinLinkAriaLabel": "نسخ رابط الانضمام",
+        "qrCodeLabel": "رمز QR",
+        "downloadQrAriaLabel": "تنزيل رمز QR"
+    },
+    "notifications": {
+        "cardTitle": "إشعارات البريد الإلكتروني",
+        "cardDescription": "اختر الأحداث التي تُطلق تنبيهات البريد الإلكتروني التلقائية.",
+        "notifyBeforeLabel": "الإشعار قبل",
+        "items": {
+            "whenCreatedSurvey": "عند إنشاء الاستبيان",
+            "whenCreatedAssessment": "عند إنشاء التقييم",
+            "beforeLiveSurvey": "قبل انطلاق الاستبيان",
+            "beforeLiveAssessment": "قبل انطلاق التقييم",
+            "whenLiveSurvey": "عند انطلاق الاستبيان",
+            "whenLiveAssessment": "عند انطلاق التقييم",
+            "reportGeneratedSurvey": "عند إنشاء تقارير الاستبيان",
+            "reportGeneratedAssessment": "عند إنشاء تقارير التقييم"
+        },
+        "participants": {
+            "sectionTitle": "إشعار المشاركين"
+        },
+        "parents": {
+            "sectionTitleSurvey": "إشعار المشاركين",
+            "sectionTitleAssessment": "إشعار أولياء الأمور",
+            "whenStudentAppearsSurvey": "عندما يحضر الطلاب الاستبيان",
+            "whenStudentAppearsAssessment": "عندما يحضر الطلاب التقييم",
+            "whenStudentFinishesSurvey": "عندما ينهي الطلاب الاستبيان",
+            "whenStudentFinishesAssessment": "عندما ينهي الطلاب التقييم"
+        }
+    }
+}

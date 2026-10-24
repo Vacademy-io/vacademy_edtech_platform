@@ -1,6 +1,7 @@
 import { FilterOption } from '@/types/assessments/question-paper-filter';
 import { Level, QuestionResponse, Subject } from '@/types/assessments/question-paper-template';
 import {
+    MyMultipleChoiceOption,
     MyQuestion,
     MyQuestionPaperFormEditInterface,
     MyQuestionPaperFormInterface,
@@ -13,6 +14,23 @@ import { getInstituteId } from '@/constants/helper';
 import { renderLatexDelimiters } from '@/lib/latex-delimiters';
 // function defined locally below to avoid circular dependency
 // import { formatTimeStudyLibraryInSeconds } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-helper/helper';
+
+/**
+ * Per-question marks a generated paper carries in its provenance
+ * (`source_meta.marks`, written by ai_service for KNOWLEDGE_BASE questions).
+ * Returned as the form's string mark, or '' when the question has none — the
+ * section default then applies exactly as before.
+ */
+export const marksFromSourceMeta = (item: { source_meta?: string | null }): string => {
+    if (!item?.source_meta) return '';
+    try {
+        const meta = JSON.parse(item.source_meta) as { marks?: unknown };
+        const marks = Number(meta?.marks);
+        return Number.isFinite(marks) && marks > 0 ? String(marks) : '';
+    } catch {
+        return '';
+    }
+};
 
 export const formatTimeStudyLibraryInSeconds = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -65,7 +83,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     text: {
                         id: null, // Assuming no direct mapping for option text ID
                         type: 'HTML', // Assuming option content is HTML
-                        content: opt?.name,
+                        content: opt?.name ?? '',
                     },
                     media_id: null, // Assuming no direct mapping for option media ID
                     option_order: null,
@@ -74,7 +92,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     explanation_text: {
                         id: null, // Assuming no direct mapping for explanation text ID
                         type: 'HTML', // Assuming explanation for options is in HTML
-                        content: question.explanation, // Assuming no explanation provided for options
+                        content: question.explanation ?? '', // Assuming no explanation provided for options
                     },
                 }));
             } else if (question.questionType === QuestionType.TRUE_FALSE) {
@@ -85,7 +103,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     text: {
                         id: null, // Assuming no direct mapping for option text ID
                         type: 'HTML', // Assuming option content is HTML
-                        content: opt?.name,
+                        content: opt?.name ?? '',
                     },
                     media_id: null, // Assuming no direct mapping for option media ID
                     option_order: null,
@@ -94,7 +112,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     explanation_text: {
                         id: null, // Assuming no direct mapping for explanation text ID
                         type: 'HTML', // Assuming explanation for options is in HTML
-                        content: question.explanation, // Assuming no explanation provided for options
+                        content: question.explanation ?? '', // Assuming no explanation provided for options
                     },
                 }));
             } else if (question.questionType === QuestionType.MCQM) {
@@ -105,7 +123,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     text: {
                         id: null, // Assuming no direct mapping for option text ID
                         type: 'HTML', // Assuming option content is HTML
-                        content: opt?.name,
+                        content: opt?.name ?? '',
                     },
                     media_id: null, // Assuming no direct mapping for option media ID
                     option_order: null,
@@ -114,7 +132,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     explanation_text: {
                         id: null, // Assuming no direct mapping for explanation text ID
                         type: 'HTML', // Assuming explanation for options is in HTML
-                        content: question.explanation, // Assuming no explanation provided for options
+                        content: question.explanation ?? '', // Assuming no explanation provided for options
                     },
                 }));
             } else if (question.questionType === QuestionType.CMCQS) {
@@ -125,7 +143,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     text: {
                         id: null, // Assuming no direct mapping for option text ID
                         type: 'HTML', // Assuming option content is HTML
-                        content: opt?.name,
+                        content: opt?.name ?? '',
                     },
                     media_id: null, // Assuming no direct mapping for option media ID
                     option_order: null,
@@ -134,7 +152,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     explanation_text: {
                         id: null, // Assuming no direct mapping for explanation text ID
                         type: 'HTML', // Assuming explanation for options is in HTML
-                        content: question.explanation, // Assuming no explanation provided for options
+                        content: question.explanation ?? '', // Assuming no explanation provided for options
                     },
                 }));
             } else if (question.questionType === QuestionType.CMCQM) {
@@ -145,7 +163,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     text: {
                         id: null, // Assuming no direct mapping for option text ID
                         type: 'HTML', // Assuming option content is HTML
-                        content: opt?.name,
+                        content: opt?.name ?? '',
                     },
                     media_id: null, // Assuming no direct mapping for option media ID
                     option_order: null,
@@ -154,7 +172,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                     explanation_text: {
                         id: null, // Assuming no direct mapping for explanation text ID
                         type: 'HTML', // Assuming explanation for options is in HTML
-                        content: question.explanation, // Assuming no explanation provided for options
+                        content: question.explanation ?? '', // Assuming no explanation provided for options
                     },
                 }));
             }
@@ -207,7 +225,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                 text: {
                     id: null, // Assuming no direct mapping for text ID
                     type: 'HTML', // Assuming the content is HTML
-                    content: question.questionName,
+                    content: question.questionName ?? '',
                 },
                 media_id: null, // Assuming no direct mapping for media_id
                 created_at: null,
@@ -220,7 +238,7 @@ export function transformQuestionPaperDataAI(data: MyQuestionPaperFormInterface)
                 explanation_text: {
                     id: null, // Assuming no direct mapping for explanation text ID
                     type: 'HTML', // Assuming explanation is in HTML
-                    content: question.explanation,
+                    content: question.explanation ?? '',
                 },
                 default_question_time_mins:
                     Number(question.questionDuration.hrs || 0) * 60 +
@@ -426,66 +444,75 @@ export function transformQuestionPaperData(data: MyQuestionPaperFormInterface) {
     };
 }
 
+/**
+ * The answer choices a question type carries, or [] for types with none
+ * (NUMERIC, ONE_WORD, LONG_ANSWER, CODING). Every row keeps all five option
+ * arrays, so reading the wrong one sends four blank options to the backend.
+ */
+function getChoiceOptions(question: MyQuestion): MyMultipleChoiceOption[] {
+    switch (question.questionType) {
+        case 'MCQS':
+            return question.singleChoiceOptions ?? [];
+        case 'MCQM':
+            return question.multipleChoiceOptions ?? [];
+        case 'CMCQS':
+            return question.csingleChoiceOptions ?? [];
+        case 'CMCQM':
+            return question.cmultipleChoiceOptions ?? [];
+        case 'TRUE_FALSE':
+            return question.trueFalseOptions ?? [];
+        default:
+            return [];
+    }
+}
+
 export function convertQuestionsDataToResponse(questions: MyQuestion[], key: string) {
     const convertedQuestions = questions?.map((question) => {
-        const options =
-            question.questionType === 'MCQS'
-                ? question.singleChoiceOptions.map((opt, idx) => ({
-                      id: key === 'added' ? null : opt.id, // Set to null if it's a new question
-                      preview_id: key === 'added' ? idx : opt.id, // Always use index as preview_id
-                      question_id: question.questionId,
-                      text: {
-                          id: null, // Assuming no mapping for text ID
-                          type: 'HTML',
-                          content: opt?.name,
-                      },
-                      media_id: null,
-                      option_order: null,
-                      created_on: null,
-                      updated_on: null,
-                      explanation_text: {
-                          id: null,
-                          type: 'HTML',
-                          content: question.explanation,
-                      },
-                  }))
-                : question.multipleChoiceOptions.map((opt, idx) => ({
-                      id: key === 'added' ? null : opt.id, // Set to null if it's a new question
-                      preview_id: key === 'added' ? idx : opt.id, // Always use index as preview_id
-                      question_id: question.questionId,
-                      text: {
-                          id: null,
-                          type: 'HTML',
-                          content: opt?.name,
-                      },
-                      media_id: null,
-                      option_order: null,
-                      created_on: null,
-                      updated_on: null,
-                      explanation_text: {
-                          id: null,
-                          type: 'HTML',
-                          content: question.explanation,
-                      },
-                  }));
+        const isNew = key === 'added';
+        const choiceOptions = getChoiceOptions(question);
+        const options = choiceOptions.map((opt, idx) => ({
+            id: isNew ? null : opt.id, // Set to null if it's a new question
+            preview_id: isNew ? idx : opt.id,
+            question_id: question.questionId,
+            text: {
+                id: null, // Assuming no mapping for text ID
+                type: 'HTML',
+                content: opt?.name,
+            },
+            media_id: null,
+            option_order: null,
+            created_on: null,
+            updated_on: null,
+            explanation_text: {
+                id: null,
+                type: 'HTML',
+                content: question.explanation,
+            },
+        }));
 
-        const correctOptionIds = (
-            question.questionType === 'MCQS'
-                ? question.singleChoiceOptions
-                : question.multipleChoiceOptions
-        )
+        const correctOptionIds = choiceOptions
             .map((opt, idx) => (opt.isSelected ? (opt.id ? opt.id : idx.toString()) : null))
             .filter((idx) => idx !== null);
 
-        const auto_evaluation_json = JSON.stringify({
-            type: question.questionType === 'MCQS' ? 'MCQS' : 'MCQM',
-            data: {
-                correctOptionIds,
-            },
-        });
+        // Same answer-key builder as a new paper's save. This used to be MCQ-only,
+        // so an edited NUMERIC question was sent {"type":"MCQM","data":{correctOptionIds:[]}},
+        // the backend found no validAnswers, and the answer reloaded as 0.
+        const auto_evaluation_json = getEvaluationJSON(
+            question,
+            correctOptionIds,
+            question.validAnswers,
+            question.subjectiveAnswerText
+        );
+        const parent_rich_text = question.parentRichTextContent
+            ? {
+                  id: null,
+                  type: 'HTML',
+                  content: question.parentRichTextContent,
+              }
+            : null;
 
         return {
-            id: key === 'added' ? null : question.questionId, // Set to null if it's a new question
+            id: isNew ? null : question.questionId, // Set to null if it's a new question
             preview_id: question.questionId, // Keep preview_id as the questionId
             text: {
                 id: null,
@@ -496,7 +523,8 @@ export function convertQuestionsDataToResponse(questions: MyQuestion[], key: str
             created_at: null,
             updated_at: null,
             question_response_type: null,
-            question_type: question.questionType,
+            // CMCQS/CMCQM/CNUMERIC are form-only types; the backend rejects them.
+            question_type: getQuestionType(question.questionType),
             access_level: null,
             auto_evaluation_json,
             evaluation_type: null,
@@ -507,6 +535,8 @@ export function convertQuestionsDataToResponse(questions: MyQuestion[], key: str
             },
             default_question_time_mins: null,
             options,
+            parent_rich_text,
+            options_json: getOptionsJson(question),
             subject_tags: question.tags ?? [], // Preserve/update subject tags on edit
             errors: [],
             warnings: [],
@@ -604,8 +634,10 @@ export const transformResponseDataToMyQuestionsSchema = (data: QuestionResponse[
         let numericType;
         let subjectiveAnswerText;
         if (item.options_json) {
-            decimals = JSON.parse(item.options_json)?.decimals || 0;
-            numericType = JSON.parse(item.options_json)?.numeric_type || '';
+            const optionsJson = JSON.parse(item.options_json);
+            decimals = optionsJson?.decimals || 0;
+            // Saved as numericType; numeric_type kept for any older rows.
+            numericType = optionsJson?.numericType || optionsJson?.numeric_type || '';
         }
         if (item.auto_evaluation_json) {
             if (item.question_type === 'ONE_WORD') {
@@ -634,7 +666,7 @@ export const transformResponseDataToMyQuestionsSchema = (data: QuestionResponse[
                     item.explanation_text?.content || item.explanation_text_data?.content
                 ) || '',
             questionType: item.question_type,
-            questionMark: '',
+            questionMark: marksFromSourceMeta(item),
             questionPenalty: '',
             questionDuration: {
                 hrs: String(Math.floor((item.default_question_time_mins ?? 0) / 60)), // Extract hours
@@ -728,8 +760,10 @@ export const transformResponseDataToMyQuestionsSchemaSingleQuestion = (item: Que
     let numericType;
     let subjectiveAnswerText;
     if (item.options_json) {
-        decimals = JSON.parse(item.options_json)?.decimals || 0;
-        numericType = JSON.parse(item.options_json)?.numeric_type || '';
+        const optionsJson = JSON.parse(item.options_json);
+        decimals = optionsJson?.decimals || 0;
+        // Saved as numericType; numeric_type kept for any older rows.
+        numericType = optionsJson?.numericType || optionsJson?.numeric_type || '';
     }
     if (item.auto_evaluation_json) {
         if (item.question_type === 'ONE_WORD') {
@@ -757,7 +791,7 @@ export const transformResponseDataToMyQuestionsSchemaSingleQuestion = (item: Que
                 item.explanation_text?.content || item.explanation_text_data?.content
             ) || '',
         questionType: item.question_type,
-        questionMark: '',
+        questionMark: marksFromSourceMeta(item),
         questionPenalty: '',
         questionDuration: {
             hrs: String(Math.floor((item.default_question_time_mins ?? 0) / 60)), // Extract hours
@@ -851,6 +885,8 @@ export const convertQuestionsToExportSchema = (rawQuestions: QuestionResponse[])
             },
         })),
         marking_json: q.auto_evaluation_json,
+        evaluation_json: q.auto_evaluation_json,
+        explanation_text: q.explanation_text?.content || q.explanation_text_data?.content || '',
         question_type: q.question_type,
         section_id: q.section_id ?? '',
         question_duration: q.default_question_time_mins ?? 1, // default to 1 if null
@@ -899,6 +935,44 @@ export const isQuillContentEmpty = (content: string) => {
     return textOnly.length === 0;
 };
 
+/**
+ * The answers of a numeric question worth saving. An answer box the teacher left
+ * empty is null in the form; it must not reach the answer key. Every other value
+ * goes through untouched, exactly as before.
+ */
+export const usableNumericAnswers = (validAnswers?: unknown[] | null): number[] =>
+    (validAnswers ?? []).filter(
+        (answer) => answer !== null && answer !== undefined && answer !== ''
+    ) as number[];
+
+const hasNumericAnswer = (validAnswers?: unknown[] | null) =>
+    usableNumericAnswers(validAnswers).some((answer) => Number.isFinite(Number(answer)));
+
+/**
+ * Index of the first numeric question that would be saved with no answer, or -1.
+ * Saved like that, every learner's response to it is graded wrong.
+ *
+ * With `previous` (editing a saved paper) only questions that are new or whose
+ * answer the teacher changed count: a question already saved without an answer,
+ * and left alone, keeps saving exactly as it did.
+ */
+export const findNumericQuestionWithoutAnswer = (
+    questions: MyQuestion[] = [],
+    previous?: MyQuestion[]
+): number => {
+    const before = new Map((previous ?? []).map((question) => [question.questionId, question]));
+    return questions.findIndex((question) => {
+        if (question.questionType !== 'NUMERIC' && question.questionType !== 'CNUMERIC') {
+            return false;
+        }
+        if (hasNumericAnswer(question.validAnswers)) return false;
+        const saved = before.get(question.questionId);
+        return (
+            !saved || JSON.stringify(saved.validAnswers) !== JSON.stringify(question.validAnswers)
+        );
+    });
+};
+
 export function getEvaluationJSON(
     question: MyQuestion,
     correctOptionIds?: (string | null)[],
@@ -945,14 +1019,14 @@ export function getEvaluationJSON(
             return JSON.stringify({
                 type: 'NUMERIC',
                 data: {
-                    validAnswers,
+                    validAnswers: usableNumericAnswers(validAnswers),
                 },
             });
         case 'CNUMERIC':
             return JSON.stringify({
                 type: 'NUMERIC',
                 data: {
-                    validAnswers,
+                    validAnswers: usableNumericAnswers(validAnswers),
                 },
             });
         case 'ONE_WORD':
@@ -989,6 +1063,7 @@ export function getOptionsJson(question: MyQuestion): string | null {
         case 'MCQM':
             return null;
         case 'NUMERIC':
+        case 'CNUMERIC':
             return JSON.stringify({
                 decimals: question.decimals,
                 numericType: question.numericType,

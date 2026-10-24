@@ -1,0 +1,19 @@
+{
+    "classMaterials": "Class Materials",
+    "uploadPdf": "Upload PDF",
+    "addVideo": "Add Video",
+    "noMaterialsYet": "No class materials added yet. Upload a PDF or add a video to link it to a chapter.",
+    "titleLabel": "Title",
+    "uploadFile": "Upload file",
+    "youtubeUrl": "YouTube URL",
+    "invalidYoutubeUrl": "Enter a valid YouTube URL",
+    "uploadingEllipsis": "Uploading…",
+    "add": "Add",
+    "cancel": "Cancel",
+    "couldNotResolveInstitute": "Could not resolve your institute.",
+    "couldNotUploadPdf": "Could not upload the PDF.",
+    "couldNotUploadVideo": "Could not upload the video.",
+    "couldNotAddMaterial": "Could not add this material.",
+    "sessionFallback": "Session",
+    "defaultTitle": "{{label}} – Notes ({{formatted}})"
+}

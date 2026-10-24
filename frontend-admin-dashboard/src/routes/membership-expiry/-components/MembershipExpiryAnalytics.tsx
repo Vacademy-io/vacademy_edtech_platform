@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useMembershipExpiryAnalytics } from '../-hooks/useMembershipExpiryAnalytics';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function MembershipExpiryAnalytics({ packageSessionIds, onCardClick }: Props) {
+    const { t } = useTranslation('membershipExpiryMembershipExpiryAnalytics');
     const { stats, dateRanges, isLoading } = useMembershipExpiryAnalytics(packageSessionIds);
 
     if (isLoading) {
@@ -23,12 +25,12 @@ export function MembershipExpiryAnalytics({ packageSessionIds, onCardClick }: Pr
                 onClick={() => onCardClick?.(dateRanges.expired)}
             >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Recently Expired (30d)</CardTitle>
+                    <CardTitle className="text-sm font-medium text-gray-500">{t('recentlyExpired')}</CardTitle>
                     <ClockCounterClockwise className="h-5 w-5 text-red-500" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-red-600">{stats.recentlyExpired}</div>
-                    <p className="text-xs text-gray-500">Memberships ended</p>
+                    <p className="text-xs text-gray-500">{t('membershipsEnded')}</p>
                 </CardContent>
             </Card>
 
@@ -37,12 +39,12 @@ export function MembershipExpiryAnalytics({ packageSessionIds, onCardClick }: Pr
                 onClick={() => onCardClick?.(dateRanges.expiring)}
             >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Expiring Soon (30d)</CardTitle>
+                    <CardTitle className="text-sm font-medium text-gray-500">{t('expiringSoon')}</CardTitle>
                     <Warning className="h-5 w-5 text-amber-500" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold text-amber-600">{stats.expiringSoon}</div>
-                    <p className="text-xs text-gray-500">Memberships expiring</p>
+                    <p className="text-xs text-gray-500">{t('membershipsExpiring')}</p>
                 </CardContent>
             </Card>
         </div>

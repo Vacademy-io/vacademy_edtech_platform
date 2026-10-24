@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,7 @@ interface QuizGenerationFormProps {
 }
 
 export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = false }: QuizGenerationFormProps) => {
+    const { t } = useTranslation('instructorCopilotQuizGenerationForm');
     const [numQuestions, setNumQuestions] = useState(5);
     const [classLevel, setClassLevel] = useState('');
     const [questionType, setQuestionType] = useState('MCQS');
@@ -38,12 +40,12 @@ export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = fals
         e.preventDefault();
 
         if (!transcript || !transcript.trim()) {
-            toast.error('No transcript available. Please ensure you have transcribed audio first.');
+            toast.error(t('errors.noTranscript'));
             return;
         }
 
         if (!classLevel.trim()) {
-            toast.error('Please enter a class level');
+            toast.error(t('errors.classLevelRequired'));
             return;
         }
 
@@ -62,10 +64,10 @@ export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = fals
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <MagicWand size={20} className="text-primary-500" />
-                    Generate Quiz from Transcript
+                    {t('title')}
                 </CardTitle>
                 <CardDescription>
-                    Generate quiz questions based on the instructor's transcript
+                    {t('description')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -73,7 +75,7 @@ export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = fals
                     {/* Number of Questions */}
                     <div className="space-y-2">
                         <Label htmlFor="numQuestions">
-                            Number of Questions <span className="text-red-500">*</span>
+                            {t('numberOfQuestions')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="numQuestions"
@@ -90,24 +92,24 @@ export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = fals
                     {/* Class Level */}
                     <div className="space-y-2">
                         <Label htmlFor="classLevel">
-                            Class Level <span className="text-red-500">*</span>
+                            {t('classLevel')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="classLevel"
-                            placeholder="e.g., 9th class NCERT, Grade 10, High School"
+                            placeholder={t('classLevelPlaceholder')}
                             value={classLevel}
                             onChange={(e) => setClassLevel(e.target.value)}
                             required
                             disabled={isGenerating}
                         />
                         <p className="text-xs text-slate-500">
-                            Specify the education level or standard
+                            {t('classLevelHint')}
                         </p>
                     </div>
 
                     {/* Question Type */}
                     <div className="space-y-2">
-                        <Label htmlFor="questionType">Question Type</Label>
+                        <Label htmlFor="questionType">{t('questionType')}</Label>
                         <Select
                             value={questionType}
                             onValueChange={setQuestionType}
@@ -128,7 +130,7 @@ export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = fals
 
                     {/* Question Language */}
                     <div className="space-y-2">
-                        <Label htmlFor="questionLanguage">Language</Label>
+                        <Label htmlFor="questionLanguage">{t('language')}</Label>
                         <Select
                             value={questionLanguage}
                             onValueChange={setQuestionLanguage}
@@ -156,12 +158,12 @@ export const QuizGenerationForm = ({ transcript, onGenerate, isGenerating = fals
                         {isGenerating ? (
                             <>
                                 <Spinner size={16} className="animate-spin" />
-                                Generating Quiz...
+                                {t('generatingButton')}
                             </>
                         ) : (
                             <>
                                 <MagicWand size={16} />
-                                Generate Quiz from Transcript
+                                {t('generateButton')}
                             </>
                         )}
                     </Button>

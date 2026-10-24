@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import i18n from '@/i18n';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -36,7 +37,7 @@ export const addPageNumbers = (doc: jsPDF): void => {
         doc.setFontSize(9);
         doc.setTextColor(150);
         doc.text(
-            `Page ${i} of ${pageCount}`,
+            i18n.t('instructorCopilotPdfHelpers:pageOf', { current: i, total: pageCount }),
             doc.internal.pageSize.getWidth() / 2,
             doc.internal.pageSize.getHeight() - 10,
             { align: 'center' }

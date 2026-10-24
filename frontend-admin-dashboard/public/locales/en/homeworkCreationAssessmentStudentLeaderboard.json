@@ -1,0 +1,12 @@
+{
+    "heading": "Leaderboard",
+    "table": {
+        "duration": "{{minutes}} min {{seconds}} sec",
+        "percentileLabel": "Percentile",
+        "marksLabel": "Marks"
+    },
+    "export": {
+        "pdfSuccess": "Leaderboard data for PDF exported successfully",
+        "csvSuccess": "Leaderboard data for CSV exported successfully"
+    }
+}

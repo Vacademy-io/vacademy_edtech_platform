@@ -1,0 +1,1321 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "key": "core",
+      "label": "Core",
+      "description": "Dashboard, contacts, team, settings and audit trail every institute needs.",
+      "rail": null,
+      "core": true,
+      "features": [
+        {
+          "key": "core.dashboard",
+          "label": "Dashboard",
+          "description": "The home dashboard.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "dashboard"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/dashboard"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "core.contacts",
+          "label": "Contacts",
+          "description": "All contacts, user tags and invites.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "manage-contacts"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-contacts",
+              "/manage-contacts/dashboard",
+              "/user-tags/institute",
+              "/user-tags/link",
+              "/manage-students/invite"
+            ]
+          },
+          "setting_keys": [
+            "CUSTOM_FIELD_SETTING"
+          ]
+        },
+        {
+          "key": "core.teams",
+          "label": "Team",
+          "description": "Staff members and their roles.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "manage-institute",
+              "manage-institute/institute-overview"
+            ],
+            "widgets": [
+              "roleTypeUsers"
+            ],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-institute/teams",
+              "/manage-institute/overview"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "core.settings",
+          "label": "Settings",
+          "description": "Institute settings, naming, theme and language.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "settings"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/settings"
+            ]
+          },
+          "setting_keys": [
+            "NAMING_SETTING",
+            "ROLE_DISPLAY_SETTING",
+            "THEME_SETTING",
+            "LANGUAGE_SETTING"
+          ]
+        },
+        {
+          "key": "core.activity_logs",
+          "label": "Activity logs",
+          "description": "Audit trail of admin actions.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "admin-activity-logs"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/admin-activity-logs"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "lms",
+      "label": "Learning (LMS)",
+      "description": "Courses, batches, learning reports and learner engagement.",
+      "rail": "LMS",
+      "core": false,
+      "features": [
+        {
+          "key": "lms.courses",
+          "label": "Courses",
+          "description": "Course catalogue and course authoring.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "courses",
+              "course-creation"
+            ],
+            "widgets": [
+              "learningCenter",
+              "myCourses"
+            ],
+            "quick_actions": [
+              "my-courses",
+              "new-course"
+            ],
+            "assistant_groups": [],
+            "setup_steps": [
+              "course"
+            ],
+            "routes": [
+              "/study-library/courses",
+              "/study-library/bulk-content-uploading"
+            ]
+          },
+          "setting_keys": [
+            "COURSE_SETTING",
+            "CERTIFICATE_SETTING",
+            "LMS_SETTING",
+            "SLIDE_DOWNLOAD_PERMISSION_SETTING",
+            "SLIDE_CONTENT_PROTECTION_SETTING",
+            "OFFLINE_ACCESS_SETTING"
+          ]
+        },
+        {
+          "key": "lms.batches",
+          "label": "Batches & enrolment",
+          "description": "Batches, sessions and enrolled learners.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "manage-institute/batches",
+              "manage-institute/sessions",
+              "manage-contacts/linked-contacts"
+            ],
+            "widgets": [
+              "enrollLearners"
+            ],
+            "quick_actions": [
+              "add-student",
+              "new-batch"
+            ],
+            "assistant_groups": [
+              "batch_data"
+            ],
+            "setup_steps": [
+              "level",
+              "batch",
+              "learner"
+            ],
+            "routes": [
+              "/manage-institute/batches",
+              "/manage-institute/sessions",
+              "/manage-students/students-list"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "lms.course_planning",
+          "label": "Course planning & logbook",
+          "description": "Curriculum planning and course progress logs.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "course-planning-logging"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/planning/planning",
+              "/planning/activity-logs"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "lms.reports",
+          "label": "Learning reports",
+          "description": "Learner progress reports and institute pulse.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "learning-reports",
+              "institute-pulse",
+              "lms-dashboard"
+            ],
+            "widgets": [],
+            "quick_actions": [
+              "reports"
+            ],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/study-library/reports",
+              "/institute-pulse",
+              "/lms-dashboard"
+            ]
+          },
+          "setting_keys": [
+            "AI_INSIGHTS_SETTING"
+          ]
+        },
+        {
+          "key": "lms.student_ai",
+          "label": "Student AI",
+          "description": "AI tutor for learners.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "student-ai"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/study-library/student-ai"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "lms.doubts",
+          "label": "Doubts",
+          "description": "Learner doubt management.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "doubt-management"
+            ],
+            "widgets": [
+              "unresolvedDoubts"
+            ],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/study-library/doubt-management"
+            ]
+          },
+          "setting_keys": [
+            "DOUBT_MANAGEMENT_SETTING"
+          ]
+        },
+        {
+          "key": "lms.engagement",
+          "label": "Learning engagement",
+          "description": "Interactive classes and daily engagement.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "learning-engagement"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/study-library/volt",
+              "/engagement"
+            ]
+          },
+          "setting_keys": [
+            "ENGAGEMENT_SETTING"
+          ]
+        },
+        {
+          "key": "lms.mentorship",
+          "label": "Mentorship",
+          "description": "Mentors, mentorship sessions and requests.",
+          "default_on": false,
+          "governs": {
+            "nav": [
+              "mentorship"
+            ],
+            "widgets": [
+              "mentorshipStats"
+            ],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/mentorship/dashboard",
+              "/mentorship/mentors",
+              "/mentorship/sessions",
+              "/mentorship/requests",
+              "/mentorship/my-mentorship"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "assessments",
+      "label": "Assessments",
+      "description": "Tests, question banks and evaluation.",
+      "rail": "LMS",
+      "core": false,
+      "features": [
+        {
+          "key": "assessments.tests",
+          "label": "Tests & evaluation",
+          "description": "Create, schedule and evaluate tests and surveys.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "assessments-tests"
+            ],
+            "widgets": [
+              "assessmentCenter"
+            ],
+            "quick_actions": [
+              "assessments",
+              "evaluations"
+            ],
+            "assistant_groups": [
+              "assessments"
+            ],
+            "setup_steps": [],
+            "routes": [
+              "/assessment/dashboard",
+              "/assessment/assessment-list",
+              "/assessment/create-assessment/defaultId/EXAM",
+              "/assessment/create-assessment/defaultId/MOCK",
+              "/assessment/create-assessment/defaultId/SURVEY",
+              "/evaluation/evaluations"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "assessments.question_banks",
+          "label": "Question banks",
+          "description": "Question banks and question papers.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "question-banks"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/assessment/question-papers"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "assessments.scanned_evaluation",
+          "label": "Scanned evaluation",
+          "description": "Evaluate scanned answer sheets.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "assessments-tests/scanned-evaluation"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/evaluation/evaluation-tool"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "live_classes",
+      "label": "Live classes",
+      "description": "Live sessions, attendance and meetings.",
+      "rail": "LMS",
+      "core": false,
+      "features": [
+        {
+          "key": "live_classes.sessions",
+          "label": "Live sessions",
+          "description": "Schedule live classes and track attendance.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "live-sessions"
+            ],
+            "widgets": [
+              "liveClasses"
+            ],
+            "quick_actions": [
+              "todays-classes"
+            ],
+            "assistant_groups": [
+              "schedule"
+            ],
+            "setup_steps": [],
+            "routes": [
+              "/study-library/live-session/dashboard",
+              "/study-library/live-session",
+              "/study-library/live-session/schedule/step1",
+              "/study-library/live-session/schedule/bulk",
+              "/study-library/attendance-tracker",
+              "/study-library/live-session/feedback"
+            ]
+          },
+          "setting_keys": [
+            "LIVE_SESSION_SETTING"
+          ]
+        },
+        {
+          "key": "live_classes.meetings",
+          "label": "Meetings",
+          "description": "Staff and team meeting schedules.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "meetings",
+              "meetings/meetings-dashboard"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/meetings/my-schedule",
+              "/meetings/team",
+              "/meetings/dashboard"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "crm",
+      "label": "CRM",
+      "description": "Leads, admissions and calling.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "crm.leads",
+          "label": "Leads & follow-ups",
+          "description": "Lead lists, boards, follow-ups and lead reports.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "leads"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/audience-manager/list",
+              "/audience-manager/recent-leads",
+              "/audience-manager/lead-board",
+              "/audience-manager/follow-ups",
+              "/audience-manager/lead-lookup",
+              "/audience-manager/onboarding",
+              "/counsellors",
+              "/sales-dashboard",
+              "/audience-manager/reports"
+            ]
+          },
+          "setting_keys": [
+            "LEAD_SETTING",
+            "AUDIENCE_ROLE_ACCESS",
+            "ONBOARDING_SETTING"
+          ]
+        },
+        {
+          "key": "crm.admissions",
+          "label": "Admissions",
+          "description": "Enquiries, applications and admissions.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "admissions"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/admissions/dashboard",
+              "/admissions/admission-list",
+              "/admissions/enquiries",
+              "/admissions/application"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "crm.calling",
+          "label": "Calling",
+          "description": "Telephony call log and call queue.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "calling",
+              "leads/call-log",
+              "calling/calling-dashboard"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/audience-manager/call-log",
+              "/calling/call-queue",
+              "/calling/dashboard"
+            ]
+          },
+          "setting_keys": [
+            "VOICE_CALLING_SETTING"
+          ]
+        },
+        {
+          "key": "crm.ai_calling",
+          "label": "AI calling",
+          "description": "AI voice agents that call leads.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "calling/calling-ai-agents",
+              "calling/calling-ai-settings"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/calling/ai-agents"
+            ]
+          },
+          "setting_keys": [
+            "AI_CALLING_SETTING"
+          ]
+        },
+        {
+          "key": "crm.call_intelligence",
+          "label": "Call intelligence",
+          "description": "AI analysis of sales calls.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "leads/ai-intelligence"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/audience-manager/ai-intelligence"
+            ]
+          },
+          "setting_keys": [
+            "CRM_INTELLIGENCE_SETTING"
+          ]
+        },
+        {
+          "key": "crm.live_activity",
+          "label": "Live activity",
+          "description": "Real-time feed of institute activity.",
+          "default_on": false,
+          "governs": {
+            "nav": [
+              "live-activity"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/live-activity"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "communications",
+      "label": "Communications",
+      "description": "Announcements, email, WhatsApp, chat and notifications.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "communications.announcements",
+          "label": "Announcements",
+          "description": "Create, schedule and approve announcements.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "communications/announcement-create",
+              "communications/announcement-history",
+              "communications/announcement-schedule",
+              "communications/announcement-approval"
+            ],
+            "widgets": [],
+            "quick_actions": [
+              "announce"
+            ],
+            "assistant_groups": [
+              "announcements"
+            ],
+            "setup_steps": [],
+            "routes": [
+              "/announcement/create",
+              "/announcement/history",
+              "/announcement/schedule",
+              "/announcement/approval"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "communications.email",
+          "label": "Email campaigns",
+          "description": "Email campaigning.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "communications/announcement-email-campaigning"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/announcement/email-campaigning"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "communications.whatsapp",
+          "label": "WhatsApp",
+          "description": "WhatsApp inbox and templates.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "communications/whatsapp-inbox",
+              "communications/whatsapp-templates"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/communication/inbox",
+              "/communication/whatsapp-templates"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "communications.chat",
+          "label": "Chat",
+          "description": "In-app chat.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "communications/chat"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/chat"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "communications.notification_hub",
+          "label": "Notification hub",
+          "description": "Automated notification settings and logs.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "communications/notification-hub",
+              "communications/messaging-dashboard"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/communication/notification-hub",
+              "/communication/dashboard"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "automation",
+      "label": "Automation",
+      "description": "Workflows, chatbot flows and engagement engines.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "automation.workflows",
+          "label": "Workflows",
+          "description": "Automated workflows.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "automations/workflow-list",
+              "automations/automation-dashboard"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/workflow/list",
+              "/automation/dashboard"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "automation.chatbot_flows",
+          "label": "Chatbot flows",
+          "description": "Chatbot conversation flows.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "automations/chatbot-flows"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/automation/chatbot-flows"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "automation.engagement_engines",
+          "label": "Engagement engines",
+          "description": "Engagement engines and their task inbox.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "engagement-engines"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/engagement-engines",
+              "/engagement-engines/inbox",
+              "/engagement-engines/dashboard"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "website",
+      "label": "Website",
+      "description": "Website builder, product pages and blog.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "website.builder",
+          "label": "Website builder",
+          "description": "Build and publish the institute website.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "automations/website-builder",
+              "automations/site-assistant"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-pages"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "website.product_pages",
+          "label": "Product pages",
+          "description": "Product and course landing pages.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "automations/product-pages"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-pages/product-pages"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "website.blog",
+          "label": "Blog",
+          "description": "Blog posts on the institute website.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "automations/blog"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-pages/blog"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "finance",
+      "label": "Finance",
+      "description": "Fees, memberships and packages.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "finance.fees",
+          "label": "Fees",
+          "description": "Fee plans, installments and collections.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "fee-management"
+            ],
+            "widgets": [
+              "financeSummary"
+            ],
+            "quick_actions": [],
+            "assistant_groups": [
+              "payments"
+            ],
+            "setup_steps": [],
+            "routes": [
+              "/financial-management/fee-plans",
+              "/financial-management/manage-finances",
+              "/financial-management/collection-dashboard",
+              "/financial-management/pay-installments",
+              "/financial-management/adjustment-approvals"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "finance.memberships",
+          "label": "Memberships & payments",
+          "description": "Payments, memberships and expiries.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "membership-management"
+            ],
+            "widgets": [
+              "recentTransactions",
+              "revenueTrends"
+            ],
+            "quick_actions": [
+              "collect-payment"
+            ],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/payment-dashboard",
+              "/manage-payments",
+              "/membership-expiry",
+              "/membership-stats"
+            ]
+          },
+          "setting_keys": [
+            "PAYMENT_SETTING"
+          ]
+        },
+        {
+          "key": "finance.packages",
+          "label": "Packages",
+          "description": "Sellable packages.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "manage-institute/manage-packages"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/admin-package-management"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "sub_orgs",
+      "label": "Sub-organisations",
+      "description": "Partner sub-organisations and their teams.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "sub_orgs.partners",
+          "label": "Partners",
+          "description": "Sub-organisations, their teams and analytics.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "manage-institute/suborg-teams",
+              "manage-institute/manage-institute-suborgs"
+            ],
+            "widgets": [
+              "subOrgOverview",
+              "subOrgSelfStats",
+              "subOrgGeography",
+              "subOrgRevenueTrends",
+              "vleAnalytics",
+              "topVles",
+              "subOrgSeatCourses",
+              "subOrgActivityDues"
+            ],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-suborg-teams",
+              "/manage-custom-teams"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "inventory",
+      "label": "Inventory",
+      "description": "Inventory and stock.",
+      "rail": "CRM",
+      "core": false,
+      "features": [
+        {
+          "key": "inventory.items",
+          "label": "Inventory",
+          "description": "Inventory items and stock.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "manage-institute/inventory-management"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/manage-inventory"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "erp",
+      "label": "ERP (HR & Payroll)",
+      "description": "People, leave, attendance, payroll, compliance and accounts.",
+      "rail": "ERP",
+      "core": false,
+      "features": [
+        {
+          "key": "erp.people",
+          "label": "People",
+          "description": "Employees, org chart and staff records.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-people"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/people",
+              "/erp/people/org",
+              "/erp/people/staff-bridge"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "erp.leave",
+          "label": "Leave",
+          "description": "Leave requests, balances and policies.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-leave"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/leave",
+              "/erp/leave/balances",
+              "/erp/leave/setup"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "erp.attendance",
+          "label": "Attendance",
+          "description": "Staff attendance and regularisations.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-attendance"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/attendance",
+              "/erp/attendance/regularizations",
+              "/erp/attendance/setup"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "erp.payroll",
+          "label": "Payroll",
+          "description": "Payroll runs, adjustments and salary setup.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-payroll"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/payroll",
+              "/erp/payroll/adjustments",
+              "/erp/payroll/salary-setup"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "erp.compliance",
+          "label": "Compliance",
+          "description": "Statutory filings, challans and provisions.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-compliance"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/compliance",
+              "/erp/compliance/challans",
+              "/erp/compliance/provisions"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "erp.finance",
+          "label": "Accounts",
+          "description": "Journal and profit and loss.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-finance"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/finance/journal",
+              "/erp/finance/pnl"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "erp.my_hr",
+          "label": "My HR",
+          "description": "Employee self-service: leave, payslips, tax and claims.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "erp-my-hr"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/erp/my-hr",
+              "/erp/my-hr/leave",
+              "/erp/my-hr/payslips",
+              "/erp/my-hr/tax",
+              "/erp/my-hr/claims"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    },
+    {
+      "key": "ai",
+      "label": "AI",
+      "description": "AI tools, knowledge base, copilots and content studio.",
+      "rail": "AI",
+      "core": false,
+      "features": [
+        {
+          "key": "ai.tools",
+          "label": "AI tools",
+          "description": "AI teaching tools such as lecture planning.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "ai-tools-tab",
+              "course-planning-logging/ai-lecture-planning"
+            ],
+            "widgets": [
+              "aiFeaturesCard"
+            ],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/ai-center/ai-tools",
+              "/ai-center/ai-tools/vsmart-lecture"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "ai.knowledge_base",
+          "label": "Knowledge base",
+          "description": "Institute knowledge base for AI.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "knowledge-base-tab"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/knowledge-base"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "ai.instructor_copilot",
+          "label": "Instructor copilot",
+          "description": "AI copilot for instructors.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "instructor-copilot-tab"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/instructor-copilot"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "ai.course_creator",
+          "label": "AI course creator",
+          "description": "Generate courses with AI.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "ai-copilot-tab",
+              "course-creation/create-course-ai"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/study-library/ai-copilot"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "ai.content_studio",
+          "label": "Content studio",
+          "description": "AI video content studio.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "content-ai-studio"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/video-api-studio/console"
+            ]
+          },
+          "setting_keys": []
+        },
+        {
+          "key": "ai.content_api",
+          "label": "Content API",
+          "description": "AI content generation API.",
+          "default_on": true,
+          "governs": {
+            "nav": [
+              "content-ai-api",
+              "learning-engagement/create-engaging-content"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/video-api-studio"
+            ]
+          },
+          "setting_keys": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+    "loading": "Chargement des paramètres…",
+    "header": {
+        "title": "Assistant Vacademy",
+        "description": "L'assistant IA intégré à l'application pour votre équipe. Contrôlez les capacités qu'il peut utiliser pour tout le monde, et accordez des capacités supplémentaires à des rôles spécifiques ci-dessous. L'accès est toujours limité à cet établissement."
+    },
+    "capabilities": {
+        "title": "Capacités pour tous",
+        "description": "Activé pour chaque rôle non-apprenant de votre établissement."
+    },
+    "perRole": {
+        "title": "Accès par rôle (avancé)",
+        "description": "Accordez des capacités supplémentaires à des rôles spécifiques, en plus de l'ensemble commun à tout l'établissement ci-dessus. Laissez un rôle non personnalisé pour utiliser les paramètres communs à l'établissement.",
+        "suggestedPresets": "Préréglages suggérés :",
+        "customize": "Personnaliser"
+    },
+    "footer": {
+        "save": "Enregistrer les paramètres",
+        "saving": "Enregistrement…"
+    },
+    "toasts": {
+        "settingsSaved": "Paramètres de l'assistant enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres de l'assistant",
+        "presetApplied": "Préréglage appliqué — cliquez sur Enregistrer les paramètres pour confirmer."
+    },
+    "tools": {
+        "search_help_knowledge": {
+            "label": "Aide et guides pratiques",
+            "description": "Répond aux questions « comment faire / où trouver » sur l'utilisation du portail, avec des instructions étape par étape."
+        },
+        "learner_data": {
+            "label": "Recherche de données des apprenants",
+            "description": "Recherchez des apprenants par nom/e-mail/téléphone et répondez aux questions sur leur présence, leurs résultats d'évaluation, leur activité, leur progression dans le cours et leur résumé de connexion — et générez leur rapport d'analyse complet. Activé par défaut pour les administrateurs ; à accorder aux autres rôles ci-dessous."
+        },
+        "payments": {
+            "label": "Paiements et frais",
+            "description": "Répondez aux questions sur l'historique des paiements d'un apprenant, les frais impayés/en retard, et les plans de paiement. Activé par défaut pour les administrateurs."
+        },
+        "batch_data": {
+            "label": "Listes des groupes (batches)",
+            "description": "Affichez les apprenants d'un groupe et répondez aux questions sur les effectifs de groupe. Activé par défaut pour les administrateurs."
+        },
+        "schedule": {
+            "label": "Emploi du temps des cours",
+            "description": "Répondez aux questions « quels cours sont en direct/à venir » et « qu'est-ce que j'ai aujourd'hui » à partir de l'emploi du temps des sessions en direct. Activé par défaut pour les administrateurs."
+        },
+        "institute_overview": {
+            "label": "Aperçu de l'établissement",
+            "description": "Instantanés à l'échelle de l'établissement : total des frais en retard, cours en direct en ce moment, nombre d'apprenants actifs. Activé par défaut pour les administrateurs."
+        },
+        "learner_edits": {
+            "label": "Modifications des apprenants (actions)",
+            "description": "Permettez à l'assistant de PROPOSER des modifications — modifier les informations d'un apprenant, prolonger l'accès, changer de groupe, activer/désactiver. Chaque modification nécessite que l'utilisateur appuie sur Confirmer sur une carte avant d'être appliquée. Activé par défaut pour les administrateurs ; les autres rôles sont facultatifs."
+        },
+        "assessments": {
+            "label": "Résultats des évaluations",
+            "description": "Recherchez des évaluations et répondez aux questions sur les soumissions, les scores, les évaluations en attente et les classements. Activé par défaut pour les administrateurs."
+        },
+        "website_builder": {
+            "label": "Site web : consultation",
+            "description": "Consulter les sites web de l’établissement — pages, contenu de chaque section (quels cours, quelle campagne de prospects), trafic, état de la capture de prospects et vérifications avant publication — et mener l’entretien nécessaire avant de générer un site. Lecture seule. Activé par défaut pour les administrateurs."
+        },
+        "website_builder_edits": {
+            "label": "Site web : modifier les brouillons",
+            "description": "Permettre à l’assistant de créer et modifier des sites web par conversation — composer des pages, modifier des sections, définir couleurs et polices, relier des formulaires aux campagnes de prospects. Chaque modification est enregistrée en brouillon ; rien n’est publié tant que vous ne le publiez pas dans Manage Pages. N’utilise aucun crédit IA. Désactivé par défaut."
+        },
+        "audience_forms": {
+            "label": "Formulaires de prospects : consultation",
+            "description": "Consulter les campagnes de prospects (Audience Manager) : leurs champs de formulaire, où elles sont utilisées sur les sites, prospects reçus et prospects récents. Lecture seule. Activé par défaut pour les administrateurs."
+        },
+        "audience_forms_edits": {
+            "label": "Formulaires de prospects : modification",
+            "description": "Permettre à l’assistant de créer des campagnes de prospects, d’ajouter des champs à leurs formulaires et d’envoyer des prospects de test. Il ne supprime jamais rien. Désactivé par défaut."
+        },
+        "announcements": {
+            "label": "Annonces",
+            "description": "Consultez les annonces planifiées/passées, et PROPOSEZ d'en envoyer une à des groupes, des rôles ou des apprenants spécifiques — l'envoi nécessite toujours d'appuyer sur Confirmer sur une carte. Activé par défaut pour les administrateurs."
+        }
+    },
+    "presets": {
+        "TEACHER": "Enseignants : données des apprenants + emploi du temps + évaluations",
+        "EVALUATOR": "Évaluateurs : données des apprenants + évaluations"
+    }
+}

@@ -1,0 +1,41 @@
+{
+    "title": "LMS Integration",
+    "loading": "Loading…",
+    "builtInLms": "the built-in Vacademy LMS",
+    "moodleCourseId": "Moodle course ID",
+    "courseIdInLms": "Course ID in the LMS",
+    "enrolSyncNotice": {
+        "prefix": "When learners enrol in this course, they're set up in",
+        "suffix": "."
+    },
+    "noConnections": {
+        "prefix": "No LMS connections yet. Add one under",
+        "settingsPath": "Settings → Connect your LMS",
+        "suffix": ", then come back to apply it here."
+    },
+    "setupHeading": "Set up this course's LMS",
+    "lmsConnectionLabel": "LMS connection",
+    "chooseConnectionPlaceholder": "Choose a connection",
+    "moodleCourseIdPlaceholder": "e.g. 74",
+    "courseIdPlaceholder": "Course id in the LMS",
+    "courseIdHelp": {
+        "prefix": "The id of this course in",
+        "suffix": ". The site/token come from the connection — only the course id changes per course."
+    },
+    "additionalFieldsLabel": "Additional fields (optional)",
+    "fieldKeyPlaceholder": "key (e.g. roleId)",
+    "fieldValuePlaceholder": "value",
+    "removeFieldAriaLabel": "Remove field",
+    "addFieldButton": "Add field",
+    "additionalFieldsHelp": "Any extra key–value pairs are saved into this course's LMS settings JSON (e.g. a custom field a workflow reads).",
+    "applyingButton": "Applying…",
+    "applyButton": "Use this LMS for the course",
+    "errors": {
+        "loadFailed": "Failed to load LMS info",
+        "pickConnection": "Pick an LMS connection first.",
+        "applyFailed": "Failed to apply LMS connection"
+    },
+    "toasts": {
+        "applySuccess": "This course now syncs with {{lmsName}}."
+    }
+}

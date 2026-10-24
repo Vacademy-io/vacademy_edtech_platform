@@ -1,0 +1,89 @@
+{
+    "heading": {
+        "title": "लीड बोर्ड",
+        "subtitle": "किसी लीड की स्थिति बदलने के लिए उसे दूसरे कॉलम में खींचें।"
+    },
+    "slaOptions": {
+        "anyOverdue": "कोई समयसीमा चूकी",
+        "firstContactMissed": "पहला संपर्क चूका",
+        "firstContactComingUp": "पहला संपर्क आने वाला है",
+        "followUpComingUp": "फ़ॉलो-अप आने वाला है",
+        "followUpMissed": "फ़ॉलो-अप चूका"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "पिछले 24 घंटे",
+        "last7Days": "पिछले 7 दिन",
+        "last15Days": "पिछले 15 दिन",
+        "last30Days": "पिछले 30 दिन",
+        "allTime": "सभी समय",
+        "customRange": "कस्टम श्रेणी"
+    },
+    "filters": {
+        "tier": {
+            "label": "सभी स्तर",
+            "hot": "हॉट",
+            "warm": "वॉर्म",
+            "cold": "कोल्ड"
+        },
+        "sla": {
+            "label": "सभी SLA स्थितियां"
+        },
+        "audience": {
+            "label": "सभी {{term}}",
+            "untitled": "अनाम ऑडियंस"
+        },
+        "callHistory": {
+            "any": "कॉल इतिहास",
+            "notCalled": "कॉल नहीं की गई",
+            "calledAny": "कॉल की गई (कोई भी)",
+            "calledOnce": "एक बार कॉल की गई",
+            "calledTwicePlus": "2+ बार कॉल की गई",
+            "aiCalled": "AI द्वारा कॉल की गई",
+            "manualCalled": "मैन्युअल रूप से कॉल की गई"
+        },
+        "customDate": {
+            "setDates": "तारीखें सेट करें",
+            "rangeDisplay": "{{from}} → {{to}}",
+            "done": "पूर्ण",
+            "from": "से",
+            "to": "तक"
+        }
+    },
+    "toolbar": {
+        "leadSettings": "लीड सेटिंग्स"
+    },
+    "chips": {
+        "search": "खोजें: {{query}}",
+        "audience": "ऑडियंस: {{names}}",
+        "tier": "स्तर: {{tiers}}",
+        "sla": "SLA: {{states}}",
+        "counsellor": "काउंसलर: {{names}}",
+        "source": "स्रोत: {{source}}",
+        "customField": "{{field}}: {{value}}",
+        "dateRangeCustomWithDates": "तारीख: {{from}} → {{to}}",
+        "dateRangeCustomFallback": "तारीख: कस्टम श्रेणी",
+        "dateRangeFallback": "तारीख श्रेणी",
+        "fallbackSelected": "चयनित",
+        "fallbackField": "फ़ील्ड",
+        "unassigned": "असाइन नहीं किया गया",
+        "removeAriaLabel": "{{label}} हटाएं",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "search": {
+        "placeholder": "सभी कॉलम में लीड्स खोजें",
+        "ariaLabel": "लीड्स खोजें"
+    },
+    "board": {
+        "loading": "बोर्ड लोड हो रहा है…",
+        "noStatusColumnLabel": "कोई स्थिति नहीं",
+        "noStatusesTitle": "कोई लीड स्थिति कॉन्फ़िगर नहीं है",
+        "noStatusesDescription": "बोर्ड का उपयोग करने के लिए लीड सेटिंग्स में अपनी पाइपलाइन स्थितियां सेट करें।",
+        "allHiddenTitle": "सभी कॉलम छिपाए गए",
+        "allHiddenDescription": "हर स्थिति कॉलम छिपा हुआ है — कुछ दिखाने के लिए \"कॉलम प्रबंधित करें\" का उपयोग करें।"
+    },
+    "callReasons": {
+        "noSubmissionId": "लीड की कोई सबमिशन आईडी नहीं है",
+        "noPhone": "लीड का कोई फ़ोन नंबर दर्ज नहीं है",
+        "callInProgress": "एक और कॉल शुरू हो रही है…"
+    }
+}

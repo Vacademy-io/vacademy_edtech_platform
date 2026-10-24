@@ -138,7 +138,7 @@ public class CustomReportService {
         // Pre-resolved filter options for the enumerable fields.
         List<CustomReportCatalogDTO.FilterField> filters = new ArrayList<>();
         filters.add(filterField("source_type", "Source", distinctSourceOptions(instituteId)));
-        filters.add(filterField("lead_tier", "Tier", staticOptions("HOT", "WARM", "COLD", "UNCLASSIFIED")));
+        filters.add(filterField("lead_tier", "Tier", tierOptions(instituteId)));
         filters.add(filterField(STATUS_KEY, "Current status", statusOptions(instituteId)));
         filters.add(filterField(COUNSELLOR_KEY, "Counsellor", counsellorOptions(instituteId, callerUserId)));
 
@@ -364,6 +364,28 @@ public class CustomReportService {
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    /** Institute tier catalog (falls back to the legacy trio), plus UNCLASSIFIED for unscored leads. */
+    private List<CustomReportCatalogDTO.Option> tierOptions(String instituteId) {
+        List<CustomReportCatalogDTO.Option> out = new ArrayList<>();
+        try {
+            List<Map<String, Object>> rows = jdbc.queryForList(
+                    "SELECT tier_key, label FROM lead_tier WHERE institute_id = :instituteId "
+                            + "AND is_active = true ORDER BY display_order, tier_key",
+                    new MapSqlParameterSource("instituteId", instituteId));
+            for (Map<String, Object> r : rows) {
+                String key = String.valueOf(r.get("tier_key"));
+                Object label = r.get("label");
+                out.add(CustomReportCatalogDTO.Option.builder()
+                        .value(key).label(label != null ? label.toString() : key).build());
+            }
+        } catch (Exception ignored) {
+            // table missing or query failure: fall through to the legacy trio
+        }
+        if (out.isEmpty()) out.addAll(staticOptions("HOT", "WARM", "COLD"));
+        out.add(CustomReportCatalogDTO.Option.builder().value("UNCLASSIFIED").label("UNCLASSIFIED").build());
+        return out;
     }
 
     private static List<CustomReportCatalogDTO.Option> staticOptions(String... values) {

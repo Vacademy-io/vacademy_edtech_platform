@@ -1,0 +1,15 @@
+{
+    "title": "Paramètres de remise",
+    "changeButton": "Modifier les paramètres de remise",
+    "noDiscount": {
+        "label": "Aucune remise appliquée"
+    },
+    "badge": {
+        "active": "Actif"
+    },
+    "value": {
+        "percentOff": "{{value}}% de réduction",
+        "amountOff": "₹{{value}} de réduction"
+    },
+    "expires": "Expire le : {{date}}"
+}

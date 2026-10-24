@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import { readRecordedPaymentDetails } from '@/services/offline-payment-modes';
 import { fetchPaymentLogs } from '@/services/payment-logs';
 import type { PaymentLogEntry, PaymentLogsRequest } from '@/types/payment-logs';
 import { resolveEntryCurrency } from '@/utils/payment-currency';
@@ -75,6 +76,9 @@ const toCsvRow = (entry: PaymentLogEntry): Record<string, string | number> => {
         Currency: resolveEntryCurrency(entry),
         'Payment Status': entry.current_payment_status ?? log?.payment_status ?? '',
         'Payment Method': log?.vendor ?? '',
+        // Offline payments: how it was paid, as the admin recorded it.
+        'Paid Via': readRecordedPaymentDetails(log)?.label ?? '',
+        'Payment Reference': log?.payment_reference ?? '',
         'Plan Status': plan?.status ?? '',
         'Payment Type': derivePaymentTypeLabel(entry),
         'Course / Membership': plan?.enroll_invite?.name ?? '',

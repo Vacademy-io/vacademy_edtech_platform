@@ -1,0 +1,12 @@
+{
+    "buttons": {
+        "saving": "Enregistrement...",
+        "createPlan": "Créer le plan",
+        "next": "Suivant",
+        "createPaymentPlan": "Créer un plan de paiement",
+        "back": "Retour",
+        "hidePreview": "Masquer l'aperçu",
+        "previewPlans": "Aperçu des plans",
+        "cancel": "Annuler"
+    }
+}

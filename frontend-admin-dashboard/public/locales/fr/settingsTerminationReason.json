@@ -1,0 +1,23 @@
+{
+    "loading": "Chargement...",
+    "header": {
+        "title": "Motif de résiliation",
+        "description": "Lorsqu'un administrateur retire un apprenant d'un cours avec la résiliation définitive, demander pourquoi. Le motif est enregistré dans le journal d'activité des administrateurs."
+    },
+    "enabled": {
+        "label": "Demander un motif",
+        "description": "Afficher un champ de motif lorsque la résiliation définitive est sélectionnée."
+    },
+    "required": {
+        "label": "Rendre le motif obligatoire",
+        "description": "L'apprenant ne peut pas être résilié tant qu'aucun motif n'est saisi."
+    },
+    "saveButton": {
+        "saving": "Enregistrement...",
+        "save": "Enregistrer les modifications"
+    },
+    "toasts": {
+        "saveSuccess": "Paramètre du motif de résiliation enregistré",
+        "saveError": "Échec de l'enregistrement du paramètre"
+    }
+}

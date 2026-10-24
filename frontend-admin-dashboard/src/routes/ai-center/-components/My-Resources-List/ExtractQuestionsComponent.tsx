@@ -4,12 +4,14 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { handleGenerateAssessmentQuestions } from '../../-services/ai-center-service';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import AITasksList from '../AITasksList';
 import { getRandomTaskName } from '../../-utils/helper';
 
 const ExtractQuestionsComponent = ({ fileId }: { fileId: string }) => {
+    const { t } = useTranslation('aiCenterExtractQuestionsComponent');
     const [prompt, setPrompt] = useState('');
     const [enableDialog, setEnableDialog] = useState(false);
     const [extractQuestionsDialog, setExtractQuestionsDialog] = useState(false);
@@ -28,7 +30,13 @@ const ExtractQuestionsComponent = ({ fileId }: { fileId: string }) => {
             taskName: string;
             taskId?: string;
         }) => {
-            return handleGenerateAssessmentQuestions(pdfId, userPrompt, taskName, taskId || '');
+            return handleGenerateAssessmentQuestions(
+                pdfId,
+                userPrompt,
+                taskName,
+                taskId || '',
+                'extract'
+            );
         },
         onSuccess: () => {
             setPrompt('');
@@ -60,22 +68,21 @@ const ExtractQuestionsComponent = ({ fileId }: { fileId: string }) => {
         <>
             <Dialog open={extractQuestionsDialog} onOpenChange={handleCloseExtractQuestionDialog}>
                 <DialogTrigger>
-                    <Badge className="cursor-pointer whitespace-nowrap bg-[#F4FFF9]">
-                        Extract Questions
+                    <Badge className="cursor-pointer whitespace-nowrap bg-success-50">
+                        {t('trigger.label')}
                     </Badge>
                 </DialogTrigger>
                 <DialogContent className="p-0">
                     <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                        Extract Questions
+                        {t('dialog.title')}
                     </h1>
                     <div className="flex flex-col gap-4 p-4">
                         <MyInput
                             inputType="text"
-                            inputPlaceholder="Enter Your Prompt Here"
+                            inputPlaceholder={t('dialog.promptPlaceholder')}
                             input={prompt}
                             onChangeFunction={(e) => setPrompt(e.target.value)}
-                            required={true}
-                            label="Prompt"
+                            label={t('dialog.promptLabel')}
                             className="w-full"
                         />
                         {generateAssessmentMutation.status === 'pending' ? (
@@ -96,9 +103,8 @@ const ExtractQuestionsComponent = ({ fileId }: { fileId: string }) => {
                                 layoutVariant="default"
                                 className="text-sm"
                                 onClick={handleExtractQuestions}
-                                disable={!prompt}
                             >
-                                Extract
+                                {t('dialog.extractButton')}
                             </MyButton>
                         )}
                     </div>
@@ -106,7 +112,7 @@ const ExtractQuestionsComponent = ({ fileId }: { fileId: string }) => {
             </Dialog>
             {enableDialog && (
                 <AITasksList
-                    heading="Vsmart Extract"
+                    heading={t('tasksList.heading')}
                     enableDialog={enableDialog}
                     setEnableDialog={setEnableDialog}
                 />

@@ -1,6 +1,7 @@
 name: Deploy Notification to VET EKS
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -110,42 +111,82 @@ jobs:
           aws eks update-kubeconfig --name ${{ secrets.VET_EKS_CLUSTER_NAME }} --region ${{ secrets.VET_EKS_REGION }}
 
       - name: Deploy to Kubernetes
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          APP_USERNAME: ${{ secrets.APP_USERNAME }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          CLOUD_FRONT_URL: ${{ secrets.CLOUD_FRONT_URL }}
+          NOTIFICATION_SERVICE_DB_URL: ${{ secrets.NOTIFICATION_SERVICE_DB_URL }}
+          NOTIFICATION_SERVICE_READ_DB_URL: ${{ secrets.NOTIFICATION_SERVICE_READ_DB_URL }}
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          MAIL_PORT: ${{ secrets.MAIL_PORT }}
+          AWS_MAIL_USERNAME: ${{ secrets.AWS_MAIL_USERNAME }}
+          AWS_MAIL_PASSWORD: ${{ secrets.AWS_MAIL_PASSWORD }}
+          SES_SENDER_SMTP_USERNAME: ${{ secrets.AWS_MAIL_USERNAME }}
+          SES_SENDER_SMTP_PASSWORD: ${{ secrets.AWS_MAIL_PASSWORD }}
+          SES_SENDER_EMAIL: ${{ secrets.SES_SENDER_EMAIL }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_ACCESS_TOKEN_VIDYAYATAN: ${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }}
+          WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }}
+          SES_CONFIGURATION_SET: ${{ secrets.SES_CONFIGURATION_SET }}
+          SES_EVENTS_SQS_URL: ${{ secrets.SES_EVENTS_SQS_URL }}
+          SQS_AWS_ACCESS_KEY: ${{ secrets.SQS_AWS_ACCESS_KEY }}
+          SQS_AWS_SECRET_KEY: ${{ secrets.SQS_AWS_SECRET_KEY }}
+          SQS_AWS_REGION: ${{ secrets.SQS_AWS_REGION }}
+          SQS_ENDPOINT: ${{ secrets.SQS_ENDPOINT }}
+          SQS_REGION: ${{ secrets.SQS_REGION }}
+          AWS_SQS_ENABLED: ${{ secrets.AWS_SQS_ENABLED }}
+          INBOUND_EMAIL_ENABLED: ${{ secrets.INBOUND_EMAIL_ENABLED }}
+          INBOUND_EMAIL_AWS_REGION: ${{ secrets.INBOUND_EMAIL_AWS_REGION }}
+          INBOUND_EMAIL_AWS_ACCESS_KEY: ${{ secrets.INBOUND_EMAIL_AWS_ACCESS_KEY }}
+          INBOUND_EMAIL_AWS_SECRET_KEY: ${{ secrets.INBOUND_EMAIL_AWS_SECRET_KEY }}
+          INBOUND_EMAIL_SQS_QUEUE_NAME: ${{ secrets.INBOUND_EMAIL_SQS_QUEUE_NAME }}
+          INBOUND_EMAIL_S3_BUCKET: ${{ secrets.INBOUND_EMAIL_S3_BUCKET }}
+          EMAIL_UNSUBSCRIBE_SECRET: ${{ secrets.EMAIL_UNSUBSCRIBE_SECRET }}
+          EMAIL_SENDER_POSTAL_ADDRESS: ${{ secrets.EMAIL_SENDER_POSTAL_ADDRESS }}
+          EMAIL_UNSUBSCRIBE_BASE_URL: ${{ secrets.EMAIL_UNSUBSCRIBE_BASE_URL }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           kubectl set env deployment/notification-service \
             environment=stage \
-            "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-            "DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-            "APP_USERNAME=${{ secrets.APP_USERNAME }}" \
-            "APP_PASSWORD=${{ secrets.APP_PASSWORD }}" \
-            "CLOUD_FRONT_URL=${{ secrets.CLOUD_FRONT_URL }}" \
-            "NOTIFICATION_SERVICE_DB_URL=${{ secrets.NOTIFICATION_SERVICE_DB_URL }}" \
-            "NOTIFICATION_SERVICE_READ_DB_URL=${{ secrets.NOTIFICATION_SERVICE_READ_DB_URL }}" \
-            "MAIL_HOST=${{ secrets.MAIL_HOST }}" \
-            "MAIL_PORT=${{ secrets.MAIL_PORT }}" \
-            "AWS_MAIL_USERNAME=${{ secrets.AWS_MAIL_USERNAME }}" \
-            "AWS_MAIL_PASSWORD=${{ secrets.AWS_MAIL_PASSWORD }}" \
-            "SES_SENDER_SMTP_USERNAME=${{ secrets.AWS_MAIL_USERNAME }}" \
-            "SES_SENDER_SMTP_PASSWORD=${{ secrets.AWS_MAIL_PASSWORD }}" \
-            "SES_SENDER_EMAIL=${{ secrets.SES_SENDER_EMAIL }}" \
-            "WHATSAPP_ACCESS_TOKEN=${{ secrets.WHATSAPP_ACCESS_TOKEN }}" \
-            "WHATSAPP_ACCESS_TOKEN_VIDYAYATAN=${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }}" \
-            "WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN=${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }}" \
-            "SES_CONFIGURATION_SET=${{ secrets.SES_CONFIGURATION_SET }}" \
-            "SES_EVENTS_SQS_URL=${{ secrets.SES_EVENTS_SQS_URL }}" \
-            "SQS_AWS_ACCESS_KEY=${{ secrets.SQS_AWS_ACCESS_KEY }}" \
-            "SQS_AWS_SECRET_KEY=${{ secrets.SQS_AWS_SECRET_KEY }}" \
-            "SQS_AWS_REGION=${{ secrets.SQS_AWS_REGION }}" \
-            "SQS_ENDPOINT=${{ secrets.SQS_ENDPOINT }}" \
-            "SQS_REGION=${{ secrets.SQS_REGION }}" \
-            "AWS_SQS_ENABLED=${{ secrets.AWS_SQS_ENABLED }}" \
-            "INBOUND_EMAIL_ENABLED=${{ secrets.INBOUND_EMAIL_ENABLED }}" \
-            "INBOUND_EMAIL_AWS_REGION=${{ secrets.INBOUND_EMAIL_AWS_REGION }}" \
-            "INBOUND_EMAIL_AWS_ACCESS_KEY=${{ secrets.INBOUND_EMAIL_AWS_ACCESS_KEY }}" \
-            "INBOUND_EMAIL_AWS_SECRET_KEY=${{ secrets.INBOUND_EMAIL_AWS_SECRET_KEY }}" \
-            "INBOUND_EMAIL_SQS_QUEUE_NAME=${{ secrets.INBOUND_EMAIL_SQS_QUEUE_NAME }}" \
-            "INBOUND_EMAIL_S3_BUCKET=${{ secrets.INBOUND_EMAIL_S3_BUCKET }}" \
-            "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" \
-            "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"
+            "DB_PASSWORD=${DB_PASSWORD//[$'\r\n']/}" \
+            "DB_USERNAME=${DB_USERNAME//[$'\r\n']/}" \
+            "APP_USERNAME=${APP_USERNAME//[$'\r\n']/}" \
+            "APP_PASSWORD=${APP_PASSWORD//[$'\r\n']/}" \
+            "CLOUD_FRONT_URL=${CLOUD_FRONT_URL//[$'\r\n']/}" \
+            "NOTIFICATION_SERVICE_DB_URL=${NOTIFICATION_SERVICE_DB_URL//[$'\r\n']/}" \
+            "NOTIFICATION_SERVICE_READ_DB_URL=${NOTIFICATION_SERVICE_READ_DB_URL//[$'\r\n']/}" \
+            "MAIL_HOST=${MAIL_HOST//[$'\r\n']/}" \
+            "MAIL_PORT=${MAIL_PORT//[$'\r\n']/}" \
+            "AWS_MAIL_USERNAME=${AWS_MAIL_USERNAME//[$'\r\n']/}" \
+            "AWS_MAIL_PASSWORD=${AWS_MAIL_PASSWORD//[$'\r\n']/}" \
+            "SES_SENDER_SMTP_USERNAME=${SES_SENDER_SMTP_USERNAME//[$'\r\n']/}" \
+            "SES_SENDER_SMTP_PASSWORD=${SES_SENDER_SMTP_PASSWORD//[$'\r\n']/}" \
+            "SES_SENDER_EMAIL=${SES_SENDER_EMAIL//[$'\r\n']/}" \
+            "WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN//[$'\r\n']/}" \
+            "WHATSAPP_ACCESS_TOKEN_VIDYAYATAN=${WHATSAPP_ACCESS_TOKEN_VIDYAYATAN//[$'\r\n']/}" \
+            "WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN=${WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN//[$'\r\n']/}" \
+            "SES_CONFIGURATION_SET=${SES_CONFIGURATION_SET//[$'\r\n']/}" \
+            "SES_EVENTS_SQS_URL=${SES_EVENTS_SQS_URL//[$'\r\n']/}" \
+            "SQS_AWS_ACCESS_KEY=${SQS_AWS_ACCESS_KEY//[$'\r\n']/}" \
+            "SQS_AWS_SECRET_KEY=${SQS_AWS_SECRET_KEY//[$'\r\n']/}" \
+            "SQS_AWS_REGION=${SQS_AWS_REGION//[$'\r\n']/}" \
+            "SQS_ENDPOINT=${SQS_ENDPOINT//[$'\r\n']/}" \
+            "SQS_REGION=${SQS_REGION//[$'\r\n']/}" \
+            "AWS_SQS_ENABLED=${AWS_SQS_ENABLED//[$'\r\n']/}" \
+            "INBOUND_EMAIL_ENABLED=${INBOUND_EMAIL_ENABLED//[$'\r\n']/}" \
+            "INBOUND_EMAIL_AWS_REGION=${INBOUND_EMAIL_AWS_REGION//[$'\r\n']/}" \
+            "INBOUND_EMAIL_AWS_ACCESS_KEY=${INBOUND_EMAIL_AWS_ACCESS_KEY//[$'\r\n']/}" \
+            "INBOUND_EMAIL_AWS_SECRET_KEY=${INBOUND_EMAIL_AWS_SECRET_KEY//[$'\r\n']/}" \
+            "INBOUND_EMAIL_SQS_QUEUE_NAME=${INBOUND_EMAIL_SQS_QUEUE_NAME//[$'\r\n']/}" \
+            "INBOUND_EMAIL_S3_BUCKET=${INBOUND_EMAIL_S3_BUCKET//[$'\r\n']/}" \
+            "EMAIL_UNSUBSCRIBE_SECRET=${EMAIL_UNSUBSCRIBE_SECRET//[$'\r\n']/}" \
+            "EMAIL_SENDER_POSTAL_ADDRESS=${EMAIL_SENDER_POSTAL_ADDRESS//[$'\r\n']/}" \
+            "EMAIL_UNSUBSCRIBE_BASE_URL=${EMAIL_UNSUBSCRIBE_BASE_URL//[$'\r\n']/}" \
+            "SENTRY_DSN=${SENTRY_DSN//[$'\r\n']/}" \
+            "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN//[$'\r\n']/}"
 
       # Pins the immutable SHA tag and FAILS the workflow if the pods do not come
       # up. Replaces a blind `kubectl rollout restart`, which only forced a re-pull
@@ -159,10 +200,10 @@ jobs:
           DEPLOYMENT_NAME: notification-service
           NAMESPACE: default
         run: |
-          kubectl set image deployment/$DEPLOYMENT_NAME 
-            $DEPLOYMENT_NAME=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG 
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            $DEPLOYMENT_NAME=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG \
             --namespace $NAMESPACE
-          kubectl rollout status deployment/$DEPLOYMENT_NAME 
+          kubectl rollout status deployment/$DEPLOYMENT_NAME \
             --namespace $NAMESPACE --timeout=10m
 
       - name: Roll back if the new image failed to come up
@@ -173,6 +214,6 @@ jobs:
         run: |
           echo "::error::Rollout failed — reverting to the previous working image."
           kubectl rollout undo deployment/$DEPLOYMENT_NAME --namespace $NAMESPACE || true
-          kubectl rollout status deployment/$DEPLOYMENT_NAME 
+          kubectl rollout status deployment/$DEPLOYMENT_NAME \
             --namespace $NAMESPACE --timeout=10m || true
           kubectl get pods -l app=$DEPLOYMENT_NAME --namespace $NAMESPACE || true

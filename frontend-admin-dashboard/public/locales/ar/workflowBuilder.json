@@ -1,0 +1,194 @@
+{
+    "weekdays": {
+        "mon": "الإثنين",
+        "monShort": "ن",
+        "tue": "الثلاثاء",
+        "tueShort": "ث",
+        "wed": "الأربعاء",
+        "wedShort": "ر",
+        "thu": "الخميس",
+        "thuShort": "خ",
+        "fri": "الجمعة",
+        "friShort": "ج",
+        "sat": "السبت",
+        "satShort": "س",
+        "sun": "الأحد",
+        "sunShort": "ح"
+    },
+    "schedulePicker": {
+        "heading": "الخطوة 3 — تعيين الجدول الزمني",
+        "howOften": "ما مدى تكرار تشغيله؟",
+        "frequency": {
+            "daily": { "label": "يوميًا", "desc": "كل يوم" },
+            "weekly": { "label": "أسبوعيًا", "desc": "اختر أيامًا محددة" },
+            "monthly": { "label": "شهريًا", "desc": "مرة واحدة في الشهر" },
+            "interval": { "label": "متكرر", "desc": "كل X دقيقة" },
+            "custom": { "label": "مخصص", "desc": "تعبير كرون" }
+        },
+        "atWhatTime": "في أي وقت؟",
+        "onWhichDays": "في أي أيام؟",
+        "presets": {
+            "weekdays": "أيام العمل",
+            "weekends": "عطلة نهاية الأسبوع",
+            "monWedFri": "الإثنين، الأربعاء، الجمعة",
+            "tueThu": "الثلاثاء، الخميس",
+            "everyDay": "كل يوم"
+        },
+        "onWhichDayOfMonth": "في أي يوم من الشهر؟",
+        "runEvery": "التشغيل كل",
+        "minutes": "دقائق",
+        "intervalPresets": {
+            "min15": "15 دقيقة",
+            "min30": "30 دقيقة",
+            "hour1": "ساعة واحدة",
+            "hours2": "ساعتان",
+            "hours6": "6 ساعات",
+            "hours12": "12 ساعة"
+        },
+        "cronLabel": "تعبير كرون (تنسيق Quartz)",
+        "cronPlaceholder": "0 0 9 * * ?",
+        "cronHint": "التنسيق: ثانية دقيقة ساعة يوم شهر يوم الأسبوع. مثال: \"0 0 9 * * ?\" = يوميًا الساعة 9 صباحًا",
+        "summary": {
+            "daily": "يعمل كل يوم في {{time}}",
+            "selectAtLeastOneDay": "اختر يومًا واحدًا على الأقل",
+            "weekdaysOnly": "يعمل أيام العمل (الإثنين-الجمعة) في {{time}}",
+            "customDays": "يعمل كل {{days}} في {{time}}",
+            "monthly": "يعمل في اليوم {{day}} من كل شهر في {{time}}",
+            "interval_zero": "يعمل كل {{count}} دقيقة",
+            "interval_one": "يعمل كل دقيقة واحدة",
+            "interval_two": "يعمل كل دقيقتين",
+            "interval_few": "يعمل كل {{count}} دقائق",
+            "interval_many": "يعمل كل {{count}} دقيقة",
+            "interval_other": "يعمل كل {{count}} دقيقة",
+            "customPlaceholder": "أدخل تعبير كرون"
+        },
+        "timezone": "المنطقة الزمنية",
+        "timezones": {
+            "kolkata": "آسيا/كولكاتا (IST)",
+            "utc": "UTC",
+            "newYork": "أمريكا/نيويورك (EST)",
+            "london": "أوروبا/لندن (GMT)",
+            "dubai": "آسيا/دبي (GST)"
+        },
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء (اختياري)"
+    },
+    "setup": {
+        "title": "إنشاء سير عمل جديد",
+        "orManual": "أو قم بإعداده يدويًا",
+        "optional": "(اختياري)",
+        "back": "رجوع",
+        "step1": {
+            "heading": "ماذا نسمي سير العمل هذا؟",
+            "subheading": "امنحه اسمًا يصف الغرض منه.",
+            "nameLabel": "اسم سير العمل",
+            "namePlaceholder": "مثال: بريد ترحيبي بعد التسجيل",
+            "descriptionLabel": "الوصف",
+            "descriptionPlaceholder": "صف بإيجاز ما يقوم به سير العمل هذا",
+            "next": "التالي: اختر نوع المشغّل"
+        },
+        "step2": {
+            "heading": "متى يجب تشغيل سير العمل هذا؟",
+            "subheading": "اختر ما يبدأ سير العمل — حدث أو جدول زمني.",
+            "eventDriven": {
+                "title": "عند حدوث شيء ما",
+                "desc": "يعمل عند تسجيل طالب، أو تعبئة نموذج، أو فشل دفعة، وما إلى ذلك."
+            },
+            "scheduled": {
+                "title": "وفق جدول زمني",
+                "desc": "يعمل في أوقات ثابتة — يوميًا، أسبوعيًا، شهريًا، أو مخصص."
+            },
+            "nextEvent": "التالي: اختر الحدث",
+            "nextSchedule": "التالي: تعيين الجدول الزمني",
+            "triggerNodeName": "المشغّل: {{event}}"
+        },
+        "step3": {
+            "eventHeading": "ما الحدث الذي يجب أن يشغّل سير العمل هذا؟",
+            "eventSubheading": "اختر الحدث، ثم قم اختياريًا بتقييده بكيان محدد.",
+            "selectEventLabel": "اختر حدثًا",
+            "selectEventPlaceholder": "-- اختر حدثًا --",
+            "generalCategory": "عام",
+            "scopeHeading": "النطاق (اختياري)",
+            "scopeHint": "اختر {{type}} محددًا أو اتركه \"الكل\" ليعمل في كل مرة.",
+            "triggerDescriptionLabel": "وصف المشغّل",
+            "triggerDescriptionPlaceholder": "مثال: أرسل بريدًا ترحيبيًا عند تسجيل طالب جديد",
+            "scheduleHeading": "إعداد الجدول الزمني",
+            "scheduleSubheading": "اختر مدى تكرار ووقت تشغيل سير العمل هذا.",
+            "next": "التالي: بناء سير العمل"
+        },
+        "steps": {
+            "name": "الاسم",
+            "triggerType": "نوع المشغّل",
+            "eventSetup": "إعداد الحدث",
+            "schedule": "الجدول الزمني",
+            "buildWorkflow": "بناء سير العمل"
+        }
+    },
+    "triggerSummary": {
+        "allOf": "كل {{type}}",
+        "selectedCount_zero": "لا شيء محدد…",
+        "selectedCount_one": "عنصر واحد محدد…",
+        "selectedCount_two": "عنصران محددان…",
+        "selectedCount_few": "{{count}} عناصر محددة…",
+        "selectedCount_many": "{{count}} عنصرًا محددًا…",
+        "selectedCount_other": "{{count}} عنصر محدد…",
+        "noLongerExists": "{{id}} — لم يعد موجودًا"
+    },
+    "configSummary": {
+        "eventTrigger": "مشغّل الحدث",
+        "schedule": "الجدول الزمني",
+        "editSetup": "تعديل الإعداد",
+        "everyMinutes_zero": "كل {{count}} دقيقة",
+        "everyMinutes_one": "كل دقيقة",
+        "everyMinutes_two": "كل دقيقتين",
+        "everyMinutes_few": "كل {{count}} دقائق",
+        "everyMinutes_many": "كل {{count}} دقيقة",
+        "everyMinutes_other": "كل {{count}} دقيقة",
+        "starts": "البدء: {{date}}",
+        "ends": "الانتهاء: {{date}}"
+    },
+    "canvas": {
+        "namePlaceholder": "اسم سير العمل...",
+        "eventDriven": "قائم على الحدث",
+        "scheduled": "مجدول",
+        "wizard": "المعالج",
+        "testRun": "تشغيل تجريبي",
+        "testRunning": "جارٍ التشغيل...",
+        "saveDraft": "حفظ كمسودة",
+        "publish": "نشر",
+        "dismiss": "تجاهل",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "صف ما يقوم به سير العمل هذا...",
+        "nodesUnit_zero": "عقدة",
+        "nodesUnit_one": "عقدة",
+        "nodesUnit_two": "عقدتان",
+        "nodesUnit_few": "عُقد",
+        "nodesUnit_many": "عقدة",
+        "nodesUnit_other": "عقدة",
+        "connectionsUnit_zero": "اتصال",
+        "connectionsUnit_one": "اتصال",
+        "connectionsUnit_two": "اتصالان",
+        "connectionsUnit_few": "اتصالات",
+        "connectionsUnit_many": "اتصالًا",
+        "connectionsUnit_other": "اتصال",
+        "emptyHint": "انقر على عقدة لتكوينها، أو اسحب عُقدًا من اللوحة اليسرى لبناء سير العمل الخاص بك.",
+        "testRunResultsHeading": "نتائج التشغيل التجريبي (تشغيل جاف)",
+        "testRunFailedAlert": "فشل التشغيل التجريبي. راجع وحدة التحكم للحصول على التفاصيل."
+    },
+    "validation": {
+        "nameRequired": "اسم سير العمل مطلوب",
+        "addNode": "أضف عقدة واحدة على الأقل",
+        "addNodeBeforeTest": "أضف عقدة واحدة على الأقل قبل الاختبار",
+        "selectTriggerEvent": "اختر حدث تشغيل لسير العمل القائم على الأحداث",
+        "enterCron": "أدخل تعبير كرون لسير العمل المجدول",
+        "nodesNotConnected_zero": "لا توجد عُقد غير متصلة: {{names}}",
+        "nodesNotConnected_one": "عقدة واحدة غير متصلة: {{names}}",
+        "nodesNotConnected_two": "عقدتان غير متصلتين: {{names}}",
+        "nodesNotConnected_few": "{{count}} عُقد غير متصلة: {{names}}",
+        "nodesNotConnected_many": "{{count}} عقدة غير متصلة: {{names}}",
+        "nodesNotConnected_other": "{{count}} عقدة غير متصلة: {{names}}",
+        "genericValidationError": "خطأ في التحقق",
+        "unknownError": "خطأ غير معروف",
+        "saveFailed": "فشل الحفظ: {{message}}"
+    }
+}

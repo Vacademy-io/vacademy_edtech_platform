@@ -1,0 +1,84 @@
+{
+    "dialogTitle": "تمديد الوصول إلى الدورة",
+    "unlimitedLabel": "غير محدود",
+    "modes": {
+        "extend": {
+            "label": "التمديد بعدد أيام",
+            "hint": "يُمدَّد كل متعلم من تاريخ انتهائه الحالي، بحيث لا يفقد أحد الوقت الذي كان لديه بالفعل. يُحسب المتعلمون الذين انتهت صلاحيتهم بالفعل اعتبارًا من اليوم."
+        },
+        "setDate": {
+            "label": "تحديد نفس تاريخ الانتهاء للجميع",
+            "hint": "ينتهي وصول كل متعلم محدد في هذا التاريخ بالضبط، أيًا كان لديه الآن."
+        },
+        "unlimited": {
+            "label": "منح وصول غير محدود",
+            "hint": "يلغي تاريخ الانتهاء تمامًا لكل متعلم محدد."
+        }
+    },
+    "config": {
+        "changePrompt_zero": "غيّر صلاحية الوصول إلى الدورة لـ <strong>{{count}}</strong> متعلم محدد.",
+        "changePrompt_one": "غيّر صلاحية الوصول إلى الدورة لمتعلم واحد (<strong>{{count}}</strong>) محدد.",
+        "changePrompt_two": "غيّر صلاحية الوصول إلى الدورة لمتعلمين اثنين (<strong>{{count}}</strong>) محددين.",
+        "changePrompt_few": "غيّر صلاحية الوصول إلى الدورة لـ <strong>{{count}}</strong> متعلمين محددين.",
+        "changePrompt_many": "غيّر صلاحية الوصول إلى الدورة لـ <strong>{{count}}</strong> متعلمًا محددًا.",
+        "changePrompt_other": "غيّر صلاحية الوصول إلى الدورة لـ <strong>{{count}}</strong> متعلم محدد.",
+        "whatToChange": "ما الذي تريد تغييره",
+        "daysToAdd": "الأيام المراد إضافتها",
+        "negativeHint": "استخدم رقمًا سالبًا لتقصير مدة الوصول.",
+        "newExpiryDate": "تاريخ الانتهاء الجديد",
+        "applyToEveryCourse": "التطبيق على <strong>كل دورة</strong> مسجَّل بها هؤلاء المتعلمون",
+        "batchesHint_zero": "معطّل افتراضيًا — سيتم تغيير {{count}} دفعة فقط من الدفعات المعروضة في هذه القائمة.",
+        "batchesHint_one": "معطّل افتراضيًا — سيتم تغيير الدفعة الواحدة ({{count}}) المعروضة في هذه القائمة فقط.",
+        "batchesHint_two": "معطّل افتراضيًا — سيتم تغيير الدفعتين ({{count}}) المعروضتين في هذه القائمة فقط.",
+        "batchesHint_few": "معطّل افتراضيًا — سيتم تغيير {{count}} دفعات فقط من الدفعات المعروضة في هذه القائمة.",
+        "batchesHint_many": "معطّل افتراضيًا — سيتم تغيير {{count}} دفعة فقط من الدفعات المعروضة في هذه القائمة.",
+        "batchesHint_other": "معطّل افتراضيًا — سيتم تغيير {{count}} دفعة فقط من الدفعات المعروضة في هذه القائمة.",
+        "reasonLabel": "السبب (اختياري)",
+        "reasonPlaceholder": "مثال: تمديد الوصول للجميع بعد تغيير الجدول",
+        "reasonHint": "يُحفظ في كل صف من سجل الوصول الذي يكتبه هذا التغيير."
+    },
+    "resultList": {
+        "daysDelta_zero": "({{sign}}{{count}} يوم)",
+        "daysDelta_one": "({{sign}}{{count}} يوم)",
+        "daysDelta_two": "({{sign}}{{count}} يومان)",
+        "daysDelta_few": "({{sign}}{{count}} أيام)",
+        "daysDelta_many": "({{sign}}{{count}} يومًا)",
+        "daysDelta_other": "({{sign}}{{count}} يوم)"
+    },
+    "preview": {
+        "summaryLine_zero": "سيتغير {{count}} تسجيل، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_one": "سيتغير تسجيل واحد ({{count}})، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_two": "سيتغير تسجيلان ({{count}})، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_few": "ستتغير {{count}} تسجيلات، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_many": "سيتغير {{count}} تسجيلاً، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_other": "سيتغير {{count}} تسجيل، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "notSaved": "لم يتم حفظ أي شيء بعد."
+    },
+    "results": {
+        "summaryLine_zero": "تم تحديث {{count}} تسجيل، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_one": "تم تحديث تسجيل واحد ({{count}})، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_two": "تم تحديث تسجيلين ({{count}})، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_few": "تم تحديث {{count}} تسجيلات، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_many": "تم تحديث {{count}} تسجيلاً، تم تخطي {{skipped}}، وفشل {{failed}}.",
+        "summaryLine_other": "تم تحديث {{count}} تسجيل، تم تخطي {{skipped}}، وفشل {{failed}}."
+    },
+    "footer": {
+        "checking": "جارٍ التحقق…",
+        "previewChanges": "معاينة التغييرات",
+        "back": "رجوع",
+        "applying": "جارٍ التطبيق…",
+        "applyChanges": "تطبيق التغييرات",
+        "done": "تم"
+    },
+    "toasts": {
+        "previewFailed": "فشلت المعاينة",
+        "accessChangeFailed": "فشل تغيير الوصول",
+        "accessUpdated_zero": "تم تحديث الوصول لـ {{count}} تسجيل",
+        "accessUpdated_one": "تم تحديث الوصول لتسجيل واحد ({{count}})",
+        "accessUpdated_two": "تم تحديث الوصول لتسجيلين ({{count}})",
+        "accessUpdated_few": "تم تحديث الوصول لـ {{count}} تسجيلات",
+        "accessUpdated_many": "تم تحديث الوصول لـ {{count}} تسجيلاً",
+        "accessUpdated_other": "تم تحديث الوصول لـ {{count}} تسجيل",
+        "noChanges": "لم يتم تغيير أي تسجيل."
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "title": "تنزيل ملف PDF للاختبار",
+    "description": "اختر خيارات التنزيل لملف PDF الخاص بالاختبار.",
+    "pdfType": "نوع الملف",
+    "showAnswers": "إظهار الإجابات",
+    "showAnswersHint": "تضمين الإجابات الصحيحة في ملف PDF (لمفتاح الإجابة)",
+    "showExplanations": "إظهار التفسيرات",
+    "showExplanationsHint": "تضمين تفسيرات مفصلة لكل إجابة",
+    "answerKeyMode": "وضع مفتاح الإجابة",
+    "assessmentPaperMode": "وضع ورقة التقييم",
+    "answerKeyModeDescription": "سيتضمن ملف PDF الإجابات الصحيحة مميزة باللون الأخضر. مثالي للمعلمين ومفاتيح الإجابة.",
+    "assessmentPaperModeDescription": "سيتم تنسيق ملف PDF كورقة تقييم نظيفة بدون إجابات. مثالي لتقديمه للطلاب كاختبار مكتوب.",
+    "cancel": "إلغاء",
+    "downloadPdf": "تنزيل PDF",
+    "toast": {
+        "success": "تم تنزيل ملف PDF للاختبار بنجاح!",
+        "error": "فشل إنشاء ملف PDF للاختبار"
+    }
+}

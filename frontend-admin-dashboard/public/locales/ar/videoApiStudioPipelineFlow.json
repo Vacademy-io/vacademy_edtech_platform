@@ -1,0 +1,13 @@
+{
+    "errors": {
+        "talentCutFromProduction": "تم حذف الممثلين من الإنتاج",
+        "scoreCutFromProduction": "تم حذف الموسيقى التصويرية من الإنتاج"
+    },
+    "hint": {
+        "clickAnyStageForDetails": "انقر على أي مرحلة لعرض التفاصيل"
+    },
+    "directorTicker": {
+        "label": "المخرج:",
+        "workingOn": "جارٍ العمل على {{stage}}…"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "schema": {
+        "campaignIdRequired": "अभियान आईडी आवश्यक है"
+    },
+    "navHeading": "{{audienceTerm}} उपयोगकर्ता",
+    "helmet": {
+        "title": "{{audienceTerm}} उपयोगकर्ता",
+        "description": "{{audienceTerm}} में नामांकित उपयोगकर्ताओं को देखें।"
+    },
+    "backButton": "{{audienceTermPlural}} पर वापस जाएँ",
+    "missingCampaignId": "अभियान आईडी आवश्यक है"
+}

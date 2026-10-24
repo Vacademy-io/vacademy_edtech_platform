@@ -32,6 +32,9 @@ public class ChatSettings {
 
     private AttachmentSettings attachments;
 
+    @JsonProperty("message_actions")
+    private MessageActionSettings messageActions;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -68,6 +71,25 @@ public class ChatSettings {
         private Boolean enabled = true;
         // sender role -> target role -> allowed. Roles: student | teacher | admin
         private Map<String, Map<String, Boolean>> matrix = new HashMap<>();
+    }
+
+    /**
+     * What a learner may do to a message they ALREADY sent. Both default to true: students could
+     * already delete their own messages before these flags existed, and defaulting them off would
+     * silently take that away from every institute on upgrade.
+     *
+     * Scoped to students on purpose — teachers and admins keep both actions regardless. Editing and
+     * deleting someone ELSE's message is moderation and is governed separately.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class MessageActionSettings {
+        @JsonProperty("students_can_edit_own")
+        private Boolean studentsCanEditOwn = true;
+        @JsonProperty("students_can_delete_own")
+        private Boolean studentsCanDeleteOwn = true;
     }
 
     @Data

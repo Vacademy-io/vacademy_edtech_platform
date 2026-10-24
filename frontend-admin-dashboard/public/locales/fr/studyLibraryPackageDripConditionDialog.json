@@ -1,0 +1,37 @@
+{
+    "dialog": {
+        "editHeading": "Modifier la condition de diffusion",
+        "addHeading": "Ajouter une condition de diffusion",
+        "course": "Cours : {{packageName}}",
+        "enableTargetCondition": "Activer la condition de diffusion pour {{target}}",
+        "enableTargetConditionHint": "Détermine si cette condition de diffusion spécifique pour {{target}} est active"
+    },
+    "form": {
+        "targetContent": "Contenu ciblé",
+        "selectTarget": "Sélectionner une cible",
+        "appliesToAll": "Cette condition s'appliquera à tous les {{level}} de ce cours",
+        "behavior": "Comportement",
+        "selectBehavior": "Sélectionner un comportement",
+        "unlockRule": "Règle de déverrouillage",
+        "noRuleConfigured": "Aucune règle configurée. Veuillez configurer une règle de déverrouillage ci-dessous.",
+        "releaseDate": "Date de publication",
+        "metric": "Indicateur",
+        "averageOfAll": "Moyenne de tout",
+        "averageOfLastN": "Moyenne des N derniers",
+        "count": "Nombre",
+        "thresholdPercent": "Seuil %"
+    },
+    "behaviorOptions": {
+        "lock": "Verrouiller (afficher mais empêcher l'accès)",
+        "hide": "Masquer (complètement caché)"
+    },
+    "ruleTypes": {
+        "dateBased": "Basé sur la date",
+        "completionBased": "Basé sur l'achèvement"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "updateCondition": "Mettre à jour la condition",
+        "addCondition": "Ajouter la condition"
+    }
+}

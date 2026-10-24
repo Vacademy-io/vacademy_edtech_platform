@@ -1,0 +1,83 @@
+{
+    "linkForm": {
+        "cancel": "Annuler",
+        "linking": "Liaison en cours…",
+        "linkButton": "Lier {{person}}"
+    },
+    "backTrail": {
+        "label": "Retour — affichage de {{name}}"
+    },
+    "roles": {
+        "guardian": "Tuteur",
+        "student": "Élève"
+    },
+    "fallback": {
+        "thisLearner": "cet apprenant",
+        "thisGuardian": "ce tuteur"
+    },
+    "toast": {
+        "copiedToClipboard": "{{field}} copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie de {{field}}",
+        "guardianLinked": "Tuteur lié",
+        "studentLinked": "Élève lié",
+        "guardianCredentialsSentTo": "Identifiants du tuteur envoyés à {{email}}",
+        "guardianCredentialsSent": "Identifiants du tuteur envoyés",
+        "guardianCredentialsNotSent": "Impossible d'envoyer les identifiants du tuteur",
+        "guardianCredentialsSendFailed": "Échec de l'envoi des identifiants du tuteur",
+        "linkGuardianFailedDefault": "Échec de la liaison du tuteur."
+    },
+    "toastFields": {
+        "studentUsername": "Nom d'utilisateur de l'élève",
+        "studentPassword": "Mot de passe de l'élève",
+        "username": "Nom d'utilisateur",
+        "email": "E-mail",
+        "password": "Mot de passe"
+    },
+    "fields": {
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "name": "Nom",
+        "email": "E-mail",
+        "mobile": "Mobile"
+    },
+    "status": {
+        "loading": "Chargement…",
+        "notFound": "Introuvable",
+        "passwordNotFound": "Mot de passe introuvable"
+    },
+    "ownLogin": {
+        "passwordHidden": "L'affichage des mots de passe est désactivé pour cet établissement — activez-le dans Paramètres → Affichage des rôles pour voir les identifiants de cet élève ici.",
+        "heading": "Identifiants de cet élève"
+    },
+    "errors": {
+        "loadGuardianInfo": "Impossible de charger les informations du tuteur"
+    },
+    "guardianHero": {
+        "eyebrow": "Profil du tuteur",
+        "title": "Ceci est un profil de tuteur",
+        "linkedToChildren_one": "Lié à {{count}} enfant",
+        "linkedToChildren_many": "Lié à {{count}} enfant",
+        "linkedToChildren_other": "Lié à {{count}} enfants"
+    },
+    "linkedChildren": {
+        "heading": "Enfants liés",
+        "addChild": "Ajouter un enfant",
+        "viewLearnerTooltip": "Voir les informations du tuteur de cet apprenant"
+    },
+    "noGuardian": {
+        "title": "Aucun tuteur lié pour l'instant",
+        "hint": "Liez un tuteur existant, ou ajoutez-en un nouveau, directement d'ici."
+    },
+    "linkGuardianSection": {
+        "heading": "Lier un tuteur",
+        "addGuardian": "Ajouter un tuteur"
+    },
+    "guardianSection": {
+        "heading": "Tuteur",
+        "shareCredentialsTooltip": "Envoyer ces identifiants par e-mail pour que le tuteur puisse se connecter au portail parent",
+        "shareCredentials": "Partager les identifiants",
+        "sending": "Envoi en cours…",
+        "viewProfileTooltip": "Voir le profil propre de ce tuteur",
+        "viewProfileLink": "Voir le profil du tuteur →"
+    }
+}

@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "Select a conversation",
+        "subtitle": "Choose a contact from the left to view messages"
+    },
+    "backToConversations": "Back to conversations",
+    "idLabel": "ID: {{id}}",
+    "escalation": {
+        "title": "Waiting for your reply",
+        "reason": {
+            "maxTurns": "The conversation reached its automated reply limit.",
+            "aiError": "The assistant could not generate a reply.",
+            "manual": "Handed over by an admin.",
+            "default": "The assistant didn't have the information to answer, so it said it would check with the team.",
+            "existingLead": "An existing lead messaged again through the chatbot. No new lead was created — the contact was recorded on their existing lead.",
+            "crmSaveFailed": "The chatbot couldn't save this lead to the CRM. Their answers are below — add them to the CRM by hand."
+        },
+        "askedQuote": "They asked: “{{message}}”",
+        "messageQuote": "Their message: “{{message}}”",
+        "answersQuote": "Their answers:\n{{message}}"
+    },
+    "loadError": {
+        "retrying": "Retrying…",
+        "tryAgain": "Try again"
+    },
+    "loadOlder": {
+        "loading": "Loading...",
+        "cta": "Load older messages"
+    },
+    "noMessages": "No messages in this conversation yet",
+    "bot": "Bot",
+    "viaTemplate": "via template “{{name}}”",
+    "notDelivered": "Not delivered",
+    "accountLevelFailure": "This affects every WhatsApp message from this number, not only this chat.",
+    "errorCode": "WhatsApp error code {{code}}",
+    "viewDocument": "View document",
+    "attachmentAlt": "attachment",
+    "origin": {
+        "workflow": "Sent by workflow “{{name}}”",
+        "workflowUnnamed": "Sent by a workflow",
+        "chatbotFlow": "Sent by chatbot flow “{{name}}”",
+        "chatbotFlowUnnamed": "Sent by a chatbot flow"
+    },
+    "templateCategory": {
+        "MARKETING": "Marketing",
+        "UTILITY": "Utility",
+        "AUTHENTICATION": "Authentication"
+    },
+    "noFailureReason": "WhatsApp did not report a reason for this message.",
+    "inbound": {
+        "kind": {
+            "image": "Photo",
+            "video": "Video",
+            "audio": "Audio",
+            "voice": "Voice message",
+            "sticker": "Sticker",
+            "document": "Document",
+            "location": "Location",
+            "contacts": "Contact card",
+            "reaction": "Reaction",
+            "unsupported": "A message type WhatsApp does not share with business apps",
+            "form_response": "Form response",
+            "other": "Attachment"
+        },
+        "mediaError": {
+            "expired": "WhatsApp no longer has this file — media is kept for about 30 days.",
+            "tooLarge": "This file is too large to preview here.",
+            "notConfigured": "WhatsApp is not set up for this institute, so the file cannot be fetched.",
+            "failed": "Could not load this file from WhatsApp."
+        },
+        "loading": "Loading {{kind}}…",
+        "openInMaps": "Open in Google Maps",
+        "unnamedContact": "Unnamed contact",
+        "reactedTo": "Reacted {{emoji}} to “{{preview}}”",
+        "reactedToMessage": "Reacted {{emoji}} to a message",
+        "reactionRemoved": "Removed a reaction"
+    }
+}

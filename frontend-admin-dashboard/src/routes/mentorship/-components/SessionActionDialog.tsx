@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -31,6 +32,7 @@ export function SessionActionDialog({
     asAdmin?: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('mentorshipSessionActionDialog');
     const [reason, setReason] = useState('');
     const [startTime, setStartTime] = useState<string | null>(null);
     const run = useSessionAction();
@@ -54,7 +56,7 @@ export function SessionActionDialog({
     const submit = async () => {
         if (!session || !action || !instituteId) return;
         if (action === 'reschedule' && !startTime) {
-            toast.error('Pick a new slot');
+            toast.error(t('pickNewSlot'));
             return;
         }
         try {
@@ -71,7 +73,7 @@ export function SessionActionDialog({
                 startTime: action === 'reschedule' ? startTime ?? undefined : undefined,
                 asAdmin,
             });
-            toast.success(action === 'cancel' ? 'Session cancelled' : 'Session moved');
+            toast.success(action === 'cancel' ? t('sessionCancelled') : t('sessionMoved'));
             onOpenChange(false);
         } catch (error) {
             // Slot clashes and concurrent edits come back with a readable reason —
@@ -81,9 +83,7 @@ export function SessionActionDialog({
                 tags: { 'mentorship.action': `session-${action}` },
                 extra: { bookingInstanceId: session.booking_instance_id },
                 fallbackMessage:
-                    action === 'cancel'
-                        ? "Couldn't cancel the session."
-                        : "Couldn't move the session.",
+                    action === 'cancel' ? t('cancelFailed') : t('rescheduleFailed'),
             });
         }
     };
@@ -93,7 +93,7 @@ export function SessionActionDialog({
 
     return (
         <MyDialog
-            heading={cancelling ? 'Cancel session' : 'Reschedule session'}
+            heading={cancelling ? t('cancelHeading') : t('rescheduleHeading')}
             open={!!action}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-md"
@@ -105,7 +105,7 @@ export function SessionActionDialog({
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Keep as is
+                        {t('keepAsIs')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -114,7 +114,11 @@ export function SessionActionDialog({
                         onClick={submit}
                         disable={run.isPending}
                     >
-                        {run.isPending ? 'Saving…' : cancelling ? 'Cancel session' : 'Move session'}
+                        {run.isPending
+                            ? t('saving')
+                            : cancelling
+                              ? t('cancelSession')
+                              : t('moveSession')}
                     </MyButton>
                 </div>
             }
@@ -122,24 +126,31 @@ export function SessionActionDialog({
             <div className="flex flex-col gap-4">
                 <p className="text-body text-neutral-600">
                     {cancelling ? (
-                        <>
-                            <b>{session.student_name || 'The learner'}</b> and{' '}
-                            <b>{session.mentor_name || 'the mentor'}</b> are told it&apos;s off, and
-                            the calendar entry and reminders are removed.
-                        </>
+                        <Trans
+                            t={t}
+                            i18nKey="cancelBody"
+                            values={{
+                                studentName: session.student_name || t('learnerFallback'),
+                                mentorName: session.mentor_name || t('mentorFallback'),
+                            }}
+                            components={{ bold1: <b />, bold2: <b /> }}
+                        />
                     ) : (
-                        <>
-                            The old slot is released and a new booking is created for{' '}
-                            <b>{session.student_name || 'the learner'}</b>. If the new time was just
-                            taken, you&apos;ll be asked to pick another.
-                        </>
+                        <Trans
+                            t={t}
+                            i18nKey="rescheduleBody"
+                            values={{
+                                studentName: session.student_name || t('learnerFallbackLower'),
+                            }}
+                            components={{ bold1: <b /> }}
+                        />
                     )}
                 </p>
 
                 {!cancelling && (
                     <div className="flex flex-col gap-2">
                         <span className="text-caption font-medium text-neutral-600">
-                            New date &amp; time
+                            {t('newDateTime')}
                         </span>
                         <MentorSlotPicker
                             instituteId={instituteId}
@@ -157,8 +168,10 @@ export function SessionActionDialog({
                         setReason(e.target.value)
                     }
                     inputType="text"
-                    inputPlaceholder={cancelling ? 'e.g. Mentor is unwell' : 'Optional note'}
-                    label={cancelling ? 'Reason (shown to the learner)' : 'Reason (optional)'}
+                    inputPlaceholder={
+                        cancelling ? t('reasonCancelPlaceholder') : t('reasonOptionalPlaceholder')
+                    }
+                    label={cancelling ? t('reasonCancelLabel') : t('reasonOptionalLabel')}
                     className="sm:w-full"
                 />
             </div>

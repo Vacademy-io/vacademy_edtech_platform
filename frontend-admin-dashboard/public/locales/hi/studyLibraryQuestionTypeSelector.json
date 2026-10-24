@@ -1,0 +1,15 @@
+{
+    "addQuestion": "प्रश्न जोड़ें",
+    "quickAccess": "त्वरित पहुंच",
+    "mcqSingleCorrect": "एमसीक्यू (एकल सही)",
+    "mcqMultipleCorrect": "एमसीक्यू (बहु सही)",
+    "numerical": "संख्यात्मक",
+    "trueFalse": "सही गलत",
+    "writingSkills": "लेखन कौशल",
+    "longAnswer": "दीर्घ उत्तर",
+    "singleWord": "एक शब्द",
+    "readingSkills": "पठन कौशल",
+    "comprehensionMcqSingleCorrect": "अवबोधन एमसीक्यू (एकल सही)",
+    "comprehensionMcqMultipleCorrect": "अवबोधन एमसीक्यू (बहु सही)",
+    "comprehensionNumeric": "अवबोधन संख्यात्मक"
+}

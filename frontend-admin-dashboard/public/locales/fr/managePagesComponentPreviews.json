@@ -1,0 +1,166 @@
+{
+    "productPageOffer": {
+        "seeAll": "Voir tout",
+        "pickPage": "Choisissez une page produit dans le panneau des propriétés pour afficher ses cours ici.",
+        "loading": "Chargement des cours…",
+        "noCourses": "Cette page produit n'a pas encore de cours actifs.",
+        "courseFallback": "Cours",
+        "free": "Gratuit",
+        "viewCourse": "Voir le cours",
+        "enrolNow": "S'inscrire maintenant",
+        "addToCart": "Ajouter au panier",
+        "checkout": "Passer à la caisse",
+        "basketPreviewCount_one": "{{count}} cours sélectionné",
+        "basketPreviewCount_many": "{{count}} cours sélectionnés",
+        "basketPreviewCount_other": "{{count}} cours sélectionnés",
+        "hiddenCountCapped_one": "+ {{count}} cours supplémentaire — la ligne se termine par une carte reliant à la page produit complète.",
+        "hiddenCountCapped_many": "+ {{count}} cours supplémentaires — la ligne se termine par une carte reliant à la page produit complète.",
+        "hiddenCountCapped_other": "+ {{count}} cours supplémentaires — la ligne se termine par une carte reliant à la page produit complète.",
+        "hiddenCountPaged_one": "+ {{count}} cours supplémentaire — les visiteurs parcourent {{totalPages}} pages{{suffix}}.",
+        "hiddenCountPaged_many": "+ {{count}} cours supplémentaires — les visiteurs parcourent {{totalPages}} pages{{suffix}}.",
+        "hiddenCountPaged_other": "+ {{count}} cours supplémentaires — les visiteurs parcourent {{totalPages}} pages{{suffix}}.",
+        "pagedSuffixCarousel": ", en faisant défiler chaque ligne horizontalement",
+        "pagedSuffixScrollable": ", en faisant défiler à l'intérieur de la section"
+    },
+    "leadForm": {
+        "pickCampaign": "Choisissez une campagne dans le panneau des propriétés — ses champs de formulaire s'affichent ici.",
+        "loading": "Chargement des champs du formulaire…",
+        "noFields": "Cette campagne n'a pas encore de champs de formulaire — ajoutez-les dans le gestionnaire d'audience.",
+        "submit": "Envoyer"
+    },
+    "detailBlocks": {
+        "empty": "Ajoutez un bloc pour chaque programme que vous souhaitez documenter."
+    },
+    "header": {
+        "getStarted": "Commencer",
+        "logoAlt": "Logo"
+    },
+    "hero": {
+        "titleFallback": "Titre principal",
+        "getStarted": "Commencer",
+        "photoFallback": "Photo {{index}}",
+        "imageArea": "Zone image"
+    },
+    "footer": {
+        "platform": "Plateforme",
+        "bottomNote": "© 2025"
+    },
+    "stats": {
+        "empty": "Aucune statistique ajoutée pour le moment"
+    },
+    "testimonial": {
+        "textFallback": "Texte du témoignage…",
+        "authorFallback": "Étudiant",
+        "empty": "Ajoutez des témoignages dans le panneau des propriétés"
+    },
+    "mediaShowcase": {
+        "slideFallback": "Diapositive {{index}}",
+        "moreSlides_one": "+{{count}} de plus",
+        "moreSlides_many": "+{{count}} de plus",
+        "moreSlides_other": "+{{count}} de plus",
+        "slideCount_one": "{{count}} diapositive · mise en page diaporama",
+        "slideCount_many": "{{count}} diapositives · mise en page diaporama",
+        "slideCount_other": "{{count}} diapositives · mise en page diaporama",
+        "mediaItemFallback": "Élément média",
+        "typeImage": "Image",
+        "typeVideo": "Vidéo",
+        "empty": "Ajoutez des diapositives ou des éléments média dans le panneau des propriétés"
+    },
+    "video": {
+        "addUrl": "Ajoutez une URL vidéo dans les propriétés"
+    },
+    "ctaBanner": {
+        "headingFallback": "Appel à l'action"
+    },
+    "gallery": {
+        "imageFallback": "Image {{index}}"
+    },
+    "dataPlaceholder": {
+        "defaultDescription": "Affiche des données en direct sur la page publiée"
+    },
+    "marquee": {
+        "defaultItem1": "Cours les mieux notés",
+        "defaultItem2": "Plus de 10 000 apprenants",
+        "defaultItem3": "Instructeurs experts",
+        "scrollingHint": "→ défilement"
+    },
+    "dispatcher": {
+        "buyRentHeading": "Choisissez votre voie",
+        "buy": "Acheter",
+        "rent": "Louer",
+        "courseCatalogLabel": "Catalogue de cours",
+        "courseCatalogDesc": "Affiche les cours en direct — « {{title}} »",
+        "ourCoursesDefault": "Nos cours",
+        "bookCatalogueLabel": "Catalogue de livres",
+        "bookCatalogueDesc": "Affiche les livres en direct — « {{title}} »",
+        "bookCollectionDefault": "Collection de livres",
+        "cartLabel": "Panier",
+        "cartDesc": "Panier de l'étudiant avec articles et processus de paiement",
+        "courseDetailsLabel": "Détails du cours",
+        "courseDetailsDesc": "Affiche les données détaillées du cours actuel",
+        "bookDetailsLabel": "Détails du livre",
+        "bookDetailsDesc": "Affiche les données détaillées du livre actuel",
+        "policyLabel": "Page de politique",
+        "policyDesc": "Affiche le contenu des politiques / conditions",
+        "tabItemFallback": "Élément {{index}}",
+        "tabTabFallback": "Onglet {{index}}",
+        "tabContentDefault": "Contenu de l'onglet",
+        "logoCloudEmptyTicker": "Ajoutez des éléments de bandeau via le panneau des propriétés",
+        "logoCloudEmptyLogos": "Ajoutez des logos via le panneau des propriétés",
+        "mapEmbedPreview": "Aperçu de la carte intégrée",
+        "mapEmbedAddUrl": "Ajoutez une URL d'intégration Google Maps",
+        "countdownHeadingFallback": "L'événement commence dans",
+        "unitDays": "Jours",
+        "unitHours": "Heures",
+        "unitMins": "Min",
+        "unitSecs": "Sec",
+        "textBlockDefault": "Bloc de texte — cliquez pour modifier le contenu",
+        "uploadImage": "Téléversez une image",
+        "buttonFallback": "Bouton",
+        "newsletterPlaceholder": "Entrez votre e-mail",
+        "newsletterButton": "S'abonner",
+        "columnLayoutLabel": "Mise en page à {{cols}} colonnes · espacement : {{gap}}",
+        "slotEmpty": "Emplacement {{index}} — vide",
+        "slotComponentCount_one": "{{count}} composant",
+        "slotComponentCount_many": "{{count}} composants",
+        "slotComponentCount_other": "{{count}} composants",
+        "filterCategory": "Catégorie",
+        "filterLevel": "Niveau",
+        "filterPrice": "Prix",
+        "courseImage": "Image du cours",
+        "courseGridNote": "Grille de cours · le contenu se charge à l'exécution",
+        "htmlPageEmptyTitle": "Page HTML vide",
+        "htmlPageEmptyBody": "Collez votre HTML et CSS dans le panneau des propriétés.",
+        "htmlBlockLabel": "Bloc HTML",
+        "htmlBlockEmpty": "Bloc HTML vide",
+        "unknownComponent": "Composant inconnu : {{type}}"
+    },
+    "documentViewer": {
+        "noFile": "Aucun PDF pour l'instant",
+        "addPdf": "Ajoutez un PDF dans le panneau de droite",
+        "openDocument": "Ouvrir le document",
+        "download": "Télécharger le PDF"
+    },
+    "blog": {
+        "sampleCategory": "Conseils d’étude",
+        "sampleTitle": "Article exemple {{n}}",
+        "sampleExcerpt": "Un court aperçu de l’article s’affiche ici.",
+        "readMore": "Lire la suite",
+        "liveNote": "Les articles publiés apparaissent ici sur le site. Rédigez-les dans Manage Pages → Blog."
+    },
+    "jobOpenings": {
+        "view": "Voir la description du poste",
+        "empty": "Aucun poste pour l’instant — ajoutez-en un dans les réglages de la section.",
+        "liveNote": "Sur le site, chaque poste s’ouvre sur sa propre page."
+    },
+    "catalogFeatures": {
+        "hero": "Bannière d'en-tête",
+        "streamIcons": "Icônes de filières",
+        "streamTabs": "Onglets de filières",
+        "filterSidebar": "Barre de filtres",
+        "highlightedRows_one": "{{count}} rangée mise en avant",
+        "highlightedRows_many": "{{count}} de rangées mises en avant",
+        "highlightedRows_other": "{{count}} rangées mises en avant",
+        "editorialCards": "Cartes éditoriales"
+    }
+}

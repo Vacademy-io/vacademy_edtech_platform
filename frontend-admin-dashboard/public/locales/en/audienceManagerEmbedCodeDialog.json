@@ -1,0 +1,38 @@
+{
+    "dialogTitle": "Embed Code - {{campaignName}}",
+    "dialogDescription": "Embed this form on your website or any webpage to collect responses.",
+    "tabs": {
+        "buttonPopup": "Button + Popup",
+        "directEmbed": "Direct Embed"
+    },
+    "defaults": {
+        "buttonText": "Register Now",
+        "popupTitle": "Registration Form"
+    },
+    "buttonPanel": {
+        "heading": "Customize Button",
+        "buttonTextLabel": "Button Text",
+        "bgColorLabel": "Background Color",
+        "textColorLabel": "Text Color",
+        "borderRadiusLabel": "Border Radius (px)",
+        "popupTitleLabel": "Popup Title",
+        "previewLabel": "Preview"
+    },
+    "iframePanel": {
+        "heading": "Customize iFrame",
+        "widthLabel": "Width",
+        "heightLabel": "Starting height (px) — adjusts to the form",
+        "previewScaledLabel": "Preview (scaled)",
+        "formPreviewTitle": "Form Preview",
+        "tipPrefix": "Tip: Use",
+        "tipSuffix": "for responsive width, or specify pixels like"
+    },
+    "copyButton": {
+        "copy": "Copy",
+        "copied": "Copied"
+    },
+    "toasts": {
+        "copiedToClipboard": "Copied to clipboard!",
+        "copyFailed": "Failed to copy"
+    }
+}

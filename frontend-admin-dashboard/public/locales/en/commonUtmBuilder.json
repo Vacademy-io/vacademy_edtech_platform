@@ -1,0 +1,68 @@
+{
+    "menuItem": "Generate UTM link",
+    "title": "Generate UTM link",
+    "subtitle": "Tag this {{surface}} link so campaign traffic is attributed in your reports.",
+    "subtitleFor": "Tag the {{surface}} link for \"{{name}}\" so campaign traffic is attributed in your reports.",
+    "surface": {
+        "AUDIENCE": "audience form",
+        "LIVE_SESSION": "live session",
+        "ASSESSMENT": "assessment",
+        "ENROLL_INVITE": "enrolment invite",
+        "PRODUCT_PAGE": "product page",
+        "CATALOGUE": "catalogue site",
+        "CUSTOM": "Any page"
+    },
+    "destination": {
+        "label": "Destination",
+        "missing": "No shareable link is available yet."
+    },
+    "fields": {
+        "utm_source": {
+            "label": "Source",
+            "placeholder": "whatsapp",
+            "hint": "Where the traffic comes from — the platform or partner."
+        },
+        "utm_medium": {
+            "label": "Medium",
+            "placeholder": "social",
+            "hint": "How it reaches them — social, cpc, email, sms, qr."
+        },
+        "utm_campaign": {
+            "label": "Campaign",
+            "placeholder": "diwali-2026",
+            "hint": "The campaign name. Use the same value on every link in the campaign."
+        },
+        "utm_content": {
+            "label": "Content",
+            "placeholder": "story-cta",
+            "hint": "Optional. Tells two versions of the same ad or post apart."
+        },
+        "utm_term": {
+            "label": "Term",
+            "placeholder": "neet-coaching",
+            "hint": "Optional. The paid keyword this link was bought against."
+        }
+    },
+    "preview": {
+        "label": "Generated link",
+        "empty": "Fill in source and medium to build the link."
+    },
+    "validation": {
+        "sourceMediumRequired": "Source and medium are both required — without them the visit is reported as direct traffic.",
+        "campaignRequired": "Your institute requires a campaign name on every generated link."
+    },
+    "actions": {
+        "copy": "Copy link",
+        "copied": "Copied",
+        "open": "Open",
+        "showQr": "QR code",
+        "hideQr": "Hide QR",
+        "downloadQr": "Download QR",
+        "reset": "Reset"
+    },
+    "toast": {
+        "copied": "UTM link copied",
+        "copyFailed": "Could not copy the link. Select it and copy manually.",
+        "qrFailed": "Could not generate the QR image."
+    }
+}

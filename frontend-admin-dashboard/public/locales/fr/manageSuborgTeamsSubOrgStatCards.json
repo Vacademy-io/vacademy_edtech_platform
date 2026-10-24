@@ -1,0 +1,10 @@
+{
+    "free": "Gratuit",
+    "planStatus": "Statut du forfait",
+    "planLabel": "Forfait {{plan}}",
+    "awaitingAdmin": "En attente de l'administrateur",
+    "noPlan": "Aucun forfait",
+    "totalLearners": "Total des apprenants",
+    "totalSeats": "Total des places",
+    "adminOutstanding": "Solde dû par l'administrateur"
+}

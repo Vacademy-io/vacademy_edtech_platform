@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import vacademy.io.admin_core_service.features.media_service.service.MediaService;
 import vacademy.io.admin_core_service.features.slide.entity.ScormSlide;
 import vacademy.io.admin_core_service.features.slide.repository.ScormSlideRepository;
+import vacademy.io.common.media.dto.FileDetailsDTO;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -17,7 +18,10 @@ import org.w3c.dom.NodeList;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -27,6 +31,12 @@ import java.util.zip.ZipInputStream;
 @RequiredArgsConstructor
 @Slf4j
 public class ScormService {
+
+    // New name rather than an overwrite: the media bucket serves objects as
+    // immutable for a year, so a changed file at the old key would never reach
+    // CloudFront or browsers that already cached it.
+    private static final String PLAYER_FILE_NAME = "vacademy_player_v2.html";
+    private static final String LEGACY_PLAYER_FILE_NAME = "vacademy_player.html";
 
     private final ScormSlideRepository scormSlideRepository;
     private final MediaService mediaService;
@@ -91,6 +101,68 @@ public class ScormService {
     }
 
     /**
+     * Moves SCORM slides still launched through the legacy player onto the
+     * current one: uploads {@link #PLAYER_FILE_NAME} next to the package and
+     * repoints launch_url at it. The legacy file is left in place, so reverting
+     * a slide is just restoring its old launch_url. Idempotent — an upgraded
+     * slide no longer matches the legacy suffix.
+     *
+     * Course knowledge: deliberately not wired to ContentIndexMarker. Only the
+     * player wrapper is replaced; the lesson text is unchanged.
+     */
+    public Map<String, Object> upgradeLegacyPlayers(boolean dryRun, int limit) {
+        List<ScormSlide> legacy = scormSlideRepository.findByLaunchUrlEndingWith("/" + LEGACY_PLAYER_FILE_NAME);
+        List<ScormSlide> batch = legacy.subList(0, Math.min(Math.max(limit, 0), legacy.size()));
+
+        List<String> upgraded = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
+        for (ScormSlide slide : batch) {
+            if (isBlank(slide.getOriginalFileId()) || isBlank(slide.getLaunchPath())) {
+                failed.add(slide.getId() + " (missing original_file_id or launch_path)");
+                continue;
+            }
+            if (dryRun) {
+                upgraded.add(slide.getId());
+                continue;
+            }
+            File tempDir = null;
+            try {
+                tempDir = Files.createTempDirectory("scorm_player_" + slide.getId()).toFile();
+                File player = generatePlayerWrapper(tempDir, slide.getLaunchPath(), slide.getScormVersion());
+                String key = slide.getOriginalFileId() + "/" + PLAYER_FILE_NAME;
+                FileDetailsDTO result = mediaService.uploadFileToKey(new CustomMultipartFile(player), key);
+                if (result == null || result.getUrl() == null || !result.getUrl().endsWith("/" + PLAYER_FILE_NAME)) {
+                    failed.add(slide.getId() + " (upload returned no usable url)");
+                    continue;
+                }
+                slide.setLaunchUrl(result.getUrl());
+                scormSlideRepository.save(slide);
+                upgraded.add(slide.getId());
+            } catch (Exception e) {
+                log.error("[SCORM] Player upgrade failed for scorm_slide {}", slide.getId(), e);
+                failed.add(slide.getId() + " (" + e.getMessage() + ")");
+            } finally {
+                if (tempDir != null) {
+                    deleteDirectory(tempDir);
+                }
+            }
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("dryRun", dryRun);
+        summary.put("legacyRemainingBefore", legacy.size());
+        summary.put("processed", batch.size());
+        summary.put(dryRun ? "wouldUpgrade" : "upgraded", upgraded.size());
+        summary.put("failed", failed);
+        summary.put("slideIds", upgraded);
+        return summary;
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    /**
      * Generates a wrapper HTML page that provides the SCORM API (both 1.2 and 2004)
      * and loads the actual SCORM content in an iframe. Since both files live on the
      * same S3 origin, the SCORM content can discover the API via window.parent.API.
@@ -98,6 +170,13 @@ public class ScormService {
      * The wrapper also uses postMessage to bridge SCORM API calls back to the
      * parent
      * React app for learner tracking.
+     *
+     * The content iframe is only pointed at the package once the parent app has
+     * sent the learner's data (vacademy_scorm_init). Packages read
+     * cmi.learner_id / cmi.suspend_data the moment they initialise; when those
+     * come back empty, packages that keep their own browser-storage copy fall
+     * back to it, and one learner's progress lands in the next account opened
+     * in the same browser.
      */
     private File generatePlayerWrapper(File tempDir, String launchPath, String scormVersion) throws IOException {
         String wrapperHtml = """
@@ -114,7 +193,7 @@ public class ScormService {
                     </style>
                 </head>
                 <body>
-                    <iframe id="scormContent" src="%s" allowfullscreen></iframe>
+                    <iframe id="scormContent" data-src="%s" allowfullscreen></iframe>
                     <script>
                         // ===== SCORM Data Store =====
                         var cmiData = {};
@@ -135,12 +214,23 @@ public class ScormService {
                             } catch(e) { /* cross-origin, ignore */ }
                         }
 
+                        // Content waits for the learner's data; see generatePlayerWrapper
+                        var contentStarted = false;
+                        function startContent() {
+                            if (contentStarted) return;
+                            contentStarted = true;
+                            var frame = document.getElementById('scormContent');
+                            frame.src = frame.getAttribute('data-src');
+                        }
+
                         // Listen for initialization data from parent app
                         window.addEventListener('message', function(event) {
                             if (event.data && event.data.type === 'vacademy_scorm_init') {
+                                if (contentStarted) return;
                                 if (event.data.cmiData) {
                                     cmiData = event.data.cmiData;
                                 }
+                                startContent();
                             }
                         });
 
@@ -203,12 +293,20 @@ public class ScormService {
                             GetErrorString: function(code) { return 'No error'; },
                             GetDiagnostic: function(code) { return 'No error'; }
                         };
+
+                        // Opened directly, or embedded by a host that never sends
+                        // init: start anyway rather than sit on a blank page.
+                        if (window.parent === window) {
+                            startContent();
+                        } else {
+                            setTimeout(startContent, 3000);
+                        }
                     </script>
                 </body>
                 </html>
                 """.formatted(launchPath);
 
-        File wrapperFile = new File(tempDir, "vacademy_player.html");
+        File wrapperFile = new File(tempDir, PLAYER_FILE_NAME);
         Files.writeString(wrapperFile.toPath(), wrapperHtml, StandardCharsets.UTF_8);
         log.info("Generated SCORM player wrapper at: {}", wrapperFile.getAbsolutePath());
         return wrapperFile;

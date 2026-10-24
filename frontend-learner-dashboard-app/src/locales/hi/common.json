@@ -32,5 +32,20 @@
     },
     "common": {
         "loading": "लोड हो रहा है..."
+    },
+    "aiUsageLimit": {
+        "title": "AI उपयोग सीमा पूरी हो गई",
+        "featureFallback": "AI",
+        "reachedDay": "आपने आज की {{feature}} सीमा का उपयोग कर लिया है।",
+        "reachedWeek": "आपने इस सप्ताह की {{feature}} सीमा का उपयोग कर लिया है।",
+        "reachedMonth": "आपने इस महीने की {{feature}} सीमा का उपयोग कर लिया है।",
+        "reachedPlanPeriod": "आपने इस प्लान अवधि की {{feature}} सीमा का उपयोग कर लिया है।",
+        "reached": "आप {{feature}} की उपयोग सीमा तक पहुँच गए हैं।",
+        "numbersCredits": "{{limit}} में से {{used}} क्रेडिट उपयोग हुए।",
+        "numbersRequests": "{{limit}} में से {{used}} अनुरोध उपयोग हुए।",
+        "numbersUsd": "{{limit}} में से {{used}} उपयोग हुए।",
+        "resetsAt": "आप {{when}} के बाद फिर से इसका उपयोग कर सकते हैं, या अपने शिक्षक से पूछें।",
+        "tryLater": "बाद में फिर से कोशिश करें, या अपने शिक्षक से पूछें।",
+        "warning": "आप अपनी AI उपयोग सीमा के करीब हैं।"
     }
 }

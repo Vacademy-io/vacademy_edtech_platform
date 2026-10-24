@@ -1,0 +1,12 @@
+{
+    "noAttemptsYet": "Aucune tentative pour l'instant — la répartition des scores apparaîtra dès que des apprenants auront soumis leurs réponses.",
+    "scoreSpread": "Répartition des scores",
+    "learnersCount_one": "{{count}} apprenant",
+    "learnersCount_many": "{{count}} d'apprenants",
+    "learnersCount_other": "{{count}} apprenants",
+    "bucketTitle_one": "{{from}}–{{to}} % : {{count}} apprenant",
+    "bucketTitle_many": "{{from}}–{{to}} % : {{count}} d'apprenants",
+    "bucketTitle_other": "{{from}}–{{to}} % : {{count}} apprenants",
+    "passMark": "réussite {{percentage}} %",
+    "axisCaption": "Score (%) — chaque barre couvre 10 points"
+}

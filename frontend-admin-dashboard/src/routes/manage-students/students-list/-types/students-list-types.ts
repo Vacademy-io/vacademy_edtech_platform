@@ -31,8 +31,10 @@ export interface FilterConfig {
      *  (`filterList` is unused for this kind; see `customFieldId`).
      *  'CUSTOM_FIELD_RANGE' renders the date/number range popover for DATE and
      *  NUMBER custom fields (selection is sentinel-encoded; see
-     *  custom-field-filter-encoding). */
-    kind?: 'CUSTOM_FIELD_SEARCH' | 'CUSTOM_FIELD_RANGE';
+     *  custom-field-filter-encoding).
+     *  'DATE_RANGE' renders the shared date-range popover (presets + a custom
+     *  from/to), used for the Joined filter over the learner's enrolment date. */
+    kind?: 'CUSTOM_FIELD_SEARCH' | 'CUSTOM_FIELD_RANGE' | 'DATE_RANGE';
     /** custom_field.id — required when kind is a CUSTOM_FIELD_* value. */
     customFieldId?: string;
     /** custom_field.field_type — set for CUSTOM_FIELD_RANGE (DATE vs NUMBER inputs). */

@@ -8,6 +8,7 @@
  * still struggle to spot small edits, the planned upgrade is word-level
  * red/green highlighting on top of these panes.
  */
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -21,7 +22,17 @@ interface UnsavedCompareDialogProps {
     currentHtml: string;
 }
 
-const Pane = ({ label, html, accent }: { label: string; html: string; accent: string }) => (
+const Pane = ({
+    label,
+    html,
+    accent,
+    emptyLabel,
+}: {
+    label: string;
+    html: string;
+    accent: string;
+    emptyLabel: string;
+}) => (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <p className={`text-caption font-semibold uppercase tracking-wide ${accent}`}>{label}</p>
         {html ? (
@@ -33,7 +44,7 @@ const Pane = ({ label, html, accent }: { label: string; html: string; accent: st
             />
         ) : (
             <div className="flex h-96 w-full items-center justify-center rounded-md border border-neutral-200 bg-neutral-50">
-                <p className="text-body text-neutral-400">No saved version yet</p>
+                <p className="text-body text-neutral-400">{emptyLabel}</p>
             </div>
         )}
     </div>
@@ -45,25 +56,34 @@ export const UnsavedCompareDialog = ({
     savedHtml,
     currentHtml,
 }: UnsavedCompareDialogProps) => {
+    const { t } = useTranslation('studyLibraryUnsavedCompareDialog');
     if (!open) return null;
     return (
         <MyDialog
-            heading="Compare with saved version"
+            heading={t('heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="w-full max-w-5xl"
         >
             <div className="flex flex-col gap-3">
                 <p className="text-caption text-neutral-500">
-                    Left is the last saved version of this{' '}
-                    {getTerminology(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()}; right is
-                    your current unsaved edit (kept only in this browser). Use Save Draft or
-                    Publish to keep the current version, or Discard changes to return to the saved
-                    one.
+                    {t('description', {
+                        slide: getTerminology(ContentTerms.Slide, SystemTerms.Slide).toLowerCase(),
+                    })}
                 </p>
                 <div className="flex flex-col gap-3 md:flex-row">
-                    <Pane label="Saved" html={savedHtml} accent="text-neutral-500" />
-                    <Pane label="Current (unsaved)" html={currentHtml} accent="text-warning-600" />
+                    <Pane
+                        label={t('saved')}
+                        html={savedHtml}
+                        accent="text-neutral-500"
+                        emptyLabel={t('noSavedVersion')}
+                    />
+                    <Pane
+                        label={t('currentUnsaved')}
+                        html={currentHtml}
+                        accent="text-warning-600"
+                        emptyLabel={t('noSavedVersion')}
+                    />
                 </div>
             </div>
         </MyDialog>

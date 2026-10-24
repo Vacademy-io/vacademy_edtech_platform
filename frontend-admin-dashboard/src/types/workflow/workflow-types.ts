@@ -330,3 +330,67 @@ export interface EnrollmentWorkflowRun {
     completed_at: string | null;
     steps: EnrollmentWorkflowStep[];
 }
+
+// ── Per-learner automation runs (learner side-view "Workflows" tab) ──────────
+
+/** One node's execution inside a run that happened for a specific learner. */
+export interface UserWorkflowRunStep {
+    log_id: string | null;
+    node_template_id: string;
+    /** Human-readable node name; falls back to the node type. */
+    node_name: string;
+    node_type: string;
+    status: ExecutionLogStatus | null;
+    error_message: string | null;
+    error_type: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    execution_time_ms: number | null;
+}
+
+/**
+ * One automation run that happened FOR a specific learner/lead, with its steps.
+ *
+ * Unlike {@link EnrollmentWorkflowRun} (which is per-course and includes runs that
+ * have not happened yet), every row here is a real past execution whose recorded
+ * subject is this user. Backed by
+ * GET /admin-core-service/v1/workflow-execution/user/{userId}.
+ */
+export interface UserWorkflowRun {
+    execution_id: string;
+    workflow_id: string | null;
+    workflow_name: string | null;
+    /** SCHEDULED | EVENT_DRIVEN */
+    workflow_type: string | null;
+    /** Trigger event that fired it, e.g. LEARNER_BATCH_ENROLLMENT. */
+    event_name: string | null;
+    status: WorkflowExecutionStatus;
+    error_message: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    /** False when the run can't be re-run; `retry_blocked_reason` says why. */
+    retryable: boolean;
+    retry_blocked_reason: string | null;
+    /** Set when this run is itself a retry — the execution it re-ran. */
+    retry_of_execution_id: string | null;
+    retried_by_user_id: string | null;
+    steps: UserWorkflowRunStep[];
+}
+
+export interface PagedUserWorkflowRuns {
+    content: UserWorkflowRun[];
+    page_number: number;
+    page_size: number;
+    total_elements: number;
+    total_pages: number;
+    last: boolean;
+    first: boolean;
+}
+
+/** What POST .../{executionId}/retry returns: the newly queued run. */
+export interface WorkflowRetryResponse {
+    execution_id: string;
+    retry_of_execution_id: string;
+    workflow_id: string | null;
+    workflow_name: string | null;
+}

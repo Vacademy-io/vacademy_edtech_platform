@@ -1,0 +1,285 @@
+{
+    "slideDisplayUtils": {
+        "untitled": "Sans titre",
+        "item": "Élément"
+    },
+    "fileUploader": {
+        "types": {
+            "pdf": "PDF",
+            "image": "Image",
+            "doc": "DOC/DOCX",
+            "video": "Vidéo",
+            "audio": "Audio"
+        },
+        "anyFile": "Tout fichier",
+        "clickToUpload": "Cliquez pour importer",
+        "orDragAndDrop": "ou glissez-déposez",
+        "sizeLimit": "{{hint}} jusqu'à 10 Mo",
+        "uploading": "Importation en cours...",
+        "selectFile": "Sélectionner un fichier",
+        "uploadedFiles": "Fichiers importés",
+        "onlyTypesAllowed": "Seuls les fichiers {{types}} sont autorisés pour ce devoir."
+    },
+    "htmlSlideIframe": {
+        "documentTitle": "Document"
+    },
+    "jupyterSlide": {
+        "loadingNotebook": "Chargement du notebook Jupyter...",
+        "loadingInterface": "Chargement de l'interface du notebook...",
+        "openInNewTab": "Ouvrir dans un nouvel onglet",
+        "errors": {
+            "loadConfigFailed": "Échec du chargement de la configuration du notebook",
+            "loadFailed": "Échec du chargement du notebook"
+        },
+        "verification": {
+            "prompt": "Nous vérifions simplement que vous apprenez activement : veuillez cliquer sur le nombre <num>{{number}}</num> dans un délai de <cnt>{{countdown}}</cnt> secondes."
+        },
+        "paused": {
+            "title": "Notebook Jupyter en pause",
+            "body_one": "Vous avez changé d'onglet {{count}} fois. Cliquez ci-dessous pour reprendre votre session de notebook.",
+            "body_other": "Vous avez changé d'onglet {{count}} fois. Cliquez ci-dessous pour reprendre votre session de notebook.",
+            "resume": "Reprendre le notebook",
+            "body_many": "Vous avez changé d'onglet {{count}} fois. Cliquez ci-dessous pour reprendre votre session de notebook."
+        },
+        "header": {
+            "branchLocation": "Branche : {{branch}} • Emplacement : {{location}}"
+        },
+        "footer": {
+            "type": "Type : Notebook Jupyter",
+            "activeTab": "Onglet actif : {{tab}}",
+            "interactive": "Interactif"
+        }
+    },
+    "lessonListSidebar": {
+        "locked": "Verrouillé",
+        "slideCount": "{{count}} {{term}}",
+        "progressCompleted": "{{done}} / {{total}} terminé(s)",
+        "noSlides": "Aucun(e) {{term}}",
+        "loadOutlineFailed": "Impossible de charger le plan du cours.",
+        "courseProgress": "{{done}} / {{total}} {{term}} terminé(s)",
+        "noModulesYet": "Aucun(e) {{term}} pour l'instant"
+    },
+    "leaseLockOverlay": {
+        "leaseExpired": {
+            "title": "Connectez-vous à Internet pour conserver l'accès hors ligne",
+            "body": "Cet appareil revalide périodiquement le contenu hors ligne. Reconnectez-vous brièvement pour renouveler l'accès et continuer à voir ce cours hors ligne."
+        },
+        "revoked": {
+            "title": "Accès hors ligne supprimé",
+            "body": "Votre établissement a révoqué l'accès hors ligne pour cet appareil. Reconnectez-vous pour voir ce qui reste disponible."
+        }
+    },
+    "requiresInternetSlide": {
+        "title": "Ce contenu nécessite une connexion Internet",
+        "bodyWithType": "Le contenu {{type}} est hébergé en externe et ne peut pas être téléchargé pour une utilisation hors ligne. Reconnectez-vous pour le consulter.",
+        "bodyGeneric": "Ce contenu est hébergé en externe et ne peut pas être téléchargé pour une utilisation hors ligne. Reconnectez-vous pour le consulter.",
+        "waiting": "En attente de connexion"
+    },
+    "pdfViewer": {
+        "loading": "Chargement…"
+    },
+    "questionSlide": {
+        "toast": {
+            "savedOffline": "Enregistré — sera synchronisé une fois en ligne"
+        },
+        "placeholders": {
+            "oneWord": "Tapez votre réponse en un mot",
+            "longAnswer": "Tapez votre réponse...",
+            "decimal": "Entrez une valeur décimale",
+            "integer": "Entrez une valeur entière"
+        },
+        "numericPad": {
+            "clear": "Effacer"
+        },
+        "unsupportedType": "Type de question non pris en charge : {{type}}",
+        "questionLabel": "Question :",
+        "prompts": {
+            "mcqs": "Sélectionnez une réponse :",
+            "trueFalse": "Sélectionnez Vrai ou Faux :",
+            "mcqm": "Sélectionnez toutes les réponses qui s'appliquent :",
+            "oneWord": "Entrez votre réponse :",
+            "longAnswer": "Tapez votre réponse :",
+            "numeric": "Entrez une valeur numérique :"
+        },
+        "buttons": {
+            "submitting": "Envoi en cours...",
+            "submitted": "Envoyé",
+            "resubmit": "Renvoyer",
+            "submit": "Envoyer"
+        },
+        "explanation": {
+            "hide": "Masquer l'explication de la réponse",
+            "show": "Afficher l'explication de la réponse"
+        }
+    },
+    "quizViewer": {
+        "selectAllThatApply": "Plusieurs réponses peuvent être correctes — sélectionnez toutes celles qui s’appliquent",
+        "questionTypeDescriptions": {
+            "mcqs": "Questions à choix multiples - Une seule bonne réponse",
+            "mcqm": "Questions à choix multiples - Plusieurs bonnes réponses",
+            "numeric": "Réponse numérique",
+            "oneWord": "Réponse en un mot",
+            "text": "Réponse courte - Réponse textuelle",
+            "longAnswer": "Réponse longue - Réponse détaillée",
+            "trueFalse": "Vrai ou Faux",
+            "match": "Faire correspondre",
+            "fillInTheBlank": "Compléter le texte à trous",
+            "comprehensionPrefix": "Compréhension - {{description}}",
+            "genericQuestion": "Question"
+        },
+        "noQuestionsAvailable": "Aucune question de quiz disponible.",
+        "toast": {
+            "noAttemptsRemaining": "Aucune tentative restante pour ce quiz.",
+            "missingContext": "Impossible d'envoyer le quiz — contexte manquant. Veuillez rouvrir cette diapositive.",
+            "savedOffline": "Enregistré — sera synchronisé une fois en ligne",
+            "quizSubmitted": "Quiz envoyé !",
+            "quizSubmittedSuccessfully": "Quiz envoyé avec succès !",
+            "submitFailed": "Échec de l'envoi du quiz. Veuillez réessayer.",
+            "incorrectAnswer": "Réponse incorrecte. Veuillez réessayer."
+        },
+        "invalidNumber": "Veuillez entrer un nombre valide",
+        "placeholders": {
+            "numeric": "Entrez une valeur numérique",
+            "text": "Tapez votre réponse",
+            "longAnswer": "Tapez votre réponse..."
+        },
+        "questionOf": "Question {{current}} sur {{total}}",
+        "passageLabel": "Passage :",
+        "showLess": "Afficher moins",
+        "showMore": "Afficher plus",
+        "questionLabel": "Question :",
+        "questionTextUnavailable": "Texte de la question non disponible",
+        "buttons": {
+            "previous": "Précédent",
+            "submitting": "Envoi en cours...",
+            "finish": "Terminer",
+            "next": "Suivant"
+        },
+        "answered": "Répondu",
+        "notAnswered": "Sans réponse",
+        "incorrectTryAgain": "Incorrect. Réessayez."
+    },
+    "scormSlide": {
+        "errors": {
+            "dataNotFound": "Données de la diapositive SCORM introuvables",
+            "launchPathNotConfigured": "Le chemin de lancement SCORM n'est pas configuré",
+            "loadFailed": "Échec du chargement du contenu SCORM"
+        },
+        "loading": "Chargement du contenu SCORM...",
+        "urlNotAvailable": "URL du contenu SCORM non disponible",
+        "defaultTitle": "Contenu SCORM"
+    },
+    "scratchSlide": {
+        "loadingProject": "Chargement du projet Scratch...",
+        "loadingInterface": "Chargement de l'interface Scratch...",
+        "openInScratch": "Ouvrir dans Scratch",
+        "editInScratch": "Modifier dans Scratch",
+        "errors": {
+            "loadConfigFailed": "Échec du chargement de la configuration du projet",
+            "loadFailed": "Échec du chargement du projet"
+        },
+        "verification": {
+            "prompt": "Nous vérifions simplement que vous apprenez activement : veuillez cliquer sur le nombre <num>{{number}}</num> dans un délai de <cnt>{{countdown}}</cnt> secondes."
+        },
+        "paused": {
+            "title": "Projet Scratch en pause",
+            "body_one": "Vous avez changé d'onglet {{count}} fois. Cliquez ci-dessous pour reprendre votre projet Scratch.",
+            "body_other": "Vous avez changé d'onglet {{count}} fois. Cliquez ci-dessous pour reprendre votre projet Scratch.",
+            "resume": "Reprendre le projet",
+            "body_many": "Vous avez changé d'onglet {{count}} fois. Cliquez ci-dessous pour reprendre votre projet Scratch."
+        },
+        "header": {
+            "projectId": "ID du projet : {{id}}"
+        },
+        "footer": {
+            "type": "Type : Projet Scratch",
+            "embedType": "Type d'intégration : {{type}}",
+            "autoStart": "Démarrage automatique",
+            "interactive": "Interactif"
+        }
+    },
+    "videoQuestionOverlay": {
+        "title": "Question vidéo",
+        "skipQuestion": "Passer la question",
+        "answerRequired": "Une réponse est requise pour continuer",
+        "questionLabel": "Question : ",
+        "questionContextAlt": "Contexte de la question {{index}}",
+        "placeholders": {
+            "oneWord": "Entrez votre réponse",
+            "longAnswer": "Tapez votre réponse détaillée ici...",
+            "decimal": "Entrez une valeur décimale",
+            "integer": "Entrez une valeur entière"
+        },
+        "numericPad": {
+            "clear": "Effacer"
+        },
+        "prompts": {
+            "mcqs": "Sélectionnez une réponse :",
+            "trueFalse": "Sélectionnez Vrai ou Faux :",
+            "mcqm": "Sélectionnez toutes les réponses qui s'appliquent :",
+            "oneWord": "Entrez votre réponse :",
+            "longAnswer": "Donnez une réponse détaillée :",
+            "numeric": "Entrez la valeur numérique :",
+            "generic": "Répondez à la question :"
+        },
+        "evaluation": {
+            "submittedSuccessfully": "Réponse envoyée avec succès.",
+            "correctWellDone": "Correct ! Bien joué.",
+            "incorrectAnswerIs": "Incorrect. La bonne réponse est : {{answer}}",
+            "notFound": "Introuvable",
+            "correctAllSelected": "Correct ! Vous avez sélectionné toutes les bonnes réponses.",
+            "incorrectAnswersAre": "Incorrect. Les bonnes réponses sont : {{answers}}",
+            "explanationSuffix": "\n\nExplication : {{explanation}}",
+            "imagePlaceholder": "[Image : {{content}}]"
+        },
+        "submitError": "Une erreur s'est produite lors du traitement de votre réponse. Veuillez réessayer.",
+        "correct": "Correct !",
+        "incorrect": "Incorrect",
+        "buttons": {
+            "continueVideo": "Continuer la vidéo",
+            "submitting": "Envoi en cours...",
+            "submitAnswer": "Envoyer la réponse"
+        }
+    },
+    "vimeoPlayer": {
+        "unavailable": {
+            "title": "Cette vidéo n'est pas disponible",
+            "body": "Elle n'a pas pu être chargée. Veuillez contacter votre administrateur."
+        },
+        "verification": {
+            "selectMiddleNumber": "Sélectionnez le nombre du milieu pour continuer",
+            "timeRemaining": "Temps restant : {{seconds}} s"
+        }
+    },
+    "youtubePlayer": {
+        "verification": {
+            "title": "Vérification de concentration active",
+            "prompt": "Sélectionnez <num>{{number}}</num> pour maintenir votre série d'apprentissage.",
+            "closingIn": "Fermeture dans {{seconds}} s"
+        },
+        "controls": {
+            "exitFullscreen": "Quitter le plein écran",
+            "goToLive": "Aller au direct",
+            "live": "EN DIRECT",
+            "speed": "Vitesse"
+        },
+        "manualPlay": {
+            "ariaLabel": "Démarrer la vidéo",
+            "tapToStart": "Appuyez pour démarrer la vidéo",
+            "autoplayHint": "La vidéo démarrera automatiquement"
+        },
+        "questionMarker": {
+            "title": "Question {{index}}",
+            "answered": " (Répondu)",
+            "skippable": " (Peut être ignoré)",
+            "required": " (Requis)",
+            "navigationDisabled": " (Navigation désactivée)"
+        },
+        "live": {
+            "ended": "Cette session est terminée",
+            "notStarted": "Commence à l’heure prévue",
+            "endedHint": "Il n’y a plus rien à lire. Vous pouvez quitter cette page.",
+            "notStartedHint": "La lecture démarrera d’elle-même au début du cours."
+        }
+    }
+}

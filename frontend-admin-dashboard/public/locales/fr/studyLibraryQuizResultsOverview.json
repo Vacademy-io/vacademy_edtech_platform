@@ -1,0 +1,60 @@
+{
+    "filter": {
+        "all": "Tous les quiz",
+        "attempted": "Tentés",
+        "notStarted": "Non commencés",
+        "needsAttention": "À surveiller"
+    },
+    "sort": {
+        "courseOrder": "Ordre du cours",
+        "lowestAvgScore": "Score moyen le plus bas",
+        "highestAvgScore": "Score moyen le plus élevé",
+        "lowestParticipation": "Participation la plus faible",
+        "mostRecentActivity": "Activité la plus récente"
+    },
+    "header": {
+        "quiz": "Quiz",
+        "questions": "Questions",
+        "attempted": "Tentés",
+        "avgScore": "Score moyen",
+        "passed": "Réussi",
+        "lastActivity": "Dernière activité"
+    },
+    "untitledQuiz": "Quiz sans titre",
+    "marks_one": "{{count}} point",
+    "marks_many": "{{count}} points",
+    "marks_other": "{{count}} points",
+    "noAttemptsYet": "Aucune tentative pour l'instant",
+    "passLabel": "réussite {{percent}}%",
+    "noPassMark": "Aucun seuil de réussite",
+    "error": {
+        "title": "Impossible de charger les résultats du quiz",
+        "subtitle": "La requête a échoué. Vérifiez votre connexion et réessayez."
+    },
+    "retry": "Réessayer",
+    "stat": {
+        "quizzes": "Quiz",
+        "quizzesHintNotStarted_one": "{{count}} pas encore commencé",
+        "quizzesHintNotStarted_many": "{{count}} pas encore commencés",
+        "quizzesHintNotStarted_other": "{{count}} pas encore commencés",
+        "quizzesHintAllAttempts": "Tous ont été tentés",
+        "learnersStarted": "Apprenants ayant commencé",
+        "learnersStartedHint": "Au moins un quiz effectué",
+        "avgScore": "Score moyen",
+        "avgScoreHint": "Sur l'ensemble des tentatives",
+        "needsAttention": "À surveiller",
+        "needsAttentionHint": "Quiz avec une moyenne inférieure à 50 %"
+    },
+    "search": {
+        "placeholder": "Rechercher des quiz ou des chapitres"
+    },
+    "filterGroupAriaLabel": "Filtrer les quiz",
+    "refreshAriaLabel": "Actualiser les résultats du quiz",
+    "empty": {
+        "noneTitle": "Aucun quiz dans ce cours pour l'instant",
+        "filteredTitle": "Aucun quiz ne correspond à ces filtres",
+        "noneSubtitle": "Ajoutez une diapositive de quiz à un chapitre et les résultats s'afficheront ici dès qu'un apprenant le tentera.",
+        "filteredSubtitle": "Essayez un autre terme de recherche ou effacez les filtres."
+    },
+    "clearFilters": "Effacer les filtres"
+}

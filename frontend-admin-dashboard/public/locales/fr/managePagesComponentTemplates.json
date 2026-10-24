@@ -1,0 +1,295 @@
+{
+    "header": {
+        "title": "Ma plateforme",
+        "navHome": "Accueil",
+        "navCourses": "Cours",
+        "authLogin": "Connexion"
+    },
+    "heroSection": {
+        "eyebrow": "Inscriptions ouvertes pour la nouvelle session",
+        "title": "Bienvenue sur notre plateforme",
+        "subheading": "Votre chemin vers la maîtrise commence ici",
+        "description": "<p>Commencez votre parcours d'apprentissage dès aujourd'hui avec des cours dirigés par des experts, conçus pour une réussite concrète.</p>",
+        "tagOnline": "En ligne",
+        "tagSelfPaced": "À votre rythme",
+        "tagCertified": "Certifié",
+        "exploreCoursesButton": "Découvrir les cours",
+        "talkToUsButton": "Contactez-nous",
+        "statLearnersLabel": "Apprenants",
+        "statRatingLabel": "Note moyenne",
+        "heroImageAlt": "Image principale"
+    },
+    "courseCatalog": {
+        "title": "Nos cours",
+        "filterLevelLabel": "Niveau"
+    },
+    "footer": {
+        "leftTitle": "Ma plateforme",
+        "leftText": "Bienvenue sur notre plateforme.",
+        "rightTitle": "Liens"
+    },
+    "mediaShowcase": {
+        "headerText": "Témoignages de réussite",
+        "description": "Écoutez directement nos apprenants."
+    },
+    "statsHighlights": {
+        "headerText": "Nos réalisations",
+        "description": "Des chiffres qui témoignent de notre croissance.",
+        "statStudentsLabel": "Étudiants"
+    },
+    "testimonialSection": {
+        "headerText": "Ce que disent nos étudiants",
+        "description": "Des retours authentiques de nos apprenants."
+    },
+    "bookCatalogue": {
+        "title": "Collection de livres"
+    },
+    "buyRentSection": {
+        "heading": "Choisissez votre parcours",
+        "buyButtonLabel": "Acheter",
+        "rentButtonLabel": "Louer"
+    },
+    "policyRenderer": {
+        "shippingTitle": "Politique",
+        "shippingContent": "<p>Contenu ici</p>"
+    },
+    "faqSection": {
+        "headerText": "Questions fréquentes",
+        "subheading": "Tout ce que vous devez savoir.",
+        "faq1Question": "Quels cours proposez-vous ?",
+        "faq1Answer": "Nous proposons un large éventail de cours dans plusieurs disciplines.",
+        "faq2Question": "Comment puis-je m'inscrire ?",
+        "faq2Answer": "Il vous suffit de vous inscrire, de parcourir notre catalogue et de cliquer sur « S'inscrire » pour le cours de votre choix.",
+        "faq3Question": "Y a-t-il un essai gratuit ?",
+        "faq3Answer": "Oui ! Beaucoup de nos cours proposent un aperçu gratuit."
+    },
+    "videoEmbed": {
+        "title": "Découvrez notre histoire"
+    },
+    "ctaBanner": {
+        "heading": "Prêt à commencer ?",
+        "subheading": "Rejoignez des milliers d'apprenants et commencez votre parcours dès aujourd'hui.",
+        "buttonText": "Commencer à apprendre"
+    },
+    "pricingTable": {
+        "headerText": "Choisissez votre forfait",
+        "subheading": "Une tarification simple et transparente pour tous.",
+        "basicName": "Essentiel",
+        "basicPrice": "Gratuit",
+        "basicDescription": "Idéal pour démarrer",
+        "basicFeature1": "5 cours",
+        "basicFeature2": "Accès à la communauté",
+        "basicFeature3": "Support par e-mail",
+        "basicButtonText": "Commencer",
+        "proName": "Pro",
+        "proPeriod": "/mois",
+        "proDescription": "Pour les apprenants sérieux",
+        "proFeature1": "Cours illimités",
+        "proFeature2": "Support prioritaire",
+        "proFeature3": "Certificats",
+        "proFeature4": "Sessions en direct",
+        "proButtonText": "Passer à Pro"
+    },
+    "leadForm": {
+        "title": "Inscrivez votre intérêt",
+        "subtitle": "Renseignez vos coordonnées et nous vous recontacterons.",
+        "submitLabel": "Envoyer",
+        "successMessage": "Merci ! Nous avons bien reçu vos informations."
+    },
+    "contactForm": {
+        "heading": "Contactez-nous",
+        "subheading": "Nous serions ravis d'avoir de vos nouvelles. Envoyez-nous un message !",
+        "nameLabel": "Nom complet",
+        "emailLabel": "Adresse e-mail",
+        "phoneLabel": "Numéro de téléphone",
+        "messageLabel": "Message",
+        "submitLabel": "Envoyer le message",
+        "successMessage": "Merci ! Nous vous recontacterons bientôt."
+    },
+    "teamSection": {
+        "headerText": "Découvrez notre équipe",
+        "subheading": "Les personnes passionnées derrière notre plateforme.",
+        "member1Name": "Membre de l'équipe",
+        "member1Role": "Cofondateur et PDG",
+        "member1Bio": "Passionné par l'éducation et la technologie.",
+        "member2Name": "Membre de l'équipe",
+        "member2Role": "Responsable de l'apprentissage",
+        "member2Bio": "Dévoué à créer la meilleure expérience d'apprentissage."
+    },
+    "announcementFeed": {
+        "headerText": "Dernières actualités",
+        "subheading": "Restez informé de nos dernières actualités.",
+        "item1Title": "Lancement d'un nouveau cours",
+        "item1Summary": "Nous sommes ravis d'annoncer notre nouvelle série de cours avancés.",
+        "item1Tag": "Actualité",
+        "item2Title": "Mise à jour de la plateforme",
+        "item2Summary": "Nous avons amélioré notre plateforme pour une meilleure expérience d'apprentissage.",
+        "item2Tag": "Mise à jour"
+    },
+    "imageGallery": {
+        "headerText": "Galerie",
+        "image1Alt": "Image de galerie 1",
+        "image2Alt": "Image de galerie 2",
+        "image3Alt": "Image de galerie 3"
+    },
+    "tabsAccordion": {
+        "tab1Title": "Onglet 1",
+        "tab1Content": "<p>Contenu de l'onglet 1</p>",
+        "tab2Title": "Onglet 2",
+        "tab2Content": "<p>Contenu de l'onglet 2</p>",
+        "tab3Title": "Onglet 3",
+        "tab3Content": "<p>Contenu de l'onglet 3</p>"
+    },
+    "logoCloud": {
+        "headerText": "Ils nous font confiance"
+    },
+    "trustChip": {
+        "text": "Approuvé par plus de 10 000 apprenants"
+    },
+    "sectionHeading": {
+        "eyebrow": "Pourquoi nous choisir",
+        "title": "Un apprentissage qui reste vraiment",
+        "highlight": "reste vraiment",
+        "lead": "Des programmes conçus autour des résultats — pas seulement du contenu."
+    },
+    "mapEmbed": {
+        "title": "Notre emplacement"
+    },
+    "countdownTimer": {
+        "heading": "L'événement commence dans",
+        "expiredMessage": "L'événement a commencé !"
+    },
+    "textBlock": {
+        "content": "<h2>Votre titre ici</h2><p>Rédigez votre contenu ici. Il s'agit d'un bloc de texte enrichi — vous pouvez ajouter des titres, des paragraphes, des listes, des liens, etc.</p>"
+    },
+    "detailBlocks": {
+        "block1Tag": "Programme phare",
+        "block1Title": "Programme phare",
+        "block1Description": "Une ou deux phrases sur le public visé et le contenu couvert.",
+        "block1Item1Title": "Ce qui est couvert",
+        "block1Item1Description": "Un détail concret sur le programme, les supports ou l'enseignement.",
+        "block1Item2Title": "Comment il est enseigné",
+        "block1Item2Description": "Cours en direct, enregistrements, séances de questions — selon ce qui s'applique ici.",
+        "block1Item3Title": "Pratique et évaluation",
+        "block1Item3Description": "Séries de tests, sujets antérieurs, analyses.",
+        "block1Spec1Label": "Admissibilité",
+        "block1Spec1Value": "Qui peut participer",
+        "block1Spec2Label": "Mode",
+        "block1Spec2Value": "Présentiel + en ligne",
+        "block1Spec3Label": "Durée",
+        "block1Spec3Value": "12 mois",
+        "block1Spec4Label": "Niveau",
+        "block1Spec4Value": "Débutant à avancé",
+        "block1Note": "Remarque facultative — réductions, mensualités ou tout élément à signaler.",
+        "block2Tag": "Catégorie",
+        "block2Title": "Deuxième programme",
+        "block2Description": "Dupliquez ce bloc pour chaque programme que vous proposez.",
+        "block2Item1Title": "Détail un",
+        "block2Item1Description": "Remplacez par un détail réel.",
+        "block2Item2Title": "Détail deux",
+        "block2Item2Description": "Remplacez par un détail réel.",
+        "block2Spec1Label": "Admissibilité",
+        "block2Spec1Value": "Qui peut participer",
+        "block2Spec2Label": "Mode",
+        "block2Spec2Value": "En ligne"
+    },
+    "featureGrid": {
+        "headerText": "Pourquoi nous choisir",
+        "subheading": "Tout ce dont vous avez besoin pour réussir",
+        "feature1Title": "Instructeurs experts",
+        "feature1Description": "Apprenez auprès de professionnels du secteur riches de plusieurs années d'expérience.",
+        "feature1Chip1": "Corps enseignant IIT/NIT",
+        "feature2Title": "Contenu riche",
+        "feature2Description": "Accédez à des supports de cours et des ressources complets.",
+        "feature3Title": "Cours certifiés",
+        "feature3Description": "Obtenez des certificats reconnus à l'issue du cours.",
+        "feature4Badge": "Division formation",
+        "feature4Title": "CGP Career Avenues",
+        "feature4Description": "Un accompagnement complet dans toutes les branches de l'ingénierie.",
+        "feature4Bullet1": "GATE — Informatique (CS), Électronique (ECE), Électrotechnique (EEE), Mécanique (ME), Génie civil (CE), Génie chimique (CH)",
+        "feature4Bullet2": "Cohortes post-GATE ISRO/BARC/DRDO",
+        "feature4Bullet3": "Kerala PSC et placement sur campus"
+    },
+    "imageBlock": {
+        "alt": "Image"
+    },
+    "buttonBlock": {
+        "text": "Commencer"
+    },
+    "newsletterSignup": {
+        "heading": "Restez informé",
+        "subheading": "Abonnez-vous à notre newsletter pour recevoir les dernières actualités.",
+        "placeholder": "Entrez votre e-mail",
+        "buttonText": "S'abonner",
+        "successMessage": "Merci de vous être abonné !"
+    },
+    "stepsProcess": {
+        "headerText": "Comment ça marche",
+        "subheading": "Démarrez en quelques étapes seulement",
+        "step1Title": "Inscrivez-vous",
+        "step1Description": "Créez votre compte gratuit en quelques secondes.",
+        "step2Title": "Choisissez un cours",
+        "step2Description": "Parcourez notre catalogue et choisissez ce qui vous intéresse.",
+        "step3Title": "Commencez à apprendre",
+        "step3Description": "Accédez à vos supports de cours et commencez."
+    },
+    "marquee": {
+        "item1Text": "Cours les mieux notés",
+        "item2Text": "Plus de 10 000 apprenants inscrits",
+        "item3Text": "Programme dirigé par des experts",
+        "item4Text": "Apprenez à votre rythme",
+        "item5Text": "Des compétences pertinentes pour le secteur"
+    },
+    "productPageOffer": {
+        "title": "Nos programmes",
+        "subtitle": "Choisissez un programme et inscrivez-vous en quelques minutes.",
+        "viewAllLabel": "Voir tout",
+        "ctaLabel": "S'inscrire maintenant",
+        "cartCtaLabel": "Ajouter au panier",
+        "checkoutCtaLabel": "Passer à la caisse",
+        "viewCourseLabel": "Voir le cours"
+    },
+    "documentViewer": {
+        "heading": "Parcourez notre catalogue",
+        "subheading": "Feuilletez chaque page directement ici.",
+        "buttonText": "Ouvrir le catalogue"
+    },
+    "blog": {
+        "heading": "Sur le blog",
+        "subheading": "Conseils d’étude, actualités des examens et histoires de nos classes.",
+        "readMoreLabel": "Lire la suite",
+        "backLabel": "Tous les articles",
+        "emptyMessage": "Pas encore d’articles — revenez bientôt."
+    },
+    "jobOpenings": {
+        "headerText": "Postes ouverts",
+        "subheading": "Rejoignez notre équipe. Ouvrez une offre pour lire la description complète et postuler.",
+        "viewButtonLabel": "Voir la description du poste",
+        "applyButtonLabel": "Postuler",
+        "backLabel": "Toutes les offres",
+        "emptyMessage": "Aucun poste ouvert pour le moment — revenez bientôt.",
+        "job1Title": "Enseignant",
+        "job1Summary": "Enseignez votre matière à de petits groupes, en classe et en ligne.",
+        "job1Location": "Votre ville",
+        "job1JobType": "Temps plein",
+        "job1Compensation": "Selon expérience",
+        "job1DetailLabel": "Matière",
+        "job1DetailValue": "Votre matière",
+        "job1Description": "<h2>Le poste</h2><p>Décrivez le quotidien de cette personne et avec qui elle travaillera.</p><h3>Missions</h3><ul><li>Préparer et donner les cours</li><li>Suivre et accompagner la progression des élèves</li></ul><h3>Profil recherché</h3><ul><li>Diplôme dans la matière</li><li>Expérience d’enseignement appréciée</li></ul>",
+        "job2Title": "Conseiller pédagogique",
+        "job2Summary": "Orientez élèves et parents vers la bonne formation.",
+        "job2Location": "Votre ville",
+        "job2JobType": "Temps plein",
+        "job2Description": "<h2>Le poste</h2><p>Décrivez le poste, l’équipe et ce qu’on attend du premier mois.</p><h3>Profil recherché</h3><ul><li>Communication claire</li><li>Expérience dans l’éducation ou l’orientation</li></ul>"
+    },
+    "promoPopup": {
+        "badge": "Durée limitée",
+        "heading": "Vente flash sur tous les cours",
+        "highlight": "-50 %",
+        "body": "Inscrivez-vous dès aujourd’hui et économisez sur chaque cours. Offre valable peu de temps.",
+        "couponCode": "SAVE50",
+        "buttonText": "Profiter de l’offre",
+        "dismissText": "Non merci, plus tard",
+        "footnote": "*Conditions applicables"
+    }
+}

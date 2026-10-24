@@ -1,0 +1,149 @@
+{
+    "loadError": "تعذر تحميل بيانات الإرشاد.",
+    "retry": "إعادة المحاولة",
+    "mentorFallback": "مرشد",
+    "learnerFallback": "متعلم",
+    "viewAllSessions": "عرض جميع الجلسات",
+    "viewAllMentors": "عرض جميع المرشدين",
+    "kpi": {
+        "mentors": {
+            "label": "المرشدون",
+            "hint": "في فريقك"
+        },
+        "studentsMentored": {
+            "label": "الطلاب المُرشَدون",
+            "hint_zero": "لا يوجد ({{count}}) اقتران نشط",
+            "hint_one": "اقتران نشط واحد",
+            "hint_two": "اقترانان نشطان",
+            "hint_few": "{{count}} اقترانات نشطة",
+            "hint_many": "{{count}} اقترانًا نشطًا",
+            "hint_other": "{{count}} اقتران نشط",
+            "detail_one": "{{count}} pairing · {{mentors}} mentors",
+            "detail_other": "{{count}} pairings · {{mentors}} mentors"
+        },
+        "sessionsAhead": {
+            "label": "الجلسات القادمة",
+            "hint": "الأيام السبعة القادمة"
+        },
+        "averageRating": {
+            "label": "متوسط التقييم",
+            "hintRated_zero": "لا يوجد ({{count}}) مرشد مُقيَّم",
+            "hintRated_one": "من مرشد واحد مُقيَّم",
+            "hintRated_two": "من مرشدَين مُقيَّمين",
+            "hintRated_few": "من {{count}} مرشدين مُقيَّمين",
+            "hintRated_many": "من {{count}} مرشدًا مُقيَّمًا",
+            "hintRated_other": "من {{count}} مرشد مُقيَّم",
+            "hintNone": "لا توجد تقييمات بعد",
+            "detailRated_one": "From {{count}} rated mentor · {{ratings}} ratings",
+            "detailRated_other": "From {{count}} rated mentors · {{ratings}} ratings"
+        },
+        "requests": {
+            "label": "Requests waiting",
+            "detail": "Waiting for your decision"
+        }
+    },
+    "outcomes": {
+        "cardTitle": "نتائج الجلسات",
+        "cardSubtitle": "ملخص الجلسات منذ البداية",
+        "empty": "لا توجد جلسات بعد. تظهر النتائج هنا بمجرد أن يسجلها المرشدون.",
+        "completed": "مكتملة",
+        "noShows": "عدم حضور",
+        "cancelled": "ملغاة",
+        "awaitingReview": "بانتظار المراجعة",
+        "totalLabel": "sessions in total"
+    },
+    "workload": {
+        "cardTitle": "عبء عمل المرشدين",
+        "cardSubtitle": "عدد الطلاب لكل مرشد",
+        "empty": "لا يوجد مرشدون بعد.",
+        "countOfCap": "{{count}} / {{cap}}",
+        "fullSuffix": " · مكتمل",
+        "noUpcoming": "لا توجد جلسات قادمة",
+        "upcomingCount_zero": "لا توجد ({{count}}) جلسات قادمة",
+        "upcomingCount_one": "جلسة واحدة قادمة",
+        "upcomingCount_two": "جلستان قادمتان",
+        "upcomingCount_few": "{{count}} جلسات قادمة",
+        "upcomingCount_many": "{{count}} جلسة قادمة",
+        "upcomingCount_other": "{{count}} جلسة قادمة"
+    },
+    "attention": {
+        "cardTitle": "بحاجة إلى اهتمام",
+        "cardSubtitle": "أمور بانتظارك",
+        "allCaughtUp": "كل شيء تحت السيطرة",
+        "allCaughtUpDescription": "لا توجد طلبات معلقة وجميع الجلسات مسجلة.",
+        "requestsTitle": "طلبات متعلمين بالانتظار",
+        "requestsDetail_zero": "لا يوجد ({{count}}) متعلمين ينتظرون الاقتران بمرشد",
+        "requestsDetail_one": "متعلم واحد ينتظر الاقتران بمرشد",
+        "requestsDetail_two": "متعلمان ينتظران الاقتران بمرشد",
+        "requestsDetail_few": "{{count}} متعلمين ينتظرون الاقتران بمرشد",
+        "requestsDetail_many": "{{count}} متعلمًا ينتظرون الاقتران بمرشد",
+        "requestsDetail_other": "{{count}} متعلم ينتظر الاقتران بمرشد",
+        "reviewRequests": "مراجعة الطلبات",
+        "awaitingTitle": "جلسات بانتظار المراجعة",
+        "awaitingDetail_zero": "لا توجد ({{count}}) جلسات بحاجة إلى تسجيل نتيجتها",
+        "awaitingDetail_one": "جلسة واحدة بحاجة إلى تسجيل نتيجتها",
+        "awaitingDetail_two": "جلستان بحاجة إلى تسجيل نتيجتهما",
+        "awaitingDetail_few": "{{count}} جلسات بحاجة إلى تسجيل نتيجتها",
+        "awaitingDetail_many": "{{count}} جلسة بحاجة إلى تسجيل نتيجتها",
+        "awaitingDetail_other": "{{count}} جلسة بحاجة إلى تسجيل نتيجتها",
+        "reviewSessions": "مراجعة الجلسات",
+        "fullTitle": "Mentors at their limit",
+        "fullDetail_one": "{{count}} mentor can’t take new {{learners}}",
+        "fullDetail_other": "{{count}} mentors can’t take new {{learners}}",
+        "noBookingTitle": "Mentors without a booking page",
+        "noBookingDetail_one": "{{count}} mentor can’t be booked by their {{learners}}",
+        "noBookingDetail_other": "{{count}} mentors can’t be booked by their {{learners}}",
+        "openMentors": "Open mentors"
+    },
+    "upcoming": {
+        "cardTitle": "الجلسات القادمة",
+        "cardSubtitle": "أقرب 5 جلسات",
+        "empty": "لا توجد حجوزات بعد.",
+        "durationMinutes_zero": "{{count}} د",
+        "durationMinutes_one": "دقيقة",
+        "durationMinutes_two": "دقيقتان",
+        "durationMinutes_few": "{{count}} د",
+        "durationMinutes_many": "{{count}} د",
+        "durationMinutes_other": "{{count}} د",
+        "linkReady": "Meet link ready",
+        "linkPending": "Link pending"
+    },
+    "hero": {
+        "eyebrow": "Mentorship · all time",
+        "unit": "sessions delivered",
+        "sub": "{{upcoming}} upcoming · {{awaiting}} waiting for their outcome to be recorded",
+        "today": "Sessions today",
+        "attendance": "Attendance",
+        "listed": "Listed in the directory"
+    },
+    "insights": {
+        "top": {
+            "title": "{{name}} has the happiest mentees",
+            "text_one": "★ {{rating}} from {{count}} rating — the best-rated mentor right now.",
+            "text_other": "★ {{rating}} from {{count}} ratings — the best-rated mentor right now."
+        },
+        "noShow": {
+            "title": "{{rate}}% of recorded sessions were no-shows",
+            "text_one": "{{count}} session where the {{learners}} didn’t turn up. A reminder the night before helps.",
+            "text_other": "{{count}} sessions where the {{learners}} didn’t turn up. A reminder the night before helps."
+        },
+        "full": {
+            "title_one": "{{count}} mentor is at their limit",
+            "title_other": "{{count}} mentors are at their limit",
+            "text": "Requests for them can’t be approved until the limit is raised or a mentee is unassigned."
+        },
+        "noBooking": {
+            "title_one": "{{count}} mentor has no booking page",
+            "title_other": "{{count}} mentors have no booking page",
+            "text": "Their {{learners}} can’t book a 1:1 with them yet."
+        }
+    },
+    "top": {
+        "cardTitle": "Top mentors",
+        "cardSubtitle": "By rating and number of ratings",
+        "empty": "No ratings yet. Mentors appear here once their sessions are rated.",
+        "rating": "★ {{rating}}",
+        "detail_one": "{{count}} rating · {{students}} {{learners}}",
+        "detail_other": "{{count}} ratings · {{students}} {{learners}}"
+    }
+}

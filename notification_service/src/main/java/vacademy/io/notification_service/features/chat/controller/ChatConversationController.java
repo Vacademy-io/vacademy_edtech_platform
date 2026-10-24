@@ -48,6 +48,15 @@ public class ChatConversationController {
                 conversationService.listConversations(id.userId(), id.instituteId(), id.role(), type, limit));
     }
 
+    /** Unread total for the sidebar badge — a cheap aggregate, so clients don't poll the full list. */
+    @GetMapping("/conversations/unread-count")
+    public ResponseEntity<Map<String, Long>> unreadCount(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId) {
+        ChatIdentity id = ChatIdentity.from(user, clientId);
+        return ResponseEntity.ok(Map.of("count", conversationService.getUnreadTotal(id.userId(), id.instituteId())));
+    }
+
     @GetMapping("/conversations/{conversationId}/messages")
     public ResponseEntity<ChatMessagePageResponse> getMessages(
             @PathVariable String conversationId,
@@ -79,6 +88,19 @@ public class ChatConversationController {
         }
     }
 
+    /** Edit the body of a message you sent. Sender-only; see ChatMessageService#editMessage. */
+    @PatchMapping("/conversations/{conversationId}/messages/{messageId}")
+    public ResponseEntity<ChatMessageResponse> editMessage(
+            @PathVariable String conversationId,
+            @PathVariable String messageId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody EditChatMessageRequest request) {
+        ChatIdentity id = ChatIdentity.from(user, clientId);
+        return ResponseEntity.ok(
+                messageService.editMessage(conversationId, messageId, id.userId(), id.role(), request));
+    }
+
     @DeleteMapping("/conversations/{conversationId}/messages/{messageId}")
     public ResponseEntity<ChatMessageResponse> deleteMessage(
             @PathVariable String conversationId,
@@ -86,7 +108,8 @@ public class ChatConversationController {
             @AuthenticationPrincipal CustomUserDetails user,
             @RequestHeader(value = "clientId", required = false) String clientId) {
         ChatIdentity id = ChatIdentity.from(user, clientId);
-        return ResponseEntity.ok(messageService.deleteMessage(conversationId, messageId, id.userId(), id.role()));
+        return ResponseEntity.ok(
+                messageService.deleteMessage(conversationId, messageId, id.userId(), id.role(), id.instituteId()));
     }
 
     @PostMapping("/conversations/{conversationId}/read")

@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "आज की गतिविधि",
+        "subtitle": "उपयोगकर्ता जुड़ाव का रीयल-टाइम सारांश"
+    },
+    "stats": {
+        "uniqueUsers": "अद्वितीय उपयोगकर्ता",
+        "sessions": "सत्र",
+        "apiCalls": "एपीआई कॉल",
+        "activityTime": "गतिविधि समय",
+        "avgSession": "औसत सत्र",
+        "peakHour": "व्यस्ततम समय"
+    },
+    "suffix": {
+        "hours": "घं",
+        "minutes": "मि",
+        "oclock": ":00"
+    },
+    "error": {
+        "widgetName": "गतिविधि सारांश"
+    }
+}

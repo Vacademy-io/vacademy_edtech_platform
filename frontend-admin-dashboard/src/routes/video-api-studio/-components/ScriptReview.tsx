@@ -1,18 +1,19 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
     FileText,
     Play,
-    RotateCcw,
-    ChevronDown,
-    ChevronUp,
+    ArrowCounterClockwise,
+    CaretDown,
+    CaretUp,
     Clock,
-    LayoutList,
+    ListBullets,
     Pencil,
-    Trash2,
+    Trash,
     Plus,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 interface ScriptReviewProps {
     script: string;
@@ -133,6 +134,7 @@ function SentenceRow({
     onInsertAfter: (id: string) => void;
     disabled?: boolean;
 }) {
+    const { t } = useTranslation('videoApiStudioScriptReview');
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(s.text);
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -166,12 +168,12 @@ function SentenceRow({
     return (
         <div className="group relative flex gap-3 rounded-lg border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-muted/30">
             {/* Time badge column */}
-            <div className="flex w-[88px] shrink-0 flex-col items-end gap-0.5 pt-0.5">
-                <span className="font-mono text-[11px] font-medium tabular-nums text-foreground">
+            <div className="flex w-24 shrink-0 flex-col items-end gap-0.5 pt-0.5">
+                <span className="font-mono text-2xs font-medium tabular-nums text-foreground">
                     {formatTime(s.start)} – {formatTime(s.end)}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
-                    {s.words} {s.words === 1 ? 'word' : 'words'}
+                <span className="text-2xs text-muted-foreground">
+                    {t('counts.words', { count: s.words })}
                 </span>
             </div>
 
@@ -221,15 +223,15 @@ function SentenceRow({
                         {s.text}
                     </button>
                 )}
-                <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="mt-1 flex items-center gap-2 text-2xs text-muted-foreground">
                     {tooShort && (
                         <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                            short fragment
+                            {t('sentenceRow.shortFragment')}
                         </span>
                     )}
                     {tooLong && (
                         <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                            long sentence — consider splitting
+                            {t('sentenceRow.longSentence')}
                         </span>
                     )}
                 </div>
@@ -242,7 +244,7 @@ function SentenceRow({
                         type="button"
                         onClick={() => setEditing(true)}
                         className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title="Edit"
+                        title={t('sentenceRow.editTitle')}
                     >
                         <Pencil className="size-3.5" />
                     </button>
@@ -250,7 +252,7 @@ function SentenceRow({
                         type="button"
                         onClick={() => onInsertAfter(s.id)}
                         className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title="Insert sentence below"
+                        title={t('sentenceRow.insertTitle')}
                     >
                         <Plus className="size-3.5" />
                     </button>
@@ -258,9 +260,9 @@ function SentenceRow({
                         type="button"
                         onClick={() => onDelete(s.id)}
                         className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
-                        title="Delete sentence"
+                        title={t('sentenceRow.deleteTitle')}
                     >
-                        <Trash2 className="size-3.5" />
+                        <Trash className="size-3.5" />
                     </button>
                 </div>
             )}
@@ -275,11 +277,17 @@ export function ScriptReview({
     onResume,
     onDiscard,
     isResuming,
-    title = 'Review Script',
-    subtitle = 'Edit the script below, then proceed to generate audio & visuals.',
-    ctaLabel = 'Proceed to Video',
-    discardLabel = 'Start Over',
+    title,
+    subtitle,
+    ctaLabel,
+    discardLabel,
 }: ScriptReviewProps) {
+    const { t } = useTranslation('videoApiStudioScriptReview');
+    const resolvedTitle = title ?? t('defaults.title');
+    const resolvedSubtitle = subtitle ?? t('defaults.subtitle');
+    const resolvedCtaLabel = ctaLabel ?? t('defaults.ctaLabel');
+    const resolvedDiscardLabel = discardLabel ?? t('defaults.discardLabel');
+
     const [showPrompt, setShowPrompt] = useState(false);
     const [view, setView] = useState<'timeline' | 'raw'>('timeline');
 
@@ -312,7 +320,13 @@ export function ScriptReview({
         if (idx < 0) return;
         const before = sentences.slice(0, idx + 1).map((s) => s.text);
         const after = sentences.slice(idx + 1).map((s) => s.text);
-        onScriptChange(joinSentences([...before, 'New sentence.', ...after]));
+        onScriptChange(
+            joinSentences([
+                ...before,
+                t('sentenceRow.newSentencePlaceholder'),
+                ...after,
+            ]),
+        );
     };
 
     return (
@@ -326,23 +340,23 @@ export function ScriptReview({
                         </div>
                         <div className="min-w-0">
                             <h2 className="text-base font-semibold text-foreground">
-                                {title}
+                                {resolvedTitle}
                             </h2>
                             <p className="truncate text-xs text-muted-foreground">
-                                {subtitle}
+                                {resolvedSubtitle}
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-2xs text-muted-foreground">
                         <span className="hidden items-center gap-1 rounded-md bg-muted px-2 py-1 sm:flex">
                             <Clock className="size-3" />
-                            ≈ {formatTime(totalDuration)}
+                            {t('approxDuration', { time: formatTime(totalDuration) })}
                         </span>
                         <span className="rounded-md bg-muted px-2 py-1">
-                            {wordCount} {wordCount === 1 ? 'word' : 'words'}
+                            {t('counts.words', { count: wordCount })}
                         </span>
                         <span className="rounded-md bg-muted px-2 py-1">
-                            {sentences.length} {sentences.length === 1 ? 'sentence' : 'sentences'}
+                            {t('counts.sentences', { count: sentences.length })}
                         </span>
                     </div>
                 </div>
@@ -353,11 +367,11 @@ export function ScriptReview({
                     onClick={() => setShowPrompt((v) => !v)}
                 >
                     {showPrompt ? (
-                        <ChevronUp className="size-3.5" />
+                        <CaretUp className="size-3.5" />
                     ) : (
-                        <ChevronDown className="size-3.5" />
+                        <CaretDown className="size-3.5" />
                     )}
-                    <span className="font-medium">Original prompt</span>
+                    <span className="font-medium">{t('prompt.toggleLabel')}</span>
                     {!showPrompt && (
                         <span className="ml-1 truncate opacity-60">{prompt}</span>
                     )}
@@ -380,8 +394,8 @@ export function ScriptReview({
                                     : 'text-muted-foreground hover:text-foreground'
                             }`}
                         >
-                            <LayoutList className="size-3.5" />
-                            Timeline
+                            <ListBullets className="size-3.5" />
+                            {t('viewToggle.timeline')}
                         </button>
                         <button
                             type="button"
@@ -393,21 +407,24 @@ export function ScriptReview({
                             }`}
                         >
                             <Pencil className="size-3.5" />
-                            Edit raw
+                            {t('viewToggle.editRaw')}
                         </button>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
-                        Times are estimates (≈160&nbsp;wpm). Real timings come from TTS in the next stage.
+                    <span className="text-2xs text-muted-foreground">
+                        {t('viewToggle.estimatesNote', { wpm: Math.round(WORDS_PER_SECOND * 60) })}
                     </span>
                 </div>
 
                 {/* Body */}
                 {view === 'timeline' ? (
-                    <div className="max-h-[60vh] overflow-y-auto px-3 py-3">
+                    <div className="max-h-[60vh] overflow-y-auto px-3 py-3" /* design-lint-ignore: viewport-relative scroll panel (not a dialog), no named token matches 60vh */>
                         {sentences.length === 0 ? (
                             <div className="rounded-md border border-dashed py-10 text-center text-sm text-muted-foreground">
-                                No sentences detected. Switch to <strong>Edit raw</strong>{' '}
-                                to add narration.
+                                <Trans
+                                    t={t}
+                                    i18nKey="timeline.empty"
+                                    components={{ strong: <strong /> }}
+                                />
                             </div>
                         ) : (
                             <div className="flex flex-col gap-0.5">
@@ -433,7 +450,7 @@ export function ScriptReview({
                             onChange={(e) => onScriptChange(e.target.value)}
                             rows={20}
                             className="resize-y font-mono text-sm leading-relaxed"
-                            placeholder="Script will appear here..."
+                            placeholder={t('rawView.placeholder')}
                             disabled={isResuming}
                         />
                     </div>
@@ -446,8 +463,8 @@ export function ScriptReview({
                         disabled={isResuming}
                         className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
                     >
-                        <RotateCcw className="size-3.5" />
-                        {discardLabel}
+                        <ArrowCounterClockwise className="size-3.5" />
+                        {resolvedDiscardLabel}
                     </button>
                     <Button
                         onClick={onResume}
@@ -455,7 +472,7 @@ export function ScriptReview({
                         className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                     >
                         <Play className="size-4" />
-                        {isResuming ? 'Resuming...' : ctaLabel}
+                        {isResuming ? t('resuming') : resolvedCtaLabel}
                     </Button>
                 </div>
             </div>

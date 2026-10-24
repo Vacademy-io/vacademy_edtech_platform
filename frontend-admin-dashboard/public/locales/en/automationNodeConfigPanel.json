@@ -1,0 +1,282 @@
+{
+    "panel": {
+        "selectNode": "Select a node to configure",
+        "nodeNamePlaceholder": "Node name"
+    },
+    "common": {
+        "variableMappings": "Variable Mappings",
+        "filename": "Filename",
+        "filenamePlaceholder": "brochure.pdf"
+    },
+    "trigger": {
+        "sectionLabel": "Trigger Settings",
+        "typeLabel": "Trigger Type",
+        "type": {
+            "keywordMatch": "Keyword Match",
+            "firstContact": "First Contact (new user)",
+            "buttonReply": "Button Reply"
+        },
+        "keywordsLabel": "Keywords (comma-separated)",
+        "keywordsPlaceholder": "hello, hi, start",
+        "matchTypeLabel": "Match Type",
+        "matchType": {
+            "exact": "Exact match",
+            "contains": "Contains",
+            "regex": "Regex pattern"
+        },
+        "priorityLabel": "Priority (higher = checked first)"
+    },
+    "sendMessage": {
+        "sectionLabel": "Session Message",
+        "noTemplateNotice": "No template needed — sends directly within the 24hr session window.",
+        "typeLabel": "Message Type",
+        "type": {
+            "text": "Text Message",
+            "image": "Image",
+            "video": "Video",
+            "document": "Document (PDF, etc.)",
+            "audio": "Audio"
+        },
+        "textLabel": "Message Text",
+        "textPlaceholder": "Hello {{example}}! 👋\n\nWelcome to our service. How can I help you today?",
+        "formattingHint": "Supports WhatsApp formatting: *bold*, _italic_, ~strikethrough~, ```code```",
+        "variableHint": {
+            "prefix": "Use",
+            "suffix": "for dynamic values:"
+        },
+        "mediaUrlLabel": "Media URL",
+        "mediaUrlPlaceholder": "https://example.com/image.jpg",
+        "mediaUrlHint": {
+            "prefix": "Must be a publicly accessible HTTPS URL. Use",
+            "suffix": "for dynamic URLs."
+        },
+        "captionLabel": "Caption (optional)",
+        "captionPlaceholder": "Check out this image!",
+        "variableMappingsHint": {
+            "prefix": "Map",
+            "suffix": "used above to system or custom fields with fallback defaults."
+        }
+    },
+    "sendTemplate": {
+        "sectionLabel": "Template",
+        "searchLabel": "Search & Select Template",
+        "searchPlaceholder": "Search templates...",
+        "loading": "Loading templates...",
+        "noResults": "No templates found. Type name manually below.",
+        "nameLabel": "Template Name",
+        "namePlaceholder": "welcome_message",
+        "languageLabel": "Language",
+        "languagePlaceholder": "en",
+        "previewLabel": "Preview",
+        "previewHeader": "Header: [{{type}}]",
+        "headerSectionLabel": "Header ({{type}})",
+        "headerUrlLabelDocument": "Document URL",
+        "headerUrlLabelGeneric": "{{type}} URL",
+        "headerUrlPlaceholder": "https://...",
+        "bodyParamsLabel": "Body Parameters",
+        "bodyParamsHint": {
+            "prefix": "Use",
+            "suffix": "syntax or type static values"
+        },
+        "bodyParamPlaceholder": "{{example}} or static text",
+        "addParameter": "Add parameter",
+        "buttonParamsLabel": "Button Parameters",
+        "buttonFallbackLabel": "Button {{index}}",
+        "urlSuffixLabel": "URL suffix",
+        "payloadLabel": "Payload",
+        "variableMappingsHint": {
+            "prefix": "Map",
+            "suffix": "used in body params, header URL, or button URL suffix to user or custom fields with fallback defaults."
+        }
+    },
+    "sendInteractive": {
+        "sectionLabel": "Interactive Message",
+        "sessionNotice": "Requires 24hr session window. Configure a fallback template below.",
+        "typeLabel": "Type",
+        "type": {
+            "button": "Reply Buttons (max 3)",
+            "list": "List Menu"
+        },
+        "bodyLabel": "Body Text",
+        "bodyPlaceholder": "Please select an option...",
+        "footerLabel": "Footer (optional)",
+        "footerPlaceholder": "Powered by...",
+        "buttonsLabel": "Buttons",
+        "buttonTitlePlaceholder": "Button Title",
+        "addButton": "Add Button",
+        "listButtonLabel": "Menu Button Text",
+        "listButtonPlaceholder": "View Options",
+        "sectionsLabel": "Sections",
+        "sectionTitlePlaceholder": "Section Title",
+        "rowTitlePlaceholder": "Row Title",
+        "rowIdPlaceholder": "Row ID (for conditions)",
+        "rowDescriptionPlaceholder": "Description (optional)",
+        "addRow": "Add Row",
+        "addSection": "Add Section",
+        "fallbackTemplateLabel": "Fallback Template (if 24hr window expired)"
+    },
+    "condition": {
+        "sectionLabel": "Condition Branches",
+        "hint": "Each branch creates an outgoing edge. Connect them to the next nodes on the canvas.",
+        "typeLabel": "Condition Type",
+        "type": {
+            "userResponse": "User Text Response",
+            "buttonReply": "Interactive Button Reply",
+            "listReply": "List Selection Reply"
+        },
+        "importButton_one": "Import {{count}} option from connected Interactive node",
+        "importButton_other": "Import {{count}} options from connected Interactive node",
+        "defaultBranchLabel": "Default",
+        "branchLabelPlaceholder": "Branch label",
+        "defaultCheckboxLabel": "Default (fallback)",
+        "matchType": {
+            "exact": "Exact",
+            "contains": "Contains",
+            "regex": "Regex",
+            "buttonId": "Button ID",
+            "listId": "List Row ID",
+            "payload": "Payload"
+        },
+        "matchValuePlaceholder": "Match value...",
+        "addBranch": "Add Branch"
+    },
+    "delay": {
+        "sectionLabel": "Delay Settings",
+        "durationLabel": "Duration",
+        "unit": {
+            "seconds": "Seconds",
+            "minutes": "Minutes",
+            "hours": "Hours",
+            "days": "Days"
+        }
+    },
+    "workflow": {
+        "sectionLabel": "Workflow Action",
+        "idLabel": "Workflow ID",
+        "contextHint": "The workflow will receive phone, instituteId, userId, and messageText as context."
+    },
+    "webhook": {
+        "sectionLabel": "HTTP Webhook",
+        "urlLabel": "URL",
+        "methodLabel": "Method",
+        "resultVariableLabel": "Result Variable Name",
+        "resultHint": {
+            "prefix": "Response stored as",
+            "suffix": "for use in later nodes."
+        }
+    },
+    "aiCredits": {
+        "outOfCreditsTitle": "Out of AI credits.",
+        "outOfCreditsBody": "This step will not call the model — conversations that reach it are handed to a human in the WhatsApp Inbox until the institute tops up.",
+        "spendNotice": "Each reply spends AI credits",
+        "balance": "· balance {{balance}}"
+    },
+    "aiResponse": {
+        "sectionLabel": "AI Conversation",
+        "modelLabel": "Model",
+        "model": {
+            "platformDefault": "Platform default (GLM 5.3 Flash)",
+            "gemini20Flash": "Gemini 2.0 Flash (fast)",
+            "gemini25Flash": "Gemini 2.5 Flash",
+            "gemini25Pro": "Gemini 2.5 Pro",
+            "claude35Sonnet": "Claude 3.5 Sonnet",
+            "gpt4oMini": "GPT-4o Mini",
+            "deepseekV32": "DeepSeek V3.2"
+        },
+        "systemPromptLabel": "System Prompt",
+        "systemPromptPlaceholder": "You are a helpful assistant for {{example}}. Answer questions about courses and enrollment...",
+        "maxTokensLabel": "Max Tokens",
+        "maxTurnsLabel": "Max Turns",
+        "temperatureLabel": "Temperature",
+        "exitKeywordsLabel": "Exit Keywords (comma-separated)",
+        "fallbackMessageLabel": "Fallback Message (on error/max turns)",
+        "fallbackMessagePlaceholder": "Let me connect you with a human agent.",
+        "unsureSectionLabel": "When the AI doesn't know",
+        "escalateCheckboxLabel": "Hand over to an admin instead of guessing",
+        "handoverMessageLabel": "Hand-over Message",
+        "handoverMessagePlaceholder": "I don't have that information with me right now. Let me check with our team and get back to you shortly.",
+        "escalationNotice": {
+            "prefix": "When the answer isn't in the AI's context it sends this message instead of inventing one. The conversation is then marked",
+            "unanswered": "Unanswered",
+            "middle": "in the WhatsApp Inbox and the people listed under",
+            "flowSettings": "Flow Settings",
+            "suffix": "are told a learner is waiting, by email and/or WhatsApp. Replying from the Inbox clears it."
+        },
+        "interactiveSectionLabel": "Interactive Responses",
+        "interactiveCheckboxLabel": "Allow AI to send reply buttons and list menus",
+        "interactiveNotice": "The AI can now include reply buttons (max 3) or list menus when presenting choices. Falls back to plain text if the format is invalid or 24hr session expired."
+    },
+    "crmLeadCheck": {
+        "sectionLabel": "Check CRM lead",
+        "hint": "Looks this WhatsApp number up across your CRM. A new number is added to the “WhatsApp Leads” list straight away. A known lead is never duplicated — the contact is recorded on their existing lead.",
+        "outputsLabel": "Outputs",
+        "branchNew": "New lead",
+        "branchExisting": "Existing lead",
+        "connected": "Connected",
+        "notConnected": "Not connected",
+        "connectBothNotice": "An output that isn't connected ends the flow for that kind of lead. Drag from the matching dot at the bottom of the node to connect it.",
+        "existingSectionLabel": "If the lead already exists",
+        "existingMessageLabel": "Message to send",
+        "existingMessagePlaceholder": "e.g. Welcome back! Our team will get in touch with you shortly.",
+        "blankSendsNothing": "Leave blank to send nothing.",
+        "notifyTeamLabel": "Alert the team",
+        "notifyTeamHint": "Marks the chat as waiting for a reply in the WhatsApp Inbox and notifies the people in this flow's Settings."
+    },
+    "askField": {
+        "sectionLabel": "Ask & save field",
+        "hint": "Asks one question, waits for the reply, checks it fits the field and saves it on the lead.",
+        "fieldLabel": "Field",
+        "fieldPlaceholder": "Choose a field…",
+        "leadDetailsGroup": "Lead details",
+        "customFieldsGroup": "Custom fields",
+        "systemFields": {
+            "fullName": "Full name",
+            "email": "Email"
+        },
+        "loadingFields": "Loading custom fields…",
+        "loadFieldsFailed": "Couldn't load custom fields.",
+        "retry": "Retry",
+        "noCustomFields": "No custom fields yet — add them in Settings → Custom Fields.",
+        "missingFieldOption": "{{field}} (no longer exists)",
+        "missingFieldNotice": "This field no longer exists in your custom fields. Choose another one.",
+        "typeWithChoices": "Type: {{type}} · {{total}} choices",
+        "typeOnly": "Type: {{type}}",
+        "noChoicesNotice": "This field has no choices set up yet. Add them in Settings → Custom Fields.",
+        "choicesChangedNotice": "This field's choices have changed since it was picked.",
+        "refreshChoices": "Use the latest choices",
+        "defaultQuestion": "Please share your {{field}}.",
+        "questionLabel": "Question",
+        "questionPlaceholder": "What should the bot ask?",
+        "retryMessageLabel": "Retry message",
+        "retryMessagePlaceholder": "Sorry, that doesn't look right. Please try again.",
+        "retryMessageHint": "Sent when the reply doesn't fit the field — e.g. not a valid email, or not one of the choices.",
+        "maxRetriesLabel": "Max retries",
+        "allowSkipLabel": "Let them skip this question",
+        "listButtonLabel": "List button text",
+        "noSaveStepNotice": "Add a “Save Lead to CRM” step after your questions to set the lead status and run your lead workflows.",
+        "preview": {
+            "sectionLabel": "Preview",
+            "noQuestion": "Your question will appear here",
+            "modeText": "They type their answer.",
+            "modeButtons": "Sent as reply buttons.",
+            "modeList": "Sent as a list they open with the button.",
+            "modeNumbered": "More than 10 choices — sent as a numbered list; they reply with the number.",
+            "modeMultiSelect": "Multi-select — sent as a numbered list; they can reply with several numbers.",
+            "longChoiceNotice": "Some choices are longer than WhatsApp allows here ({{max}} characters) and may be cut short."
+        }
+    },
+    "saveToCrm": {
+        "sectionLabel": "Save lead to CRM",
+        "hint": "Saves every answer collected in this flow on the lead — creating the lead if it doesn't exist yet — and runs your lead-submission workflows.",
+        "statusLabel": "Set lead status",
+        "dontChange": "Don't change",
+        "loadingStatuses": "Loading statuses…",
+        "missingStatusOption": "{{status}} (no longer exists)",
+        "missingStatusNotice": "This status no longer exists. Choose another, or “Don't change”.",
+        "successMessageLabel": "Message after saving",
+        "successMessagePlaceholder": "e.g. Thanks! Our team will contact you soon.",
+        "blankSendsNothing": "Leave blank to send nothing.",
+        "fireWorkflowsLabel": "Run lead workflows",
+        "fireWorkflowsHint": "Runs this institute's \"lead submitted\" workflows (e.g. confirmation messages, admin alerts) for a new lead once the answers are saved. Turn off if those workflows would send the person a second welcome message. Never runs for a lead that already existed."
+    }
+}

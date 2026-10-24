@@ -24,6 +24,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: No new hard-coded model ids
+        run: python scripts/check_model_literals.py
+
       - name: Install dependencies
         working-directory: ai_service
         run: |

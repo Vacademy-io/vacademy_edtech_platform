@@ -1,0 +1,28 @@
+{
+    "dialog": {
+        "heading_one": "प्रश्न चुनें (कुल {{count}})",
+        "heading_other": "प्रश्न चुनें (कुल {{count}})"
+    },
+    "footer": {
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "addQuestions_one": "{{count}} प्रश्न जोड़ें",
+        "addQuestions_other": "{{count}} प्रश्न जोड़ें"
+    },
+    "search": {
+        "placeholder": "प्रश्न खोजें..."
+    },
+    "tags": {
+        "filterLabel": "टैग के अनुसार फ़िल्टर करें:"
+    },
+    "list": {
+        "selectAll_one": "सभी चुनें ({{count}})",
+        "selectAll_other": "सभी चुनें ({{count}})",
+        "matchingCount_one": "{{count}} मेल खाता है",
+        "matchingCount_other": "{{count}} मेल खाते हैं",
+        "emptyState": "आपकी खोज से कोई प्रश्न मेल नहीं खाता।"
+    }
+}

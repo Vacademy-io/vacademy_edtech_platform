@@ -1,4 +1,6 @@
 import { Info } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 /**
@@ -6,13 +8,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
  * exactly what each number (Concentration Score, Course Completed, etc.) means.
  */
 export function MetricInfo({ text }: { text: string }) {
+    const { t } = useTranslation('studyLibraryReportsMetricInfo');
     return (
         <TooltipProvider delayDuration={150}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
                         type="button"
-                        aria-label="What is this?"
+                        aria-label={t('whatIsThis')}
                         className="text-neutral-400 transition-colors hover:text-primary-500"
                     >
                         <Info className="size-4" />
@@ -31,13 +34,10 @@ export function MetricInfo({ text }: { text: string }) {
 }
 
 /** Canonical metric explanations, shared across the report views. */
-export const METRIC_INFO = {
-    courseCompleted:
-        'Average % of course content completed — based on video watch time and document pages viewed across all published slides in this course.',
-    timeSpentAvg:
-        'Average time spent learning per active day in the selected date range.',
-    concentration:
-        'A focus score (0–100%) recorded while studying videos. It starts at 100 and drops for tab switches, pauses, and missed in-video check questions — higher means more focused.',
-    leaderboard:
-        'Learners ranked by total learning time, with concentration score as the tie-breaker.',
-} as const;
+export const buildMetricInfo = (t: TFunction) =>
+    ({
+        courseCompleted: t('studyLibraryReportsMetricInfo:courseCompleted'),
+        timeSpentAvg: t('studyLibraryReportsMetricInfo:timeSpentAvg'),
+        concentration: t('studyLibraryReportsMetricInfo:concentration'),
+        leaderboard: t('studyLibraryReportsMetricInfo:leaderboard'),
+    }) as const;

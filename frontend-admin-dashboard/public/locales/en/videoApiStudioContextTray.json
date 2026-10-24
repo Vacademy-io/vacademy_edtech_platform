@@ -1,0 +1,47 @@
+{
+    "refs": {
+        "label_one": "Refs ({{count}})",
+        "label_other": "Refs ({{count}})",
+        "removeAria": "Remove {{fileName}}"
+    },
+    "sources": {
+        "label_one": "Sources ({{count}})",
+        "label_other": "Sources ({{count}})",
+        "unknown": "Unknown",
+        "removeAria": "Remove {{name}}"
+    },
+    "audio": {
+        "label": "Audio",
+        "original": "Original",
+        "originalTitleAvailable": "Use the original audio from your source clip",
+        "originalTitleUnavailable": "Original audio is only available with a single source clip",
+        "aiNarration": "AI Narration",
+        "muteTtsDuringSourceClips": "Mute TTS during source clips"
+    },
+    "smartPlan": {
+        "label": "Smart plan",
+        "analyzing": "analyzing prompt…",
+        "captureWebsite": "Capture website",
+        "skipWebsite": "Skip website",
+        "webSearch": "Web search",
+        "skipSearch": "Skip search",
+        "muteTtsOnClips": "Mute TTS on clips",
+        "ttsOverClips": "TTS over clips",
+        "muteTtsTitle": "Mute TTS narration during source-clip shots so the demo's original audio plays",
+        "overlayInfographics": "Overlay infographics",
+        "sideInfographics": "Side infographics",
+        "overlayTitle": "Float infographics over the demo footage (vs. side-by-side card)",
+        "manual": "manual",
+        "auto": "auto",
+        "hideWhy": "Hide why ▴",
+        "why": "Why? ▾"
+    },
+    "webCapture": {
+        "label": "Web capture",
+        "ignoredTitle": "{{url}} — ignored (still in prompt, not captured)",
+        "activeTitle": "{{url}} — screenshots + images will be captured and used as references",
+        "undo": "undo",
+        "reEnableAria": "Re-enable capture for {{host}}",
+        "skipAria": "Skip capture for {{host}}"
+    }
+}

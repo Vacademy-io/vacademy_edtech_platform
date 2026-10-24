@@ -1,0 +1,19 @@
+{
+    "dialog": {
+        "title": "Accept Request",
+        "confirmText": "Are you sure you want to accept the request for {{name}}?",
+        "paymentPendingBulk_one": "*Note: Payment is still pending for {{count}} student",
+        "paymentPendingBulk_other": "*Note: Payment is still pending for {{count}} students",
+        "paymentPendingSingle": "*Note: Payment is still pending for this student",
+        "emailNotice": "This will accept the request to the selected students via email."
+    },
+    "buttons": {
+        "cancel": "Cancel",
+        "accept": "Accept Request"
+    },
+    "toasts": {
+        "acceptSuccess": "Request accepted successfully",
+        "acceptFailed": "Failed to accept request",
+        "unexpectedError": "An unexpected error occurred"
+    }
+}

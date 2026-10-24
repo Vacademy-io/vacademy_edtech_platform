@@ -86,47 +86,23 @@ import { getFilePublicUrlQuery } from "@/services/file-url-cache";
 import { getLatestResume } from "@/services/resume-thread";
 import { useTranslation } from "react-i18next";
 
-export interface Chapter {
-  id: string;
-  chapter_name: string;
-  status: string;
-  description: string;
-  file_id: string | null;
-  chapter_order: number;
-  // Server-computed rollup from /modules-with-chapters. Always present in the
-  // payload; typed optional only because a few local placeholder objects in
-  // this file construct a Chapter without it.
-  percentage_completed?: number;
-  drip_condition_json?: string | null;
-  drip_condition?: string | null; // JSON string from API
-}
-export interface ChapterMetadata {
-  chapter: Chapter;
-  slides_count: {
-    video_count: number;
-    pdf_count: number;
-    doc_count: number;
-    unknown_count: number;
-  };
-  chapter_in_package_sessions: string[];
-}
-export interface Module {
-  id: string;
-  module_name: string;
-  status: string;
-  description: string;
-  thumbnail_id: string;
-}
-export interface ModuleWithChapters {
-  module: Module;
-  module_order: number | null;
-  // Server-computed module rollup from /modules-with-chapters. Null when the
-  // module has no learner-visible content at all, which is why the subject
-  // average skips it instead of scoring it 0.
-  percentage_completed?: number | null;
-  chapters: Chapter[];
-}
-export type SubjectModulesMap = { [subjectId: string]: ModuleWithChapters[] };
+// Course-structure data contract — shared with the other course-details view so
+// the two cannot drift on the server payload. Re-exported because existing call
+// sites import these types from this module.
+import type {
+  Chapter,
+  ChapterMetadata,
+  Module,
+  ModuleWithChapters,
+  SubjectModulesMap,
+} from "@/types/course-structure";
+export type {
+  Chapter,
+  ChapterMetadata,
+  Module,
+  ModuleWithChapters,
+  SubjectModulesMap,
+};
 
 /** Minimal subject shape from course-init; used when form-based subjects aren't ready yet */
 export type CourseInitSubject = {
@@ -165,6 +141,10 @@ const CONTENT_CARD_SHELL =
  * A locked item gets the padlock centred ON the artwork behind a scrim, not a
  * small glyph tucked under the title: on a card whose image is the whole
  * visual, that is the only place the lock actually reads as "this is shut".
+ *
+ * No crossOrigin on these <img>s: nothing reads their pixels, and a CORS
+ * request fails outright on a CDN copy cached without Access-Control-Allow-Origin
+ * — the card showed a broken image while the admin's plain <img> loaded fine.
  */
 const ContentCardThumb = ({
   url,
@@ -186,7 +166,6 @@ const ContentCardThumb = ({
           "size-full",
           fit === "contain" ? "object-contain" : "object-cover",
         )}
-        crossOrigin="anonymous"
         referrerPolicy="no-referrer"
         loading="eager"
       />
@@ -496,7 +475,7 @@ export const CourseStructureDetails = ({
       // Add course discussion tab if enabled
       if (shouldShowCourseDiscussion) {
         finalTabs.push({
-          label: "Course Discussion",
+          label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Discussion`,
           value: TabType.COURSE_DISCUSSION,
         });
       }
@@ -638,20 +617,14 @@ export const CourseStructureDetails = ({
     packageSessionId,
   );
   const { conditionFor: dripConditionFor, now: dripNow } = dripSchedule;
-  // Anchors plus the first-item strictness flag, spread into every
-  // LearnerProgressData below. strictFirstItem rides the same opt-in as the
-  // rest: institutes that have not turned this on keep today's behaviour.
+  // Day-1 anchors for day-wise rules, spread into every LearnerProgressData
+  // below.
   const dripAnchors = useMemo(
     () => ({
       enrollmentDate: dripSchedule.enrollmentDate,
       sessionStartDate: dripSchedule.sessionStartDate,
-      strictFirstItem: dripSchedule.applyConfiguredRules,
     }),
-    [
-      dripSchedule.enrollmentDate,
-      dripSchedule.sessionStartDate,
-      dripSchedule.applyConfiguredRules,
-    ],
+    [dripSchedule.enrollmentDate, dripSchedule.sessionStartDate],
   );
 
   // Drill-down state for Content Structure tab
@@ -1725,7 +1698,6 @@ export const CourseStructureDetails = ({
                           src={thumbUrlById[`subject:${subject.id}`]}
                           alt={toTitleCase(subject.subject_name)}
                           className="w-6 h-6 rounded-sm object-cover border border-border"
-                          crossOrigin="anonymous"
                           referrerPolicy="no-referrer"
                           loading="eager"
                         />
@@ -1829,7 +1801,6 @@ export const CourseStructureDetails = ({
                                       }
                                       alt={mod.module.module_name}
                                       className="w-5 h-5 rounded-sm object-cover border border-border"
-                                      crossOrigin="anonymous"
                                       referrerPolicy="no-referrer"
                                       loading="eager"
                                     />
@@ -1943,7 +1914,6 @@ export const CourseStructureDetails = ({
                                                   ch.chapter_name,
                                                 )}
                                                 className="w-4 h-4 rounded-sm object-cover border border-border"
-                                                crossOrigin="anonymous"
                                                 referrerPolicy="no-referrer"
                                                 loading="eager"
                                               />
@@ -3074,8 +3044,8 @@ export const CourseStructureDetails = ({
                 key={i}
                 className="h-full rounded-lg border-neutral-200 bg-card p-2"
               >
-                <CardContent className="p-0 flex flex-col h-full">
-                  <Skeleton className="mb-2 aspect-video w-full rounded-lg" />
+                <CardContent className="p-0 flex flex-col h-full gap-2">
+                  <Skeleton className="aspect-video w-full rounded-lg" />
                   <div className="flex flex-1 flex-col gap-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/3" />
@@ -3411,7 +3381,7 @@ export const CourseStructureDetails = ({
                 return (
                   <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center">
                     <p className="text-neutral-500 italic">
-                      No content available in this chapter.
+                      No content available in this {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}.
                     </p>
                   </div>
                 );
@@ -3444,7 +3414,7 @@ export const CourseStructureDetails = ({
                           }
                         }}
                       >
-                        <CardContent className="p-3 sm:p-4 flex items-start gap-3 sm:gap-4">
+                        <CardContent className="p-3 sm:p-card flex items-start gap-3 sm:gap-4">
                           <div className="flex-shrink-0 flex w-10 h-10 items-center justify-center rounded-lg bg-neutral-100/80 text-sm font-bold text-neutral-500 group-hover:bg-primary-50 group-hover:text-primary-600 transition-colors">
                             {index + 1}
                           </div>
@@ -3510,8 +3480,8 @@ export const CourseStructureDetails = ({
       </div>
     ),
     [TabType.TEACHERS]: (
-      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600">
-        <div className="flex items-center gap-3 mb-3">
+      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600 space-y-stack">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center">
             <span className="text-white text-xs font-bold">T</span>
           </div>
@@ -3526,8 +3496,8 @@ export const CourseStructureDetails = ({
       </div>
     ),
     [TabType.ASSESSMENT]: (
-      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600">
-        <div className="flex items-center gap-3 mb-3">
+      <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600 space-y-stack">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
             <span className="text-white text-xs font-bold">A</span>
           </div>
@@ -3544,8 +3514,8 @@ export const CourseStructureDetails = ({
             <BatchChatPanel packageSessionId={packageSessionId} />
           </>
         ) : (
-          <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600">
-            <div className="flex items-center gap-3 mb-3">
+          <div className="rounded-md bg-card border border-neutral-200 p-5 text-sm text-neutral-600 space-y-stack">
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">D</span>
               </div>
@@ -3982,7 +3952,7 @@ export const CourseStructureDetails = ({
   useEffect(() => {
     setNavHeading(
       <div className="flex items-center gap-2">
-        <div>Course Details</div>
+        <div>{getTerminology(ContentTerms.Course, SystemTerms.Course)} Details</div>
       </div>,
     );
   }, [setNavHeading]);
@@ -4033,7 +4003,7 @@ export const CourseStructureDetails = ({
       )}
 
       <PullToRefreshWrapper onRefresh={refreshData}>
-        <div className="flex size-full flex-col gap-3 rounded-lg bg-card pt-0 pb-3 text-neutral-700">
+        <div className="flex size-full flex-col gap-stack rounded-lg bg-card pt-0 pb-3 text-neutral-700">
           <Tabs
             value={activeStructureTab}
             onValueChange={handleTabChange}

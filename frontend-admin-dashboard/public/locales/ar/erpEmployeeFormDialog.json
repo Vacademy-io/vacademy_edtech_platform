@@ -1,0 +1,78 @@
+{
+    "validation": {
+        "joinDateRequired": "اختر تاريخ الالتحاق",
+        "noticePeriodWholeNumber": "استخدم عددًا صحيحًا من الأيام",
+        "userIdRequired": "معرّف المستخدم مطلوب لربط هذا الملف بشخص"
+    },
+    "noDepartment": "لا يوجد قسم",
+    "noDesignation": "لا يوجد مسمى وظيفي",
+    "noReportingManager": "لا يوجد مدير مباشر",
+    "notSet": "غير محدد",
+    "toast": {
+        "updated": "تم تحديث ملف الموظف",
+        "added": "تمت إضافة الموظف"
+    },
+    "errors": {
+        "updateFailed": "تعذّر تحديث ملف الموظف هذا",
+        "createFailed": "تعذّرت إضافة هذا الموظف"
+    },
+    "editEmployee": "تعديل الموظف",
+    "addEmployee": "إضافة موظف",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ…",
+    "adding": "جارٍ الإضافة…",
+    "saveChanges": "حفظ التغييرات",
+    "sections": {
+        "whoThisIsFor": "لمن هذا الملف",
+        "roleInOrganisation": "الدور في المؤسسة",
+        "emergencyContact": "جهة اتصال الطوارئ",
+        "statutoryIdentifiers": "المعرّفات القانونية"
+    },
+    "fields": {
+        "userId": {
+            "label": "معرّف المستخدم",
+            "placeholder": "معرّف مستخدم المنصة",
+            "description": "طريقة أسهل: افتح Staff Coverage وأنشئ ملف الموارد البشرية مباشرة من شخص موجود بالفعل في فريقك — سيملأ معرّف المستخدم تلقائيًا."
+        },
+        "employeeCode": {
+            "label": "رمز الموظف",
+            "placeholder": "مثل EMP-014"
+        },
+        "joinDate": {
+            "label": "تاريخ الالتحاق"
+        },
+        "department": "القسم",
+        "designation": "المسمى الوظيفي",
+        "reportingManager": "المدير المباشر",
+        "employmentType": "نوع التوظيف",
+        "noticePeriod": {
+            "label": "فترة الإشعار (أيام)",
+            "placeholder": "مثل 30"
+        },
+        "nationality": {
+            "label": "الجنسية",
+            "placeholder": "مثل هندية"
+        },
+        "contactName": {
+            "label": "الاسم",
+            "placeholder": "اسم جهة الاتصال"
+        },
+        "contactPhone": {
+            "label": "الهاتف",
+            "placeholder": "رقم جهة الاتصال"
+        },
+        "contactRelation": {
+            "label": "صلة القرابة",
+            "placeholder": "مثل الزوج/الزوجة"
+        },
+        "pan": {
+            "label": "PAN",
+            "placeholder": "مثل ABCDE1234F"
+        },
+        "uan": {
+            "label": "UAN",
+            "placeholder": "رقم UAN لصندوق التوفير"
+        }
+    },
+    "maskedHint": "الرقم المخزَّن مخفي. اترك هذا الحقل فارغًا للاحتفاظ به."
+}

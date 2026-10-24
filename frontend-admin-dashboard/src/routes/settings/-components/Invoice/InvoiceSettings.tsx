@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Check,
     CaretUpDown,
@@ -55,17 +57,28 @@ import {
 } from './invoice-settings-service';
 import { InvoiceTemplatesSection } from './InvoiceTemplatesSection';
 import { InvoiceNumberingSection } from './InvoiceNumberingSection';
+import { InvoiceSeriesSection, seriesErrors, seriesValueOf } from './InvoiceSeriesSection';
 import { InvoiceNumberingChangeDialog } from './InvoiceNumberingChangeDialog';
 
-const INJECTABLE_PLACEHOLDERS: Array<{ tag: string; description: string }> = [
-    { tag: '{{country}}', description: 'Operating country name' },
-    { tag: '{{country_code}}', description: 'ISO country code (e.g. IN)' },
-    { tag: '{{tax_registration_number}}', description: 'GSTIN / VAT number' },
-    { tag: '{{hsn_code}}', description: 'HSN / SAC code' },
-    { tag: '{{tax_components}}', description: 'Tax components table (label, rate, amount)' },
-    { tag: '{{tax_label}}', description: 'Tax line label' },
-    { tag: '{{tax_rate}}', description: 'Default tax rate %' },
-];
+function getInjectablePlaceholders(
+    t: TFunction
+): Array<{ tag: string; description: string }> {
+    return [
+        { tag: '{{country}}', description: t('injectablePlaceholders.country') },
+        { tag: '{{country_code}}', description: t('injectablePlaceholders.countryCode') },
+        {
+            tag: '{{tax_registration_number}}',
+            description: t('injectablePlaceholders.taxRegistrationNumber'),
+        },
+        { tag: '{{hsn_code}}', description: t('injectablePlaceholders.hsnCode') },
+        {
+            tag: '{{tax_components}}',
+            description: t('injectablePlaceholders.taxComponents'),
+        },
+        { tag: '{{tax_label}}', description: t('injectablePlaceholders.taxLabel') },
+        { tag: '{{tax_rate}}', description: t('injectablePlaceholders.taxRate') },
+    ];
+}
 
 function CountryCombobox({
     code,
@@ -74,6 +87,7 @@ function CountryCombobox({
     code: string;
     onSelect: (code: string, name: string) => void;
 }) {
+    const { t } = useTranslation('settingsInvoice');
     const [open, setOpen] = useState(false);
     const selected = code ? findCountry(code) : undefined;
 
@@ -93,16 +107,21 @@ function CountryCombobox({
                             <span className="text-xs uppercase text-slate-400">{selected.code}</span>
                         </span>
                     ) : (
-                        <span className="text-slate-500">Select country…</span>
+                        <span className="text-slate-500">
+                            {t('countryCombobox.selectPlaceholder')}
+                        </span>
                     )}
                     <CaretUpDown className="size-4 text-slate-400" />
                 </button>
             </PopoverTrigger>
             <PopoverContent className="w-[320px] p-0" align="start">
                 <Command>
-                    <CommandInput placeholder="Search countries…" className="h-9" />
+                    <CommandInput
+                        placeholder={t('countryCombobox.searchPlaceholder')}
+                        className="h-9"
+                    />
                     <CommandList className="max-h-64">
-                        <CommandEmpty>No country found.</CommandEmpty>
+                        <CommandEmpty>{t('countryCombobox.noResults')}</CommandEmpty>
                         <CommandGroup>
                             {COUNTRIES.map((country) => {
                                 const checked = country.code === code;
@@ -149,6 +168,7 @@ function AdminCopyMultiSelect({
     selectedIds: string[];
     onChange: (ids: string[]) => void;
 }) {
+    const { t } = useTranslation('settingsInvoice');
     const [open, setOpen] = useState(false);
     const { data: admins = [], isLoading } = useQuery({
         queryKey: ['invoice-admin-copy-options'],
@@ -175,21 +195,27 @@ function AdminCopyMultiSelect({
                     >
                         {selectedIds.length > 0 ? (
                             <span>
-                                {selectedIds.length} admin{selectedIds.length > 1 ? 's' : ''}{' '}
-                                selected
+                                {t('adminSelect.selectedCount', { count: selectedIds.length })}
                             </span>
                         ) : (
-                            <span className="text-slate-500">Select admins…</span>
+                            <span className="text-slate-500">
+                                {t('adminSelect.selectPlaceholder')}
+                            </span>
                         )}
                         <CaretUpDown className="size-4 text-slate-400" />
                     </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[360px] p-0" align="start">
                     <Command>
-                        <CommandInput placeholder="Search admins…" className="h-9" />
+                        <CommandInput
+                            placeholder={t('adminSelect.searchPlaceholder')}
+                            className="h-9"
+                        />
                         <CommandList className="max-h-64">
                             <CommandEmpty>
-                                {isLoading ? 'Loading admins…' : 'No admins found.'}
+                                {isLoading
+                                    ? t('adminSelect.loading')
+                                    : t('adminSelect.noResults')}
                             </CommandEmpty>
                             <CommandGroup>
                                 {admins.map((admin) => {
@@ -235,7 +261,7 @@ function AdminCopyMultiSelect({
                                 type="button"
                                 className="text-slate-400 hover:text-slate-600"
                                 onClick={() => toggle(admin.id)}
-                                title="Remove"
+                                title={t('adminSelect.remove')}
                             >
                                 ×
                             </button>
@@ -256,6 +282,7 @@ function TaxComponentEditor({
     onChange: (next: TaxComponent[]) => void;
     emptyHint?: string;
 }) {
+    const { t } = useTranslation('settingsInvoice');
     const update = (i: number, patch: Partial<TaxComponent>) =>
         onChange(components.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
     const add = () => onChange([...components, { label: '', rate: 0 }]);
@@ -265,14 +292,14 @@ function TaxComponentEditor({
         <div className="space-y-2">
             {components.length === 0 ? (
                 <p className="rounded-md border border-dashed bg-slate-50/50 px-3 py-2 text-xs italic text-slate-400">
-                    {emptyHint ?? 'No tax components configured.'}
+                    {emptyHint ?? t('taxComponentEditor.emptyDefault')}
                 </p>
             ) : (
                 components.map((comp, index) => (
                     <div key={index} className="flex items-center gap-2">
                         <Input
                             className="max-w-[200px]"
-                            placeholder="Label (e.g. CGST)"
+                            placeholder={t('taxComponentEditor.labelPlaceholder')}
                             value={comp.label}
                             onChange={(e) => update(index, { label: e.target.value })}
                         />
@@ -282,7 +309,7 @@ function TaxComponentEditor({
                                 min={0}
                                 step="0.01"
                                 className="pr-7"
-                                placeholder="Rate"
+                                placeholder={t('taxComponentEditor.ratePlaceholder')}
                                 value={String(comp.rate)}
                                 onChange={(e) => update(index, { rate: parseFloat(e.target.value) || 0 })}
                             />
@@ -295,7 +322,7 @@ function TaxComponentEditor({
                             size="sm"
                             className="p-2 text-destructive hover:text-destructive"
                             onClick={() => remove(index)}
-                            title="Remove component"
+                            title={t('taxComponentEditor.removeTitle')}
                         >
                             <Trash className="size-4" />
                         </Button>
@@ -304,22 +331,24 @@ function TaxComponentEditor({
             )}
             <Button variant="outline" size="sm" className="mt-1" onClick={add}>
                 <Plus className="mr-2 size-4" />
-                Add tax component
+                {t('taxComponentEditor.addButton')}
             </Button>
         </div>
     );
 }
 
-const INVOICE_SETTINGS_SECTIONS: SettingsSectionGroup[] = [
-    {
-        sections: [
-            { id: 'grp-general', label: 'General', icon: Receipt },
-            { id: 'grp-numbering', label: 'Numbering', icon: Hash },
-            { id: 'grp-tax', label: 'Country & Tax', icon: Percent },
-            { id: 'grp-templates', label: 'Templates', icon: FileText },
-        ],
-    },
-];
+function getInvoiceSettingsSections(t: TFunction): SettingsSectionGroup[] {
+    return [
+        {
+            sections: [
+                { id: 'grp-general', label: t('sections.general'), icon: Receipt },
+                { id: 'grp-numbering', label: t('sections.numbering'), icon: Hash },
+                { id: 'grp-tax', label: t('sections.tax'), icon: Percent },
+                { id: 'grp-templates', label: t('sections.templates'), icon: FileText },
+            ],
+        },
+    ];
+}
 
 /** Tokens that make numbering non-sequential — these escalate the save warning. */
 const RISKY_TOKEN_PATTERN =
@@ -335,6 +364,8 @@ const numberingChanged = (a: InvoiceNumberingConfig, b: InvoiceNumberingConfig) 
     a.startFrom !== b.startFrom;
 
 export default function InvoiceSettings() {
+    const { t } = useTranslation('settingsInvoice');
+    const { t: tSeries } = useTranslation('settingsInvoiceSeries');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<InvoiceSettingsData>(DEFAULT_INVOICE_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
@@ -364,14 +395,14 @@ export default function InvoiceSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveInvoiceSettings,
         onSuccess: () => {
-            toast.success('Invoice settings saved');
+            toast.success(t('toasts.saved'));
             setHasChanges(false);
             setNumberingConfirmOpen(false);
             queryClient.invalidateQueries({ queryKey: ['invoice-settings'] });
             // The next number / current example both move once a new strategy is live.
             queryClient.invalidateQueries({ queryKey: ['invoice-numbering-state'] });
         },
-        onError: () => toast.error('Failed to save invoice settings'),
+        onError: () => toast.error(t('toasts.saveFailed')),
     });
 
     /**
@@ -385,6 +416,12 @@ export default function InvoiceSettings() {
         (data ? data.numbering.seqScope !== settings.numbering.seqScope : false);
 
     const handleSave = () => {
+        // A half-filled receipt-series set-up would number nobody differently; say what is missing.
+        const seriesProblems = seriesErrors(seriesValueOf(settings), tSeries);
+        if (seriesProblems.length) {
+            toast.error(seriesProblems[0]);
+            return;
+        }
         if (numberingIsDirty && (numberingState?.existingInvoiceCount ?? 0) > 0) {
             setNumberingConfirmOpen(true);
             return;
@@ -476,14 +513,17 @@ export default function InvoiceSettings() {
 
     if (isLoading) {
         return (
-            <div className="p-6 text-sm text-muted-foreground">Loading invoice settings…</div>
+            <div className="p-6 text-sm text-muted-foreground">{t('page.loading')}</div>
         );
     }
 
+    const invoiceSettingsSections = getInvoiceSettingsSections(t);
+    const injectablePlaceholders = getInjectablePlaceholders(t);
+
     return (
         <SettingsPageShell
-            title="Invoice Settings"
-            description="Configure tax, currency and email behaviour for generated invoices, manage the invoice PDF & email templates, and set the country tax details injected into those templates."
+            title={t('page.title')}
+            description={t('page.description')}
             maxWidth="max-w-7xl"
             dirty={hasChanges}
             saving={saving}
@@ -494,23 +534,21 @@ export default function InvoiceSettings() {
                     setHasChanges(false);
                 }
             }}
-            saveLabel="Save Invoice Settings"
+            saveLabel={t('page.saveLabel')}
         >
-            <SettingsSectionsLayout groups={INVOICE_SETTINGS_SECTIONS}>
+            <SettingsSectionsLayout groups={invoiceSettingsSections}>
             <section id="grp-general" className="space-y-6">
             {/* General invoice options */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">General</CardTitle>
-                    <CardDescription>
-                        Tax and currency defaults applied when an invoice is generated.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('general.title')}</CardTitle>
+                    <CardDescription>{t('general.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
                     <div className="grid gap-5 sm:grid-cols-2">
                         {/* Currency */}
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-currency">Currency</Label>
+                            <Label htmlFor="invoice-currency">{t('general.currency.label')}</Label>
                             <Select
                                 value={settings.currency}
                                 onValueChange={(v) => update({ currency: v })}
@@ -530,11 +568,13 @@ export default function InvoiceSettings() {
 
                         {/* Tax label */}
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-tax-label">Tax label</Label>
+                            <Label htmlFor="invoice-tax-label">
+                                {t('general.taxLabel.label')}
+                            </Label>
                             <Input
                                 id="invoice-tax-label"
                                 className="max-w-xs"
-                                placeholder="e.g. GST, VAT, Tax"
+                                placeholder={t('general.taxLabel.placeholder')}
                                 value={settings.taxLabel}
                                 onChange={(e) => update({ taxLabel: e.target.value })}
                             />
@@ -542,7 +582,9 @@ export default function InvoiceSettings() {
 
                         {/* Tax rate */}
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-tax-rate">Default tax rate (%)</Label>
+                            <Label htmlFor="invoice-tax-rate">
+                                {t('general.taxRate.label')}
+                            </Label>
                             <Input
                                 id="invoice-tax-rate"
                                 type="number"
@@ -555,7 +597,7 @@ export default function InvoiceSettings() {
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Applied to invoice totals when no per-plan tax is set.
+                                {t('general.taxRate.hint')}
                             </p>
                         </div>
                     </div>
@@ -564,10 +606,10 @@ export default function InvoiceSettings() {
                     <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
                             <Label htmlFor="invoice-tax-included" className="cursor-pointer">
-                                Prices include tax
+                                {t('general.taxIncluded.label')}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                When on, listed prices are treated as tax-inclusive.
+                                {t('general.taxIncluded.hint')}
                             </p>
                         </div>
                         <Switch
@@ -580,11 +622,10 @@ export default function InvoiceSettings() {
                     <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
                             <Label htmlFor="invoice-send-email" className="cursor-pointer">
-                                Send invoice email automatically
+                                {t('general.sendEmail.label')}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                Email the generated invoice PDF to the learner when a payment is
-                                completed.
+                                {t('general.sendEmail.hint')}
                             </p>
                         </div>
                         <Switch
@@ -595,11 +636,11 @@ export default function InvoiceSettings() {
                     </div>
 
                     <div className="space-y-1.5 rounded-lg border p-3">
-                        <Label htmlFor="invoice-pdf-placement">Invoice PDF delivery</Label>
+                        <Label htmlFor="invoice-pdf-placement">
+                            {t('general.pdfPlacement.label')}
+                        </Label>
                         <p className="text-xs text-muted-foreground">
-                            Choose which email carries the invoice PDF after a successful payment.
-                            &quot;Payment confirmation email&quot; sends a single combined mail
-                            instead of a separate invoice email.
+                            {t('general.pdfPlacement.hint')}
                         </p>
                         <Select
                             value={settings.invoicePdfPlacement}
@@ -614,10 +655,10 @@ export default function InvoiceSettings() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="INVOICE_EMAIL">
-                                    Separate invoice email
+                                    {t('general.pdfPlacement.optionSeparate')}
                                 </SelectItem>
                                 <SelectItem value="PAYMENT_CONFIRMATION_EMAIL">
-                                    Attach to payment confirmation email (single email)
+                                    {t('general.pdfPlacement.optionAttach')}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -627,12 +668,10 @@ export default function InvoiceSettings() {
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label htmlFor="invoice-admin-copy" className="cursor-pointer">
-                                    Send copy to admins
+                                    {t('general.adminCopy.label')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Whenever a payment completes, the selected admins also receive
-                                    the invoice / payment confirmation email (including the invoice
-                                    PDF).
+                                    {t('general.adminCopy.hint')}
                                 </p>
                             </div>
                             <Switch
@@ -643,7 +682,7 @@ export default function InvoiceSettings() {
                         </div>
                         {settings.sendAdminCopy && (
                             <div className="space-y-1.5">
-                                <Label>Admins to copy</Label>
+                                <Label>{t('general.adminCopy.adminsToCopy')}</Label>
                                 <AdminCopyMultiSelect
                                     selectedIds={settings.adminCopyUserIds}
                                     onChange={(ids) => update({ adminCopyUserIds: ids })}
@@ -656,13 +695,10 @@ export default function InvoiceSettings() {
                         <div className="flex items-center justify-between">
                             <div className="space-y-0.5">
                                 <Label htmlFor="invoice-proforma" className="cursor-pointer">
-                                    Issue unpaid invoices as proforma
+                                    {t('general.proforma.label')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    An invoice raised before payment is issued as a proforma,
-                                    numbered from a separate series. The real invoice number is
-                                    allocated only when it is paid, so a proforma that is cancelled
-                                    or never paid leaves no gap in your invoice series.
+                                    {t('general.proforma.hint')}
                                 </p>
                             </div>
                             <Switch
@@ -673,14 +709,13 @@ export default function InvoiceSettings() {
                         </div>
                         {settings.proformaEnabled && (
                             <p className="rounded-md bg-warning-50 p-2 text-xs text-warning-700">
-                                Invoices already issued keep their current numbers. Proformas are
-                                numbered{' '}
+                                {t('general.proforma.warningPrefix')}{' '}
                                 <span className="font-medium">
                                     {settings.numbering.format.includes('{{doc_type}}')
-                                        ? 'using PRO as the document type'
+                                        ? t('general.proforma.usingProDocType')
                                         : `PRO-${settings.numbering.format}`}
                                 </span>{' '}
-                                and are renumbered into your invoice series on payment.
+                                {t('general.proforma.warningSuffix')}
                             </p>
                         )}
                     </div>
@@ -688,11 +723,10 @@ export default function InvoiceSettings() {
                     <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
                             <Label htmlFor="invoice-manual-enroll" className="cursor-pointer">
-                                Generate invoice on manual / bulk enrollment
+                                {t('general.manualEnroll.label')}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                When an admin enrolls learners manually or in bulk (no payment
-                                gateway), generate an invoice for them.
+                                {t('general.manualEnroll.hint')}
                             </p>
                         </div>
                         <Switch
@@ -712,33 +746,37 @@ export default function InvoiceSettings() {
                     update({ numbering: { ...settings.numbering, ...patch } })
                 }
             />
+            <InvoiceSeriesSection
+                value={seriesValueOf(settings)}
+                onChange={(next) => update({ numberingSeries: next.series, numberingSeriesPolicy: next.policy })}
+                defaultFormat={settings.numbering.format}
+            />
             </section>
 
             <section id="grp-tax" className="space-y-6">
             {/* Country & tax components */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Country &amp; Tax Details</CardTitle>
-                    <CardDescription>
-                        The operating country, your tax registration number and its tax components.
-                        These are injectable into invoice templates.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('tax.title')}</CardTitle>
+                    <CardDescription>{t('tax.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
                     <div className="grid gap-5 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                            <Label>Country</Label>
+                            <Label>{t('tax.country.label')}</Label>
                             <CountryCombobox
                                 code={settings.country.code}
                                 onSelect={handleCountrySelect}
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-tax-reg-no">Tax registration number</Label>
+                            <Label htmlFor="invoice-tax-reg-no">
+                                {t('tax.taxRegNumber.label')}
+                            </Label>
                             <Input
                                 id="invoice-tax-reg-no"
                                 className="max-w-xs"
-                                placeholder="e.g. 22AAAAA0000A1Z5"
+                                placeholder={t('tax.taxRegNumber.placeholder')}
                                 value={settings.country.taxRegistrationNumber}
                                 onChange={(e) =>
                                     updateCountry({ taxRegistrationNumber: e.target.value })
@@ -746,16 +784,16 @@ export default function InvoiceSettings() {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-hsn-sac">HSN / SAC code</Label>
+                            <Label htmlFor="invoice-hsn-sac">{t('tax.hsnSac.label')}</Label>
                             <Input
                                 id="invoice-hsn-sac"
                                 className="max-w-xs"
-                                placeholder="e.g. 999293 (education services)"
+                                placeholder={t('tax.hsnSac.placeholder')}
                                 value={settings.country.hsnSacCode}
                                 onChange={(e) => updateCountry({ hsnSacCode: e.target.value })}
                             />
                             <p className="text-xs text-muted-foreground">
-                                SAC for services (e.g. courses); HSN for goods.
+                                {t('tax.hsnSac.hint')}
                             </p>
                         </div>
                     </div>
@@ -763,18 +801,17 @@ export default function InvoiceSettings() {
                     {/* Tax components editor */}
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <Label>Tax components</Label>
+                            <Label>{t('tax.components.label')}</Label>
                             {settings.country.taxComponents.length > 0 && (
                                 <span className="text-xs text-muted-foreground">
-                                    Total: {totalConfiguredTax}%
+                                    {t('tax.components.total', { total: totalConfiguredTax })}
                                 </span>
                             )}
                         </div>
 
                         {settings.country.taxComponents.length === 0 ? (
                             <p className="rounded-md border border-dashed bg-slate-50/50 px-3 py-2 text-xs italic text-slate-400">
-                                No tax components configured. Add one (e.g. CGST 9%, SGST 9%) or pick
-                                a country above to load suggested defaults.
+                                {t('tax.components.empty')}
                             </p>
                         ) : (
                             <div className="space-y-2">
@@ -782,7 +819,7 @@ export default function InvoiceSettings() {
                                     <div key={index} className="flex items-center gap-2">
                                         <Input
                                             className="max-w-[200px]"
-                                            placeholder="Label (e.g. CGST)"
+                                            placeholder={t('tax.components.labelPlaceholder')}
                                             value={comp.label}
                                             onChange={(e) =>
                                                 updateTaxComponent(index, { label: e.target.value })
@@ -794,7 +831,7 @@ export default function InvoiceSettings() {
                                                 min={0}
                                                 step="0.01"
                                                 className="pr-7"
-                                                placeholder="Rate"
+                                                placeholder={t('tax.components.ratePlaceholder')}
                                                 value={String(comp.rate)}
                                                 onChange={(e) =>
                                                     updateTaxComponent(index, {
@@ -811,7 +848,7 @@ export default function InvoiceSettings() {
                                             size="sm"
                                             className="p-2 text-destructive hover:text-destructive"
                                             onClick={() => removeTaxComponent(index)}
-                                            title="Remove component"
+                                            title={t('tax.components.removeTitle')}
                                         >
                                             <Trash className="size-4" />
                                         </Button>
@@ -827,29 +864,28 @@ export default function InvoiceSettings() {
                             onClick={addTaxComponent}
                         >
                             <Plus className="mr-2 size-4" />
-                            Add tax component
+                            {t('tax.components.addButton')}
                         </Button>
                     </div>
 
                     {/* Tax components by package type */}
                     <div className="space-y-2 rounded-lg border p-3">
-                        <Label>Tax components by package type</Label>
+                        <Label>{t('tax.byPackageType.label')}</Label>
                         <p className="text-xs text-muted-foreground">
-                            Override the default components for a specific package type. At invoice
-                            time, each line item uses its package type&apos;s components, falling back
-                            to the default set above.
+                            {t('tax.byPackageType.description')}
                         </p>
                         <Select value={selectedPkgType} onValueChange={setSelectedPkgType}>
                             <SelectTrigger className="max-w-xs">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {PACKAGE_TYPES.map((t) => {
+                                {PACKAGE_TYPES.map((pkgType) => {
                                     const count =
-                                        settings.country.taxComponentsByPackageType[t]?.length ?? 0;
+                                        settings.country.taxComponentsByPackageType[pkgType]
+                                            ?.length ?? 0;
                                     return (
-                                        <SelectItem key={t} value={t}>
-                                            {t}
+                                        <SelectItem key={pkgType} value={pkgType}>
+                                            {pkgType}
                                             {count > 0 ? ` (${count})` : ''}
                                         </SelectItem>
                                     );
@@ -861,17 +897,19 @@ export default function InvoiceSettings() {
                                 settings.country.taxComponentsByPackageType[selectedPkgType] ?? []
                             }
                             onChange={(next) => updateTypeComponents(selectedPkgType, next)}
-                            emptyHint={`No override for ${selectedPkgType} — the default components above will apply.`}
+                            emptyHint={t('tax.byPackageType.emptyOverride', {
+                                packageType: selectedPkgType,
+                            })}
                         />
                     </div>
 
                     {/* Injectable placeholders reference */}
                     <div className="rounded-lg border bg-slate-50/60 p-3">
                         <p className="mb-2 text-xs font-semibold text-slate-600">
-                            Injectable in invoice templates
+                            {t('injectablePlaceholders.sectionTitle')}
                         </p>
                         <div className="grid gap-1.5 sm:grid-cols-2">
-                            {INJECTABLE_PLACEHOLDERS.map((p) => (
+                            {injectablePlaceholders.map((p) => (
                                 <div key={p.tag} className="flex items-center gap-2 text-xs">
                                     <code className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-slate-700">
                                         {p.tag}

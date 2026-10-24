@@ -1,0 +1,42 @@
+{
+    "title": "التسليمات",
+    "loading": "جارٍ تحميل التسليمات…",
+    "noSubmissionsYet": "لا توجد تسليمات بعد.",
+    "learnerFallback": "المتعلم",
+    "submittedAt": "تم التسليم في {{date}}",
+    "pageOfTotal": "صفحة {{page}} من {{total}}",
+    "status": {
+        "evaluated": "مُقيَّم",
+        "evaluating": "قيد التقييم",
+        "pending": "قيد الانتظار"
+    },
+    "actions": {
+        "reEvaluate": "إعادة التقييم",
+        "quickEvaluate": "تقييم سريع",
+        "tool": "الأداة"
+    },
+    "errors": {
+        "couldNotLoadSubmissions": "تعذّر تحميل التسليمات. افتح \"عرض التسليمات\" لرؤيتها.",
+        "couldNotLoadQuestion": "تعذّر تحميل سؤال التقييم. يرجى تجربة الأداة الكاملة.",
+        "enterMarks": "يرجى إدخال الدرجات.",
+        "submitFailed": "فشل إرسال التقييم. يرجى المحاولة مرة أخرى."
+    },
+    "toast": {
+        "evaluationSubmitted": "تم إرسال التقييم",
+        "evaluationSubmittedDescription": "تم تقييم تسليم {{name}}."
+    },
+    "dialog": {
+        "heading": "تقييم — {{name}}",
+        "marks": "الدرجات",
+        "outOfMarks": " (من أصل {{max}})",
+        "remarks": "الملاحظات",
+        "optional": "(اختياري)",
+        "remarksPlaceholder": "أضف ملاحظات سيراها المتعلم…",
+        "evaluatedPdf": "ملف PDF المُقيَّم",
+        "choosePdf": "اختر ملف PDF",
+        "noFileChosen": "لم يتم اختيار ملف",
+        "cancel": "إلغاء",
+        "submitting": "جارٍ الإرسال…",
+        "submitEvaluation": "إرسال التقييم"
+    }
+}

@@ -3,6 +3,10 @@ import { hslVar } from "@/lib/theme-ramp";
 import { resolveFontStack } from "@/utils/branding";
 import {
   THEME_ROLE_SETTINGS_KEY,
+  UI_CORNERS_VALUES,
+  UI_DENSITY_VALUES,
+  UI_GRADIENT_VALUES,
+  type StudentUiTypeMirror,
   type ThemeRoleSettings,
 } from "@/types/theme-role-settings";
 
@@ -73,6 +77,7 @@ export function applyInstituteBackground(): void {
   const root = document.documentElement;
   if (!background) {
     root.style.removeProperty("--background");
+    root.style.removeProperty("--canvas");
     root.style.removeProperty("--cp-bg");
     return;
   }
@@ -80,6 +85,10 @@ export function applyInstituteBackground(): void {
     const [h, s, l] = convert.hex.hsl(background.replace("#", ""));
     const value = hslVar([h, s, l]);
     root.style.setProperty("--background", value);
+    // --canvas too: a skin may tint the canvas (Corporate does), and an
+    // institute's explicit page background has to win over a skin default.
+    // Inline beats the stylesheet, so writing it here restores that precedence.
+    root.style.setProperty("--canvas", value);
     root.style.setProperty("--cp-bg", value);
   } catch {
     // ignore malformed institute-authored hex
@@ -103,4 +112,82 @@ export function applyInstituteFont(): void {
   } catch {
     // ignore malformed institute-authored font
   }
+}
+
+/**
+ * Apply the institute-authored presentation axes (THEME_SETTING `density` /
+ * `corners` / `gradient` roles) as data-ui-* attributes on <html>. The token
+ * flips themselves live in styles/ui-axes.css.
+ *
+ * Attributes rather than inline custom properties on purpose: the axes each
+ * move several tokens at once, and theme-provider already writes --primary-*
+ * and --background inline. An inline declaration outranks any stylesheet rule,
+ * so writing the axis tokens inline here would silently win over an
+ * institute's --background/--radius work and, worse, could not be undone by a
+ * later stylesheet. Attributes keep the cascade intact and let
+ * applyInstituteBackground's inline --background continue to override the
+ * axis-set canvas, which is the precedence we want.
+ *
+ * Unknown/absent values fall back to the documented default for that axis, so
+ * a malformed or partially-saved blob degrades to today's look rather than to
+ * an unstyled one.
+ */
+export function applyInstituteUiAxes(): void {
+  const roles = readThemeRoleSettings()?.roles;
+  const root = document.documentElement;
+
+  // Write an axis attribute ONLY when the institute actually chose that axis.
+  //
+  // An always-present attribute would make "institute picked the default" and
+  // "institute never opened the Appearance tab" indistinguishable in CSS, and a
+  // skin could then never supply its own house defaults — the Corporate skin
+  // proposes 10px corners and a tinted canvas out of the box, but must still
+  // lose to an institute that explicitly picked "sharp".
+  //
+  // Omitting the attribute falls through to :root, whose values are identical to
+  // the documented defaults, so this is a no-op for every institute that has not
+  // set an axis. Where the attribute IS present it beats the skin's defaults,
+  // because styles/ui-axes.css is imported after the skin stylesheets and the two
+  // selectors have equal specificity.
+  const setOrClear = <T extends string>(
+    attr: string,
+    value: unknown,
+    allowed: readonly T[]
+  ) => {
+    if (allowed.includes(value as T)) root.setAttribute(attr, value as string);
+    else root.removeAttribute(attr);
+  };
+
+  setOrClear("data-ui-density", roles?.density, UI_DENSITY_VALUES);
+  setOrClear("data-ui-corners", roles?.corners, UI_CORNERS_VALUES);
+  setOrClear("data-ui-gradient", roles?.gradient, UI_GRADIENT_VALUES);
+}
+
+/**
+ * Resolve the learner UI skin, preferring the new THEME_SETTING `skin` role
+ * and falling back to the legacy STUDENT_DISPLAY_SETTINGS `ui.type`.
+ *
+ * The skin control moved from Student Display to the Appearance tab so that
+ * every "how the learner app looks" setting lives in one blob. Institutes
+ * configured before that move have their skin ONLY in ui.type, and there is no
+ * migration job — so this fallback is load-bearing, not defensive. Reading
+ * roles.skin bare would silently reset every already-configured institute to
+ * the default skin.
+ *
+ * @param legacyUiType STUDENT_DISPLAY_SETTINGS.ui.type, if the caller has it.
+ */
+export function resolveUiSkin(
+  legacyUiType?: StudentUiTypeMirror | null
+): StudentUiTypeMirror {
+  const allowed: readonly StudentUiTypeMirror[] = [
+    "default",
+    "vibrant",
+    "play",
+    "cleanerPlay",
+    "corporate",
+  ];
+  const fromTheme = readThemeRoleSettings()?.roles?.skin;
+  if (fromTheme && allowed.includes(fromTheme)) return fromTheme;
+  if (legacyUiType && allowed.includes(legacyUiType)) return legacyUiType;
+  return "default";
 }

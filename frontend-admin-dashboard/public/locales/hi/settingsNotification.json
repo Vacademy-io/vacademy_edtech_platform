@@ -1,0 +1,319 @@
+{
+    "subTabs": {
+        "ariaLabel": "सूचना सेटिंग्स के सेक्शन",
+        "general": "सामान्य",
+        "chat": "चैट और समुदाय",
+        "push": "पुश सूचनाएं",
+        "email": "ईमेल"
+    },
+    "header": {
+        "title": "सूचना सेटिंग्स",
+        "subtitle": "संस्थान-व्यापी घोषणा अनुमतियां कॉन्फ़िगर करें",
+        "saveSettings": "सेटिंग्स सहेजें"
+    },
+    "loading": "लोड हो रहा है...",
+    "errors": {
+        "loadSettings": "सेटिंग्स लोड करने में विफल",
+        "loadEmailConfigurations": "ईमेल कॉन्फ़िगरेशन लोड करने में विफल",
+        "saveSettings": "सूचना सेटिंग्स सहेजने में विफल"
+    },
+    "toasts": {
+        "settingsSaved": "सूचना सेटिंग्स सहेजी गईं"
+    },
+    "footer": {
+        "save": "सहेजें"
+    },
+    "general": {
+        "title": "सामान्य",
+        "approvalRequired": {
+            "label": "अनुमोदन आवश्यक",
+            "hint": "घोषणाएं दिखाई देने से पहले एडमिन अनुमोदन आवश्यक करें"
+        },
+        "maxAnnouncementsPerDay": {
+            "label": "अधिकतम घोषणाएं/दिन",
+            "hint": "प्रति उपयोगकर्ता सीमा"
+        },
+        "retentionDays": {
+            "label": "प्रतिधारण (दिन)",
+            "hint": "स्वचालित सफाई अवधि"
+        },
+        "defaultTimezone": {
+            "label": "डिफ़ॉल्ट समय क्षेत्र",
+            "hint": "शेड्यूलिंग और रिमाइंडर के लिए उपयोग किया जाता है"
+        }
+    },
+    "community": {
+        "title": "समुदाय",
+        "studentsCanSend": "छात्र भेज सकते हैं",
+        "adminsCanModerate": "एडमिन मॉडरेट कर सकते हैं",
+        "allowReplies": "जवाब देने की अनुमति दें",
+        "allowedTags": "अनुमत टैग"
+    },
+    "systemAlerts": {
+        "title": "सिस्टम अलर्ट",
+        "teachersCanSend": "शिक्षक भेज सकते हैं",
+        "adminsCanSend": "एडमिन भेज सकते हैं",
+        "autoDismissHours": {
+            "label": "स्वतः खारिज (घंटे)",
+            "hint": "इतने बाद स्वतः साफ़ करें"
+        }
+    },
+    "appOverlays": {
+        "title": "ऐप ओवरले",
+        "description": "फ़ुल-स्क्रीन घोषणाएं जो {{role}} ऐप खोलने पर देखते हैं",
+        "canSend": "{{role}} भेज सकते हैं"
+    },
+    "dashboardPins": {
+        "title": "डैशबोर्ड पिन",
+        "studentsCanCreate": "छात्र बना सकते हैं",
+        "teachersCanCreate": "शिक्षक बना सकते हैं",
+        "adminsCanCreate": "एडमिन बना सकते हैं",
+        "maxDurationHours": {
+            "label": "अधिकतम अवधि (घंटे)",
+            "hint": "पिन का जीवनकाल"
+        },
+        "maxPinsPerUser": {
+            "label": "प्रति उपयोगकर्ता अधिकतम पिन",
+            "hint": "निर्माण सीमा"
+        },
+        "requireApproval": "अनुमोदन आवश्यक"
+    },
+    "directMessages": {
+        "title": "डायरेक्ट मैसेज",
+        "studentsCanSend": "छात्र भेज सकते हैं",
+        "allowReplies": "जवाब देने की अनुमति दें",
+        "moderationEnabled": "मॉडरेशन सक्षम"
+    },
+    "push": {
+        "title": "पुश सूचनाएं (Firebase)",
+        "enable": {
+            "label": "पुश सूचनाएं सक्षम करें",
+            "hint": "मान्य Firebase सेवा खाता JSON आवश्यक"
+        },
+        "base64Label": "या Base64-एन्कोडेड JSON पेस्ट करें",
+        "base64Placeholder": "Base64 स्ट्रिंग",
+        "validateAndSave": "सत्यापित करें और सहेजें",
+        "keyConfigured": "इस संस्थान के लिए एक सर्विस अकाउंट कुंजी सहेजी गई है। यह दोबारा नहीं दिखाई जाती; इसे बदलने के लिए ही नई कुंजी पेस्ट करें।"
+    },
+    "streams": {
+        "title": "स्ट्रीम्स",
+        "teachersCanSend": "शिक्षक भेज सकते हैं",
+        "allowDuringClass": "कक्षा के दौरान अनुमति दें",
+        "autoArchiveHours": {
+            "label": "स्वतः संग्रह (घंटे)",
+            "hint": "स्वतः संग्रह में ले जाएं"
+        }
+    },
+    "resources": {
+        "title": "संसाधन",
+        "studentsCanUpload": "छात्र अपलोड कर सकते हैं",
+        "maxFileSizeMb": {
+            "label": "अधिकतम फ़ाइल आकार (MB)",
+            "hint": "अपलोड सीमा"
+        }
+    },
+    "chat": {
+        "title": "इन-ऐप मैसेज",
+        "enabled": "इन-ऐप मैसेज सक्षम",
+        "ownMessagesTitle": "{{role}} — अपने संदेश",
+        "ownMessagesDescription": "यह हर जगह लागू होता है जहां {{studentRoleLower}} चैट कर सकते हैं। {{teacherRole}} और एडमिन हमेशा दोनों कार्रवाइयां बनाए रखते हैं।",
+        "canEditOwn": "{{role}} अपने संदेश संपादित कर सकते हैं",
+        "canDeleteOwn": "{{role}} अपने संदेश हटा सकते हैं",
+        "batchGroupsTitle": "{{batch}} समूह",
+        "canPost": "{{role}} पोस्ट कर सकते हैं",
+        "communityTitle": "समुदाय",
+        "communityChannelEnabled": "समुदाय चैनल सक्षम",
+        "communityRulesTitle": "समुदाय नियम",
+        "guidelinesTitle": "दिशानिर्देश शीर्षक",
+        "guidelinesTitlePlaceholder": "जैसे, समुदाय दिशानिर्देश",
+        "guidelineItems": "दिशानिर्देश आइटम",
+        "guidelineItemPlaceholder": "दिशानिर्देश जोड़ें और Enter दबाएं",
+        "acknowledgementRequired": "स्वीकृति आवश्यक",
+        "slowModeSeconds": {
+            "label": "स्लो मोड (सेकंड)",
+            "hint": "पोस्ट के बीच देरी"
+        },
+        "newMemberReadonlyMinutes": {
+            "label": "नया सदस्य केवल-पढ़ने योग्य (मिनट)",
+            "hint": "शुरुआत में नए सदस्यों को म्यूट करें"
+        },
+        "allowLinks": "लिंक की अनुमति दें",
+        "allowAttachments": "अटैचमेंट की अनुमति दें",
+        "bannedKeywords": "प्रतिबंधित कीवर्ड",
+        "bannedKeywordPlaceholder": "कीवर्ड जोड़ें और Enter दबाएं",
+        "autoModerationAction": "स्वतः-मॉडरेशन कार्रवाई",
+        "selectActionPlaceholder": "कार्रवाई चुनें",
+        "actionBlock": "ब्लॉक करें",
+        "actionFlag": "फ़्लैग करें",
+        "directMessagesTitle": "डायरेक्ट मैसेज",
+        "directMessagesEnabled": "डायरेक्ट मैसेज सक्षम",
+        "senderCanMessage": "भेजने वाला \\ किसे मैसेज कर सकता है",
+        "attachmentsTitle": "अटैचमेंट",
+        "imagesEnabled": "इमेज सक्षम",
+        "filesEnabled": "फ़ाइलें सक्षम",
+        "maxFileSizeMb": {
+            "label": "अधिकतम फ़ाइल आकार (MB)",
+            "hint": "अपलोड सीमा"
+        }
+    },
+    "email": {
+        "addressesTitle": "ईमेल पते",
+        "addressesDescription": "ये वे ईमेल पते हैं जिनका उपयोग आपका संस्थान शिक्षार्थियों और स्टाफ़ को संदेश भेजने के लिए करता है। प्रत्येक पते का एक उद्देश्य होता है — उदाहरण के लिए, एक मार्केटिंग अभियानों के लिए, दूसरा सपोर्ट जवाबों के लिए।",
+        "toastAddFailed": "यह ईमेल पता नहीं जोड़ा जा सका। कृपया पुनः प्रयास करें।",
+        "toastUpdateSuccess": "सहेजा गया। इस पते से भेजे गए नए ईमेल अपडेट किए गए विवरण का उपयोग करेंगे।",
+        "toastUpdateFailed": "आपके बदलाव सहेजे नहीं जा सके। कृपया पुनः प्रयास करें।",
+        "toastDeleteSuccess": "ईमेल पता हटाया गया।",
+        "toastDeleteFailed": "यह ईमेल पता हटाया नहीं जा सका। कृपया पुनः प्रयास करें।"
+    },
+    "emailCc": {
+        "title": "ईमेल कॉपी (CC / BCC)",
+        "description": "लेन-देन संबंधी ईमेल की एक कॉपी अपनी टीम को भेजें — उदाहरण के लिए, हर इनवॉइस अपने अकाउंट्स इनबॉक्स में। जब तक आप यह सेटिंग और नीचे दिए गए अलग-अलग ईमेल दोनों चालू न करें, कॉपी बंद रहती हैं।",
+        "sendCopies": "लेन-देन संबंधी ईमेल की कॉपी भेजें",
+        "noneSelected": "नीचे कोई ईमेल चयनित नहीं है, इसलिए कोई कॉपी नहीं भेजी जाएगी।",
+        "noAddresses": "कोई पता नहीं जोड़ा गया है, इसलिए कोई कॉपी नहीं भेजी जाएगी। पता जोड़ने के लिए टाइप करें और Enter दबाएं।",
+        "copyType": "कॉपी प्रकार",
+        "copyTypeHint": "BCC आपकी टीम के पते छिपाए रखता है। CC उन्हें ईमेल पर शिक्षार्थी को दिखाता है — CC का उपयोग तभी करें जब शिक्षार्थी को यह देखना चाहिए कि इसे और किसे भेजा गया।",
+        "alwaysCopy": "हमेशा इन पतों को कॉपी करें",
+        "alwaysCopyHint": "नीचे आप जो भी ईमेल चालू करते हैं, उस हर एक में जोड़ा जाता है। इसके बजाय प्रति ईमेल पते सेट करने के लिए इसे खाली छोड़ें।",
+        "emailPlaceholder": "name@example.com — जोड़ने के लिए Enter दबाएं",
+        "whichEmails": "कौन-से ईमेल कॉपी करने हैं",
+        "alsoCopyTo": "इसे भी कॉपी करें — ऊपर दिए गए पतों के अतिरिक्त",
+        "notRecorded": "कॉपी को प्राप्तकर्ता के विरुद्ध ईमेल रिपोर्ट में दर्ज नहीं किया जाता, और कॉपी किए गए पते से मिले जवाब ट्रैक नहीं होते।",
+        "invalidEmail": "\"{{value}}\" एक मान्य ईमेल पता नहीं है।"
+    },
+    "stringListEditor": {
+        "defaultPlaceholder": "जोड़ें और Enter दबाएं"
+    },
+    "tagEditor": {
+        "placeholder": "टैग जोड़ें और Enter दबाएं"
+    },
+    "emailPurposes": {
+        "utility": {
+            "label": "सिस्टम सूचनाएं और अपडेट",
+            "hint": "खाता अलर्ट, पासवर्ड रीसेट, रिमाइंडर"
+        },
+        "info": {
+            "label": "घोषणाएं और सामान्य जानकारी",
+            "hint": "समाचार, न्यूज़लेटर, प्रसारण अपडेट"
+        },
+        "transactional": {
+            "label": "रसीदें और पुष्टिकरण",
+            "hint": "भुगतान रसीदें, नामांकन पुष्टिकरण"
+        },
+        "marketing": {
+            "label": "मार्केटिंग और प्रोमोशन",
+            "hint": "अभियान, ऑफ़र, प्रचारात्मक सामग्री"
+        },
+        "support": {
+            "label": "सपोर्ट और सहायता",
+            "hint": "मदद चाहने वाले शिक्षार्थियों या स्टाफ़ के जवाब"
+        },
+        "other": "अन्य (कस्टम उद्देश्य)…",
+        "customHint": "ऊपर की श्रेणियों में फ़िट न होने वाले ईमेल के लिए एक कस्टम उद्देश्य।"
+    },
+    "emailList": {
+        "verifiedNotice": {
+            "part1": "प्रत्येक पते को",
+            "verifiedWithService": "ईमेल सेवा से सत्यापित",
+            "part2": "किया जाना चाहिए, तभी वह भेज सकेगा। पता जोड़ने पर उसे एक पुष्टिकरण लिंक ईमेल किया जाता है — उस लिंक पर क्लिक करें, फिर",
+            "refreshStatus": "स्थिति रीफ़्रेश करें",
+            "part3": "दबाएं। जब तक कोई पता सत्यापित नहीं होता, उसके संदेश प्लेटफ़ॉर्म के डिफ़ॉल्ट पते से भेजे जाते हैं।"
+        },
+        "unverifiedNotice": {
+            "part1": "यहां किसी भी पते से ईमेल भेजे जाने से पहले,",
+            "needsVerification": "हमारी टीम को उसे ईमेल सेवा से सत्यापित करना होगा",
+            "part2": "। जब तक यह नहीं हो जाता, नए पते से संदेश प्राप्तकर्ताओं तक नहीं पहुंचेंगे। यदि आपने अभी कोई पता जोड़ा या बदला है, तो कृपया",
+            "contactSupport": "सपोर्ट से संपर्क करें",
+            "part3": "ताकि हम आपके लिए इसे सत्यापित कर सकें।"
+        },
+        "loadingAddresses": "आपके ईमेल पते लोड हो रहे हैं…",
+        "addNewTitle": "नया ईमेल पता जोड़ें",
+        "fields": {
+            "email": "ईमेल पता",
+            "emailPlaceholder": "जैसे, support@yourschool.com",
+            "displayName": "प्रदर्शित नाम",
+            "displayNamePlaceholder": "जैसे, \"Acme Academy Support\"",
+            "displayNameHint": "ईमेल पते के पास प्राप्तकर्ताओं को दिखाया जाता है।",
+            "purpose": "यह ईमेल किसलिए है?",
+            "purposePlaceholder": "एक उद्देश्य चुनें",
+            "customPurposePlaceholder": "जैसे, \"Newsletter\" या \"Alumni\"",
+            "customPurposeHint": "एक छोटा नाम उपयोग करें। हम इसे आंतरिक रूप से {{code}} के रूप में सहेजेंगे।",
+            "customPurposeDefaultCode": "YOUR_PURPOSE",
+            "notes": "टिप्पणियां (वैकल्पिक)",
+            "notesPlaceholder": "आपकी टीम के संदर्भ के लिए"
+        },
+        "addButton": "ईमेल पता जोड़ें",
+        "yourAddresses": "आपके ईमेल पते ({{count}})",
+        "emptyState": "आपने अभी तक कोई ईमेल पता नहीं जोड़ा है। एक जोड़ने के लिए ऊपर दिए गए फ़ॉर्म का उपयोग करें।",
+        "toasts": {
+            "emailExists": "यह ईमेल पता पहले से जोड़ा जा चुका है।",
+            "purposeExists": "इस उद्देश्य के लिए आपके पास पहले से एक पता है। मौजूदा पते को संपादित करें या कोई दूसरा उद्देश्य चुनें।",
+            "addedVerificationStarted": "ईमेल पता जोड़ा गया — सत्यापन शुरू हुआ।",
+            "addedVerificationStartedDescription": "AWS ने {{email}} पर एक पुष्टिकरण ईमेल भेजा है। उसे खोलें और लिंक पर क्लिक करें, फिर नीचे दिए गए पते को रीफ़्रेश करें।",
+            "added": "ईमेल पता जोड़ा गया।",
+            "addedVerificationFailedDescription": "सत्यापन स्वतः शुरू नहीं हो सका। नीचे दिए गए पते पर \"Verify sender\" बटन का उपयोग करें।",
+            "addedNoVerificationDescription": "इस पते से ईमेल भेजे जाने से पहले, हमारी टीम को इसे सत्यापित करना होगा। इसे सत्यापित करवाने के लिए कृपया सपोर्ट से संपर्क करें — सत्यापन से पहले भेजे गए ईमेल प्राप्तकर्ताओं तक नहीं पहुंचेंगे।"
+        }
+    },
+    "verificationBadge": {
+        "verified": "सत्यापित",
+        "pending": "सत्यापन लंबित",
+        "failed": "सत्यापन विफल",
+        "notVerified": "सत्यापित नहीं"
+    },
+    "dnsTable": {
+        "toastCopied": "कॉपी किया गया",
+        "toastCopyFailed": "कॉपी नहीं हो सका",
+        "instructions": "अपने डोमेन में ये DNS रिकॉर्ड जोड़ें, फिर \"स्थिति रीफ़्रेश करें\" दबाएं:",
+        "columnType": "प्रकार",
+        "columnName": "नाम / होस्ट",
+        "columnValue": "मान",
+        "copyButton": "कॉपी करें"
+    },
+    "emailRow": {
+        "purposeLockedTitle": "पता जोड़े जाने के बाद उद्देश्य बदला नहीं जा सकता। अलग उद्देश्य के लिए इस पते को हटाकर नया पता जोड़ें।",
+        "purposeLocked": "उद्देश्य बदला नहीं जा सकता",
+        "sendingStatus": "भेजने की स्थिति:",
+        "working": "काम जारी है…",
+        "verifySender": "प्रेषक सत्यापित करें",
+        "checking": "जांच हो रही है…",
+        "refreshStatus": "स्थिति रीफ़्रेश करें",
+        "verifyDomainInstead": "इसके बजाय पूरा डोमेन सत्यापित करें (बेहतर डिलीवरेबिलिटी)",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "saveChanges": "बदलाव सहेजें",
+        "removing": "हटाया जा रहा है…",
+        "remove": "हटाएं",
+        "genericError": "कृपया पुनः प्रयास करें।",
+        "confirmDelete": "\"{{email}}\" हटाएं?\n\nयह अब {{purpose}} के लिए उपयोग नहीं होगा।\nज़रूरत पड़ने पर आप इसे बाद में वापस जोड़ सकते हैं।",
+        "toasts": {
+            "domainVerificationStarted": "डोमेन सत्यापन शुरू हुआ",
+            "verificationEmailSent": "सत्यापन ईमेल भेजा गया",
+            "verificationStartFailed": "सत्यापन शुरू नहीं हो सका",
+            "refreshFailed": "स्थिति रीफ़्रेश नहीं हो सकी"
+        },
+        "controls": {
+            "controlsTitle": "Sending controls",
+            "controlsHint": "Optional. Cap how many emails this sender may send per day (overflow is queued for the next day) and add the unsubscribe footer required for commercial email.",
+            "maxPerDay": "Max emails per day",
+            "maxPerDayPlaceholder": "0 = unlimited",
+            "timezone": "Day boundary time zone",
+            "timezonePlaceholder": "e.g. America/New_York",
+            "sendAfterHour": "Next day's window opens at (hour, 0–23)",
+            "postalAddress": "Postal address for the footer",
+            "postalAddressPlaceholder": "Required by CAN-SPAM for commercial email",
+            "listUnsubscribe": "Add unsubscribe link and headers to every email from this sender",
+            "listUnsubscribeHint": "Promotional emails always get them; turn this on to add them to other purposes too.",
+            "rampEnabled": "Warm up gradually (recommended for a new domain)",
+            "rampEnabledHint": "Start small and raise the daily limit on a schedule. Mailbox providers judge a new sending domain on how its volume grows; anything over the day's limit is queued for the next window, not dropped.",
+            "rampStartPerDay": "Start at (emails/day)",
+            "rampStep": "Increase by",
+            "rampEveryDays": "Every (days)",
+            "rampCeiling": "Stop increasing at",
+            "rampStartedOn": "Warm-up started {{date}}. The schedule follows the calendar, so pausing does not bank extra volume.",
+            "skipWeekends": "Don't send on Saturday or Sunday",
+            "maxPerDayManaged": "Max emails per day (set by the warm-up schedule)"
+        },
+        "verifyDomainUpgrade": "Verify the whole domain for better deliverability (DKIM) — sending keeps working while DNS propagates"
+    }
+}

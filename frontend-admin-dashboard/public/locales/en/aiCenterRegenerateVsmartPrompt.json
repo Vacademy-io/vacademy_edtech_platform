@@ -1,0 +1,43 @@
+{
+    "dialog": {
+        "heading": "Vsmart Prompt"
+    },
+    "fields": {
+        "text": {
+            "label": "Text",
+            "placeholder": "Enter text"
+        },
+        "num": {
+            "label": "Number of Questions",
+            "placeholder": "Enter number of questions"
+        },
+        "classLevel": {
+            "label": "Class Level",
+            "placeholder": "Enter class level"
+        },
+        "topics": {
+            "label": "Topics",
+            "placeholder": "Enter topics"
+        },
+        "questionType": {
+            "label": "Question Type",
+            "placeholder": "Enter question type"
+        },
+        "questionLanguage": {
+            "label": "Question Language",
+            "placeholder": "Enter question language"
+        }
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "regenerate": "Regenerate"
+    },
+    "validation": {
+        "textRequired": "Text is required",
+        "numRequired": "Number of questions must be at least 1",
+        "classLevelRequired": "Class level is required",
+        "topicsRequired": "Topics are required",
+        "questionTypeRequired": "Question type is required",
+        "questionLanguageRequired": "Question language is required"
+    }
+}

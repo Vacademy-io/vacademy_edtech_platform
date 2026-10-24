@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "makeAnnouncement": "إنشاء إعلان"
+    },
+    "dialog": {
+        "heading": "إنشاء إعلان",
+        "titleLabel": "عنوان الإعلان",
+        "titlePlaceholder": "اكتب عنوانًا موجزًا للإعلان (مثال: الوقت المتبقي، تم حل المشكلة التقنية)",
+        "instructionsHeading": "تعليمات التقييم",
+        "publishButton": "نشر الإعلان"
+    },
+    "validation": {
+        "titleRequired": "العنوان مطلوب"
+    }
+}

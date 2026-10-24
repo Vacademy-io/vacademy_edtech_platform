@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "اختر محادثة",
+        "subtitle": "اختر جهة اتصال من اليسار لعرض الرسائل"
+    },
+    "backToConversations": "العودة إلى المحادثات",
+    "idLabel": "المعرّف: {{id}}",
+    "escalation": {
+        "title": "بانتظار ردك",
+        "reason": {
+            "maxTurns": "وصلت المحادثة إلى حد الردود الآلية.",
+            "aiError": "تعذر على المساعد إنشاء رد.",
+            "manual": "تم تحويلها من قبل مسؤول.",
+            "default": "لم تكن لدى المساعد المعلومات اللازمة للرد، لذا ذكر أنه سيتحقق مع الفريق.",
+            "existingLead": "راسل عميل محتمل حالي مرة أخرى عبر روبوت المحادثة. لم يتم إنشاء عميل محتمل جديد — سُجّل التواصل على سجله الحالي.",
+            "crmSaveFailed": "تعذر على روبوت المحادثة حفظ هذا العميل المحتمل في CRM. إجاباته أدناه — أضفها إلى CRM يدويًا."
+        },
+        "askedQuote": "سألوا: «{{message}}»",
+        "messageQuote": "رسالته: «{{message}}»",
+        "answersQuote": "إجاباته:\n{{message}}"
+    },
+    "loadError": {
+        "retrying": "إعادة المحاولة…",
+        "tryAgain": "أعد المحاولة"
+    },
+    "loadOlder": {
+        "loading": "جارٍ التحميل...",
+        "cta": "تحميل الرسائل الأقدم"
+    },
+    "noMessages": "لا توجد رسائل في هذه المحادثة بعد",
+    "bot": "بوت",
+    "viaTemplate": "عبر القالب «{{name}}»",
+    "notDelivered": "لم يتم التسليم",
+    "accountLevelFailure": "يؤثر هذا على كل رسالة WhatsApp من هذا الرقم، وليس على هذه المحادثة فقط.",
+    "errorCode": "رمز خطأ WhatsApp {{code}}",
+    "viewDocument": "عرض المستند",
+    "attachmentAlt": "مرفق",
+    "origin": {
+        "workflow": "أُرسلت بواسطة سير العمل «{{name}}»",
+        "workflowUnnamed": "أُرسلت بواسطة سير عمل",
+        "chatbotFlow": "أُرسلت بواسطة تدفق روبوت المحادثة «{{name}}»",
+        "chatbotFlowUnnamed": "أُرسلت بواسطة تدفق روبوت محادثة"
+    },
+    "templateCategory": {
+        "MARKETING": "تسويق",
+        "UTILITY": "خدمي",
+        "AUTHENTICATION": "مصادقة"
+    },
+    "noFailureReason": "لم يذكر واتساب سببًا لعدم تسليم هذه الرسالة.",
+    "inbound": {
+        "kind": {
+            "image": "صورة",
+            "video": "فيديو",
+            "audio": "صوت",
+            "voice": "رسالة صوتية",
+            "sticker": "ملصق",
+            "document": "مستند",
+            "location": "موقع",
+            "contacts": "بطاقة جهة اتصال",
+            "reaction": "تفاعل",
+            "unsupported": "نوع رسالة لا يشاركه واتساب مع تطبيقات الأعمال",
+            "form_response": "رد على نموذج",
+            "other": "مرفق"
+        },
+        "mediaError": {
+            "expired": "لم يعد هذا الملف متاحًا على واتساب — يُحتفظ بالوسائط لمدة 30 يومًا تقريبًا.",
+            "tooLarge": "هذا الملف أكبر من أن يُعرض هنا.",
+            "notConfigured": "واتساب غير مُعدّ لهذه المؤسسة، لذا لا يمكن جلب الملف.",
+            "failed": "تعذّر تحميل هذا الملف من واتساب."
+        },
+        "loading": "جارٍ تحميل {{kind}}…",
+        "openInMaps": "فتح في خرائط Google",
+        "unnamedContact": "جهة اتصال بلا اسم",
+        "reactedTo": "تفاعل بـ {{emoji}} على «{{preview}}»",
+        "reactedToMessage": "تفاعل بـ {{emoji}} على رسالة",
+        "reactionRemoved": "أزال تفاعلًا"
+    }
+}

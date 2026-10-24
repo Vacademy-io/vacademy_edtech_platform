@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "batchSelection": "बैच चयन",
+        "individualSelection": "व्यक्तिगत चयन"
+    },
+    "studentCount_one": "{{count}} छात्र",
+    "studentCount_other": "{{count}} छात्र",
+    "clickRowHint": "डेटा एंट्री शुरू करने के लिए किसी पंक्ति पर क्लिक करें",
+    "search": {
+        "placeholder": "नाम से खोजें..."
+    },
+    "table": {
+        "headers": {
+            "studentName": "छात्र का नाम",
+            "status": "स्थिति",
+            "score": "अंक"
+        },
+        "empty": "कोई छात्र नहीं मिला"
+    },
+    "status": {
+        "attempted": "प्रयास किया गया",
+        "pending": "लंबित",
+        "registered": "पंजीकृत"
+    }
+}

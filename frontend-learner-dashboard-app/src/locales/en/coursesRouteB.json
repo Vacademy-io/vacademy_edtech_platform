@@ -1,0 +1,45 @@
+{
+  "courseDetailsPage": {
+    "selectors": {
+      "sessionPlaceholder": "Select {{session}}",
+      "levelPlaceholder": "Select {{level}}"
+    },
+    "mobileCard": {
+      "overview": "{{course}} Overview",
+      "author": "Author",
+      "courseTime": "{{course}} Time"
+    },
+    "sections": {
+      "whatYoullLearn": "What you'll learn?",
+      "aboutThisCourse": "About this {{course}}",
+      "whoShouldJoin": "Who should join?"
+    },
+    "enroll": "Enroll",
+    "courseBannerAlt": "{{course}} Banner",
+    "unknownInstructor": "Unknown {{instructor}}"
+  },
+  "ratings": {
+    "heading": "Ratings & Reviews",
+    "notAvailable": "N/A",
+    "reviewsCount_one": "{{count}} review",
+    "reviewsCount_other": "{{count}} reviews",
+    "loading": "Loading reviews...",
+    "empty": "No reviews yet",
+    "toast": {
+      "submitFailed": "Failed to submit rating",
+      "unexpectedError": "An unexpected error occurred"
+    }
+  },
+  "videoPlayer": {
+    "unsupported": "Your browser does not support the video tag.",
+    "vimeoTitle": "Vimeo video player",
+    "youtubeTitle": "YouTube video player"
+  },
+  "courseStructure": {
+    "heading": "{{course}} Structure",
+    "collapseAll": "Collapse All",
+    "expandAll": "Expand All",
+    "noSlides": "No slides in this chapter.",
+    "navHeading": "{{course}} Details"
+  }
+}

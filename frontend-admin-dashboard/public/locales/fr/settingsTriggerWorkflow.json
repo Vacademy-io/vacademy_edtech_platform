@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "title": "Déclencher un workflow",
+        "descriptionPrefix": "Exécuter une automatisation pour",
+        "descriptionSuffix": "lorsqu'un événement de lead se déclenche."
+    },
+    "actionType": {
+        "label": "Que voulez-vous faire ?",
+        "communication": {
+            "title": "Communication",
+            "description": "Envoyer un e-mail ou un message WhatsApp."
+        },
+        "payload": {
+            "title": "Coller les données dans une charge utile",
+            "description": "Envoyer les données de l'événement (POST) vers une URL."
+        }
+    },
+    "event": {
+        "label": "Se déclencher sur quel événement ?",
+        "placeholder": "Sélectionner un événement de lead",
+        "options": {
+            "leadAssignedToCounselor": "Lead assigné au conseiller",
+            "leadTatReminderBefore": "Rappel de délai du lead (avant dépassement)",
+            "leadTatOverdue": "Délai du lead dépassé",
+            "followUpDue": "Relance à effectuer",
+            "followUpOverdue": "Relance en retard",
+            "leadStatusChanged": "Statut du lead modifié"
+        }
+    },
+    "statusGate": {
+        "label": "Quand le statut passe à",
+        "placeholder": "N'importe quel statut",
+        "anyStatusChange": "N'importe quel changement de statut",
+        "hint": "Correspond au nouveau statut du lead. Choisissez un statut pour ne se déclencher que sur ce changement, ou conservez « N'importe quel changement de statut »."
+    },
+    "channel": {
+        "label": "Canal",
+        "email": "E-mail",
+        "whatsapp": "WhatsApp"
+    },
+    "recipient": {
+        "label": "Envoyer la notification à",
+        "counselor": "Conseiller assigné (par défaut)",
+        "lead": "Coordonnées propres du lead"
+    },
+    "template": {
+        "label": "Modèle",
+        "createSample": "Créer un modèle d'exemple",
+        "creatingSample": "Création de l'exemple…",
+        "placeholder": "Sélectionner un modèle",
+        "emptyText": "Aucun modèle ne correspond à votre recherche.",
+        "noneFoundEmail": "Aucun modèle d'e-mail trouvé. Cliquez sur « Créer un modèle d'exemple » ci-dessus pour un point de départ prêt à l'emploi.",
+        "noneFoundWhatsapp": "Aucun modèle WhatsApp trouvé. Créez d'abord un modèle WhatsApp approuvé."
+    },
+    "payload": {
+        "label": "URL de destination",
+        "placeholder": "https://example.com/webhook",
+        "hint": "Le contexte de l'événement (lead, conseiller, pool, etc.) est envoyé en POST au format JSON."
+    },
+    "name": {
+        "label": "Nom du workflow",
+        "placeholder": "ex. Notifier le parent lorsque la relance est due"
+    },
+    "description": {
+        "label": "Description",
+        "optional": "(facultatif)",
+        "placeholder": "Que fait ce workflow ?"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "creating": "Création…",
+        "create": "Créer le workflow"
+    },
+    "toasts": {
+        "sampleCreated": "Modèle d'exemple « {{name}} » créé",
+        "noSampleTemplate": "Aucun modèle d'exemple disponible pour cet événement.",
+        "sampleCreateFailed": "Échec de la création du modèle",
+        "workflowCreated": "Workflow créé",
+        "workflowCreateFailed": "Échec de la création du workflow"
+    }
+}

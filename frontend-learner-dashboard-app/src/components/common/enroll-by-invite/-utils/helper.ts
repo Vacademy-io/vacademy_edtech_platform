@@ -1,5 +1,6 @@
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { InsituteCustomField } from "../-services/custom-fields-setup";
+import i18n from "@/i18n";
 
 interface CourseMedia {
   type: string; // e.g., 'video', 'image', etc.
@@ -295,8 +296,8 @@ export function convertPlansToPaymentOptions(rawPlans: PackageSessionData) {
       description: plan.description,
       duration:
         unit === "days"
-          ? plan.validity_in_days + " days"
-          : Math.floor(plan.validity_in_days / 30) + " months",
+          ? i18n.t("enrollmentB:planDuration.days", { count: plan.validity_in_days })
+          : i18n.t("enrollmentB:planDuration.months", { count: Math.floor(plan.validity_in_days / 30) }),
       features,
     };
   });
@@ -315,7 +316,7 @@ export function getDefaultPlanFromPaymentsData(item: PaymentOption) {
     return {
       id: item.id,
       name: item.name,
-      description: "Pay in installments",
+      description: i18n.t("enrollmentB:planDescriptions.payInInstallments"),
       currency: (parsedData?.currency as string) || "INR",
       type: item.type,
       complex_payment_option_id: item.complex_payment_option_id,
@@ -327,7 +328,7 @@ export function getDefaultPlanFromPaymentsData(item: PaymentOption) {
     return {
       id: item.id,
       name: item.name,
-      description: "Access to donation plan.",
+      description: i18n.t("enrollmentB:planDescriptions.donationPlan"),
       suggestedAmount:
         parsedData?.donationData?.suggestedAmounts
           ?.split(",")
@@ -344,7 +345,7 @@ export function getDefaultPlanFromPaymentsData(item: PaymentOption) {
     return {
       id: item.id,
       name: item.name,
-      description: "Access to free plan.",
+      description: i18n.t("enrollmentB:planDescriptions.freePlan"),
       days: parsedData?.freeData?.validityDays || 0,
       type: item.type,
     };
@@ -352,7 +353,7 @@ export function getDefaultPlanFromPaymentsData(item: PaymentOption) {
     return {
       id: item.id,
       name: item.name,
-      description: "Access to one time payment plan.",
+      description: i18n.t("enrollmentB:planDescriptions.oneTimePlan"),
       price: parsedData?.upfrontData?.fullPrice || "",
       currency: parsedData?.currency || "",
       type: item.type,
@@ -365,7 +366,7 @@ export function getDefaultPlanFromPaymentsData(item: PaymentOption) {
     return {
       id: item.id,
       name: item.name,
-      description: "Access to subscription plan.",
+      description: i18n.t("enrollmentB:planDescriptions.subscriptionPlan"),
       currency: (parsedData?.currency as string) || "",
       type: item.type,
       payment_options: item.payment_plans,

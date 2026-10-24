@@ -1,0 +1,187 @@
+{
+    "loading": "Loading settings…",
+    "toast": {
+        "pushUnsupported": "This browser does not support push notifications.",
+        "pushEnabled": "Push notifications enabled on this device.",
+        "pushBlocked": "Notifications blocked. Unblock them from the browser padlock icon, then retry.",
+        "saveSuccess": "Doubt management settings saved",
+        "saveFailed": "Failed to save doubt management settings",
+        "duplicateType": "Duplicate query type key \"{{key}}\". Rename one of them.",
+        "duplicateStatus": "Duplicate status key \"{{key}}\". Rename one of them."
+    },
+    "defaultAssignment": {
+        "title": "Default auto-assignment",
+        "description": "Controls who gets pre-assigned when a learner raises a new doubt. Only affects new doubts — existing doubts keep their current assignees.",
+        "options": {
+            "subjectTeacher": {
+                "title": "Subject teacher",
+                "description": "Auto-assign to faculty mapped to the doubt's subject (narrowest match). Ideal for slide-level doubts where the subject is unambiguous."
+            },
+            "batchTeacher": {
+                "title": "Batch teacher",
+                "description": "Auto-assign to every faculty mapped to the batch, regardless of subject. This is the legacy behavior."
+            },
+            "both": {
+                "title": "Both",
+                "description": "Union of subject-mapped and batch-mapped faculty."
+            },
+            "none": {
+                "title": "Admins only",
+                "description": "Skip teachers entirely — assign every doubt to your institute admins, who are notified and then triage it onward."
+            }
+        }
+    },
+    "fallback": {
+        "title": "Fallback behavior",
+        "description": "What to do when a doubt's subject has no mapped faculty.",
+        "label": "Fall back to batch teachers when no subject teacher exists",
+        "hint": "If off, doubts with no subject-mapped faculty will be left unassigned and require manual attention."
+    },
+    "subOrg": {
+        "title": "{{label}} routing",
+        "description": "Applies only to doubts raised by a learner who belongs to a {{labelLower}}. Their {{labelLower}} shares this institute's courses and batches, so none of the rules above can reach its staff — batch-teacher matching skips {{labelLower}} access rows and role lookups run against this institute. Turn this on to notify them as well.",
+        "notifyLabel": "Also notify the learner's {{labelLower}}",
+        "notifyHint": "They are added as assignees on top of whoever the rules above picked, so they get the email, push and bell alert and the doubt shows up in their inbox.",
+        "whoReceives": "Who receives it",
+        "recipients": {
+            "allTeam": {
+                "title": "{{label}} admins and team",
+                "description": "Everyone with active access to the learner's {{labelLower}} — its admins plus every team member added under it."
+            },
+            "adminsOnly": {
+                "title": "{{label}} admins only",
+                "description": "Just the admins of the learner's {{labelLower}}. Quieter, but team members won't see the doubt unless an admin assigns it."
+            }
+        },
+        "notifyParentLabel": "Also email this institute's own team",
+        "notifyParentOn": "On: your teachers/admins are notified alongside the {{labelLower}}, exactly as they are for a normal doubt.",
+        "notifyParentOff": "Off: only the {{labelLower}} is emailed. Your own team gets no email, push or bell for these doubts — but they still appear in your Doubt Management inbox, so nothing is hidden."
+    },
+    "browserPush": {
+        "title": "Push notifications on this device",
+        "description": "Each admin/teacher enables push on their own browser. Without this step, the push toggles below do nothing for this user — the backend sends, the browser silently drops.",
+        "status": {
+            "granted": "Enabled",
+            "denied": "Blocked by browser",
+            "unsupported": "Not supported",
+            "default": "Not enabled yet"
+        },
+        "hint": {
+            "granted": "This device will receive FCM pushes for doubt events.",
+            "denied": "Click the padlock icon in the URL bar → Notifications → Allow, then reload.",
+            "default": "Click the button to prompt for notification permission.",
+            "unsupported": "Your browser doesn't expose the Notification API."
+        },
+        "alreadyEnabled": "Already enabled",
+        "enableButton": "Enable push"
+    },
+    "events": {
+        "raised": {
+            "title": "When a doubt is raised",
+            "description": "Notifies the assigned teacher(s). Push is delivered via the same FCM pipeline already used elsewhere — browsers that haven't granted notification permission will silently skip."
+        },
+        "resolved": {
+            "title": "When a doubt is resolved",
+            "description": "Notifies the learner who raised the doubt."
+        }
+    },
+    "notificationCard": {
+        "push": {
+            "label": "Push notification",
+            "hint": "Default on. Uses FCM — recipients must have granted notification permission and registered a device token."
+        },
+        "bell": {
+            "label": "In-app bell alert",
+            "hint": "Default on. Shows a persistent entry in the recipient's bell icon — stays visible when the user returns to the app even if they missed the push."
+        },
+        "email": {
+            "label": "Email notification",
+            "hint": "On by default. Sent alongside the push — turn off to suppress. Uses the seeded default template unless you pick a custom one below."
+        },
+        "emailTemplate": {
+            "label": "Email template",
+            "defaultOption": "Default template (auto)",
+            "helpPrefix": "Leave as",
+            "helpEm": "Default template (auto)",
+            "helpSuffix": "to use the seeded institute template — it automatically picks up your institute theme color, name, and support email. Pick a custom template here only if you want different copy.",
+            "placeholdersLabel": "Placeholders available:"
+        }
+    },
+    "queryTypes": {
+        "title": "Query types",
+        "description": "The categories a learner can pick when raising a query (e.g. Doubt, Technical Issue, Payment Issue). Each type routes to its own default handler — including the built-in Doubt type, which you can point at a teacher, a role, or specific staff. The Doubt type can't be renamed or removed.",
+        "namePlaceholder": "Type name (e.g. Technical Issue)",
+        "builtIn": "Built-in",
+        "removeType": "Remove type",
+        "enabled": "Enabled",
+        "learnerCanPick": "Learner can pick",
+        "routeTo": "Route to",
+        "followsDefault": "follows \"Default auto-assignment\" above",
+        "systemRoutingNote": "This only changes who is auto-assigned and notified. Teacher inbox visibility still follows \"Default auto-assignment\" above.",
+        "staffHandlers": "Staff handlers",
+        "loadingStaff": "Loading staff…",
+        "noStaff": "No active staff found. Add team members under Teams first, then pick them here.",
+        "nobodyPicked": "Nobody picked yet — until you add someone, these queries fall back to the institute's admins.",
+        "alsoAlwaysAssign": "Also always assign",
+        "alsoAssignHint": "Added on top of \"Route to\" — pick a teacher route and still keep these people on every query of this type.",
+        "rolesPlaceholder": "Roles…",
+        "staffPlaceholder": "Staff…",
+        "addType": "Add query type",
+        "assigneeSource": {
+            "default": "Default auto-assignment (set above)",
+            "subjectTeacher": "Subject teacher",
+            "batchTeacher": "Batch teacher",
+            "role": "A role",
+            "specificUsers": "Specific staff",
+            "none": "No one (no notifications sent)"
+        },
+        "roles": {
+            "ADMIN": "Admin",
+            "TEACHER": "Teacher",
+            "EVALUATOR": "Evaluator",
+            "CONTENT CREATOR": "Content Creator",
+            "ASSESSMENT CREATOR": "Assessment Creator"
+        }
+    },
+    "learnerQuery": {
+        "title": "Learner query intake",
+        "description": "Let learners raise queries from outside a course. Off by default — turning this on does not affect the in-course doubt flow. Learners only see the types you marked \"Learner can pick\" above.",
+        "enableLabel": "Enable learner query intake",
+        "enableHint": "Master switch for the entry points below.",
+        "topbarLabel": "Show \"?\" icon in the top bar",
+        "topbarHint": "A quick-access question-mark button visible across the learner app.",
+        "dashboardLabel": "Show \"Raise a query\" card on the dashboard",
+        "dashboardHint": "A help card on the learner home screen.",
+        "guestLabel": "Allow logged-out visitors to raise queries",
+        "guestHint": "Adds a \"Need help?\" button to the learner login page. Visitors leave their name and email — staff replies are emailed to that address."
+    },
+    "saveButton": {
+        "saving": "Saving…",
+        "save": "Save settings"
+    },
+    "statuses": {
+        "title": "Doubt statuses",
+        "description": "The stages a doubt moves through on the staff side — Pending and Resolved are built in; add your own (In progress, Waiting on learner, Escalated…). Every status change and remark is recorded in the doubt's activity trail with who made it.",
+        "namePlaceholder": "Status name (e.g. In progress)",
+        "builtIn": "Built-in",
+        "removeStatus": "Remove status",
+        "color": "Status colour",
+        "kind": "Counts as",
+        "kinds": {
+            "OPEN": "Open",
+            "IN_PROGRESS": "In progress",
+            "RESOLVED": "Resolved"
+        },
+        "kindHint": {
+            "OPEN": "Learners see this as an open, unanswered doubt.",
+            "IN_PROGRESS": "Learners see this as being worked on. The doubt stays open.",
+            "RESOLVED": "Moving here resolves the doubt: the learner is notified and it leaves the pending lists."
+        },
+        "learnerLabel": "Learner sees",
+        "learnerLabelPlaceholder": "Same as \"{{label}}\"",
+        "thisStatus": "this status",
+        "enabled": "Enabled",
+        "addStatus": "Add status",
+        "trailNote": "Internal remarks and the assignment/status history are only ever shown to admins and teachers — learners see just the status label above."
+    }
+}

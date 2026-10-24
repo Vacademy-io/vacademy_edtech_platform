@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Clock } from "@phosphor-icons/react";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { Preferences } from "@capacitor/preferences";
 import { safeParse } from "@/lib/storage";
+import { isUntimedPlayMode } from "@/lib/untimed-play-mode";
 
 export function SectionTimer() {
+  const { t } = useTranslation("questionTest");
   const {
     currentSection,
     sectionTimers,
@@ -36,6 +39,8 @@ export function SectionTimer() {
   }, []);
   useEffect(() => {
     if (!currentTimer?.isRunning) return;
+    // Practice tests and surveys have no clock, section-wise or otherwise.
+    if (isUntimedPlayMode(playMode)) return;
 
     const timer = setInterval(() => {
       const newTime = Math.max(0, currentTimer.timeLeft - 1000);
@@ -51,7 +56,7 @@ export function SectionTimer() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentTimer?.isRunning, currentTimer?.timeLeft, currentSection]);
+  }, [currentTimer?.isRunning, currentTimer?.timeLeft, currentSection, playMode]);
 
   if (!currentTimer) return null;
 
@@ -73,7 +78,7 @@ export function SectionTimer() {
           className={`transition-colors ${colorClass}`}
           role="timer"
           aria-live={isCritical ? "assertive" : "off"}
-          aria-label={`Section time remaining: ${minutes} minutes ${seconds} seconds`}
+          aria-label={t("sectionTimer.ariaLabel", { minutes, seconds })}
         >
           {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
         </span>

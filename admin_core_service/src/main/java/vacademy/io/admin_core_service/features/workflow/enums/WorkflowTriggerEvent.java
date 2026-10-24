@@ -30,6 +30,11 @@ public enum WorkflowTriggerEvent {
     SUBSCRIPTION_CANCELLED,
     SUBSCRIPTION_TERMINATED,
     LEARNER_RE_ENROLLMENT,
+    // Fired once a plan change is actually APPLIED to the user_plan — after the upgrade
+    // payment clears, after a scheduled downgrade takes effect at renewal, or immediately
+    // on an admin override. Keyed by eventId = enrollInviteId (the NEW one on a
+    // cross-option move), falling back to instituteId.
+    SUBSCRIPTION_PLAN_CHANGED,
 
     // Fired when an admin makes a learner INACTIVE in a package session
     // (institute_learner MAKE_INACTIVE operation). Keyed by eventId = packageSessionId.
@@ -83,6 +88,9 @@ public enum WorkflowTriggerEvent {
     // locked out of a live paper, so it is the assessment event most worth routing to email /
     // WhatsApp / push rather than leaving in an inbox nobody refreshes.
     ASSESSMENT_REATTEMPT_REQUESTED,
+    // A bulk AI copy-check (uploaded scanned copies) finished: every copy graded,
+    // failed, or waiting for an admin to pick the student. Fired by assessment_service.
+    ASSESSMENT_AI_EVALUATION_COMPLETED,
 
     // Onboarding. STEP_* are keyed by eventId = onboarding_step.id (the step definition,
     // not the instance) so admins can target a specific step from the trigger config UI.
@@ -90,6 +98,23 @@ public enum WorkflowTriggerEvent {
     ONBOARDING_FLOW_COMPLETED,
     ONBOARDING_STEP_ENTERED,
     ONBOARDING_STEP_COMPLETED,
-    ONBOARDING_STEP_SKIPPED
+    ONBOARDING_STEP_SKIPPED,
+
+    /**
+     * HR & Payroll events (Phase F5) — institutes attach approval/notification/
+     * escalation workflows to these; HR's own emails remain as direct sends,
+     * these enable AUTOMATION on top.
+     */
+    HR_LEAVE_REQUESTED,
+    HR_LEAVE_DECIDED,
+    HR_COMP_OFF_DECIDED,
+    HR_LOAN_REQUESTED,
+    HR_LOAN_DECIDED,
+    HR_REIMBURSEMENT_REQUESTED,
+    HR_REIMBURSEMENT_DECIDED,
+    HR_PAYROLL_PROCESSED,
+    HR_PAYROLL_APPROVED,
+    HR_PAYROLL_PAID,
+    HR_EMPLOYEE_STATUS_CHANGED
 }
 

@@ -1,0 +1,55 @@
+{
+    "dialogTitle": "Attribuer un badge",
+    "intro_one": "Attribuer un badge à {{count}} apprenant sélectionné.",
+    "intro_many": "Attribuer un badge à {{count}} apprenants sélectionnés.",
+    "intro_other": "Attribuer un badge à {{count}} apprenants sélectionnés.",
+    "duplicateRowsHint_one": "1 apprenant apparaît dans plusieurs lignes de la sélection et n'est compté qu'une fois.",
+    "duplicateRowsHint_many": "{{count}} apprenants apparaissent dans plusieurs lignes de la sélection et ne sont comptés qu'une fois.",
+    "duplicateRowsHint_other": "{{count}} apprenants apparaissent dans plusieurs lignes de la sélection et ne sont comptés qu'une fois.",
+    "disabledBanner": "Les badges sont désactivés pour cet établissement. Les attributions sont enregistrées, mais les apprenants ne les verront pas et ne seront pas notifiés tant que les badges ne sont pas activés dans Paramètres → Badges et récompenses (les parents ayant accès au portail les voient immédiatement).",
+    "noteLabel": "Note pour les apprenants (facultatif)",
+    "notePlaceholder": "ex. Effort remarquable sur le projet de la semaine — chaque apprenant voit cette note avec le badge",
+    "noteHint": "La même note est jointe à chaque apprenant de cette sélection.",
+    "running": {
+        "title": "Attribution du badge…",
+        "progress": "{{done}} apprenant(s) sur {{total}} traité(s)",
+        "keepOpen": "Gardez cette fenêtre ouverte jusqu'à la fin."
+    },
+    "results": {
+        "awarded_one": "{{count}} apprenant nouvellement récompensé",
+        "awarded_many": "{{count}} apprenants nouvellement récompensés",
+        "awarded_other": "{{count}} apprenants nouvellement récompensés",
+        "upgraded_one": "{{count}} apprenant l'avait débloqué automatiquement — désormais enregistré comme attribution par le personnel",
+        "upgraded_many": "{{count}} apprenants l'avaient débloqué automatiquement — désormais enregistrés comme attributions par le personnel",
+        "upgraded_other": "{{count}} apprenants l'avaient débloqué automatiquement — désormais enregistrés comme attributions par le personnel",
+        "alreadyHad_one": "{{count}} apprenant possédait déjà ce badge (inchangé)",
+        "alreadyHad_many": "{{count}} apprenants possédaient déjà ce badge (inchangés)",
+        "alreadyHad_other": "{{count}} apprenants possédaient déjà ce badge (inchangés)",
+        "failed_one": "{{count}} apprenant n'a pas pu être récompensé — réessayez pour lui",
+        "failed_many": "{{count}} apprenants n'ont pas pu être récompensés — réessayez pour eux",
+        "failed_other": "{{count}} apprenants n'ont pas pu être récompensés — réessayez pour eux",
+        "notEnrolled_one": "{{count}} apprenant n'appartient pas à cet établissement (ignoré)",
+        "notEnrolled_many": "{{count}} apprenants n'appartiennent pas à cet établissement (ignorés)",
+        "notEnrolled_other": "{{count}} apprenants n'appartiennent pas à cet établissement (ignorés)",
+        "notified": "Les apprenants ont été notifiés.",
+        "notNotified": "Les apprenants n'ont pas été notifiés car les badges sont désactivés pour cet établissement."
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "award_one": "Attribuer à {{count}} apprenant",
+        "award_many": "Attribuer à {{count}} apprenants",
+        "award_other": "Attribuer à {{count}} apprenants",
+        "awarding": "Attribution…",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "success_one": "Badge attribué à {{count}} apprenant",
+        "success_many": "Badge attribué à {{count}} apprenants",
+        "success_other": "Badge attribué à {{count}} apprenants",
+        "nothingNew": "Tous les apprenants sélectionnés possédaient déjà ce badge",
+        "partialFailure_one": "{{count}} apprenant n'a pas pu être récompensé",
+        "partialFailure_many": "{{count}} apprenants n'ont pas pu être récompensés",
+        "partialFailure_other": "{{count}} apprenants n'ont pas pu être récompensés",
+        "notNotified": "Les apprenants ne sont pas notifiés tant que les badges sont désactivés"
+    }
+}

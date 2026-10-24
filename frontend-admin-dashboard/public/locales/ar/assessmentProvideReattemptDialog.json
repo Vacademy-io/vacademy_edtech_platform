@@ -1,0 +1,17 @@
+{
+    "dialogHeading": "منح إعادة المحاولة",
+    "confirmTitlePrefix": "هل أنت متأكد من رغبتك في منح إعادة محاولة إلى",
+    "confirmTitleSuffix": " المحدد؟",
+    "inputLabel": "عدد المحاولات الممنوحة",
+    "inputPlaceholder": "1",
+    "inputError": "أدخل رقمًا صحيحًا بين 1 و20",
+    "doneButton": "تم",
+    "toastSuccess_zero": "لم يتم منح أي محاولات ({{count}}) للمشاركين المحددين.",
+    "toastSuccess_one": "تم منح محاولة واحدة ({{count}}) للمشاركين المحددين.",
+    "toastSuccess_two": "تم منح محاولتين ({{count}}) للمشاركين المحددين.",
+    "toastSuccess_few": "تم منح {{count}} محاولات للمشاركين المحددين.",
+    "toastSuccess_many": "تم منح {{count}} محاولة للمشاركين المحددين.",
+    "toastSuccess_other": "تم منح {{count}} محاولة للمشاركين المحددين.",
+    "toastErrorBulk": "تعذر تحديد تسجيلات المشاركين المحددين.",
+    "toastErrorSingle": "تعذر تحديد تسجيل هذا المشارك."
+}

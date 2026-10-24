@@ -36,6 +36,16 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
+# Site Assistant iframe, injected by /site-assistant.js on institutes' own
+# websites. Must stay frameable: never add X-Frame-Options / frame-ancestors.
+/site-assistant-embed
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/site-assistant-embed/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
 # ============================================
 # ALL OTHER ROUTES - Basic security headers only
 # ============================================
@@ -72,6 +82,13 @@
 /*.css
   Cache-Control: public, max-age=31536000
 
+# The Site Assistant loader keeps ONE unhashed URL that institutes paste into
+# their own sites, so the year-long /*.js cache above must not apply to it:
+# a fix would otherwise take a year to reach their visitors.
+/site-assistant.js
+  ! Cache-Control
+  Cache-Control: public, max-age=300, must-revalidate
+
 /*.png
   Cache-Control: public, max-age=31536000, immutable
 
@@ -84,8 +101,13 @@
 /*.gif
   Cache-Control: public, max-age=31536000, immutable
 
-/*.ico
-  Cache-Control: public, max-age=31536000, immutable
+# NOTE: deliberately NO blanket rule for .ico.
+#
+# /favicon.ico is answered per-institute by functions/_middleware.ts, which sets
+# its own short cache-control. The old `/*.ico immutable` rule matched the
+# REQUEST path (see the warning at the top of this file), so it pinned whichever
+# mark a visitor first received for a year — on white-label domains that was the
+# Vacademy "V", and no deploy could dislodge it.
 
 /*.svg
   Cache-Control: public, max-age=31536000, immutable
@@ -117,3 +139,8 @@
 
 /manifest.webmanifest
   Cache-Control: no-cache, no-store, must-revalidate
+
+# WebAssembly core of the premium teacher avatar (@spatius/avatarkit)
+/assets/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable

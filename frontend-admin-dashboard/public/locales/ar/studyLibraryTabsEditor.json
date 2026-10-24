@@ -1,0 +1,26 @@
+{
+    "tabbedContent": "محتوى بعلامات تبويب",
+    "addTab": "+ إضافة علامة تبويب",
+    "preview": "معاينة",
+    "edit": "تحرير",
+    "switchOrRenameHint": "انقر للتبديل · انقر نقرًا مزدوجًا لإعادة التسمية",
+    "untitled": "بدون عنوان",
+    "renameTab": "إعادة تسمية علامة التبويب",
+    "removeTab": "إزالة علامة التبويب",
+    "tabColorLabel": "لون علامة التبويب:",
+    "defaultTabLabel": "علامة التبويب {{number}}",
+    "genericTab": "علامة التبويب",
+    "contentPlaceholder": "محتوى \"{{label}}\"…",
+    "emptyTabContent": "محتوى علامة التبويب فارغ",
+    "tabColors": {
+        "default": "افتراضي",
+        "blue": "أزرق",
+        "green": "أخضر",
+        "red": "أحمر",
+        "orange": "برتقالي",
+        "purple": "بنفسجي",
+        "teal": "أزرق مخضر",
+        "pink": "وردي",
+        "gray": "رمادي"
+    }
+}

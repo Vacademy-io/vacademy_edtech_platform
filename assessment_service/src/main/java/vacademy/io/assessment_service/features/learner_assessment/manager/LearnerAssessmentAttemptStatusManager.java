@@ -27,6 +27,7 @@ import vacademy.io.assessment_service.features.question_core.enums.EvaluationTyp
 import vacademy.io.assessment_service.features.assessment.service.StudentAttemptService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.core.utils.DateUtil;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.assessment_service.core.exception.VacademyException;
 import vacademy.io.common.logging.SentryLogger;
 
@@ -61,6 +62,9 @@ public class LearnerAssessmentAttemptStatusManager {
         RestartAssessmentService restartAssessmentService;
 
         @Autowired
+        vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiEvaluationSubmissionEnqueuer aiEvaluationSubmissionEnqueuer;
+
+        @Autowired
         AssessmentLLMAnalyticsService assessmentLLMAnalyticsService;
 
         @Autowired
@@ -75,6 +79,44 @@ public class LearnerAssessmentAttemptStatusManager {
          * expiry paths always run the authoritative calculation regardless.
          */
         private final Set<String> attemptsWithRecalcInFlight = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        /**
+         * Reject an attempt that does not belong to the caller.
+         * <p>
+         * These endpoints previously checked only that the attempt belonged to the
+         * ASSESSMENT in the query string — never that it belonged to the caller. Since
+         * the attempt id is the only other input, any authenticated learner could sync
+         * over, or submit, another learner's exam.
+         * <p>
+         * Staff are let through deliberately: evaluators and admins legitimately act on
+         * a learner's attempt, and this guard exists to stop learner-on-learner access,
+         * not to narrow what staff can already do.
+         */
+        static void assertOwnershipOrStaff(StudentAttempt attempt, CustomUserDetails user, String operation) {
+                if (user == null) {
+                        throw new ForbiddenException("Not allowed to access this attempt");
+                }
+                String ownerId = attempt.getRegistration() == null ? null : attempt.getRegistration().getUserId();
+                if (ownerId != null && ownerId.equals(user.getUserId())) {
+                        return;
+                }
+                if (isStaff(user)) {
+                        return;
+                }
+                log.warn("Blocked cross-user attempt access during {}: attemptId={}, ownerUserId={}, callerUserId={}",
+                                operation, attempt.getId(), ownerId, user.getUserId());
+                throw new ForbiddenException("Not allowed to access this attempt");
+        }
+
+        private static boolean isStaff(CustomUserDetails user) {
+                if (user.isRootUser()) return true;
+                return user.getAuthorities() != null && user.getAuthorities().stream()
+                                .map(authority -> authority.getAuthority() == null ? ""
+                                                : authority.getAuthority().toUpperCase())
+                                .anyMatch(STAFF_AUTHORITIES::contains);
+        }
+
+        private static final Set<String> STAFF_AUTHORITIES = Set.of("ADMIN", "EVALUATOR", "TEACHER", "CREATOR");
 
         /**
          * Converts the duration distribution data into a list of duration responses.
@@ -178,6 +220,8 @@ public class LearnerAssessmentAttemptStatusManager {
                                         assessmentId, assessment.getId(), attemptId, user.getId());
                         throw new VacademyException("Student Not Linked with Assessment");
                 }
+
+                assertOwnershipOrStaff(studentAttempt.get(), user, "status-update");
 
                 // Check if the attempt status is preview
                 if (AssessmentAttemptEnum.PREVIEW.name().equals(studentAttempt.get().getStatus())) {
@@ -374,6 +418,8 @@ public class LearnerAssessmentAttemptStatusManager {
                         throw new VacademyException("Student Not Linked with Assessment");
                 }
 
+                assertOwnershipOrStaff(studentAttempt.get(), user, "submit");
+
                 // Check if the attempt status is preview
                 if (AssessmentAttemptEnum.PREVIEW.name().equals(studentAttempt.get().getStatus())) {
                         log.warn("Attempt to submit preview assessment: assessmentId={}, attemptId={}, userId={}",
@@ -417,6 +463,13 @@ public class LearnerAssessmentAttemptStatusManager {
                         log.error("Failed to send assessment data for analysis - continuing anyway: {}", e.getMessage(),
                                         e);
                 }
+
+                // Queue AI evaluation for assessments that opted in (V43). Enqueue only --
+                // the poller dispatches -- so the work belongs to a database row rather
+                // than to this pod, and survives a deploy or crash right after submit.
+                // Self-contained and non-throwing: a submission that succeeded must never
+                // be reported as failed because an optional grading step could not start.
+                aiEvaluationSubmissionEnqueuer.enqueueIfEnabled(attempt, assessment);
 
                 log.info("[SUBMIT-ASSESSMENT] Submission completed successfully for attemptId: {}", attemptId);
                 return ResponseEntity.ok("Done");

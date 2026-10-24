@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Images, Check, MagicWand } from '@phosphor-icons/react';
 import {
     Dialog,
@@ -24,6 +25,7 @@ export function BadgeLibraryPicker({
     value: string;
     onSelect: (token: string) => void;
 }) {
+    const { t } = useTranslation('settingsBadgeLibraryPicker');
     const [open, setOpen] = useState(false);
     const groups = getLibraryByTheme();
     const current = getLibraryBadge(value);
@@ -33,7 +35,7 @@ export function BadgeLibraryPicker({
             <DialogTrigger asChild>
                 <button
                     type="button"
-                    title="Choose from badge library"
+                    title={t('trigger.title')}
                     className={cn(
                         'flex size-9 shrink-0 items-center justify-center rounded-md border transition',
                         current
@@ -48,12 +50,9 @@ export function BadgeLibraryPicker({
                 <DialogHeader className="border-b border-neutral-100 px-6 py-4">
                     <DialogTitle className="flex items-center gap-2">
                         <MagicWand className="size-5 text-primary-500" weight="fill" />
-                        Badge library
+                        {t('dialog.title')}
                     </DialogTitle>
-                    <p className="pt-1 text-sm text-neutral-500">
-                        Pick a ready-made badge. Each achievement comes in five tiers — the
-                        ring goes bronze, silver, gold, platinum, then diamond.
-                    </p>
+                    <p className="pt-1 text-sm text-neutral-500">{t('dialog.description')}</p>
                 </DialogHeader>
 
                 <ScrollArea className="max-h-96 px-6 py-5">
@@ -97,7 +96,10 @@ export function BadgeLibraryPicker({
                                                         onSelect(badge.token);
                                                         setOpen(false);
                                                     }}
-                                                    title={`${group.themeLabel} · ${badge.tier}`}
+                                                    title={t('badgeOption.title', {
+                                                        theme: group.themeLabel,
+                                                        tier: badge.tier,
+                                                    })}
                                                     className={cn(
                                                         'group relative flex flex-col items-center gap-1.5 rounded-xl border p-2 transition',
                                                         selected
@@ -115,7 +117,10 @@ export function BadgeLibraryPicker({
                                                     >
                                                         <img
                                                             src={badge.url}
-                                                            alt={`${group.themeLabel} ${badge.tier} badge`}
+                                                            alt={t('badgeOption.alt', {
+                                                                theme: group.themeLabel,
+                                                                tier: badge.tier,
+                                                            })}
                                                             className="size-full object-contain"
                                                         />
                                                     </span>

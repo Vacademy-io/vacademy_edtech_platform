@@ -14,7 +14,7 @@ name: Deploy to Stage Server (standalone k3s)
 #   STAGE_HOST           - stage server IP/host (e.g. 188.245.114.166)
 #   AWS_ACCESS_KEY / AWS_SECRET_ACCESS_KEY - push FE images to public ECR
 # If set at the ORG level, the secret's "Repository access" must include this
-# repo (All repositories, or Selected repositories -> vacademy_platform), else
+# repo (All repositories, or Selected repositories -> vacademy_edtech_platform), else
 # ${{ secrets.* }} resolves to empty and the SSH steps fail.
 # The server must already be bootstrapped once via vacademy_devops/install.sh
 # (k3s + cert-manager + values.secret.yaml present at /root/vacademy-services).

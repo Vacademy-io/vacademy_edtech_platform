@@ -61,6 +61,45 @@ type TipTapEditorProps = {
   borderless?: boolean;
 };
 
+/**
+ * DOM output for the math nodes.
+ *
+ * These used to return the KaTeX markup as a STRING child of the output spec —
+ * ProseMirror renders a string child as a text node, so `getHTML()` produced
+ * `<span class="math-inline" data-latex="x^2">&lt;span class="katex"&gt;…</span>`:
+ * the whole KaTeX tree escaped into visible text. Round-tripping through the
+ * editor was invisible (parseHTML reads `data-latex` and ignores the junk), but
+ * every consumer that renders the stored HTML directly — the question sidebar,
+ * the PDF export, the learner app — printed the markup instead of the formula.
+ *
+ * Returning a real element keeps `data-latex` as the source of truth AND emits
+ * usable KaTeX markup for those consumers.
+ */
+function renderMathSpec(
+  tag: 'span' | 'div',
+  className: string,
+  displayMode: boolean,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  HTMLAttributes: Record<string, any>
+) {
+  const latex = HTMLAttributes?.latex || HTMLAttributes['data-latex'] || '';
+  const dom = document.createElement(tag);
+  Object.entries({ ...HTMLAttributes, class: className, 'data-latex': latex }).forEach(
+    ([key, value]) => {
+      if (key === 'latex' || value == null) return;
+      dom.setAttribute(key, String(value));
+    }
+  );
+  if (latex) {
+    try {
+      dom.innerHTML = katex.renderToString(latex, { throwOnError: false, displayMode });
+    } catch {
+      dom.textContent = latex;
+    }
+  }
+  return dom;
+}
+
 export function TipTapEditor({
   value,
   onChange,
@@ -228,9 +267,13 @@ export function TipTapEditor({
         };
       },
       parseHTML() {
+        // Rule priority above the default 50: ProseMirror tries mark rules first
+        // at equal priority, so Link's `a[href]` otherwise claims every saved
+        // `<a data-attachment>` and an attachment reopened for editing came back
+        // as a plain link without its chip.
         return [
-          { tag: 'a[data-attachment]' },
-          { tag: 'div[data-attachment]' },
+          { tag: 'a[data-attachment]', priority: 60 },
+          { tag: 'div[data-attachment]', priority: 60 },
         ];
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -278,20 +321,7 @@ export function TipTapEditor({
           }];
         },
         renderHTML({ HTMLAttributes }) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const latex = (HTMLAttributes as any)?.latex || (HTMLAttributes as any)['data-latex'] || '';
-          let html = '';
-          try {
-            html = katex.renderToString(latex, { throwOnError: false, displayMode: false });
-          } catch { }
-          return [
-            'span',
-            mergeAttributes(
-              { class: 'math-inline', 'data-latex': latex },
-              HTMLAttributes
-            ),
-            html,
-          ];
+          return renderMathSpec('span', 'math-inline', false, HTMLAttributes);
         },
         addNodeView() {
           return ({ node }) => {
@@ -334,20 +364,7 @@ export function TipTapEditor({
           }];
         },
         renderHTML({ HTMLAttributes }) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const latex = (HTMLAttributes as any)?.latex || (HTMLAttributes as any)['data-latex'] || '';
-          let html = '';
-          try {
-            html = katex.renderToString(latex, { throwOnError: false, displayMode: true });
-          } catch { }
-          return [
-            'div',
-            mergeAttributes(
-              { class: 'math-block', 'data-latex': latex },
-              HTMLAttributes
-            ),
-            html,
-          ];
+          return renderMathSpec('div', 'math-block', true, HTMLAttributes);
         },
         addNodeView() {
           return ({ node }) => {
@@ -866,10 +883,12 @@ export function TipTapEditor({
     }
   }, [value, editor]);
 
-  // Sync editable prop changes
+  // Sync editable prop changes. emitUpdate=false: the default fires onUpdate on
+  // mount, which flags isInternalChange and makes the sync above drop content
+  // loaded right after mount (a saved blog post reopened empty).
   useEffect(() => {
     if (editor) {
-      editor.setEditable(editable);
+      editor.setEditable(editable, false);
     }
   }, [editor, editable]);
 

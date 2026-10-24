@@ -34,7 +34,11 @@ public class EngagementBrainClient {
     private final LLMService llmService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${engagement.brain.model:anthropic/claude-sonnet-4.5}")
+    /**
+     * Optional override. Blank (the default) lets the 'engagement' row in ai_model_defaults
+     * decide, which the super-admin portal edits.
+     */
+    @Value("${engagement.brain.model:}")
     private String brainModel;
 
     /** Structured decision for one member. Nulls where the model chose NO_OP. */
@@ -69,9 +73,12 @@ public class EngagementBrainClient {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
-                    .model(brainModel)
+                    .model(brainModel == null || brainModel.isBlank() ? null : brainModel.trim())
                     .history(new ArrayList<>(history))
                     .build();
+            session.getContext().put(LLMService.CTX_USE_CASE, "engagement");
+            // Engagement is billed per dispatched message (EngagementDispatchJob.charge), not per brain token.
+            session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {

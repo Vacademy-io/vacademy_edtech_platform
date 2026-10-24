@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowsOut } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import indiaStatesRaw from '../-data/india-states.geojson.json';
 
@@ -58,6 +59,7 @@ const polysOf = (f: GeoFeature): Ring[][] =>
     f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
 
 export default function IndiaStateMap({ counts, subOrgPlural }: IndiaStateMapProps) {
+    const { t } = useTranslation('dashboardIndiaStateMap');
     const [hover, setHover] = useState<{ name: string; count: number } | null>(null);
 
     const { paths, maxCount } = useMemo(() => {
@@ -133,14 +135,14 @@ export default function IndiaStateMap({ counts, subOrgPlural }: IndiaStateMapPro
 
     const readout = (
         <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-            <span className="font-medium text-neutral-500">India distribution</span>
+            <span className="font-medium text-neutral-500">{t('legend.title')}</span>
             {shown ? (
                 <span className="truncate text-neutral-700">
                     <span className="font-semibold text-primary-600">{shown.count}</span>{' '}
                     {subOrgPlural} · {shown.name}
                 </span>
             ) : (
-                <span className="text-neutral-400">Hover a state</span>
+                <span className="text-neutral-400">{t('legend.hoverPrompt')}</span>
             )}
         </div>
     );
@@ -151,7 +153,7 @@ export default function IndiaStateMap({ counts, subOrgPlural }: IndiaStateMapPro
             viewBox={`0 0 ${W} ${H}`}
             className={className}
             role="img"
-            aria-label={`${subOrgPlural} by Indian state`}
+            aria-label={t('map.ariaLabel', { subOrgPlural })}
         >
             {paths.map((p) => {
                 const ratio = maxCount > 0 ? p.count / maxCount : 0;
@@ -169,7 +171,7 @@ export default function IndiaStateMap({ counts, subOrgPlural }: IndiaStateMapPro
                         onMouseEnter={() => setHover({ name: p.name, count: p.count })}
                         onMouseLeave={() => setHover(null)}
                     >
-                        <title>{`${p.name}: ${p.count}`}</title>
+                        <title>{t('map.tooltip', { name: p.name, count: p.count })}</title>
                     </path>
                 );
             })}
@@ -203,8 +205,8 @@ export default function IndiaStateMap({ counts, subOrgPlural }: IndiaStateMapPro
                 <button
                     type="button"
                     onClick={() => setExpanded(true)}
-                    aria-label="Enlarge map"
-                    title="Enlarge map"
+                    aria-label={t('actions.enlargeMap')}
+                    title={t('actions.enlargeMap')}
                     className="absolute bottom-0 right-0 z-10 flex size-6 cursor-pointer items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600"
                 >
                     <ArrowsOut size={13} weight="bold" />
@@ -214,7 +216,7 @@ export default function IndiaStateMap({ counts, subOrgPlural }: IndiaStateMapPro
             </div>
 
             <MyDialog
-                heading={`${subOrgPlural} by state`}
+                heading={t('dialog.heading', { subOrgPlural })}
                 open={expanded}
                 onOpenChange={setExpanded}
                 dialogWidth="max-w-2xl"

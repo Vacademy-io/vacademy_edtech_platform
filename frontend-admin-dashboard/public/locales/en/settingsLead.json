@@ -1,0 +1,86 @@
+{
+    "tabs": {
+        "config": "Configuration",
+        "pools": "Pools",
+        "forms": "Forms",
+        "workbench": "Workbench"
+    },
+    "loading": "Loading lead settings…",
+    "toasts": {
+        "saved": "Lead settings saved",
+        "saveFailed": "Failed to save lead settings",
+        "weightsSumError": "Scoring weights must sum to 100 (current: {{total}})"
+    },
+    "enableCard": {
+        "title": "Lead Management System",
+        "description": "Controls whether lead scoring, tier badges, and the lead sidebar tab are visible institute-wide. Disabling hides all lead UI without deleting data.",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "visibilityCard": {
+        "title": "Score Badge Visibility",
+        "description": "Choose where the lead score badge appears.",
+        "options": {
+            "enquiryTable": "Enquiries table (Admissions → Enquiries)",
+            "contactsTable": "Contacts table (Manage Contacts)",
+            "studentsTable": "Students table (Manage Students)"
+        }
+    },
+    "allLeadsCard": {
+        "title": "All Leads View",
+        "description": "Choose whether converted leads appear in the unfiltered \"All leads\" view of Recent Leads and lead lists. You can still see them by picking \"Enrolled / Converted\" or your converted status in the Lead Status filter, or on the Lead Board.",
+        "hideConverted": "Hide converted leads from All leads",
+        "showConvertedFilter": "Offer \"Enrolled / Converted\" in the Lead Status filter",
+        "showConvertedFilterHint": "This is the built-in option that finds leads enrolled into a course. Turn it off if your own converted status already covers it — most institutes have one, and the two sit next to each other looking almost identical."
+    },
+    "followUpsCard": {
+        "title": "Follow-ups",
+        "description": "Choose which leads appear in the Follow-ups page.",
+        "hideLost": "Hide lost leads from Follow-ups",
+        "hideLostHint": "Lost leads are left out of every Follow-ups tab: Today, Upcoming, Overdue, All and Completed. Turn this off to show them."
+    },
+    "weightsCard": {
+        "title": "Scoring Weights",
+        "description": "Each factor contributes its weight percentage to the final score (0–100). Weights must sum to exactly 100.",
+        "factors": {
+            "sourceQuality": {
+                "label": "Source Quality",
+                "description": "Score based on how the lead came in (e.g. Walk-in > Google Ads > Manual)"
+            },
+            "profileCompleteness": {
+                "label": "Profile Completeness",
+                "description": "Percentage of key fields filled (name, email, phone, class, etc.)"
+            },
+            "recency": {
+                "label": "Recency",
+                "description": "Time decay — newer leads score higher, older ones decay"
+            },
+            "engagement": {
+                "label": "Engagement",
+                "description": "Number of timeline notes and interactions recorded"
+            }
+        },
+        "total": "Total",
+        "mustEqual100": "must equal 100"
+    },
+    "recencyCard": {
+        "title": "Recency Decay",
+        "description": "Number of days before a lead's recency score starts to decay toward 0. A lead submitted today scores 100 for recency; one submitted {{days}} days ago scores ~50.",
+        "unit": "days"
+    },
+    "saveButton": {
+        "saving": "Saving…",
+        "save": "Save scoring settings"
+    },
+    "terminologyCard": {
+        "title": "Terminology",
+        "description": "Call the built-in lead attributes what your team calls them. Leave blank to keep the defaults.",
+        "tierLabel": "Name for \"Tier\"",
+        "tierPlaceholder": "e.g. Interest Level",
+        "leadStatusLabel": "Name for \"Lead status\"",
+        "leadStatusPlaceholder": "e.g. Action Label",
+        "campaignTypeLabel": "Name for \"Campaign type\"",
+        "campaignTypePlaceholder": "e.g. Source",
+        "hint": "Used in the leads table headers, filters, lead side-view and these settings. Save with the button below."
+    }
+}

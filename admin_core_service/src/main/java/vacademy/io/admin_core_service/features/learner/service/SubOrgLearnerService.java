@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.learner.service;
 
+import vacademy.io.admin_core_service.features.offline_payment.service.OfflinePaymentDetailsService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -74,6 +76,7 @@ import java.util.Calendar;
 public class SubOrgLearnerService {
 
     private final AuthService authService;
+    private final OfflinePaymentDetailsService offlinePaymentDetailsService;
     private final InstituteStudentRepository instituteStudentRepository;
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final PackageSessionRepository packageSessionRepository;
@@ -97,6 +100,7 @@ public class SubOrgLearnerService {
     private final FeeLedgerAllocationService feeLedgerAllocationService;
     private final vacademy.io.admin_core_service.features.suborg.service.SubOrgSubscriptionService subOrgSubscriptionService;
     private final vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService instituteSettingService;
+    private final vacademy.io.admin_core_service.features.course_settings.service.LmsExistingUserEditPolicyService lmsExistingUserEditPolicyService;
 
     @Transactional(readOnly = true)
     public SubOrgResponseDTO getUsersByPackageSessionAndSubOrg(
@@ -351,6 +355,13 @@ public class SubOrgLearnerService {
         }
         Institute subOrg = validateSubOrg(request.getSubOrgId());
         validateInstitute(request.getInstituteId());
+        // How the offline payment was made: validated now, before the learner is created,
+        // so a bad mode fails the request instead of leaving an enrollment without its payment.
+        OfflinePaymentDetailsService.Resolved offlinePaidVia = "OFFLINE".equalsIgnoreCase(request.getPaymentMode())
+                && request.getOfflinePaymentAmount() != null && request.getOfflinePaymentAmount() > 0.0
+                ? offlinePaymentDetailsService.resolve(request.getInstituteId(),
+                        request.getOfflinePaymentDetails(), request.getOfflinePaymentReference())
+                : null;
 
         // 3. Create or fetch user
         UserDTO user = createOrFetchUser(request);
@@ -433,7 +444,7 @@ public class SubOrgLearnerService {
 
         // 12. Optional offline payment record + invoice.
         ManualPaymentResult paymentResult = recordOfflinePaymentIfRequested(
-                request, user.getId(), learnerUserPlanId, admin.getUserId(), resolvedLearnerOption);
+                request, user.getId(), learnerUserPlanId, admin.getUserId(), resolvedLearnerOption, offlinePaidVia);
 
         // Hydrate password back from auth-service so the LMS create-user webhook
         // (workflow node referencing #ctx['member']['password']) receives the real
@@ -455,7 +466,7 @@ public class SubOrgLearnerService {
 
         // Trigger workflow for each PS (existing per-PS contract).
         for (String psId : psIds) {
-            triggerEnrollmentWorkflow(request.getInstituteId(), user, psId, adminDTO);
+            triggerEnrollmentWorkflow(request.getInstituteId(), user, psId, request.getSubOrgId(), adminDTO);
         }
 
         return SubOrgEnrollResponseDTO.builder()
@@ -484,7 +495,8 @@ public class SubOrgLearnerService {
                                                                 String learnerUserId,
                                                                 String learnerUserPlanId,
                                                                 String recordedByUserId,
-                                                                PaymentOption resolvedOption) {
+                                                                PaymentOption resolvedOption,
+                                                                OfflinePaymentDetailsService.Resolved paidVia) {
         boolean offlineRequested = "OFFLINE".equalsIgnoreCase(request.getPaymentMode())
                 && request.getOfflinePaymentAmount() != null
                 && request.getOfflinePaymentAmount() > 0.0
@@ -503,8 +515,9 @@ public class SubOrgLearnerService {
         double amount = request.getOfflinePaymentAmount();
         String currency = StringUtils.hasText(request.getOfflinePaymentCurrency())
                 ? request.getOfflinePaymentCurrency() : "INR";
-        Date paymentDate = request.getOfflinePaymentDate() != null
-                ? request.getOfflinePaymentDate() : new Date();
+        Date paymentDate = request.getOfflinePaymentDate() != null ? request.getOfflinePaymentDate()
+                : paidVia != null && paidVia.paymentDate() != null
+                        ? java.sql.Date.valueOf(paidVia.paymentDate()) : new Date();
 
         String paymentLogId;
         try {
@@ -538,6 +551,7 @@ public class SubOrgLearnerService {
                     PaymentLogStatusEnum.SUCCESS.name(),
                     PaymentStatusEnum.PAID.name(),
                     specificJson);
+            offlinePaymentDetailsService.apply(paymentLogId, paidVia, recordedByUserId);
             log.info("Recorded manual offline payment={} currency={} for learner={} userPlan={} logId={}",
                     amount, currency, learnerUserId, learnerUserPlanId, paymentLogId);
         } catch (Exception e) {
@@ -749,6 +763,17 @@ public class SubOrgLearnerService {
             String generatedPassword = generateRandomPassword(8);
             request.getUser().setPassword(generatedPassword);
             log.info("Generated password for user with email: {}", request.getUser().getEmail());
+        }
+
+        // Default the username to the email. The learner-portal sub-org members page
+        // (single add + bulk upload) sends no username, so auth-service used to invent
+        // one ("vitt" + 4 random chars) that then rode into the enrolment workflow and
+        // the welcome email while the admin wizard, which has a username field, enrols
+        // the same people as email/email. Only applies to a NEW account — auth-service
+        // ignores the username when it matches an existing user by email.
+        if (!StringUtils.hasText(request.getUser().getUsername())
+                && StringUtils.hasText(request.getUser().getEmail())) {
+            request.getUser().setUsername(request.getUser().getEmail().trim().toLowerCase());
         }
 
         boolean sendCredentials = readCourseSettingEnrollmentFlag(
@@ -1082,17 +1107,78 @@ public class SubOrgLearnerService {
 
     @Async
     public void triggerEnrollmentWorkflow(String instituteId, UserDTO userDTO, String packageSessionId,
-            UserDTO adminDTO) {
+            String subOrgId, UserDTO enrolledBy) {
         Optional<PackageSession> optionalPackageSession = packageSessionRepository.findById(packageSessionId);
         if (optionalPackageSession.isEmpty()) {
             throw new VacademyException("PackageSession Not found");
         }
+        // May a workflow overwrite an existing LMS account's password for this enrolment?
+        // Resolved course-then-institute (defaults false) so the staff/add-member path carries the
+        // same lmsEditExistingUser flag the batch path already sets. Best-effort — a read failure
+        // must not stop the enrolment, and false leaves the existing account untouched.
+        boolean mayEditExistingLmsUser = false;
+        try {
+            mayEditExistingLmsUser = lmsExistingUserEditPolicyService.mayEditExistingUser(
+                    instituteId, optionalPackageSession.get().getPackageEntity().getId());
+        } catch (Exception e) {
+            log.warn("Could not resolve lmsEditExistingUser for institute {} / package {} — defaulting to false: {}",
+                    instituteId, optionalPackageSession.get().getPackageEntity().getId(), e.getMessage());
+        }
+        // The sub-org's OWN leader, not whoever clicked enroll — see the javadoc on
+        // SubOrgMemberEnrollmentContext.build. This route is NOT only used by a practice admin
+        // adding their own staff: a Vet Education platform admin adds members on a practice's
+        // behalf, and their email resolves to no LearnDash group at all (get-leader-group 404s),
+        // so nt_vet_add_mem_03_find_leader_group failed and the member was never added to the
+        // practice group. Resolving the leader from the sub-org fixes that; a null leader makes
+        // the practice-group nodes skip, which beats filing someone under the wrong practice.
+        UserDTO subOrgLeader = resolveSubOrgLeader(subOrgId, packageSessionId);
         // Built centrally so this route and bulk/v3/assign publish an identical context —
         // see SubOrgMemberEnrollmentContext for why 'user' is published alongside 'member'.
         Map<String, Object> contextData = SubOrgMemberEnrollmentContext.build(
-                userDTO, adminDTO, optionalPackageSession.get());
+                userDTO, subOrgLeader, enrolledBy, optionalPackageSession.get(), mayEditExistingLmsUser);
         workflowTriggerService.handleTriggerEvents(WorkflowTriggerEvent.SUB_ORG_MEMBER_ENROLLMENT.name(),
                 packageSessionId, instituteId, contextData);
+    }
+
+    /**
+     * The sub-org's own leader — the practice admin whose email owns the practice's LearnDash
+     * group. Workflow nodes resolve that group with
+     * {@code get-leader-group?email=#ctx['subOrgAdmin']['email']}, so this must never be the
+     * acting platform admin.
+     *
+     * <p>Prefers the ROOT_ADMIN mapping for this batch and falls back to any active admin of the
+     * sub-org. Returns null when the sub-org has no resolvable leader: the practice-group nodes
+     * then skip, which is deliberate — no group beats the wrong group. Mirrors
+     * {@code BulkAssignmentService.resolveSubOrgLeader}, the other publisher of this event.
+     */
+    private UserDTO resolveSubOrgLeader(String subOrgId, String packageSessionId) {
+        if (!StringUtils.hasText(subOrgId)) {
+            return null;
+        }
+        try {
+            String leaderUserId = mappingRepository
+                    .findRootAdminMappingBySubOrgAndPackageSession(subOrgId, packageSessionId)
+                    .map(StudentSessionInstituteGroupMapping::getUserId)
+                    .orElse(null);
+
+            if (!StringUtils.hasText(leaderUserId)) {
+                List<String> adminIds = mappingRepository.findActiveAdminUserIdsBySubOrg(subOrgId);
+                leaderUserId = (adminIds == null || adminIds.isEmpty()) ? null : adminIds.get(0);
+            }
+
+            if (!StringUtils.hasText(leaderUserId)) {
+                log.warn("No leader found for sub-org {} — SUB_ORG_MEMBER_ENROLLMENT will carry a "
+                        + "null subOrgAdmin, so practice-group nodes will skip rather than enroll "
+                        + "into the wrong group", subOrgId);
+                return null;
+            }
+
+            List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(List.of(leaderUserId));
+            return (users == null || users.isEmpty()) ? null : users.get(0);
+        } catch (Exception e) {
+            log.warn("Failed to resolve leader for sub-org {}: {}", subOrgId, e.getMessage());
+            return null;
+        }
     }
 
     private String findRootAdminPlanId(String subOrgId, String packageSessionId) {

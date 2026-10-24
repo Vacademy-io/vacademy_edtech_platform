@@ -12,7 +12,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -39,6 +39,7 @@ class BboxViolation:
     rect: dict         # {"l": float, "t": float, "r": float, "b": float}
     text: str          # first 80 chars of element textContent (empty for media)
     is_media: bool     # True for IMG/SVG/CANVAS/VIDEO
+    zone: str = ""     # keep-out zone hit (lesson teacher / caption strip); "" = canvas overflow
 
 
 class ScreenshotClientError(RuntimeError):
@@ -191,6 +192,8 @@ class ShotScreenshotClient:
         height: int,
         timestamps: List[float],
         background: str = "#0a0e27",
+        keep_out: Optional[List[Dict[str, Any]]] = None,
+        check_squeeze: bool = False,
     ) -> List[BboxViolation]:
         """Call /bbox-check on the render worker and return overflow violations.
 
@@ -214,6 +217,10 @@ class ShotScreenshotClient:
             "timestamps": [float(t) for t in timestamps],
             "background": background,
         }
+        if keep_out:
+            payload["keep_out"] = list(keep_out)
+        if check_squeeze:
+            payload["check_squeeze"] = True
 
         try:
             data = self._post_json("/bbox-check", payload)
@@ -239,6 +246,7 @@ class ShotScreenshotClient:
                     rect=dict(entry.get("rect") or {}),
                     text=str(entry.get("text", "")),
                     is_media=bool(entry.get("is_media", False)),
+                    zone=str(entry.get("zone", "") or ""),
                 ))
             except (KeyError, ValueError, TypeError) as exc:
                 raise ScreenshotClientError(f"malformed bbox violation entry: {exc}") from exc

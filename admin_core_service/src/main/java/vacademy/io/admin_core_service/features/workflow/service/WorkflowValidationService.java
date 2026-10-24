@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.workflow.dto.IdempotencySettings;
 import vacademy.io.admin_core_service.features.workflow.dto.WorkflowBuilderDTO;
+import vacademy.io.admin_core_service.features.workflow.enums.IdempotencyStrategy;
 import vacademy.io.admin_core_service.features.workflow.service.idempotency.IdempotencyStrategyFactory;
 
 import java.util.*;
@@ -18,6 +19,16 @@ public class WorkflowValidationService {
 
     private final ObjectMapper objectMapper;
     private final IdempotencyStrategyFactory idempotencyStrategyFactory;
+    private final TriggerContextKeyRegistry triggerContextKeyRegistry;
+
+    /**
+     * Node types that only consume the context. A workflow made solely of these (plus the
+     * TRIGGER) has no node that could add a key, so every {@code #ctx['x']} a send node reads
+     * must come from the trigger event itself.
+     */
+    private static final Set<String> NON_PRODUCING_NODE_TYPES = Set.of(
+            "TRIGGER", "SEND_EMAIL", "SEND_WHATSAPP", "COMBOT", "SEND_PUSH_NOTIFICATION",
+            "DELAY", "CONDITION", "SET_LEAD_STATUS");
 
     @lombok.Data
     @lombok.AllArgsConstructor
@@ -121,7 +132,87 @@ public class WorkflowValidationService {
             validateTriggerIdempotency(dto.getTrigger().getIdempotencyGenerationSetting(), errors);
         }
 
+        if ("EVENT_DRIVEN".equalsIgnoreCase(dto.getWorkflowType()) && dto.getTrigger() != null) {
+            validateTriggerContextKeys(dto, errors);
+        }
+
         return errors;
+    }
+
+    /**
+     * A {@code #ctx['key']} that the trigger event never emits is the one mistake the engine
+     * cannot surface: in a CUSTOM_EXPRESSION idempotency key it throws inside SpEL and
+     * {@code WorkflowTriggerService} skips the trigger before any execution row exists; in a send
+     * node's {@code on} it yields {@code [null]} and the node sends nothing. Both were shipped by
+     * the AI drafter on 2026-09-11 ({@code #ctx['lead']} on AUDIENCE_LEAD_SUBMISSION). Checked
+     * only for events {@link TriggerContextKeyRegistry} knows — an uncatalogued event is skipped.
+     */
+    private void validateTriggerContextKeys(WorkflowBuilderDTO dto, List<ValidationError> errors) {
+        String event = dto.getTrigger().getTriggerEventName();
+        Set<String> emitted = triggerContextKeyRegistry.emittedKeys(event);
+        if (emitted == null) {
+            return;
+        }
+
+        // Idempotency expression: evaluated against the raw emitter context + triggerId/eventName/eventId,
+        // before any node runs — nothing upstream can supply a missing key, so this is an ERROR.
+        String customExpression = customIdempotencyExpression(dto.getTrigger().getIdempotencyGenerationSetting());
+        if (customExpression != null) {
+            Set<String> allowed = new LinkedHashSet<>(emitted);
+            allowed.addAll(TriggerContextKeyRegistry.IDEMPOTENCY_TIME_ENGINE_KEYS);
+            List<String> unknown = TriggerContextKeyRegistry.referencedCtxKeys(customExpression).stream()
+                    .filter(k -> !allowed.contains(k))
+                    .toList();
+            if (!unknown.isEmpty()) {
+                errors.add(new ValidationError(null, "trigger.idempotency_generation_setting",
+                        "customExpression references #ctx" + unknown + " but " + event
+                                + " never puts " + (unknown.size() == 1 ? "that key" : "those keys")
+                                + " on the context — the expression would throw and the trigger would be skipped"
+                                + " with no execution. Keys available here: " + String.join(", ", allowed),
+                        "ERROR"));
+            }
+        }
+
+        // Send-node 'on': only checkable when no node in the graph can add context keys.
+        boolean anyProducer = dto.getNodes().stream()
+                .map(WorkflowBuilderDTO.NodeDTO::getNodeType)
+                .anyMatch(t -> t == null || !NON_PRODUCING_NODE_TYPES.contains(t.toUpperCase()));
+        if (anyProducer) {
+            return;
+        }
+        Set<String> allowedOnKeys = new LinkedHashSet<>(emitted);
+        allowedOnKeys.addAll(TriggerContextKeyRegistry.ENGINE_KEYS);
+        allowedOnKeys.add("item"); // forEach iteration variable
+        for (WorkflowBuilderDTO.NodeDTO node : dto.getNodes()) {
+            if (!(node.getConfig() instanceof Map<?, ?> config)) continue;
+            Object on = config.get("on");
+            if (!(on instanceof String onExpr) || onExpr.isBlank()) continue;
+            List<String> unknown = TriggerContextKeyRegistry.referencedCtxKeys(onExpr).stream()
+                    .filter(k -> !allowedOnKeys.contains(k))
+                    .toList();
+            if (!unknown.isEmpty()) {
+                errors.add(new ValidationError(node.getId(), "config.on",
+                        "'on' references #ctx" + unknown + " but " + event + " does not emit "
+                                + (unknown.size() == 1 ? "that key" : "those keys")
+                                + " and no upstream node produces it — the node would have no recipients."
+                                + " Keys available here: " + String.join(", ", allowedOnKeys),
+                        "WARNING"));
+            }
+        }
+    }
+
+    /** The customExpression of a CUSTOM_EXPRESSION idempotency setting (object or JSON string), else null. */
+    private String customIdempotencyExpression(Object provided) {
+        if (provided == null) return null;
+        try {
+            String json = provided instanceof String s ? s : objectMapper.writeValueAsString(provided);
+            if (json.isBlank() || "null".equals(json)) return null;
+            IdempotencySettings settings = objectMapper.readValue(json, IdempotencySettings.class);
+            if (settings.getStrategy() != IdempotencyStrategy.CUSTOM_EXPRESSION) return null;
+            return settings.getCustomExpression();
+        } catch (Exception e) {
+            return null; // malformed settings are reported by validateTriggerIdempotency
+        }
     }
 
     /**

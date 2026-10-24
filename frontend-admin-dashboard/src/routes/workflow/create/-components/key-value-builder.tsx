@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash } from '@phosphor-icons/react';
@@ -17,9 +18,12 @@ export function KeyValueBuilder({
     onChange,
     nodeId,
     valueMode = 'both',
-    keyPlaceholder = 'field name',
-    valuePlaceholder = 'value',
+    keyPlaceholder,
+    valuePlaceholder,
 }: KeyValueBuilderProps) {
+    const { t } = useTranslation('workflowKeyValueBuilder');
+    const resolvedKeyPlaceholder = keyPlaceholder ?? t('defaultKeyPlaceholder');
+    const resolvedValuePlaceholder = valuePlaceholder ?? t('defaultValuePlaceholder');
     const entries = Object.entries(value ?? {});
     if (entries.length === 0) {
         entries.push(['', '']);
@@ -64,7 +68,7 @@ export function KeyValueBuilder({
                             value={key}
                             onChange={(e) => updateEntry(i, 'key', e.target.value)}
                             className="h-8 text-xs"
-                            placeholder={keyPlaceholder}
+                            placeholder={resolvedKeyPlaceholder}
                         />
                     </div>
                     <span className="mt-1.5 text-xs text-gray-400">=</span>
@@ -73,7 +77,7 @@ export function KeyValueBuilder({
                             <VariablePicker
                                 value={val}
                                 onChange={(v) => updateEntry(i, 'value', v)}
-                                placeholder={valuePlaceholder}
+                                placeholder={resolvedValuePlaceholder}
                                 nodeId={nodeId}
                             />
                         ) : valueMode === 'text' ? (
@@ -81,14 +85,14 @@ export function KeyValueBuilder({
                                 value={val}
                                 onChange={(e) => updateEntry(i, 'value', e.target.value)}
                                 className="h-8 text-xs"
-                                placeholder={valuePlaceholder}
+                                placeholder={resolvedValuePlaceholder}
                             />
                         ) : (
                             // 'both' mode — VariablePicker (which has advanced text mode built in)
                             <VariablePicker
                                 value={val}
                                 onChange={(v) => updateEntry(i, 'value', v)}
-                                placeholder={valuePlaceholder}
+                                placeholder={resolvedValuePlaceholder}
                                 nodeId={nodeId}
                             />
                         )}
@@ -102,7 +106,7 @@ export function KeyValueBuilder({
             ))}
 
             <Button variant="ghost" size="sm" onClick={addEntry} className="h-7 gap-1 text-xs text-gray-500 w-full justify-center border border-dashed border-gray-200">
-                <Plus size={12} /> Add field
+                <Plus size={12} /> {t('addField')}
             </Button>
         </div>
     );

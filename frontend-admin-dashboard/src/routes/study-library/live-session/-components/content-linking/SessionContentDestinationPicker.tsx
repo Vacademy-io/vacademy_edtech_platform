@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { CircleNotch, MagicWand } from '@phosphor-icons/react';
 
 import { MyButton } from '@/components/design-system/button';
@@ -132,7 +133,7 @@ export function SessionContentDestinationPicker({
     initialNotify,
     onSubmit,
     isSubmitting,
-    submitLabel = 'Add',
+    submitLabel,
     submitDisabled,
     hideSubmit,
     hidePosition,
@@ -140,6 +141,7 @@ export function SessionContentDestinationPicker({
     hideStatus,
     onDestinationsChange,
 }: Props) {
+    const { t } = useTranslation('studyLibrarySessionContentDestinationPicker');
     const queryClient = useQueryClient();
     const studyLibraryData = useStudyLibraryStore((s) => s.studyLibraryData);
     const getDetailsFromPackageSessionId = useInstituteDetailsStore(
@@ -333,7 +335,7 @@ export function SessionContentDestinationPicker({
         <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4">
             <div className="flex items-center justify-between gap-2">
                 <span className="text-body font-semibold text-neutral-700">
-                    Add to batches ({destinations.length} selected)
+                    {t('addToBatches', { count: destinations.length })}
                 </span>
                 {batches.length > 1 && (
                     <MyButton
@@ -344,7 +346,7 @@ export function SessionContentDestinationPicker({
                         disable={!batches.some((b) => rows[b.packageSessionId]?.chapterId)}
                     >
                         <MagicWand className="mr-1 size-3.5" />
-                        Apply to all batches
+                        {t('applyToAllBatches')}
                     </MyButton>
                 )}
             </div>
@@ -367,7 +369,7 @@ export function SessionContentDestinationPicker({
                     {!hidePosition && (
                         <div className="flex flex-col gap-1.5">
                             <span className="text-caption font-medium text-neutral-600">
-                                Position
+                                {t('position.label')}
                             </span>
                             <Select
                                 value={position}
@@ -377,8 +379,8 @@ export function SessionContentDestinationPicker({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="BOTTOM">End of chapter</SelectItem>
-                                    <SelectItem value="TOP">Beginning of chapter</SelectItem>
+                                    <SelectItem value="BOTTOM">{t('position.endOfChapter')}</SelectItem>
+                                    <SelectItem value="TOP">{t('position.beginningOfChapter')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -387,7 +389,7 @@ export function SessionContentDestinationPicker({
                     {!hideStatus && (
                         <label className="flex flex-col gap-1.5">
                             <span className="text-caption font-medium text-neutral-600">
-                                Status
+                                {t('status.label')}
                             </span>
                             <span className="flex items-center gap-2">
                                 <Switch
@@ -397,7 +399,9 @@ export function SessionContentDestinationPicker({
                                     }
                                 />
                                 <span className="text-body text-neutral-700">
-                                    {slideStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
+                                    {slideStatus === 'PUBLISHED'
+                                        ? t('status.published')
+                                        : t('status.draft')}
                                 </span>
                             </span>
                         </label>
@@ -406,12 +410,12 @@ export function SessionContentDestinationPicker({
                     {!hideNotify && (
                         <label className="flex flex-col gap-1.5">
                             <span className="text-caption font-medium text-neutral-600">
-                                Notify learners
+                                {t('notifyLearners.label')}
                             </span>
                             <span className="flex items-center gap-2">
                                 <Switch checked={notify} onCheckedChange={setNotify} />
                                 <span className="text-body text-neutral-700">
-                                    {notify ? 'On' : 'Off'}
+                                    {notify ? t('notifyLearners.on') : t('notifyLearners.off')}
                                 </span>
                             </span>
                         </label>
@@ -426,7 +430,7 @@ export function SessionContentDestinationPicker({
                         disable={!canSubmit}
                         onClick={handleSubmit}
                     >
-                        {isSubmitting ? 'Adding…' : submitLabel}
+                        {isSubmitting ? t('actions.adding') : submitLabel ?? t('actions.add')}
                     </MyButton>
                 )}
             </div>
@@ -447,6 +451,7 @@ function DestinationRow({
     row: RowState;
     onPatch: (patch: Partial<RowState>) => void;
 }) {
+    const { t } = useTranslation('studyLibrarySessionContentDestinationPicker');
     const modulesQuery = useModulesWithChaptersQuery(row.subjectId, batch.packageSessionId);
     const modules = (modulesQuery.data as ModulesWithChapters[] | undefined) ?? [];
     const selectedModule = modules.find((m) => m.module.id === row.moduleId) ?? null;
@@ -497,7 +502,7 @@ function DestinationRow({
                 <div className="grid grid-cols-1 gap-2 pl-6 sm:grid-cols-3">
                     {!hideSubjectCell && (
                         <FixedOrSelect
-                            label="Subject"
+                            label={t('fields.subject')}
                             show={showSubjectSelect}
                             fixedLabel={subjects.length === 1 ? subjects[0]!.subject_name : '—'}
                             value={row.subjectId}
@@ -513,7 +518,7 @@ function DestinationRow({
                     )}
                     {!hideModuleCell && (
                         <FixedOrSelect
-                            label="Module"
+                            label={t('fields.module')}
                             show={showModuleSelect}
                             fixedLabel={modules.length === 1 ? modules[0]!.module.module_name : '—'}
                             value={row.moduleId}
@@ -528,7 +533,7 @@ function DestinationRow({
                         />
                     )}
                     <FixedOrSelect
-                        label="Chapter"
+                        label={t('fields.chapter')}
                         show
                         fixedLabel="—"
                         value={row.chapterId}
@@ -568,13 +573,14 @@ function FixedOrSelect({
     /** Options are being fetched — show a spinner placeholder instead of an empty control. */
     loading?: boolean;
 }) {
+    const { t } = useTranslation('studyLibrarySessionContentDestinationPicker');
     if (loading) {
         return (
             <div className="flex flex-col gap-1">
                 <span className="text-caption text-neutral-500">{label}</span>
                 <span className="flex h-9 items-center gap-2 rounded-md border border-neutral-200 bg-white px-3 text-body text-neutral-400">
                     <CircleNotch className="size-4 animate-spin" />
-                    Loading {label.toLowerCase()}s…
+                    {t('fixedOrSelect.loading', { label })}
                 </span>
             </div>
         );
@@ -587,9 +593,9 @@ function FixedOrSelect({
                     options={options}
                     value={value}
                     onChange={onChange}
-                    placeholder={`Select ${label.toLowerCase()}`}
-                    searchPlaceholder={`Search ${label.toLowerCase()}…`}
-                    emptyText="No matches"
+                    placeholder={t('fixedOrSelect.select', { label })}
+                    searchPlaceholder={t('fixedOrSelect.search', { label })}
+                    emptyText={t('fixedOrSelect.noMatches')}
                     disabled={disabled}
                 />
             ) : (

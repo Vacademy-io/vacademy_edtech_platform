@@ -1,0 +1,13 @@
+{
+    "newUsers": "New Users",
+    "retainers": "Retainers",
+    "totalUsers_one": "Total user",
+    "totalUsers_other": "Total users",
+    "new": "New",
+    "retainer": "Retainer",
+    "last24Hours": "Last 24 Hours",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "weeklyUserTrends": "Weekly User Trends",
+    "userRegistrationsLast7Days": "User registrations over the last 7 days"
+}

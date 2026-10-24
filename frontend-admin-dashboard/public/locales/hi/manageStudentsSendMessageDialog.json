@@ -1,0 +1,84 @@
+{
+    "dialogTitle": "व्हाट्सएप संदेश भेजें",
+    "dialogDescription": "चयनित विद्यार्थियों को एक स्वीकृत व्हाट्सएप टेम्पलेट भेजें।",
+    "steps": {
+        "selectTemplate": "टेम्पलेट चुनें",
+        "mapVariables": "वेरिएबल मैप करें",
+        "reviewSend": "समीक्षा करें और भेजें"
+    },
+    "systemFields": {
+        "fullName": "पूरा नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "city": "शहर",
+        "region": "क्षेत्र",
+        "gender": "लिंग",
+        "enrollmentId": "नामांकन आईडी",
+        "username": "यूज़रनेम",
+        "password": "पासवर्ड"
+    },
+    "toasts": {
+        "loadTemplatesFailed": "व्हाट्सएप टेम्पलेट लोड करने में विफल",
+        "selectTemplateFirst": "पहले एक व्हाट्सएप टेम्पलेट चुनें।",
+        "noValidRecipients": "मोबाइल नंबर वाला कोई मान्य प्राप्तकर्ता नहीं है।",
+        "sendFailed": "व्हाट्सएप संदेश भेजने में विफल। कृपया पुनः प्रयास करें।",
+        "partialSuccess": "{{total}} में से {{accepted}} को स्वीकार किया गया — {{failed}} विफल रहे। नीचे सूची देखें।",
+        "sendSuccess_one": "{{count}} प्राप्तकर्ता के लिए व्हाट्सएप संदेश स्वीकार किया गया",
+        "sendSuccess_other": "{{count}} प्राप्तकर्ताओं के लिए व्हाट्सएप संदेश स्वीकार किया गया",
+        "unexpectedError": "एक अप्रत्याशित त्रुटि हुई। कृपया पुनः प्रयास करें।"
+    },
+    "templateStep": {
+        "templateLabel": "टेम्पलेट",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+        "selectPlaceholder": "एक स्वीकृत टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से मेल खाने वाला कोई स्वीकृत टेम्पलेट नहीं है।",
+        "noTemplatesFound": "इस संस्थान के लिए कोई स्वीकृत व्हाट्सएप टेम्पलेट नहीं मिला।",
+        "languageCodeLabel": "भाषा कोड",
+        "templatePreviewLabel": "टेम्पलेट पूर्वावलोकन",
+        "recipientsNotice_one": "{{count}} प्राप्तकर्ता को यह संदेश मिलेगा।",
+        "recipientsNotice_other": "{{count}} प्राप्तकर्ताओं को यह संदेश मिलेगा।",
+        "skippedNotice_one": "({{count}} छोड़ा गया — मोबाइल नंबर नहीं है)",
+        "skippedNotice_other": "({{count}} छोड़े गए — मोबाइल नंबर नहीं है)"
+    },
+    "variableMappingStep": {
+        "noVariables": "मैप करने के लिए कोई वेरिएबल नहीं है। आप आगे बढ़ सकते हैं।",
+        "mapHint": "प्रत्येक टेम्पलेट वेरिएबल को किसी विद्यार्थी फ़ील्ड से मैप करें, या एक निश्चित मान सेट करें। भेजते समय मान प्रति विद्यार्थी हल किए जाते हैं।",
+        "columnVariable": "वेरिएबल",
+        "columnMappedField": "मैप की गई फ़ील्ड",
+        "selectFieldPlaceholder": "फ़ील्ड चुनें...",
+        "staticValueOption": "स्थिर मान…",
+        "staticValuePlaceholder": "जैसे \"विद्यार्थी\"",
+        "searchPlaceholder": "फ़ील्ड खोजें...",
+        "noMatch": "आपकी खोज से कोई फ़ील्ड मेल नहीं खाता।",
+        "credentialsLoading": "लॉगिन विवरण लाए जा रहे हैं... {{done}}/{{total}}",
+        "credentialsFailed": "लॉगिन विवरण नहीं मिल सके। डायलॉग बंद करके फिर से कोशिश करें।",
+        "credentialsMissing_one": "{{count}} छात्र का यूज़रनेम/पासवर्ड सेव नहीं है, उसे छोड़ दिया जाएगा।",
+        "credentialsMissing_other": "{{count}} छात्रों का यूज़रनेम/पासवर्ड सेव नहीं है, उन्हें छोड़ दिया जाएगा।",
+        "credentialsReady_one": "{{count}} छात्र के लॉगिन विवरण तैयार हैं।",
+        "credentialsReady_other": "{{count}} छात्रों के लॉगिन विवरण तैयार हैं।"
+    },
+    "reviewStep": {
+        "messagesSent": "संदेश भेजे गए",
+        "sendCompleted": "भेजना पूर्ण हुआ",
+        "recipientsLabel": "प्राप्तकर्ता",
+        "sentLabel": "भेजे गए",
+        "failedLabel": "विफल",
+        "stillProcessing": "पृष्ठभूमि में अभी भी प्रोसेस हो रहा है — अंतिम गिनती संचार इतिहास में दिखाई देगी।",
+        "close": "बंद करें",
+        "channelLabel": "व्हाट्सएप",
+        "channelHeading": "चैनल",
+        "templateLabel": "टेम्पलेट",
+        "selectedStudentsCount_one": "{{count}} चयनित विद्यार्थी",
+        "selectedStudentsCount_other": "{{count}} चयनित विद्यार्थी",
+        "variableMappingsLabel": "वेरिएबल मैपिंग",
+        "staticValueLabel": "स्थिर: \"{{value}}\"",
+        "sending": "भेजा जा रहा है...",
+        "sendButton_one": "{{count}} विद्यार्थी को भेजें",
+        "sendButton_other": "{{count}} विद्यार्थियों को भेजें",
+        "sampleFor": "{{name}} के लिए उदाहरण"
+    },
+    "footer": {
+        "back": "पीछे",
+        "next": "आगे"
+    }
+}

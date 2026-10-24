@@ -1,0 +1,67 @@
+{
+    "dropzone": {
+        "hint": "Déposez des images ou des PDF ici"
+    },
+    "preview": {
+        "empty": "Rien à prévisualiser"
+    },
+    "textarea": {
+        "placeholder": "Décrivez ce que vous voulez créer…"
+    },
+    "attach": {
+        "title": "Joindre des images ou des PDF de référence",
+        "ariaLabel": "Joindre des fichiers de référence"
+    },
+    "pdfExtract": {
+        "title": "Extraire le texte du PDF et l'utiliser comme prompt (remplace le texte actuel)",
+        "ariaLabel": "Extraire le PDF comme prompt"
+    },
+    "previewToggle": {
+        "title": "Basculer l'aperçu Markdown/LaTeX",
+        "ariaLabel": "Basculer l'aperçu"
+    },
+    "dialogueChip": {
+        "title": "Les scènes de dialogue narratif sont activées (défini dans les paramètres)",
+        "modeDrama": "Drame",
+        "modeStorybook": "Livre d'histoires",
+        "modelOmni": "Omni",
+        "modelSeedance": "Seedance"
+    },
+    "durationChip": {
+        "title": "Durée cible (définie dans les paramètres)"
+    },
+    "send": {
+        "titleReady": "Générer (Entrée)",
+        "titleAvatarMissing": "Choisissez un présentateur dans ⚙ Paramètres ← Présentateur avant de générer",
+        "ariaReady": "Générer",
+        "ariaAvatarMissing": "Choisissez un présentateur avant de générer"
+    },
+    "footer": {
+        "courseCta": "Envie de créer un cours entier avec l'IA ?",
+        "credits_one": "{{value}} crédit",
+        "credits_many": "{{value}} crédits",
+        "credits_other": "{{value}} crédits"
+    },
+    "toasts": {
+        "sampleAudioUnavailable": "Exemple audio pas encore disponible",
+        "hostMissingTitle": "Choisissez d'abord un présentateur",
+        "hostMissingDescription": "Ouvrez ⚙ Paramètres ← l'onglet Présentateur et choisissez un avatar enregistré, ou enregistrez-en un dans l'onglet Avatars.",
+        "pdfExtractSuccess": "Contenu du PDF extrait avec succès",
+        "pdfExtractFailed": "Échec de l'extraction du contenu du PDF",
+        "filesSkipped_one": "{{count}} fichier ignoré (seuls les images et les PDF sont acceptés)",
+        "filesSkipped_many": "{{count}} fichiers ignorés (seuls les images et les PDF sont acceptés)",
+        "filesSkipped_other": "{{count}} fichiers ignorés (seuls les images et les PDF sont acceptés)",
+        "maxFilesAllowed_one": "Maximum {{count}} fichier autorisé",
+        "maxFilesAllowed_many": "Maximum {{count}} fichiers autorisés",
+        "maxFilesAllowed_other": "Maximum {{count}} fichiers autorisés",
+        "fileSizeExceeded": "{{fileName}} dépasse la limite de {{maxSizeMb}} Mo",
+        "filesAttached_one": "{{count}} fichier joint",
+        "filesAttached_many": "{{count}} fichiers joints",
+        "filesAttached_other": "{{count}} fichiers joints",
+        "filesAttachedPartial": "{{success}} joints, {{failed}} échoués",
+        "filesUploadFailed_one": "Échec de l'envoi de {{count}} fichier",
+        "filesUploadFailed_many": "Échec de l'envoi de {{count}} fichiers",
+        "filesUploadFailed_other": "Échec de l'envoi de {{count}} fichiers",
+        "attachmentsUploadFailed": "Échec de l'envoi des pièces jointes"
+    }
+}

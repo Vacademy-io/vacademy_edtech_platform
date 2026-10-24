@@ -14,6 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
+import vacademy.io.admin_core_service.features.course_settings.service.LmsExistingUserEditPolicyService;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.EnrollmentPolicySettingsDTO;
 import vacademy.io.admin_core_service.features.enrollment_policy.dto.ReenrollmentPolicyDTO;
@@ -41,6 +42,7 @@ import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerS
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.core.internal_api_wrapper.InternalClientUtils;
+import vacademy.io.common.exceptions.EnrollmentConflictException;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.entity.Institute;
 import vacademy.io.common.institute.entity.session.PackageSession;
@@ -67,6 +69,9 @@ public class StudentRegistrationManager {
 
     @Autowired
     private PackageSessionRepository packageSessionRepository;
+
+    @Autowired
+    private LmsExistingUserEditPolicyService lmsExistingUserEditPolicyService;
 
     @Value("${auth.server.baseurl}")
     private String authServerBaseUrl;
@@ -462,7 +467,8 @@ public class StudentRegistrationManager {
                     log.info("Blocking enrollment for user {} - already active in package session {}",
                             student.getUserId(), packageSessionId);
 
-                    throw new VacademyException(message);
+                    throw new EnrollmentConflictException(
+                            EnrollmentConflictException.ConflictType.PAID_MEMBER_BLOCKED, message);
                 }
             } catch (VacademyException e) {
                 throw e; // Re-throw blocking exception
@@ -539,7 +545,8 @@ public class StudentRegistrationManager {
                                     allowedDateStr, gapDays);
                         }
 
-                        throw new VacademyException(message);
+                        throw new EnrollmentConflictException(
+                                EnrollmentConflictException.ConflictType.REENROLLMENT_BLOCKED, message);
                     }
                 }
             }
@@ -1159,7 +1166,10 @@ public class StudentRegistrationManager {
 
     private String generateUsername(String fullName) {
         // Ensure full name has at least 4 characters, else pad with "X"
-        String namePart = fullName.replaceAll("\\s+", "").substring(0, Math.min(fullName.length(), 4)).toLowerCase();
+        // Bound the cut by the stripped length: "A B C" strips to 3 characters while the
+        // raw length is 5, and cutting 4 threw StringIndexOutOfBoundsException.
+        String stripped = fullName == null ? "" : fullName.replaceAll("\\s+", "");
+        String namePart = stripped.substring(0, Math.min(stripped.length(), 4)).toLowerCase();
         if (namePart.length() < 4) {
             namePart = String.format("%-4s", namePart).replace(' ', 'X');
         }
@@ -1184,6 +1194,15 @@ public class StudentRegistrationManager {
 
     public void triggerEnrollmentWorkflow(String instituteId, UserDTO userDTO, String packageSessionId,
                                           Institute subOrg) {
+        triggerEnrollmentWorkflow(instituteId, userDTO, packageSessionId, subOrg, null);
+    }
+
+    /**
+     * Same, with the plan the enrollment belongs to, so the event can say whether this is a
+     * TRIAL or a PAID membership. Prefer this overload wherever a plan is known.
+     */
+    public void triggerEnrollmentWorkflow(String instituteId, UserDTO userDTO, String packageSessionId,
+                                          Institute subOrg, String userPlanId) {
         // Validate and gather context UP-FRONT while we still have references.
         // The actual workflow firing is deferred until after the parent transaction
         // commits (see below) — if it errored later, we still want the validation
@@ -1203,6 +1222,49 @@ public class StudentRegistrationManager {
         // and HTTP_REQUEST webhook bodies can reference the course name directly
         // without needing a separate QUERY node to look it up.
         contextData.put("packageName", pkg.getPackageName());
+        // May a workflow overwrite an LMS account that already exists for this learner?
+        // Resolved here, once, rather than by a QUERY node in each graph: the setting is
+        // course-then-institute (see LmsExistingUserEditPolicyService) and the graph has no
+        // clean way to express that fallback in SpEL. Nodes gate on
+        // #ctx['lmsEditExistingUser'] == true. Best-effort — a failure to read it must not
+        // stop the enrolment, and false is the safe answer (leave the LMS account alone).
+        boolean mayEditExistingLmsUser = false;
+        try {
+            mayEditExistingLmsUser = lmsExistingUserEditPolicyService
+                    .mayEditExistingUser(instituteId, pkg.getId());
+        } catch (Exception e) {
+            log.warn("Could not resolve {} for institute {} / package {} — defaulting to false: {}",
+                    LmsExistingUserEditPolicyService.CONTEXT_KEY, instituteId, pkg.getId(), e.getMessage());
+        }
+        contextData.put(LmsExistingUserEditPolicyService.CONTEXT_KEY, mayEditExistingLmsUser);
+
+        // Trial or paid? This event carried no membership shape at all, so a workflow on it
+        // could not tell a trial joiner from a paying member — the same greeting, and the same
+        // 14-day trial drip, fired for both. Both of the happy flows end here: a first-time
+        // signup that lands on a trial, and a returning member (cancelled or renewal-failed)
+        // who pays to continue and must go straight to the regular classes. The shape has to
+        // travel with the event for those two to be addressable at all.
+        //
+        // Gate workflow conditions on membershipType ('TRIAL' / 'PAID'). UNKNOWN means no plan
+        // was resolvable (admin direct enrolment, bulk assignment, free courses) and must
+        // never be read as either one.
+        String membershipType = "UNKNOWN";
+        boolean isTrialMembership = false;
+        if (StringUtils.hasText(userPlanId)) {
+            try {
+                UserPlan plan = userPlanService.findById(userPlanId);
+                if (plan != null) {
+                    isTrialMembership = Boolean.TRUE.equals(plan.getIsTrial());
+                    membershipType = isTrialMembership ? "TRIAL" : "PAID";
+                }
+            } catch (Exception e) {
+                log.warn("Could not resolve the membership shape for plan {} — the enrollment "
+                        + "workflow context will say UNKNOWN: {}", userPlanId, e.getMessage());
+            }
+        }
+        contextData.put("userPlanId", userPlanId);
+        contextData.put("isTrial", isTrialMembership);
+        contextData.put("membershipType", membershipType);
 
         final String eventName = WorkflowTriggerEvent.LEARNER_BATCH_ENROLLMENT.name();
         final String finalInstituteId = instituteId;

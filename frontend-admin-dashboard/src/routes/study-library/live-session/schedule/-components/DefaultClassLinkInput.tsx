@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyInput } from '@/components/design-system/input';
 import { Link, BookOpen, Trash, Plus, Copy } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
@@ -20,6 +21,7 @@ export function DefaultClassLinkInput({
     onClassNameChange,
     onCopy,
 }: DefaultClassLinkInputProps) {
+    const { t } = useTranslation('studyLibraryDefaultClassLinkInput');
     if (value === null || value === undefined) {
         return (
             <button
@@ -33,10 +35,10 @@ export function DefaultClassLinkInput({
                 </div>
                 <div>
                     <span className="font-semibold text-gray-700 group-hover:text-primary">
-                        Add Default Link for This Day
+                        {t('addDefaultLinkForThisDay')}
                     </span>
                     <p className="mt-0.5 text-xs text-gray-400">
-                        Shown to learners when sessions are not live
+                        {t('shownToLearnersWhenNotLive')}
                     </p>
                 </div>
             </button>
@@ -53,10 +55,10 @@ export function DefaultClassLinkInput({
                     </div>
                     <div>
                         <h4 className="text-sm font-semibold text-gray-800">
-                            Default Link
+                            {t('defaultLink')}
                         </h4>
                         <p className="text-[11px] leading-tight text-gray-500">
-                            Shown when sessions are not live
+                            {t('shownWhenNotLive')}
                         </p>
                     </div>
                 </div>
@@ -69,7 +71,7 @@ export function DefaultClassLinkInput({
                             className="group/btn flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-blue-600 transition-all duration-150 hover:bg-blue-100/60 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Copy size={13} weight="bold" className="transition-transform duration-150 group-hover/btn:scale-110" />
-                            <span>Copy</span>
+                            <span>{t('copy')}</span>
                         </button>
                     )}
                     <button
@@ -82,7 +84,7 @@ export function DefaultClassLinkInput({
                         className="group/btn flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-500 transition-all duration-150 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Trash size={13} weight="bold" className="transition-transform duration-150 group-hover/btn:scale-110" />
-                        <span>Remove</span>
+                        <span>{t('remove')}</span>
                     </button>
                 </div>
             </div>
@@ -93,11 +95,11 @@ export function DefaultClassLinkInput({
                 <div>
                     <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-600">
                         <BookOpen size={13} className="text-blue-500" weight="duotone" />
-                        Class Name
+                        {t('className')}
                     </label>
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="e.g., Mathematics Class"
+                        inputPlaceholder={t('classNamePlaceholder')}
                         input={classNameValue || ''}
                         onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) => {
                             const newValue = e.target.value;
@@ -112,12 +114,12 @@ export function DefaultClassLinkInput({
                 <div>
                     <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-600">
                         <Link size={13} className="text-blue-500" weight="duotone" />
-                        Link URL
+                        {t('linkUrl')}
                         <span className="text-red-400">*</span>
                     </label>
                     <MyInput
                         inputType="url"
-                        inputPlaceholder="https://example.com"
+                        inputPlaceholder={t('linkUrlPlaceholder')}
                         input={value || ''}
                         onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) => {
                             const newValue = e.target.value.trim();

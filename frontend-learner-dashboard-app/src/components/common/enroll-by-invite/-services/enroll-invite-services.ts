@@ -1,3 +1,4 @@
+import { isBlankPhone } from "@/lib/phone-validation";
 import {
   BASE_URL,
   ENROLL_OPEN_STUDENT_URL,
@@ -186,7 +187,12 @@ const getPhoneField = (registrationData: RegistrationDataType): string => {
       value.render_type || getFieldRenderType(key, value.type || "text");
     return renderType === FieldRenderType.PHONE;
   });
-  return phoneEntry ? phoneEntry[1].value : "";
+  const value = phoneEntry ? phoneEntry[1].value : "";
+  // A form may leave its phone field optional, and the phone widget keeps the selected
+  // country's dial code in the box — so a skipped field reads back as "+91". Storing that as
+  // the learner's mobile number, or handing it to a payment gateway as their contact, is worse
+  // than storing nothing.
+  return isBlankPhone(value) ? "" : value;
 };
 
 /**

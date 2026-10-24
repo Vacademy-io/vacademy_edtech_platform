@@ -3,6 +3,7 @@ import { SubjectMaterial } from "@/components/common/study-library/level-materia
 import { InitStudyLibraryProvider } from "@/providers/study-library/init-study-library-provider";
 import { createFileRoute } from "@tanstack/react-router";
 import { Helmet } from "react-helmet";
+import { useTranslation } from "react-i18next";
 
 interface LevelSearchParams {
     courseId: string;
@@ -22,11 +23,12 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent() {
+    const { t } = useTranslation("courseDetailsC");
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{document?.title || "Learning Center"}</title>
-                <meta name="description" content="Learning Center page" />
+                <title>{document?.title || t("subjectsRoute.title")}</title>
+                <meta name="description" content={t("subjectsRoute.metaDescription")} />
             </Helmet>
             <InitStudyLibraryProvider>
                 <SubjectMaterial />

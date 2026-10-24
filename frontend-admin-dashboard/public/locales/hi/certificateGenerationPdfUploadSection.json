@@ -1,0 +1,52 @@
+{
+    "readyCard": {
+        "title": "टेम्पलेट तैयार है",
+        "preview": "पूर्वावलोकन",
+        "remove": "हटाएँ",
+        "removing": "हटाया जा रहा है",
+        "imageAlt": "प्रमाणपत्र टेम्पलेट पूर्वावलोकन",
+        "typeLabel": "प्रकार",
+        "typePdf": "PDF → छवि",
+        "typeImage": "छवि",
+        "formatLabel": "प्रारूप",
+        "dimensionsLabel": "आयाम",
+        "uploadedLabel": "अपलोड किया गया",
+        "confirmRemove": "क्या आप वाकई इस टेम्पलेट को हटाना चाहते हैं? इससे सभी फ़ील्ड मैपिंग भी साफ़ हो जाएँगी।"
+    },
+    "dropzone": {
+        "processingDefault": "फ़ाइल संसाधित हो रही है...",
+        "fileTypeUnsupported": "फ़ाइल प्रकार समर्थित नहीं है",
+        "dropHere": "फ़ाइल यहाँ छोड़ें",
+        "uploadTitle": "प्रमाणपत्र टेम्पलेट अपलोड करें",
+        "processingSubtitle": "कृपया प्रतीक्षा करें जब तक आपका टेम्पलेट संसाधित हो रहा है",
+        "dragDropSubtitle": "अपनी PDF या इमेज फ़ाइल यहाँ खींचकर छोड़ें, या ब्राउज़ करने के लिए क्लिक करें",
+        "chooseFile": "टेम्पलेट फ़ाइल चुनें"
+    },
+    "requirements": {
+        "title": "समर्थित प्रारूप:",
+        "pdf": "PDF फ़ाइलें (छवि में बदल दी जाएँगी)",
+        "png": "PNG छवियाँ",
+        "jpg": "JPG/JPEG छवियाँ",
+        "maxSize": "अधिकतम फ़ाइल आकार: 50MB",
+        "recommendation": "बेहतर गुणवत्ता के लिए उच्च रिज़ॉल्यूशन की सलाह दी जाती है"
+    },
+    "processingSteps": {
+        "readingPdf": "PDF फ़ाइल पढ़ी जा रही है...",
+        "loadingPdf": "PDF दस्तावेज़ लोड हो रहा है...",
+        "renderingPdf": "PDF को छवि में रेंडर किया जा रहा है...",
+        "convertingImage": "छवि प्रारूप में बदला जा रहा है...",
+        "loadingImage": "छवि लोड हो रही है...",
+        "processingImage": "छवि संसाधित हो रही है..."
+    },
+    "errors": {
+        "title": "अपलोड त्रुटि",
+        "processFailed": "{{fileType}} फ़ाइल संसाधित करने में विफल। कृपया सुनिश्चित करें कि यह एक मान्य फ़ाइल है।",
+        "uploadFailed": "फ़ाइल अपलोड करने में विफल",
+        "loadImageFailed": "छवि लोड करने में विफल",
+        "canvasContextFailed": "कैनवास संदर्भ प्राप्त करने में विफल"
+    },
+    "fileTypes": {
+        "pdf": "PDF",
+        "image": "छवि"
+    }
+}

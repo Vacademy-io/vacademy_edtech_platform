@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.common.util.JsonUtil;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService;
@@ -21,6 +22,7 @@ import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentLo
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogLineItemRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService;
 import vacademy.io.admin_core_service.features.user_subscription.service.coupon.CouponDiscountUtil;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserInstitutePaymentGatewayMappingService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
@@ -89,43 +91,95 @@ public class PaymentService {
          * invoice would show plan_price − (N × discount).
          */
         private void recordCouponLineItemIfApplicable(String paymentLogId, UserPlan userPlan) {
-                if (userPlan == null || paymentLogId == null) {
+                PaymentPlan plan = userPlan != null ? userPlan.getPaymentPlan() : null;
+                recordFirstPaymentDiscountLineItem(paymentLogId, userPlan,
+                                plan != null ? RegionalPriceLock.listPrice(userPlan) : null);
+        }
+
+        /**
+         * First charge of a UserPlan: records the attached discount (coupon or admin)
+         * as a negative line item and counts it as one discounted cycle. Public so the
+         * admin manual-payment paths (manual enroll, bulk assign) record the same line
+         * the gateway paths do.
+         *
+         * @param grossAmount the pre-discount amount the discount was computed on
+         */
+        public void recordFirstPaymentDiscountLineItem(String paymentLogId, UserPlan userPlan, Double grossAmount) {
+                if (userPlan == null || paymentLogId == null || grossAmount == null) {
                         return;
                 }
-                AppliedCouponDiscount coupon = userPlan.getAppliedCouponDiscount();
-                if (coupon == null) {
-                        return;
-                }
-                PaymentPlan plan = userPlan.getPaymentPlan();
-                if (plan == null) {
-                        return;
-                }
-                double discount = CouponDiscountUtil.computeDiscount(coupon, plan.getActualPrice());
-                if (discount <= 0.0) {
+                AppliedCouponDiscount discount = userPlan.getAppliedCouponDiscount();
+                if (discount == null) {
                         return;
                 }
                 if (paymentLogLineItemRepository
-                                .existsByPaymentLog_UserPlan_IdAndSourceId(userPlan.getId(), coupon.getId())) {
-                        log.debug("Coupon line item already recorded for userPlan={} coupon={} — skipping",
-                                        userPlan.getId(), coupon.getId());
+                                .existsByPaymentLog_UserPlan_IdAndSourceId(userPlan.getId(), discount.getId())) {
+                        log.debug("Discount line item already recorded for userPlan={} discount={} — skipping",
+                                        userPlan.getId(), discount.getId());
                         return;
                 }
-                paymentLogRepository.findById(paymentLogId).ifPresent(paymentLog -> {
+                // Cycles only matter for admin discounts (renewals never apply coupons), so a
+                // coupon enrollment is left exactly as it was — no extra counter write.
+                if (saveDiscountLineItem(paymentLogId, discount, grossAmount, RegionalPriceLock.scale(userPlan))
+                                && AdminDiscountService.SOURCE_ADMIN.equals(discount.getDiscountSource())) {
+                        markDiscountedCycle(userPlan);
+                }
+        }
+
+        /**
+         * Renewal charge: records the discount on THIS payment log (each renewal is its
+         * own invoice). The cycle is counted when the renewal is confirmed PAID, see
+         * RenewalPaymentService.
+         */
+        public void recordRenewalDiscountLineItem(String paymentLogId, AppliedCouponDiscount discount,
+                        double grossAmount, UserPlan userPlan) {
+                if (paymentLogId == null || discount == null) {
+                        return;
+                }
+                if (paymentLogLineItemRepository.existsByPaymentLogIdAndSourceId(paymentLogId, discount.getId())) {
+                        return;
+                }
+                saveDiscountLineItem(paymentLogId, discount, grossAmount, RegionalPriceLock.scale(userPlan));
+        }
+
+        /** One more charge reduced by the plan's discount; persisted with the plan's next save. */
+        public void markDiscountedCycle(UserPlan userPlan) {
+                int used = userPlan.getDiscountCyclesApplied() != null ? userPlan.getDiscountCyclesApplied() : 0;
+                userPlan.setDiscountCyclesApplied(used + 1);
+                userPlanService.save(userPlan);
+        }
+
+        /**
+         * @param scale regional ÷ base price of the UserPlan (1 when not regionally priced):
+         *              discount amounts are written in the base currency, the gross is not.
+         */
+        private boolean saveDiscountLineItem(String paymentLogId, AppliedCouponDiscount discount, double grossAmount,
+                        double scale) {
+                boolean admin = AdminDiscountService.SOURCE_ADMIN.equals(discount.getDiscountSource());
+                double computed = CouponDiscountUtil.computeDiscount(discount, grossAmount / scale) * scale;
+                // Coupons: same figure as before. Admin discounts: never more than the price.
+                double amount = admin ? Math.min(computed, grossAmount) : computed;
+                if (amount <= 0.0) {
+                        return false;
+                }
+                return paymentLogRepository.findById(paymentLogId).map(paymentLog -> {
                         PaymentLogLineItem item = new PaymentLogLineItem();
                         item.setPaymentLog(paymentLog);
-                        // Both fields contain "COUPON" so InvoiceService picks the row up
-                        // in calculateDiscountAmount AND resolves the code via
-                        // buildDiscountDescription (source.toLowerCase().contains("coupon")).
-                        item.setType("COUPON_DISCOUNT");
-                        item.setSource("COUPON_CODE");
-                        item.setSourceId(coupon.getId());
+                        // Coupon rows: both fields contain "COUPON" so InvoiceService picks the
+                        // row up in calculateDiscountAmount AND resolves the code via
+                        // buildDiscountDescription. Admin rows: type contains "DISCOUNT",
+                        // which calculateDiscountAmount and buildLineItems also pick up.
+                        item.setType(admin ? "ADMIN_DISCOUNT" : "COUPON_DISCOUNT");
+                        item.setSource(admin ? "ADMIN_DISCOUNT" : "COUPON_CODE");
+                        item.setSourceId(discount.getId());
                         // Stored as negative — calculateDiscountAmount's "< 0" branch is the
                         // canonical convention for this column.
-                        item.setAmount(-(int) Math.round(discount));
+                        item.setAmount(-(Math.round(amount * 100.0) / 100.0));
                         paymentLogLineItemRepository.save(item);
-                        log.info("Recorded coupon line item {} for paymentLog={} coupon={} discount={}",
-                                        item.getId(), paymentLogId, coupon.getName(), discount);
-                });
+                        log.info("Recorded {} line item {} for paymentLog={} discount={} amount={}",
+                                        item.getType(), item.getId(), paymentLogId, discount.getId(), amount);
+                        return true;
+                }).orElse(false);
         }
 
         /**

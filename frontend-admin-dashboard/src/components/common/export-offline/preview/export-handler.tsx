@@ -13,9 +13,20 @@ interface ExportHandlerProps {
     sections: Section[];
     settings: ExportSettings;
     setNumber?: number;
+    title?: string;
+    durationMins?: number;
+    // eslint-disable-next-line
+    instructions?: any;
 }
 
-export function ExportHandler({ sections, settings, setNumber }: ExportHandlerProps) {
+export function ExportHandler({
+    sections,
+    settings,
+    setNumber,
+    title,
+    durationMins,
+    instructions,
+}: ExportHandlerProps) {
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(34);
     const pagesRef = useRef<HTMLDivElement>(null);
@@ -159,7 +170,7 @@ export function ExportHandler({ sections, settings, setNumber }: ExportHandlerPr
             link.href = url;
             link.download = `Paper${
                 setNumber ? ` ${String.fromCharCode(65 + setNumber)}` : ''
-            }.pdf`;
+            }${settings.exportSolutionKey ? ' (Answer Key)' : ''}.pdf`;
             link.click();
             URL.revokeObjectURL(url);
         } catch (error) {
@@ -201,7 +212,14 @@ export function ExportHandler({ sections, settings, setNumber }: ExportHandlerPr
                     width: '210mm',
                 }}
             >
-                <PaperSet sections={sections} setNumber={setNumber || 0} settings={settings} />
+                <PaperSet
+                    sections={sections}
+                    setNumber={setNumber || 0}
+                    settings={settings}
+                    title={title}
+                    durationMins={durationMins}
+                    instructions={instructions}
+                />
             </div>
             {isExporting && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">

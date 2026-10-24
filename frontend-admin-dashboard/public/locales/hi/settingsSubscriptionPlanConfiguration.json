@@ -1,0 +1,26 @@
+{
+    "title": "सदस्यता योजना कॉन्फ़िगरेशन",
+    "durationUnit": {
+        "label": "अवधि इकाई",
+        "days": "दिन",
+        "months": "महीने",
+        "hint": "यह इकाई नीचे दिए गए सभी मूल्य निर्धारण अंतरालों के लिए उपयोग की जाएगी"
+    },
+    "pricingIntervals": {
+        "heading": "मूल्य निर्धारण अंतराल",
+        "addButton": "अंतराल जोड़ें",
+        "interval": {
+            "titleLabel": "शीर्षक",
+            "titlePlaceholder": "जैसे बेसिक प्लान",
+            "durationLabel": "अवधि ({{unit}})",
+            "priceLabel": "मूल्य",
+            "pricePlaceholder": "0",
+            "featuresHeading": "विशेषताएं",
+            "addFeaturePlaceholder": "एक विशेषता जोड़ें",
+            "addFeatureButton": "जोड़ें",
+            "removeButton": "अंतराल हटाएं",
+            "planChangeLabel": "Members can switch to this plan",
+            "planChangeHint": "(turn on plan switching for this option first)"
+        }
+    }
+}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Registration } from '../../../-types/registration-types';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +19,7 @@ interface SectionProps {
 }
 
 export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, updateFormData }) => {
+    const { t } = useTranslation('admissionsParentGuardianSection');
     const [activeTab, setActiveTab] = React.useState<'FATHER' | 'MOTHER' | 'GUARDIAN'>('FATHER');
 
     const updateParentInfo = (
@@ -34,10 +36,10 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
         });
     };
 
-    const getMaxLength = (type: string, label: string): number | undefined => {
+    const getMaxLength = (type: string, isNameField: boolean): number | undefined => {
         if (type === 'email') return MAX_LENGTH.EMAIL;
         if (type === 'tel') return MAX_LENGTH.PHONE;
-        if (label.toLowerCase().includes('name')) return MAX_LENGTH.NAME;
+        if (isNameField) return MAX_LENGTH.NAME;
         return MAX_LENGTH.GENERAL;
     };
 
@@ -48,7 +50,8 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
         placeholder: string = '',
         required: boolean = false,
         type: string = 'text',
-        options?: string[]
+        options?: string[],
+        isNameField: boolean = false
     ) => (
         <div>
             <Label className="mb-1 block text-sm font-medium text-neutral-700">
@@ -57,7 +60,7 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
             {options ? (
                 <Select value={value} onValueChange={onChange}>
                     <SelectTrigger>
-                        <SelectValue placeholder="Select" />
+                        <SelectValue placeholder={t('selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                         {options.map((opt) => (
@@ -73,7 +76,7 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
                     placeholder={placeholder}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    maxLength={getMaxLength(type, label)}
+                    maxLength={getMaxLength(type, isNameField)}
                 />
             )}
         </div>
@@ -91,35 +94,38 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
             <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     {renderField(
-                        'Full Name',
+                        t('fullNameLabel'),
                         data.name || '',
                         (v) => updateParentInfo(type, 'name', v),
-                        `${title}'s full name`,
+                        t('fullNamePlaceholder', { title }),
+                        true,
+                        'text',
+                        undefined,
                         true
                     )}
                     <PhoneNumberInput
                         name={`${type}.mobile`}
                         value={data.mobile || ''}
                         onChange={(_name, value) => updateParentInfo(type, 'mobile', value)}
-                        label="Mobile Number"
+                        label={t('mobileNumberLabel')}
                         required
-                        placeholder="Enter mobile number"
+                        placeholder={t('mobileNumberPlaceholder')}
                     />
                     <div>
                         <Label className="mb-1 block text-sm font-medium text-neutral-700">
-                            Email Address{' '}
+                            {t('emailAddressLabel')}{' '}
                             {type === 'fatherInfo' && <span className="text-red-500">*</span>}
                         </Label>
                         <Input
                             type="email"
-                            placeholder="example@email.com"
+                            placeholder={t('emailPlaceholderExample')}
                             value={emailValue}
                             onChange={(e) => updateParentInfo(type, 'email', e.target.value)}
                             maxLength={MAX_LENGTH.EMAIL}
                             className={showEmailError ? 'border-red-400 focus:border-red-500 focus:ring-red-300' : ''}
                         />
                         {showEmailError && (
-                            <span className="text-xs text-red-500">Enter a valid email address</span>
+                            <span className="text-xs text-red-500">{t('emailValidationError')}</span>
                         )}
                     </div>
                 </div>
@@ -130,11 +136,11 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
     return (
         <div className="space-y-6">
             <div className="border-b border-neutral-200">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <nav className="-mb-px flex gap-x-8" aria-label={t('tabsAriaLabel')}>
                     {[
-                        { id: 'FATHER', name: 'Father Details' },
-                        { id: 'MOTHER', name: 'Mother Details' },
-                        { id: 'GUARDIAN', name: 'Guardian Details' },
+                        { id: 'FATHER', name: t('tabFatherDetails') },
+                        { id: 'MOTHER', name: t('tabMotherDetails') },
+                        { id: 'GUARDIAN', name: t('tabGuardianDetails') },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -155,9 +161,9 @@ export const ParentGuardianSection: React.FC<SectionProps> = ({ formData, update
             </div>
 
             <div className="mt-4">
-                {activeTab === 'FATHER' && renderParentForm('fatherInfo', 'Father')}
-                {activeTab === 'MOTHER' && renderParentForm('motherInfo', 'Mother')}
-                {activeTab === 'GUARDIAN' && renderParentForm('guardianInfo', 'Guardian')}
+                {activeTab === 'FATHER' && renderParentForm('fatherInfo', t('roleFather'))}
+                {activeTab === 'MOTHER' && renderParentForm('motherInfo', t('roleMother'))}
+                {activeTab === 'GUARDIAN' && renderParentForm('guardianInfo', t('roleGuardian'))}
             </div>
         </div>
     );

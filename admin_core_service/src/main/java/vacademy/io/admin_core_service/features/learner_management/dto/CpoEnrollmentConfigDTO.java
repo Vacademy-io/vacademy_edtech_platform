@@ -48,4 +48,19 @@ public class CpoEnrollmentConfigDTO {
 
     /** Optional external reference (cheque #, UPI ref) — stored on PaymentLog.paymentSpecificData. */
     private String paymentReference;
+
+    /**
+     * How the offline payment was made (mode, sub-option, reference, date). Falls back to
+     * {@code options.payment_details}. See OfflinePaymentDetailsService.
+     */
+    private vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO paymentDetails;
+
+    /**
+     * Learner-specific installment schedule chosen by the admin (count, gap, first due
+     * date, optionally edited rows). When set, the learner's bills are generated from it
+     * instead of the plan's fixed template; it also lets a one-time course price be paid
+     * in installments. Cannot be combined with {@link #installmentOverrides}, which target
+     * template rows. See docs/CPO_FLEXIBLE_INSTALLMENTS.md.
+     */
+    private vacademy.io.admin_core_service.features.fee_management.dto.InstallmentScheduleDTO installmentSchedule;
 }

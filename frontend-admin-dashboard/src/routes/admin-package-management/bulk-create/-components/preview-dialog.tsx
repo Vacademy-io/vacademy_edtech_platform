@@ -12,6 +12,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckCircle, XCircle, Package, Users } from '@phosphor-icons/react';
 import { BulkCourseItem, GlobalDefaults, BulkCreateResponse, BatchConfig } from '../-types/bulk-create-types';
 import { formatPlanPrice } from '@/utils/finance-utils';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface PreviewDialogProps {
     open: boolean;
@@ -63,7 +68,12 @@ export function PreviewDialog({
                 <DialogHeader>
                     <DialogTitle>Review & Confirm</DialogTitle>
                     <DialogDescription>
-                        Review the courses that will be created. Validation has passed.
+                        Review the{' '}
+                        {getTerminologyPlural(
+                            ContentTerms.Course,
+                            SystemTerms.Course
+                        ).toLocaleLowerCase()}{' '}
+                        that will be created. Validation has passed.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -75,7 +85,12 @@ export function PreviewDialog({
                                 Validation Successful
                             </p>
                             <p className="text-xs text-green-600">
-                                {dryRunResult.success_count} course(s) ready to be created
+                                {dryRunResult.success_count}{' '}
+                                {getTerminology(
+                                    ContentTerms.Course,
+                                    SystemTerms.Course
+                                ).toLocaleLowerCase()}
+                                (s) ready to be created
                             </p>
                         </div>
                     </div>
@@ -97,7 +112,8 @@ export function PreviewDialog({
                                             <Package className="size-5 text-primary-600" />
                                             <div>
                                                 <h4 className="text-sm font-medium">
-                                                    {course.course_name || 'Unnamed Course'}
+                                                    {course.course_name ||
+                                                        `Unnamed ${getTerminology(ContentTerms.Course, SystemTerms.Course)}`}
                                                 </h4>
                                                 <p className="text-xs text-neutral-500">
                                                     {course.course_type}
@@ -180,7 +196,9 @@ export function PreviewDialog({
                         Go Back & Edit
                     </Button>
                     <Button onClick={onConfirm} disabled={isSubmitting}>
-                        {isSubmitting ? 'Creating...' : `Create ${courses.length} Course(s)`}
+                        {isSubmitting
+                            ? 'Creating...'
+                            : `Create ${courses.length} ${getTerminology(ContentTerms.Course, SystemTerms.Course)}(s)`}
                     </Button>
                 </DialogFooter>
             </DialogContent>

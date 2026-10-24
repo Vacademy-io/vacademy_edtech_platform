@@ -1,4 +1,5 @@
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,11 +12,12 @@ interface PostFormFillConfigurationCardProps {
 }
 
 const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardProps) => {
+    const { t } = useTranslation('manageStudentsPostFormFillConfigurationCard');
     return (
         <Card className="shadow-none rounded-sm bg-neutral-50/50">
             <CardHeader className="border-b bg-neutral-100/50 p-4">
                 <CardTitle className="text-base font-semibold text-neutral-800">
-                    Post Form Fill Configuration
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 p-4">
@@ -25,12 +27,12 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                         name="postformfillConfiguration.redirectPath"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Redirect Path (Optional)</FormLabel>
+                                <FormLabel>{t('redirectPath.label')}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="/dashboard or https://example.com" {...field} />
+                                    <Input placeholder={t('redirectPath.placeholder')} {...field} />
                                 </FormControl>
                                 <p className="text-xs text-neutral-500">
-                                    If set, the user will be instantly redirected to this path after successful enrollment, skipping the success page.
+                                    {t('redirectPath.helpText')}
                                 </p>
                                 <FormMessage />
                             </FormItem>
@@ -43,9 +45,9 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                         render={({ field }) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
-                                    <FormLabel className="text-sm font-semibold">Show Login Button</FormLabel>
+                                    <FormLabel className="text-sm font-semibold">{t('showLoginButton.label')}</FormLabel>
                                     <p className="text-xs text-neutral-500">
-                                        Display the login button on the success page if not redirecting immediately.
+                                        {t('showLoginButton.helpText')}
                                     </p>
                                 </div>
                                 <FormControl>
@@ -63,15 +65,15 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                         name="postformfillConfiguration.content"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Success Page Content (Optional)</FormLabel>
+                                <FormLabel>{t('content.label')}</FormLabel>
                                 <FormControl>
-                                    <Textarea rows={4} placeholder="HTML/Text Content" {...field} />
+                                    <Textarea rows={4} placeholder={t('content.placeholder')} {...field} />
                                 </FormControl>
                                 <p className="text-xs text-neutral-500">
-                                    Custom content to display on the success page. Overrides the default message. You may use HTML.
+                                    {t('content.helpText')}
                                 </p>
                                 <p className="text-xs text-neutral-500">
-                                    Supported tokens: <code>{'{{courseName}}'}</code> and <code>{'{{amount}}'}</code>. They are replaced at runtime with the course title and the amount the learner paid for their selected plan.
+                                    {t('content.tokensPrefix')} <code>{'{{courseName}}'}</code> {t('content.tokensJoiner')} <code>{'{{amount}}'}</code>. {t('content.tokensSuffix')}
                                 </p>
                                 <FormMessage />
                             </FormItem>
@@ -84,9 +86,9 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                         render={({ field }) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
-                                    <FormLabel className="text-sm font-semibold">Collect Billing Contact Details</FormLabel>
+                                    <FormLabel className="text-sm font-semibold">{t('collectBillingContactDetails.label')}</FormLabel>
                                     <p className="text-xs text-neutral-500">
-                                        Let learners add a separate billing contact (name, email, role) during enrollment. The billing email also receives invoices and renewal notices.
+                                        {t('collectBillingContactDetails.helpText')}
                                     </p>
                                 </div>
                                 <FormControl>
@@ -102,10 +104,10 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                     {form.watch('postformfillConfiguration.collectBillingContactDetails') && (
                         <div className="space-y-4 rounded-lg border border-dashed p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                                Billing Contact Fields
+                                {t('billingContactFields.heading')}
                             </p>
                             <p className="text-xs text-neutral-500">
-                                Customize the labels learners see, mark fields optional, and (for the third field) supply dropdown options as a comma-separated list. Leave the options blank to render it as a free-text input.
+                                {t('billingContactFields.helpText')}
                             </p>
 
                             {(['name', 'email', 'role'] as const).map((key) => (
@@ -118,9 +120,13 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                                         name={`postformfillConfiguration.billingContactFields.${key}.label` as const}
                                         render={({ field }) => (
                                             <FormItem className="sm:col-span-6">
-                                                <FormLabel className="text-xs">Field {key} label</FormLabel>
+                                                <FormLabel className="text-xs">
+                                                    {t('billingContactFields.fieldLabelTemplate', {
+                                                        field: t(`billingContactFields.fieldNames.${key}`),
+                                                    })}
+                                                </FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Field label" {...field} />
+                                                    <Input placeholder={t('billingContactFields.fieldLabelPlaceholder')} {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -132,7 +138,7 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                                         name={`postformfillConfiguration.billingContactFields.${key}.required` as const}
                                         render={({ field }) => (
                                             <FormItem className="flex items-center justify-between gap-2 sm:col-span-6">
-                                                <FormLabel className="text-xs">Required</FormLabel>
+                                                <FormLabel className="text-xs">{t('billingContactFields.required')}</FormLabel>
                                                 <FormControl>
                                                     <Switch
                                                         checked={field.value}
@@ -149,15 +155,15 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
                                             name="postformfillConfiguration.billingContactFields.role.options"
                                             render={({ field }) => (
                                                 <FormItem className="sm:col-span-12">
-                                                    <FormLabel className="text-xs">Options (comma-separated)</FormLabel>
+                                                    <FormLabel className="text-xs">{t('billingContactFields.options.label')}</FormLabel>
                                                     <FormControl>
                                                         <Input
-                                                            placeholder="Owner, Manager, Finance"
+                                                            placeholder={t('billingContactFields.options.placeholder')}
                                                             {...field}
                                                         />
                                                     </FormControl>
                                                     <p className="text-xs text-neutral-500">
-                                                        Leave blank to render this field as a free-text input.
+                                                        {t('billingContactFields.options.helpText')}
                                                     </p>
                                                     <FormMessage />
                                                 </FormItem>

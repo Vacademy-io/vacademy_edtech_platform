@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "unknownCounsellorEmail": "अज्ञात काउंसलर ईमेल: {{email}}",
+        "ambiguousCounsellorName": "\"{{name}}\" नाम के कई काउंसलर मौजूद हैं — कृपया उनका ईमेल इस्तेमाल करें",
+        "unknownCounsellor": "अज्ञात काउंसलर: {{name}}",
+        "unknownLeadStatus": "अज्ञात लीड स्थिति: {{status}}.",
+        "validStatuses": "मान्य स्थितियां: {{statuses}}",
+        "fieldRequired": "{{field}} आवश्यक है",
+        "invalidEmail": "अमान्य ईमेल: {{email}}",
+        "invalidMobile": "अमान्य मोबाइल नंबर: {{mobile}}"
+    },
+    "csvTemplate": {
+        "leadOwnerColumn": "लीड ओनर (काउंसलर ईमेल)",
+        "leadStatusColumn": "लीड स्थिति",
+        "sampleName": "जॉन डो",
+        "sampleStatus": "नया"
+    }
+}

@@ -10,6 +10,7 @@ import { amplitudeEvents, trackEvent } from '@/lib/amplitude';
 import { Building2, GraduationCap, Shield, User, ChevronDown } from 'lucide-react';
 import { fetchMultipleInstituteDetails, getInstituteName } from '@/lib/auth/instituteService';
 import { InstituteDetailsType } from '@/schemas/student/student-list/institute-schema';
+import { useTranslation } from 'react-i18next';
 
 interface Institute {
     id: string;
@@ -24,6 +25,7 @@ interface InstituteSelectionProps {
 }
 
 export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProps) {
+    const { t } = useTranslation('loginInstituteSelection');
     const [institutes, setInstitutes] = useState<Institute[]>([]);
     const [selectedInstitute, setSelectedInstitute] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
@@ -36,14 +38,14 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
         const initializeInstitutes = async () => {
             const accessToken = getTokenFromCookie(TokenKey.accessToken);
             if (!accessToken) {
-                toast.error('No access token found');
+                toast.error(t('noAccessTokenFound'));
                 navigate({ to: '/login' });
                 return;
             }
 
             const tokenData = getTokenDecodedData(accessToken);
             if (!tokenData || !tokenData.authorities) {
-                toast.error('Invalid token data');
+                toast.error(t('invalidTokenData'));
                 navigate({ to: '/login' });
                 return;
             }
@@ -52,7 +54,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
             const instituteList: Institute[] = Object.entries(tokenData.authorities).map(
                 ([instituteId, authority]) => ({
                     id: instituteId,
-                    name: `Institute ${instituteId.slice(0, 8)}...`, // Will be updated with real names
+                    name: t('instituteFallbackName', { idPrefix: instituteId.slice(0, 8) }), // Will be updated with real names
                     roles: authority.roles || [],
                     permissions: authority.permissions || [],
                 })
@@ -68,7 +70,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
             });
 
             if (validInstitutes.length === 0) {
-                toast.error('You do not have access to any institutes');
+                toast.error(t('noInstituteAccess'));
                 navigate({ to: '/login' });
                 return;
             }
@@ -184,14 +186,14 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
 
     const handleContinue = () => {
         if (!selectedInstitute) {
-            toast.error('Please select an institute');
+            toast.error(t('pleaseSelectAnInstitute'));
             return;
         }
 
         const institute = institutes.find((inst) => inst.id === selectedInstitute);
 
         if (!institute) {
-            toast.error('Selected institute not found');
+            toast.error(t('selectedInstituteNotFound'));
             return;
         }
 
@@ -213,7 +215,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                 <div className="flex w-full flex-col items-center justify-center gap-20">
                     <div className="flex flex-col items-center justify-center gap-4">
                         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-                        <p className="text-sm text-gray-600">Loading institutes...</p>
+                        <p className="text-sm text-gray-600">{t('loadingInstitutes')}</p>
                     </div>
                 </div>
             </SplashScreen>
@@ -226,8 +228,8 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                 <div className="flex flex-col items-center gap-4">
                     <Building2 className="h-12 w-12 text-primary-500" />
                     <Heading
-                        heading="Select Your Institute"
-                        subHeading="Choose the institute you want to access"
+                        heading={t('selectYourInstitute')}
+                        subHeading={t('chooseInstituteToAccess')}
                     />
                 </div>
 
@@ -235,14 +237,14 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                     {isLoadingDetails && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
-                            Loading institute details...
+                            {t('loadingInstituteDetails')}
                         </div>
                     )}
 
                     {/* Institute Dropdown */}
                     <div className="w-full max-w-md" ref={dropdownRef}>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Select Institute
+                            {t('selectInstituteLabel')}
                         </label>
                         <div className="relative">
                             <button
@@ -256,7 +258,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                                         {selectedInstitute ? (
                                             <>
                                                 <div className="font-medium text-gray-900">
-                                                    {institutes.find(i => i.id === selectedInstitute)?.name || 'Select an institute'}
+                                                    {institutes.find(i => i.id === selectedInstitute)?.name || t('selectAnInstitute')}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     {(() => {
@@ -269,7 +271,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                                                 </div>
                                             </>
                                         ) : (
-                                            <span className="text-gray-500">Select an institute</span>
+                                            <span className="text-gray-500">{t('selectAnInstitute')}</span>
                                         )}
                                     </div>
                                 </div>
@@ -330,7 +332,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                     <div className="flex w-full max-w-md flex-col gap-4">
                         {!selectedInstitute && (
                             <p className="text-sm text-gray-500 text-center">
-                                Please select an institute to continue
+                                {t('pleaseSelectAnInstituteToContinue')}
                             </p>
                         )}
 
@@ -344,7 +346,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                             }}
                             disabled={!selectedInstitute}
                         >
-                            {selectedInstitute ? 'Continue to Dashboard' : 'Please select an institute'}
+                            {selectedInstitute ? t('continueToDashboard') : t('pleaseSelectAnInstitute')}
                         </MyButton>
 
                         <button
@@ -352,7 +354,7 @@ export function InstituteSelection({ onInstituteSelect }: InstituteSelectionProp
                             onClick={() => navigate({ to: '/login' })}
                             className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                         >
-                            Back to Login
+                            {t('backToLogin')}
                         </button>
                     </div>
                 </div>

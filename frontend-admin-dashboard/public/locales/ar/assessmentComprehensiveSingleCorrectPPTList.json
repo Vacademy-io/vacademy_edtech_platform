@@ -1,0 +1,29 @@
+{
+    "header": {
+        "questionsSettings": "إعدادات الأسئلة",
+        "questionTypeLabel": "نوع السؤال",
+        "marksLabel": "الدرجات",
+        "negativeMarkingLabel": "الدرجات السالبة"
+    },
+    "timeLimit": {
+        "title": "الحد الزمني",
+        "hrs": "ساعة",
+        "min": "دقيقة"
+    },
+    "comprehensionText": "نص الاستيعاب",
+    "question": {
+        "label": "السؤال"
+    },
+    "answer": {
+        "label": "الإجابة:"
+    },
+    "explanation": {
+        "label": "الشرح:"
+    },
+    "optionLabels": {
+        "a": "(a.)",
+        "b": "(b.)",
+        "c": "(c.)",
+        "d": "(d.)"
+    }
+}

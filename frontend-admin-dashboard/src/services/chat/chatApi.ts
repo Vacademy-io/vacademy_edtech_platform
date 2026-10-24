@@ -26,6 +26,9 @@ export interface ChatConversationResponse {
     memberRole?: string;
     rulesVersion?: number;
     canPost: boolean;
+    /** Institute setting (students only): may the caller edit/delete a message THEY sent? */
+    canEditOwnMessages?: boolean;
+    canDeleteOwnMessages?: boolean;
 }
 
 export interface ChatMessageResponse {
@@ -111,6 +114,7 @@ export interface ChatReportResponse {
     id: string;
     instituteId: string;
     conversationId: string;
+    conversationType?: ChatConversationType;
     messageId?: string;
     reporterId: string;
     reason: string;
@@ -232,6 +236,27 @@ export const sendMessage = async (
         `${CHAT_BASE}/conversations/${conversationId}/messages`,
         body,
         { params: { userId, userRole, userName } }
+    );
+    return res.data;
+};
+
+export interface EditChatMessageRequest {
+    text: string;
+    richTextType?: string;
+}
+
+/**
+ * Rewrite the body of a message you sent. Sender-only server-side; the message keeps its position in
+ * the thread and comes back with `isEdited` set.
+ */
+export const editMessage = async (
+    conversationId: string,
+    messageId: string,
+    body: EditChatMessageRequest
+): Promise<ChatMessageResponse> => {
+    const res = await authenticatedAxiosInstance.patch(
+        `${CHAT_BASE}/conversations/${conversationId}/messages/${messageId}`,
+        body
     );
     return res.data;
 };
@@ -434,6 +459,43 @@ export const describeDirectChatError = (err: unknown, fallback: string): string 
     if (raw.includes('CANNOT_DM_SELF')) return "You can't message yourself.";
     if (raw.includes('TARGET_REQUIRED')) return "That person's account is missing, so a chat can't be opened.";
     return fallback;
+};
+
+/**
+ * Explains why a delete was refused. The server distinguishes "you may not moderate here" from a
+ * transient failure, and a blanket "please try again" on the former sends a moderator round a loop
+ * that can never succeed.
+ */
+export const describeDeleteChatError = (err: unknown): string => {
+    const response = (err as { response?: { status?: number; data?: { message?: string } } })
+        ?.response;
+    const raw = response?.data?.message ?? '';
+    if (raw.includes('NOT_ALLOWED')) {
+        return 'Only the sender or a moderator of this conversation can delete this message.';
+    }
+    if (raw.includes('MESSAGE_NOT_FOUND')) return 'That message is no longer available.';
+    return 'Failed to delete the message.';
+};
+
+/**
+ * Explains why an edit was refused, so a rule rejection reads as a rule rejection rather than a
+ * "try again" the user can never satisfy.
+ */
+export const describeEditChatError = (err: unknown): string => {
+    const response = (err as { response?: { status?: number; data?: { message?: string } } })
+        ?.response;
+    const raw = response?.data?.message ?? '';
+    if (raw.includes('NOT_THE_SENDER')) return 'You can only edit your own messages.';
+    if (raw.includes('MESSAGE_DELETED'))
+        return 'This message was deleted and can no longer be edited.';
+    if (raw.includes('EMPTY_MESSAGE')) return 'A message cannot be empty — delete it instead.';
+    if (raw.includes('BLOCKED_BY_MODERATION')) {
+        return "That wording isn't allowed by this channel's rules.";
+    }
+    if (raw.includes('LINKS_NOT_ALLOWED')) return "This channel's rules don't allow links.";
+    if (raw.includes('CHAT_DISABLED')) return 'Chat is turned off for this institute.';
+    if (raw.includes('MESSAGE_NOT_FOUND')) return 'That message is no longer available.';
+    return 'Failed to save the edit.';
 };
 
 /**

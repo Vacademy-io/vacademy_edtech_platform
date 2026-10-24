@@ -1,0 +1,63 @@
+{
+    "form": {
+        "studentRequired": "छात्र आवश्यक है",
+        "startDateRequired": "आरंभ तिथि आवश्यक है",
+        "endDateRequired": "समाप्ति तिथि आवश्यक है",
+        "dateRangeTooLong": "आरंभ तिथि और समाप्ति तिथि के बीच का अंतर एक महीने से कम होना चाहिए।",
+        "selectStudent": "छात्र चुनें",
+        "searchStudent": "छात्र खोजें...",
+        "noStudentsFound": "कोई छात्र नहीं मिला",
+        "errorsHeading": "कृपया निम्नलिखित त्रुटियाँ ठीक करें:",
+        "batchRequired": "कम से कम एक बैच चुनें",
+        "loadingStudents": "लोड हो रहा है…",
+        "learnerHint": "{{count}} उपलब्ध",
+        "pickBatchFirst": "पहले {{batch}} चुनें।"
+    },
+    "actions": {
+        "generateReport": "रिपोर्ट तैयार करें",
+        "exporting": "निर्यात हो रहा है…",
+        "exportPdf": "PDF निर्यात करें",
+        "exportCsv": "CSV निर्यात करें"
+    },
+    "toast": {
+        "exportSuccess": "शिक्षार्थी रिपोर्ट निर्यात हुई",
+        "exportFailed": "PDF निर्यात करने में विफल",
+        "csvExportSuccess": "CSV निर्यात हो गया",
+        "csvExportFailed": "CSV निर्यात विफल",
+        "learnerNotInBatches": "यह शिक्षार्थी चुने गए किसी भी बैच में नामांकित नहीं है।"
+    },
+    "report": {
+        "duration": "अवधि:",
+        "courseCompletedLabel": "{{term}} पूर्ण",
+        "dailyTimeSpentAvg": "दैनिक व्यतीत समय (औसत)",
+        "concentrationScoreAvg": "एकाग्रता स्कोर (औसत)",
+        "dailyLearningPerformance": "दैनिक सीखने का प्रदर्शन",
+        "trackDailyProgress": "दैनिक प्रगति और गतिविधि पैटर्न ट्रैक करें",
+        "activitySummary": "गतिविधि सारांश",
+        "learningTimeline": "लर्निंग टाइमलाइन",
+        "dateLabel": "तिथि:",
+        "batchCount": "{{term}} · {{count}} चयनित",
+        "batchLoadFailed": "{{name}} की रिपोर्ट लोड नहीं हो सकी।",
+        "loadFailed": "रिपोर्ट लोड करते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।"
+    },
+    "csv": {
+        "fileStem": "learner-timeline",
+        "summaryTitle": "सारांश",
+        "startDate": "आरंभ तिथि",
+        "endDate": "समाप्ति तिथि",
+        "learnerCourseCompleted": "{{term}} पूर्ण (%)",
+        "batchCourseCompleted": "{{batch}} {{term}} पूर्ण (%)",
+        "learnerDailyTimeMin": "दैनिक औसत समय (मिनट)",
+        "batchDailyTimeMin": "{{batch}} दैनिक औसत समय (मिनट)",
+        "learnerConcentration": "एकाग्रता स्कोर (%)",
+        "batchConcentration": "{{batch}} एकाग्रता स्कोर (%)",
+        "dailyTitle": "दैनिक समय",
+        "date": "तिथि",
+        "learnerTimeMin": "बिताया समय (मिनट)",
+        "batchAvgTimeMin": "{{batch}} औसत समय (मिनट)",
+        "slidesTitle": "लर्निंग टाइमलाइन",
+        "slide": "अध्ययन {{term}}",
+        "concentration": "एकाग्रता स्कोर (%)",
+        "timeSpentMin": "बिताया समय (मिनट)"
+    }
+}

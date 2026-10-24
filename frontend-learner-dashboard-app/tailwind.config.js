@@ -156,6 +156,8 @@ module.exports = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        // Page canvas (body + shell). Defaults to --background; see index.css.
+        canvas: "hsl(var(--canvas))",
         foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary-500))",
@@ -282,6 +284,29 @@ module.exports = {
           // as ink on white for most presets).
           "brand-ink": "hsl(var(--catalogue-brand-ink))",
         },
+        // Opt-in site palette (globalSettings.theme.palette → --palette-* channel
+        // vars on the page wrapper, see $tagName/-utils/catalogue-palette.ts).
+        // A site without a palette falls back to the catalogue token named
+        // second, so these classes are safe on any site.
+        palette: {
+          text: "hsl(var(--palette-text, var(--catalogue-text-primary)) / <alpha-value>)",
+          body: "hsl(var(--palette-body, var(--catalogue-text-secondary)) / <alpha-value>)",
+          muted: "hsl(var(--palette-muted, var(--catalogue-text-muted)) / <alpha-value>)",
+          muted2: "hsl(var(--palette-muted2, var(--catalogue-text-muted)) / <alpha-value>)",
+          primary: "hsl(var(--palette-primary, var(--primary-500)) / <alpha-value>)",
+          gold: "hsl(var(--palette-gold, var(--primary-500)) / <alpha-value>)",
+          accent: "hsl(var(--palette-accent, var(--primary-400)) / <alpha-value>)",
+          olive: "hsl(var(--palette-olive, var(--primary-500)) / <alpha-value>)",
+          cream: "hsl(var(--palette-cream, var(--catalogue-bg-subtle)) / <alpha-value>)",
+          canvas: "hsl(var(--palette-canvas, var(--catalogue-bg)) / <alpha-value>)",
+          sand: "hsl(var(--palette-sand, var(--catalogue-bg-muted)) / <alpha-value>)",
+          border: "hsl(var(--palette-border, var(--catalogue-border)) / <alpha-value>)",
+          "border-strong": "hsl(var(--palette-border-strong, var(--catalogue-border-strong)) / <alpha-value>)",
+          // Feature "chrome": eyebrow and copy on dark bands, outlined buttons.
+          "accent-on-dark": "hsl(var(--palette-accent-on-dark, var(--primary-200)) / <alpha-value>)",
+          "body-on-dark": "hsl(var(--palette-body-on-dark, var(--catalogue-bg-muted)) / <alpha-value>)",
+          outline: "hsl(var(--palette-outline, var(--catalogue-border-strong)) / <alpha-value>)",
+        },
         // WhatsApp brand (contact CTA).
         whatsapp: "#25D366",
         "whatsapp-hover": "#20ba59",
@@ -352,6 +377,8 @@ module.exports = {
         "view-dialog": "calc(90vh - 120px)",
         "blob-lg": "500px",
         "blob-md": "400px",
+        // Density axis. h-control == today's h-9 on inputs/buttons.
+        control: "var(--ui-control-h)",
       },
       width: {
         ...VW,
@@ -411,6 +438,8 @@ module.exports = {
         "filter-scroll": "200px",
         "filter-scroll-lg": "240px",
         "parent-main": "calc(100vh - 8rem)",
+        // Density axis, paired with height.control.
+        control: "var(--ui-control-h)",
       },
       // Course-structure tree indents (icon + gap + icon + gap + margin).
       padding: {
@@ -422,6 +451,21 @@ module.exports = {
         // calculator is the tallest at ~470px) so the last option can always be
         // scrolled out from behind it.
         "tool-dock": "31rem",
+        // Density axis (data-ui-density). p-card == today's p-4, p-card-lg ==
+        // p-6, p-page == p-4, so swapping a primitive over is a no-op at the
+        // default setting.
+        card: "var(--ui-pad-card)",
+        "card-lg": "var(--ui-pad-card-lg)",
+        page: "var(--ui-pad-page)",
+      },
+      gap: {
+        // Density axis. gap-stack == today's gap-3, gap-section == gap-6.
+        stack: "var(--ui-gap-stack)",
+        section: "var(--ui-gap-section)",
+      },
+      space: {
+        stack: "var(--ui-gap-stack)",
+        section: "var(--ui-gap-section)",
       },
       borderRadius: {
         // Catalogue radius bridge — honours data-catalogue-radius
@@ -433,12 +477,28 @@ module.exports = {
         "catalogue-xl": "var(--catalogue-radius-xl)",
         "catalogue-2xl": "var(--catalogue-radius-2xl)",
         "catalogue-full": "var(--catalogue-radius-full)",
+        // Scale per docs/design-system/01-foundations.md §4:
+        //   sm = --radius - 4, md = --radius - 2, lg = --radius.
+        // The learner config previously had sm = --radius - 2 and md = --radius,
+        // which made rounded-md and rounded-lg BYTE-IDENTICAL (8px) across 1,494
+        // usages — the distinction developers were reaching for did not exist.
+        //
+        // `rounded` (DEFAULT) was never declared at all, so it fell through to
+        // Tailwind's stock 4px. Anchoring it to --radius - 4 keeps that exact 4px
+        // at the default seed while putting those 323 usages on the corners axis.
+        //
+        // max(0px, ...) is load-bearing, not defensive: the corners axis sets
+        // --radius to 2px on "sharp", where an unclamped calc() would evaluate
+        // negative. A negative border-radius is invalid, so the whole
+        // declaration would be dropped and the element would fall back to
+        // whatever it inherited rather than to a square corner.
+        sm: "max(0px, calc(var(--radius) - 4px))",
+        DEFAULT: "max(0px, calc(var(--radius) - 4px))",
+        md: "max(0px, calc(var(--radius) - 2px))",
         lg: "var(--radius)",
-        md: "calc(var(--radius))",
-        sm: "calc(var(--radius) - 2px)",
         xl: "calc(var(--radius) + 2px)",
         "2xl": "calc(var(--radius) + 4px)",
-        "3xl": "2rem",
+        "3xl": "calc(var(--radius) + 24px)",
         // Play (gamified) card + button radius tokens.
         "play-card": "var(--play-radius-card)",
         "play-card-sm": "var(--play-radius-card-sm)",
@@ -453,6 +513,12 @@ module.exports = {
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
         xl: "var(--shadow-xl)",
+        // shadow-2xl (27 usages) and shadow-inner (7) previously fell through
+        // to stock Tailwind's pure-black rgb(0 0 0 / .25), the only two steps
+        // in the scale not tinted to the app's cool slate. Same ink, one step
+        // above --shadow-xl.
+        "2xl": "var(--shadow-2xl)",
+        inner: "var(--shadow-inner)",
         // Play (gamified) 3D press shadow; tracks the active theme via --primary-200.
         "play-press": "0 2px 0 hsl(var(--primary-200))",
         // Play badge inset 3D shadow.

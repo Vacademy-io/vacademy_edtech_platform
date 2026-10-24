@@ -1,8 +1,9 @@
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { useEffect, useState } from 'react';
 import { MainStepComponent } from './StepComponents/MainStepComponent';
-import { Check, Info, FileText, ListChecks, Users, ShieldCheck } from 'lucide-react';
+import { Check, Info, FileText, ListChecks, Users, ShieldCheck } from '@phosphor-icons/react';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ const CreateAssessmentSidebar: React.FC<CreateAssessmentSidebarProps> = ({
     onStepClick,
 }) => {
     const { open } = useSidebar();
+    const { t } = useTranslation('assessmentCreateAssessmentComponent');
 
     return (
         <div className="flex flex-col gap-1.5 px-3 py-4">
@@ -90,15 +92,15 @@ const CreateAssessmentSidebar: React.FC<CreateAssessmentSidebarProps> = ({
                                 <div className="flex items-center gap-1.5">
                                     <span
                                         className={cn(
-                                            'text-[11px] font-semibold uppercase tracking-wider',
+                                            'text-2xs font-semibold uppercase tracking-wider',
                                             isActive ? 'text-primary-600' : 'text-slate-400'
                                         )}
                                     >
-                                        Step {index + 1}
+                                        {t('sidebar.stepLabel', { number: index + 1 })}
                                     </span>
                                     {isCompleted && !isActive && (
-                                        <span className="text-[10px] font-medium text-emerald-600">
-                                            · Done
+                                        <span className="text-2xs font-medium text-emerald-600">
+                                            {t('sidebar.done')}
                                         </span>
                                     )}
                                 </div>
@@ -110,7 +112,7 @@ const CreateAssessmentSidebar: React.FC<CreateAssessmentSidebarProps> = ({
                                 >
                                     {step.label}
                                 </span>
-                                <span className="truncate text-[11px] text-slate-500">
+                                <span className="truncate text-2xs text-slate-500">
                                     {step.description}
                                 </span>
                             </div>
@@ -121,7 +123,7 @@ const CreateAssessmentSidebar: React.FC<CreateAssessmentSidebarProps> = ({
                             <span
                                 aria-hidden
                                 className={cn(
-                                    'absolute left-[1.92rem] top-[3.25rem] h-3 w-0.5 rounded-full',
+                                    'absolute start-8 top-12 h-3 w-0.5 rounded-full',
                                     isCompleted ? 'bg-emerald-400' : 'bg-slate-200'
                                 )}
                             />
@@ -135,6 +137,7 @@ const CreateAssessmentSidebar: React.FC<CreateAssessmentSidebarProps> = ({
 
 const CreateAssessmentComponent = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation('assessmentCreateAssessmentComponent');
     const [isOpen, setIsOpen] = useState(false);
     const { assessmentId, examtype } = Route.useParams();
     const { currentStep: presentStep } = Route.useSearch();
@@ -142,41 +145,55 @@ const CreateAssessmentComponent = () => {
     const { SubjectFilterData } = useFilterDataForAssesment(instituteDetails);
 
     const examTypeLabel: Record<string, string> = {
-        EXAM: 'Examination',
-        MOCK: 'Mock Assessment',
-        PRACTICE: 'Practice Assessment',
-        SURVEY: 'Survey',
-        MANUAL_UPLOAD_EXAM: 'Manual Upload Exam',
+        EXAM: t('examTypeLabel.exam'),
+        MOCK: t('examTypeLabel.mock'),
+        PRACTICE: t('examTypeLabel.practice'),
+        SURVEY: t('examTypeLabel.survey'),
+        MANUAL_UPLOAD_EXAM: t('examTypeLabel.manualUploadExam'),
     };
 
     const steps: StepDef[] = [
         {
-            label: 'Basic Info',
-            description: 'Name, schedule, and settings',
+            label: t('steps.basicInfo.label'),
+            description: t('steps.basicInfo.description'),
             id: 'basic-info',
             icon: Info,
         },
         {
-            label: 'Add Questions',
-            description: 'Upload or create questions',
+            label: t('steps.addQuestions.label'),
+            description: t('steps.addQuestions.description'),
             id: 'add-question',
             icon: FileText,
         },
         {
-            label: 'Add Participants',
-            description: 'Choose who can take this',
+            label: t('steps.addParticipants.label'),
+            description: t('steps.addParticipants.description'),
             id: 'add-participants',
             icon: Users,
         },
         {
-            label: 'Access Control',
-            description: 'Permissions for managing',
+            label: t('steps.accessControl.label'),
+            description: t('steps.accessControl.description'),
             id: 'access-control',
             icon: ShieldCheck,
         },
     ];
     const [currentStep, setCurrentStep] = useState(presentStep);
     const [completedSteps, setCompletedSteps] = useState([false, false, false, false]);
+    /** Keep ?currentStep in step with the wizard, so a refresh lands where the user was. */
+    const syncStepToUrl = (step: number) => {
+        navigate({
+            to: '/assessment/create-assessment/$assessmentId/$examtype',
+            params: {
+                assessmentId: assessmentId,
+                examtype: examtype,
+            },
+            search: {
+                currentStep: step,
+            },
+        });
+    };
+
     const completeCurrentStep = () => {
         setCompletedSteps((prev) => {
             const updated = [...prev];
@@ -184,18 +201,12 @@ const CreateAssessmentComponent = () => {
             return updated;
         });
         if (currentStep < steps.length - 1) {
-            setCurrentStep((prev) => prev + 1);
-            // Update URL `currentStep` without reloading
-            navigate({
-                to: '/assessment/create-assessment/$assessmentId/$examtype',
-                params: {
-                    assessmentId: assessmentId,
-                    examtype: examtype,
-                },
-                search: {
-                    currentStep: currentStep,
-                },
-            });
+            const nextStep = currentStep + 1;
+            setCurrentStep(nextStep);
+            // The URL used to be written with the PRE-increment value, inside a setter
+            // that had already advanced — so ?currentStep was permanently one behind, and
+            // since it is only read at mount, a refresh landed on the wrong step.
+            syncStepToUrl(nextStep);
         }
     };
 
@@ -208,8 +219,37 @@ const CreateAssessmentComponent = () => {
     const goToStep = (index: number) => {
         if (index <= currentStep || completedSteps[index - 1]) {
             setCurrentStep(index);
+            // Sidebar navigation never touched the URL at all.
+            syncStepToUrl(index);
         }
     };
+
+    const createLabel =
+        examtype === 'SURVEY' ? t('helmet.titleSurvey') : t('helmet.titleAssessment');
+    const metaDescription =
+        examtype === 'SURVEY' ? t('helmet.descriptionSurvey') : t('helmet.descriptionAssessment');
+
+    /*
+     * Warn before the browser discards unsaved work.
+     *
+     * Each step keeps its edits in its own react-hook-form and only writes them to the
+     * zustand store inside the mutation's onSuccess — so anything not yet submitted is
+     * lost on a refresh or a back-navigation, silently. The wizard also holds
+     * savedAssessmentId in memory, so a refresh mid-flow would leave steps 2-4 posting
+     * against an empty assessment id.
+     *
+     * This is the browser-level guard only; in-app step switching keeps the forms mounted.
+     */
+    useEffect(() => {
+        const warnOnUnload = (event: BeforeUnloadEvent) => {
+            // Nothing to lose before the assessment exists or once it is fully done.
+            if (currentStep === 0 && !completedSteps[0]) return;
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', warnOnUnload);
+        return () => window.removeEventListener('beforeunload', warnOnUnload);
+    }, [currentStep, completedSteps]);
     return (
         <LayoutContainer
             sidebarComponent={
@@ -222,11 +262,8 @@ const CreateAssessmentComponent = () => {
             }
         >
             <Helmet>
-                <title>{examtype === 'SURVEY' ? 'Create Survey' : 'Create Assessment'}</title>
-                <meta
-                    name="description"
-                    content={examtype === 'SURVEY' ? 'This page is for creating a survey for students via admin.' : 'This page is for creating an assessment for students via admin.'}
-                />
+                <title>{createLabel}</title>
+                <meta name="description" content={metaDescription} />
             </Helmet>
             <div className="mb-6 flex flex-col gap-3 border-b border-slate-200 pb-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -238,13 +275,16 @@ const CreateAssessmentComponent = () => {
                             variant="secondary"
                             className="bg-slate-100 font-medium text-slate-600 hover:bg-slate-100"
                         >
-                            Step {currentStep + 1} of {steps.length}
+                            {t('header.stepOf', { current: currentStep + 1, total: steps.length })}
                         </Badge>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                         <ListChecks className="h-3.5 w-3.5" />
                         <span className="font-medium tabular-nums">
-                            {completedSteps.filter(Boolean).length} / {steps.length} completed
+                            {t('header.completed', {
+                                count: completedSteps.filter(Boolean).length,
+                                total: steps.length,
+                            })}
                         </span>
                     </div>
                 </div>
@@ -263,7 +303,7 @@ const CreateAssessmentComponent = () => {
                 handleCompleteCurrentStep={completeCurrentStep}
                 completedSteps={completedSteps}
             />
-            <NoCourseDialog isOpen={isOpen} setIsOpen={setIsOpen} type={examtype === 'SURVEY' ? 'Create Survey' : 'Create Assessment'} />
+            <NoCourseDialog isOpen={isOpen} setIsOpen={setIsOpen} type={createLabel} />
         </LayoutContainer>
     );
 };

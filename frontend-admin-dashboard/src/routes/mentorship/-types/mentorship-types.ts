@@ -229,6 +229,9 @@ export interface StudentRow {
     full_name?: string;
     email?: string;
     username?: string;
+    /** Batch the learner is enrolled in — captions the row in the picker. */
+    package_session_id?: string;
+    mobile_number?: string;
 }
 
 // A note / activity from the shared timeline system.

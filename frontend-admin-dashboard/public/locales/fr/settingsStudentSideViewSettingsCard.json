@@ -1,0 +1,17 @@
+{
+    "title": "Options de la vue latérale étudiant",
+    "description": "Configurez les onglets visibles, leur ordre et celui qui s'ouvre par défaut dans la vue latérale étudiant.",
+    "resendMessage": {
+        "label": "Autoriser le renvoi d'un message",
+        "hint": "Ajoute un bouton Renvoyer à chaque message envoyé dans l'onglet Notifications. Le renvoi délivre à nouveau le message à l'apprenant."
+    },
+    "ariaLabel": {
+        "moveUp": "Déplacer {{label}} vers le haut",
+        "moveDown": "Déplacer {{label}} vers le bas"
+    },
+    "defaultTab": {
+        "label": "Onglet par défaut",
+        "hint": "L'onglet qui s'ouvre lorsque la vue latérale s'affiche pour la première fois.",
+        "placeholder": "Sélectionner un onglet"
+    }
+}

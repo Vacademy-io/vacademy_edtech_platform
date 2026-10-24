@@ -1,0 +1,203 @@
+{
+    "navigation": {
+        "updateSurvey": "Update Survey",
+        "updateAssessment": "Update Assessment",
+        "createSurvey": "Create Survey",
+        "createAssessment": "Create Assessment"
+    },
+    "toasts": {
+        "updateSuccess": "Step 1 data has been updated successfully!",
+        "saveSuccess": "Step 1 data has been saved successfully!"
+    },
+    "errors": {
+        "saveFailed": "Failed to save basic info."
+    },
+    "header": {
+        "title": "Basic Information",
+        "description": "Configure the basic details for your assessment including name, schedule, evaluation method, and result release preferences.",
+        "updateButton": "Update",
+        "nextButton": "Next"
+    },
+    "basicInfoSection": {
+        "titleSurvey": "Survey Information",
+        "titleAssessment": "Basic Information",
+        "description": "Name, subject, and instructions shown to participants.",
+        "titlePlaceholder": "Add Title",
+        "nameLabelSurvey": "Survey Name",
+        "nameLabelAssessment": "Assessment Name",
+        "instructionsLabelSurvey": "Survey Instructions",
+        "instructionsLabelAssessment": "Assessment Instructions",
+        "instructionsPlaceholderSurvey": "Write the survey instructions",
+        "instructionsPlaceholderAssessment": "Write the assessment instructions"
+    },
+    "liveDateRangeSection": {
+        "title": "Live Date Range",
+        "description": "When participants can start and must finish the assessment.",
+        "startDateLabel": "Start Date & Time",
+        "endDateLabel": "End Date & Time"
+    },
+    "attemptSettingsSection": {
+        "title": "Attempt Settings",
+        "description": "Control how participants take this assessment.",
+        "reattemptCountPlaceholder": "Reattempt Count",
+        "reattemptCountLabel": "Reattempt Count",
+        "resultEvaluationType": {
+            "label": "Result & Evaluation Type",
+            "options": {
+                "autoAfterSubmission": {
+                    "label": "Auto — Release after submission",
+                    "help": "System grades automatically. Results are visible to the learner immediately after they submit."
+                },
+                "autoAfterAssessmentEnd": {
+                    "label": "Auto — Release after exam ends",
+                    "help": "System grades automatically. Results become visible only after the assessment end time passes."
+                },
+                "noAutoRelease": {
+                    "label": "Auto — Release manually",
+                    "help": "System grades automatically. Results stay hidden until you click \"Release Result\" in the submissions tab."
+                },
+                "manual": {
+                    "label": "Manual evaluation & release",
+                    "help": "Teacher grades each submission by hand. Results stay hidden until you manually evaluate and release them."
+                }
+            },
+            "managedByApi": "Managed by API: results are released by the partner system (or with Release Result), so this stays Manual."
+        },
+        "submissionType": {
+            "label": "Submission Type",
+            "helper": "How students submit their answers (e.g., file upload, PDF)."
+        },
+        "assessmentPreview": {
+            "labelSurvey": "Allow Survey Preview",
+            "labelAssessment": "Allow Assessment Preview",
+            "description": "Let participants preview the assessment before starting.",
+            "timeLimitLabel": "Preview Time Limit"
+        },
+        "switchSections": {
+            "label": "Allow {{role}}s to switch between sections",
+            "description": "Participants can jump back and forth between sections."
+        },
+        "aiEvaluation": {
+            "label": "Evaluate submissions with AI",
+            "description": "Grade each submission automatically when it is submitted. Uses institute credits per question graded; a teacher still reviews and releases the result."
+        },
+        "omrMode": {
+            "label": "OMR sheet (pen & paper) mode",
+            "description": "Students answer on a printed OMR sheet. Only single-correct MCQs (2–5 options, up to 200 questions). Each learner's roll number is their enrollment number. Results stay held until you release them."
+        }
+    },
+    "unusedFields": {
+        "testCreation": {
+            "titlePlaceholder": "Add Title",
+            "nameLabelSurvey": "Survey Name",
+            "nameLabelAssessment": "Assessment Name"
+        },
+        "liveDateRange": {
+            "startDateLabel": "Start Date & Time",
+            "endDateLabel": "End Date & Time"
+        },
+        "assessmentInstructions": {
+            "labelSurvey": "Survey Instructions",
+            "labelAssessment": "Assessment Instructions",
+            "placeholderSurvey": "Add Survey Instructions",
+            "placeholderAssessment": "Add Assessment Instructions"
+        },
+        "assessmentPreview": {
+            "enableLabel": "Enable Assessment Preview",
+            "timeLimitLabel": "Preview Time Limit"
+        },
+        "reattemptCount": {
+            "placeholder": "Enter Reattempt Count",
+            "label": "Reattempt Count"
+        },
+        "submissionType": {
+            "label": "Submission Type",
+            "options": {
+                "autoSubmit": "Auto Submit",
+                "manualSubmit": "Manual Submit"
+            }
+        },
+        "durationDistribution": {
+            "label": "Duration Distribution",
+            "helper": "Choose whether time limits apply to the whole test, per section, or per question.",
+            "options": {
+                "entireAssessment": "Entire Assessment",
+                "sectionWise": "Section Wise",
+                "questionWise": "Question Wise"
+            }
+        },
+        "evaluationType": {
+            "label": "Evaluation Type",
+            "options": {
+                "auto": "Auto Evaluation",
+                "manual": "Manual Evaluation"
+            }
+        },
+        "switchSections": {
+            "label": "Allow Switching Between Sections"
+        },
+        "reattemptRequest": {
+            "label": "Allow Students to Raise Reattempt Request"
+        },
+        "timeIncreaseRequest": {
+            "label": "Allow Students to Raise Time Increase Request"
+        }
+    },
+    "validation": {
+        "cannotSave": "Can't save yet",
+        "cannotSaveGeneric": "Can't save yet — some required details are missing or invalid."
+    },
+    "proctoring": {
+        "title": "Proctoring",
+        "description": "Watch for cheating during the attempt. Choose how much monitoring this assessment needs; the learner is told before starting.",
+        "comingSoon": "Coming soon",
+        "tiers": {
+            "NONE": {
+                "label": "Off",
+                "description": "No camera. Fullscreen and tab-switch checks only.",
+                "price": "Free"
+            },
+            "BASIC": {
+                "label": "Basic",
+                "description": "Webcam check-in, on-device face detection, a small snapshot every few seconds. Nothing streams.",
+                "price": "Included"
+            },
+            "PRO": {
+                "label": "Pro",
+                "description": "Basic plus short video clips of each flagged moment and phone detection.",
+                "price": ""
+            },
+            "ULTRA": {
+                "label": "Ultra",
+                "description": "Pro plus a live proctor room and AI review of every attempt.",
+                "price": ""
+            }
+        },
+        "knobs": {
+            "cameraRequired": {
+                "label": "Camera required to start",
+                "description": "The attempt cannot begin until the learner allows the camera."
+            },
+            "faceCheck": {
+                "label": "Face detection",
+                "description": "Flag when no face, or more than one face, is in frame. Runs on the learner's device."
+            },
+            "showSelfView": {
+                "label": "Show learner their camera",
+                "description": "A small preview stays on screen so they know they are being recorded."
+            },
+            "snapshotInterval": {
+                "label": "Snapshot every",
+                "description": "Routine frames for review. Flags always capture one.",
+                "off": "Flags only",
+                "every": "{{seconds}} s"
+            },
+            "maxViolations": {
+                "label": "Auto-submit after",
+                "description": "Flags before the attempt is submitted automatically. Never = only record for review.",
+                "never": "Never",
+                "after": "{{count}} flags"
+            }
+        }
+    }
+}

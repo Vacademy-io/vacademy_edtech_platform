@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "emptyDocument": "L'IA a renvoyé un document vide. Essayez de reformuler votre requête.",
+        "requestFailed": "Échec de la requête ({{status}})"
+    }
+}

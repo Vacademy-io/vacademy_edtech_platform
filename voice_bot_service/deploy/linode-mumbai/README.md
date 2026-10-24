@@ -30,7 +30,7 @@ the long-lived Plivo WebSocket.
 ## 3. Bootstrap (as root on the box)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Vacademy-io/vacademy_platform/main/voice_bot_service/deploy/linode-mumbai/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Vacademy-io/vacademy_edtech_platform/main/voice_bot_service/deploy/linode-mumbai/bootstrap.sh | bash
 # fill the three blank secrets in /opt/voice-bot/.env
 #   (VOICE_BOT_CLIENT_SECRET / SARVAM_API_KEY / GEMINI_API_KEY — same values as
 #    the k8s deployment: kubectl get deploy voice-bot-service -o yaml | grep -A1 …)

@@ -1,0 +1,116 @@
+{
+    "otaUpdate": {
+        "version": "संस्करण {{version}}",
+        "autoUpdating": {
+            "title": "ऐप अपडेट हो रहा है…",
+            "pleaseWait": "कृपया थोड़ी देर प्रतीक्षा करें"
+        },
+        "forceUpdate": {
+            "title": "अपडेट आवश्यक है",
+            "downloading": "अपडेट डाउनलोड हो रहा है...",
+            "updateNow": "अभी अपडेट करें"
+        },
+        "banner": {
+            "updateAvailable": "अपडेट {{version}} उपलब्ध है",
+            "releaseNotesSuffix": " — {{notes}}",
+            "downloading": "डाउनलोड हो रहा है...",
+            "update": "अपडेट करें",
+            "dismiss": "खारिज करें"
+        }
+    },
+    "tutorialsHelpButton": {
+        "ariaLabel": "सहायता और ट्यूटोरियल",
+        "viewedAriaLabel": "देखा गया",
+        "title": "ट्यूटोरियल",
+        "description": "ऐप के त्वरित गाइडेड वॉकथ्रू। शुरू करने के लिए एक चुनें।",
+        "pdfGuide": {
+            "preparing": "आपकी गाइड तैयार की जा रही है...",
+            "label": "पूरी चरण-दर-चरण गाइड (PDF)",
+            "description": "ऊपर दिए गए सभी विषयों की विस्तृत पुस्तिका डाउनलोड करें।"
+        },
+        "toast": {
+            "downloadFailed": "गाइड डाउनलोड नहीं हो सकी। कृपया फिर से प्रयास करें।"
+        }
+    },
+    "notificationInitializer": {
+        "newNotification": "नई सूचना"
+    },
+    "modernDesignShowcase": {
+        "header": {
+            "title": "मॉडर्न डिज़ाइन सिस्टम",
+            "subtitle": "आधुनिक घटकों, सुंदर एनिमेशन और सहज इंटरैक्शन के साथ हमारे व्यापक डिज़ाइन सिस्टम का अनुभव करें।"
+        },
+        "notification": {
+            "initiated": "{{action}} शुरू किया गया...",
+            "completed": "{{action}} सफलतापूर्वक पूरा हुआ!"
+        },
+        "actions": {
+            "play": "प्ले",
+            "download": "डाउनलोड",
+            "formSubmit": "फ़ॉर्म सबमिट"
+        },
+        "buttons": {
+            "buttonComponents": "बटन घटक",
+            "primaryActions": "प्राथमिक क्रियाएँ",
+            "startLearning": "सीखना शुरू करें",
+            "downloadResources": "संसाधन डाउनलोड करें",
+            "quickAction": "त्वरित क्रिया",
+            "secondaryActions": "द्वितीयक क्रियाएँ",
+            "settings": "सेटिंग्स",
+            "share": "साझा करें",
+            "like": "पसंद"
+        },
+        "cards": {
+            "progressTracker": "प्रगति ट्रैकर",
+            "courseCompletionRate": "{{course}} पूर्णता दर",
+            "notificationsTitle": "सूचनाएं",
+            "notificationsDescription": "अपनी सीखने की प्रगति से अपडेट रहें",
+            "enableNotifications": "सूचनाएं सक्षम करें",
+            "quickStats": "त्वरित आंकड़े",
+            "coursesLabel": "{{courses}}",
+            "completedLabel": "पूर्ण"
+        },
+        "forms": {
+            "formComponents": "फ़ॉर्म घटक",
+            "standardInputs": "मानक इनपुट",
+            "fullNameLabel": "पूरा नाम",
+            "fullNamePlaceholder": "अपना पूरा नाम दर्ज करें",
+            "emailLabel": "ईमेल पता",
+            "emailPlaceholder": "अपना ईमेल दर्ज करें",
+            "emailHelper": "हम आपका ईमेल कभी साझा नहीं करेंगे",
+            "passwordLabel": "पासवर्ड",
+            "passwordPlaceholder": "अपना पासवर्ड दर्ज करें",
+            "passwordError": "पासवर्ड कम से कम 8 वर्णों का होना चाहिए",
+            "enhancedInputs": "उन्नत इनपुट",
+            "searchLabel": "खोजें",
+            "searchPlaceholder": "{{courses}} खोजें...",
+            "usernameLabel": "उपयोगकर्ता नाम",
+            "usernamePlaceholder": "एक उपयोगकर्ता नाम चुनें",
+            "usernameHelper": "यह उपयोगकर्ता नाम उपलब्ध है!",
+            "loadingExampleLabel": "लोडिंग उदाहरण",
+            "loadingExamplePlaceholder": "उपलब्धता जांची जा रही है...",
+            "submitForm": "फ़ॉर्म सबमिट करें",
+            "reset": "रीसेट करें"
+        },
+        "animations": {
+            "title": "एनिमेशन उदाहरण",
+            "hoverLift": {
+                "title": "होवर लिफ्ट",
+                "description": "होवर पर हल्का उठाव"
+            },
+            "scaleEffect": {
+                "title": "स्केल इफ़ेक्ट",
+                "description": "होवर पर हल्की स्केलिंग"
+            },
+            "clickEffect": {
+                "title": "क्लिक इफ़ेक्ट",
+                "description": "सक्रिय स्थिति प्रतिक्रिया"
+            }
+        },
+        "footer": {
+            "description": "यह डिज़ाइन सिस्टम आधुनिक, सुलभ और उच्च-प्रदर्शन वाले यूज़र इंटरफ़ेस बनाने के लिए एक मज़बूत आधार प्रदान करता है।",
+            "viewDocumentation": "दस्तावेज़ देखें",
+            "githubRepository": "GitHub रिपॉज़िटरी"
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "manageYourSessions": "Manage Your {{session}}",
+    "description": "Effortlessly organize, upload, and track educational resources in one place. Provide {{learnerPlural}} with easy access to the materials they need to succeed, ensuring a seamless learning experience.",
+    "add": "Add",
+    "addNew": "Add New {{session}}",
+    "noCourseDialog": {
+        "type": "Adding Sessions",
+        "content": "You need to create a course before"
+    },
+    "toast": {
+        "added": " {{session}} added successfully",
+        "addFailed": "Failed to add {{session}}"
+    },
+    "subtitle": "Each {{session}} lists the {{course}} levels that run in it. Every {{course}} × {{level}} × {{session}} is a {{batch}}."
+}

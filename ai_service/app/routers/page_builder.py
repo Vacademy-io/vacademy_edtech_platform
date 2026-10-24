@@ -17,9 +17,11 @@ Phase A scope: one page per run (wizard). Copilot ops come in Phase B.
 from __future__ import annotations
 
 import asyncio
+from urllib.parse import urlparse
 import base64
 import json
 import logging
+import math
 import os
 import re
 import uuid
@@ -29,25 +31,35 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..core.security import get_current_user
 from ..db import db_dependency
 from ..models.ai_token_usage import RequestType
-from ..services.ai_billing import preflight_tool_credits, record_tool_billing
+from ..services.ai_billing import (
+    UC, metering_from_request, metering_kwargs, metering_user, preflight_tool_credits, record_tool_billing,
+    supported_kwargs,
+)
+from ..services.figma_links import FIGMA_LINK_GUIDANCE, find_figma_url, is_figma_url
+from ..services.image_model_resolver import PAGE_BUILDER_IMAGE, ImageCharge, image_model_for, plan_image_charge
 from ..services.llm_json import generate_json
+from ..constants.model_defaults import GLM_DEFAULT
 from ..services.model_selection import resolve_models
 from ..services.page_audit import audit_component, audit_page, audit_reference_fidelity
+from ..services.catalogue_summary import job_slug
 from ..utils.json_extract import extract_and_sanitize_json
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/page-builder", tags=["page-builder"])
 
-# Page composition wants a strong instruction-following model; override via env.
-_DEFAULT_MODEL = os.getenv("PAGE_BUILDER_MODEL") or "anthropic/claude-sonnet-5"
+# The model comes from the 'page_builder' use case (ai_model_defaults, set in
+# the super-admin portal); a request's preferred_model still wins. This is only
+# the hard fallback for a missing row / unreachable DB — the platform default
+# (GLM), overridable via env for emergencies.
+_DEFAULT_MODEL = os.getenv("PAGE_BUILDER_MODEL") or GLM_DEFAULT
 _USAGE_MARKUP = Decimal("2")
 _TOOL_KEY = "page_generate"
 
@@ -63,6 +75,28 @@ _IMAGE_KEYS = {
     "thumbnail", "icontype_image", "imageurl",
 }
 _IMAGE_LIST_KEYS = {"avatars", "imagecollage", "images"}
+# Newer widgets name their art after what it is (filterSidebar.promo.screenImage,
+# heroSection coverImage, previewImageUrl…). A fixed key list let those slip past
+# BOTH the stripper here and the MCP's allow-list, so a model could hotlink any
+# URL through them. Any key ending in one of these is an image key too.
+_IMAGE_KEY_SUFFIXES = ("image", "imageurl", "src")
+
+
+def is_image_key(key: Any) -> bool:
+    """A prop key whose string value is an image URL (allow-list-keep).
+
+    THE shared rule: page_builder's stripper and the MCP's asset allow-list
+    (assistant_tools_website_edit._asset_urls_in) both call this, so a key can
+    never be stripped on one side and unrecognised on the other."""
+    if not isinstance(key, str):
+        return False
+    lk = key.lower()
+    return lk in _IMAGE_KEYS or lk.endswith(_IMAGE_KEY_SUFFIXES)
+
+
+def is_image_list_key(key: Any) -> bool:
+    """A prop key holding a list of image URLs (string items are allow-list-keep)."""
+    return isinstance(key, str) and key.lower() in _IMAGE_LIST_KEYS
 
 # Hostile URL schemes — browsers strip embedded control chars/whitespace before
 # parsing a scheme, so "java\tscript:" still fires; normalize first.
@@ -97,13 +131,19 @@ def _sanitize_html(value: str) -> str:
 # structural/text tags only, class-based styling via a separate scrubbed CSS
 # blob, images only from vetted URLs, no scripts/iframes/svg/forms/media.
 
+# del/ins/strike: a struck-through original price is the commonest thing a
+# marketing section needs and <del> is what authors write for it. nh3 keeps a
+# disallowed tag's CHILDREN, so omitting it turned "<del>₹1,599</del>" into
+# bare "₹1,599" and left the matching `del { … }` CSS rule dead — a silent
+# no-op that reads as "the edit did not save". No scripting surface; their
+# "cite" attribute stays disallowed (it is a URL).
 _CUSTOM_HTML_TAGS = {
     "a", "article", "aside", "b", "blockquote", "br", "button", "caption",
-    "cite", "code", "dd", "div", "dl", "dt", "em", "figcaption", "figure",
-    "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hr", "i", "img",
-    "li", "mark", "nav", "ol", "p", "pre", "s", "section", "small", "span",
-    "strong", "sub", "sup", "table", "tbody", "td", "tfoot", "th", "thead",
-    "time", "tr", "u", "ul",
+    "cite", "code", "dd", "del", "div", "dl", "dt", "em", "figcaption",
+    "figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hr",
+    "i", "img", "ins", "li", "mark", "nav", "ol", "p", "pre", "s", "section",
+    "small", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td",
+    "tfoot", "th", "thead", "time", "tr", "u", "ul",
 }
 _CUSTOM_HTML_ATTRS = {
     "*": {"class", "id", "style", "title", "role", "aria-label", "aria-hidden"},
@@ -122,7 +162,7 @@ _MAX_HTML_BLOCKS_PER_PAGE = 3
 
 _CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
 _CSS_URL_RE = re.compile(r"url\s*\([^)]*\)", re.I)
-_CSS_BANNED_RE = re.compile(r"@import\b|expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:", re.I)
+_CSS_BANNED_RE = re.compile(r"@import\b|expression\s*\(|(?<![\w-])behavior\s*:|-moz-binding|javascript\s*:", re.I)
 _IMG_SRC_RE = re.compile(r'(<img\b[^>]*?\bsrc=")([^"]*)(")', re.I)
 
 
@@ -180,7 +220,12 @@ def _load_catalog() -> Dict[str, Any]:
 
 # ─── Image generation (logos / hero art / illustrations) ────────────────────
 
-_IMAGE_MODEL = os.getenv("PAGE_IMAGE_MODEL") or "google/gemini-3.1-flash-image"
+# PAGE_IMAGE_MODEL (env) wins; else the 'page_builder_image' use case
+# (super-admin portal), else this literal. Chat-completions image models only
+# (the call below sends `modalities`).
+_IMAGE_MODEL_ENV = os.getenv("PAGE_IMAGE_MODEL")
+_IMAGE_MODEL_DEFAULT = "google/gemini-3.1-flash-image"
+_IMAGE_MODEL = _IMAGE_MODEL_ENV or _IMAGE_MODEL_DEFAULT
 _IMAGE_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 _IMAGE_ASPECTS = {"16:9", "4:3", "1:1", "3:4", "9:16", "3:2", "2:3"}
 # Auto-generated images per page. Was 5, which quietly became the binding
@@ -197,7 +242,12 @@ _MIN_BAND_PADDING_PX = 32.0
 _GEN_PREFIX = "gen:"
 
 
-async def _openrouter_image(prompt: str, aspect: str) -> Optional[bytes]:
+def _image_model() -> str:
+    """The page-builder image model right now (cached 30 s by the resolver)."""
+    return _IMAGE_MODEL_ENV or image_model_for(PAGE_BUILDER_IMAGE, _IMAGE_MODEL_DEFAULT)
+
+
+async def _openrouter_image(prompt: str, aspect: str, model: Optional[str] = None) -> Optional[bytes]:
     """One image via OpenRouter (same call the course/doc image path uses).
     Returns raw PNG bytes or None."""
     from ..config import get_settings
@@ -210,7 +260,7 @@ async def _openrouter_image(prompt: str, aspect: str) -> Optional[bytes]:
             _IMAGE_API_URL,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
             json={
-                "model": _IMAGE_MODEL,
+                "model": model or _image_model(),
                 "messages": [{"role": "user", "content": prompt}],
                 "modalities": ["image"],
                 "image_config": {"aspect_ratio": aspect if aspect in _IMAGE_ASPECTS else "16:9"},
@@ -242,33 +292,56 @@ def _upload_image(data: bytes, kind: str) -> Optional[str]:
         return None
 
 
-def _bill_image(db, institute_id: Optional[str], user_id: Optional[str]) -> None:
+def _page_metering(request: Optional[Request], institute_id: Optional[str], user: Any, user_id: Optional[str]) -> Any:
+    """Usage-event attribution for a page-builder call (never changes a charge)."""
+    return metering_from_request(request, institute_id, user=user) or metering_user(user_id, surface="ADMIN_APP")
+
+
+def _bill_image(db, institute_id: Optional[str], user_id: Optional[str], model: Optional[str] = None,
+                metering: Any = None) -> None:
     if not institute_id:
         return
+    model = model or _image_model()
+    # billing.image_registry_pricing: off (default) charges the flat image
+    # rate exactly as before; shadow adds would_be_credits to the usage
+    # metadata; on charges the registry price of the model that ran.
+    try:
+        charge = plan_image_charge(model, 1, feature="page_builder_image")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("[page-image] image pricing plan failed (%s); billing as before", e)
+        charge = ImageCharge("off")
     try:
         from ..services.token_usage_service import TokenUsageService
         from ..models.ai_token_usage import ApiProvider
-        TokenUsageService(db).record_usage_and_deduct_credits(
+        tus = TokenUsageService(db)
+        tus.record_usage_and_deduct_credits(
             api_provider=ApiProvider.OPENAI,  # via OpenRouter
             prompt_tokens=0, completion_tokens=0, total_tokens=0,
             request_type=RequestType.IMAGE,
             institute_id=institute_id, user_id=user_id,
-            model=_IMAGE_MODEL, metadata={"feature": "page_builder_image"},
+            model=model, metadata=charge.metadata({"feature": "page_builder_image"}),
+            precomputed_credits=charge.precomputed_credits,
+            **supported_kwargs(tus.record_usage_and_deduct_credits, metering_kwargs(
+                UC.PAGE_BUILDER_IMAGE,
+                metering if metering is not None else metering_user(user_id, surface="ADMIN_APP"),
+            )),
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[page-image] billing skipped: %s", e)
 
 
 async def _generate_and_upload_image(
-    prompt: str, aspect: str, kind: str, db, institute_id: Optional[str], user_id: Optional[str]
+    prompt: str, aspect: str, kind: str, db, institute_id: Optional[str], user_id: Optional[str],
+    metering: Any = None,
 ) -> Optional[str]:
     """Generate → upload → bill one image. Returns the public URL or None."""
-    data = await _openrouter_image(prompt, aspect)
+    model = _image_model()
+    data = await _openrouter_image(prompt, aspect, model)
     if not data:
         return None
     url = _upload_image(data, kind)
     if url:
-        _bill_image(db, institute_id, user_id)
+        _bill_image(db, institute_id, user_id, model, **supported_kwargs(_bill_image, {"metering": metering}))
     return url
 
 
@@ -277,7 +350,8 @@ _GEN_KEYS = {"image", "src", "logo", "avatar", "photo", "backgroundimage", "post
 _GEN_ASPECT = {"logo": "1:1", "avatar": "1:1", "photo": "4:3", "backgroundimage": "16:9", "thumbnail": "4:3"}
 
 
-async def _autogen_images(page: Any, db, institute_id: Optional[str], user_id: Optional[str]) -> set:
+async def _autogen_images(page: Any, db, institute_id: Optional[str], user_id: Optional[str],
+                          metering: Any = None) -> set:
     """Walk the page for image fields set to 'gen:<prompt>', generate each
     (concurrently, capped), upload, and replace the value with the real URL
     (or '' on failure). Returns the set of generated URLs to allowlist."""
@@ -304,7 +378,8 @@ async def _autogen_images(page: Any, db, institute_id: Optional[str], user_id: O
     generated: set = set()
 
     async def one(container: Dict[str, Any], key: str, prompt: str, aspect: str, kind: str) -> None:
-        url = await _generate_and_upload_image(prompt, aspect, kind, db, institute_id, user_id)
+        url = await _generate_and_upload_image(prompt, aspect, kind, db, institute_id, user_id,
+                                               **supported_kwargs(_generate_and_upload_image, {"metering": metering}))
         container[key] = url or ""
         if url:
             generated.add(url)
@@ -317,19 +392,21 @@ def _is_public_http_host(target: str) -> bool:
     """SSRF guard shared by site-import and image-inlining: only public
     http(s) hosts — blocks localhost / .local / private / link-local ranges."""
     try:
-        import ipaddress
         import socket
         from urllib.parse import urlparse
+
+        from ..services.safe_http import host_is_blocked_name, is_public_address
         if not target.startswith(("http://", "https://")):
             return False
         host = (urlparse(target).hostname or "").lower()
-        if not host or host == "localhost" or host.endswith(".local") or host.endswith(".internal"):
+        if host_is_blocked_name(host):
             return False
-        for info in socket.getaddrinfo(host, None):
-            ip = ipaddress.ip_address(info[4][0])
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
-                return False
-        return True
+        # Same address rules as safe_fetch (adds CGNAT, NAT64 and v4-mapped
+        # private addresses to the old private/loopback/link-local list). This
+        # is only a PRE-check for callers that cannot pin the connection
+        # (Playwright); anything we download ourselves goes through safe_fetch.
+        infos = socket.getaddrinfo(host, None)
+        return bool(infos) and all(is_public_address(info[4][0]) for info in infos)
     except Exception:  # noqa: BLE001 — guard failure = treat as non-public
         return False
 
@@ -393,16 +470,28 @@ async def _inline_image_data_url(url: str) -> tuple[Optional[str], Optional[str]
     presigned/short-lived or served with non-image content types, which
     providers reject. SSRF-guarded. Returns (data_url, None) on success or
     (None, reason) on failure."""
+    from ..services.safe_http import WEB_PORTS, SafeFetchError, safe_fetch
     if not isinstance(url, str) or not _is_public_http_host(url):
         return None, "blocked non-public host"
     try:
-        async with httpx.AsyncClient(timeout=12.0, follow_redirects=False) as client:
-            resp = await client.get(url)
+        # Pinned to the validated address, every redirect hop re-checked, body
+        # capped while streaming (the pre-check above alone could be rebound).
+        try:
+            resp = await safe_fetch(
+                url, max_bytes=_MAX_INLINE_IMAGE_BYTES, timeout=12.0, total_timeout=30.0, allow_http=True,
+                allowed_ports=WEB_PORTS,  # the old fetch took any port; keep :8080 / :8443 working
+            )
+        except SafeFetchError as exc:
+            if exc.code == "too_large":
+                return None, "bad size (over limit)"
+            if exc.code in ("blocked_host", "blocked_address"):
+                return None, "blocked non-public host"
+            return None, f"fetch error: {exc.code}"
         if resp.status_code != 200:
             return None, f"http {resp.status_code}"
-        if not resp.content or len(resp.content) > _MAX_INLINE_IMAGE_BYTES:
+        if not resp.content:
             return None, f"bad size {len(resp.content)}"
-        ctype = (resp.headers.get("content-type") or "").split(";")[0].strip().lower()
+        ctype = resp.content_type
         if not ctype.startswith("image/"):
             head = resp.content[:12]
             if head.startswith(b"\x89PNG"):
@@ -422,6 +511,242 @@ async def _inline_image_data_url(url: str) -> tuple[Optional[str], Optional[str]
         return None, f"fetch error: {type(e).__name__}"
 
 
+# Reference-site capture. One desktop viewport, a scroll-through so lazy
+# sections mount, then a full-page PNG sliced into viewport-tall tiles: the
+# vision pass reads at most _MAX_INSPIRATION_IMAGES images, and one 9000px
+# strip downscaled to 1568px tall is unreadable, while six 1600px tiles keep
+# every section legible. Everything here is best-effort — a capture failure
+# degrades to "no reference", never to a failed build.
+_REFERENCE_VIEWPORT = {"width": 1440, "height": 900}
+_REFERENCE_TILE_HEIGHT = 1600
+_REFERENCE_NAV_TIMEOUT_MS = 20_000
+_REFERENCE_IDLE_TIMEOUT_MS = 8_000
+_REFERENCE_SETTLE_MS = 1_200
+_REFERENCE_GROWTH_POLL_MS = 500
+_REFERENCE_GROWTH_MAX_MS = 10_000
+# Hard ceiling on one capture (navigation + settle + scroll + screenshot).
+_REFERENCE_TOTAL_TIMEOUT_S = 75
+# Chromium costs ~400 MB per capture; the pod has 3 GiB with ~1 GiB in use.
+_REFERENCE_CAPTURE_SLOTS = asyncio.Semaphore(2)
+_REFERENCE_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/131.0.0.0 Safari/537.36"
+)
+# Automation tells that make sites swap their real page for a "browser not
+# supported" interstitial (Khan Academy did, on navigator.webdriver).
+_REFERENCE_INIT_SCRIPT = "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"
+
+
+async def _wait_for_reference_to_settle(page: Any) -> None:
+    """Poll the document's height + text length until two consecutive reads
+    agree (or the budget runs out). A page that is still a spinner keeps
+    changing; a rendered one holds still within a second or two."""
+    last: Optional[tuple] = None
+    waited = 0
+    while waited < _REFERENCE_GROWTH_MAX_MS:
+        try:
+            cur = tuple(await page.evaluate(
+                "() => [document.body ? document.body.scrollHeight : 0, document.body ? document.body.innerText.length : 0]"
+            ))
+        except Exception:  # noqa: BLE001
+            return
+        # "Settled" needs real content: a blank splash (no text) never counts.
+        if last is not None and cur == last and cur[1] > 80:
+            return
+        last = cur
+        await page.wait_for_timeout(_REFERENCE_GROWTH_POLL_MS)
+        waited += _REFERENCE_GROWTH_POLL_MS
+
+
+_CONSENT_BUTTON_RE = r"^(accept( all)?( cookies)?|allow( all)?( cookies)?|i agree|agree|got it|ok(ay)?|accept & close|accept and close)$"
+
+
+async def _dismiss_consent_banner(page: Any) -> None:
+    """Click the first visible 'Accept cookies'-style button, if any. A consent
+    modal over the hero would otherwise be what the vision pass describes.
+    Best-effort; never raises."""
+    try:
+        clicked = await page.evaluate(
+            """(re) => {
+                const rx = new RegExp(re, 'i');
+                const els = [...document.querySelectorAll('button, [role="button"], a')];
+                for (const el of els) {
+                    const t = (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ');
+                    if (!t || t.length > 40 || !rx.test(t)) continue;
+                    const r = el.getBoundingClientRect();
+                    if (r.width < 20 || r.height < 12) continue;
+                    el.click(); return t;
+                }
+                return null;
+            }""",
+            _CONSENT_BUTTON_RE,
+        )
+        if clicked:
+            await page.wait_for_timeout(600)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _slice_screenshot(png: bytes, tile_height: int = _REFERENCE_TILE_HEIGHT, max_tiles: int = _MAX_INSPIRATION_IMAGES) -> List[bytes]:
+    """Cut a full-page PNG into top-to-bottom tiles (PNG bytes). A short page
+    yields one tile; a very long one is truncated at max_tiles — the fold and
+    the first few bands carry the design language, the footer rarely does."""
+    from io import BytesIO
+    from PIL import Image
+
+    img = Image.open(BytesIO(png))
+    img.load()
+    width, height = img.size
+    if width <= 0 or height <= 0:
+        return []
+    tiles: List[bytes] = []
+    top = 0
+    while top < height and len(tiles) < max_tiles:
+        bottom = min(height, top + tile_height)
+        # Drop a sliver at the end (< 15% of a tile) — a footer strip on its
+        # own is a wasted image slot.
+        if tiles and (bottom - top) < tile_height * 0.15:
+            break
+        buf = BytesIO()
+        img.crop((0, top, width, bottom)).save(buf, format="PNG", optimize=True)
+        tiles.append(buf.getvalue())
+        top = bottom
+    return tiles
+
+
+async def _capture_reference_screenshots(url: str, warnings: List[str]) -> List[str]:
+    """Screenshot a reference website → data: URLs the vision pass can read
+    directly. SSRF-guarded like every other fetch here — for the first URL AND
+    for every request the page makes afterwards (redirects, images, XHR): the
+    browser runs inside the cluster, so an unguarded <img src=http://internal>
+    would paint an internal response into a screenshot the admin can see.
+    Returns [] on any failure and says why in warnings."""
+    target = (url or "").strip()
+    if not target:
+        return []
+    # A figma.com file opened without the owner's session is Figma's login
+    # wall: capturing it "designed" pages from a sign-in form. No server-side
+    # Figma (product decision 1) — say what works instead.
+    if is_figma_url(target):
+        warnings.append(FIGMA_LINK_GUIDANCE)
+        return []
+    if not target.lower().startswith(("http://", "https://")):
+        target = "https://" + target
+    if not _is_public_http_host(target):
+        warnings.append("Reference site skipped: not a public http(s) host")
+        return []
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError:
+        warnings.append("Reference site skipped: screenshot engine unavailable")
+        return []
+    try:
+        async with _REFERENCE_CAPTURE_SLOTS:
+            png = await asyncio.wait_for(_capture_reference_png(target, async_playwright), _REFERENCE_TOTAL_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        warnings.append("Reference site could not be captured (timed out)")
+        return []
+    except Exception as e:  # noqa: BLE001
+        logger.warning("[page-builder] reference capture failed for %s: %s", target[:120], e)
+        warnings.append(f"Reference site could not be captured ({type(e).__name__})")
+        return []
+    if not png:
+        warnings.append("Reference site produced no screenshot")
+        return []
+    tiles = _slice_screenshot(png)
+    out: List[str] = []
+    for tile in tiles:
+        payload, ctype = _downscale_for_vision(tile, "image/png")
+        out.append(f"data:{ctype};base64,{base64.b64encode(payload).decode()}")
+    if out:
+        warnings.append(f"Captured the reference site as {len(out)} screenshot tile(s)")
+    return out
+
+
+async def _capture_reference_png(target: str, async_playwright: Any) -> Optional[bytes]:
+    """One guarded browser session → full-page PNG (or None)."""
+    host_ok: Dict[str, bool] = {}
+
+    async def guard(route: Any, request: Any) -> None:
+        # One DNS check per host per capture; anything non-public is aborted.
+        try:
+            host = (urlparse(request.url).hostname or "").lower()
+            if host not in host_ok:
+                host_ok[host] = _is_public_http_host(request.url)
+            if host_ok[host]:
+                await route.continue_()
+            else:
+                await route.abort("blockedbyclient")
+        except Exception:  # noqa: BLE001
+            try:
+                await route.abort("blockedbyclient")
+            except Exception:  # noqa: BLE001
+                pass
+
+    png: Optional[bytes] = None
+    if True:
+        async with async_playwright() as pw:
+            # Full Chromium (new headless), not the headless shell: sites that
+            # fingerprint the shell answer with "browser not supported" banners.
+            # The shell is the fallback where only it is installed.
+            try:
+                browser = await pw.chromium.launch(headless=True, channel="chromium", args=["--disable-dev-shm-usage"])
+            except Exception:  # noqa: BLE001
+                browser = await pw.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
+            try:
+                context = await browser.new_context(viewport=_REFERENCE_VIEWPORT, user_agent=_REFERENCE_UA, locale="en-US")
+                await context.add_init_script(_REFERENCE_INIT_SCRIPT)
+                await context.route("**/*", guard)
+                page = await context.new_page()
+                try:
+                    await page.goto(target, wait_until="domcontentloaded", timeout=_REFERENCE_NAV_TIMEOUT_MS)
+                except Exception as e:  # noqa: BLE001 — partial DOM still screenshots
+                    logger.info("[page-builder] reference nav timed out, capturing anyway: %s", e)
+                # SPA-aware readiness. domcontentloaded fires while a React/Vue
+                # site is still a loading bar (the7cs.co.in captured as a 5 KB
+                # blank), so wait — briefly — for the network to quieten, then
+                # until the document stops growing.
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=_REFERENCE_IDLE_TIMEOUT_MS)
+                except Exception:  # noqa: BLE001 — ad/analytics-heavy sites never go idle
+                    pass
+                await _wait_for_reference_to_settle(page)
+                await _dismiss_consent_banner(page)
+                # Scroll through so IntersectionObserver-gated sections mount,
+                # then return to the top so the fold is the first tile.
+                try:
+                    await page.evaluate(
+                        """async () => {
+                            const step = 700; const max = Math.min(document.body.scrollHeight, 12000);
+                            for (let y = 0; y < max; y += step) { window.scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); }
+                            window.scrollTo(0, 0);
+                        }"""
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
+                await page.wait_for_timeout(_REFERENCE_SETTLE_MS)
+                png = await page.screenshot(full_page=True, type="png")
+            finally:
+                await browser.close()
+    return png
+
+
+async def _resolve_inspiration_sources(body: "GeneratePageRequest", warnings: List[str]) -> List[str]:
+    """Admin-uploaded screenshots first (they chose those deliberately), then
+    the captured reference site, within the vision pass's image budget."""
+    urls = [u for u in (body.inspiration_image_urls or []) if isinstance(u, str) and u]
+    if body.reference_url and is_figma_url(body.reference_url):
+        # Checked before the budget so the admin learns why, not "budget full".
+        warnings.append(FIGMA_LINK_GUIDANCE)
+    elif body.reference_url:
+        room = _MAX_INSPIRATION_IMAGES - len(urls)
+        if room <= 0:
+            warnings.append("Reference site skipped: the screenshot budget is already full")
+        else:
+            urls += (await _capture_reference_screenshots(body.reference_url, warnings))[:room]
+    return urls[:_MAX_INSPIRATION_IMAGES]
+
+
 async def _import_site(url: str) -> str:
     """Best-effort fetch of the institute's own site → a compact text corpus
     (title, headings, paragraphs) so the rebuilt page keeps their REAL copy.
@@ -429,6 +754,9 @@ async def _import_site(url: str) -> str:
     if not url or not url.strip():
         return ""
     target = url.strip()
+    # A Figma file link fetches Figma's login page, not anyone's copy.
+    if is_figma_url(target):
+        return ""
     if not target.startswith(("http://", "https://")):
         target = "https://" + target
     # SSRF guard: only public http(s) hosts — block localhost / link-local /
@@ -479,6 +807,16 @@ async def _import_site(url: str) -> str:
         return ""
 
 
+def _vision_models(db) -> tuple[str, List[str]]:
+    """The page_builder chain for the two vision passes. They used to ride the
+    platform env default through ApiKeyResolver, so a super-admin change to the
+    page_builder use case never reached them. The use-case default is passed
+    as an explicit model (with its chain for failover); a request's
+    preferred_model is deliberately NOT applied here — a text model an admin
+    picked for composition may not read images."""
+    return resolve_models(db, "page_builder", hard_fallback=_DEFAULT_MODEL)
+
+
 async def _describe_attachments(
     image_urls: List[str], db, institute_id: Optional[str], user_id: Optional[str]
 ) -> str:
@@ -507,24 +845,39 @@ async def _describe_attachments(
         attachments = [{"type": "image", "url": u} for u in urls]
 
     client = ChatLLMClient(ApiKeyResolver(db))
+    primary, fallbacks = _vision_models(db)
     messages = [{
         "role": "user",
         "content": (
             "An education-institute admin attached these image(s) to a request to edit their "
-            "website. For EACH image, first classify it as either A) a SCREENSHOT/MOCKUP of a web "
-            "section or page, or B) a PHOTO / logo / graphic meant to be placed on the page.\n"
+            "website. For EACH image, first classify it as A) a SCREENSHOT/MOCKUP of ONE web "
+            "section, B) a PHOTO / logo / graphic meant to be placed on the page, or C) a FULL-PAGE "
+            "DESIGN (a whole landing page mockup, or a TEMPLATE SHEET showing several alternative "
+            "designs side by side).\n"
             "If A: describe the section precisely enough to rebuild it — layout (columns, order), "
             "every piece of visible TEXT verbatim (headings, subheadings, body, badges/chips, "
             "button labels, stats and their labels), and the visual treatment (card style, dark or "
             "light band, icon usage, alignment).\n"
             "If B: one line on what it depicts and where it would fit.\n"
+            "If C: say 'FULL-PAGE DESIGN'. When the sheet shows SEVERAL variants, pick exactly ONE — "
+            "the one labelled recommended/selected/default, otherwise the first — name it, and describe "
+            "ONLY that variant. Then give: (1) PALETTE as hex — if the image carries a colour legend, "
+            "copy its values exactly; primary = the colour of the main BUTTONS/links (never the dark "
+            "header/footer or hero surface — that is a surface colour, report it separately), plus "
+            "the hero band colour, the page background, and any accent; (2) HEADER: nav labels in "
+            "order and the CTA button label; (3) SECTIONS top-to-bottom, one line each: role "
+            "(hero / feature strip / course grid / stats / steps / testimonials / cta / footer), "
+            "layout (split image-right, 4 icon tiles, etc.), whether the band is dark or light, and "
+            "every visible text verbatim (headline, subheading, tile labels, button labels, "
+            "section title and any 'View all' link); (4) FOOTER columns if visible.\n"
             "Be concise but complete. No preamble."
         ),
         "attachments": attachments,
     }]
     try:
         resp = await client.chat_completion(
-            messages, temperature=0.2, max_tokens=1400, institute_id=institute_id, user_id=user_id
+            messages, temperature=0.2, max_tokens=2200, institute_id=institute_id, user_id=user_id,
+            model=primary, fallback_models=fallbacks,
         )
         return _clean_string((resp.get("content") or "").strip())
     except Exception as e:  # noqa: BLE001 — never block the edit on the vision pass
@@ -554,25 +907,39 @@ async def _analyze_inspiration(
     from ..services.api_key_resolver import ApiKeyResolver
 
     client = ChatLLMClient(ApiKeyResolver(db))
+    primary, fallbacks = _vision_models(db)
     urls = [u for u in image_urls if isinstance(u, str) and u][:_MAX_INSPIRATION_IMAGES]
     if not urls:
         return {}
     # Inline as data URLs for the same reason the copilot pass does: provider-side
     # fetching of our media URLs is unreliable, and a silently unseen screenshot
     # produces confident nonsense.
-    inlined = await asyncio.gather(*(_inline_image_data_url(u) for u in urls))
+    # A captured reference site arrives already inlined (data: URLs) — only
+    # remote URLs need fetching.
+    async def _as_data_url(u: str) -> tuple[Optional[str], Optional[str]]:
+        if u.startswith("data:image/"):
+            return u, None
+        return await _inline_image_data_url(u)
+
+    inlined = await asyncio.gather(*(_as_data_url(u) for u in urls))
     attachments = [{"type": "image", "url": d} for d, _ in inlined if d] or [
-        {"type": "image", "url": u} for u in urls
+        {"type": "image", "url": u} for u in urls if not u.startswith("data:")
     ]
 
     messages = [{
         "role": "user",
         "content": (
             "These are screenshots of website(s) an education institute wants their new site to look "
-            "like. Reverse-engineer the DESIGN so it can be rebuilt. Return ONLY JSON:\n"
+            "like. Reverse-engineer the DESIGN so it can be rebuilt. Ignore anything that is not part of "
+            "the page's own design: cookie/consent dialogs, 'browser not supported' or announcement "
+            "strips, chat widgets and popups — never list those as sections. Return ONLY JSON:\n"
             "{\n"
+            '  "pickedVariant": "<only when an image is a TEMPLATE SHEET showing several alternative designs: '
+            'the label of the ONE you describe — the variant marked recommended/selected/default, else the '
+            'first; omit for a single design>",\n'
             '  "mood": "<one line: e.g. editorial and calm / bold and high-contrast / warm community>",\n'
-            '  "palette": {"primary": "#rrggbb", "accent": "#rrggbb", "background": "#rrggbb", "ink": "#rrggbb"},\n'
+            '  "palette": {"primary": "#rrggbb", "accent": "#rrggbb", "background": "#rrggbb", "ink": "#rrggbb", '
+            '"surface": "#rrggbb"},\n'
             '  "typography": {"heading": "serif"|"sans"|"display", "body": "serif"|"sans", '
             '"scale": "editorial"|"default"|"compact", "weight": "light"|"regular"|"bold"},\n'
             '  "shape": {"radius": "sharp"|"rounded"|"pill", "density": "airy"|"balanced"|"dense", '
@@ -587,19 +954,30 @@ async def _analyze_inspiration(
             'generous whitespace, tinted card headers>"],\n'
             '  "avoid": ["<treatments that would BREAK this look — e.g. gradients, glassmorphism, drop shadows>"]\n'
             "}\n"
-            "Rules: palette colours MUST be real hex values sampled from the screenshot.\n"
+            "Rules: palette colours MUST be real hex values sampled from the screenshot. If the image "
+            "carries an explicit COLOUR LEGEND / palette strip (swatches with hex codes and roles), copy "
+            "those values exactly and map their roles: 'buttons/headings' → primary, 'icons/highlights' → "
+            "accent, 'background' → background, 'text' → ink, 'header/footer' → surface.\n"
             "  primary = the colour a visitor would name as THIS BRAND'S colour: the most saturated, "
-            "characterful hue, the one carrying decorative shapes, badges, highlights and key buttons. "
+            "characterful hue, the one carrying decorative shapes, badges, highlights and KEY BUTTONS. "
             "Do NOT simply take the nav/link colour — if the links are a muted or near-neutral blue "
             "while the page's character comes from a warmer or brighter hue, the warmer hue is the "
             "primary. (A rebuild that copies the link colour is technically the same blue and looks "
-            "nothing like the original.)\n"
+            "nothing like the original.) A DARK NAVY/BLACK header, hero or footer band is NEVER the "
+            "primary — it is a surface: report it as `surface` and note the dark band in `sections`.\n"
             "  accent = the second most characterful hue.\n"
             "  background = the dominant page surface. Say so precisely when it is an off-white, cream, "
             "or tinted paper rather than pure white — that tint is a deliberate choice and a large part "
             "of how the design feels.\n"
             "  ink = body text.\n"
-            "List `sections` in the order they appear, top to bottom, one entry per visible band. "
+            "  surface = the dark band colour used for the header/hero/footer, if the design has one.\n"
+            "TEMPLATE SHEETS: if an image shows several alternative designs side by side (labelled "
+            "'Template 1', 'Option B', colour variants…), describe exactly ONE — the one marked "
+            "recommended/selected/default, otherwise the first — set `pickedVariant` to its label, and "
+            "ignore the others completely; never blend them.\n"
+            "List `sections` in the order they appear, top to bottom, one entry per visible band, and say "
+            "in `notes` whether the band is dark or light and what it holds (e.g. '4 icon tiles', "
+            "'4 course tiles with a View all link', 'split hero, image right'). "
             "Describe STRUCTURE AND TREATMENT ONLY — do NOT transcribe their headlines, marketing copy, "
             "brand name or logo, and never suggest reusing their images."
         ),
@@ -608,7 +986,8 @@ async def _analyze_inspiration(
     resp = await client.chat_completion(
         # Room for a section blueprint across up to six screenshots; a truncated
         # reply loses the tail of `sections`, which is the part that matters.
-        messages, temperature=0.2, max_tokens=2600, institute_id=institute_id, user_id=user_id
+        messages, temperature=0.2, max_tokens=2600, institute_id=institute_id, user_id=user_id,
+        model=primary, fallback_models=fallbacks,
     )
     return _coerce_inspiration_spec(resp.get("content") or "")
 
@@ -642,12 +1021,15 @@ def _coerce_inspiration_spec(raw: str) -> Dict[str, Any]:
     mood = data.get("mood")
     if isinstance(mood, str) and mood.strip():
         spec["mood"] = _clean_string(mood)[:160]
+    picked = data.get("pickedVariant")
+    if isinstance(picked, str) and picked.strip():
+        spec["pickedVariant"] = _clean_string(picked)[:120]
 
     palette_in = data.get("palette")
     if isinstance(palette_in, dict):
         palette = {
             k: coerce_hex_color(palette_in.get(k))
-            for k in ("primary", "accent", "background", "ink")
+            for k in ("primary", "accent", "background", "ink", "surface")
         }
         palette = {k: v for k, v in palette.items() if v}
         if palette:
@@ -750,6 +1132,11 @@ class GeneratePageRequest(BaseModel):
     # The institute's OWN existing website — we extract its real copy so the
     # rebuilt page keeps their actual content ("rebuild my site").
     source_url: Optional[str] = None
+    # SOMEONE ELSE'S website whose LAYOUT the admin wants ("make mine look like
+    # that"). We screenshot it server-side and feed the tiles to the same vision
+    # pass as inspiration_image_urls. Their content is never copied; and with
+    # global_settings pinned, neither are their colours — only the structure.
+    reference_url: Optional[str] = None
     # Compact snapshot of real courses, passed by the admin FE so copy and
     # data-bound components reference real offerings (no new cross-service call).
     courses: List[CourseSnapshotItem] = Field(default_factory=list)
@@ -810,6 +1197,12 @@ _FONT_STACKS: Dict[str, str] = {
     "Rubik": "Rubik, sans-serif",
     "Quicksand": "Quicksand, sans-serif",
     "Baloo 2": '"Baloo 2", sans-serif',
+    # Devanagari faces (mirrors catalogue-fonts.ts) for Hindi / Marathi sites.
+    "Noto Sans Devanagari": '"Noto Sans Devanagari", sans-serif',
+    "Mukta": "Mukta, sans-serif",
+    "Hind": "Hind, sans-serif",
+    "Noto Serif Devanagari": '"Noto Serif Devanagari", serif',
+    "Tiro Devanagari Hindi": '"Tiro Devanagari Hindi", serif',
 }
 
 # One compact, VALID exemplar page showing the premium vocabulary in-schema —
@@ -903,13 +1296,91 @@ _VOCAB_HEADER = (
 )
 
 
-def _inspiration_block(inspiration: Any) -> str:
+# Preset brand colours (learner catalogue-themes.css --primary-500), used to
+# derive a dark band surface when a pinned theme names a preset but no hex.
+_PRESET_PRIMARY_HEX = {
+    "default": "#0EA5E9", "ocean": "#0EA5E9", "forest": "#22C55E", "sunset": "#F97316",
+    "midnight": "#7C3AED", "rose": "#E11D48", "violet": "#8B5CF6", "amber": "#F59E0B", "slate": "#283E70",
+}
+
+
+def _derive_dark_surface(theme: Any) -> str:
+    """The dark band colour a pinned theme implies: its brand hue taken down to
+    a deep shade (L≈14%). A navy brand gives a navy band, a forest brand a deep
+    green — so bands the reference paints dark come out dark in THIS site's
+    colour, not the reference's. Falls back to a neutral near-black."""
+    import colorsys
+
+    theme = theme if isinstance(theme, dict) else {}
+    primary = coerce_hex_color(theme.get("primaryColor")) or _PRESET_PRIMARY_HEX.get(str(theme.get("preset") or "").lower())
+    if not primary:
+        return "#111827"
+    r, g, b = (int(primary[i:i + 2], 16) / 255.0 for i in (1, 3, 5))
+    h, l, sat = colorsys.rgb_to_hls(r, g, b)
+    rr, gg, bb = colorsys.hls_to_rgb(h, 0.14, min(sat, 0.55))
+    return "#%02X%02X%02X" % (round(rr * 255), round(gg * 255), round(bb * 255))
+
+
+def _hex_distance(a: str, b: str) -> int:
+    """Manhattan distance in RGB between two #rrggbb strings (0 = identical)."""
+    return sum(abs(int(a[i:i + 2], 16) - int(b[i:i + 2], 16)) for i in (1, 3, 5))
+
+
+def _recolour_reference_palette(node: Any, ref_palette: Dict[str, Any], surface: str, _tol: int = 48) -> int:
+    """Theme-locked builds: scrub every colour prop that is (near) a colour
+    sampled from the reference. A dark background becomes the site's own dark
+    surface; anything else is dropped so the theme tokens take over. Near-white
+    is left alone (it is the canvas, not a brand cue). Mutates; returns the
+    number of props touched."""
+    refs = [h for h in (coerce_hex_color(v) for v in (ref_palette or {}).values()) if h]
+    refs = [h for h in refs if not _is_near_white(h)]
+    if not refs:
+        return 0
+    touched = 0
+
+    def visit(obj: Any) -> None:
+        nonlocal touched
+        if isinstance(obj, dict):
+            for key in list(obj.keys()):
+                val = obj[key]
+                if isinstance(val, (dict, list)):
+                    visit(val)
+                    continue
+                if not (isinstance(key, str) and key.lower().endswith("color")):
+                    continue
+                hexv = coerce_hex_color(val)
+                if not hexv or _is_near_white(hexv) or not any(_hex_distance(hexv, r) <= _tol for r in refs):
+                    continue
+                if key.lower().endswith("backgroundcolor") and is_hex_dark(hexv):
+                    obj[key] = surface
+                else:
+                    del obj[key]
+                touched += 1
+        elif isinstance(obj, list):
+            for item in obj:
+                visit(item)
+
+    visit(node)
+    return touched
+
+
+def _is_near_white(hexv: str) -> bool:
+    r, g, b = (int(hexv[i:i + 2], 16) for i in (1, 3, 5))
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.93
+
+
+def _inspiration_block(inspiration: Any, theme_locked: bool = False, locked_surface: Optional[str] = None) -> str:
     """Render the reverse-engineered reference design as a STRUCTURAL constraint.
 
     The old version pasted mood adjectives under a heading that said "direction
     ONLY", which the model reasonably read as "ignore the layout". The spec is
     now the page's plan: its section list becomes the section list, its palette
-    becomes theme.primaryColor, its typography becomes the font pairing."""
+    becomes theme.primaryColor, its typography becomes the font pairing.
+
+    theme_locked ("make mine look like THAT site, but in MY colours"): the
+    site already has a theme, so every colour and font line is replaced by an
+    explicit instruction to take structure only — the reference's palette must
+    not leak into the page through any prop."""
     if isinstance(inspiration, str):
         text = inspiration.strip()
         return (
@@ -919,8 +1390,13 @@ def _inspiration_block(inspiration: Any) -> str:
     if not isinstance(inspiration, dict) or not inspiration:
         return ""
 
+    if theme_locked:
+        # Strip the sampled colours from what the model sees: a hex in the
+        # spec is a hex it will reach for, whatever the prose says.
+        inspiration = {k: v for k, v in inspiration.items() if k not in ("palette", "typography")}
     lines = [
-        "## REFERENCE DESIGN — MATCH THIS",
+        "## REFERENCE DESIGN — MATCH THIS" if not theme_locked else
+        "## REFERENCE LAYOUT — MATCH ITS STRUCTURE (colours and fonts come from the FIXED SITE THEME below)",
         "The admin gave screenshots of the site they want theirs to look like; a vision pass "
         "reverse-engineered it into the spec below. Treat it as the PLAN for this page, not as vague "
         "inspiration — a visitor should recognise the same design language. The one thing you must NOT "
@@ -929,9 +1405,40 @@ def _inspiration_block(inspiration: Any) -> str:
         json.dumps(inspiration, ensure_ascii=False),
         "HOW TO APPLY IT:",
     ]
+    if inspiration.get("pickedVariant"):
+        lines.append(
+            f"- VARIANT: the reference was a template sheet; build \"{inspiration['pickedVariant']}\" and "
+            "nothing from the other variants."
+        )
     palette = inspiration.get("palette") if isinstance(inspiration.get("palette"), dict) else {}
     primary = palette.get("primary")
-    if primary:
+    surface = palette.get("surface")
+    if theme_locked:
+        band = locked_surface or "#111827"
+        lines.append(
+            "- COLOURS: this site already has a theme. Do NOT set globalSettings.theme.primaryColor, do NOT "
+            "set page.backgroundColor, and do NOT paint any section, card, chip or button with a colour "
+            "taken from the reference — buttons and links pick up the theme's brand colour by themselves. "
+            "Section tints, if the layout alternates them, are the theme's own light tints."
+        )
+        lines.append(
+            f"- DARK BANDS: where the reference paints a band dark (header, hero, CTA, footer), paint it "
+            f"with props.backgroundColor \"{band}\" — this site's own dark surface, derived from its brand "
+            "colour (the renderer switches the band's ink to light). Never the reference's surface colour."
+        )
+        lines.append(
+            "- TYPE: keep the theme's fonts. Copy only the reference's SCALE — an oversized hero headline, "
+            "a small tracked eyebrow, tight card titles — via headingScale and the components' own props."
+        )
+    if surface and not theme_locked:
+        lines.append(
+            f"- DARK BANDS: the reference's header/hero/footer surface is \"{surface}\". Paint those bands "
+            f"with props.backgroundColor \"{surface}\" (the renderer switches their ink to light) — this "
+            "is a SURFACE, never theme.primaryColor."
+        )
+    if theme_locked:
+        pass
+    elif primary:
         lines.append(
             f"- BRAND COLOUR: set globalSettings.theme.primaryColor to \"{primary}\" (the reference's own "
             "brand colour) and choose the preset whose family sits closest to it. This is the single "
@@ -943,6 +1450,8 @@ def _inspiration_block(inspiration: Any) -> str:
             "set theme.primaryColor only if the institute's own brand colour is known."
         )
     background = palette.get("background")
+    if theme_locked:
+        background = None
     if background and background.lower() not in ("#ffffff", "#fefefe"):
         lines.append(
             f"- CANVAS: the reference does NOT sit on white — its page surface is \"{background}\". Set "
@@ -950,19 +1459,19 @@ def _inspiration_block(inspiration: Any) -> str:
             "loses most of its warmth even when every other choice is right, and alternating section "
             "tints should be picked to sit on THAT surface, not on white."
         )
-    if palette.get("ink"):
+    if palette.get("ink") and not theme_locked:
         lines.append(
             f"- INK: body and heading text in the reference reads as \"{palette['ink']}\". Where you set a "
             "textColor explicitly, stay close to it, and keep every text/background pair you author at a "
             "contrast ratio of at least 4.5:1."
         )
-    if palette.get("accent"):
+    if palette.get("accent") and not theme_locked:
         lines.append(
             f"- SECONDARY: \"{palette['accent']}\" is the reference's second colour — use it for ornaments, "
             "chips or a single contrasting band rather than as the brand colour."
         )
     typo = inspiration.get("typography") if isinstance(inspiration.get("typography"), dict) else {}
-    if typo:
+    if typo and not theme_locked:
         head = typo.get("heading")
         want = (
             "a SERIF display face (Playfair Display / Fraunces / DM Serif Display)" if head == "serif"
@@ -995,7 +1504,9 @@ def _inspiration_block(inspiration: Any) -> str:
             "htmlBlock, gallery→imageGallery, team→teamSection, pricing→pricingTable, contact→contactForm "
             "or leadForm). Honour each entry's `layout`. Drop a section only when this institute has no "
             "content for it, and add one only when the brief needs it — do not silently fall back to the "
-            "default landing-page rhythm."
+            "default landing-page rhythm. PEOPLE ARE NEVER INVENTED: a testimonials/team/logos band is "
+            "built only from names, quotes and partners that appear in the brief or the imported site; "
+            "if there are none, OMIT that band (it will be removed anyway)."
         )
     moves = inspiration.get("signatureMoves") if isinstance(inspiration.get("signatureMoves"), list) else []
     if moves:
@@ -1358,6 +1869,68 @@ _NO_COMMERCE_RULE = (
 )
 
 
+#: Pattern components that are page sections the composer may emit (header /
+#: footer are site chrome, globalSettings patterns are site settings).
+_PATTERN_CARD_SKIP = frozenset({"header", "footer", "globalSettings"})
+
+_PATTERN_CARDS_RULES = (
+    "## DESIGN PATTERNS — opt-in looks of our blocks (use one ONLY when the REFERENCE DESIGN shows it)\n"
+    "Each card is a named look of a component in the vocabulary: what it looks like, when NOT to use it, and the props "
+    "that produce it (merge `props` into that component's props). When a reference section matches a card, build it "
+    "from the card instead of the nearest generic look — e.g. a course grid of text-led cards with a stream label and "
+    "format chips is courseCatalog with render.cardStyle 'editorial', not a default grid. Several courseCatalog cards "
+    "combine into ONE courseCatalog: deep-merge their props (objects key by key, arrays concatenated). Text in "
+    "<angle brackets> is a placeholder: write your own copy from the brief, or leave the field empty. Every id "
+    "(libraryId, audienceId, productPageCode, course ids) stays EMPTY — the admin links them in the editor. Never "
+    "write numbers the widgets compute live (stats kinds, counts, prices). A card the reference does not show stays "
+    "off: the block's ordinary look is the default."
+)
+
+
+_CARD_IMAGE_PLACEHOLDER = "<image: a PROVIDED IMAGES url, 'gen:<prompt>' when IMAGE GENERATION is on, or empty>"
+_CARD_ROUTE_PLACEHOLDER = "<route: of a page this site has, or an #anchor on this page>"
+
+
+def _composer_card_props(value: Any, key: str = "") -> Any:
+    """
+    A pattern's ``minimal`` props as the composer may use them. The registry's
+    placeholders are written for MCP callers (website(list_media),
+    website_edit(link_lead_form)), tools this composer does not have, and its
+    example routes (/login, /learning-paths) may not exist on this site.
+    """
+    if isinstance(value, dict):
+        return {k: _composer_card_props(v, k) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_composer_card_props(v, key) for v in value]
+    if not isinstance(value, str):
+        return value
+    if value.startswith("<") and ("website(" in value or "website_edit(" in value):
+        if "image" in value.lower():
+            return _CARD_IMAGE_PLACEHOLDER
+        name = value[1:].split(":", 1)[0].strip()
+        return f"<{name}: leave empty — the admin picks it in the editor>"
+    if key == "target" and value.startswith("/"):
+        return _CARD_ROUTE_PLACEHOLDER
+    return value
+
+
+def _pattern_cards_block(catalog: Dict[str, Any], vocab_types: set) -> str:
+    """Compact pattern cards for the components this page may contain, or "" when the catalog has none."""
+    cards = []
+    for p in catalog.get("patterns") or []:
+        if not isinstance(p, dict) or not p.get("id"):
+            continue
+        component = p.get("component")
+        if component in _PATTERN_CARD_SKIP or component not in vocab_types:
+            continue
+        card = {"id": p["id"], "component": component, "looks": p.get("looksLike"), "avoid": p.get("avoidWhen"),
+                "props": _composer_card_props(p.get("minimal"))}
+        cards.append({k: v for k, v in card.items() if v not in (None, "", [], {})})
+    if not cards:
+        return ""
+    return _PATTERN_CARDS_RULES + "\n" + json.dumps(cards, ensure_ascii=False)
+
+
 def _build_prompt(req: GeneratePageRequest, catalog: Dict[str, Any], inspiration: Any = None, site_corpus: str = "", fixed_global: Optional[Dict[str, Any]] = None) -> str:
     parts: List[str] = []
     parts.append(
@@ -1418,7 +1991,16 @@ def _build_prompt(req: GeneratePageRequest, catalog: Dict[str, Any], inspiration
             "structure, do NOT invent different facts)\n" + site_corpus
         )
     if inspiration:
-        parts.append(_inspiration_block(inspiration))
+        parts.append(_inspiration_block(
+            inspiration,
+            theme_locked=bool(fixed_global),
+            locked_surface=_derive_dark_surface((fixed_global or {}).get("theme")) if fixed_global else None,
+        ))
+        # Only with a reference design: the cards name looks to MATCH, so a
+        # page composed from a brief alone is prompted exactly as before.
+        cards = _pattern_cards_block(catalog, {c.get("type") for c in vocab})
+        if cards:
+            parts.append(cards)
     if req.direction:
         parts.append(f"## DESIGN DIRECTION\n{req.direction}")
 
@@ -1502,13 +2084,13 @@ def clean_urls(node: Any, allowed_urls: set, warnings: List[str]) -> Any:
             lk = k.lower()
             # Image keys: pure allowlist-keep — empty, or exactly a provided
             # URL; everything else (data:, //host, HTTP, hallucinated) stripped.
-            if lk in _IMAGE_KEYS and isinstance(v, str):
+            if is_image_key(k) and isinstance(v, str):
                 if v and v not in allowed_urls:
                     warnings.append(f"Stripped unknown image URL from '{k}'")
                     out[k] = ""
                 else:
                     out[k] = v
-            elif lk in _IMAGE_LIST_KEYS and isinstance(v, list):
+            elif is_image_list_key(k) and isinstance(v, list):
                 kept = [u for u in v if not (isinstance(u, str) and u and u not in allowed_urls)]
                 if len(kept) != len(v):
                     warnings.append(f"Stripped unknown image URL(s) from '{k}'")
@@ -1554,6 +2136,236 @@ def clean_urls(node: Any, allowed_urls: set, warnings: List[str]) -> Any:
         # sanitize embedded markup (rich-text props reach dangerouslySetInnerHTML).
         return _clean_string(node)
     return node
+
+
+# The learner renderer's icon set (FEATURE_ICON_MAP in JsonRenderer.tsx —
+# Phosphor names). featureGrid reads features[].iconName and draws nothing for
+# any other name, silently. (stepsProcess reads steps[].icon instead, and that
+# key is dual-purpose — a library name OR a raw emoji — so it is left alone.)
+# The composer is told this list, but the copilot's edit prompt was not, and a
+# model that has seen more Lucide than Phosphor reaches for "MessageSquare",
+# "Users", "Monitor", "Award" — a whole feature strip then ships iconless
+# (field case: Smart AI Academy, 2026-09-14). Normalise instead of trusting.
+_FEATURE_ICONS = {
+    "GraduationCap", "Rocket", "Target", "UsersThree", "Code", "Brain", "Trophy", "Lightbulb",
+    "ShieldCheck", "ChartLineUp", "Clock", "Star", "BookOpen", "Certificate", "ChatsCircle",
+    "Wrench", "Sparkle", "Medal", "Briefcase", "Globe",
+}
+_FEATURE_ICON_ALIASES = {
+    # Lucide / Heroicons / Font Awesome / Material names the models emit most
+    "messagesquare": "ChatsCircle", "messagecircle": "ChatsCircle", "message": "ChatsCircle",
+    "chat": "ChatsCircle", "chatbubble": "ChatsCircle", "comments": "ChatsCircle", "bot": "ChatsCircle",
+    "users": "UsersThree", "user": "UsersThree", "usercog": "UsersThree", "usercheck": "UsersThree",
+    "group": "UsersThree", "people": "UsersThree", "team": "UsersThree", "usergroup": "UsersThree",
+    "monitor": "Globe", "laptop": "Code", "desktop": "Globe", "computer": "Code", "video": "Globe",
+    "award": "Medal", "badge": "Medal", "badgecheck": "Certificate", "ribbon": "Medal",
+    "certificate": "Certificate", "scroll": "Certificate", "filecheck": "Certificate", "diploma": "Certificate",
+    "book": "BookOpen", "bookmarked": "BookOpen", "library": "BookOpen", "notebook": "BookOpen",
+    "graduation": "GraduationCap", "school": "GraduationCap", "academiccap": "GraduationCap",
+    "cap": "GraduationCap", "mortarboard": "GraduationCap",
+    "zap": "Lightbulb", "bolt": "Lightbulb", "idea": "Lightbulb", "bulb": "Lightbulb", "flash": "Lightbulb",
+    "sparkles": "Sparkle", "wand": "Sparkle", "magic": "Sparkle", "stars": "Sparkle",
+    "cpu": "Brain", "chip": "Brain", "brain": "Brain", "robot": "Brain", "ai": "Brain", "network": "Brain",
+    "shield": "ShieldCheck", "lock": "ShieldCheck", "security": "ShieldCheck", "check": "ShieldCheck",
+    "checkcircle": "ShieldCheck", "circlecheck": "ShieldCheck",
+    "trendingup": "ChartLineUp", "chart": "ChartLineUp", "barchart": "ChartLineUp", "linechart": "ChartLineUp",
+    "growth": "ChartLineUp", "analytics": "ChartLineUp", "presentation": "ChartLineUp",
+    "clock": "Clock", "timer": "Clock", "calendar": "Clock", "schedule": "Clock", "hourglass": "Clock",
+    "settings": "Wrench", "tool": "Wrench", "tools": "Wrench", "cog": "Wrench", "gear": "Wrench",
+    "hammer": "Wrench", "build": "Wrench",
+    "briefcase": "Briefcase", "work": "Briefcase", "business": "Briefcase", "building": "Briefcase",
+    "globe": "Globe", "world": "Globe", "earth": "Globe", "language": "Globe", "wifi": "Globe",
+    "rocket": "Rocket", "launch": "Rocket", "trending": "Rocket",
+    "target": "Target", "crosshair": "Target", "goal": "Target", "focus": "Target",
+    "trophy": "Trophy", "cup": "Trophy", "winner": "Trophy",
+    "star": "Star", "favorite": "Star", "heart": "Star",
+    "code": "Code", "terminal": "Code", "braces": "Code", "coding": "Code",
+    "facebook": "Globe", "instagram": "Globe", "twitter": "Globe", "linkedin": "Globe", "youtube": "Globe",
+    "tiktok": "Globe", "whatsapp": "ChatsCircle", "phone": "ChatsCircle", "mail": "ChatsCircle",
+    "email": "ChatsCircle", "envelope": "ChatsCircle", "handshake": "UsersThree", "partner": "UsersThree",
+}
+# When the name gives nothing away, the card's own title usually does.
+_FEATURE_ICON_KEYWORDS = (
+    (("certif", "diploma", "credential"), "Certificate"),
+    (("teach", "mentor", "expert", "guid", "instructor", "faculty", "coach", "community"), "UsersThree"),
+    (("chat", "gpt", "conversation", "support", "assistant"), "ChatsCircle"),
+    (("prompt", "code", "coding", "develop", "program", "engineer"), "Code"),
+    (("ai", "brain", "intellig", "machine learning", "neural"), "Brain"),
+    (("class", "online", "flexible", "anytime", "pace", "schedule", "time", "hour"), "Clock"),
+    (("practic", "hands-on", "project", "workshop", "tool"), "Wrench"),
+    (("career", "job", "business", "professional", "work"), "Briefcase"),
+    (("grow", "result", "analytic", "data", "progress", "outcome"), "ChartLineUp"),
+    (("secur", "safe", "trust", "responsib", "ethic", "privacy"), "ShieldCheck"),
+    (("student", "learn", "course", "lesson", "study", "curriculum"), "BookOpen"),
+    (("global", "world", "internation", "language", "remote"), "Globe"),
+    (("idea", "innov", "creat", "insight"), "Lightbulb"),
+    (("award", "medal", "recogni", "achieve"), "Medal"),
+    (("win", "top", "rank", "champion", "success"), "Trophy"),
+    (("launch", "start", "fast", "accelerat", "boost"), "Rocket"),
+    (("goal", "target", "focus", "exam", "mission"), "Target"),
+    (("new", "featured", "premium", "special", "magic"), "Sparkle"),
+    (("rating", "review", "quality", "favourite", "favorite"), "Star"),
+    (("school", "academy", "degree", "graduat", "universit", "educat"), "GraduationCap"),
+)
+
+
+def normalize_icon_name(name: Any, title: Any = "") -> Optional[str]:
+    """Map a model-supplied iconName onto the renderer's icon set.
+
+    Exact (case-insensitive) library names pass through; known aliases from
+    other icon libraries are translated; otherwise the card's title picks a
+    fitting icon by keyword; None when nothing fits (the caller drops the key,
+    which renders no icon — honest, and the same thing an unknown name did)."""
+    raw = str(name or "").strip()
+    if raw:
+        for lib in _FEATURE_ICONS:
+            if lib.lower() == raw.lower():
+                return lib
+        key = re.sub(r"[^a-z]", "", raw.lower())
+        for prefix in ("lucide", "phosphor", "heroicons", "heroicon", "mdi"):
+            if key.startswith(prefix) and key[len(prefix):]:
+                key = key[len(prefix):]
+        for suffix in ("icon", "outline", "solid", "fill", "duotone", "bold", "regular", "light", "thin", "rounded"):
+            if key.endswith(suffix) and key[: -len(suffix)]:
+                key = key[: -len(suffix)]
+        if key in _FEATURE_ICON_ALIASES:
+            return _FEATURE_ICON_ALIASES[key]
+        if len(key) >= 4:
+            for alias, lib in _FEATURE_ICON_ALIASES.items():
+                if len(alias) >= 4 and (alias in key or key in alias):
+                    return lib
+    # Title keywords match at a word start only: a bare substring made "ai"
+    # claim "Training" and "art" claim "Smart".
+    hay = f"{raw} {title or ''}".lower()
+    for needles, lib in _FEATURE_ICON_KEYWORDS:
+        if any(re.search(r"\b" + re.escape(n), hay) for n in needles):
+            return lib
+    return None
+
+
+def _normalize_icon_names(ctype: str, props: Dict[str, Any], warnings: List[str]) -> None:
+    """Rewrite featureGrid.features[].iconName in place — the one key the
+    renderer resolves ONLY through the icon library."""
+    key = {"featureGrid": "features"}.get(ctype)
+    if not key or not isinstance(props.get(key), list):
+        return
+    fixed: List[str] = []
+    for item in props[key]:
+        if not isinstance(item, dict) or not item.get("iconName"):
+            continue
+        original = str(item["iconName"])
+        resolved = normalize_icon_name(original, item.get("title"))
+        if resolved == original:
+            continue
+        if resolved is None:
+            item.pop("iconName", None)
+        else:
+            item["iconName"] = resolved
+        fixed.append(f"{original}→{resolved or 'none'}")
+    if fixed:
+        warnings.append(f"Mapped {ctype} icon names onto the icon library: " + ", ".join(fixed[:8]))
+
+
+def is_hex_dark(hex_color: Any) -> bool:
+    """Mirror of the learner renderer's isHexDark (Rec. 601 luminance < 0.55)."""
+    value = coerce_hex_color(hex_color)
+    if not value:
+        return False
+    r, g, b = (int(value[i:i + 2], 16) for i in (1, 3, 5))
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55
+
+
+def _apply_dark_band(ctype: str, props: Dict[str, Any], style: Optional[Dict[str, Any]], warnings: List[str]) -> Optional[Dict[str, Any]]:
+    """A hero on a dark author colour must flip its ink to light.
+
+    heroSection paints its title/description with theme TOKEN classes, which a
+    props.textColor does not override — so a navy hero with textColor #FFFFFF
+    still renders navy-on-navy (field case: Smart AI Academy copilot build).
+    The renderer flips tokens for any wrapper carrying the `dark` class, so
+    mark the band. sectionHeading additionally needs its colour mirrored onto
+    style.backgroundColor or a 56px seam of page colour shows above it."""
+    bg = props.get("backgroundColor")
+    if ctype not in ("heroSection", "sectionHeading") or not isinstance(bg, str) or not coerce_hex_color(bg):
+        return style
+    style = dict(style) if isinstance(style, dict) else {}
+    if not any(style.get(k) for k in ("backgroundColor", "background", "backgroundImage", "backgroundLayers")):
+        style["backgroundColor"] = bg
+    has_bg_image = bool(props.get("backgroundImage")) or any(
+        style.get(k) for k in ("backgroundImage", "backgroundLayers")
+    )
+    if ctype == "heroSection" and is_hex_dark(bg) and not has_bg_image:
+        classes = [c for c in str(style.get("customClass") or "").split() if c]
+        if "dark" not in classes:
+            classes.append("dark")
+            style["customClass"] = " ".join(classes)
+            warnings.append("Marked the dark hero band 'dark' so its headline renders in light ink")
+    return style
+
+
+# ─── jobOpenings (careers) ───────────────────────────────────────────────────
+# Contract mirrored by the learner's -utils/job-openings.ts and the editor's
+# jobs/job-templates.ts: the template ids, and the slug rule (each job's page
+# lives at /<page>/<slug>, so a slug must be stable and unique per section).
+JOB_TEMPLATES = ("classic", "poster", "list", "editorial", "dark", "minimal", "spotlight", "split")
+_MAX_JOBS = 60
+_SAFE_ROUTE_RE = re.compile(r"^#?[A-Za-z0-9][A-Za-z0-9_\-/#]*$")
+
+
+def _https_link(value: Any) -> str:
+    """An external form link: https only (http is upgraded); anything else is ''."""
+    url = str(value or "").strip()
+    if re.match(r"^http://", url, re.I):
+        url = "https://" + url[7:]
+    return url if re.match(r"^https://[^\s/]+", url, re.I) else ""
+
+
+def _normalize_job_openings(props: Dict[str, Any], warnings: List[str]) -> None:
+    """jobOpenings props after the generic scrub: a known template, columns 1-4,
+    and jobs whose apply links are external https, with stable unique slugs."""
+    template = props.get("template")
+    if template not in JOB_TEMPLATES:
+        if template:
+            warnings.append(f"jobOpenings: unknown template '{template}', using 'classic'")
+        props["template"] = "classic"
+    try:
+        props["columns"] = min(4, max(1, int(props.get("columns") or 2)))
+    except (TypeError, ValueError):
+        props["columns"] = 2
+    raw = props.get("jobs")
+    jobs = [j for j in raw if isinstance(j, dict)] if isinstance(raw, list) else []
+    if len(jobs) > _MAX_JOBS:
+        warnings.append(f"jobOpenings: kept the first {_MAX_JOBS} jobs")
+        jobs = jobs[:_MAX_JOBS]
+    used: set = set()
+    for i, job in enumerate(jobs):
+        if not str(job.get("id") or "").strip():
+            job["id"] = f"job-{uuid.uuid4().hex[:6]}"
+        apply_raw = str(job.get("applyUrl") or "").strip()
+        job["applyUrl"] = _https_link(apply_raw)
+        if apply_raw and not job["applyUrl"]:
+            warnings.append(f"jobOpenings: dropped a non-https apply link on '{job.get('title') or job['id']}'")
+        second = str(job.get("secondaryUrl") or "").strip()
+        if second and not (_https_link(second) or _SAFE_ROUTE_RE.match(second)):
+            job["secondaryUrl"] = ""
+        elif second.lower().startswith("http"):
+            job["secondaryUrl"] = _https_link(second)
+        details = job.get("details")
+        if details is not None:
+            job["details"] = [
+                {"label": str(d.get("label") or ""), "value": str(d.get("value") or "")}
+                for d in (details if isinstance(details, list) else [])
+                if isinstance(d, dict) and str(d.get("value") or "").strip()
+            ]
+        # A visible job's slug is fixed here, so its address survives a title edit.
+        if job.get("enabled") is False or not str(job.get("title") or "").strip():
+            continue
+        root = job_slug(job.get("slug")) or job_slug(job.get("title")) or f"job-{i + 1}"
+        slug, n = root, 2
+        while slug in used:
+            slug, n = f"{root}-{n}", n + 1
+        used.add(slug)
+        job["slug"] = slug
+    props["jobs"] = jobs
 
 
 def sanitize_component(
@@ -1611,14 +2423,45 @@ def sanitize_component(
             if isinstance(slot, list) else []
             for slot in slots
         ]
+    _normalize_icon_names(ctype, cleaned_props, warnings)
+    if ctype == "jobOpenings":
+        _normalize_job_openings(cleaned_props, warnings)
+    # The editor template offers hero left.subheading and its preview shows
+    # it, but the LEARNER never renders it — so a model that puts the tagline
+    # there (as the copilot did) ships a hero with no copy under the title.
+    # Fold it into description, the field the live page reads, when that is
+    # empty; when both exist the subheading stays (harmless, preview-only).
+    if ctype == "heroSection":
+        left = cleaned_props.get("left")
+        if isinstance(left, dict):
+            sub = left.get("subheading")
+            desc = left.get("description")
+            if isinstance(sub, str) and sub.strip() and not (isinstance(desc, str) and desc.strip()):
+                left["description"] = sub.strip()  # already cleaned by clean_urls; plain text like every AI-written description
+                left.pop("subheading", None)
+                warnings.append("Moved the hero subheading into description (the live hero renders description, not subheading)")
     cleaned: Dict[str, Any] = {
         "id": cid,
         "type": ctype,
-        "enabled": True,
+        # Keep an explicit opt-out: forcing True made set_layout unable to
+        # switch the site header/footer off (a custom htmlBlock replaces them).
+        "enabled": comp.get("enabled") is not False,
         "props": cleaned_props,
     }
+    # anchorId is a COMPONENT field (the wrapper renders it as the DOM id);
+    # models keep filing it under props, where nothing reads it — so a hero
+    # button targeting '#courses' scrolled nowhere. Hoist it.
+    props_anchor = cleaned_props.pop("anchorId", None)
+    anchor = comp.get("anchorId") or props_anchor
+    if isinstance(anchor, str) and anchor.strip():
+        slug = _anchor_slug(anchor)
+        if slug:
+            cleaned["anchorId"] = slug
     if isinstance(comp.get("style"), dict) and comp["style"]:
         cleaned["style"] = clean_urls(comp["style"], allowed_urls, warnings)
+    dark_style = _apply_dark_band(ctype, cleaned_props, cleaned.get("style"), warnings)
+    if dark_style:
+        cleaned["style"] = dark_style
     # Surface color belongs on the STYLE layer when a section shell is used:
     # props.backgroundColor only paints the inner content column, so a shell
     # section would render as an inset card with page-color gutters. Copy it
@@ -1691,7 +2534,104 @@ def coerce_hex_color(value: Any) -> Optional[str]:
     return None
 
 
-def _coerce_global_settings(raw: Any, base: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+# globalSettings.theme.palette: named hex colours + applyToTokens. The renderer
+# reads 16 known names (catalogue-palette.ts PALETTE_KEYS) and accepts #rgb or
+# #rrggbb in any case; the editor's palette card also shows other authored
+# names, so any identifier-like key with a hex value is kept AS AUTHORED (no
+# re-casing — a round trip must not rewrite the admin's values).
+_PALETTE_HEX_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+_PALETTE_KEY_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,39}$")
+_PALETTE_MAX_KEYS = 40
+# globalSettings.theme.contentMaxWidth: px of content, the range the renderer
+# honours (resolveContentMaxWidth).
+_CONTENT_MAX_WIDTH_RANGE = (320, 2400)
+
+
+def _clean_palette(raw: Any) -> Dict[str, Any]:
+    """The valid entries of a palette object ({} for anything else)."""
+    if not isinstance(raw, dict):
+        return {}
+    out: Dict[str, Any] = {}
+    for key, value in raw.items():
+        if len(out) >= _PALETTE_MAX_KEYS:
+            break
+        if key == "applyToTokens":
+            if isinstance(value, bool):
+                out[key] = value
+        elif isinstance(key, str) and _PALETTE_KEY_RE.match(key) and isinstance(value, str):
+            v = value.strip()
+            if _PALETTE_HEX_RE.match(v):
+                out[key] = v
+    return out
+
+
+def _clean_content_max_width(raw: Any) -> Optional[int]:
+    """A content width in px the renderer honours, else None.
+
+    Same rule as resolveContentMaxWidth (and the editor's palette card): round,
+    then 320–2400 or nothing. NOT a clamp — the renderer ignores 3000 and
+    shows the default width, so clamping it to 2400 would visibly narrow the
+    page on an unrelated edit."""
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, str):
+        try:
+            raw = float(raw.strip())
+        except ValueError:
+            return None
+    if not isinstance(raw, (int, float)) or raw != raw or raw in (float("inf"), float("-inf")):
+        return None
+    px = int(math.floor(raw + 0.5))  # Math.round, not banker's rounding
+    lo, hi = _CONTENT_MAX_WIDTH_RANGE
+    return px if lo <= px <= hi else None
+
+
+def _carry_theme_extras(
+    theme_in: Dict[str, Any], base_theme: Dict[str, Any], allow_new: bool = True
+) -> Dict[str, Any]:
+    """theme.palette / theme.contentMaxWidth for the clamp's output.
+
+    Incoming wins over base, per colour for the palette (so "change the accent"
+    keeps the other 15). An explicit null clears the key, the same contract as
+    primaryColor; a null colour inside an incoming palette removes that colour.
+
+    `allow_new=False` is for input that is the MODEL's own proposal (unpinned
+    generation, the chrome assistant): it may edit a palette / width the site
+    already has, but never add one to a site that has none — both are opt-in."""
+    out: Dict[str, Any] = {}
+
+    base_palette = _clean_palette(base_theme.get("palette"))
+    if "palette" in theme_in and theme_in.get("palette") is None:
+        palette: Dict[str, Any] = {}
+    else:
+        palette = dict(base_palette)
+        incoming = theme_in.get("palette")
+        if not allow_new and not base_palette:
+            incoming = None
+        if isinstance(incoming, dict):
+            for key, value in incoming.items():
+                if value is None:
+                    palette.pop(key, None)
+            palette.update(_clean_palette(incoming))
+    if palette:
+        out["palette"] = palette
+
+    base_width = _clean_content_max_width(base_theme.get("contentMaxWidth"))
+    if "contentMaxWidth" in theme_in and (allow_new or base_width is not None or theme_in.get("contentMaxWidth") is None):
+        width = _clean_content_max_width(theme_in.get("contentMaxWidth"))
+        if width is None and theme_in.get("contentMaxWidth") is not None:
+            # Junk from the model: keep the site's own width rather than drop it.
+            width = base_width
+    else:
+        width = base_width
+    if width is not None:
+        out["contentMaxWidth"] = width
+    return out
+
+
+def _coerce_global_settings(
+    raw: Any, base: Optional[Dict[str, Any]] = None, *, model_proposed: bool = False
+) -> Optional[Dict[str, Any]]:
     """Clamp the model's globalSettings to valid values (the theme presets,
     atmospheres, fonts, etc. the renderers actually support). Font label OR a
     known stack maps to a stack; anything else falls back to Inter.
@@ -1700,7 +2640,11 @@ def _coerce_global_settings(raw: Any, base: Optional[Dict[str, Any]] = None) -> 
     back to the base instead of to a hardcoded default — required by the chrome
     editor, whose prompt says "include ONLY the keys you actually changed": with
     no base, "switch the theme to ocean" also reset atmosphere, heading scale,
-    radius and the brand color to defaults."""
+    radius and the brand color to defaults.
+
+    `model_proposed=True` marks `raw` as the model's own output (not the
+    caller's pinned settings): it may then change a palette / content width
+    the base already has, but cannot introduce either."""
     if not isinstance(raw, dict):
         return None
     theme_in = raw.get("theme") if isinstance(raw.get("theme"), dict) else {}
@@ -1754,6 +2698,15 @@ def _coerce_global_settings(raw: Any, base: Optional[Dict[str, Any]] = None) -> 
             theme_out["primaryColor"] = primary
     elif coerce_hex_color(base_theme.get("primaryColor")):
         theme_out["primaryColor"] = coerce_hex_color(base_theme.get("primaryColor"))
+
+    # Opt-in site palette + content width (learner -utils/catalogue-palette.ts).
+    # The clamp above rebuilds `theme` from scratch, so these were silently
+    # DROPPED by every path that runs it: the wizard's pinned theme (applied
+    # over the site's theme) and the chrome assistant's merge both wiped a
+    # 16-colour palette on "add a page" or "make the corners sharper". Carry
+    # them through (incoming wins, base fills in), validated the way the
+    # renderer reads them; a site without either still gets neither.
+    theme_out.update(_carry_theme_extras(theme_in, base_theme, allow_new=not model_proposed))
 
     return {
         "theme": theme_out,
@@ -1893,6 +2846,91 @@ async def _repair_page(
     return _apply_ops_to_page(page, ops), warnings, usage or {}
 
 
+_ANCHOR_ROLE_HINTS = {
+    # '#target' → words that identify the section it means, by id/title/type
+    "courses": ("course", "program", "catalog", "catalogue", "offering"),
+    "programs": ("program", "course", "catalog", "catalogue"),
+    "features": ("feature", "offer", "why", "benefit"),
+    "about": ("about", "story", "mission"),
+    "contact": ("contact", "enquir", "inquir", "lead", "form"),
+    "pricing": ("pricing", "plan", "fee"),
+    "faq": ("faq", "question"),
+    "testimonials": ("testimonial", "review", "stories"),
+    "team": ("team", "faculty", "mentor"),
+    "gallery": ("gallery", "photo"),
+}
+
+
+def _anchor_slug(value: Any) -> str:
+    """One spelling for anchors and the '#targets' that point at them. The
+    learner scrolls with document.getElementById (case-sensitive), so both
+    sides must be slugged the same way."""
+    return _SLUG_RE.sub("-", str(value or "").strip().lstrip("#").lower()).strip("-")
+
+
+def resolve_dead_anchors(components: List[Dict[str, Any]], warnings: List[str], stampable: Optional[List[Dict[str, Any]]] = None) -> None:
+    """Give every '#target' button a section to land on.
+
+    The composer writes hero CTAs like {"target": "#courses"} and then never
+    sets anchorId "courses" on anything, so the page's main button scrolls
+    nowhere (a long-standing field bug — see the 7Cs home page). Rather than
+    trusting the model to close that loop, pick the section it evidently
+    meant: an exact id match, then an id/title containing the target word,
+    then a component whose id/title/type matches the target's role hints —
+    and stamp the anchor on it. Existing anchors are never moved. Mutates.
+    `stampable` limits which components may receive an anchor (the copilot
+    can only stamp the sections it is inserting)."""
+    if not components:
+        return
+    anchors = {c.get("anchorId") for c in components if c.get("anchorId")}
+    targets: List[str] = []
+
+    def take(btn: Any, key: str) -> None:
+        # Slug the target the way anchorId is slugged, and write that spelling
+        # back so '#Courses' / '#Top Courses' land on 'courses' / 'top-courses'.
+        if not isinstance(btn, dict):
+            return
+        t = str(btn.get(key) or "").strip()
+        if not (t.startswith("#") and len(t) > 1):
+            return
+        slug = _anchor_slug(t)
+        if not slug:
+            return
+        if t != f"#{slug}":
+            btn[key] = f"#{slug}"
+        targets.append(slug)
+
+    for c in components:
+        left = (c.get("props") or {}).get("left") or {}
+        for b in list(left.get("buttons") or []) + ([left["button"]] if isinstance(left.get("button"), dict) else []):
+            take(b, "target")
+        if c.get("type") in ("ctaBanner", "buttonBlock"):
+            btn = (c.get("props") or {}).get("button")
+            take(btn, "target" if isinstance(btn, dict) and btn.get("target") else "url")
+    for target in dict.fromkeys(targets):
+        if target in anchors:
+            continue
+
+        def text_of(c: Dict[str, Any]) -> str:
+            p = c.get("props") or {}
+            return " ".join(str(x) for x in (c.get("id"), c.get("type"), p.get("title"), p.get("headerText"), p.get("eyebrow"), p.get("heading")) if x).lower()
+
+        pool = stampable if stampable is not None else components
+        candidates = [c for c in pool if c.get("type") != "heroSection" and not c.get("anchorId")]
+        pick = next((c for c in candidates if str(c.get("id", "")).lower() == target), None)
+        if pick is None:
+            pick = next((c for c in candidates if target in text_of(c)), None)
+        if pick is None:
+            hints = _ANCHOR_ROLE_HINTS.get(target, ())
+            pick = next((c for c in candidates if any(h in text_of(c) for h in hints)), None)
+        if pick is None:
+            warnings.append(f"Button target '#{target}' has no matching section on the page")
+            continue
+        pick["anchorId"] = target
+        anchors.add(target)
+        warnings.append(f"Pointed '#{target}' at section '{pick.get('id')}'")
+
+
 def _sanitize_page(
     raw_json: str, req: GeneratePageRequest, catalog: Dict[str, Any], extra_allowed: Optional[set] = None
 ) -> tuple[Dict[str, Any], Optional[Dict[str, Any]], List[str]]:
@@ -1902,7 +2940,9 @@ def _sanitize_page(
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=502, detail=f"Model returned invalid JSON: {e}")
 
-    global_settings = _coerce_global_settings(data.get("globalSettings")) if isinstance(data, dict) else None
+    global_settings = (
+        _coerce_global_settings(data.get("globalSettings"), model_proposed=True) if isinstance(data, dict) else None
+    )
     page = data.get("page") if isinstance(data, dict) else None
     if page is None and isinstance(data, dict) and "components" in data:
         page = data  # model returned the page object directly
@@ -1929,6 +2969,7 @@ def _sanitize_page(
 
     if len(components) < 2:
         raise HTTPException(status_code=502, detail="Generation produced too few usable sections — please retry.")
+    resolve_dead_anchors(components, warnings)
 
     slug_source = req.route_slug or page.get("route") or req.page_type or "ai-page"
     route = _SLUG_RE.sub("-", str(slug_source).lower()).strip("-") or "ai-page"
@@ -1966,10 +3007,81 @@ async def estimate_page_generation(
     return preflight_tool_credits(db, tool_key=_TOOL_KEY, tool_params={}, institute_id=institute_id)
 
 
+_PEOPLE_SECTIONS = {"testimonialSection": "testimonials", "teamSection": "members"}
+
+
+# Role words the composer uses AS names when it has none ("Founder",
+# "Team Member", "Student"). They match ordinary prose, so they never count.
+_NAME_STOPWORDS = {
+    "founder", "cofounder", "team", "member", "student", "students", "teacher", "parent", "learner",
+    "director", "ceo", "cto", "head", "principal", "admin", "staff", "user", "customer", "client",
+    "name", "your", "our", "the", "and", "mentor", "trainer", "instructor", "professional", "alumni",
+}
+
+
+def _name_tokens(name: Any) -> List[str]:
+    """Significant words of a person's name ("Aditi R." → ["aditi"]); role
+    words are not names."""
+    return [w for w in re.findall(r"[^\W\d_]{3,}", str(name or "").lower()) if w not in _NAME_STOPWORDS]
+
+
+def strip_fabricated_people(page: Dict[str, Any], evidence: str, warnings: List[str]) -> int:
+    """Drop testimonials and team members whose names appear nowhere in what
+    the admin actually gave us (brief, imported site, institute name).
+
+    The doctrine says never invent a detail; a reference site with a quotes
+    band still makes the composer write "Aditi R., Student — 'I went from…'"
+    (the7cs reference, 2026-09-15). A fabricated review on a live school site
+    is a trust problem, not a design one, so this is enforced, not requested.
+    A section left empty is removed. Returns the number of entries dropped."""
+    if not isinstance(page, dict):
+        return 0
+    # Punctuation → spaces so "Priya," and "(Li Na)" still match as words.
+    corpus = " " + re.sub(r"[^\w]+", " ", str(evidence or "").lower()) + " "
+    dropped = 0
+    kept: List[Dict[str, Any]] = []
+    for comp in page.get("components") or []:
+        key = _PEOPLE_SECTIONS.get(str((comp or {}).get("type") or ""))
+        props = (comp or {}).get("props") if isinstance(comp, dict) else None
+        if not key or not isinstance(props, dict) or not isinstance(props.get(key), list):
+            kept.append(comp)
+            continue
+        real = []
+        for entry in props[key]:
+            name = str((entry or {}).get("name") or "").strip().lower() if isinstance(entry, dict) else ""
+            words = re.findall(r"[^\W\d_]{3,}", name)
+            tokens = _name_tokens(name)
+            # A name is "given" when one of its (non-role) words occurs in the
+            # evidence. A name made only of role words ("Founder") never is. A
+            # name with no 3-letter word at all ("Li Na") is checked whole.
+            if words:
+                given = any(f" {t}" in corpus for t in tokens)
+            else:
+                whole = re.sub(r"[^\w]+", " ", name)
+                given = bool(name) and f" {whole} " in corpus
+            if given:
+                real.append(entry)
+            else:
+                dropped += 1
+        props[key] = real
+        if real:
+            kept.append(comp)
+        else:
+            warnings.append(
+                f"Removed the '{comp.get('type')}' section: its {key} were not in your brief. "
+                "Add real ones in the editor if you have them — nothing is invented."
+            )
+    page["components"] = kept
+    if dropped:
+        warnings.append(f"Dropped {dropped} invented name(s) from testimonials/team")
+    return dropped
+
+
 async def _compose_one_page(
     body: GeneratePageRequest, catalog: Dict[str, Any], db, institute_id: str, actor_user_id: Optional[str],
     fixed_global: Optional[Dict[str, Any]] = None,
     inspiration: Optional[Dict[str, Any]] = None,
+    metering: Any = None,
 ) -> tuple[Dict[str, Any], Optional[Dict[str, Any]], List[str], str, str]:
     """Compose ONE page end-to-end: inspiration/site-import → prompt → LLM →
     auto-images → sanitize → bill. Returns (page, global_settings, warnings,
@@ -1978,16 +3090,20 @@ async def _compose_one_page(
     # A caller composing several pages analyses the screenshots once and passes
     # the spec in — the vision pass is the same for every page of a site.
     inspiration = dict(inspiration or {})
-    if not inspiration and body.inspiration_image_urls:
+    pre_warnings: List[str] = []
+    if not inspiration and (body.inspiration_image_urls or body.reference_url):
         try:
-            inspiration = await _analyze_inspiration(
-                body.inspiration_image_urls, db, institute_id, actor_user_id
-            )
+            sources = await _resolve_inspiration_sources(body, pre_warnings)
+            if sources:
+                inspiration = await _analyze_inspiration(sources, db, institute_id, actor_user_id)
         except Exception as e:  # noqa: BLE001
             logger.warning("[page-builder] inspiration analysis skipped: %s", e)
 
     site_corpus = ""
-    if body.source_url:
+    if body.source_url and is_figma_url(body.source_url):
+        if FIGMA_LINK_GUIDANCE not in pre_warnings:
+            pre_warnings.append(FIGMA_LINK_GUIDANCE)
+    elif body.source_url:
         try:
             site_corpus = await _import_site(body.source_url)
         except Exception as e:  # noqa: BLE001
@@ -2011,12 +3127,14 @@ async def _compose_one_page(
             data = json.loads(raw_json)
             page_obj = data.get("page") if isinstance(data, dict) else None
             if isinstance(page_obj, dict):
-                generated_urls = await _autogen_images(page_obj, db, institute_id, actor_user_id)
+                generated_urls = await _autogen_images(page_obj, db, institute_id, actor_user_id,
+                                                       **supported_kwargs(_autogen_images, {"metering": metering}))
                 raw_json = json.dumps(data)
         except Exception as e:  # noqa: BLE001
             logger.warning("[page-builder] auto-image pass skipped: %s", e)
 
     page, global_settings, warnings = _sanitize_page(raw_json, body, catalog, extra_allowed=generated_urls)
+    warnings[:0] = pre_warnings
     # Backstop for the reference colour: if we sampled a real accent hex from the
     # admin's screenshots and the model still returned a bare preset, apply it.
     # Matching the reference's colour is the cue people judge first, and it is
@@ -2024,6 +3142,19 @@ async def _compose_one_page(
     # remembering one line of the prompt.
     ref_palette = (inspiration.get("palette") or {}) if inspiration else {}
     ref_primary = coerce_hex_color(ref_palette.get("primary"))
+    if fixed_global is not None:
+        # Theme locked: the reference contributes LAYOUT only. Neither backstop
+        # may run, and any reference hex the model still painted is remapped.
+        ref_primary = None
+        ref_palette_locked, ref_palette = ref_palette, {}
+        moved = _recolour_reference_palette(page, ref_palette_locked, _derive_dark_surface(fixed_global.get("theme")))
+        if moved:
+            warnings.append(f"Kept the site's own theme: remapped {moved} reference colour(s) the composer had painted")
+    strip_fabricated_people(
+        page,
+        " ".join(filter(None, [body.brief, site_corpus, body.institute_name, *(i.caption or "" for i in body.images)])),
+        warnings,
+    )
     if ref_primary and isinstance(global_settings, dict):
         theme = global_settings.get("theme")
         if isinstance(theme, dict) and not theme.get("primaryColor"):
@@ -2059,7 +3190,7 @@ async def _compose_one_page(
             )
             # Did it actually adopt the reference? Until now nothing asked, so
             # the only detector was the admin looking at the published page.
-            issues += audit_reference_fidelity(page, global_settings, inspiration)
+            issues += audit_reference_fidelity(page, global_settings, inspiration, theme_locked=fixed_global is not None)
             fixable = [i for i in issues if i["severity"] == "fix"]
             if fixable:
                 logger.info("[page-builder] self-check found %d defect(s): %s",
@@ -2075,7 +3206,7 @@ async def _compose_one_page(
                     page_type=body.page_type or "homepage",
                     info_only=_is_info_only(body.brief),
                     inspiration=inspiration or None,
-                ) + audit_reference_fidelity(page, global_settings, inspiration)
+                ) + audit_reference_fidelity(page, global_settings, inspiration, theme_locked=fixed_global is not None)
             warnings.extend(f"{i['message']} {i['hint']}" for i in issues)
         except Exception as e:  # noqa: BLE001 — a page with defects beats no page
             logger.warning("[page-builder] self-check skipped: %s", e)
@@ -2098,6 +3229,9 @@ async def _compose_one_page(
             user_role=None,
             idempotency_key=f"{_TOOL_KEY}:{run_id}",
             usage_markup=_USAGE_MARKUP,
+            use_case=UC.PAGE_BUILDER,
+            metering=metering,
+            usage_context={"run_id": run_id, "page_type": body.page_type or "homepage"},
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[page-builder] billing skipped: %s", e)
@@ -2110,6 +3244,7 @@ async def generate_page(
     body: GeneratePageRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> GeneratePageResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -2140,7 +3275,9 @@ async def generate_page(
     # belong in a prompt or in a response the editor merges back.
     pinned = _coerce_global_settings(body.global_settings) if body.global_settings else None
     page, global_settings, warnings, model_used, run_id = await _compose_one_page(
-        body, catalog, db, institute_id, actor_user_id, fixed_global=pinned
+        body, catalog, db, institute_id, actor_user_id, fixed_global=pinned,
+        **supported_kwargs(_compose_one_page,
+                           {"metering": _page_metering(request, institute_id, current_user, actor_user_id)}),
     )
     return GeneratePageResponse(
         page=page, global_settings=global_settings, run_id=run_id, model=model_used, warnings=warnings
@@ -2216,11 +3353,48 @@ def _build_edit_prompt(req: EditPageRequest, catalog: Dict[str, Any], attachment
               "place it using its URL from PROVIDED IMAGES.\n"
               "MAPPING HINTS for a transcribed card grid: a small category label above each card title "
               "is the card's `chips` (do NOT drop it — it is what makes the grid scannable); a per-card "
-              "link like 'View details' is the card's `link` {text,url}; leave `icon`/`iconName` UNSET "
-              "when the reference shows no icon (an unset icon renders nothing, which is correct — do "
-              "not substitute a decorative emoji); a tinted header band above each card's body means "
-              "featureGrid style 'panel' with headerVariant."
+              "link like 'View details' is the card's `link` {text,url}; when the reference shows an "
+              "icon or pictogram on a tile (most icon strips and course/category tiles do), set "
+              "`iconName` from the ICON LIBRARY — an iconless tile next to iconed ones looks unfinished; "
+              "leave `icon`/`iconName` UNSET only when the reference clearly shows text-only cards (an "
+              "unset icon renders nothing — never substitute a decorative emoji); a tinted header band "
+              "above each card's body means featureGrid style 'panel' with headerVariant.\n"
+              "IF IT IS A FULL-PAGE DESIGN (or the admin asks to make the page 'like this'): REBUILD "
+              "THE WHOLE PAGE from it — this is the one case where a large ops list is right. "
+              "(a) `remove` every placeholder/template component already on the page that the design "
+              "does not have. (b) Emit one `insert` per section IN TOP-TO-BOTTOM ORDER; the first with "
+              "afterId null, every following one with afterId = the id of the section you inserted "
+              "just before it (a new id is a valid anchor). (c) Map sections onto the vocabulary: hero → "
+              "heroSection layout 'split' (right.image \"gen:…\" when the design shows art) with the "
+              "design's headline, subheading and both button labels; an icon strip → featureGrid "
+              "columns 4 style 'cards' with a one-line description per tile (never leave description "
+              "empty); a 'Popular Courses / View All' band → a sectionHeading (eyebrow = the band's "
+              "label, anchorId 'courses') followed by a featureGrid style 'tinted' whose tiles carry "
+              "the course names with a short description and a `link` {text:'View course', url:…}; "
+              "stats → statsHighlights; steps → stepsProcess; final band → ctaBanner. Every tile that "
+              "shows an icon in the design gets an iconName from the ICON LIBRARY (course tiles "
+              "included). A button whose target does not exist on the page (a 'Watch Intro' with no "
+              "video, a '#section' that is not built) is DROPPED, not left pointing nowhere. A "
+              "full-bleed hero keeps styles.roundedEdges false. The attached screenshot is a "
+              "REFERENCE — never set it as right.image or any other image field; leave the field "
+              "empty (or use \"gen:…\" when IMAGE GENERATION is on). (d) COLOURS: a "
+              "dark hero/footer is a SURFACE — put it in that component's props.backgroundColor "
+              "(the renderer switches the ink to light automatically) and NEVER in theme.primaryColor; "
+              "theme.primaryColor is the BUTTON colour from the design's palette (send it with "
+              "updateGlobalSettings, hex only). Give alternating sections a light tint "
+              "(e.g. #F8FAFC) so the bands read like the design. (e) The site header and footer are "
+              "global chrome edited elsewhere — do not insert header/footer components; in `reply`, "
+              "tell the admin which nav labels and footer columns the design shows so they can set "
+              "them under Site chrome."
         )
+    parts.append(
+        "## ICON LIBRARY\nfeatureGrid features[].iconName accepts ONLY these names (Phosphor): "
+        "GraduationCap, Rocket, Target, UsersThree, Code, Brain, Trophy, Lightbulb, ShieldCheck, ChartLineUp, "
+        "Clock, Star, BookOpen, Certificate, ChatsCircle, Wrench, Sparkle, Medal, Briefcase, Globe. Any other "
+        "name (Lucide/Material names like MessageSquare, Users, Monitor, Award) renders NO icon. Pick the "
+        "closest one from this list. stepsProcess uses steps[].icon (same names, or an emoji) and only when "
+        "nodeStyle is 'icon'."
+    )
     if req.history:
         convo = "\n".join(f"{t.role}: {t.content}" for t in req.history[-6:])
         parts.append("## RECENT CONVERSATION\n" + convo)
@@ -2242,7 +3416,7 @@ def _build_edit_prompt(req: EditPageRequest, catalog: Dict[str, Any], attachment
     parts.append(
         "## OUTPUT CONTRACT\nReturn ONLY JSON of this shape (no markdown, no commentary):\n"
         '{"reply": "<one friendly sentence summarizing what you changed>", "ops": [\n'
-        '  {"op": "insert", "component": {"id":"<kebab>","type":"<type>","enabled":true,"props":{…},"style":{…}?}, "afterId": "<existing-id or null to prepend>", "note": "<plain-language>"},\n'
+        '  {"op": "insert", "component": {"id":"<kebab>","type":"<type>","enabled":true,"props":{…},"style":{…}?}, "afterId": "<existing-id, the id of an insert earlier in this list, or null to prepend>", "note": "<plain-language>"},\n'
         '  {"op": "update", "id": "<existing-id>", "propsPatch": {…}?, "stylePatch": {…}?, "note": "<plain-language>"},\n'
         '  {"op": "remove", "id": "<existing-id>", "note": "<plain-language>"},\n'
         '  {"op": "move", "id": "<existing-id>", "afterId": "<existing-id or null>", "note": "<plain-language>"},\n'
@@ -2258,7 +3432,30 @@ def _build_edit_prompt(req: EditPageRequest, catalog: Dict[str, Any], attachment
     return "\n\n".join(parts)
 
 
-def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], extra_allowed: Optional[set] = None) -> tuple[List[Dict[str, Any]], str, List[str]]:
+def _mockup_urls_from_brief(brief: str, image_urls: List[str]) -> set:
+    """Attachment URLs the vision pass classified as a screenshot / mockup /
+    template sheet (class A or C) rather than a photo/logo (class B). With ONE
+    attachment the classification is unambiguous; with several, the brief
+    does not map lines to URLs, so only an all-mockup brief excludes them.
+    Fails SAFE: anything ambiguous (both kinds of words, no class marker)
+    keeps the images usable — a stripped photo the admin meant to place is
+    worse than a mockup that slips through."""
+    text = (brief or "").strip()
+    if not text or not image_urls:
+        return set()
+    head = text[:160].upper()
+    marker = re.match(r"^\s*(?:IMAGE\s*\d+\s*[:\-]\s*)?[\(\[]?([ABC])[\)\]:.\-]", head)
+    cls = marker.group(1) if marker else None
+    mock_words = ("FULL-PAGE DESIGN", "TEMPLATE SHEET", "SCREENSHOT", "MOCKUP", "MOCK-UP", "WIREFRAME")
+    photo_words = ("PHOTO", "LOGO", "GRAPHIC", "ILLUSTRATION", "PICTURE", "PORTRAIT", "HEADSHOT")
+    is_mockup = cls in ("A", "C") or any(w in head for w in mock_words)
+    is_photo = cls == "B" or any(w in head for w in photo_words)
+    if is_mockup and not is_photo:
+        return set(image_urls)
+    return set()
+
+
+def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], extra_allowed: Optional[set] = None, mockup_urls: Optional[set] = None) -> tuple[List[Dict[str, Any]], str, List[str]]:
     warnings: List[str] = []
     try:
         data = json.loads(raw_json)
@@ -2269,7 +3466,14 @@ def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], 
 
     reply = str(data.get("reply") or "").strip()
     allowed_types = {c["type"] for c in catalog["components"]}
-    allowed_urls = {i.url for i in req.images} | (extra_allowed or set())
+    # A screenshot/mockup the admin attached is a REFERENCE, never page art:
+    # with image generation off the model reached for the only URL it had and
+    # put the whole template sheet in the hero. Keep it out of the allowlist.
+    allowed_urls = ({i.url for i in req.images} - (mockup_urls or set())) | (extra_allowed or set())
+    # Images ALREADY on the page are trusted (the variants endpoint uses the
+    # same rule): a patch that re-sends a section's object — say the whole
+    # filterSidebar with its promo.screenImage — must not blank its own art.
+    allowed_urls |= _collect_page_image_urls(req.page, set()) - (mockup_urls or set())
     # Ids that exist on the page (top-level + slot children) — ops may only
     # reference these (inserts bring their own new id).
     existing_ids: set = set()
@@ -2289,6 +3493,13 @@ def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], 
 
     clean_ops: List[Dict[str, Any]] = []
     seen_ids = set(existing_ids)
+    # Ids created by earlier inserts in THIS batch. The editor applies ops in
+    # order and `afterId: null` means PREPEND, so a page rebuilt as several
+    # inserts that all say null lands in REVERSE order (hero at the bottom —
+    # field case: Smart AI Academy, 2026-09-14). Two fixes: an insert may now
+    # anchor on an id inserted just before it, and a null afterId following
+    # another insert is read as "continue the sequence", not "start over".
+    inserted_ids: List[str] = []
     for op in data["ops"]:
         if not isinstance(op, dict):
             continue
@@ -2299,9 +3510,12 @@ def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], 
             if comp is None:
                 continue
             after = op.get("afterId")
-            if after is not None and after not in existing_ids:
+            if after is not None and after not in existing_ids and after not in inserted_ids:
                 warnings.append("insert.afterId not on page — appended to end")
                 after = None
+            if after is None and inserted_ids:
+                after = inserted_ids[-1]
+            inserted_ids.append(comp["id"])
             clean_ops.append({"op": "insert", "component": comp, "afterId": after, "note": note})
         elif kind == "update":
             oid = op.get("id")
@@ -2349,7 +3563,7 @@ def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], 
                 warnings.append(f"move skipped — unknown id '{oid}'")
                 continue
             after = op.get("afterId")
-            if after is not None and after not in existing_ids:
+            if after is not None and after not in existing_ids and after not in inserted_ids:
                 after = None
             clean_ops.append({"op": "move", "id": oid, "afterId": after, "note": note})
         elif kind == "updateGlobalSettings":
@@ -2370,6 +3584,15 @@ def _sanitize_ops(raw_json: str, req: EditPageRequest, catalog: Dict[str, Any], 
         else:
             warnings.append(f"Dropped unknown op '{kind}'")
 
+    # Anchors can only be stamped on components we are inserting (an update op
+    # patches props/style, not the component's anchorId), so resolve against
+    # the page as it will look with the inserts applied and let the resolver
+    # pick among the new sections; existing sections keep their anchors.
+    inserted = [op["component"] for op in clean_ops if op["op"] == "insert"]
+    if inserted:
+        existing = [c for c in (req.page.get("components") or []) if isinstance(c, dict)]
+        resolve_dead_anchors(existing + inserted, warnings, stampable=inserted)
+
     return clean_ops, reply, warnings
 
 
@@ -2378,6 +3601,7 @@ async def edit_page(
     body: EditPageRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> EditPageResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -2390,6 +3614,7 @@ async def edit_page(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
 
     estimate = preflight_tool_credits(db, tool_key=_EDIT_TOOL_KEY, tool_params={}, institute_id=institute_id)
     if estimate.get("sufficient") is False:
@@ -2435,12 +3660,16 @@ async def edit_page(
         try:
             data = json.loads(raw_json)
             if isinstance(data, dict) and isinstance(data.get("ops"), list):
-                generated_urls = await _autogen_images(data["ops"], db, institute_id, actor_user_id)
+                generated_urls = await _autogen_images(data["ops"], db, institute_id, actor_user_id,
+                                                       **supported_kwargs(_autogen_images, {"metering": meter_ctx}))
                 raw_json = json.dumps(data)
         except Exception as e:  # noqa: BLE001
             logger.warning("[page-copilot] auto-image pass skipped: %s", e)
 
-    ops, reply, warnings = _sanitize_ops(raw_json, body, catalog, extra_allowed=generated_urls)
+    ops, reply, warnings = _sanitize_ops(
+        raw_json, body, catalog, extra_allowed=generated_urls,
+        mockup_urls=_mockup_urls_from_brief(attachment_brief, [i.url for i in body.images]),
+    )
 
     try:
         record_tool_billing(
@@ -2455,6 +3684,9 @@ async def edit_page(
             user_role=None,
             idempotency_key=f"{_EDIT_TOOL_KEY}:{run_id}",
             usage_markup=_USAGE_MARKUP,
+            use_case=UC.PAGE_BUILDER,
+            metering=meter_ctx,
+            usage_context={"run_id": run_id},
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[page-copilot] billing skipped: %s", e)
@@ -2510,10 +3742,9 @@ def _collect_page_image_urls(node: Any, out: set, depth: int = 0) -> set:
         return out
     if isinstance(node, dict):
         for k, v in node.items():
-            lk = k.lower()
-            if lk in _IMAGE_KEYS and isinstance(v, str) and v:
+            if is_image_key(k) and isinstance(v, str) and v:
                 out.add(v)
-            elif lk in _IMAGE_LIST_KEYS and isinstance(v, list):
+            elif is_image_list_key(k) and isinstance(v, list):
                 out.update(u for u in v if isinstance(u, str) and u)
             else:
                 _collect_page_image_urls(v, out, depth + 1)
@@ -2583,8 +3814,8 @@ def _build_variants_prompt(
         parts.append(
             f"The current section is a '{target.get('type')}'. Prefer keeping that type; switch to a "
             "different component only when the instruction genuinely calls for a different kind of "
-            "section, and never to header, footer or productPageOffer (an admin must bind that one "
-            "to a product page by hand, so a generated one renders as nothing)."
+            "section, and never to header, footer, productPageOffer, folderBrowser or learningPath (an admin "
+            "must bind those to a product page / folder library by hand, so a generated one renders as nothing)."
         )
     parts.append(_VOCAB_HEADER + json.dumps(vocab, ensure_ascii=False))
     parts.append("## STYLE VOCABULARY\n" + json.dumps(catalog["styleSchema"], ensure_ascii=False))
@@ -2647,6 +3878,7 @@ async def generate_section_variants(
     body: SectionVariantsRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> SectionVariantsResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -2657,6 +3889,7 @@ async def generate_section_variants(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
 
     target = _find_component(body.page, body.component_id)
     if target is None:
@@ -2706,7 +3939,7 @@ async def generate_section_variants(
             continue
         # productPageOffer needs an admin-chosen product page, so a generated
         # one is guaranteed to render as nothing (audit rule 'offer-unbound').
-        if comp_in.get("type") == "productPageOffer" and comp_in.get("type") != target.get("type"):
+        if comp_in.get("type") in ("productPageOffer", "folderBrowser", "learningPath") and comp_in.get("type") != target.get("type"):
             rejected += 1
             continue
         # Fresh seen_ids per variant: they are alternatives, not siblings, so
@@ -2753,6 +3986,9 @@ async def generate_section_variants(
             user_role=None,
             idempotency_key=f"{_EDIT_TOOL_KEY}:{run_id}",
             usage_markup=_USAGE_MARKUP,
+            use_case=UC.PAGE_BUILDER,
+            metering=meter_ctx,
+            usage_context={"run_id": run_id},
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[page-section] billing skipped: %s", e)
@@ -2768,6 +4004,7 @@ _FONT_FAMILIES = {
     "Inter", "Roboto", "Open Sans", "Poppins", "Lato", "Montserrat", "Mulish", "Figtree",
     "Outfit", "Nunito", "Space Grotesk", "Playfair Display", "Fraunces", "Newsreader",
     "Lora", "DM Serif Display", "Rubik", "Quicksand", "Baloo 2",
+    "Noto Sans Devanagari", "Mukta", "Hind", "Noto Serif Devanagari", "Tiro Devanagari Hindi",
 }
 _ATMOSPHERES = {"flat", "soft", "mesh", "aurora"}
 _INTENSITIES = {"subtle", "medium", "bold"}
@@ -2791,6 +4028,38 @@ def _theme_value_reference() -> str:
         f"- motion.personality: {sorted(_MOTIONS)}\n"
         f"- fonts.family (body) and fonts.headingFamily (headings): {sorted(_FONT_FAMILIES)}"
     )
+
+
+#: globalSettings.theme.palette keys (learner -utils/catalogue-palette.ts PALETTE_KEYS).
+_PATCH_PALETTE_KEYS = (
+    "text", "body", "muted", "muted2", "primary", "gold", "accent", "olive", "cream", "canvas",
+    "sand", "border", "borderStrong", "accentOnDark", "bodyOnDark", "outline",
+)
+#: globalSettings.theme.contentMaxWidth range (resolveContentMaxWidth).
+_PATCH_WIDTH_MIN, _PATCH_WIDTH_MAX = 320, 2400
+
+
+def _validate_palette_patch(raw: Any, warnings: List[str]) -> Dict[str, Any]:
+    """A theme.palette PATCH: known keys with a hex value (None removes one) and applyToTokens."""
+    if not isinstance(raw, dict):
+        warnings.append("Ignored theme.palette — not an object of named colours")
+        return {}
+    out: Dict[str, Any] = {}
+    for key, value in raw.items():
+        if key == "applyToTokens":
+            if isinstance(value, bool) or value is None:
+                out[key] = value
+            else:
+                warnings.append("Ignored theme.palette.applyToTokens — not true/false")
+        elif key not in _PATCH_PALETTE_KEYS:
+            warnings.append(f"Ignored unknown theme.palette key '{key}'")
+        elif value is None:
+            out[key] = None
+        elif coerce_hex_color(value):
+            out[key] = coerce_hex_color(value)
+        else:
+            warnings.append(f"Ignored theme.palette.{key} — not a hex colour")
+    return out
 
 
 def _validate_global_patch(patch: Dict[str, Any], warnings: List[str]) -> Dict[str, Any]:
@@ -2831,6 +4100,24 @@ def _validate_global_patch(patch: Dict[str, Any], warnings: List[str]) -> Dict[s
             }
             if atm_out:
                 theme_out["atmosphere"] = atm_out
+        # Opt-in design tokens (learner -utils/catalogue-palette.ts): the named
+        # palette and the content column width. Kept only when valid; the
+        # merge (applyOps / website_edit) folds a palette in key by key.
+        if "palette" in theme_in:
+            palette_out = _validate_palette_patch(theme_in.get("palette"), warnings)
+            if palette_out:
+                theme_out["palette"] = palette_out
+        if "contentMaxWidth" in theme_in:
+            width = theme_in.get("contentMaxWidth")
+            if width is None:
+                theme_out["contentMaxWidth"] = None  # explicit reset to the default width
+            elif (not isinstance(width, bool) and isinstance(width, (int, float)) and width == int(width)
+                  and _PATCH_WIDTH_MIN <= int(width) <= _PATCH_WIDTH_MAX):
+                theme_out["contentMaxWidth"] = int(width)
+            else:
+                warnings.append(
+                    f"Ignored theme.contentMaxWidth — not a whole px value from {_PATCH_WIDTH_MIN} to {_PATCH_WIDTH_MAX}"
+                )
         if theme_out:
             out["theme"] = theme_out
 
@@ -2915,6 +4202,7 @@ async def derive_brand_kit(
     body: BrandKitRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> BrandKitResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -2922,6 +4210,7 @@ async def derive_brand_kit(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
 
     estimate = preflight_tool_credits(db, tool_key=_BRAND_TOOL_KEY, tool_params={}, institute_id=institute_id)
     if estimate.get("sufficient") is False:
@@ -2988,6 +4277,9 @@ async def derive_brand_kit(
             user_role=None,
             idempotency_key=f"{_BRAND_TOOL_KEY}:{run_id}",
             usage_markup=_USAGE_MARKUP,
+            use_case=UC.PAGE_BUILDER,
+            metering=meter_ctx,
+            usage_context={"run_id": run_id},
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[brand-kit] billing skipped: %s", e)
@@ -3026,6 +4318,7 @@ async def generate_page_image(
     body: GenerateImageRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> GenerateImageResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -3035,6 +4328,7 @@ async def generate_page_image(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
 
     wrapper, default_aspect = _IMAGE_KIND_STYLE.get(body.kind, _IMAGE_KIND_STYLE["image"])
     prompt = wrapper.format(p=body.prompt.strip())
@@ -3042,13 +4336,15 @@ async def generate_page_image(
     n = max(1, min(3, body.count))
 
     results = await asyncio.gather(
-        *[_generate_and_upload_image(prompt, aspect, body.kind, db, institute_id, actor_user_id) for _ in range(n)],
+        *[_generate_and_upload_image(prompt, aspect, body.kind, db, institute_id, actor_user_id,
+                                     **supported_kwargs(_generate_and_upload_image, {"metering": meter_ctx}))
+          for _ in range(n)],
         return_exceptions=True,
     )
     urls = [r for r in results if isinstance(r, str) and r]
     if not urls:
         raise HTTPException(status_code=502, detail="Image generation failed — please try again.")
-    return GenerateImageResponse(urls=urls, model=_IMAGE_MODEL)
+    return GenerateImageResponse(urls=urls, model=_image_model())
 
 
 # ─── Multi-page site (one brief → several coherent pages) ────────────────────
@@ -3087,7 +4383,13 @@ class GenerateSiteRequest(BaseModel):
     # every page — a per-page vision pass would cost N times as much for an
     # identical answer, and could hand each page a slightly different palette.
     inspiration_image_urls: List[str] = Field(default_factory=list)
+    # A website whose LAYOUT the whole site should follow — captured once,
+    # shared by every page (see GeneratePageRequest.reference_url).
+    reference_url: Optional[str] = None
     design_language: Optional[str] = None
+    # The site's EXISTING theme (theme/fonts/motion). When set, every page is
+    # composed INTO it and the reference contributes structure only.
+    global_settings: Optional[Dict[str, Any]] = None
 
 
 class SitePageOut(BaseModel):
@@ -3107,6 +4409,7 @@ async def generate_site(
     body: GenerateSiteRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> GenerateSiteResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -3116,6 +4419,7 @@ async def generate_site(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
 
     # De-dup, keep order, always lead with homepage, cap at 5 pages.
     seen: set = set()
@@ -3147,13 +4451,18 @@ async def generate_site(
     shared_global: Optional[Dict[str, Any]] = None
     model_used = _DEFAULT_MODEL
 
+    # "Keep my theme" for a whole site: the field was accepted and then never
+    # read, so every multi-page build proposed a fresh theme regardless.
+    if body.global_settings:
+        shared_global = _coerce_global_settings(body.global_settings)
+
     # One vision pass for the whole site, reused by every page below.
     shared_inspiration: Dict[str, Any] = {}
-    if body.inspiration_image_urls:
+    if body.inspiration_image_urls or body.reference_url:
         try:
-            shared_inspiration = await _analyze_inspiration(
-                body.inspiration_image_urls, db, institute_id, actor_user_id
-            )
+            sources = await _resolve_inspiration_sources(body, warnings)
+            if sources:
+                shared_inspiration = await _analyze_inspiration(sources, db, institute_id, actor_user_id)
         except Exception as e:  # noqa: BLE001
             logger.warning("[page-builder] site inspiration analysis skipped: %s", e)
 
@@ -3176,6 +4485,7 @@ async def generate_site(
             page, gs, w, model_used, _ = await _compose_one_page(
                 sub, catalog, db, institute_id, actor_user_id, fixed_global=shared_global,
                 inspiration=shared_inspiration,
+                **supported_kwargs(_compose_one_page, {"metering": meter_ctx}),
             )
         except HTTPException:
             if pages:
@@ -3185,7 +4495,9 @@ async def generate_site(
             shared_global = gs
         page["route"] = pt if pt != "homepage" else (page.get("route") or "home")
         pages.append(SitePageOut(page_type=pt, page=page))
-        warnings.extend(w)
+        # The Figma guidance can come from the shared reference AND the
+        # homepage's source_url — say it once.
+        warnings.extend(x for x in w if not (x == FIGMA_LINK_GUIDANCE and x in warnings))
 
     if not pages:
         raise HTTPException(status_code=502, detail="Site generation produced no pages — please retry.")
@@ -3267,7 +4579,10 @@ def _build_intake_prompt(req: IntakeRequest) -> str:
         "color/style direction (including anything learned from uploaded logo/inspiration), and which "
         "uploaded photos exist. Be specific — the composer only knows what the brief says. Keep the "
         "brief under 350 words — dense, no filler.\n"
-        "ALWAYS return `brief` as your best current draft even before ready (the admin can jump ahead)."
+        "ALWAYS return `brief` as your best current draft even before ready (the admin can jump ahead).\n"
+        "FIGMA LINKS: nothing here can open a figma.com link (it shows Figma's sign-in page). If the admin "
+        f"shares one, say: \"{FIGMA_LINK_GUIDANCE}\" and ask for screenshots of the frames "
+        "(request_upload='inspiration'). Never claim to have seen a Figma design."
     )
     if req.institute_name:
         parts.append(f"## INSTITUTE\nName: {req.institute_name}")
@@ -3298,6 +4613,52 @@ def _build_intake_prompt(req: IntakeRequest) -> str:
     return "\n\n".join(parts)
 
 
+def _latest_user_figma_link(history: List[IntakeTurn]) -> Optional[str]:
+    """The figma.com link in the admin's LATEST message, if any."""
+    for turn in reversed(history):
+        if turn.role != "assistant":
+            return find_figma_url(turn.content or "")
+    return None
+
+
+_FIGMA_SCREENSHOT_ASK = "Could you upload screenshots of the frames you want the page to follow?"
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _drop_figma_sentences(text: str) -> str:
+    """``text`` without any sentence that mentions Figma — a model that ignored
+    the FIGMA LINKS rule ("I've looked at your Figma design…", "match the Figma
+    file") must not reach the admin or the composer. Line breaks are kept."""
+    lines = []
+    for line in (text or "").splitlines():
+        kept = [s for s in _SENTENCE_SPLIT_RE.split(line) if "figma" not in s.lower()]
+        lines.append(" ".join(kept).rstrip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def _latest_user_has_images(history: List[IntakeTurn]) -> bool:
+    """The admin's LATEST message came with uploaded images (e.g. the frames' screenshots)."""
+    for turn in reversed(history):
+        if turn.role != "assistant":
+            # Only https uploads are sent to the model (see intake_turn's attachments).
+            return any(isinstance(u, str) and u.startswith("https://") for u in turn.image_urls or [])
+    return False
+
+
+def _apply_figma_link_guard(reply: str, request_upload: Optional[str],
+                            screenshots_attached: bool = False) -> tuple[str, Optional[str]]:
+    """The admin just pasted a Figma link: the reply opens with the guidance,
+    keeps only the model's sentences that don't talk about Figma (it cannot
+    have seen the design), asks for screenshots when nothing else is left, and
+    the screenshot uploader opens. When the same message already carries
+    screenshots, the model HAS seen the frames: only the guidance is added."""
+    if screenshots_attached:
+        rest = reply.replace(FIGMA_LINK_GUIDANCE, "").strip()
+        return (f"{FIGMA_LINK_GUIDANCE}\n\n{rest}" if rest else FIGMA_LINK_GUIDANCE), request_upload
+    rest = _drop_figma_sentences(reply.replace(FIGMA_LINK_GUIDANCE, ""))
+    return f"{FIGMA_LINK_GUIDANCE}\n\n{rest or _FIGMA_SCREENSHOT_ASK}", request_upload or "inspiration"
+
+
 def _parse_intake_json(raw: str) -> Dict[str, Any]:
     """Tolerant parse: strip code fences / leading prose around the JSON."""
     text = raw.strip()
@@ -3314,6 +4675,7 @@ async def intake_turn(
     body: IntakeRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> IntakeResponse:
     from ..services.chat_llm_client import ChatLLMClient
     from ..services.api_key_resolver import ApiKeyResolver
@@ -3324,6 +4686,7 @@ async def intake_turn(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
     if len(body.history) > _MAX_INTAKE_TURNS:
         raise HTTPException(status_code=400, detail="This conversation is too long — please generate or start over.")
 
@@ -3370,6 +4733,14 @@ async def intake_turn(
             msg["content"] = (str(msg["content"]) + f"\n[uploaded {len(atts)} image(s)]").strip()
     if len(messages) == 1:
         messages.append({"role": "user", "content": "Hi — I want to build a website for my institute."})
+    figma_link = _latest_user_figma_link(body.history)
+    figma_shots = bool(figma_link) and _latest_user_has_images(body.history)
+    if figma_link:
+        messages[-1]["content"] = (
+            str(messages[-1].get("content") or "")
+            + "\n\n(The link above is a Figma file. It cannot be opened here — follow the FIGMA LINKS rule."
+            + (" The admin attached screenshots with this message: use those.)" if figma_shots else ")")
+        )
     # Vision turns pull chat models into prose mode ("Nice logo! …") — restate
     # the contract inside the final user message so every turn stays JSON.
     messages[-1]["content"] = (
@@ -3446,6 +4817,16 @@ async def intake_turn(
     page_type = data.get("page_type")
     if page_type not in _PAGE_TYPE_LABELS:
         page_type = "homepage"
+    reply = _clean_string(str(data.get("reply") or "")).strip()[:2000] or "Tell me about your institute!"
+    ready = bool(data.get("ready"))
+    brief = _clean_string(str(data.get("brief"))) if data.get("brief") else None
+    if figma_link:
+        reply, req_upload = _apply_figma_link_guard(reply, req_upload, screenshots_attached=figma_shots)
+        if not figma_shots:
+            # Nothing has been seen yet: wait for the screenshots, and keep "match
+            # the Figma file" out of the brief the composer reads.
+            ready = False
+            brief = _drop_figma_sentences(brief or "") or None
 
     try:
         record_tool_billing(
@@ -3460,17 +4841,20 @@ async def intake_turn(
             user_role=None,
             idempotency_key=f"{_INTAKE_TOOL_KEY}:{run_id}",
             usage_markup=_USAGE_MARKUP,
+            use_case=UC.PAGE_BUILDER,
+            metering=meter_ctx,
+            usage_context={"run_id": run_id},
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[page-intake] billing skipped: %s", e)
 
     return IntakeResponse(
-        reply=_clean_string(str(data.get("reply") or "")).strip()[:2000] or "Tell me about your institute!",
+        reply=reply,
         chips=chips,
         request_upload=req_upload,
         received_image_kind=recv_kind,
-        ready=bool(data.get("ready")),
-        brief=(_clean_string(str(data.get("brief"))) if data.get("brief") else None),
+        ready=ready,
+        brief=brief,
         page_type=page_type,
         whole_site=bool(data.get("whole_site")),
         run_id=run_id,
@@ -3534,9 +4918,11 @@ def _build_chrome_prompt(req: SiteChromeRequest, catalog: Dict[str, Any]) -> str
     )
     parts.append(
         "## HEADER RULES\n"
-        "- `navigation`: [{label, route, openInSameTab}] — the main menu. `route` is a page route "
+        "- `navigation`: [{label, route, openInSameTab, enabled}] — the main menu. `route` is a page route "
         "from the PAGES list below (use \"\" for home), an #anchor, or an absolute URL. NEVER invent "
-        "a route: a menu item pointing at a page that does not exist is a dead link.\n"
+        "a route: a menu item pointing at a page that does not exist is a dead link. `enabled: false` "
+        "means the admin deliberately hid that link; carry the flag through untouched unless the "
+        "instruction is to show or hide it.\n"
         "- `authLinks`: [{label, route}] — the buttons on the RIGHT. Use route 'login' for Login and "
         "'signup' for Sign Up. An enquiry/registration button that opens a campaign form needs an "
         "audienceId the ADMIN must choose, so emit it with route '' and NO audienceId; the admin "
@@ -3572,7 +4958,10 @@ def _build_chrome_prompt(req: SiteChromeRequest, catalog: Dict[str, Any]) -> str
     )
     parts.append(
         "## CURRENT SETTINGS (edit these; preserve anything the instruction does not mention)\n"
-        + json.dumps(req.global_settings or {}, ensure_ascii=False)[:12000]
+        # The site-language dictionary (globalSettings.i18n) can be large and is not
+        # chrome: keep it out of this window so it never crowds out header/footer
+        # context. _merge_chrome deep-copies the full settings, so it survives.
+        + json.dumps({k: v for k, v in (req.global_settings or {}).items() if k != "i18n"}, ensure_ascii=False)[:12000]
     )
     if req.history:
         parts.append(
@@ -3610,7 +4999,7 @@ def _merge_chrome(current: Dict[str, Any], proposed: Any, warnings: List[str]) -
     # wiped the brand color, because the clamp defaults every absent key.
     theme_like = {k: v for k, v in proposed.items() if k in _CHROME_WRITABLE_KEYS}
     if theme_like:
-        coerced = _coerce_global_settings(theme_like, base=merged)
+        coerced = _coerce_global_settings(theme_like, base=merged, model_proposed=True)
         if coerced:
             for k in _CHROME_WRITABLE_KEYS:
                 if k in theme_like and k in coerced:
@@ -3626,8 +5015,10 @@ def _merge_chrome(current: Dict[str, Any], proposed: Any, warnings: List[str]) -
             props_in = section_in.get("props")
             if not isinstance(props_in, dict):
                 continue
-            # Strings get the same hostile-content scrub as page props.
-            cleaned = clean_urls(props_in, set(), warnings)
+            # Strings get the same hostile-content scrub as page props. Images
+            # already in the site's chrome stay allowed (a model that echoes the
+            # logo back must not blank it); any other URL is stripped.
+            cleaned = clean_urls(props_in, _collect_page_image_urls(current.get("layout") if isinstance(current, dict) else None, set()), warnings)
             existing = merged["layout"].get(section)
             if isinstance(existing, dict):
                 merged["layout"][section] = {
@@ -3644,6 +5035,7 @@ async def edit_site_chrome(
     body: SiteChromeRequest,
     db: Session = Depends(db_dependency),
     current_user=Depends(get_current_user),
+    request: Request = None,
 ) -> SiteChromeResponse:
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
@@ -3654,6 +5046,7 @@ async def edit_site_chrome(
     if not institute_id:
         raise HTTPException(status_code=400, detail="No institute context on this session.")
     actor_user_id = getattr(current_user, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, current_user, actor_user_id)
 
     estimate = preflight_tool_credits(
         db, tool_key=_CHROME_TOOL_KEY, tool_params={}, institute_id=institute_id
@@ -3703,6 +5096,9 @@ async def edit_site_chrome(
             user_role=None,
             idempotency_key=f"{_CHROME_TOOL_KEY}:{run_id}",
             usage_markup=_USAGE_MARKUP,
+            use_case=UC.PAGE_BUILDER,
+            metering=meter_ctx,
+            usage_context={"run_id": run_id},
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("[site-chrome] billing skipped: %s", e)
@@ -3712,5 +5108,205 @@ async def edit_site_chrome(
         reply=reply,
         run_id=run_id,
         model=model_used,
+        warnings=warnings,
+    )
+
+
+# ─── Site languages: translate site texts ─────────────────────────────────────
+#
+# A site's other languages are dictionaries keyed by the EXACT base-language
+# text (globalSettings.i18n.strings[locale]); the builder's Translations panel
+# sends the missing texts here in batches and merges what comes back. The work
+# (translation memory, masking, chunked parallel calls, safety checks) lives in
+# translation_service.translate_website_strings; this route authenticates,
+# pre-flights credits and charges ONCE per request on the summed usage.
+#
+# Auth is the pinned principal (membership of the clientId institute is
+# checked), stricter than get_current_user, which trusts clientId verbatim —
+# and, because it spends the institute's credits, only for the people who can
+# edit the website: the builder's own write gate is ADMIN or OWNER
+# (use-catalogue-permissions.ts). Platform root users pass.
+from ..core.security import get_pinned_principal  # noqa: E402
+from ..schemas.auth import PinnedPrincipal  # noqa: E402
+
+_TRANSLATE_TOOL_KEY = "page_translate"
+
+
+def _can_translate_site(principal: Any) -> bool:
+    if getattr(principal, "is_root_user", False):
+        return True
+    roles = {
+        str(r).strip().upper().replace("-", "_").replace(" ", "_")
+        for r in (getattr(principal, "roles", None) or [])
+        if r
+    }
+    return "OWNER" in roles or any("ADMIN" in r for r in roles)
+
+
+class SiteTranslateRequest(BaseModel):
+    # Exact source texts — they come back as the keys of `translations`.
+    strings: List[str] = Field(default_factory=list)
+    target_locale: str
+    source_locale: str = "en"
+    # "Translate again with AI": ignore the translation memory.
+    skip_memory: bool = False
+    preferred_model: Optional[str] = None
+
+
+class SiteTranslateFailure(BaseModel):
+    source: str
+    reason: str
+
+
+class SiteTranslateResponse(BaseModel):
+    translations: Dict[str, str]
+    failed: List[SiteTranslateFailure] = Field(default_factory=list)
+    tm_hits: int = 0
+    run_id: str
+    model: str
+    warnings: List[str] = Field(default_factory=list)
+
+
+@router.post("/v1/translate", response_model=SiteTranslateResponse)
+async def translate_site_strings(
+    body: SiteTranslateRequest,
+    db: Session = Depends(db_dependency),
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    request: Request = None,
+) -> SiteTranslateResponse:
+    # Imported here so loading the page builder stays light (the service pulls
+    # in the translation-job models).
+    from ..services import translation_service as ts
+
+    institute_id = getattr(principal, "institute_id", None)
+    if not institute_id:
+        raise HTTPException(status_code=400, detail="No institute context on this session.")
+    if not _can_translate_site(principal):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only institute admins can translate the website.",
+        )
+    actor_user_id = getattr(principal, "user_id", None)
+    meter_ctx = _page_metering(request, institute_id, principal, actor_user_id)
+
+    source = (body.source_locale or "en").strip().lower()
+    target = (body.target_locale or "").strip().lower()
+    if source not in ts.LOCALE_NAMES or target not in ts.LOCALE_NAMES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported language. Supported: {', '.join(sorted(ts.LOCALE_NAMES))}.",
+        )
+    if source == target:
+        raise HTTPException(status_code=400, detail="The target language is the site's base language.")
+
+    # Exact texts, each once, in the order sent. Blank texts need no translation.
+    seen: set = set()
+    texts: List[str] = []
+    for value in body.strings or []:
+        if not isinstance(value, str) or not value.strip() or value in seen:
+            continue
+        seen.add(value)
+        texts.append(value)
+    run_id = uuid.uuid4().hex
+    if not texts:
+        return SiteTranslateResponse(translations={}, run_id=run_id, model="", warnings=["Nothing to translate."])
+    if len(texts) > ts.WEBSITE_MAX_STRINGS:
+        raise HTTPException(
+            status_code=400, detail=f"Send at most {ts.WEBSITE_MAX_STRINGS} texts per request."
+        )
+    too_long = [s for s in texts if len(s) > ts.WEBSITE_MAX_STRING_CHARS]
+    texts = [s for s in texts if len(s) <= ts.WEBSITE_MAX_STRING_CHARS]
+    total_chars = sum(len(s) for s in texts)
+    if total_chars > ts.WEBSITE_MAX_TOTAL_CHARS:
+        raise HTTPException(
+            status_code=400, detail="Too much text for one request — send the texts in smaller batches."
+        )
+
+    warnings: List[str] = []
+    failures: List[Dict[str, str]] = [
+        {"source": s, "reason": "too long to translate automatically — translate it by hand"} for s in too_long
+    ]
+    if not texts:
+        return SiteTranslateResponse(
+            translations={}, failed=failures, run_id=run_id, model="", warnings=warnings
+        )
+
+    # Translation memory first: remembered texts are free, so credits are
+    # pre-flighted only on what goes to the model (none → no credit check).
+    memory: Dict[str, str] = (
+        {}
+        if body.skip_memory
+        else await ts.lookup_website_memory(
+            strings=texts, source_locale=source, target_locale=target, institute_id=institute_id
+        )
+    )
+    model_chars = sum(len(s) for s in texts if s not in memory)
+    if model_chars:
+        estimate = preflight_tool_credits(
+            db,
+            tool_key=_TRANSLATE_TOOL_KEY,
+            tool_params={"transcript_chars": model_chars},
+            institute_id=institute_id,
+        )
+        if estimate.get("sufficient") is False:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=(
+                    f"Insufficient credits: translating these texts needs ~{estimate['estimated_credits']} "
+                    f"credits but the balance is {estimate.get('current_balance')}."
+                ),
+            )
+
+    try:
+        result = await ts.translate_website_strings(
+            strings=texts,
+            source_locale=source,
+            target_locale=target,
+            institute_id=institute_id,
+            memory=memory,
+            preferred_model=body.preferred_model,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("[translate] failed: %s", e)
+        raise HTTPException(status_code=502, detail="Could not translate right now. You were not charged.")
+
+    if result["llm_calls"] and not result["completed_calls"] and not result["translations"]:
+        raise HTTPException(
+            status_code=502, detail="The AI could not translate right now. You were not charged."
+        )
+
+    if result["completed_calls"]:
+        usage = result.get("usage") or {}
+        try:
+            record_tool_billing(
+                tool_key=_TRANSLATE_TOOL_KEY,
+                tool_params={"transcript_chars": int(result.get("llm_chars") or 0)},
+                request_type=RequestType.TRANSLATION,
+                model=result.get("model_used") or "",
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                completion_tokens=int(usage.get("completion_tokens") or 0),
+                institute_id=institute_id,
+                user_id=actor_user_id,
+                user_role=None,
+                idempotency_key=f"{_TRANSLATE_TOOL_KEY}:{run_id}",
+                usage_markup=_USAGE_MARKUP,
+                use_case=UC.TRANSLATION,
+                metering=meter_ctx,
+                usage_context={"run_id": run_id, "feature": "site_translate"},
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning("[translate] billing skipped: %s", e)
+
+    failures.extend(result.get("failed") or [])
+    if failures:
+        warnings.append(
+            f"{len(failures)} text(s) could not be translated safely and were left untranslated."
+        )
+    return SiteTranslateResponse(
+        translations=result.get("translations") or {},
+        failed=[SiteTranslateFailure(**f) for f in failures],
+        tm_hits=int(result.get("tm_hits") or 0),
+        run_id=run_id,
+        model=result.get("model_used") or ("translation-memory" if result.get("tm_hits") else ""),
         warnings=warnings,
     )

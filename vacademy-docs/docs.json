@@ -1,0 +1,281 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Vacademy Docs",
+  "description": "Developer and admin docs for Vacademy: the Catalogue API for your own website, and the MCP server that lets Claude, ChatGPT and Cursor work with your institute's courses, learners and CRM.",
+  "colors": {
+    "primary": "#ED7424",
+    "light": "#F4A06A",
+    "dark": "#C95A12"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://vacademy.io"
+  },
+  "favicon": "/favicon.svg",
+  "fonts": {
+    "family": "Plus Jakarta Sans"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "vacademy.io",
+        "href": "https://vacademy.io"
+      },
+      {
+        "label": "Support",
+        "href": "mailto:support@vacademy.io"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://dash.vacademy.io"
+    }
+  },
+  "navigation": {
+    "products": [
+      {
+        "product": "Catalogue API",
+        "description": "Courses and enquiries on your own website",
+        "icon": "book-open",
+        "tabs": [
+          {
+            "tab": "Documentation",
+            "icon": "book-open",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "introduction",
+                  "quickstart",
+                  "keys-and-websites"
+                ]
+              },
+              {
+                "group": "Concepts",
+                "pages": [
+                  "concepts/courses",
+                  "concepts/streams-and-learning-paths",
+                  "concepts/course-pages-and-seo"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "guides/enquiries",
+                  "guides/going-live"
+                ]
+              },
+              {
+                "group": "Platform",
+                "pages": [
+                  "platform/errors",
+                  "platform/rate-limits-and-caching",
+                  "platform/versioning",
+                  "platform/changelog"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API reference",
+            "icon": "square-terminal",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "api-reference/introduction"
+                ]
+              },
+              {
+                "group": "Endpoints",
+                "openapi": "api-reference/openapi.json"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "product": "MCP server",
+        "description": "Use Claude, ChatGPT or Cursor with your institute",
+        "icon": "robot",
+        "tabs": [
+          {
+            "tab": "Guides",
+            "icon": "book-open",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "mcp-server/introduction",
+                  "mcp-server/quickstart",
+                  "mcp-server/for-counsellors",
+                  "mcp-server/how-it-works"
+                ]
+              },
+              {
+                "group": "Connect your AI app",
+                "pages": [
+                  "mcp-server/connect/claude",
+                  "mcp-server/connect/claude-code",
+                  "mcp-server/connect/chatgpt",
+                  "mcp-server/connect/cursor",
+                  "mcp-server/connect/vscode",
+                  "mcp-server/connect/other-apps"
+                ]
+              },
+              {
+                "group": "Settings and access",
+                "pages": [
+                  "mcp-server/settings/enable-the-server",
+                  "mcp-server/settings/roles",
+                  "mcp-server/settings/areas-and-levels",
+                  "mcp-server/settings/risk-levels",
+                  "mcp-server/settings/opt-in-features",
+                  "mcp-server/settings/connections-and-revoking",
+                  "mcp-server/settings/client-ids"
+                ]
+              },
+              {
+                "group": "Working with it",
+                "pages": [
+                  "mcp-server/usage/confirmations",
+                  "mcp-server/usage/drafts-vs-live",
+                  "mcp-server/usage/prompting-tips",
+                  "mcp-server/usage/playbooks",
+                  "mcp-server/usage/errors",
+                  "mcp-server/usage/troubleshooting"
+                ]
+              },
+              {
+                "group": "Technical: sign-in (OAuth)",
+                "pages": [
+                  "mcp-server/oauth/how-sign-in-works",
+                  "mcp-server/oauth/institute-server-url",
+                  "mcp-server/oauth/tokens-and-expiry"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Tools",
+            "icon": "wrench",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "mcp-server/tools/catalogue"
+                ]
+              },
+              {
+                "group": "LMS",
+                "pages": [
+                  "mcp-server/tools/identity",
+                  "mcp-server/tools/institute",
+                  "mcp-server/tools/website",
+                  "mcp-server/tools/lead-forms",
+                  "mcp-server/tools/automations",
+                  "mcp-server/tools/blog",
+                  "mcp-server/tools/courses",
+                  "mcp-server/tools/learners",
+                  "mcp-server/tools/learner-reports",
+                  "mcp-server/tools/sub-orgs",
+                  "mcp-server/tools/crm-payments"
+                ]
+              },
+              {
+                "group": "CRM",
+                "pages": [
+                  "mcp-server/tools/crm-leads",
+                  "mcp-server/tools/crm-calls",
+                  "mcp-server/tools/crm-meetings",
+                  "mcp-server/tools/crm-messages",
+                  "mcp-server/tools/crm-reports"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Security",
+            "icon": "shield-check",
+            "groups": [
+              {
+                "group": "Security and privacy",
+                "pages": [
+                  "mcp-server/security/overview",
+                  "mcp-server/security/data-and-pii",
+                  "mcp-server/security/audit-log",
+                  "mcp-server/security/prompt-injection",
+                  "mcp-server/security/guardrails"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Changelog",
+            "icon": "clock",
+            "groups": [
+              {
+                "group": "Changelog",
+                "pages": [
+                  "mcp-server/changelog"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "redirects": [
+    {
+      "source": "/catalog",
+      "destination": "/introduction"
+    },
+    {
+      "source": "/mcp-server/security/for-counsellors",
+      "destination": "/mcp-server/for-counsellors"
+    }
+  ],
+  "api": {
+    "playground": {
+      "display": "simple"
+    },
+    "examples": {
+      "languages": [
+        "curl",
+        "javascript",
+        "python"
+      ],
+      "defaults": "required"
+    },
+    "mdx": {
+      "server": "https://api.vacademy.ai/catalog/v1",
+      "auth": {
+        "method": "key",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "website": "https://vacademy.io"
+    }
+  },
+  "seo": {
+    "indexing": "navigable"
+  }
+}

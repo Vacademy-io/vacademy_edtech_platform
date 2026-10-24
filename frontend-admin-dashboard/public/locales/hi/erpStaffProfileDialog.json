@@ -1,0 +1,23 @@
+{
+    "heading": "HR प्रोफ़ाइल बनाएं",
+    "cancel": "रद्द करें",
+    "createProfile": "प्रोफ़ाइल बनाएं",
+    "creating": "बनाया जा रहा है…",
+    "noDepartment": "कोई विभाग नहीं",
+    "noDesignation": "कोई पदनाम नहीं",
+    "thisPerson": "इस व्यक्ति",
+    "fields": {
+        "employeeCodeLabel": "कर्मचारी कोड",
+        "employeeCodePlaceholder": "HR को एक असाइन करने देने के लिए खाली छोड़ें",
+        "joinDateLabel": "जॉइनिंग तारीख",
+        "departmentLabel": "विभाग",
+        "designationLabel": "पदनाम"
+    },
+    "toasts": {
+        "created": "{{name}} के लिए HR प्रोफ़ाइल बनाई गई"
+    },
+    "errors": {
+        "joinDateRequired": "जॉइनिंग तारीख चुनें",
+        "createFailed": "{{name}} के लिए HR प्रोफ़ाइल नहीं बनाई जा सकी"
+    }
+}

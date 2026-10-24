@@ -1,0 +1,507 @@
+{
+    "catalogHero": {
+        "_owner": "Feature 'hero' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogTabs": {
+        "_owner": "Feature 'tabs' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogSidebar": {
+        "filters": "Filtres",
+        "clearAll": "Tout effacer",
+        "showMore": "+ Voir plus",
+        "showLess": "− Voir moins",
+        "_owner": "Feature 'sidebar' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogSections": {
+        "_owner": "Feature 'sections' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "catalogCards": {
+        "_owner": "Feature 'cards' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "siteChrome": {
+        "_owner": "Feature 'chrome' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "learningPaths": {
+        "_owner": "Feature 'paths' adds its keys above this line (specs/CONTRACT.md)"
+    },
+    "common": {
+        "viewMore": "Voir plus",
+        "viewLess": "Voir moins",
+        "clearSearch": "Effacer la recherche",
+        "previousSlide": "Diapositive précédente",
+        "nextSlide": "Diapositive suivante",
+        "addToCart": "Ajouter au panier",
+        "remove": "Retirer",
+        "inStock": "En stock",
+        "outOfStock": "Rupture de stock",
+        "onlyLeft": "Seulement {{count}} restant(s)",
+        "previousPage": "Page précédente",
+        "nextPage": "Page suivante"
+    },
+    "productPageOffer": {
+        "spendMoreForTierAmount": "Dépensez {{spend}} de plus pour obtenir {{amount}} de réduction.",
+        "spendMoreForTierPercent": "Dépensez {{spend}} de plus pour obtenir {{percent}} % de réduction.",
+        "addMoreForTierAmount": "Ajoutez {{count}} {{course}} de plus pour obtenir {{amount}} de réduction.",
+        "addMoreForTierAmountMore": "Ajoutez {{count}} {{course}} de plus pour obtenir {{amount}} de réduction supplémentaire.",
+        "addMoreForTierPercent": "Ajoutez {{count}} {{course}} de plus pour obtenir {{percent}} % de réduction.",
+        "finderShowing": "Affichage",
+        "finderShowAll": "Afficher tous les {{courses}}",
+        "addMoreForTier": "Ajoutez {{count}} {{course}} de plus pour obtenir {{offer}}.",
+        "savedAmount": "{{amount}} · {{percent}} % économisés",
+        "emptyConfig": "Choisissez une page produit dans le panneau des propriétés pour afficher ses {{courses}} ici.",
+        "errorLoad": "Impossible de charger cette page produit. Vérifiez qu'elle est active et appartient à cet établissement.",
+        "emptyCourses": "Cette page produit n'a pas encore de {{courses}} — ajoutez-en dans son onglet {{courses}}.",
+        "seeAll": "Tout voir",
+        "seeAllCourses": "Voir tous les {{courses}}",
+        "enrolNow": "S'inscrire",
+        "viewCourse": "Voir le {{course}}",
+        "searchAndFilter": "Rechercher et filtrer la liste complète",
+        "scrollPrevious": "Défiler vers les {{courses}} précédents",
+        "scrollNext": "Défiler vers plus de {{courses}}",
+        "searchPlaceholder": "Rechercher des {{courses}}...",
+        "searchAriaLabel": "Rechercher des {{courses}}",
+        "noMatches": "Aucun résultat",
+        "showingRange": "Affichage de {{from}} à {{to}} sur {{total}}",
+        "noCoursesMatch": "Aucun {{courses}} ne correspond à « {{query}} ».",
+        "page": "Page {{number}}",
+        "coursePagesAriaLabel": "Pages de {{course}}",
+        "added": "Ajouté",
+        "addToCartAriaLabel": "Ajouter {{course}} au panier",
+        "removeFromCartAriaLabel": "Retirer {{course}} du panier",
+        "selectedCount_one": "{{count}} sélectionné",
+        "selectedCount_many": "{{count}} sélectionnés",
+        "selectedCount_other": "{{count}} sélectionnés",
+        "itemsSelected_one": "{{count}} {{course}} sélectionné",
+        "itemsSelected_many": "{{count}} {{courses}} sélectionnés",
+        "itemsSelected_other": "{{count}} {{courses}} sélectionnés",
+        "total": "Total",
+        "free": "Gratuit",
+        "clearCart": "Vider",
+        "proceedToCheckout": "Passer à la caisse",
+        "nothingForSelection": "Rien à afficher pour ce choix pour le moment.",
+        "showAllCourses": "Voir tous les {{courses}}"
+    },
+    "heroSection": {
+        "defaultAlt": "Aperçu du {{course}}",
+        "defaultVideoTitle": "Vidéo de la bannière",
+        "goToSlide": "Aller à la diapositive {{number}}"
+    },
+    "checkoutForm": {
+        "toast": {
+            "missingEnrollmentInfo": "Informations d'inscription manquantes",
+            "otpSentWhatsapp": "Code OTP envoyé sur votre WhatsApp",
+            "otpSendFailed": "Échec de l'envoi du code OTP. Veuillez réessayer",
+            "phoneVerified": "Numéro de téléphone vérifié avec succès",
+            "otpInvalid": "Code OTP invalide. Veuillez réessayer",
+            "loadPaymentOptionsFailed": "Impossible de charger les options de paiement. Veuillez réessayer.",
+            "paymentSuccessful": "Paiement réussi !",
+            "paymentCancelled": "Paiement annulé",
+            "checkoutSuccessful": "Paiement finalisé avec succès !",
+            "checkoutFailedDefault": "Échec du paiement. Veuillez réessayer."
+        },
+        "razorpayDescription": "Inscription au {{course}}",
+        "errors": {
+            "razorpaySdkLoadFailed": "Échec du chargement du SDK Razorpay",
+            "fullNameRequired": "Le nom complet est requis",
+            "emailRequired": "Une adresse e-mail valide est requise",
+            "phoneRequiredOtp": "Un numéro de téléphone valide est requis pour envoyer le code OTP",
+            "phoneRequired": "Un numéro de téléphone valide est requis",
+            "otpRequired": "Veuillez saisir le code OTP",
+            "phoneVerificationRequired": "La vérification du numéro de téléphone est requise",
+            "booksPreferenceMissing": "Impossible de trouver le champ personnalisé « Préférence de livres ». Veuillez contacter le support."
+        },
+        "header": {
+            "title": "Paiement",
+            "subtitle": "Complétez vos informations"
+        },
+        "loading": "Préparation du paiement...",
+        "labels": {
+            "fullName": "Nom complet",
+            "emailAddress": "Adresse e-mail",
+            "phoneWhatsapp": "Numéro de téléphone (WhatsApp)"
+        },
+        "placeholders": {
+            "name": "Entrez votre nom",
+            "email": "email@example.com",
+            "otp": "------"
+        },
+        "buttons": {
+            "sent": "Envoyé",
+            "verify": "Vérifier",
+            "verifyOtp": "Vérifier le code OTP",
+            "proceedToPayment": "Procéder au paiement"
+        },
+        "summary": {
+            "subtotalCount_one": "Sous-total ({{count}} article)",
+            "subtotalCount_other": "Sous-total ({{count}} articles)",
+            "orderTotal": "Total de la commande",
+            "itemsCount": "{{count}} articles",
+            "secure": "Sécurisé",
+            "subtotalCount_many": "Sous-total ({{count}} articles)"
+        },
+        "whatsappRequired": "Vérification WhatsApp requise pour continuer"
+    },
+    "policy": {
+        "notFoundTitle": "Politique introuvable",
+        "notFoundDescription": "La politique demandée est introuvable."
+    },
+    "banner": {
+        "alt": "Bannière"
+    },
+    "courseRecommendations": {
+        "untitledCourse": "{{course}} sans titre",
+        "free": "Gratuit",
+        "by": "par {{instructor}}"
+    },
+    "cart": {
+        "emptyDefault": "Votre panier est vide. Ajoutez des livres !",
+        "yourBooks": "Vos livres",
+        "subscriptionPlans": "Formules d'abonnement",
+        "noPlansAvailable": "Aucune formule d'adhésion disponible pour le moment.",
+        "securityDeposit": "Remarque : un dépôt de garantie remboursable de 300 ₹ est inclus dans le prix de chaque formule d'abonnement et sera restitué à la fin de l'adhésion.",
+        "total": "Total",
+        "checkout": "Payer",
+        "selectPlanFirst": "Veuillez sélectionner une formule d'adhésion avant de passer au paiement",
+        "maxBooksExceeded": "Vous pouvez louer au maximum {{max}} livres pendant cette période",
+        "noImage": "Pas d'image",
+        "paymentStatus": "Statut du paiement :",
+        "dismiss": "Fermer",
+        "subtotalCount_one": "Sous-total ({{count}} livre)",
+        "subtotalCount_other": "Sous-total ({{count}} livres)",
+        "crossStore": {
+            "multiple": "Votre panier contient des articles de {{count}} boutiques différentes ({{stores}}). Chaque boutique gère sa propre livraison, vous devrez donc peut-être payer séparément.",
+            "mismatch": "Les articles de votre panier proviennent de {{store}}, mais votre boutique active est différente. Changez de boutique ou retirez ces articles pour rester cohérent."
+        },
+        "plan": {
+            "defaultName": "Formule",
+            "maxBooksDescription": "Maximum {{max}} livres peuvent être loués pendant cette période",
+            "noLimitDescription": "Aucune limite sur le nombre total de livres pendant cette période",
+            "booksAtOnce": "Livres à la fois :",
+            "booksInPeriod": "Livres sur la période :",
+            "selected": "Sélectionnée",
+            "select": "Sélectionner"
+        },
+        "toast": {
+            "loginRequiredAfterPayment": "Paiement réussi ! Veuillez vous connecter pour accéder à vos cours.",
+            "redirecting": "Paiement réussi. Redirection en cours...",
+            "loginAutomated": "Connexion automatique réussie. Bienvenue !"
+        },
+        "subtotalCount_many": "Sous-total ({{count}} livres)"
+    },
+    "addressForm": {
+        "label": "Adresse de livraison",
+        "placeholders": {
+            "houseNo": "N° de maison / appartement / bâtiment",
+            "area": "Quartier / rue / secteur",
+            "landmark": "Point de repère (facultatif)",
+            "pincode": "Code postal",
+            "city": "Ville / village",
+            "district": "District",
+            "postOffice": "Bureau de poste"
+        },
+        "selectState": "Sélectionner l'état",
+        "selectPostOffice": "Sélectionner le bureau de poste",
+        "errors": {
+            "required": "Requis",
+            "pincodeRequired": "Le code postal est requis",
+            "pincodeDigits": "Doit comporter 6 chiffres",
+            "selectState": "Sélectionnez un état",
+            "pincodeNotFound": "Code postal introuvable — veuillez saisir l'adresse manuellement",
+            "indiaPostUnreachable": "Impossible de joindre India Post. Saisissez l'adresse manuellement."
+        }
+    },
+    "detailBlocks": {
+        "emptyGuidance": "Ajoutez un bloc pour chaque programme que vous souhaitez documenter."
+    },
+    "mediaShowcase": {
+        "videoUnavailable": "Vidéo indisponible",
+        "loading": "Chargement...",
+        "defaultVideoTitle": "Vidéo",
+        "goToSlide": "Aller à la diapositive {{number}}",
+        "slideAlt": "Diapositive {{number}}",
+        "highlightsAriaLabel": "Points forts",
+        "resumeSlideshow": "Reprendre le diaporama automatique",
+        "pauseSlideshow": "Mettre en pause le diaporama automatique"
+    },
+    "shareButton": {
+        "ariaLabel": "Partager le livre",
+        "toast": {
+            "linkError": "Impossible de générer le lien de partage",
+            "linkCopied": "Lien copié !"
+        },
+        "copied": "Copié !",
+        "copyLink": "Copier le lien",
+        "shareWhatsapp": "Partager sur WhatsApp"
+    },
+    "testimonial": {
+        "ratedOutOf5": "Noté {{stars}} sur 5",
+        "previous": "Témoignage précédent",
+        "next": "Témoignage suivant",
+        "goToTestimonial": "Aller au témoignage {{number}}"
+    },
+    "leadForm": {
+        "emptyConfig": "Choisissez une campagne d'audience dans le panneau des propriétés — ses champs de formulaire s'afficheront ici.",
+        "errorLoad": "Impossible de charger cette campagne. Vérifiez qu'elle est active et appartient à cet établissement.",
+        "emptyFields": "Cette campagne n'a pas encore de champs de formulaire — ajoutez-en dans le gestionnaire d'audience.",
+        "missingFields": "Veuillez remplir : {{fields}}",
+        "genericError": "Une erreur s'est produite — veuillez réessayer.",
+        "defaultThankYou": "Merci ! Nous avons bien reçu vos informations.",
+        "defaultAnotherResponse": "Envoyer une autre réponse",
+        "redirectingIn_one": "Redirection dans {{count}} seconde…",
+        "redirectingIn_other": "Redirection dans {{count}} secondes…",
+        "companyWebsite": "Site web de l'entreprise",
+        "sending": "Envoi en cours…",
+        "submit": "Envoyer",
+        "placeholderPrefix": "Saisissez {{name}}",
+        "selectParentFirst": "Choisissez d’abord {{name}}",
+        "redirectingIn_many": "Redirection dans {{count}} secondes…"
+    },
+    "bookDetails": {
+        "bookAltFallback": "Livre",
+        "loadingCover": "Chargement de la couverture...",
+        "onlyLeftUppercase": "Seulement {{count}} restant(s)",
+        "unknownAuthor": "Auteur inconnu",
+        "genre": "Genre :",
+        "price": "Prix",
+        "goToCart": "Aller au panier",
+        "added": "Ajouté",
+        "aboutThisBook": "À propos de ce livre",
+        "toast": {
+            "addedToCart": "Ajouté au panier",
+            "missingEnrollInfo": "Impossible d'ajouter au panier : informations d'inscription manquantes"
+        },
+        "modeTag": {
+            "rent": "Location",
+            "buy": "Achat"
+        }
+    },
+    "bookCatalogue": {
+        "untitledBook": "Livre sans titre",
+        "searchPlaceholder": "Rechercher des livres...",
+        "store": "Boutique",
+        "selectedStore": "Boutique sélectionnée",
+        "allStores": "Toutes les boutiques",
+        "pickStoreRentHint": "Choisissez une boutique pour parcourir le stock de location",
+        "bestPriceHint": "Meilleur prix affiché parmi toutes les boutiques",
+        "browseByGenre": "Parcourir par genre",
+        "rentMode": "Mode location",
+        "buyMode": "Mode achat",
+        "clearAll": "Tout effacer",
+        "pickStoreTitle": "Choisissez une boutique pour parcourir les locations",
+        "pickStoreDescription": "Les livres en location sont récupérés dans une boutique, le stock dépend donc de la boutique. Choisissez une boutique ci-dessus pour voir ce qui est disponible.",
+        "noBooksFound": "Aucun livre ne correspond à vos critères.",
+        "availableAtStores": "Disponible dans {{count}} boutiques",
+        "cart": "Panier",
+        "fromPrefix": "à partir de",
+        "lowestPriceSuffix": "— prix le plus bas",
+        "loadingMoreBooks": "Chargement d'autres livres...",
+        "endOfCatalogue": "Vous avez atteint la fin du catalogue",
+        "showingAllBooks": "Affichage des {{total}} livres",
+        "toast": {
+            "removedFromCart": "Retiré du panier",
+            "addedToCart": "Ajouté au panier"
+        }
+    },
+    "courseCatalog": {
+        "breadcrumbAriaLabel": "Fil d’Ariane",
+        "filters": "Filtres",
+        "clearAll": "Tout effacer",
+        "showResults": "Afficher les résultats",
+        "authors": "Auteurs",
+        "priceRange": "Fourchette de prix",
+        "min": "Min",
+        "max": "Max",
+        "searchPlaceholder": "Rechercher des {{courses}}...",
+        "searchAriaLabel": "Rechercher des {{courses}}",
+        "noResultsFound": "Aucun {{courses}} trouvé",
+        "noResultsHint": "Essayez d'ajuster votre recherche ou vos filtres pour trouver ce que vous cherchez.",
+        "clearAllFilters": "Effacer tous les filtres",
+        "showLess": "Voir moins",
+        "showMore": "Voir plus",
+        "noItemsAvailable": "Aucun {{title}} disponible.",
+        "filtersUnavailable": "Les filtres {{title}} sont actuellement indisponibles.",
+        "removedFromCart": "{{title}} retiré du panier",
+        "addedToCart": "{{title}} ajouté au panier !",
+        "missingEnrollInvite": "Impossible d'ajouter l'article au panier : identifiant d'invitation d'inscription manquant",
+        "untitledCourse": "{{course}} sans titre",
+        "noDescriptionAvailable": "Aucune description disponible",
+        "unknownInstructor": "{{teacher}} inconnu",
+        "add": "Ajouter",
+        "openSoon": "Ouvre bientôt",
+        "enrollmentClosed": "Inscriptions closes",
+        "freeLabel": "100 % gratuit",
+        "viewCourse": "Voir le {{course}}",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "showingRange": "Affichage de {{from}} à {{to}} sur {{total}} {{courses}}",
+        "paginationAriaLabel": "Pagination",
+        "loadingImage": "Chargement..."
+    },
+    "buyRentSection": {
+        "chooseOption": "Sélectionnez l'option qui correspond le mieux à vos besoins",
+        "rentTitle": "Louer un livre",
+        "rentDescription": "Accédez à des livres à des tarifs abordables",
+        "buyTitle": "Acheter un livre",
+        "buyDescription": "Possédez vos livres pour toujours",
+        "howItWorks": "Comment ça marche",
+        "steps": {
+            "step1Title": "Parcourir et sélectionner",
+            "step1Desc": "Explorez notre collection et choisissez des livres.",
+            "step2Title": "Choisir une option",
+            "step2Desc": "Achetez pour posséder ou louez pour accéder.",
+            "step3Title": "Finaliser l'achat",
+            "step3Desc": "Ajoutez au panier et payez en toute sécurité.",
+            "step4Title": "Commencer la lecture",
+            "step4Desc": "Accédez instantanément à vos livres."
+        },
+        "close": "Fermer",
+        "locationRestrictionTitle": "Restriction géographique",
+        "locationRestrictionMessage": "Nous n'autorisons la location de livres qu'à {{city}}. Voulez-vous continuer ?",
+        "buyInstead": "Acheter à la place",
+        "continue": "Continuer"
+    },
+    "header": {
+        "toggleMenu": "Basculer le menu",
+        "search": "Rechercher",
+        "shoppingCart": "Panier",
+        "login": "Connexion",
+        "dashboard": "Tableau de bord",
+        "customerServices": "Service client",
+        "joinCommunity": "Rejoignez notre communauté",
+        "logoAlt": "Logo",
+        "instituteLogoAlt": "Logo de l'établissement"
+    },
+    "courseDetailsRoute": {
+        "domainResolutionErrorTitle": "Erreur de résolution du domaine",
+        "retry": "Réessayer"
+    },
+    "courseDetails": {
+        "accordion": {
+            "highlightsTitle": "Points forts du {{course}}",
+            "aboutThisCourse": "À propos de ce {{course}}",
+            "whatYoullLearn": "Ce que vous apprendrez",
+            "whoShouldJoin": "Qui devrait s'inscrire"
+        },
+        "noEmailProvided": "Aucun e-mail fourni",
+        "unknownTeacher": "{{teacher}} inconnu",
+        "defaultWhoShouldLearn": "Toute personne intéressée par l'apprentissage de ce {{subject}}",
+        "defaultWhyLearn": "Acquérez des compétences et des connaissances précieuses",
+        "untitledCourse": "{{course}} sans titre",
+        "courseNotFoundDefault": "{{course}} introuvable",
+        "courseNotFoundError": "{{course}} introuvable.",
+        "courseNotPublicError": "Ce {{course}} n'est pas disponible pour une consultation publique.",
+        "loadFailedError": "Échec du chargement des détails du {{course}}",
+        "courseLoadFailedDescription": "Le {{course}} demandé n'a pas pu être chargé.",
+        "backToCatalog": "Retour au catalogue",
+        "loadingCatalogueTitle": "Chargement du catalogue de {{course}}...",
+        "loadingCatalogueDescription": "Veuillez patienter pendant que nous chargeons les informations du {{course}}.",
+        "courseOverview": "Aperçu du {{course}}",
+        "price": "Prix",
+        "rating": "Note",
+        "duration": "Durée",
+        "enrollForFree": "S'inscrire gratuitement",
+        "enrollNow": "S'inscrire maintenant",
+        "getStarted": "Commencer",
+        "clickToRegister": "Cliquez pour vous inscrire à ce {{course}}",
+        "forNewUsers": "Pour les nouveaux utilisateurs",
+        "enrollmentUnavailableTitle": "Inscription indisponible",
+        "leadFormDefaults": {
+            "fullName": "Nom complet",
+            "email": "E-mail",
+            "phone": "Numéro de téléphone"
+        },
+        "page": {
+            "breadcrumb": "Fil d'Ariane",
+            "home": "Accueil",
+            "courses": "Cours",
+            "watchPreview": "Voir l'aperçu",
+            "closePreview": "Fermer l'aperçu",
+            "mode": "Mode",
+            "modeSelfPaced": "À votre rythme",
+            "modeLive": "En direct",
+            "language": "Langue",
+            "format": "Format",
+            "author": "Auteur",
+            "instructor": "Formateur",
+            "category": "Catégorie",
+            "free": "Gratuit",
+            "freeHint": "Commencez maintenant, sans paiement",
+            "paidHint": "Accès immédiat après paiement",
+            "bookHint": "Seulement {{price}}. Commandez et bonne lecture.",
+            "getFree": "Obtenir le cours gratuitement",
+            "orderNow": "Commander",
+            "partOf": "Fait partie de {{name}}",
+            "tabDescription": "Description",
+            "tabContent": "Contenu du cours",
+            "tabToc": "Table des matières",
+            "tabAudience": "À qui s'adresse ce cours",
+            "tabLanguage": "Langue",
+            "tabFaq": "FAQ",
+            "tabInstructor": "À propos du formateur",
+            "tabAuthor": "À propos de l'auteur",
+            "aboutCourse": "À propos de ce cours",
+            "aboutBook": "À propos de ce livre numérique",
+            "languageCourse": "Ce cours est en {{language}}.",
+            "languageBook": "Ce livre numérique est en {{language}}.",
+            "faqTitle": "Questions fréquentes",
+            "courseIncludes": "Ce cours comprend",
+            "bookIncludes": "Ce livre numérique comprend",
+            "nextInSeries": "Suivant dans la série",
+            "view": "Voir",
+            "youMayAlsoLike": "Vous aimerez aussi",
+            "viewAllCourses": "Voir tous les cours"
+        }
+    },
+    "blog": {
+        "readMore": "Lire la suite",
+        "backToList": "Tous les articles",
+        "viewMore": "Voir plus",
+        "empty": "Pas encore d’articles — revenez bientôt.",
+        "emptyGuidance": "Aucun article publié pour l’instant. Rédigez-en un dans Manage Pages → Blog et publiez-le pour le voir ici.",
+        "homePageHint": "Ce blog est sur la page d’accueil : les articles s’ouvrent avec ?post=… dans l’adresse. Placez-le sur sa propre page (par ex. /blog) pour donner à chaque article une URL propre.",
+        "categories": "Catégories",
+        "allCategories": "Tous",
+        "loadFailed": "Impossible de charger les articles pour le moment.",
+        "pagination": "Pages du blog",
+        "newer": "Plus récents",
+        "older": "Plus anciens",
+        "pageOf": "Page {{page}} sur {{total}}",
+        "minRead": "{{minutes}} min de lecture",
+        "notFoundTitle": "Article introuvable",
+        "notFoundBody": "Cet article a peut-être été dépublié ou déplacé.",
+        "tags": "Étiquettes",
+        "copyLink": "Copier le lien",
+        "linkCopied": "Lien copié",
+        "gateTitle": "Débloquer cet article",
+        "gateSubtitle": "Partagez vos coordonnées une seule fois pour lire cet article et toutes les ressources gratuites du site.",
+        "contents": "Sur cette page",
+        "readingProgress": "Progression de lecture",
+        "percentRead": "{{percent}} % lu",
+        "recommendedCourses": "{{courses}} recommandés",
+        "relatedPosts": "À lire aussi",
+        "share": "Partager",
+        "shareOn": "Partager sur {{network}}"
+    },
+    "jobOpenings": {
+        "viewDetails": "Voir la description du poste",
+        "apply": "Postuler",
+        "backToList": "Toutes les offres",
+        "opensInNewTab": "(s’ouvre dans un nouvel onglet)",
+        "empty": "Aucun poste ouvert pour le moment — revenez bientôt.",
+        "emptyGuidance": "Aucune offre à afficher pour le moment. Ajoutez-en une dans Postes, dans les réglages de cette section, ou réactivez une offre désactivée.",
+        "homePageHint": "Ces offres sont sur la page d’accueil : chaque poste s’ouvre donc avec ?job=… dans l’adresse. Placez-les sur leur propre page (par exemple /careers) pour donner à chaque poste une URL propre.",
+        "jobDetails": "Détails du poste",
+        "compensation": "Rémunération",
+        "location": "Lieu",
+        "jobType": "Type de poste"
+    },
+    "comingSoon": {
+        "ribbon": "Bientôt disponible",
+        "notifyMe": "Me prévenir",
+        "viewDetails": "Voir les détails",
+        "launchingOn": "Lancement le {{date}}",
+        "launchingOnHint": "Lancement le {{date}}. Laissez vos coordonnées, nous vous préviendrons dès l'ouverture.",
+        "notifyHint": "Laissez vos coordonnées, nous vous préviendrons dès l'ouverture.",
+        "notifyTitle": "Être prévenu du lancement de {{title}}"
+    }
+}

@@ -1,0 +1,80 @@
+{
+    "colors": {
+        "title": "Couleurs du rapport",
+        "description": "Définissez les couleurs primaire et secondaire utilisées dans le PDF et l'interface du rapport d'évaluation.",
+        "primaryColor": "Couleur primaire",
+        "secondaryColor": "Couleur secondaire"
+    },
+    "logoLetterhead": {
+        "title": "Logo et en-tête",
+        "description": "Le logo et l'en-tête de votre établissement sont affichés ci-dessous. Vous pouvez les modifier ou en téléverser de nouveaux.",
+        "logo": {
+            "label": "Afficher le logo dans l'en-tête",
+            "hint": "Afficher le logo de l'établissement en haut du rapport",
+            "imageAlt": "Logo",
+            "none": "Aucun logo",
+            "change": "Modifier",
+            "upload": "Téléverser le logo"
+        },
+        "letterhead": {
+            "label": "Afficher l'arrière-plan de l'en-tête",
+            "hint": "Utiliser une image d'en-tête pleine page comme arrière-plan du rapport",
+            "imageAlt": "En-tête",
+            "none": "Aucun en-tête",
+            "change": "Modifier",
+            "upload": "Téléverser l'en-tête",
+            "crop": "Recadrer"
+        }
+    },
+    "watermark": {
+        "title": "Filigrane",
+        "description": "Ajoutez un texte en filigrane diagonal sur chaque page du rapport.",
+        "enable": "Activer le filigrane",
+        "textLabel": "Texte du filigrane",
+        "textPlaceholder": "ex. CONFIDENTIEL ou le nom de votre établissement",
+        "opacity": "Opacité ({{percent}} %)"
+    },
+    "headerFooter": {
+        "title": "En-tête et pied de page",
+        "description": {
+            "prefix": "HTML personnalisé pour l'en-tête et le pied de page du rapport. Ils apparaissent sur chaque page. Utilisez",
+            "suffix": "comme espace réservé — il sera remplacé par le nom réel de l'évaluation dans le rapport."
+        },
+        "footerText": {
+            "label": "Texte du pied de page",
+            "placeholder": "Texte du pied de page affiché en bas du rapport"
+        },
+        "headerHtml": {
+            "label": "HTML personnalisé de l'en-tête",
+            "placeholder": "<div style=\"text-align:center;\">{{assessment_name}}</div>"
+        },
+        "footerHtml": {
+            "label": "HTML personnalisé du pied de page",
+            "placeholder": "<div style=\"text-align:center; font-size:10px; color:#999;\">Powered by MyInstitute</div>"
+        }
+    },
+    "preview": {
+        "title": "Aperçu",
+        "showButton": "Afficher l'aperçu",
+        "hideButton": "Masquer l'aperçu",
+        "sample": {
+            "assessmentName": "Exemple de test de mathématiques",
+            "subtitle": "Analyse de la performance de l'étudiant",
+            "score": "Score",
+            "rank": "Rang",
+            "percentile": "Percentile",
+            "sectionPerformance": "Performance par section",
+            "sectionTablePlaceholder": "Aperçu du tableau des sections"
+        }
+    },
+    "cropper": {
+        "titleLogo": "Recadrer le logo",
+        "titleLetterhead": "Recadrer l'en-tête",
+        "confirmLabel": "Recadrer et téléverser"
+    },
+    "toasts": {
+        "logoUploaded": "Logo téléversé",
+        "letterheadUploaded": "En-tête téléversé",
+        "uploadFailed": "Échec du téléversement"
+    }
+}

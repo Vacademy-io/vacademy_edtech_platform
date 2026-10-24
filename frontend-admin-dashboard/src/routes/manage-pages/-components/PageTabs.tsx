@@ -1,7 +1,7 @@
 import { useEditorStore } from '../-stores/editor-store';
 import { Button } from '@/components/ui/button';
 import { Settings, Plus, Copy, Trash2, MoreVertical } from 'lucide-react'; // design-lint-ignore: legacy icon set, migrated incrementally
-import { Sparkle } from '@phosphor-icons/react';
+import { PencilSimple, Sparkle } from '@phosphor-icons/react';
 import { AiPageWizard } from './AiPageWizard';
 import {
     DropdownMenu,
@@ -29,7 +29,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getComponentTemplate } from '../-utils/component-templates';
+import { HOME_ROUTES } from '../-utils/rename-page';
 
 // Converts arbitrary text into a safe URL slug: lowercase, hyphens, no special chars
 const toSlug = (value: string) =>
@@ -41,7 +43,10 @@ const toSlug = (value: string) =>
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
 
+const pageLabel = (page: { title?: string; route: string }) => page.title || page.route;
+
 export const PageTabs = () => {
+    const { t: tTemplates } = useTranslation('managePagesComponentTemplates');
     const {
         config,
         selectPage,
@@ -51,6 +56,7 @@ export const PageTabs = () => {
         addPage,
         deletePage,
         duplicatePage,
+        renamePage,
     } = useEditorStore();
 
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -62,8 +68,17 @@ export const PageTabs = () => {
     // flip later and lose work to.
     const [newPageIsHtml, setNewPageIsHtml] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [renameTarget, setRenameTarget] = useState<string | null>(null);
+    const [renameTitle, setRenameTitle] = useState('');
+    const [renameRoute, setRenameRoute] = useState('');
 
     if (!config) return null;
+
+    // Two pages with the same title ("Courses | Courses") are told apart by route.
+    const labelCounts = new Map<string, number>();
+    config.pages.forEach((p) =>
+        labelCounts.set(pageLabel(p), (labelCounts.get(pageLabel(p)) ?? 0) + 1)
+    );
 
     const slugPreview = toSlug(newPageRoute);
     const isRouteConflict = !!slugPreview && config.pages.some((p) => p.route === slugPreview);
@@ -75,14 +90,40 @@ export const PageTabs = () => {
             route: slugPreview,
             title: newPageTitle.trim() || undefined,
             components: newPageIsHtml
-                ? [{ ...getComponentTemplate('htmlPage'), id: `htmlpage-${Date.now()}` }]
+                ? [{ ...getComponentTemplate('htmlPage', tTemplates), id: `htmlpage-${Date.now()}` }]
                 : [],
+            // A pasted page nearly always brings its own nav and footer.
+            ...(newPageIsHtml ? { hideSiteChrome: true } : {}),
         };
         addPage(newPage);
         setNewPageRoute('');
         setNewPageTitle('');
         setNewPageIsHtml(false);
         setShowAddDialog(false);
+    };
+
+    const renamingPage = config.pages.find((p) => p.id === renameTarget);
+    // The home page is the site root: its slug stays, only its title changes.
+    const renamingHome = HOME_ROUTES.has(
+        (renamingPage?.route ?? '').replace(/^\//, '').toLowerCase()
+    );
+    const renameSlug = toSlug(renameRoute);
+    const isRenameConflict =
+        !!renameSlug && config.pages.some((p) => p.id !== renameTarget && p.route === renameSlug);
+    const canRename = !!renamingPage && (renamingHome || (!!renameSlug && !isRenameConflict));
+
+    const openRename = (pageId: string) => {
+        const target = config.pages.find((p) => p.id === pageId);
+        if (!target) return;
+        setRenameTitle(target.title ?? '');
+        setRenameRoute(target.route ?? '');
+        setRenameTarget(pageId);
+    };
+
+    const handleRename = () => {
+        if (!renamingPage || !canRename) return;
+        renamePage(renamingPage.id, renameTitle, renamingHome ? renamingPage.route : renameSlug);
+        setRenameTarget(null);
     };
 
     const handleDeletePage = (pageId: string) => {
@@ -116,7 +157,16 @@ export const PageTabs = () => {
                             onClick={() => selectPage(page.id)}
                             className="gap-1.5 pr-1"
                         >
-                            {page.title || page.route}
+                            {(labelCounts.get(pageLabel(page)) ?? 0) > 1 ? (
+                                <span className="flex flex-col items-start leading-tight">
+                                    <span>{pageLabel(page)}</span>
+                                    <span className="font-mono text-2xs text-gray-400">
+                                        /{(page.route ?? '').replace(/^\//, '')}
+                                    </span>
+                                </span>
+                            ) : (
+                                pageLabel(page)
+                            )}
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -132,6 +182,10 @@ export const PageTabs = () => {
                                 enforced on the learner side — the site-level
                                 Draft/Publish in the header is the single gate. */}
                             <DropdownMenuContent align="start">
+                                <DropdownMenuItem onClick={() => openRename(page.id)}>
+                                    <PencilSimple className="mr-2 size-4" />
+                                    Rename
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => duplicatePage(page.id)}>
                                     <Copy className="mr-2 size-4" />
                                     Duplicate
@@ -192,6 +246,62 @@ export const PageTabs = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Rename Page Dialog */}
+            <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Rename Page</DialogTitle>
+                    </DialogHeader>
+                    <div
+                        className="space-y-4 py-4"
+                        onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                    >
+                        <div className="space-y-2">
+                            <Label htmlFor="rename-title">Page Title</Label>
+                            <Input
+                                id="rename-title"
+                                value={renameTitle}
+                                onChange={(e) => setRenameTitle(e.target.value)}
+                                placeholder="e.g., Courses"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="rename-route">Route Slug</Label>
+                            <Input
+                                id="rename-route"
+                                value={renamingHome ? renamingPage?.route ?? '' : renameRoute}
+                                onChange={(e) => setRenameRoute(e.target.value)}
+                                disabled={renamingHome}
+                                className={isRenameConflict ? 'border-red-400' : ''}
+                            />
+                            {renamingHome ? (
+                                <p className="text-xs text-gray-400">
+                                    The home page&apos;s address can&apos;t change.
+                                </p>
+                            ) : isRenameConflict ? (
+                                <p className="text-xs text-red-500">
+                                    A page with this route already exists.
+                                </p>
+                            ) : renameSlug && renameSlug !== renamingPage?.route ? (
+                                <p className="text-xs text-gray-400">
+                                    New address: <span className="font-mono">/{renameSlug}</span>.
+                                    Menu items and buttons linking to this page are updated too.
+                                </p>
+                            ) : null}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRenameTarget(null)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleRename} disabled={!canRename}>
+                            Save
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Add Page Dialog */}
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

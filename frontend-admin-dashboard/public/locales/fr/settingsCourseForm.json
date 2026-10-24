@@ -1,0 +1,84 @@
+{
+    "actions": {
+        "resetAll": "Tout réinitialiser",
+        "saving": "Enregistrement...",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "unsavedChanges": "Vous avez des modifications non enregistrées. N'oubliez pas d'enregistrer vos mises à jour.",
+    "courseInformation": {
+        "heading": "Exigences relatives aux informations du cours",
+        "descriptionRequired": "Description obligatoire",
+        "enablePopularTopics": "Activer les sujets populaires",
+        "learnerOutcomesRequired": "Résultats d'apprentissage obligatoires",
+        "aboutCourseRequired": "Présentation du cours obligatoire",
+        "targetAudienceRequired": "Public cible obligatoire",
+        "previewImageRequired": "Image d'aperçu obligatoire",
+        "enableBannerImage": "Activer l'image de bannière",
+        "bannerImageRequired": "Image de bannière obligatoire",
+        "enableCourseMedia": "Activer les médias du cours"
+    },
+    "courseStructure": {
+        "heading": "Configuration de la structure du cours",
+        "defaultDepth": "Profondeur par défaut du cours",
+        "depthOption_one": "{{count}} niveau",
+        "depthOption_many": "{{count}} niveaux",
+        "depthOption_other": "{{count}} niveaux",
+        "fixCourseDepth": "Fixer la profondeur du cours",
+        "enableSessions": "Activer les sessions",
+        "enableLevels": "Activer les niveaux"
+    },
+    "catalogueSettings": {
+        "heading": "Paramètres du catalogue et de publication",
+        "catalogueMode": "Mode du catalogue",
+        "modeAsk": "Demander avant de publier",
+        "modeAuto": "Publication automatique",
+        "modeManual": "Manuel uniquement",
+        "autoPublish": "Publier automatiquement au catalogue",
+        "filterWizard": {
+            "heading": "Assistant de filtres du cours (catalogue apprenant)",
+            "description": "La première fois qu'un apprenant ouvre le catalogue de cours, demandez-lui de choisir des filtres étape par étape, puis affichez uniquement les cours correspondants.",
+            "stepsToAsk": "Étapes à demander",
+            "order": "Les apprenants sont interrogés dans cet ordre fixe — {{level}}, puis {{session}}, puis {{tag}} — en ignorant toute étape non cochée.",
+            "requireCompletion": "Exiger la complétion (sans possibilité de passer)"
+        }
+    },
+    "viewSettings": {
+        "heading": "Paramètres d'affichage et de vue du cours",
+        "defaultViewMode": "Mode d'affichage par défaut",
+        "outlineMode": "Mode plan",
+        "structureMode": "Mode structure du cours",
+        "defaultOutlineState": "État par défaut du plan",
+        "expanded": "Développé",
+        "collapsed": "Réduit",
+        "copiedSlideStatus": "Statut de publication des diapositives copiées",
+        "keepDraft": "Conserver en brouillon (par défaut)",
+        "inheritSource": "Correspondre à la diapositive d'origine",
+        "alwaysPublished": "Toujours publier",
+        "copiedSlideDescription": "Lorsqu'une diapositive est copiée dans un autre cours, choisissez si la copie reste un brouillon, correspond à l'état publié de l'original, ou est toujours publiée. Les copies en brouillon ne sont pas visibles par les apprenants.",
+        "showContentDescriptions": "Afficher les descriptions de module et de chapitre",
+        "showContentDescriptionsHint": "Afficher la description saisie pour un module ou un chapitre sous son titre sur les cartes de contenu — dans les détails du cours et dans l'application apprenant. Désactivez pour garder ces cartes uniquement avec un titre."
+    },
+    "permissions": {
+        "heading": "Autorisations utilisateur et contrôle d'accès",
+        "allowLearnersCreate": "Autoriser les apprenants à créer des cours",
+        "allowPaymentChange": "Autoriser les changements d'option de paiement",
+        "allowDiscountChange": "Autoriser les changements d'option de remise",
+        "allowReferralChange": "Autoriser les changements d'option de parrainage",
+        "defaultCourseFilter": "Filtre de cours par défaut (Explorer les cours)",
+        "selectDefaultFilter": "Sélectionner le filtre par défaut",
+        "filterAll": "Tout afficher (aucun filtre par défaut)",
+        "filterParentsOnly": "Groupes parents uniquement (PARENTS_ONLY)",
+        "filterChildrenOnly": "Groupes enfants uniquement (CHILDREN_ONLY)",
+        "filterHint": "Détermine si Explorer les cours affiche uniquement les groupes parents, uniquement les groupes enfants, ou tous les groupes par défaut."
+    },
+    "enrollmentNotifications": {
+        "heading": "Notifications d'inscription",
+        "description": "Détermine quels bascules de notification les administrateurs voient dans la boîte de dialogue d'inscription groupée. Lorsqu'une bascule est désactivée ici, l'option correspondante est masquée dans la boîte de dialogue ET forcée à désactivée dans la requête API — afin qu'aucun e-mail ne soit envoyé par accident.",
+        "showNotifyLearners": "Afficher « Notifier les apprenants » dans l'inscription groupée",
+        "showSendCredentials": "Afficher « Envoyer les identifiants » dans l'inscription groupée"
+    },
+    "footerNote": {
+        "label": "Remarque :",
+        "text": "Les modifications seront appliquées à l'ensemble de votre établissement une fois enregistrées. Tous les flux de création de cours utiliseront ces paramètres mis à jour."
+    }
+}

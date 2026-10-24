@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ export function SlideDripConditionDialog({
     onSave,
     allSlides = [],
 }: SlideDripConditionDialogProps) {
+    const { t } = useTranslation('studyLibrarySlideDripConditionDialog');
     const [editingConditionId, setEditingConditionId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
 
@@ -120,13 +122,11 @@ export function SlideDripConditionDialog({
         // Check if condition is enabled
         const isEnabled = conditionToDelete.drip_condition?.[0]?.is_enabled;
         if (isEnabled) {
-            alert(
-                'Cannot delete an enabled condition. Please disable the slide drip condition first.'
-            );
+            alert(t('errors.cannotDeleteEnabled'));
             return;
         }
 
-        if (!confirm('Are you sure you want to delete this drip condition?')) return;
+        if (!confirm(t('confirmDelete'))) return;
 
         try {
             setSaving(true);
@@ -147,14 +147,16 @@ export function SlideDripConditionDialog({
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading={`Drip Conditions - ${slideName || 'Slide'}`}
+            heading={t('heading', { slideName: slideName || t('defaultSlideName') })}
         >
             <div className="space-y-4">
                 {hasPackageConflict && (
                     <Alert className="border-blue-200 bg-blue-50">
                         <Info className="size-4 text-blue-600" />
                         <AlertDescription className="text-sm text-blue-900">
-                            <div className="mb-2 font-semibold">Course-Level Conditions Active</div>
+                            <div className="mb-2 font-semibold">
+                                {t('courseLevelConditionsActive')}
+                            </div>
                             <div className="space-y-2">
                                 {packageSlideConditions.map((condition) => {
                                     // Find slide-targeting configs in the array
@@ -174,7 +176,7 @@ export function SlideDripConditionDialog({
                                                     variant="outline"
                                                     className="bg-purple-100 text-purple-700"
                                                 >
-                                                    Course Level
+                                                    {t('courseLevel')}
                                                 </Badge>
                                                 <Badge
                                                     variant="outline"
@@ -193,8 +195,7 @@ export function SlideDripConditionDialog({
                                 })}
                             </div>
                             <div className="mt-3 text-xs text-blue-700">
-                                These course-level conditions apply to all slides. Slide-specific
-                                conditions are disabled when course conditions target slides.
+                                {t('courseLevelConditionsNote')}
                             </div>
                         </AlertDescription>
                     </Alert>
@@ -204,7 +205,7 @@ export function SlideDripConditionDialog({
                     <>
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-gray-900">
-                                Slide Drip Conditions
+                                {t('slideDripConditions')}
                             </h3>
                             {!editingConditionId && (
                                 <MyButton
@@ -214,7 +215,7 @@ export function SlideDripConditionDialog({
                                     disabled={saving}
                                 >
                                     <Plus size={16} weight="bold" />
-                                    <span>Add Condition</span>
+                                    <span>{t('addCondition')}</span>
                                 </MyButton>
                             )}
                         </div>
@@ -222,7 +223,7 @@ export function SlideDripConditionDialog({
                         {slideConditions.length === 0 && !editingConditionId && (
                             <div className="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
                                 <p className="text-sm text-gray-500">
-                                    No drip conditions for this slide yet.
+                                    {t('noDripConditions')}
                                 </p>
                             </div>
                         )}
@@ -245,7 +246,7 @@ export function SlideDripConditionDialog({
                                                     variant="outline"
                                                     className="bg-green-100 text-green-700"
                                                 >
-                                                    Slide Level
+                                                    {t('slideLevel')}
                                                 </Badge>
                                                 <Badge
                                                     variant="outline"
@@ -265,7 +266,7 @@ export function SlideDripConditionDialog({
                                                     disabled={saving}
                                                     className="h-8 px-2"
                                                 >
-                                                    Edit
+                                                    {t('edit')}
                                                 </Button>
                                                 {!condition.drip_condition?.[0]?.is_enabled && (
                                                     <Button
@@ -276,7 +277,7 @@ export function SlideDripConditionDialog({
                                                         }
                                                         disabled={saving}
                                                         className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        title="Delete condition"
+                                                        title={t('deleteCondition')}
                                                     >
                                                         <Trash size={16} />
                                                     </Button>
@@ -308,7 +309,7 @@ export function SlideDripConditionDialog({
 
                 <div className="flex justify-end border-t pt-4">
                     <MyButton buttonType="secondary" onClick={onClose}>
-                        Close
+                        {t('close')}
                     </MyButton>
                 </div>
             </div>
@@ -325,6 +326,7 @@ interface ConditionFormProps {
 }
 
 function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: ConditionFormProps) {
+    const { t } = useTranslation('studyLibrarySlideDripConditionDialog');
     const target = 'slide';
 
     // Extract first config from array or create default
@@ -388,7 +390,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                 const params = rule.params as { unlock_date: string };
                 return (
                     <div className="space-y-2">
-                        <Label>Release Date</Label>
+                        <Label>{t('releaseDate')}</Label>
                         <Input
                             type="datetime-local"
                             value={
@@ -415,7 +417,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                 return (
                     <div className="space-y-2">
                         <div>
-                            <Label>Metric</Label>
+                            <Label>{t('metric')}</Label>
                             <Select
                                 value={params.metric}
                                 onValueChange={(value) => handleRuleChange(index, 'metric', value)}
@@ -424,16 +426,18 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="average_of_all">Average of All</SelectItem>
+                                    <SelectItem value="average_of_all">
+                                        {t('averageOfAll')}
+                                    </SelectItem>
                                     <SelectItem value="average_of_last_n">
-                                        Average of Last N
+                                        {t('averageOfLastN')}
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         {params.metric === 'average_of_last_n' && (
                             <div>
-                                <Label>Count</Label>
+                                <Label>{t('count')}</Label>
                                 <Input
                                     type="number"
                                     min="0"
@@ -445,7 +449,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                             </div>
                         )}
                         <div>
-                            <Label>Threshold %</Label>
+                            <Label>{t('thresholdPercent')}</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -468,22 +472,22 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                 return (
                     <div className="space-y-2">
                         <div>
-                            <Label>Required Slides</Label>
+                            <Label>{t('requiredSlides')}</Label>
                             <MultiSelect
                                 options={allSlides.map((slide) => ({
-                                    label: slide.heading || 'Untitled',
+                                    label: slide.heading || t('untitled'),
                                     value: slide.id,
                                 }))}
                                 selected={params.required_slides || []}
                                 onChange={(ids) => handleRuleChange(index, 'required_slides', ids)}
-                                placeholder="Select slides"
+                                placeholder={t('selectSlides')}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Select the slides that must be completed before unlocking
+                                {t('requiredSlidesHelp')}
                             </p>
                         </div>
                         <div>
-                            <Label>Completion Threshold %</Label>
+                            <Label>{t('completionThresholdPercent')}</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -494,7 +498,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Percentage completion required for prerequisite slides
+                                {t('prerequisiteThresholdHelp')}
                             </p>
                         </div>
                     </div>
@@ -516,11 +520,11 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                                 className="size-4 rounded border-gray-300"
                             />
                             <Label htmlFor={`sequential-slide-${index}`} className="cursor-pointer">
-                                Requires previous slide completion
+                                {t('requiresPreviousSlideCompletion')}
                             </Label>
                         </div>
                         <div>
-                            <Label>Completion Threshold %</Label>
+                            <Label>{t('completionThresholdPercent')}</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -531,7 +535,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                                 }
                             />
                             <p className="text-xs text-muted-foreground">
-                                Percentage completion required for previous slide
+                                {t('sequentialThresholdHelp')}
                             </p>
                         </div>
                     </div>
@@ -562,7 +566,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
         });
 
         if (hasEmptyFields) {
-            alert('Please fill in all required fields');
+            alert(t('errors.fillRequiredFields'));
             return;
         }
 
@@ -586,26 +590,26 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
     return (
         <div className="space-y-4 rounded-lg border-2 p-4">
             <div className="space-y-2">
-                <Label>Behavior</Label>
+                <Label>{t('behavior')}</Label>
                 <Select value={behavior} onValueChange={(v) => setBehavior(v as any)}>
                     <SelectTrigger>
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="lock">Lock (show but prevent access)</SelectItem>
-                        <SelectItem value="hide">Hide (completely hidden)</SelectItem>
+                        <SelectItem value="lock">{t('behaviorLock')}</SelectItem>
+                        <SelectItem value="hide">{t('behaviorHide')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
 
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <Label>Unlock Rule</Label>
+                    <Label>{t('unlockRule')}</Label>
                 </div>
 
                 {rules.length === 0 ? (
                     <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                        No rule configured. Please configure an unlock rule below.
+                        {t('noRuleConfigured')}
                     </div>
                 ) : (
                     rules.map((rule, index) => (
@@ -619,12 +623,18 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="date_based">Date-based</SelectItem>
-                                        <SelectItem value="completion_based">
-                                            Completion-based
+                                        <SelectItem value="date_based">
+                                            {t('ruleTypeDateBased')}
                                         </SelectItem>
-                                        <SelectItem value="prerequisite">Prerequisite</SelectItem>
-                                        <SelectItem value="sequential">Sequential</SelectItem>
+                                        <SelectItem value="completion_based">
+                                            {t('ruleTypeCompletionBased')}
+                                        </SelectItem>
+                                        <SelectItem value="prerequisite">
+                                            {t('ruleTypePrerequisite')}
+                                        </SelectItem>
+                                        <SelectItem value="sequential">
+                                            {t('ruleTypeSequential')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -639,10 +649,10 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
             <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="slide-condition-enabled" className="font-medium">
-                        Enable this slide condition
+                        {t('enableThisCondition')}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                        Controls whether this drip condition is active
+                        {t('enableThisConditionHelp')}
                     </p>
                 </div>
                 <Switch
@@ -654,7 +664,7 @@ function ConditionForm({ condition, slideId, onSave, saving, allSlides = [] }: C
 
             <div className="flex justify-end gap-2 pt-2">
                 <MyButton onClick={handleSubmit} disabled={saving || rules.length === 0}>
-                    {saving ? 'Saving...' : 'Save Condition'}
+                    {saving ? t('saving') : t('saveCondition')}
                 </MyButton>
             </div>
         </div>

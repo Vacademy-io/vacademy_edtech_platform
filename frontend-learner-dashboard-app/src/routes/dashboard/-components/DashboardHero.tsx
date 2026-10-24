@@ -15,6 +15,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import {
   BookOpen,
   VideoCamera,
@@ -152,6 +153,10 @@ const firstRunBand = cn(
   "relative w-full overflow-hidden rounded-2xl border border-primary/15 p-5 sm:p-8",
   "bg-gradient-to-br from-primary/5 via-background to-background",
   "[.ui-vibrant_&]:from-primary-50 [.ui-vibrant_&]:border-t-4 [.ui-vibrant_&]:border-t-primary-300",
+  // Corporate: a plain white card — no wash, no glow. Linear/Vercel-register
+  // dashboards earn attention with hierarchy, not colour; the earlier
+  // brand-wash version still read as a consumer onboarding banner.
+  "[.ui-corporate_&]:bg-none [.ui-corporate_&]:bg-card [.ui-corporate_&]:border-border [.ui-corporate_&]:shadow-xs [.ui-corporate_&]:p-5 [.ui-corporate_&]:sm:p-6",
 );
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -165,6 +170,7 @@ export function DashboardHero({
   onJoinSession,
   showGettingStarted = true,
 }: DashboardHeroProps): JSX.Element | null {
+  const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -192,8 +198,8 @@ export function DashboardHero({
   // 4. LOADING — skeleton matching the band's shape.
   if (!studyLibraryLoaded) {
     return (
-      <section aria-busy="true" aria-label="Loading" className={bandClassName}>
-        <div className="flex flex-col gap-3">
+      <section aria-busy="true" aria-label={t("dashboardHero.loadingAria")} className={bandClassName}>
+        <div className="flex flex-col gap-stack">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-9 w-full max-w-md" />
           <Skeleton className="h-4 w-56" />
@@ -236,16 +242,18 @@ export function DashboardHero({
             : "text-muted-foreground",
         )}
       >
-        {banner.isLive ? "Live now" : `Starts in ${banner.minutesUntilStart}m`}
+        {banner.isLive
+          ? t("dashboardHero.liveNow")
+          : t("dashboardHero.startsInMinutes", { minutes: banner.minutesUntilStart })}
       </span>
       <Button
         size="sm"
         onClick={() => onJoinSession(banner.session)}
-        aria-label={`Join ${banner.session.title || liveClassLabel}`}
+        aria-label={t("dashboardHero.joinAria", { title: banner.session.title || liveClassLabel })}
         className="gap-1.5"
       >
         <VideoCamera size={14} weight="fill" />
-        Join
+        {t("hero.join")}
       </Button>
     </div>
   ) : null;
@@ -258,22 +266,24 @@ export function DashboardHero({
     const steps = [
       {
         icon: BookOpen,
-        label: `Browse your ${coursesPlural.toLocaleLowerCase()}`,
-        hint: `Open a topic and start your first ${getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLocaleLowerCase()}`,
+        label: t("dashboardHero.browseCoursesLabel", { courses: coursesPlural.toLocaleLowerCase() }),
+        hint: t("dashboardHero.browseCoursesHint", {
+          slide: getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLocaleLowerCase(),
+        }),
         onClick: goToCourses,
         primary: true,
       },
       {
         icon: ClipboardText,
-        label: "Try an assessment",
-        hint: "Check what you know with a quick quiz",
+        label: t("dashboardHero.tryAssessmentLabel"),
+        hint: t("dashboardHero.tryAssessmentHint"),
         onClick: () => navigate({ to: "/assessment/examination" }),
         primary: false,
       },
       {
         icon: UserCircle,
-        label: "Complete your profile",
-        hint: "Add your details to personalize learning",
+        label: t("dashboardHero.completeProfileLabel"),
+        hint: t("dashboardHero.completeProfileHint"),
         onClick: () => navigate({ to: "/user-profile" }),
         primary: false,
       },
@@ -284,31 +294,31 @@ export function DashboardHero({
         {/* Signature decorative mesh — tenant-primary, tasteful. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -end-16 -top-20 size-52 rounded-full bg-primary/10 blur-3xl"
+          className="pointer-events-none absolute -end-16 -top-20 size-52 rounded-full bg-primary/10 blur-3xl [.ui-corporate_&]:hidden"
         />
         <div className="relative">
           {liveBanner}
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-section lg:flex-row lg:items-center lg:justify-between">
             {/* Left: greeting + checklist */}
-            <div className="min-w-0 flex-1">
-              <div className="mb-5 flex items-start gap-3">
-                <span className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+            <div className="min-w-0 flex-1 space-y-5">
+              <div className="flex items-start gap-3">
+                <span className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex [.ui-corporate_&]:hidden">
                   <Sparkle size={22} weight="fill" />
                 </span>
                 <div className="min-w-0 space-y-1">
-                  <p className="text-caption font-semibold uppercase tracking-wider text-primary">
-                    {userName ? `Welcome, ${userName}` : "Welcome"}
+                  <p className="text-caption font-semibold uppercase tracking-wider text-primary [.ui-corporate_&]:normal-case [.ui-corporate_&]:tracking-normal [.ui-corporate_&]:font-medium [.ui-corporate_&]:text-muted-foreground">
+                    {userName ? t("dashboardHero.welcomeWithName", { name: userName }) : t("dashboardHero.welcome")}
                   </p>
-                  <h2 className="text-display-sm tracking-tight text-foreground">
-                    Let's get you started
+                  <h2 className="text-display-sm tracking-tight text-foreground [.ui-corporate_&]:text-h3 [.ui-corporate_&]:font-semibold">
+                    {t("dashboardHero.getStartedTitle")}
                   </h2>
                   <p className="text-body text-muted-foreground">
-                    A few quick steps to make the most of your learning.
+                    {t("dashboardHero.getStartedSubtitle")}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2.5 [.ui-corporate_&]:space-y-0 [.ui-corporate_&]:divide-y [.ui-corporate_&]:divide-border [.ui-corporate_&]:overflow-hidden [.ui-corporate_&]:rounded-lg [.ui-corporate_&]:border [.ui-corporate_&]:border-border">
                 {steps.map((step, i) => (
                   <button
                     key={i}
@@ -317,6 +327,8 @@ export function DashboardHero({
                     className={cn(
                       "group/step flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-start transition-all duration-base ease-out-soft",
                       "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+                      // Corporate: rows of one list — flat, hover tints the row.
+                      "[.ui-corporate_&]:rounded-none [.ui-corporate_&]:border-0 [.ui-corporate_&]:bg-transparent [.ui-corporate_&]:py-2.5 [.ui-corporate_&]:hover:translate-y-0 [.ui-corporate_&]:hover:bg-muted/60 [.ui-corporate_&]:hover:shadow-none",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                       step.primary
                         ? "border-primary/40 bg-primary/5"
@@ -329,12 +341,13 @@ export function DashboardHero({
                         step.primary
                           ? "bg-primary text-primary-foreground"
                           : "bg-primary/10 text-primary group-hover/step:bg-primary/20",
+                        "[.ui-corporate_&]:size-8 [.ui-corporate_&]:border [.ui-corporate_&]:border-border [.ui-corporate_&]:bg-card [.ui-corporate_&]:text-muted-foreground [.ui-corporate_&]:group-hover/step:bg-card",
                       )}
                     >
                       <step.icon size={18} weight="duotone" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-body font-semibold text-foreground">
+                      <span className="block truncate text-body font-semibold text-foreground [.ui-corporate_&]:font-medium">
                         {step.label}
                       </span>
                       <span className="block truncate text-caption text-muted-foreground">
@@ -352,9 +365,13 @@ export function DashboardHero({
 
             {/* Right: signature illustration fills the whitespace (currentColor
                 follows the tenant primary). Desktop only. */}
+            {/* Decorative only, so Corporate drops it rather than swapping in a
+                different illustration — a restrained enterprise surface is
+                typographic, and the honest corporate treatment of a spot
+                illustration is none. */}
             <playIllustrations.OnlineLearning
               aria-hidden="true"
-              className="hidden h-44 w-auto max-w-xs shrink-0 object-contain text-primary/70 lg:block"
+              className="hidden h-44 w-auto max-w-xs shrink-0 object-contain text-primary/70 lg:block [.ui-corporate_&]:lg:hidden"
             />
           </div>
         </div>

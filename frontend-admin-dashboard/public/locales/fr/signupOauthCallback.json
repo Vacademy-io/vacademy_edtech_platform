@@ -1,0 +1,4 @@
+{
+    "authSuccess": "Authentification réussie",
+    "authFailed": "Échec de l'authentification OAuth"
+}

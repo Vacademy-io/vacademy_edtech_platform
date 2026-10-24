@@ -1,0 +1,115 @@
+{
+    "navHeading": "फॉलो-अप",
+    "heading": {
+        "team": "फॉलो-अप",
+        "mine": "मेरे फॉलो-अप",
+        "blurb": "अपने सभी काउंसलिंग फ़ॉलो-अप एक ही जगह पर संभालें और ट्रैक करें।"
+    },
+    "subline": {
+        "teamAllCaughtUp": "टीम पूरी तरह अप-टू-डेट है",
+        "selfAllCaughtUp": "आप पूरी तरह अप-टू-डेट हैं",
+        "tasksDueToday_admin_one": "टीम के पास आज {{count, number}} कार्य देय है",
+        "tasksDueToday_admin_other": "टीम के पास आज {{count, number}} कार्य देय हैं",
+        "tasksDueToday_user_one": "आपके पास आज {{count, number}} कार्य देय है",
+        "tasksDueToday_user_other": "आपके पास आज {{count, number}} कार्य देय हैं",
+        "overdueSuffix_one": " · {{count, number}} विलंबित",
+        "overdueSuffix_other": " · {{count, number}} विलंबित"
+    },
+    "tabs": {
+        "list": "सूची",
+        "calendar": "कैलेंडर"
+    },
+    "showing": {
+        "prefix": "दिखा रहे हैं",
+        "suffix_one": "फॉलो-अप",
+        "suffix_other": "फॉलो-अप",
+        "suffix_overdue_one": "विलंबित फॉलो-अप",
+        "suffix_overdue_other": "विलंबित फॉलो-अप",
+        "suffix_today_one": "आज देय फॉलो-अप",
+        "suffix_today_other": "आज देय फॉलो-अप",
+        "suffix_upcoming_one": "आगामी फॉलो-अप",
+        "suffix_upcoming_other": "आगामी फॉलो-अप",
+        "suffix_completed_one": "पूर्ण फ़ॉलो-अप",
+        "suffix_completed_other": "पूर्ण फ़ॉलो-अप"
+    },
+    "table": {
+        "actionHeader": "कार्रवाई"
+    },
+    "callReasons": {
+        "noSubmissionId": "इस लीड के लिए कोई सबमिशन आईडी नहीं है",
+        "noPhone": "इस लीड के लिए कोई फ़ोन नंबर दर्ज नहीं है",
+        "callInProgress": "एक और कॉल शुरू हो रही है…"
+    },
+    "errors": {
+        "loadFailedTitle": "फॉलो-अप लोड नहीं हो सके",
+        "loadFailedDescription": "फॉलो-अप लाने में कुछ गड़बड़ हुई। फिर से प्रयास करें।"
+    },
+    "empty": {
+        "title": {
+            "teamAllCaughtUp": "पूरी टीम में कोई लंबित फॉलो-अप नहीं है",
+            "selfAllCaughtUp": "आप पूरी तरह अप-टू-डेट हैं",
+            "noOverdue": "कोई विलंबित फॉलो-अप नहीं है",
+            "nothingToday": "आज कुछ भी देय नहीं है",
+            "noUpcoming": "अगले 7 दिनों में कोई आगामी फॉलो-अप नहीं है",
+            "default": "कोई फॉलो-अप नहीं है",
+            "noMatches": "आपकी खोज से कोई फ़ॉलो-अप मेल नहीं खाता"
+        },
+        "description": {
+            "overdueNudge_one": "आपका {{count, number}} कार्य विलंबित है — ऊपर \"लंबित\" पर स्विच करें।",
+            "overdueNudge_other": "आपके {{count, number}} कार्य विलंबित हैं — ऊपर \"लंबित\" पर स्विच करें।",
+            "upcomingNudge": "आगे क्या देय है यह देखने के लिए ऊपर \"आगामी\" पर स्विच करें।",
+            "teamAllCaughtUp": "टीम इस दृश्य के सभी फॉलो-अप पूरे कर चुकी है।",
+            "selfAllCaughtUp": "इस दृश्य में आपका कोई लंबित फॉलो-अप नहीं है।",
+            "noMatches": "“{{query}}” से कुछ मेल नहीं खाया। पूरी सूची देखने के लिए खोज हटाएँ।"
+        }
+    },
+    "search": {
+        "placeholder": "नाम, फ़ोन या ईमेल खोजें…"
+    },
+    "export": {
+        "action": "एक्सपोर्ट",
+        "running": "एक्सपोर्ट हो रहा है…",
+        "failed": "फ़ॉलो-अप एक्सपोर्ट नहीं हो सके। दोबारा कोशिश करें।",
+        "columns": {
+            "name": "लीड का नाम",
+            "email": "ईमेल",
+            "phone": "फ़ोन",
+            "source": "सोर्स",
+            "status": "स्टेटस",
+            "dueAt": "कब तक",
+            "leadOwner": "लीड ओनर",
+            "interestLevel": "रुचि स्तर",
+            "followUpNote": "फ़ॉलो-अप नोट",
+            "studentResponse": "छात्र की प्रतिक्रिया",
+            "followUpMode": "फ़ॉलो-अप माध्यम",
+            "nextAction": "अगला कदम"
+        },
+        "progress": "फ़ॉलो-अप एक्सपोर्ट हो रहे हैं… {{total}} में से {{done}}",
+        "done_one": "{{count}} फ़ॉलो-अप एक्सपोर्ट हुआ",
+        "done_other": "{{count, number}} फ़ॉलो-अप एक्सपोर्ट हुए",
+        "alreadyRunning": "एक एक्सपोर्ट पहले से चल रहा है — पूरा होते ही डाउनलोड हो जाएगा।",
+        "truncated_other": "पहले {{count, number}} फ़ॉलो-अप एक्सपोर्ट हुए। बाकी के लिए फ़िल्टर संकीर्ण करें।",
+        "partial_other": "एक्सपोर्ट बीच में रुक गया। जो {{count, number}} फ़ॉलो-अप मिले वे डाउनलोड हो गए — बाकी के लिए फिर से कोशिश करें।",
+        "truncated_one": "पहले {{count, number}} फ़ॉलो-अप एक्सपोर्ट हुए। बाकी के लिए फ़िल्टर संकीर्ण करें।",
+        "partial_one": "एक्सपोर्ट बीच में रुक गया। जो {{count, number}} फ़ॉलो-अप मिले वे डाउनलोड हो गए — बाकी के लिए फिर से कोशिश करें।"
+    },
+    "filters": {
+        "campaignType": "सभी {{term}}",
+        "audience": "सभी {{term}}",
+        "audienceUntitled": "अनाम ऑडियंस",
+        "interestLevel": "सभी रुचि स्तर"
+    },
+    "completedRange": {
+        "preset_one": "आज",
+        "preset_other": "पिछले {{count}} दिन",
+        "custom": "कस्टम अवधि",
+        "from": "कब से",
+        "to": "कब तक",
+        "allTime": "सभी समय"
+    },
+    "dueRange": {
+        "from": "देय तिथि से",
+        "to": "देय तिथि तक",
+        "clear": "देय तिथियाँ हटाएँ"
+    }
+}

@@ -19,6 +19,7 @@
  * instead (same sheet, on demand).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 import { createRoot } from 'react-dom/client';
 import { create } from 'zustand';
 import {
@@ -45,6 +46,12 @@ import { LeadStatusChip } from '@/components/shared/lead-status-chip';
 import { cn } from '@/lib/utils';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { CREATE_TIMELINE_EVENT, CREATE_LEAD_FOLLOWUP } from '@/constants/urls';
+import {
+    FollowUpFields,
+    useFollowUpFeatures,
+    useFollowUpFields,
+    useFollowUpNotesRequired,
+} from './follow-up-fields';
 import {
     fetchLeadStatuses,
     setLeadStatusForLead,
@@ -138,11 +145,7 @@ function PostCallDispositionHost() {
     return (
         <QueryClientProvider client={payload.queryClient}>
             {/* key resets the form state when a new call's disposition opens */}
-            <PostCallDispositionSheet
-                key={payload.callLogId}
-                payload={payload}
-                onClose={close}
-            />
+            <PostCallDispositionSheet key={payload.callLogId} payload={payload} onClose={close} />
         </QueryClientProvider>
     );
 }
@@ -165,7 +168,10 @@ export function openPostCallDisposition(payload: PostCallDispositionPayload): vo
     const store = usePostCallDispositionStore.getState();
     // Auto-open disabled, or a sheet for a *different* call is already open
     // (never clobber a counsellor's in-progress typing) → toast action instead.
-    if (isPostCallAutoOpenDisabled() || (store.payload && store.payload.callLogId !== payload.callLogId)) {
+    if (
+        isPostCallAutoOpenDisabled() ||
+        (store.payload && store.payload.callLogId !== payload.callLogId)
+    ) {
         toast(STATUS_TOAST_LABEL[payload.status], {
             description: payload.leadName
                 ? `Log the outcome for ${payload.leadName}?`
@@ -242,8 +248,14 @@ function PostCallDispositionSheet({
 }) {
     const queryClient = useQueryClient();
     const [open, setOpen] = useState(true);
+    // The institute's own word for "Lead status" (e.g. "Action Label").
+    const terminology = useLeadTerminology();
     const [note, setNote] = useState('');
     const [followUpAt, setFollowUpAt] = useState('');
+    const followUpFields = useFollowUpFields();
+    const notesRequired = useFollowUpNotesRequired();
+    const { keepPopupsOpen } = useFollowUpFeatures();
+    const keepOpen = keepPopupsOpen ? (e: Event) => e.preventDefault() : undefined;
     const [statusPickerOpen, setStatusPickerOpen] = useState(false);
     // null = untouched (keep the lead's current status — nothing is posted).
     const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
@@ -288,8 +300,7 @@ function PostCallDispositionSheet({
         if (!norm) return null;
         return (
             statuses.find(
-                (s) =>
-                    normalizeStatus(s.status_key) === norm || normalizeStatus(s.label) === norm
+                (s) => normalizeStatus(s.status_key) === norm || normalizeStatus(s.label) === norm
             )?.id ?? null
         );
     }, [statuses, payload.currentStatus]);
@@ -302,7 +313,13 @@ function PostCallDispositionSheet({
     // A note needs the lead's userId for the timeline event; without one it can
     // still ride along as the follow-up's content.
     const noteSavable = noteTrimmed.length > 0 && (!!payload.leadUserId || !!followUpAt);
-    const canSave = statusChanged || !!followUpAt || noteSavable;
+    // Only blocks the paths that actually create a follow-up — a counsellor who just
+    // sets a status here is not logging a follow-up and must stay unblocked.
+    const followUpNoteMissing = !!followUpAt && notesRequired && noteTrimmed.length === 0;
+    const canSave =
+        (statusChanged || !!followUpAt || noteSavable) &&
+        !followUpNoteMissing &&
+        !(!!followUpAt && followUpFields.missingRequired);
 
     // Tracks which steps already succeeded so a retry after a partial failure
     // doesn't duplicate the completed requests.
@@ -343,6 +360,7 @@ function PostCallDispositionSheet({
                     audience_response_id: payload.responseId,
                     schedule_time: new Date(followUpAt).toISOString(),
                     content: noteTrimmed || null,
+                    ...followUpFields.payload,
                 });
                 doneRef.current.followUp = true;
             }
@@ -381,6 +399,10 @@ function PostCallDispositionSheet({
             <SheetContent
                 side="right"
                 className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md"
+                // "Close pop-ups only with X" on: only X / Skip close it, so a
+                // stray click does not drop the typed note.
+                onInteractOutside={keepOpen}
+                onEscapeKeyDown={keepOpen}
             >
                 <SheetHeader className="space-y-0 border-b border-neutral-100 px-6 py-4 text-left">
                     <div className="flex items-center gap-3">
@@ -400,7 +422,9 @@ function PostCallDispositionSheet({
                 <div className="flex-1 space-y-5 px-6 py-4">
                     {/* Lead status — deferred picker; persisted only on Save. */}
                     <div className="space-y-1.5">
-                        <span className="text-xs font-medium text-neutral-700">Lead status</span>
+                        <span className="text-xs font-medium text-neutral-700">
+                            {terminology.leadStatus}
+                        </span>
                         {statusesLoading ? (
                             <div className="flex h-9 items-center gap-2 rounded-lg border border-neutral-200 px-3 text-xs text-neutral-400">
                                 <CircleNotch className="size-3.5 animate-spin" />
@@ -492,8 +516,8 @@ function PostCallDispositionSheet({
                         />
                         {noteTrimmed.length > 0 && !payload.leadUserId && !followUpAt && (
                             <p className="text-xs text-warning-600">
-                                No lead profile linked — add a follow-up time to keep this note,
-                                or it can&apos;t be saved.
+                                No lead profile linked — add a follow-up time to keep this note, or
+                                it can&apos;t be saved.
                             </p>
                         )}
                     </div>
@@ -535,6 +559,27 @@ function PostCallDispositionSheet({
                                 );
                             })}
                         </div>
+                        {followUpNoteMissing && (
+                            <p className="text-xs text-danger-600">
+                                Your institute requires a note on every follow-up.
+                            </p>
+                        )}
+                        {!!followUpAt && followUpFields.missingRequired && (
+                            <p className="text-xs text-danger-600">
+                                Answer every field marked * before scheduling this follow-up.
+                            </p>
+                        )}
+                        {/* Institute-configured response / mode / next-action dropdowns.
+                            Only once a time is set — they describe the follow-up being
+                            scheduled, so they'd be answering about nothing before that. */}
+                        {followUpAt && followUpFields.visible && (
+                            <FollowUpFields
+                                values={followUpFields.values}
+                                onChange={followUpFields.setValues}
+                                portal={false}
+                                className="pt-1"
+                            />
+                        )}
                     </div>
                 </div>
 

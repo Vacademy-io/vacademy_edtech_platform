@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Eye, EyeOff } from 'lucide-react';
+import { CircleNotch, CaretLeft, CaretRight, CheckCircle, XCircle, Clock, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useEnhancedSurveyRespondents } from './hooks/useEnhancedSurveyData';
 import { useBatchNames } from './hooks/useBatchNames';
 
@@ -13,11 +15,21 @@ interface EnhancedSurveyIndividualRespondentsTabProps {
   assessmentName?: string;
 }
 
+const buildQuestionTypeMap = (t: TFunction): Record<string, { label: string; className: string }> => ({
+  'MCQS': { label: t('questionType.mcqs'), className: 'bg-blue-100 text-blue-800 border-blue-200' },
+  'MCQM': { label: t('questionType.mcqm'), className: 'bg-green-100 text-green-800 border-green-200' },
+  'TRUE_FALSE': { label: t('questionType.trueFalse'), className: 'bg-purple-100 text-purple-800 border-purple-200' },
+  'NUMERIC': { label: t('questionType.numeric'), className: 'bg-orange-100 text-orange-800 border-orange-200' },
+  'ONE_WORD': { label: t('questionType.oneWord'), className: 'bg-pink-100 text-pink-800 border-pink-200' },
+  'LONG_ANSWER': { label: t('questionType.longAnswer'), className: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+});
+
 export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndividualRespondentsTabProps> = ({
   assessmentId,
   sectionIds = [],
   assessmentName
 }) => {
+  const { t } = useTranslation('assessmentEnhancedSurveyIndividualRespondentsTab');
   const [currentRespondentIndex, setCurrentRespondentIndex] = useState(0);
   const [pageInput, setPageInput] = useState('');
   const [pageNo, setPageNo] = useState(1);
@@ -107,19 +119,12 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
   }, [globalRespondentNumber]);
 
   const getQuestionTypeBadge = (questionType: string) => {
-    const typeMap: Record<string, { label: string; className: string }> = {
-      'MCQS': { label: 'Single Choice', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-      'MCQM': { label: 'Multiple Choice', className: 'bg-green-100 text-green-800 border-green-200' },
-      'TRUE_FALSE': { label: 'True/False', className: 'bg-purple-100 text-purple-800 border-purple-200' },
-      'NUMERIC': { label: 'Numeric', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-      'ONE_WORD': { label: 'One Word', className: 'bg-pink-100 text-pink-800 border-pink-200' },
-      'LONG_ANSWER': { label: 'Long Answer', className: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-    };
+    const typeMap = buildQuestionTypeMap(t);
     return typeMap[questionType] || { label: questionType, className: 'bg-gray-100 text-gray-800 border-gray-200' };
   };
 
   const formatUserAnswer = (response: any) => {
-    if (!response.userAnswer) return 'No response';
+    if (!response.userAnswer) return t('response.noResponse');
 
     switch (response.questionType) {
       case 'MCQS':
@@ -131,23 +136,23 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
           );
           return selectedOptions.map((opt: any) => opt.content).join(', ');
         }
-        return 'No response';
+        return t('response.noResponse');
 
       case 'NUMERIC':
         return response.userAnswer.validAnswer !== null ?
-          response.userAnswer.validAnswer.toString() : 'No response';
+          response.userAnswer.validAnswer.toString() : t('response.noResponse');
 
       case 'ONE_WORD':
       case 'LONG_ANSWER':
-        return response.userAnswer.answer || 'No response';
+        return response.userAnswer.answer || t('response.noResponse');
 
       default:
-        return 'Unknown answer format';
+        return t('response.unknownAnswerFormat');
     }
   };
 
   const formatCorrectAnswer = (response: any) => {
-    if (!response.correctAnswer) return 'No correct answer available';
+    if (!response.correctAnswer) return t('response.noCorrectAnswerAvailable');
 
     switch (response.questionType) {
       case 'MCQS':
@@ -156,26 +161,26 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
         if (response.correctAnswer.options && response.correctAnswer.options.length > 0) {
           return response.correctAnswer.options.map((opt: any) => opt.content).join(', ');
         }
-        return 'No correct options available';
+        return t('response.noCorrectOptionsAvailable');
 
       case 'NUMERIC':
         return response.correctAnswer.validAnswers ?
-          response.correctAnswer.validAnswers.join(', ') : 'No correct answer available';
+          response.correctAnswer.validAnswers.join(', ') : t('response.noCorrectAnswerAvailable');
 
       case 'ONE_WORD':
       case 'LONG_ANSWER':
-        return response.correctAnswer.answer || 'No correct answer available';
+        return response.correctAnswer.answer || t('response.noCorrectAnswerAvailable');
 
       default:
-        return 'Unknown correct answer format';
+        return t('response.unknownCorrectAnswerFormat');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading enhanced survey data...</span>
+        <CircleNotch className="h-8 w-8 animate-spin" />
+        <span className="ms-2">{t('states.loading')}</span>
       </div>
     );
   }
@@ -183,7 +188,7 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500">Error: {error}</p>
+        <p className="text-red-500">{t('states.errorPrefix')} {error}</p>
       </div>
     );
   }
@@ -191,7 +196,7 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
   if (!currentRespondent) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">No respondents found.</p>
+        <p className="text-gray-500">{t('states.noRespondentsFound')}</p>
       </div>
     );
   }
@@ -208,16 +213,16 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
             <p className="text-sm text-gray-600">{currentRespondent.email}</p>
             {currentRespondent.source_id && (
               <p className="text-xs text-gray-500 mt-1">
-                Batch: {getBatchName(currentRespondent.source_id)}
+                {t('header.batch')} {getBatchName(currentRespondent.source_id)}
               </p>
             )}
           </div>
           <div className="flex items-center space-x-2">
             <Badge className="bg-green-100 text-green-800 border-green-200">
-              {currentRespondent.correctAnswers}/{currentRespondent.totalQuestions} Correct
+              {t('header.correctCount', { correct: currentRespondent.correctAnswers, total: currentRespondent.totalQuestions })}
             </Badge>
             <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-              {currentRespondent.accuracy.toFixed(1)}% Accuracy
+              {t('header.accuracy', { value: currentRespondent.accuracy.toFixed(1) })}
             </Badge>
           </div>
         </div>
@@ -230,8 +235,8 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
             onClick={handlePrevious}
             disabled={currentRespondentIndex === 0 && pageNo === 1}
           >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
+            <CaretLeft className="h-4 w-4" />
+            {t('navigation.previous')}
           </Button>
 
           <div className="flex items-center space-x-2">
@@ -245,7 +250,7 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
               min="1"
               max={totalElements}
             />
-            <span className="text-sm text-gray-500">of {totalElements}</span>
+            <span className="text-sm text-gray-500">{t('navigation.of', { total: totalElements })}</span>
           </div>
 
           <Button
@@ -254,15 +259,15 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
             onClick={handleNext}
             disabled={currentRespondentIndex === totalRespondents - 1 && data?.pagination?.last}
           >
-            Next
-            <ChevronRight className="h-4 w-4" />
+            {t('navigation.next')}
+            <CaretRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* Individual Responses */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        {currentRespondent?.responses?.map((response: any, index: number) => {
+        {currentRespondent?.responses?.map((response: any) => {
           const typeBadge = getQuestionTypeBadge(response.questionType);
 
           return (
@@ -270,7 +275,7 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-lg font-semibold flex-1">
-                    Q{response.questionOrder}. {response.questionContent}
+                    {t('question.numberedTitle', { order: response.questionOrder, content: response.questionContent })}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <Badge className={typeBadge.className}>
@@ -289,15 +294,15 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
                   {/* User Answer */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-gray-700">User Answer:</span>
+                      <span className="text-sm font-medium text-gray-700">{t('question.userAnswer')}</span>
                       {response.isVisited ? (
                         <Eye className="h-4 w-4 text-green-500" />
                       ) : (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
+                        <EyeSlash className="h-4 w-4 text-gray-400" />
                       )}
                       {response.isMarkedForReview && (
                         <Badge variant="outline" className="text-xs">
-                          Marked for Review
+                          {t('question.markedForReview')}
                         </Badge>
                       )}
                     </div>
@@ -312,7 +317,7 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
 
                   {/* Correct Answer */}
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">Correct Answer:</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">{t('question.correctAnswer')}</div>
                     <div className="p-4 bg-gray-50 rounded-lg border">
                       <p className="text-sm">
                         {formatCorrectAnswer(response)}
@@ -323,9 +328,9 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
                   {/* Options (for MCQ questions) */}
                   {(response.questionType === 'MCQS' || response.questionType === 'MCQM' || response.questionType === 'TRUE_FALSE') && (
                     <div>
-                      <div className="text-sm font-medium text-gray-700 mb-2">All Options:</div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">{t('question.allOptions')}</div>
                       <div className="space-y-2">
-                        {response.options.map((option: any, optIndex: number) => (
+                        {response.options.map((option: any) => (
                           <div
                             key={option.id}
                             className={`p-3 rounded-lg border text-sm ${
@@ -355,10 +360,10 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {response.timeTaken}s
+                        {t('question.timeTakenSeconds', { count: response.timeTaken })}
                       </span>
                     </div>
-                    <span>Question #{response.questionOrder}</span>
+                    <span>{t('question.questionNumber', { order: response.questionOrder })}</span>
                   </div>
                 </div>
               </CardContent>
@@ -366,7 +371,7 @@ export const EnhancedSurveyIndividualRespondentsTab: React.FC<EnhancedSurveyIndi
           );
         }) || (
           <div className="col-span-2 text-center py-8">
-            <p className="text-gray-500">No responses available for this respondent.</p>
+            <p className="text-gray-500">{t('states.noResponsesAvailable')}</p>
           </div>
         )}
       </div>

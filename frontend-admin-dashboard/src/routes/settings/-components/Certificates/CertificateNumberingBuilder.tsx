@@ -1,4 +1,6 @@
 import { useRef } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Hash, Info, Warning } from '@phosphor-icons/react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -65,21 +67,21 @@ export const SEQUENCE_TOKEN = /\{SEQ(?::\d+)?\}/;
  */
 export const YEAR_TOKEN = /\{(YYYY|YY)\}/;
 
-const TOKENS: Array<{ token: string; label: string; hint: string }> = [
-    { token: '{SEQ}', label: 'Number', hint: 'The counter — 001, 002, 003. Required.' },
-    { token: '{SEQ:4}', label: 'Number (4 digits)', hint: '0001, 0002 — set the width yourself' },
-    { token: '{PREFIX}', label: 'Prefix', hint: 'The prefix set beside this field' },
-    { token: '{YYYY}', label: 'Year', hint: '2026' },
-    { token: '{YY}', label: 'Year (2-digit)', hint: '26' },
-    { token: '{SUFFIX}', label: 'Suffix', hint: 'The suffix set beside this field' },
-    { token: '{COURSE_CODE}', label: 'Course code', hint: 'Blank for courses with no code' },
+const buildTokens = (t: TFunction): Array<{ token: string; label: string; hint: string }> => [
+    { token: '{SEQ}', label: t('tokens.seq.label'), hint: t('tokens.seq.hint') },
+    { token: '{SEQ:4}', label: t('tokens.seqPadded.label'), hint: t('tokens.seqPadded.hint') },
+    { token: '{PREFIX}', label: t('tokens.prefix.label'), hint: t('tokens.prefix.hint') },
+    { token: '{YYYY}', label: t('tokens.year.label'), hint: t('tokens.year.hint') },
+    { token: '{YY}', label: t('tokens.yearShort.label'), hint: t('tokens.yearShort.hint') },
+    { token: '{SUFFIX}', label: t('tokens.suffix.label'), hint: t('tokens.suffix.hint') },
+    { token: '{COURSE_CODE}', label: t('tokens.courseCode.label'), hint: t('tokens.courseCode.hint') },
 ];
 
-const PRESETS: Array<{ label: string; pattern: string; padding: number }> = [
-    { label: 'EDU2026001', pattern: '{PREFIX}{YYYY}{SEQ:3}', padding: 3 },
-    { label: 'EDU-2026-0001', pattern: '{PREFIX}-{YYYY}-{SEQ:4}', padding: 4 },
-    { label: 'EDU/26/001', pattern: '{PREFIX}/{YY}/{SEQ:3}', padding: 3 },
-    { label: 'EDU0001', pattern: '{PREFIX}{SEQ:4}', padding: 4 },
+const buildPresets = (t: TFunction): Array<{ label: string; pattern: string; padding: number }> => [
+    { label: t('presets.options.standard'), pattern: '{PREFIX}{YYYY}{SEQ:3}', padding: 3 },
+    { label: t('presets.options.dashed'), pattern: '{PREFIX}-{YYYY}-{SEQ:4}', padding: 4 },
+    { label: t('presets.options.slash'), pattern: '{PREFIX}/{YY}/{SEQ:3}', padding: 3 },
+    { label: t('presets.options.compact'), pattern: '{PREFIX}{SEQ:4}', padding: 4 },
 ];
 
 export const CertificateNumberingBuilder = ({
@@ -90,7 +92,10 @@ export const CertificateNumberingBuilder = ({
     highestIssuedSequence,
     disabled,
 }: Props) => {
+    const { t } = useTranslation('settingsCertificateNumbering');
     const inputRef = useRef<HTMLInputElement>(null);
+    const TOKENS = buildTokens(t);
+    const PRESETS = buildPresets(t);
 
     const pattern = value.pattern.trim() || DEFAULT_CERTIFICATE_PATTERN;
     const usingDefault = !value.pattern.trim();
@@ -138,15 +143,12 @@ export const CertificateNumberingBuilder = ({
     return (
         <div className="flex flex-col gap-5 rounded-md border p-4">
             <div>
-                <div className="text-sm font-medium">Certificate numbering</div>
-                <p className="text-xs text-muted-foreground">
-                    Numbers come from a counter for this institute, so they are sequential and never
-                    repeat. Choose the shape below, and where the count starts.
-                </p>
+                <div className="text-sm font-medium">{t('heading.title')}</div>
+                <p className="text-xs text-muted-foreground">{t('heading.description')}</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
-                <Label>Start from a common format</Label>
+                <Label>{t('presets.label')}</Label>
                 <div className="flex flex-wrap gap-2">
                     {PRESETS.map((preset) => (
                         <Button
@@ -170,7 +172,7 @@ export const CertificateNumberingBuilder = ({
 
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="cert-number-format">Format</Label>
+                    <Label htmlFor="cert-number-format">{t('format.label')}</Label>
                     <Input
                         id="cert-number-format"
                         ref={inputRef}
@@ -181,13 +183,11 @@ export const CertificateNumberingBuilder = ({
                         onChange={(e) => onChange({ pattern: e.target.value })}
                         className={cn('font-mono', !hasSequence && 'border-danger-500')}
                     />
-                    <p className="text-xs text-muted-foreground">
-                        Anything outside {'{ }'} is printed as-is. Click a value below to add it.
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('format.hint')}</p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="cert-number-prefix">Prefix</Label>
+                    <Label htmlFor="cert-number-prefix">{t('prefix.label')}</Label>
                     <Input
                         id="cert-number-prefix"
                         disabled={disabled}
@@ -197,13 +197,14 @@ export const CertificateNumberingBuilder = ({
                         className="font-mono"
                     />
                     <p className="text-xs text-muted-foreground">
-                        Blank uses <span className="font-mono">{derivedPrefix}</span>, from your
-                        institute name.
+                        {t('prefix.hintBefore')}
+                        <span className="font-mono">{derivedPrefix}</span>
+                        {t('prefix.hintAfter')}
                     </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="cert-number-padding">Number width</Label>
+                    <Label htmlFor="cert-number-padding">{t('padding.label')}</Label>
                     <Input
                         id="cert-number-padding"
                         type="number"
@@ -221,13 +222,12 @@ export const CertificateNumberingBuilder = ({
                         }
                     />
                     <p className="text-xs text-muted-foreground">
-                        Digits in a bare <span className="font-mono">{'{SEQ}'}</span>. Past this
-                        width numbers get longer rather than starting over.
+                        <Trans i18nKey="settingsCertificateNumbering:padding.hint">Digits in a bare <span className="font-mono">{'{SEQ}'}</span>. Past this width numbers get longer rather than starting over.</Trans>
                     </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="cert-number-suffix">Suffix (optional)</Label>
+                    <Label htmlFor="cert-number-suffix">{t('suffix.label')}</Label>
                     <Input
                         id="cert-number-suffix"
                         disabled={disabled}
@@ -236,14 +236,13 @@ export const CertificateNumberingBuilder = ({
                         className="font-mono"
                     />
                     <p className="text-xs text-muted-foreground">
-                        Only printed where your format has{' '}
-                        <span className="font-mono">{'{SUFFIX}'}</span>.
+                        <Trans i18nKey="settingsCertificateNumbering:suffix.hint">Only printed where your format has <span className="font-mono">{'{SUFFIX}'}</span>.</Trans>
                     </p>
                 </div>
             </div>
 
             <div className="flex flex-col gap-2">
-                <Label>Add a value</Label>
+                <Label>{t('tokens.label')}</Label>
                 <div className="flex flex-wrap gap-1.5">
                     {TOKENS.map(({ token, label, hint }) => (
                         <button
@@ -266,23 +265,23 @@ export const CertificateNumberingBuilder = ({
 
             <div className="flex flex-col gap-4 rounded-md border border-neutral-200 bg-neutral-50/60 p-4">
                 <div>
-                    <div className="text-sm font-medium">Where the series starts</div>
+                    <div className="text-sm font-medium">{t('seriesStart.title')}</div>
                     <p className="text-xs text-muted-foreground">
                         {issued > 0
-                            ? `This institute has issued up to #${issued}. The next certificate takes #${nextSequence}.`
-                            : 'No certificate has been issued from this counter yet.'}
+                            ? t('seriesStart.issuedInfo', { issued, next: nextSequence })
+                            : t('seriesStart.noneIssued')}
                     </p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="cert-number-start">Start numbering from</Label>
+                        <Label htmlFor="cert-number-start">{t('seriesStart.startField.label')}</Label>
                         <Input
                             id="cert-number-start"
                             type="number"
                             min={0}
                             disabled={disabled}
-                            placeholder="Leave blank to continue"
+                            placeholder={t('seriesStart.startField.placeholder')}
                             value={value.startFrom > 0 ? String(value.startFrom) : ''}
                             onChange={(e) => {
                                 const parsed = Number(e.target.value);
@@ -296,13 +295,12 @@ export const CertificateNumberingBuilder = ({
                             className={cn('font-mono', startFromIgnored && 'border-warning-500')}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Set this if your certificates continue from paper records or another
-                            system — enter 1500 and the next one issued is #1500.
+                            {t('seriesStart.startField.hint')}
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="cert-number-reset">Restart the count each year</Label>
+                        <Label htmlFor="cert-number-reset">{t('seriesStart.resetField.label')}</Label>
                         <div className="flex h-10 items-center gap-3">
                             <Switch
                                 id="cert-number-reset"
@@ -312,13 +310,12 @@ export const CertificateNumberingBuilder = ({
                             />
                             <span className="text-sm text-neutral-600">
                                 {value.resetAnnually
-                                    ? 'Back to the start every 1 January'
-                                    : 'One unbroken series across years'}
+                                    ? t('seriesStart.resetField.on')
+                                    : t('seriesStart.resetField.off')}
                             </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Off keeps counting: #1500 in {new Date().getFullYear()} is followed by
-                            #1501 next year.
+                            {t('seriesStart.resetField.hint', { year: new Date().getFullYear() })}
                         </p>
                     </div>
                 </div>
@@ -331,13 +328,14 @@ export const CertificateNumberingBuilder = ({
                         />
                         <div className="text-xs text-warning-700">
                             <p className="font-medium">
-                                #{value.startFrom} has already been issued, so this start number is
-                                ignored.
+                                {t('warnings.startFromIgnored.title', { start: value.startFrom })}
                             </p>
                             <p className="mt-1">
-                                Numbering continues from #{nextSequence}. Numbers are never reused —
-                                #{value.startFrom} is on a certificate somebody already holds.
-                                Choose a number above #{issued} to move the series forward.
+                                {t('warnings.startFromIgnored.body', {
+                                    next: nextSequence,
+                                    start: value.startFrom,
+                                    issued,
+                                })}
                             </p>
                         </div>
                     </div>
@@ -346,10 +344,7 @@ export const CertificateNumberingBuilder = ({
                 {value.resetAnnually && startFrom > 0 && (
                     <div className="flex items-start gap-2 text-xs text-muted-foreground">
                         <Info className="mt-0.5 size-3.5 shrink-0" />
-                        <span>
-                            The count restarts each January, so it will begin at #{value.startFrom}{' '}
-                            again next year. Turn the yearly restart off for one continuous series.
-                        </span>
+                        <span>{t('info.resetRestart', { start: value.startFrom })}</span>
                     </div>
                 )}
 
@@ -360,14 +355,9 @@ export const CertificateNumberingBuilder = ({
                             weight="fill"
                         />
                         <div className="text-xs text-warning-700">
-                            <p className="font-medium">
-                                This format has no year in it, but the count restarts each year.
-                            </p>
+                            <p className="font-medium">{t('warnings.noYearToken.title')}</p>
                             <p className="mt-1">
-                                January&apos;s first certificate would repeat a number already
-                                issued. Add{' '}
-                                <span className="font-mono">{'{YYYY}'}</span> to the format, or turn
-                                the yearly restart off.
+                                <Trans i18nKey="settingsCertificateNumbering:warnings.noYearToken.body">January&apos;s first certificate would repeat a number already issued. Add <span className="font-mono">{'{YYYY}'}</span> to the format, or turn the yearly restart off.</Trans>
                             </p>
                         </div>
                     </div>
@@ -378,10 +368,10 @@ export const CertificateNumberingBuilder = ({
                 <div className="mb-2 flex items-center gap-2">
                     <Hash className="size-4 text-neutral-500" />
                     <span className="text-sm font-medium text-neutral-700">
-                        The next three certificates
+                        {t('preview.title')}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                        starting at #{nextSequence}
+                        {t('preview.startingAt', { next: nextSequence })}
                     </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -390,14 +380,15 @@ export const CertificateNumberingBuilder = ({
                             key={`${sample}-${index}`}
                             className="rounded bg-white px-2 py-1 font-mono text-xs text-neutral-700 ring-1 ring-neutral-200"
                         >
-                            {sample || '—'}
+                            {sample || t('preview.emptySample')}
                         </code>
                     ))}
                 </div>
                 {usingDefault && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                        Using the default format,{' '}
-                        <span className="font-mono">{DEFAULT_CERTIFICATE_PATTERN}</span>.
+                        {t('preview.usingDefaultBefore')}
+                        <span className="font-mono">{DEFAULT_CERTIFICATE_PATTERN}</span>
+                        {t('preview.usingDefaultAfter')}
                     </p>
                 )}
             </div>
@@ -406,14 +397,9 @@ export const CertificateNumberingBuilder = ({
                 <div className="flex items-start gap-2 rounded-md border border-danger-200 bg-danger-50 p-3">
                     <Warning className="mt-0.5 size-4 shrink-0 text-danger-600" weight="fill" />
                     <div className="text-xs text-danger-700">
-                        <p className="font-medium">
-                            This format has no counter, so every certificate would get the same
-                            number.
-                        </p>
+                        <p className="font-medium">{t('warnings.noSequence.title')}</p>
                         <p className="mt-1">
-                            Add <span className="font-mono">{'{SEQ}'}</span> where the number should
-                            go — typing digits yourself prints those exact digits every time. Until
-                            you do, the counter is added at the end so numbers stay unique.
+                            <Trans i18nKey="settingsCertificateNumbering:warnings.noSequence.body">Add <span className="font-mono">{'{SEQ}'}</span> where the number should go — typing digits yourself prints those exact digits every time. Until you do, the counter is added at the end so numbers stay unique.</Trans>
                         </p>
                     </div>
                 </div>
@@ -421,11 +407,7 @@ export const CertificateNumberingBuilder = ({
 
             <div className="flex items-start gap-2 text-xs text-muted-foreground">
                 <Info className="mt-0.5 size-3.5 shrink-0" />
-                <span>
-                    Changing the format affects certificates issued from now on. The counter itself
-                    only ever moves forward — numbers already issued are never reused, which is why
-                    a start number below #{issued || 1} has no effect.
-                </span>
+                <span>{t('info.footer', { min: issued || 1 })}</span>
             </div>
         </div>
     );

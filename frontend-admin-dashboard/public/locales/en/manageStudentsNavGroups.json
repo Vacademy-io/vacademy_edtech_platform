@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "overview": "Overview",
+        "courses": "Courses",
+        "learningProgress": "Progress",
+        "testRecord": "Tests",
+        "paymentHistory": "Payment History",
+        "enrollDeroll": "Enrol / Deroll",
+        "membership": "Membership",
+        "lead": "Lead Profile",
+        "enquiry": "Enquiry",
+        "application": "Application",
+        "notifications": "Communication",
+        "portalAccess": "Portal Access",
+        "userTagging": "User Tagging",
+        "badges": "Badges",
+        "files": "Files",
+        "parent": "Guardian",
+        "onboarding": "Onboarding",
+        "subOrg": "Sub-Org",
+        "reports": "Reports",
+        "fullHistory": "Full History",
+        "workflows": "Workflows"
+    }
+}

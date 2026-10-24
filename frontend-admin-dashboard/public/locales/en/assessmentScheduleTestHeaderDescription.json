@@ -1,0 +1,25 @@
+{
+    "heading": "Comprehensive Test Management",
+    "description": "Effortlessly monitor and manage all assessments with a comprehensive view of ongoing, upcoming, and past exams. Gain easy access to each test's details, schedule, and status, ensuring organized oversight of the entire testing process from start to finish.",
+    "assessmentSettingsLabel": "Assessment settings",
+    "createAssessmentButton": "Create Assessment",
+    "createAssessmentDialogTitle": "Create Assessment",
+    "examTypes": {
+        "examination": {
+            "title": "Examination",
+            "description": "A Fixed-time assessment that goes live for a specific schedule, simulating real exam conditions."
+        },
+        "mock": {
+            "title": "Mock Assessment",
+            "description": "A practice assessment always available, with a fixed duration to replicate exam scenarios."
+        },
+        "practice": {
+            "title": "Practice Assessment",
+            "description": "An on-demand assessment with no time limits, allowing students to attempt it anytime."
+        },
+        "survey": {
+            "title": "Survey",
+            "description": "A set of questions for feedback or opinions, with no right or wrong answers."
+        }
+    }
+}

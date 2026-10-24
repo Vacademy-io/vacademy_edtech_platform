@@ -1,0 +1,15 @@
+{
+    "header": {
+        "title": "{{term}} नामांकित करें",
+        "description": "{{term}} का नामांकन और आमंत्रण प्रबंधित करें"
+    },
+    "badges": {
+        "learnerCount": "{{count}} {{term}}",
+        "batchCount": "{{count}} {{term}}"
+    },
+    "actions": {
+        "inviteNew": "नए {{term}} आमंत्रित करें",
+        "manageList": "{{term}} सूची प्रबंधित करें",
+        "enrollmentRequests": "नामांकन अनुरोध"
+    }
+}

@@ -1,0 +1,197 @@
+{
+    "header": {
+        "title": "بوابات الدفع",
+        "description": "قم بتهيئة مزودي الخدمة (Stripe وRazorpay وPhonePe وCashfree وEway) الذين يمكن للمتعلمين الدفع من خلالهم. يتم تخزين المفاتيح لكل مؤسسة على حدة.",
+        "refresh": "تحديث",
+        "addGateway": "إضافة بوابة"
+    },
+    "list": {
+        "title": "البوابات المهيّأة",
+        "descriptionPre": "القيم السرية مخفية. انقر فوق",
+        "descriptionEdit": "تعديل",
+        "descriptionPost": "لتدوير المفاتيح، أو اترك الحقول المخفية كما هي للاحتفاظ بالسر الحالي.",
+        "loading": "جارٍ التحميل…",
+        "emptyTitle": "لا توجد بوابات دفع مهيّأة بعد",
+        "emptyDescription": "أضف بيانات اعتماد Stripe أو Razorpay أو PhonePe أو Cashfree أو Eway حتى يتمكن المتعلمون من الدفع عبر بوّاباتك.",
+        "addFirstGateway": "أضف أول بوابة لك"
+    },
+    "status": {
+        "active": "نشطة",
+        "inactive": "غير نشطة"
+    },
+    "toast": {
+        "noInstituteSelected": "لم يتم تحديد مؤسسة",
+        "selectVendor": "اختر مزود بوابة دفع",
+        "missingRequiredFields": "حقول مطلوبة مفقودة: {{fields}}",
+        "gatewayConfigured": "تم تهيئة {{vendor}}",
+        "gatewayUpdated": "تم تحديث {{vendor}}",
+        "saveFailed": "فشل حفظ إعدادات البوابة",
+        "webhookUrlCopied": "تم نسخ رابط الويب هوك",
+        "loadFailed": "فشل تحميل بوابات الدفع",
+        "gatewayDeactivated": "تم تعطيل {{vendor}}",
+        "deactivateFailed": "فشل تعطيل البوابة"
+    },
+    "dialog": {
+        "createTitle": "إضافة بوابة دفع",
+        "editTitle": "تعديل {{vendor}}",
+        "createDescription": "اختر مزوّدًا والصق بيانات اعتماد واجهة برمجة التطبيقات من لوحة تحكمه.",
+        "editDescription": "قم بتحديث بيانات الاعتماد. اترك الحقول المخفية دون تغيير للاحتفاظ بالسر الحالي.",
+        "vendorLabel": "المزوّد",
+        "vendorPlaceholder": "اختر بوابة دفع",
+        "allConfigured": "جميع البوابات المدعومة تمت تهيئتها بالفعل.",
+        "findValuesPrefix": "يمكنك العثور على هذه القيم في لوحة تحكم",
+        "dashboardLinkText": "{{vendor}}",
+        "findValuesSuffix": ".",
+        "whereToFind": "أين تجد هذه القيم",
+        "webhookUrlLabel": "رابط الويب هوك — الصقه في لوحة تحكم {{vendor}}",
+        "copyUrl": "نسخ الرابط",
+        "hide": "إخفاء",
+        "show": "إظهار",
+        "maskedValueNote": "القيمة المعروضة مخفية. اكتب سرًا جديدًا لاستبدالها، أو اتركها كما هي للاحتفاظ بالقيمة الحالية.",
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "addGatewayButton": "إضافة بوابة",
+        "saveChanges": "حفظ التغييرات"
+    },
+    "mappingCard": {
+        "editCredentials": "تعديل بيانات الاعتماد",
+        "deactivateGateway": "تعطيل البوابة",
+        "unknownVendor": "مزوّد غير معروف — لا يوجد نموذج بيانات متاح.",
+        "notSet": "غير محدد",
+        "webhookUrlLabel": "رابط الويب هوك",
+        "copyWebhookUrl": "نسخ رابط الويب هوك"
+    },
+    "deleteDialog": {
+        "title": "هل تريد تعطيل البوابة؟",
+        "description": "سيتم تمييز {{vendor}} كغير نشطة ولن يتمكن المتعلمون من الدفع من خلالها. يمكنك إضافتها مرة أخرى لاحقًا.",
+        "cancel": "إلغاء",
+        "deactivating": "جارٍ التعطيل…",
+        "deactivate": "تعطيل"
+    },
+    "vendors": {
+        "stripe": {
+            "label": "Stripe",
+            "description": "مدفوعات بطاقات واشتراكات عالمية.",
+            "fields": {
+                "apiKey": {
+                    "label": "المفتاح السري",
+                    "placeholder": "sk_live_…",
+                    "helper": "مفتاح واجهة برمجة التطبيقات السري لـ Stripe. لن يُعرض مرة أخرى بعد الحفظ."
+                },
+                "publishableKey": {
+                    "label": "المفتاح القابل للنشر",
+                    "placeholder": "pk_live_…",
+                    "helper": "يُستخدم من قبل صفحة الدفع الخاصة بالمتعلم في المتصفح."
+                },
+                "webhookSecret": {
+                    "label": "سر توقيع الويب هوك",
+                    "placeholder": "whsec_…",
+                    "helper": "اختياري. يُستخدم للتحقق من استدعاءات الويب هوك الواردة."
+                }
+            }
+        },
+        "razorpay": {
+            "label": "Razorpay",
+            "description": "بطاقات / UPI / الخدمات المصرفية عبر الإنترنت للشركات الهندية.",
+            "fields": {
+                "keyId": {
+                    "label": "معرّف المفتاح",
+                    "placeholder": "rzp_live_…",
+                    "helper": "معرّف مفتاح Razorpay (عام؛ يظهر عند الدفع)."
+                },
+                "keySecret": {
+                    "label": "سر المفتاح",
+                    "placeholder": "سر مفتاح Razorpay الخاص بك"
+                },
+                "webhookSecret": {
+                    "label": "سر الويب هوك",
+                    "placeholder": "سر توقيع الويب هوك",
+                    "helper": "قم بتعيينه في صفحة Webhooks على Razorpay. بدونه، تُرفض استدعاءات حالة الدفع برمز الخطأ 404 ولا يصل التأكيد غير المتزامن إلى المنصة أبدًا."
+                }
+            }
+        },
+        "phonepe": {
+            "label": "PhonePe",
+            "description": "بوابة PhonePe للتجار الهنود (UPI، البطاقات، المحافظ الإلكترونية). الدفع القياسي V2 (OAuth). التسوية بالروبية الهندية (INR) فقط.",
+            "setupSteps": {
+                "step1": "سجّل الدخول إلى لوحة تحكم PhonePe Business (business.phonepe.com) باستخدام حساب التاجر الخاص بك في PhonePe for Business.",
+                "step2": "اذهب إلى Developer Settings ← API Keys. يرى التجار الجدد (V2) معرّف عميل (Client ID) وسر عميل (Client Secret) وإصدار عميل (Client Version) — انسخ الثلاثة إلى الحقول أدناه.",
+                "step3": "للتجار القدامى فقط: إذا حصلت بدلاً من ذلك على Salt Key + Salt Index، ضع معرّف التاجر (Merchant ID) في «Client ID»، وSalt Key (بصيغة KEY###INDEX) في «Client Secret»، واترك «Client Version» فارغًا.",
+                "step4": "قم بتعيين «API Base URL»: V2 LIVE = https://api.phonepe.com/apis/pg، وV2 UAT/Sandbox = https://api-preprod.phonepe.com/apis/pg-sandbox (النسخة القديمة V1 = https://api.phonepe.com/apis/hermes).",
+                "step5": "ضمن Developer Settings ← Webhooks، أضف رابط الويب هوك الموضح أدناه وحدد اسم مستخدم وكلمة مرور. أدخل نفس اسم المستخدم/كلمة المرور أدناه لتأمين الاستدعاءات الواردة."
+            },
+            "fields": {
+                "clientId": {
+                    "label": "معرّف العميل (Client ID)",
+                    "placeholder": "معرّف العميل V2 (أو معرّف التاجر القديم)",
+                    "helper": "V2: معرّف العميل من Developer Settings ← API Keys. تجار V1 القدامى: معرّف التاجر الخاص بك (MID)."
+                },
+                "clientSecret": {
+                    "label": "سر العميل (Client Secret)",
+                    "placeholder": "سر العميل V2 (أو Salt Key###index القديم)",
+                    "helper": "V2: سر العميل الخاص بك. تجار V1 القدامى: Salt Key الخاص بك، يُلصق بصيغة KEY###INDEX (الفهرس عادةً 1). يبقى سريًا."
+                },
+                "clientVersion": {
+                    "label": "إصدار العميل (Client Version)",
+                    "placeholder": "مثال: 1",
+                    "helper": "لـ V2 فقط — إصدار العميل من لوحة التحكم (عادةً 1). اتركه فارغًا إذا كنت تاجرًا قديمًا يستخدم Salt Key."
+                },
+                "baseUrl": {
+                    "label": "رابط الأساس لواجهة برمجة التطبيقات",
+                    "placeholder": "https://api.phonepe.com/apis/pg",
+                    "helper": "V2 LIVE: https://api.phonepe.com/apis/pg • V2 UAT: https://api-preprod.phonepe.com/apis/pg-sandbox • V1 القديم: https://api.phonepe.com/apis/hermes"
+                },
+                "webhookUsername": {
+                    "label": "اسم مستخدم الويب هوك (اختياري)",
+                    "placeholder": "نفس اسم المستخدم الذي حددته في PhonePe ← Webhooks",
+                    "helper": "يفعّل التحقق من توقيع الاستدعاءات الواردة. يجب أن يطابق اسم المستخدم المُهيأ في لوحة تحكم PhonePe."
+                },
+                "webhookPassword": {
+                    "label": "كلمة مرور الويب هوك (اختياري)",
+                    "placeholder": "نفس كلمة المرور التي حددتها في PhonePe ← Webhooks",
+                    "helper": "يجب أن تطابق كلمة المرور المُهيأة في لوحة تحكم PhonePe. اترك كلا حقلي الويب هوك فارغين لتخطي التحقق."
+                }
+            }
+        },
+        "cashfree": {
+            "label": "Cashfree",
+            "description": "مدفوعات Cashfree للهند.",
+            "fields": {
+                "clientId": {
+                    "label": "معرّف التطبيق (App ID)",
+                    "placeholder": "TEST… أو معرّف التطبيق الفعلي"
+                },
+                "clientSecret": {
+                    "label": "المفتاح السري"
+                },
+                "baseUrl": {
+                    "label": "رابط الأساس لواجهة برمجة التطبيقات",
+                    "placeholder": "https://api.cashfree.com/pg"
+                }
+            }
+        },
+        "eway": {
+            "label": "Eway",
+            "description": "مدفوعات Eway (أستراليا / نيوزيلندا).",
+            "fields": {
+                "apiKey": {
+                    "label": "مفتاح واجهة برمجة التطبيقات"
+                },
+                "password": {
+                    "label": "كلمة المرور"
+                },
+                "publicKey": {
+                    "label": "مفتاح واجهة برمجة التطبيقات العام",
+                    "helper": "يُستخدم من قبل صفحة الدفع الخاصة بالمتعلم في المتصفح."
+                },
+                "encryptionKey": {
+                    "label": "مفتاح التشفير"
+                },
+                "baseUrl": {
+                    "label": "رابط الأساس لواجهة برمجة التطبيقات",
+                    "placeholder": "https://api.ewaypayments.com"
+                }
+            }
+        }
+    }
+}

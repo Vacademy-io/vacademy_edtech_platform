@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.counsellor_target.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.counsellor_target.dto.BulkCounsellorTargetRequest;
 import vacademy.io.admin_core_service.features.counsellor_target.dto.CounsellorTargetDTO;
 import vacademy.io.admin_core_service.features.counsellor_target.dto.CounsellorTargetProgressDTO;
@@ -45,12 +46,21 @@ public class CounsellorTargetController {
 
     /** Set/replace one counsellor's target for a (metric, period) slot. */
     @PutMapping
+    @Auditable(
+            entityType = "COUNSELLOR_TARGET",
+            action = "UPDATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'set a target for ' + @crmAuditNarrator.personFor(#request?.counsellorUserId)")
     public ResponseEntity<CounsellorTargetDTO> upsert(@RequestBody UpsertCounsellorTargetRequest request) {
         return ResponseEntity.ok(settingService.upsertTarget(request));
     }
 
     /** Apply the same target to many counsellors (bulk-apply to a team). */
     @PostMapping("/bulk")
+    @Auditable(
+            entityType = "COUNSELLOR_TARGET",
+            action = "BULK_UPDATE",
+            descriptionExpr = "'set targets for ' + @crmAuditNarrator.peopleFor(#request?.counsellorUserIds)")
     public ResponseEntity<Void> bulk(@RequestBody BulkCounsellorTargetRequest request) {
         settingService.bulkUpsertTargets(request);
         return ResponseEntity.ok().build();
@@ -58,6 +68,11 @@ public class CounsellorTargetController {
 
     /** Remove one target by id. */
     @DeleteMapping("/{targetId}")
+    @Auditable(
+            entityType = "COUNSELLOR_TARGET",
+            action = "DELETE",
+            entityIdExpr = "#targetId",
+            descriptionExpr = "'removed a target for ' + @crmAuditNarrator.personFor(#counsellorUserId)")
     public ResponseEntity<Void> delete(
             @PathVariable String targetId,
             @RequestParam("instituteId") String instituteId,

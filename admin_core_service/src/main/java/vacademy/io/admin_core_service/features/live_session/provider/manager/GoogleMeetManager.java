@@ -56,6 +56,7 @@ import java.util.Set;
 public class GoogleMeetManager implements LiveSessionProviderStrategy {
 
     private static final Set<String> ACCESS_TYPES = Set.of("OPEN", "TRUSTED", "RESTRICTED");
+    private static final Set<String> RESTRICTION_TYPES = Set.of("HOSTS_ONLY", "NO_RESTRICTION");
 
     private final GoogleAccountStore googleAccountStore;
     private final GoogleAccessTokenService accessTokenService;
@@ -91,45 +92,54 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
         String token = accessTokenService.getAccessToken(account);
 
         Map<String, Object> config = buildSpaceConfig(account, request.resolveProviderConfig());
-        boolean recordingRequested = config.containsKey("artifactConfig");
+        boolean recordingRefused = false;
 
         JsonNode response;
-        try {
-            response = createSpace(account, token, config);
-        } catch (SpaceCreateException e) {
-            log.error("google.meet.create.fail accountId={} httpStatus={} body={}",
-                    account.getId(), e.status, snippet(e.body));
-            // Evict ONLY on 401 (expired/invalid token). Google returns 403 for the recording-
-            // permission error ("updateAutoRecordingGeneration is not available to the user") — that's
-            // NOT a token problem, so don't evict; the recording fallback below handles it.
-            if (e.status == 401) {
-                accessTokenService.evict(account.getId());
-            }
-            // Graceful degradation: if auto-recording was requested but this Google plan can't record,
-            // Google fails the WHOLE spaces.create — typically 403 "updateAutoRecordingGeneration is
-            // not available to the user" (also possible as other 4xx). Retry WITHOUT recording rather
-            // than failing the session; the retry succeeding IS the proof that recording was the blocker
-            // → self-heal by turning auto-record off on the account (an account-wide plan property).
-            if (recordingRequested && e.status >= 400 && e.status < 500 && e.status != 401) {
-                config.remove("artifactConfig");
-                JsonNode retry;
-                try {
-                    retry = createSpace(account, token, config);
-                } catch (SpaceCreateException e2) {
+        while (true) {
+            try {
+                response = createSpace(account, token, config);
+                break;
+            } catch (SpaceCreateException e) {
+                log.error("google.meet.create.fail accountId={} httpStatus={} body={}",
+                        account.getId(), e.status, snippet(e.body));
+                // Evict ONLY on 401 (expired/invalid token). Google returns 403 for a feature the
+                // plan lacks ("updateAutoRecordingGeneration is not available to the user") — that's
+                // NOT a token problem, so don't evict; the feature fallback below handles it.
+                if (e.status == 401) {
+                    accessTokenService.evict(account.getId());
+                }
+                // Graceful degradation: Google fails the WHOLE spaces.create when one optional
+                // feature (recording, transcript, smart notes, attendance report, host management)
+                // isn't on the institute's plan. Drop the feature the error names and retry, so the
+                // class still gets a link; if the error names none, drop all optional features at once.
+                boolean featureRefusal = e.status >= 400 && e.status < 500 && e.status != 401;
+                List<SpaceFeature> present = SpaceFeature.presentIn(config);
+                if (!featureRefusal || present.isEmpty()) {
                     throw new VacademyException("Google Meet create space failed: HTTP " + e.status);
                 }
-                log.warn("google.meet.create recording unavailable for account {} (HTTP {} with recording, "
-                        + "OK without) — created without recording + disabled auto-record on the account",
-                        account.getId(), e.status);
-                account.setRecordingEnabled(false);
-                try {
-                    googleAccountStore.update(account);
-                } catch (Exception ignore) {
-                    /* best-effort self-heal */
+                SpaceFeature blamed = SpaceFeature.blamedBy(e.body, present);
+                List<SpaceFeature> dropped = blamed != null ? List.of(blamed) : present;
+                dropped.forEach(f -> f.removeFrom(config));
+                log.warn("google.meet.create feature unavailable for account {} (HTTP {}) — retrying without {}",
+                        account.getId(), e.status, dropped);
+                // Recording is only proven to be the blocker when the error names it, or when it was
+                // the only feature sent (the pre-existing recording-only fallback).
+                if (blamed == SpaceFeature.RECORDING || present.equals(List.of(SpaceFeature.RECORDING))) {
+                    recordingRefused = true;
                 }
-                response = retry;
-            } else {
-                throw new VacademyException("Google Meet create space failed: HTTP " + e.status);
+            }
+        }
+
+        // The retry succeeding IS the proof that recording was the blocker → self-heal by turning
+        // auto-record off on the account (an account-wide plan property).
+        if (recordingRefused && account.isRecordingEnabled()) {
+            log.warn("google.meet.create recording unavailable for account {} — disabled auto-record on the account",
+                    account.getId());
+            account.setRecordingEnabled(false);
+            try {
+                googleAccountStore.update(account);
+            } catch (Exception ignore) {
+                /* best-effort self-heal */
             }
         }
 
@@ -297,11 +307,16 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
     }
 
     /**
-     * Builds the Meet REST API SpaceConfig. accessType comes from the wizard config (override)
-     * or the account default; auto-recording is set ON only when the institute enabled it on a
-     * recording-capable edition (sending ON otherwise simply never produces an artifact).
+     * Builds the Meet REST API SpaceConfig from the wizard's per-class config, falling back to the
+     * account defaults. accessType: wizard override or account default. Recording: wizard override
+     * or the account's auto-record flag. Transcript, smart notes, attendance report and host
+     * management are per-class only.
+     *
+     * Optional features are sent only when turned ON — "off" omits the field so Google keeps its
+     * own default (off unless the Workspace admin forces it). Sending OFF for a feature the plan
+     * lacks is refused just like ON, which would cost every occurrence a failed call.
      */
-    private Map<String, Object> buildSpaceConfig(GoogleAccount account, Map<String, Object> cfg) {
+    static Map<String, Object> buildSpaceConfig(GoogleAccount account, Map<String, Object> cfg) {
         Map<String, Object> config = new LinkedHashMap<>();
 
         String accessType = stringValue(cfg, "accessType", account.getDefaultAccessType());
@@ -312,12 +327,121 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
         config.put("accessType", accessType.toUpperCase());
         config.put("entryPointAccess", "ALL");
 
-        boolean record = boolValue(cfg, "recording", account.isRecordingEnabled());
-        if (record) {
-            config.put("artifactConfig", Map.of(
-                    "recordingConfig", Map.of("autoRecordingGeneration", "ON")));
+        if (boolValue(cfg, "recording", account.isRecordingEnabled())) {
+            SpaceFeature.RECORDING.addTo(config);
+        }
+        if (boolValue(cfg, "transcription", false)) {
+            SpaceFeature.TRANSCRIPTION.addTo(config);
+        }
+        if (boolValue(cfg, "smartNotes", false)) {
+            SpaceFeature.SMART_NOTES.addTo(config);
+        }
+        if (boolValue(cfg, "attendanceReport", false)) {
+            SpaceFeature.ATTENDANCE_REPORT.addTo(config);
+        }
+        if (boolValue(cfg, "hostManagement", false)) {
+            config.put("moderation", "ON");
+            Map<String, Object> restrictions = new LinkedHashMap<>();
+            putRestriction(restrictions, "chatRestriction", cfg);
+            putRestriction(restrictions, "reactionRestriction", cfg);
+            putRestriction(restrictions, "presentRestriction", cfg);
+            if (cfg.get("joinAsViewer") != null) {
+                restrictions.put("defaultJoinAsViewerType", boolValue(cfg, "joinAsViewer", false) ? "ON" : "OFF");
+            }
+            if (!restrictions.isEmpty()) {
+                config.put("moderationRestrictions", restrictions);
+            }
         }
         return config;
+    }
+
+    private static void putRestriction(Map<String, Object> restrictions, String key, Map<String, Object> cfg) {
+        String v = stringValue(cfg, key, null);
+        if (v != null && RESTRICTION_TYPES.contains(v.toUpperCase())) {
+            restrictions.put(key, v.toUpperCase());
+        }
+    }
+
+    /**
+     * Optional SpaceConfig features that depend on the institute's Google plan (recording and
+     * transcripts need Business Standard+ / Education Plus, smart notes need Gemini, the
+     * attendance report needs Business Plus+ / Education). Each knows how to add and remove
+     * itself so {@link #createMeeting} can retry without the one Google refused.
+     */
+    enum SpaceFeature {
+        RECORDING("recordingConfig", "autoRecordingGeneration", "autorecordinggeneration"),
+        TRANSCRIPTION("transcriptionConfig", "autoTranscriptionGeneration", "autotranscriptiongeneration"),
+        SMART_NOTES("smartNotesConfig", "autoSmartNotesGeneration", "autosmartnotesgeneration"),
+        ATTENDANCE_REPORT(null, null, "attendancereport"),
+        HOST_MANAGEMENT(null, null, "moderation");
+
+        private final String artifactKey;
+        private final String generationKey;
+        /** The field name Google's error message carries for this feature, lower-cased with
+         *  "_" and spaces removed (e.g. "updateAutoRecordingGeneration is not available to the
+         *  user"). The full field name, so a message that merely mentions "recording" while
+         *  refusing another feature doesn't blame recording. */
+        private final String errorHint;
+
+        SpaceFeature(String artifactKey, String generationKey, String errorHint) {
+            this.artifactKey = artifactKey;
+            this.generationKey = generationKey;
+            this.errorHint = errorHint;
+        }
+
+        @SuppressWarnings("unchecked")
+        void addTo(Map<String, Object> config) {
+            if (this == ATTENDANCE_REPORT) {
+                config.put("attendanceReportGenerationType", "GENERATE_REPORT");
+                return;
+            }
+            Map<String, Object> artifacts = (Map<String, Object>) config
+                    .computeIfAbsent("artifactConfig", k -> new LinkedHashMap<String, Object>());
+            artifacts.put(artifactKey, Map.of(generationKey, "ON"));
+        }
+
+        @SuppressWarnings("unchecked")
+        void removeFrom(Map<String, Object> config) {
+            switch (this) {
+                case ATTENDANCE_REPORT -> config.remove("attendanceReportGenerationType");
+                case HOST_MANAGEMENT -> {
+                    config.remove("moderation");
+                    config.remove("moderationRestrictions");
+                }
+                default -> {
+                    if (config.get("artifactConfig") instanceof Map<?, ?> artifacts) {
+                        ((Map<String, Object>) artifacts).remove(artifactKey);
+                        if (artifacts.isEmpty()) config.remove("artifactConfig");
+                    }
+                }
+            }
+        }
+
+        boolean isIn(Map<String, Object> config) {
+            return switch (this) {
+                case ATTENDANCE_REPORT -> config.containsKey("attendanceReportGenerationType");
+                case HOST_MANAGEMENT -> config.containsKey("moderation");
+                default -> config.get("artifactConfig") instanceof Map<?, ?> artifacts
+                        && artifacts.containsKey(artifactKey);
+            };
+        }
+
+        static List<SpaceFeature> presentIn(Map<String, Object> config) {
+            return java.util.Arrays.stream(values()).filter(f -> f.isIn(config)).toList();
+        }
+
+        /** The present feature Google's error body names, or null when it names none of them. */
+        static SpaceFeature blamedBy(String body, List<SpaceFeature> present) {
+            if (body == null) return null;
+            String b = body.toLowerCase().replace("_", "").replace(" ", "");
+            for (SpaceFeature f : present) {
+                if (b.contains(f.errorHint)) return f;
+            }
+            if (present.contains(HOST_MANAGEMENT) && (b.contains("restriction") || b.contains("viewer"))) {
+                return HOST_MANAGEMENT;
+            }
+            return null;
+        }
     }
 
     private static String stringValue(Map<String, Object> cfg, String key, String dflt) {
@@ -348,6 +472,44 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
                 .bodyToMono(JsonNode.class)
                 .timeout(java.time.Duration.ofSeconds(15)) // don't hang the @Transactional create
                 .block();
+    }
+
+    /**
+     * Makes {@code email} a co-host of the space ({@code POST /v2/{space}/members}, role COHOST) so a
+     * teacher joining from their own Google account gets host controls while the meeting stays on the
+     * organizer's plan. Works for outside accounts (personal Gmail) with the existing
+     * meetings.space.created scope. 409 ALREADY_EXISTS means they already are one. Best-effort: never
+     * throws, so a Google hiccup can't block the join.
+     */
+    public boolean ensureCohost(GoogleAccount account, String spaceName, String email) {
+        if (account == null || spaceName == null || email == null || email.isBlank()
+                || email.equalsIgnoreCase(account.getOrganizerEmail())) {
+            return false;
+        }
+        try {
+            String token = accessTokenService.getAccessToken(account);
+            Integer status = webClientBuilder.build()
+                    .post()
+                    .uri(GoogleMeetEndpoints.MEET_API_BASE_URL + "/" + spaceName + "/members")
+                    .header("Authorization", "Bearer " + token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of("email", email.trim(), "role", "COHOST"))
+                    .exchangeToMono(resp -> resp.releaseBody().thenReturn(resp.statusCode().value()))
+                    .timeout(java.time.Duration.ofSeconds(5)) // the host waits on this before Meet opens
+                    .block();
+            if (status != null && (status == 200 || status == 409)) {
+                return true;
+            }
+            if (status != null && status == 401) {
+                accessTokenService.evict(account.getId());
+            }
+            log.warn("google.meet.cohost.fail accountId={} space={} httpStatus={}",
+                    account.getId(), spaceName, status);
+        } catch (Exception e) {
+            log.warn("google.meet.cohost.fail accountId={} space={} reason={}",
+                    account.getId(), spaceName, e.getMessage());
+        }
+        return false;
     }
 
     private static String snippet(String body) {

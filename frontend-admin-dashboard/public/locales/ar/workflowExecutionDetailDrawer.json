@@ -1,0 +1,12 @@
+{
+    "title": "تفاصيل التنفيذ",
+    "started": "بدأ",
+    "completed": "اكتمل",
+    "duration": "المدة",
+    "idempotencyKey": "مفتاح عدم التكرار",
+    "viewOnDiagram": "عرض على المخطط",
+    "nodeExecutionLogs": "سجلات تنفيذ العقد",
+    "nodeExecutionLogsCount": "سجلات تنفيذ العقد ({{count}})",
+    "loadingLogs": "جارٍ تحميل السجلات...",
+    "noNodeLogsFound": "لم يتم العثور على سجلات عقد"
+}

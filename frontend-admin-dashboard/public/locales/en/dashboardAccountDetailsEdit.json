@@ -1,0 +1,38 @@
+{
+    "dialogTitle": "Edit Account Details",
+    "signOutNote": "You'll be signed out after updating and will need to log in again with your new details.",
+    "username": {
+        "sectionTitle": "Username",
+        "label": "Username*",
+        "placeholder": "Enter your username",
+        "current": "Current: {{username}}"
+    },
+    "password": {
+        "sectionTitle": "Change Password",
+        "newLabel": "New Password*",
+        "newPlaceholder": "Enter your new password",
+        "confirmLabel": "Confirm New Password*",
+        "confirmPlaceholder": "Confirm your new password",
+        "minLengthHint": "At least 4 characters",
+        "match": "Passwords match",
+        "mismatch": "Passwords don't match"
+    },
+    "validation": {
+        "usernameMin": "Username must be at least 3 characters",
+        "usernameMax": "Username must be less than 50 characters",
+        "newPasswordMin": "New password must be at least 4 characters",
+        "confirmPasswordRequired": "Please confirm your password"
+    },
+    "toast": {
+        "loadUserFailed": "Failed to load user details",
+        "userIdMissing": "User ID not found. Please try again.",
+        "updateSuccess": "Account details updated successfully!",
+        "usernameExists": "Username already exists. Please choose a different username.",
+        "updateFailed": "Failed to update account details. Please try again."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "update": "Update Details",
+        "updating": "Updating..."
+    }
+}

@@ -2,6 +2,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Plus } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddChapterForm } from './add-chapter-form';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -26,6 +27,7 @@ const AddChapterHeaderActions = ({
     submitFn: (() => void) | null;
     isPending: boolean;
 }) => {
+    const { t } = useTranslation('studyLibraryAddChapterButton');
     return (
         <>
             <MyButton
@@ -36,7 +38,7 @@ const AddChapterHeaderActions = ({
                 disabled={isPending || !submitFn}
                 className="min-w-[120px]"
             >
-                {isPending ? 'Adding...' : 'Add Chapter'}
+                {isPending ? t('adding') : t('addChapter')}
             </MyButton>
         </>
     );
@@ -50,6 +52,7 @@ export const AddChapterButton = ({
     subjectId,
     packageSessionId,
 }: AddChapterButtonProps) => {
+    const { t } = useTranslation('studyLibraryAddChapterButton');
     const [openDialog, setOpenDialog] = useState(false);
 
     // Chapter form state for header button
@@ -70,11 +73,11 @@ export const AddChapterButton = ({
             className="!m-0 flex w-fit cursor-pointer flex-row items-center justify-start gap-2 px-0 pl-2 text-primary-500"
             id="add-chapters"
         >
-            <Plus /> Add {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
+            <Plus /> {t('addPrefix')} {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
         </MyButton>
     ) : (
         <MyButton scale="large" id="add-chapters">
-            <Plus /> Add {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
+            <Plus /> {t('addPrefix')} {getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}
         </MyButton>
     );
 
@@ -97,7 +100,7 @@ export const AddChapterButton = ({
     return (
         <MyDialog
             trigger={triggerButton}
-            heading={`Add ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
+            heading={`${t('addPrefix')} ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)}`}
             dialogWidth="min-w-fit"
             open={openDialog}
             onOpenChange={handleOpenChange}

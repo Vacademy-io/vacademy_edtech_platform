@@ -1,0 +1,84 @@
+{
+  "certificateDialog": {
+    "title": "{{course}} Completed",
+    "subtitle": "Congratulations! You've earned a certificate.",
+    "courseLabel": "{{course}}:",
+    "sessionLabel": "{{session}}:",
+    "levelLabel": "{{level}}:"
+  },
+  "videoPlayer": {
+    "vimeoTitle": "Vimeo video player",
+    "unsupported": "Your browser does not support the video tag."
+  },
+  "youtubePlayer": {
+    "title": "YouTube video player"
+  },
+  "contentSections": {
+    "whatYoullLearn": "What you'll learn",
+    "aboutCourse": "About this {{course}}",
+    "whoShouldJoin": "Who should join"
+  },
+  "enrollment": {
+    "configTitle": "{{course}} Configuration",
+    "previewModeLabel": "{{course}} Preview Mode",
+    "previewModeDescription": "Browse {{course}} structure. Enroll to access {{slides}} and materials.",
+    "noSessionForCourse": "No {{session}} available for this {{course}}",
+    "notEnrolledInSession": "You are not enrolled in any {{session}} for this {{course}}",
+    "noActiveSessionsConfigured": "This {{course}} may not have any active {{session}} configured.",
+    "contactToEnroll": "Please contact your {{teacher}} or {{admin}} to get enrolled.",
+    "selectSessionPlaceholder": "Select {{session}}",
+    "selectLevelPlaceholder": "Select {{level}}",
+    "certificateAvailable": "Certificate available",
+    "certificateDescription": "You can view or download your certificate now.",
+    "enrollButton": "Enroll"
+  },
+  "ratings": {
+    "heading": "Ratings & Reviews",
+    "subheading": "Community feedback and ratings",
+    "feedbackLabel": "Your Feedback",
+    "feedbackPlaceholder": "Write your feedback...",
+    "ratingLabel": "Rating",
+    "starCount_one": "{{count}} Star",
+    "starCount_other": "{{count}} Stars",
+    "submitting": "Submitting...",
+    "submitFeedback": "Submit Feedback",
+    "notAvailable": "N/A",
+    "totalReviews": "{{count}} reviews",
+    "noReviewsTitle": "No reviews yet",
+    "noReviewsDescription": "Be the first to share your experience with this {{course}}",
+    "noReviewText": "No review text provided",
+    "toast": {
+      "failedToSubmit": "Failed to submit rating",
+      "unexpectedError": "An unexpected error occurred",
+      "selectRatingRequired": "Please select a rating before submitting",
+      "thankYou": "Thank you for your feedback!"
+    }
+  },
+  "errorPage": {
+    "title": "Content Unavailable",
+    "description": "We couldn't load the details for this content. It may have been removed, or there might be exploring an issue on our servers."
+  },
+  "subjectsRoute": {
+    "title": "Learning Center",
+    "metaDescription": "Learning Center page"
+  },
+  "slideCounts": {
+    "video": "Video slides",
+    "code": "Code slides",
+    "pdf": "PDF slides",
+    "document": "DOC slides",
+    "question": "Question slides",
+    "assignment": "Assignment slides",
+    "presentation": "Presentation slides",
+    "jupyterNotebook": "Jupyter Notebook slides",
+    "scratchProject": "Scratch Project slides",
+    "quiz": "Quiz slides",
+    "codeEditor": "Code Editor slides",
+    "genericFallback": "{{type}} slides"
+  },
+  "common": {
+    "close": "Close",
+    "viewCertificate": "View Certificate",
+    "goBack": "Go Back"
+  }
+}

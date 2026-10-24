@@ -1,11 +1,13 @@
 import React from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
+import { useSiteNavigate } from "../../-utils/catalogue-route-search";
+import { useTranslation } from "react-i18next";
 import { HeaderProps } from "../../-types/course-catalogue-types";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { RouteMatcher } from "../../-services/route-matcher";
 import { CourseCatalogueData } from "../../-types/course-catalogue-types";
-import { useState, useEffect, useRef } from "react";
+import { createElement, useState, useEffect, useRef } from "react";
 import { MagnifyingGlass, ShoppingCart } from "@phosphor-icons/react";
 import { useCartStore } from "../../-stores/cart-store";
 import { isIOSPlatform } from "@/hooks/useIsIOS";
@@ -18,10 +20,51 @@ import { List } from "@phosphor-icons/react";
 import { AuthModal, AuthModalRef } from "@/components/common/auth/modal/AuthModal";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import type { StudentAuthPresentation } from "@/types/student-display-settings";
+import type {
+  GlobalSettings,
+  HeaderActiveStyle,
+  HeaderAuthLink,
+  HeaderNavItem,
+} from "../../-types/course-catalogue-types";
+import { useCatalogueLocale, useSiteT } from "../../-utils/catalogue-locale";
+import { isSiteCartEnabled } from "../../-utils/site-cart";
+import { courseLanguagesOf } from "../../-utils/course-variants";
+import { SiteCartButton } from "../site-cart/SiteCartButton";
+import { MegaMenuNavItem } from "../header/MegaMenuNavItem";
+import { MobileMegaMenu } from "../header/MobileMegaMenu";
+import { HeaderSearch } from "../header/HeaderSearch";
+import { HeaderLanguageSwitcher } from "../header/HeaderLanguageSwitcher";
+import { DesktopNavDropdown, MobileNavDropdown } from "./header/NavDropdown";
+import { dropdownHasActive } from "./header/nav-dropdown";
+import {
+  DESKTOP_AUTH_CLASSES,
+  MOBILE_AUTH_CLASSES,
+  desktopAuthVariant,
+  desktopNavItemClasses,
+  mobileAuthVariant,
+} from "../header/header-variants";
+import type { HeaderChromeProps } from "../../-types/site-chrome-types";
+import {
+  EDITORIAL_AUTH_CLASSES,
+  EDITORIAL_NAV,
+  EDITORIAL_RIGHT_GROUP,
+  HEADER_COMPACT_LOGO,
+  HEADER_CONTAINED_INNER,
+  HEADER_CONTAINED_OUTER,
+  editorialNavItemClasses,
+  resolveHeaderChrome,
+} from "../header/header-chrome";
+
+/** A nav item that opens the streams mega menu; one without a library stays a plain link. */
+const isMegaMenuItem = (item: HeaderNavItem | null | undefined): boolean =>
+  item?.type === "megaMenu" && !!(item.megaMenu?.libraryId || "").trim();
 
 export const HeaderComponent: React.FC<HeaderProps & {
-  navigation?: Array<{ label: string; route: string; openInSameTab?: boolean }>;
-  authLinks?: Array<{ label: string; route: string; audienceId?: string; formTitle?: string }>;
+  /** `enabled: false` hides a link the author kept but does not want live.
+   *  Absent means visible, so headers authored before the toggle existed are
+   *  unchanged. */
+  navigation?: HeaderNavItem[];
+  authLinks?: HeaderAuthLink[];
   useAuthModal?: boolean;
   catalogueData?: CourseCatalogueData;
   tagName?: string;
@@ -31,7 +74,27 @@ export const HeaderComponent: React.FC<HeaderProps & {
    *  observation — the picker was wired to nothing. */
   backgroundColor?: string;
   textColor?: string;
-}> = ({
+  /** The authored props before translation (JsonRenderer passes them when the
+   *  site is shown in another language). Everything that DECIDES — routes,
+   *  "is this the Get Started button", signup filtering — reads these, so a
+   *  translated label can never change behaviour. Absent = `navigation` /
+   *  `authLinks` above are the authored values. */
+  baseProps?: { navigation?: HeaderNavItem[]; authLinks?: HeaderAuthLink[] } & Record<string, unknown>;
+  instituteId?: string;
+  globalSettings?: GlobalSettings;
+  /** How the current page's nav item is marked. Absent = 'pill'. */
+  activeStyle?: HeaderActiveStyle;
+  /** Site search icon (courses, pages, streams). Absent = no new search. */
+  showSearch?: boolean;
+  /** हिन्दी | EN switch, when the site has more than one language. */
+  showLanguageSwitcher?: boolean;
+  /** Editor preview only: the real route of the page shown at the site root
+   *  ("" = home), so the right nav item is marked active. */
+  previewPath?: string;
+  /** Where the logo and site name lead: a page route or URL; "none" = not a
+   *  link. Unset = the institute's home-icon route, else the site's home page. */
+  logoLink?: string;
+} & HeaderChromeProps> = ({
   navigation = [],
   authLinks = [],
   useAuthModal = false,
@@ -39,9 +102,28 @@ export const HeaderComponent: React.FC<HeaderProps & {
   tagName = "home",
   backgroundColor,
   textColor,
+  baseProps,
+  instituteId,
+  globalSettings,
+  activeStyle,
+  showSearch,
+  showLanguageSwitcher,
+  previewPath,
+  logoLink,
+  barSize,
+  contentWidth,
+  navStyle,
+  logoOnly,
+  languageSwitcherStyle,
+  cartDisplay,
+  megaMenuStyle,
 }) => {
+    const { t } = useTranslation("coursePlayerB");
+    const siteT = useSiteT();
+    const siteLocale = useCatalogueLocale();
     const [togle, settogle] = useState(false);
     const navigate = useNavigate();
+    const siteNavigate = useSiteNavigate();
     const location = useLocation();
     const domainRouting = useDomainRouting();
     const { getItemCountByMode, items, syncCart } = useCartStore();
@@ -100,29 +182,110 @@ export const HeaderComponent: React.FC<HeaderProps & {
       );
     };
 
+    // Shown items paired with their authored (untranslated) values, by position
+    // — translation never adds, drops or reorders items. Logic reads `base`;
+    // only labels shown on screen come from `item` / `link`.
+    const baseNavigation = Array.isArray(baseProps?.navigation) ? baseProps.navigation : navigation;
+    const baseAuthLinks = Array.isArray(baseProps?.authLinks) ? baseProps.authLinks : authLinks;
+
+    // Links the author switched off in the editor never reach the bar, the
+    // mobile menu, or the "is there anything to show?" checks that gate them.
+    const navEntries = navigation
+      .map((item, index) => ({ item, base: baseNavigation[index] ?? item }))
+      .filter(({ base }) => base?.enabled !== false);
+    const visibleNavigation = navEntries.map(({ item }) => item);
+
+    // The catalogue this header belongs to. The prop is authoritative — the
+    // route resolved it — and the first path segment was only ever a fallback
+    // for the default "home". On a root-mounted host that segment is a PAGE
+    // ("/about"), so reading it as the tag would send every Home click to
+    // "/about" and the cart to "/about/cart".
+    const effectiveTagName =
+      tagName && tagName !== 'home'
+        ? tagName
+        : (location.pathname.split('/').filter(Boolean)[0] || tagName);
+
+    // Opt-in header features. Each one is off unless its prop (or the site's
+    // cart setting) turns it on, so a header authored before them renders
+    // exactly as it always has.
+    const resolvedInstituteId = instituteId || domainRouting.instituteId || null;
+    const resolvedGlobalSettings = globalSettings ?? catalogueData?.globalSettings;
+    const megaEntries = navEntries.filter(({ base }) => isMegaMenuItem(base));
+    const showSearchButton = showSearch === true;
+    const showSwitcher = showLanguageSwitcher === true && siteLocale.enabled && siteLocale.locales.length > 1;
+    const showSiteCart = isSiteCartEnabled(resolvedGlobalSettings?.siteCart);
+    const hasHeaderExtras = showSearchButton || showSwitcher || showSiteCart;
+    // Opt-in looks of the design (site-chrome-types.ts); all off when absent.
+    const chrome = resolveHeaderChrome({
+      barSize,
+      contentWidth,
+      navStyle,
+      logoOnly,
+      languageSwitcherStyle,
+      cartDisplay,
+      megaMenuStyle,
+    });
+    const switcherVariant = chrome.segmentedSwitcher ? "segmented" : undefined;
+    // The phone menu's nav item look (same strings as its plain items below).
+    const mobileItemClass = (active: boolean) =>
+      `block w-full text-start px-4 py-2.5 rounded-catalogue-sm text-base font-medium transition-colors duration-200 ${active
+        ? 'text-primary-500 bg-primary-50'
+        : 'text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover'
+      }`;
+    const mobileNavItemClass = mobileItemClass(false);
+
     // Filter out "Sign Up" auth links when signup is disabled at the institute level.
-    const visibleAuthLinks = signupEnabled
-      ? authLinks
-      : authLinks.filter((link) => normalizeRoute(link.route) !== 'signup');
+    const authEntries = authLinks.map((link, index) => ({ link, base: baseAuthLinks[index] ?? link }));
+    const visibleAuthEntries = signupEnabled
+      ? authEntries
+      : authEntries.filter(({ base }) => normalizeRoute(base.route) !== 'signup');
+    const visibleAuthLinks = visibleAuthEntries.map(({ link }) => link);
+
+    // With search / language / cart in the bar, the full desktop bar needs more
+    // room than md gives: measured with the client's header (5 nav items, two
+    // buttons) it overflows up to ~1180px and pushes the buttons off-screen.
+    // So with any of them the desktop bar starts at lg and tablets keep the
+    // phone bar and menu. Without them every class here is the original md one.
+    const bp = hasHeaderExtras
+      ? {
+          phoneOnly: 'lg:hidden',
+          desktopFlex: 'hidden lg:flex',
+          // flex-initial, not flex-none: the logo may shrink on desktop too.
+          catalogLogo: 'flex-1 lg:flex-initial justify-center lg:justify-start',
+        }
+      : {
+          phoneOnly: 'md:hidden',
+          desktopFlex: 'hidden md:flex',
+          catalogLogo: 'flex-1 md:flex-none justify-center md:justify-start',
+        };
+    // The phone menu opens under the bar. In the lg layout it also opens on
+    // tablets, where the bar is taller (md:h-20), so its offset follows (as
+    // classes). Otherwise, and on the iOS app (status-bar inset), it keeps its
+    // original inline top.
+    const menuTop: { className: string; style: React.CSSProperties | undefined } =
+      hasHeaderExtras && !isIOS
+        ? { className: chrome.compact ? ' top-14 md:top-16' : ' top-14 md:top-20', style: undefined }
+        : { className: '', style: { top: isIOS ? 'calc(56px + 32px)' : '56px' } }; // design-lint-ignore: original menu offset (iOS status-bar inset)
 
     // Shared by the desktop bar, the mobile bar and the mobile menu so a
-    // configured auth link behaves identically wherever it is tapped.
-    const handleAuthLinkClick = (link: { route: string; label: string; audienceId?: string; formTitle?: string }) => {
-      const r = normalizeRoute(link.route);
+    // configured auth link behaves identically wherever it is tapped. `base`
+    // decides what happens; `link` only supplies the popup title on screen.
+    const handleAuthLinkClick = (link: HeaderAuthLink, base: HeaderAuthLink = link) => {
+      const r = normalizeRoute(base.route);
       if (r === 'login' || r === 'signup') {
         if (useModalForAuth) {
           (r === 'login' ? loginAuthModalRef : signupAuthModalRef).current?.setIsOpen(true);
         } else {
           window.location.href = `/${r}`;
         }
-      } else if ((link.audienceId || '').trim()) {
+      } else if ((base.audienceId || '').trim()) {
         window.dispatchEvent(new CustomEvent('openAudienceForm', {
-          detail: { audienceId: (link.audienceId || '').trim(), title: link.formTitle || link.label },
+          detail: { audienceId: (base.audienceId || '').trim(), title: link.formTitle || link.label },
         }));
-      } else if (isLeadFormLink(link)) {
+      } else if (isLeadFormLink(base)) {
         window.dispatchEvent(new CustomEvent('openLeadCollection'));
       } else {
-        handleNavigation(link.route, link.label);
+        handleNavigation(base.route, base.label);
       }
     };
 
@@ -204,9 +367,36 @@ export const HeaderComponent: React.FC<HeaderProps & {
 
     // Check if courseCatalogeType.enabled is true
     const isCourseCatalogeTypeEnabled = !!(catalogueData?.globalSettings?.courseCatalogeType?.enabled);
-    const handleInstituteLogoClick = () => {
-      if (domainRouting.homeIconClickRoute) {
+    // Below sm the language switch moves from the bar into the phone menu
+    // (when there is one) so the bar keeps room for the logo and the toggle.
+    const hasStandardMenu = visibleNavigation.length > 0 || visibleAuthLinks.length > 0 || isAuthenticated;
+    const switcherInMenu = showSwitcher && (isCourseCatalogeTypeEnabled || hasStandardMenu);
+    // Where the logo (and the site name beside it) leads. The site's own
+    // "Logo click" setting wins ("none" = not a link); else the institute's
+    // home-icon route, as before; else the site's home page. Read untranslated
+    // (baseProps): it is a route, not text.
+    const authoredLogoLink = (() => {
+      const raw = (baseProps as { logoLink?: unknown } | undefined)?.logoLink ?? logoLink;
+      return typeof raw === "string" ? raw.trim() : "";
+    })();
+    const logoHref =
+      authoredLogoLink.toLowerCase() === "none"
+        ? null
+        : authoredLogoLink
+          ? RouteMatcher.isExternalLink(authoredLogoLink)
+            ? authoredLogoLink
+            : RouteMatcher.pagePath(effectiveTagName, authoredLogoLink)
+          : domainRouting.homeIconClickRoute || RouteMatcher.pagePath(effectiveTagName);
+    const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+      // Let the browser open a new tab / window as it would for any link.
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      if (authoredLogoLink) {
+        handleNavigation(authoredLogoLink, "", true);
+      } else if (domainRouting.homeIconClickRoute) {
         window.location.href = domainRouting.homeIconClickRoute;
+      } else {
+        void siteNavigate(RouteMatcher.pagePath(effectiveTagName));
       }
     };
 
@@ -249,48 +439,36 @@ export const HeaderComponent: React.FC<HeaderProps & {
     }, [isMobileMenuOpen, mobileMenuRef, hamburgerButtonRef]);
 
 
-    // Helper function to check if a navigation item is active
-    const isActiveRoute = (route: string, label: string) => {
-      const currentPath = location.pathname;
-      const pathSegments = currentPath.split('/').filter(Boolean);
-      const isOnTagNamePage = pathSegments.length === 1; // We're on /$tagName page
-
-      // If we're on the tagName page, check which navigation item should be active
-      if (isOnTagNamePage) {
-        // If this is a "Courses" item, make it active when on the main page
-        if (label.toLowerCase() === 'courses') {
-          return true;
-        }
-        // If this is a "Home" item, don't make it active if "Courses" exists
-        if (label.toLowerCase() === 'home') {
-          // Check if there's a "Courses" item in the navigation
-          const hasCoursesItem = navigation.some(item => item.label.toLowerCase() === 'courses');
-          // Only highlight "Home" if there's no "Courses" item
-          return !hasCoursesItem;
-        }
-      }
-
-      // Handle specific routes
-      if (route === 'homepage' || route === '/') {
-        if (label.toLowerCase() === 'home' && isOnTagNamePage) {
-          return true;
-        }
-        return false;
-      }
-
-      if (route === 'courses' || route === '/courses') {
-        if (label.toLowerCase() === 'courses' && isOnTagNamePage) {
-          return true;
-        }
-        return false;
-      }
-
-      // For other routes, check if current path matches
-      return currentPath === route || currentPath.startsWith(route);
+    // Helper function to check if a navigation item is active.
+    //
+    // A catalogue path is always /<tagName>[/<pageRoute>], so the second
+    // segment decides the winner and an empty one means the site root, which
+    // renders the home page. The previous version keyed off the item's LABEL —
+    // "Courses" always owned the root and "Home" was suppressed whenever a
+    // Courses item existed — a leftover from when /<tagName> WAS the course
+    // listing. On a multi-page site that lit "Courses" up on the home page,
+    // and the fallback below it compared a "/tag/about" pathname against a
+    // bare "about" route (no leading slash), so no inner page ever matched
+    // either: Courses was the only nav item that could ever look active.
+    const isActiveRoute = (route: string) => {
+      if (RouteMatcher.isExternalLink(route)) return false;
+      // "Whatever follows the catalogue base": the segment after "/<tag>", or
+      // the first segment when this catalogue is mounted at the host's root.
+      // The editor preview shows every page at the root, so it names the page.
+      const currentRoute = RouteMatcher.normalizeRoute(
+        (previewPath !== undefined
+          ? previewPath.split('/').filter(Boolean)[0]
+          : RouteMatcher.segmentsAfterBase(location.pathname, effectiveTagName)[0]) || ''
+      );
+      const target = RouteMatcher.normalizeRoute(route || '');
+      const targetIsHome = target === '' || target === 'home';
+      // The home page answers to both /<tagName> and /<tagName>/home.
+      if (currentRoute === '' || currentRoute === 'home') return targetIsHome;
+      return !targetIsHome && currentRoute === target;
     };
 
     // Helper function to handle navigation
-    const handleNavigation = (route: string, label: string, openInSameTab?: boolean | string) => {
+    const handleNavigation = (route: string, _label: string, openInSameTab?: boolean | string) => {
       // Normalize openInSameTab value (handle string "true"/"false", boolean, or undefined)
       const shouldOpenInSameTab = openInSameTab === true || openInSameTab === "true";
 
@@ -314,7 +492,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
         if (matchedPage) {
           // Get the proper navigation route for this page
           const navigationRoute = RouteMatcher.getPageNavigationRoute(matchedPage, tagName);
-          navigate({ to: navigationRoute });
+          void siteNavigate(navigationRoute);
           return;
         }
       }
@@ -323,30 +501,43 @@ export const HeaderComponent: React.FC<HeaderProps & {
       const normalizedRoute = RouteMatcher.normalizeRoute(route);
 
       if (normalizedRoute === 'home' || normalizedRoute === '' || route === '/') {
-        const currentPath = location.pathname;
-        const pathSegments = currentPath.split('/').filter(Boolean);
-        const currentTagName = pathSegments[0] || tagName;
-
-        navigate({ to: `/${currentTagName}` });
+        navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
         return;
       }
 
       if (normalizedRoute === 'courses') {
-        const currentPath = location.pathname;
-        const pathSegments = currentPath.split('/').filter(Boolean);
-        const currentTagName = pathSegments[0] || tagName;
-
-        navigate({ to: `/${currentTagName}` });
+        navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
         return;
       }
 
       // For other routes, check if we're already on the target route
-      if (isActiveRoute(route, label)) {
+      if (isActiveRoute(route)) {
         return;
       }
 
       // Navigate to the route as-is (for custom internal routes)
-      navigate({ to: route });
+      void siteNavigate(route);
+    };
+
+    /**
+     * Links inside a "dropdown" nav item. Those are often a sub-address of one
+     * of this site's pages ("blog/ssc-cgl" — an article on the blog page),
+     * which the loose page match in handleNavigation would collapse to the
+     * page itself ("blog".includes), dropping the article. Scoped to dropdown
+     * links so every existing nav item keeps resolving exactly as before.
+     */
+    const handleDropdownNavigation = (route: string, label: string, openInSameTab?: boolean | string) => {
+      const subPath = route.trim().replace(/^\/+/, "").replace(/\/+$/, "");
+      const firstSegment = subPath.split(/[/?#]/)[0].toLowerCase();
+      if (
+        !RouteMatcher.isExternalLink(route) &&
+        subPath.includes("/") &&
+        catalogueData?.pages?.some((page) => RouteMatcher.normalizeRoute(page.route || "") === firstSegment)
+      ) {
+        void siteNavigate(RouteMatcher.pagePath(effectiveTagName, subPath));
+        return;
+      }
+      handleNavigation(route, label, openInSameTab);
     };
 
 
@@ -354,6 +545,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
     // Use JSON logo and title from the page builder if configured
     const jsonLogoRaw = catalogueData?.globalSettings?.layout?.header?.props?.logo || null;
     const jsonTitle = catalogueData?.globalSettings?.layout?.header?.props?.title || null;
+    // Read raw from the catalogue, so it is translated here, for display only
+    // (unchanged on a single-language site).
+    const jsonTitleShown = jsonTitle ? siteT(jsonTitle) : null;
 
     // Resolve jsonLogoRaw — it may be a file ID or a full URL
     const [jsonLogoUrl, setJsonLogoUrl] = useState<string | null>(null);
@@ -378,7 +572,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
       let hideCart = false;
 
       const currentPath = location.pathname.toLowerCase();
-      const pathSegments = location.pathname.split('/').filter(Boolean);
+      // Segments after the catalogue base, so "/new/<id>" and a root-mounted
+      // "/<id>" both read as a course-details page.
+      const afterBase = RouteMatcher.segmentsAfterBase(location.pathname, effectiveTagName);
 
       // Hide on cart page
       if (currentPath.includes('/cart')) {
@@ -386,9 +582,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
         hideCart = true;
       }
 
-      // Hide on book/course details page (pattern: /$tagName/$courseId)
-      if (pathSegments.length >= 2) {
-        const potentialCourseId = pathSegments[1];
+      // Hide on book/course details page (pattern: <base>/$courseId)
+      if (afterBase.length >= 1) {
+        const potentialCourseId = afterBase[0];
         const isNumeric = /^\d+$/.test(potentialCourseId);
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(potentialCourseId);
         if (isNumeric || isUUID) {
@@ -400,7 +596,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
       // Check if current page has buyRentSection component
       // Hide search but KEEP cart visible on plan page
       if (catalogueData?.pages) {
-        const pageRoute = pathSegments.slice(1).join('/') || '';
+        const pageRoute = afterBase.join('/') || '';
         for (const page of catalogueData.pages) {
           const pageRouteLower = (page.route || '').toLowerCase();
           const pageIdLower = (page.id || '').toLowerCase();
@@ -425,15 +621,37 @@ export const HeaderComponent: React.FC<HeaderProps & {
 
     const { hideSearch, hideCart } = getIconVisibility();
 
+    // A mega item whose library is gone acts like the plain items around it.
+    const mobileMegaPlainLink = (base: HeaderNavItem) => {
+      const sameTab = base.openInSameTab === true || String(base.openInSameTab) === "true";
+      return {
+        onClick: () => {
+          setIsMobileMenuOpen(false);
+          handleNavigation(base.route, base.label, sameTab);
+        },
+        className: mobileItemClass(isActiveRoute(base.route)),
+      };
+    };
+
+    // Phones: the language switch as the menu's first row (from sm it is in the bar).
+    const renderMenuLanguageRow = () => (
+      <div className="flex items-center justify-between gap-3 border-b border-catalogue-border-subtle px-4 pb-3 pt-1 sm:hidden">
+        <span className="text-sm font-medium text-catalogue-text-secondary">
+          {t("header.language.label", "Site language")}
+        </span>
+        <HeaderLanguageSwitcher authoredLocales={resolvedGlobalSettings?.i18n?.locales} variant={switcherVariant} />
+      </div>
+    );
+
     // Consistent header height using design tokens
-    const headerHeight = 'h-16 md:h-20';
+    const headerHeight = chrome.compact ? 'h-16' : 'h-16 md:h-20';
     const headerTopOffset = isIOS ? 'pt-8' : '';
 
     return (
       <header
         // Only fall back to the theme token when the author picked nothing —
         // an inline colour must beat the class, so the class is omitted when set.
-        className={`fixed top-0 start-0 end-0 z-catalogue-fixed border-b border-catalogue-border-subtle w-full ${backgroundColor ? '' : 'bg-catalogue-bg'} ${headerTopOffset}`}
+        className={`fixed top-0 start-0 end-0 z-catalogue-fixed border-b ${chrome.editorialNav ? 'border-palette-border' : 'border-catalogue-border-subtle'} w-full ${backgroundColor ? '' : 'bg-catalogue-bg'} ${headerTopOffset}`}
         style={{
           '--header-height': 'var(--catalogue-header-height)',
           '--header-height-mobile': 'var(--catalogue-header-height-mobile)',
@@ -443,8 +661,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
       >
         {/* Container with consistent responsive padding */}
         <LogoutSidebar />
-        <div className={`w-full px-4 sm:px-6 lg:px-8 xl:px-12 ${isAndroid || isIOS ? 'mt-6' : ''}`}>
-          <div className={`flex items-center justify-between ${headerHeight}`}>
+        <div className={`${chrome.contained ? HEADER_CONTAINED_OUTER : 'w-full px-4 sm:px-6 lg:px-8 xl:px-12'} ${isAndroid || isIOS ? 'mt-6' : ''}`}>
+          <div className={`flex items-center justify-between ${headerHeight}${chrome.contained ? ` ${HEADER_CONTAINED_INNER}` : ''}`}>
             {/* Mobile menu button - Left side when courseCatalogeType.enabled is true */}
             {/* Mobile menu button - Left side when courseCatalogeType.enabled is true */}
             {isCourseCatalogeTypeEnabled && (
@@ -459,8 +677,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
                     sessionStorage.setItem('searchBarOpen', 'false');
                   }
                 }}
-                className="md:hidden p-2 rounded-md text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover flex-shrink-0 transition-colors duration-200"
-                aria-label="Toggle menu"
+                className={`${bp.phoneOnly} p-2 rounded-catalogue-sm text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover flex-shrink-0 transition-colors duration-200`}
+                aria-label={t("header.toggleMenu")}
               >
                 <div className="relative w-5 h-5 flex flex-col justify-center items-center">
                   <span
@@ -479,24 +697,30 @@ export const HeaderComponent: React.FC<HeaderProps & {
               </button>
             )}
 
-            {/* Logo and Brand */}
-            <div className={`flex items-center gap-3 ${isCourseCatalogeTypeEnabled ? 'flex-1 md:flex-none justify-center md:justify-start' : ''}`}>
+            {/* Logo and Brand. With the bar's extras it may shrink (min-w-0),
+                so the title truncates instead of pushing the controls off-screen. */}
+            {/* The logo and site name lead home (or where the site points them). */}
+            {createElement(
+              logoHref ? "a" : "div",
+              {
+                className: `flex items-center gap-3 ${isCourseCatalogeTypeEnabled ? bp.catalogLogo : ''}${hasHeaderExtras ? ' min-w-0' : ''}${logoHref ? ' no-underline' : ''}`,
+                ...(logoHref ? { href: logoHref, onClick: handleLogoClick } : {}),
+              },
+              <>
               {/* JSON logo (from page builder) */}
               {jsonLogoUrl ? (
                 <>
                   <img
                     src={jsonLogoUrl}
-                    alt="Logo"
-                    onClick={domainRouting.homeIconClickRoute ? handleInstituteLogoClick : undefined}
-                    className={`max-h-12 md:max-h-16 w-auto object-contain rounded-md transition-opacity duration-200 hover:opacity-90 ${domainRouting.homeIconClickRoute ? 'cursor-pointer' : ''
-                      }`}
+                    alt={t("header.logoAlt")}
+                    className={`${chrome.compact ? HEADER_COMPACT_LOGO : 'max-h-12 md:max-h-16'} w-auto object-contain rounded-catalogue-sm transition-opacity duration-200 hover:opacity-90${hasHeaderExtras ? ' min-w-0' : ''}`}
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
                   />
-                  {jsonTitle && (
+                  {jsonTitleShown && !chrome.logoOnly && (
                     <span className="text-base md:text-lg font-semibold text-catalogue-text-primary truncate max-w-48 md:max-w-none">
-                      {jsonTitle}
+                      {jsonTitleShown}
                     </span>
                   )}
                 </>
@@ -506,37 +730,72 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   {instituteLogoUrl && (
                     <img
                       src={instituteLogoUrl}
-                      alt="Institute Logo"
-                      onClick={domainRouting.homeIconClickRoute ? handleInstituteLogoClick : undefined}
-                      className={`h-10 w-10 md:h-11 md:w-11 rounded-full object-cover border border-catalogue-border ${domainRouting.homeIconClickRoute ? 'cursor-pointer' : ''
-                        }`}
+                      alt={t("header.instituteLogoAlt")}
+                      className="h-10 w-10 md:h-11 md:w-11 rounded-full object-cover border border-catalogue-border"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
                     />
                   )}
                   {/* Title: use JSON title if set, else institute name */}
+                  {!chrome.logoOnly && (
                   <span className="text-base md:text-lg font-semibold text-catalogue-text-primary truncate max-w-48 md:max-w-none">
-                    {jsonTitle || domainRouting.instituteName || ""}
+                    {jsonTitleShown || domainRouting.instituteName || ""}
                   </span>
+                  )}
                 </>
               )}
-            </div>
+              </>,
+            )}
 
             {/* Desktop Navigation */}
-            {navigation.length > 0 && (
-              <nav className="hidden md:flex items-center gap-1">
-                {navigation.map((item, index) => {
-                  const isActive = isActiveRoute(item.route, item.label);
-                  const openInSameTab = item.openInSameTab === true || String(item.openInSameTab) === "true";
+            {visibleNavigation.length > 0 && (
+              <nav className={`${bp.desktopFlex} ${chrome.editorialNav ? EDITORIAL_NAV : 'items-center gap-1'}`}>
+                {navEntries.map(({ item, base }, index) => {
+                  if (isMegaMenuItem(base)) {
+                    // Its panel is positioned against the fixed <header>, so
+                    // no ancestor between here and the header may be positioned.
+                    // A deleted library makes it the plain item below (plainLink).
+                    const megaSameTab = base.openInSameTab === true || String(base.openInSameTab) === "true";
+                    return (
+                      <MegaMenuNavItem
+                        key={index}
+                        label={item.label}
+                        config={item.megaMenu ?? base.megaMenu ?? {}}
+                        baseConfig={base.megaMenu ?? {}}
+                        instituteId={resolvedInstituteId}
+                        tagName={effectiveTagName}
+                        activeStyle={activeStyle}
+                        navStyle={chrome.editorialNav ? "editorial" : undefined}
+                        panelStyle={chrome.editorialMega ? "editorial" : undefined}
+                        routeActive={!!(base.route || '').trim() && isActiveRoute(base.route)}
+                        plainLink={{
+                          onClick: () => handleNavigation(base.route, base.label, megaSameTab),
+                          active: isActiveRoute(base.route),
+                        }}
+                      />
+                    );
+                  }
+                  const isActive = isActiveRoute(base.route);
+                  const openInSameTab = base.openInSameTab === true || String(base.openInSameTab) === "true";
+                  if (base.type === "dropdown" && Array.isArray(base.children) && base.children.length > 0) {
+                    const ddActive = isActive || dropdownHasActive(base.children, isActiveRoute);
+                    return (
+                      <DesktopNavDropdown
+                        key={index}
+                        label={item.label}
+                        items={base.children}
+                        active={ddActive}
+                        onNavigate={handleDropdownNavigation}
+                        buttonClassName={chrome.editorialNav ? editorialNavItemClasses(ddActive) : `px-4 py-2 rounded-catalogue-sm text-sm font-medium transition-colors duration-200 ${desktopNavItemClasses(ddActive, activeStyle)}`}
+                      />
+                    );
+                  }
                   return (
                     <button
                       key={index}
-                      onClick={() => handleNavigation(item.route, item.label, openInSameTab)}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive
-                        ? 'text-primary-500 bg-primary-50'
-                        : 'text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover'
-                        }`}
+                      onClick={() => handleNavigation(base.route, base.label, openInSameTab)}
+                      className={chrome.editorialNav ? editorialNavItemClasses(isActive) : `px-4 py-2 rounded-catalogue-sm text-sm font-medium transition-colors duration-200 ${desktopNavItemClasses(isActive, activeStyle)}`}
                     >
                       {item.label}
                     </button>
@@ -546,13 +805,13 @@ export const HeaderComponent: React.FC<HeaderProps & {
             )}
 
             {/* Right side actions */}
-            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+            <div className={chrome.editorialNav ? EDITORIAL_RIGHT_GROUP : "flex items-center gap-2 md:gap-3 flex-shrink-0"}>
               {/* Mobile menu button - Right side when courseCatalogeType is disabled.
                   Gated on nav items OR auth links, matching what the menu below
                   actually renders: a header configured with only Login /
                   Get Started (no nav) used to show no toggle at all, leaving
                   those links unreachable on a phone. */}
-              {!isCourseCatalogeTypeEnabled && (navigation.length > 0 || visibleAuthLinks.length > 0 || isAuthenticated) && (
+              {!isCourseCatalogeTypeEnabled && (visibleNavigation.length > 0 || visibleAuthLinks.length > 0 || isAuthenticated) && (
                 <button
                   ref={setHamburgerButtonRef}
                   onClick={() => {
@@ -564,8 +823,10 @@ export const HeaderComponent: React.FC<HeaderProps & {
                       sessionStorage.setItem('searchBarOpen', 'false');
                     }
                   }}
-                  className="md:hidden p-2 rounded-md text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200"
-                  aria-label="Toggle menu"
+                  // With search / language / cart in the bar, the menu toggle
+                  // moves to the far end on phones, where visitors look for it.
+                  className={`${bp.phoneOnly} p-2 rounded-catalogue-sm text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200${hasHeaderExtras ? ' order-last lg:order-none' : ''}`}
+                  aria-label={t("header.toggleMenu")}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -576,8 +837,8 @@ export const HeaderComponent: React.FC<HeaderProps & {
               {/* Search and Cart Icons */}
               {isCourseCatalogeTypeEnabled && (
                 <div className="flex items-center gap-1">
-                  {/* Search Icon */}
-                  {!hideSearch && (
+                  {/* Search Icon — replaced by the site search when the author turns that on */}
+                  {!hideSearch && !showSearchButton && (
                   <button
                     onClick={() => {
                       const newToggleState = !togle;
@@ -590,24 +851,21 @@ export const HeaderComponent: React.FC<HeaderProps & {
                         setIsMobileMenuOpen(false);
                       }
                     }}
-                    className="p-2 rounded-md text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200"
-                    aria-label="Search"
+                    className="p-2 rounded-catalogue-sm text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200"
+                    aria-label={t("header.search")}
                   >
                     <MagnifyingGlass className="w-5 h-5" />
                   </button>
                   )}
 
-                  {/* Cart Icon */}
-                  {!hideCart && (
+                  {/* Cart Icon — the book-store cart; a site cart (below) replaces it. */}
+                  {!hideCart && !showSiteCart && (
                   <button
                     onClick={() => {
-                      const currentPath = location.pathname;
-                      const pathSegments = currentPath.split('/').filter(Boolean);
-                      const currentTagName = pathSegments[0] || tagName;
-                      navigate({ to: `/${currentTagName}/cart` });
+                      navigate({ to: `${RouteMatcher.basePath(effectiveTagName)}/cart` });
                     }}
-                    className="relative p-2 rounded-md text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200"
-                    aria-label="Shopping Cart"
+                    className="relative p-2 rounded-catalogue-sm text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover transition-colors duration-200"
+                    aria-label={t("header.shoppingCart")}
                   >
                     <ShoppingCart className="w-5 h-5" />
                     {cartItemCount > 0 && (
@@ -620,13 +878,47 @@ export const HeaderComponent: React.FC<HeaderProps & {
                 </div>
               )}
 
+              {/* Site search, language switch and site cart — each opt-in. */}
+              {showSearchButton && (
+                <HeaderSearch
+                  instituteId={resolvedInstituteId}
+                  tagName={effectiveTagName}
+                  catalogueData={catalogueData}
+                  globalSettings={resolvedGlobalSettings}
+                  megaConfigs={megaEntries.map(({ base }) => base.megaMenu ?? {})}
+                  streamsLabel={megaEntries[0]?.item.label}
+                  className="flex-shrink-0"
+                  variant={chrome.editorialNav ? "editorial" : undefined}
+                />
+              )}
+              {showSwitcher && (
+                <HeaderLanguageSwitcher
+                  authoredLocales={resolvedGlobalSettings?.i18n?.locales}
+                  className={switcherInMenu ? 'hidden sm:inline-flex' : undefined}
+                  variant={switcherVariant}
+                />
+              )}
+              {showSiteCart && (
+                <SiteCartButton
+                  instituteId={resolvedInstituteId ?? undefined}
+                  tagName={effectiveTagName}
+                  settings={resolvedGlobalSettings?.siteCart}
+                  languages={
+                    resolvedGlobalSettings?.courseLanguages?.enabled
+                      ? courseLanguagesOf(resolvedGlobalSettings.courseLanguages)
+                      : undefined
+                  }
+                  hideWhenEmpty={chrome.cartWhenNotEmpty || undefined}
+                />
+              )}
+
               {/* Login Button - Mobile only (when courseCatalogeType enabled) */}
               {isCourseCatalogeTypeEnabled && !isAuthenticated && (
                 <button
                   onClick={() => navigate({ to: '/login' })}
-                  className="md:hidden px-3 py-1.5 rounded-md text-xs font-medium bg-primary-500 text-white hover:bg-primary-400 transition-colors duration-200"
+                  className={`${bp.phoneOnly} px-3 py-1.5 rounded-catalogue-sm text-xs font-medium bg-primary-500 text-white hover:bg-primary-400 transition-colors duration-200`}
                 >
-                  Login
+                  {t("header.login")}
                 </button>
               )}
 
@@ -634,13 +926,13 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   hamburger menu (see the toggle above), not in the bar: the
                   sticky MobileActionBar already carries Login / Get Started, so
                   repeating them in the header just doubled the same two CTAs. */}
-              <div className="hidden md:flex items-center gap-2">
+              <div className={`${bp.desktopFlex} items-center ${chrome.editorialNav ? 'gap-4' : 'gap-2'}`}>
                 {isAuthenticated ? (
                   <div className="flex items-center gap-3 shrink-0">
                     <SystemAlertsBar />
                     <div className="w-px h-6 bg-primary-200/60 dark:bg-neutral-700"></div>
                     <button
-                      className="group relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-md border border-primary-200/50 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-neutral-700 hover:border-primary-400 dark:hover:border-neutral-600 transition-all duration-200"
+                      className="group relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-catalogue-sm border border-primary-200/50 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-neutral-700 hover:border-primary-400 dark:hover:border-neutral-600 transition-all duration-200"
                       onClick={() => {
                         setSidebarOpen();
                       }}
@@ -649,14 +941,16 @@ export const HeaderComponent: React.FC<HeaderProps & {
                     </button>
                   </div>
                 ) : (
-                  visibleAuthLinks.map((link, index) => (
+                  visibleAuthEntries.map(({ link, base }, index) => (
                     <button
                       key={index}
-                      onClick={() => handleAuthLinkClick(link)}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${index === 0
-                        ? 'bg-primary-500 text-white hover:bg-primary-400'
-                        : 'border border-primary-500 text-primary-500 hover:bg-primary-50'
-                        }`}
+                      onClick={() => handleAuthLinkClick(link, base)}
+                      // No style set = the original rule: first filled, the rest outlined.
+                      className={
+                        chrome.editorialNav
+                          ? EDITORIAL_AUTH_CLASSES[desktopAuthVariant(base.style ?? link.style, index)]
+                          : `px-4 py-2 rounded-catalogue-sm text-sm font-medium transition-colors duration-200 ${DESKTOP_AUTH_CLASSES[desktopAuthVariant(base.style ?? link.style, index)]}`
+                      }
                     >
                       {link.label}
                     </button>
@@ -670,29 +964,57 @@ export const HeaderComponent: React.FC<HeaderProps & {
           {isCourseCatalogeTypeEnabled ? (
             <div
               ref={setMobileMenuRef}
-              className={`md:hidden  fixed start-0 end-0 z-catalogue-dropdown bg-catalogue-bg-elevated border-b border-catalogue-border transition-all duration-300 ease-out ${isMobileMenuOpen
+              className={`${bp.phoneOnly}  fixed start-0 end-0 z-catalogue-dropdown bg-catalogue-bg-elevated border-b border-catalogue-border transition-all duration-300 ease-out ${isMobileMenuOpen
                 ? 'opacity-100 visible'
                 : 'opacity-0 invisible pointer-events-none'
-                }`}
-              style={{ top: isIOS ? 'calc(56px + 32px)' : '56px' }}
+                }${megaEntries.length ? ' max-h-screen-85 overflow-y-auto overscroll-contain' : ''}${menuTop.className}`}
+              style={menuTop.style}
             >
               <div className={`transform transition-transform duration-300 ease-out ${isMobileMenuOpen ? 'translate-y-0' : '-translate-y-4'
                 }`}>
                 <div className="px-4 py-4 space-y-3">
+                  {switcherInMenu && renderMenuLanguageRow()}
                   {/* Navigation Links */}
-                  {navigation.length > 0 && (
+                  {visibleNavigation.length > 0 && (
                     <div className="space-y-1 pb-3 border-b border-catalogue-border-subtle">
-                      {navigation.map((item, index) => {
-                        const isActive = isActiveRoute(item.route, item.label);
-                        const openInSameTab = item.openInSameTab === true || String(item.openInSameTab) === "true";
+                      {navEntries.map(({ item, base }, index) => {
+                        if (isMegaMenuItem(base)) {
+                          return (
+                            <MobileMegaMenu
+                              key={index}
+                              label={item.label}
+                              config={item.megaMenu ?? base.megaMenu ?? {}}
+                              baseConfig={base.megaMenu ?? {}}
+                              instituteId={resolvedInstituteId}
+                              tagName={effectiveTagName}
+                              itemClassName={mobileNavItemClass}
+                              onDone={() => setIsMobileMenuOpen(false)}
+                              plainLink={mobileMegaPlainLink(base)}
+                            />
+                          );
+                        }
+                        const isActive = isActiveRoute(base.route);
+                        const openInSameTab = base.openInSameTab === true || String(base.openInSameTab) === "true";
+                        if (base.type === "dropdown" && Array.isArray(base.children) && base.children.length > 0) {
+                          return (
+                            <MobileNavDropdown
+                              key={index}
+                              label={item.label}
+                              items={base.children}
+                              itemClassName={mobileNavItemClass}
+                              onNavigate={handleDropdownNavigation}
+                              onDone={() => setIsMobileMenuOpen(false)}
+                            />
+                          );
+                        }
                         return (
                           <button
                             key={index}
                             onClick={() => {
                               setIsMobileMenuOpen(false);
-                              handleNavigation(item.route, item.label, openInSameTab);
+                              handleNavigation(base.route, base.label, openInSameTab);
                             }}
-                            className={`block w-full text-start px-4 py-2.5 rounded-md text-base font-medium transition-colors duration-200 ${isActive
+                            className={`block w-full text-start px-4 py-2.5 rounded-catalogue-sm text-base font-medium transition-colors duration-200 ${isActive
                               ? 'text-primary-500 bg-primary-50'
                               : 'text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover'
                               }`}
@@ -711,9 +1033,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
                       setIsMobileMenuOpen(false);
                       navigate({ to: '/login' });
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-medium bg-primary-500 text-white hover:bg-primary-400 transition-colors duration-200"
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-catalogue-md text-base font-medium bg-primary-500 text-white hover:bg-primary-400 transition-colors duration-200"
                   >
-                    <span>Login</span>
+                    <span>{t("header.login")}</span>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -727,9 +1049,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
                         setIsMobileMenuOpen(false);
                         navigate({ to: '/dashboard' });
                       }}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-medium text-white bg-primary-500 hover:bg-primary-400 transition-colors duration-200"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-catalogue-md text-base font-medium text-white bg-primary-500 hover:bg-primary-400 transition-colors duration-200"
                     >
-                      <span>Dashboard</span>
+                      <span>{t("header.dashboard")}</span>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -740,7 +1062,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      const customerServiceLink = authLinks.find(link =>
+                      const customerServiceLink = baseAuthLinks.find(link =>
                         link.label.toLowerCase().includes('support') ||
                         link.label.toLowerCase().includes('customer') ||
                         link.route.includes('support') ||
@@ -752,13 +1074,13 @@ export const HeaderComponent: React.FC<HeaderProps & {
                         window.open('https://chat.whatsapp.com/Kvh1fsDcL1GFCBrIveQ8q8', '_blank', 'noopener,noreferrer');
                       }
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-medium text-catalogue-text-secondary bg-catalogue-bg-subtle hover:bg-catalogue-interactive-hover border border-catalogue-border transition-colors duration-200"
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-catalogue-md text-base font-medium text-catalogue-text-secondary bg-catalogue-bg-subtle hover:bg-catalogue-interactive-hover border border-catalogue-border transition-colors duration-200"
                   >
                     <span className="flex items-center gap-3">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      Customer Services
+                      {t("header.customerServices")}
                     </span>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -772,13 +1094,13 @@ export const HeaderComponent: React.FC<HeaderProps & {
                         setIsMobileMenuOpen(false);
                         window.open(catalogueData.globalSettings.communityJoinLink!, '_blank', 'noopener,noreferrer');
                       }}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-medium text-white bg-whatsapp hover:bg-whatsapp-hover transition-colors duration-200 shadow-sm"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-catalogue-md text-base font-medium text-white bg-whatsapp hover:bg-whatsapp-hover transition-colors duration-200 shadow-sm"
                     >
                       <span className="flex items-center gap-3">
                         <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                         </svg>
-                        Join our community
+                        {t("header.joinCommunity")}
                       </span>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -790,7 +1112,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                   {/* <div className="relative">
                   <button
                     onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
-                    className="group w-full flex items-center justify-between px-5 py-3.5 rounded-xl text-base font-medium text-catalogue-text-primary bg-catalogue-bg-subtle hover:bg-catalogue-bg-muted border border-catalogue-border hover:border-catalogue-border-strong transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]"
+                    className="group w-full flex items-center justify-between px-5 py-3.5 rounded-catalogue-lg text-base font-medium text-catalogue-text-primary bg-catalogue-bg-subtle hover:bg-catalogue-bg-muted border border-catalogue-border hover:border-catalogue-border-strong transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]"
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -815,7 +1137,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                       isGenreDropdownOpen ? 'max-h-96 opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'
                     }`}
                   >
-                    <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="bg-gradient-to-br from-gray-50 to-white rounded-catalogue-lg border border-gray-200 shadow-sm overflow-hidden">
                       {['Poetry', 'Drama', 'Fiction', 'Non-Fiction'].map((genre, index) => (
                         <button
                           key={index}
@@ -825,10 +1147,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                             // Set genre filter in sessionStorage
                             sessionStorage.setItem('genreFilter', genre.toLowerCase());
                             // Navigate to homepage with genre filter
-                            const currentPath = location.pathname;
-                            const pathSegments = currentPath.split('/').filter(Boolean);
-                            const currentTagName = pathSegments[0] || tagName;
-                            navigate({ to: `/${currentTagName}` });
+                            navigate({ to: RouteMatcher.pagePath(effectiveTagName) });
                           }}
                           className="group w-full text-left px-6 py-3 text-sm font-medium text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-bg-subtle border-b border-catalogue-border-subtle last:border-b-0 transition-all duration-200 ease-in-out transform hover:translate-x-1"
                         >
@@ -846,25 +1165,53 @@ export const HeaderComponent: React.FC<HeaderProps & {
             </div>
           ) : (
             // Standard mobile menu
-            isMobileMenuOpen && (navigation.length > 0 || visibleAuthLinks.length > 0 || isAuthenticated) && (
+            isMobileMenuOpen && (visibleNavigation.length > 0 || visibleAuthLinks.length > 0 || isAuthenticated) && (
               <div
                 ref={setMobileMenuRef}
-                className={`md:hidden fixed start-0 end-0 z-catalogue-dropdown border-t border-catalogue-border-subtle bg-catalogue-bg-elevated ${isAndroid || isIOS ? 'mt-8' : ''}`}
-                style={{ top: isIOS ? 'calc(56px + 32px)' : '56px' }}
+                className={`${bp.phoneOnly} fixed start-0 end-0 z-catalogue-dropdown border-t border-catalogue-border-subtle bg-catalogue-bg-elevated ${isAndroid || isIOS ? 'mt-8' : ''}${megaEntries.length ? ' max-h-screen-85 overflow-y-auto overscroll-contain' : ''}${menuTop.className}`}
+                style={menuTop.style}
               >
                 <div className="px-4 py-3 space-y-1">
+                  {switcherInMenu && renderMenuLanguageRow()}
                   {/* Navigation Links */}
-                  {navigation.map((item, index) => {
-                    const isActive = isActiveRoute(item.route, item.label);
-                    const openInSameTab = item.openInSameTab === true || String(item.openInSameTab) === "true";
+                  {navEntries.map(({ item, base }, index) => {
+                    if (isMegaMenuItem(base)) {
+                      return (
+                        <MobileMegaMenu
+                          key={index}
+                          label={item.label}
+                          config={item.megaMenu ?? base.megaMenu ?? {}}
+                          baseConfig={base.megaMenu ?? {}}
+                          instituteId={resolvedInstituteId}
+                          tagName={effectiveTagName}
+                          itemClassName={mobileNavItemClass}
+                          onDone={() => setIsMobileMenuOpen(false)}
+                          plainLink={mobileMegaPlainLink(base)}
+                        />
+                      );
+                    }
+                    const isActive = isActiveRoute(base.route);
+                    const openInSameTab = base.openInSameTab === true || String(base.openInSameTab) === "true";
+                    if (base.type === "dropdown" && Array.isArray(base.children) && base.children.length > 0) {
+                      return (
+                        <MobileNavDropdown
+                          key={index}
+                          label={item.label}
+                          items={base.children}
+                          itemClassName={mobileNavItemClass}
+                          onNavigate={handleDropdownNavigation}
+                          onDone={() => setIsMobileMenuOpen(false)}
+                        />
+                      );
+                    }
                     return (
                       <button
                         key={index}
                         onClick={() => {
                           setIsMobileMenuOpen(false);
-                          handleNavigation(item.route, item.label, openInSameTab);
+                          handleNavigation(base.route, base.label, openInSameTab);
                         }}
-                        className={`block w-full text-start px-4 py-2.5 rounded-md text-base font-medium transition-colors duration-200 ${isActive
+                        className={`block w-full text-start px-4 py-2.5 rounded-catalogue-sm text-base font-medium transition-colors duration-200 ${isActive
                           ? 'text-primary-500 bg-primary-50'
                           : 'text-catalogue-text-secondary hover:text-catalogue-text-primary hover:bg-catalogue-interactive-hover'
                           }`}
@@ -878,7 +1225,7 @@ export const HeaderComponent: React.FC<HeaderProps & {
                       above — with no nav configured there is nothing to
                       separate, so it would read as a stray line. */}
                   {(visibleAuthLinks.length > 0 || isAuthenticated) && (
-                    <div className={`space-y-2 ${navigation.length > 0 ? 'border-t border-catalogue-border-subtle pt-3 mt-3' : ''}`}>
+                    <div className={`space-y-2 ${visibleNavigation.length > 0 ? 'border-t border-catalogue-border-subtle pt-3 mt-3' : ''}`}>
                       {isAuthenticated ? (
                         <>
                           <button
@@ -886,9 +1233,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
                               setIsMobileMenuOpen(false);
                               navigate({ to: '/dashboard' });
                             }}
-                            className={`block w-full text-start px-4 py-2.5 rounded-md text-base font-medium transition-colors duration-200 text-white bg-primary-500 hover:bg-primary-400`}
+                            className={`block w-full text-start px-4 py-2.5 rounded-catalogue-sm text-base font-medium transition-colors duration-200 text-white bg-primary-500 hover:bg-primary-400`}
                           >
-                            Dashboard
+                            {t("header.dashboard")}
                           </button>
                           <div className="px-4 py-1">
                             {/* In mobile maybe don't need notification bell alone, they can see from dashboard */}
@@ -896,11 +1243,11 @@ export const HeaderComponent: React.FC<HeaderProps & {
                           </div>
                         </>
                       ) : (
-                        visibleAuthLinks.map((link, index) => (
+                        visibleAuthEntries.map(({ link, base }, index) => (
                           <button
                             key={`auth-${index}`}
                             onClick={() => {
-                              const r = normalizeRoute(link.route);
+                              const r = normalizeRoute(base.route);
                               setIsMobileMenuOpen(false);
                               if (r === 'login' || r === 'signup') {
                                 if (useModalForAuth) {
@@ -909,23 +1256,21 @@ export const HeaderComponent: React.FC<HeaderProps & {
                                 } else {
                                   navigate({ to: `/${r}` });
                                 }
-                              } else if (((link as any).audienceId || '').trim()) {
+                              } else if ((base.audienceId || '').trim()) {
                                 window.dispatchEvent(new CustomEvent('openAudienceForm', {
-                                  detail: { audienceId: ((link as any).audienceId || '').trim(), title: (link as any).formTitle || link.label },
+                                  detail: { audienceId: (base.audienceId || '').trim(), title: link.formTitle || link.label },
                                 }));
-                              } else if (isLeadFormLink(link)) {
+                              } else if (isLeadFormLink(base)) {
                                 const event = new CustomEvent('openLeadCollection', {
                                   detail: { source: 'mobileMenu' }
                                 });
                                 window.dispatchEvent(event);
                               } else {
-                                navigate({ to: link.route });
+                                void siteNavigate(base.route);
                               }
                             }}
-                            className={`block w-full text-start px-4 py-2.5 rounded-md text-base font-medium transition-colors duration-200 ${index === 0
-                              ? 'bg-primary-500 text-white hover:bg-primary-400'
-                              : 'text-primary-500 hover:bg-primary-50'
-                              }`}
+                            // No style set = the original rule here: first filled, the rest plain text.
+                            className={`block w-full text-start px-4 py-2.5 rounded-catalogue-sm text-base font-medium transition-colors duration-200 ${MOBILE_AUTH_CLASSES[mobileAuthVariant(base.style ?? link.style, index)]}`}
                           >
                             {link.label}
                           </button>

@@ -1,0 +1,27 @@
+{
+    "header": {
+        "title": "Participants à l'évaluation"
+    },
+    "internalParticipants": {
+        "count_one": "{{count}} participant (Interne)",
+        "count_many": "{{count}} participants (Interne)",
+        "count_other": "{{count}} participants (Interne)"
+    },
+    "joinLink": {
+        "title": "Lien de connexion",
+        "privateWarning": "Ce lien ne fonctionne que si l'évaluation est Public. Passez-la en Public à l'étape 3 avant de la partager."
+    },
+    "qrCode": {
+        "title": "Code QR"
+    },
+    "notifications": {
+        "title": "Notifier les participants par e-mail :",
+        "whenCreated": "Lorsque l'évaluation est créée :",
+        "beforeLive": "Avant le lancement de l'évaluation :",
+        "minutesBeforeLive_one": "{{count}} min",
+        "minutesBeforeLive_many": "{{count}} min",
+        "minutesBeforeLive_other": "{{count}} min",
+        "whenLive": "Lorsque l'évaluation est en direct :",
+        "whenReportsGenerated": "Lorsque les rapports d'évaluation sont générés :"
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "blockedReasons": {
+        "cancelled": "This run was cancelled — there is nothing to pay out.",
+        "notApproved": "A bank file can only be built from an approved run, so the amounts in it are the ones the institute signed off. Approve the run first."
+    }
+}

@@ -105,6 +105,15 @@ public class ComplexPaymentOptionOperation implements PaymentOptionOperationStra
         if ("DELETED".equalsIgnoreCase(cpo.getStatus())) {
             throw new VacademyException("This fee structure is no longer available.");
         }
+        // A FLEXIBLE plan has no fixed dates: the institute picks each learner's schedule in the
+        // admin Enroll wizard (BulkAssignmentService, which does not come through here). Learner
+        // checkout still previews the plan's template, which a flexible plan does not have, so
+        // self-enrollment is refused until the learner side supports it (CPO_FLEXIBLE_INSTALLMENTS.md phase 4).
+        if (vacademy.io.admin_core_service.features.fee_management.enums.CpoScheduleMode
+                .isFlexible(cpo.getScheduleMode())) {
+            throw new VacademyException("Installments for this fee plan are set up by the institute when it "
+                    + "enrolls you. Please contact the institute to enroll.");
+        }
 
         // Step 1: Update existing ABANDONED_CART entries with userPlanId (matches OneTime/Subscription behavior).
         List<String> packageSessionIds = enrollDTO.getPackageSessionIds();

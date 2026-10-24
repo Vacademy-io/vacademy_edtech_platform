@@ -1,0 +1,15 @@
+{
+    "title": "إعدادات الخصم",
+    "changeButton": "تغيير إعدادات الخصم",
+    "noDiscount": {
+        "label": "لم يتم تطبيق أي خصم"
+    },
+    "badge": {
+        "active": "نشط"
+    },
+    "value": {
+        "percentOff": "خصم {{value}}%",
+        "amountOff": "خصم ₹{{value}}"
+    },
+    "expires": "تنتهي الصلاحية: {{date}}"
+}

@@ -1,0 +1,38 @@
+{
+    "title": "काउंसलर प्रदर्शन",
+    "summary": {
+        "counsellorCount_one": "{{count}} काउंसलर",
+        "counsellorCount_other": "{{count}} काउंसलर",
+        "avgResponse": "औसत प्रतिक्रिया",
+        "avgConversion": "औसत रूपांतरण"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "काउंसलर",
+            "assigned": "सौंपे गए",
+            "responded": "प्रतिक्रिया दी गई",
+            "conversions": "रूपांतरण",
+            "convRate": "रूपांतरण दर %",
+            "avgResponse": "औसत प्रतिक्रिया (मिनट)",
+            "tatMet": "TAT पूरा %",
+            "open": "खुले",
+            "overdue": "बकाया"
+        }
+    },
+    "table": {
+        "loading": "काउंसलर लोड हो रहे हैं…",
+        "empty": "इस अवधि में कोई काउंसलर गतिविधि नहीं है।",
+        "topPerformer": "शीर्ष प्रदर्शक",
+        "headers": {
+            "counsellor": "काउंसलर",
+            "assigned": "सौंपे गए",
+            "responded": "प्रतिक्रिया दी गई",
+            "conversions": "रूपांतरण",
+            "convRate": "रूपांतरण दर",
+            "avgResponse": "औसत प्रतिक्रिया",
+            "tatMet": "TAT पूरा",
+            "open": "खुले",
+            "overdue": "बकाया"
+        }
+    }
+}

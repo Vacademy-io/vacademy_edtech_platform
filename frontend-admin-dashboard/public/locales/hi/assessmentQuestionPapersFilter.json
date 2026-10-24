@@ -1,0 +1,6 @@
+{
+    "searchPlaceholder": "{{label}} खोजें...",
+    "noResults": "कोई परिणाम नहीं मिला।",
+    "selectedCount_one": "{{count}} चयनित",
+    "selectedCount_other": "{{count}} चयनित"
+}

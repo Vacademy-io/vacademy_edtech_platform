@@ -1,0 +1,79 @@
+{
+    "field": {
+        "priority": "प्राथमिकता",
+        "expiresAt": "समाप्ति समय",
+        "position": "स्थिति",
+        "pinStartTime": "पिन आरंभ",
+        "pinEndTime": "पिन समाप्ति",
+        "showUntil": "तब तक दिखाएं",
+        "isDismissible": "लोगों को इसे बंद करने की अनुमति दें",
+        "messagePriority": "संदेश प्राथमिकता",
+        "allowReplies": "जवाब देने की अनुमति दें",
+        "packageSessionId": "पैकेज सेशन आईडी",
+        "streamType": "स्ट्रीम प्रकार",
+        "folderName": "फ़ोल्डर का नाम",
+        "category": "श्रेणी",
+        "accessLevel": "पहुंच स्तर",
+        "communityType": "समुदाय प्रकार",
+        "tags": "टैग",
+        "taskTitle": "कार्य शीर्षक",
+        "estimatedMinutes": "अनुमानित मिनट",
+        "taskDescription": "कार्य विवरण",
+        "slideIds": "स्लाइड आईडी",
+        "goLive": "लाइव करें",
+        "deadline": "समय सीमा",
+        "status": "स्थिति",
+        "reminderBeforeMinutes": "रिमाइंडर (मिनट पहले)",
+        "isMandatory": "अनिवार्य",
+        "autoStatusUpdate": "स्थिति स्वतः अपडेट करें"
+    },
+    "hint": {
+        "expiresAt": "ऐसे अलर्ट के लिए खाली छोड़ें जो कभी समाप्त न हो।",
+        "pinPriority": "अधिक संख्या वाले ऊपर पिन होते हैं।",
+        "showUntil": "बंद न किए जाने पर भी ओवरले इस समय के बाद दिखना बंद हो जाता है। बिना समाप्ति के लिए खाली छोड़ें।",
+        "overlayPriority": "1 से 10 के बीच।",
+        "commaSeparated": "अल्पविराम से अलग करें।"
+    },
+    "placeholder": {
+        "folderName": "उदाहरण: परिपत्र",
+        "optional": "वैकल्पिक",
+        "tags": "घोषणाएं, परीक्षा",
+        "taskDescription": "शिक्षार्थी को क्या करना चाहिए?",
+        "slideIds": "slide-id-1, slide-id-2"
+    },
+    "option": {
+        "priority": {
+            "high": "उच्च",
+            "medium": "मध्यम",
+            "low": "निम्न"
+        },
+        "position": {
+            "top": "ऊपर",
+            "middle": "मध्य",
+            "bottom": "नीचे"
+        },
+        "streamType": {
+            "live": "लाइव",
+            "recorded": "रिकॉर्ड किया गया",
+            "upcoming": "आगामी"
+        },
+        "accessLevel": {
+            "students": "छात्र",
+            "teachers": "शिक्षक",
+            "everyone": "सभी"
+        },
+        "communityType": {
+            "school": "स्कूल",
+            "class": "कक्षा",
+            "club": "क्लब"
+        },
+        "status": {
+            "draft": "ड्राफ्ट",
+            "scheduled": "निर्धारित",
+            "live": "लाइव",
+            "completed": "पूर्ण",
+            "overdue": "विलंबित",
+            "cancelled": "रद्द"
+        }
+    }
+}

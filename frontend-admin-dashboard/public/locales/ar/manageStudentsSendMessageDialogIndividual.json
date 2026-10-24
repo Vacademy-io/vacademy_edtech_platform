@@ -1,0 +1,40 @@
+{
+    "dialogTitle": "إرسال رسالة واتساب",
+    "cancel": "إلغاء",
+    "sending": "جارٍ الإرسال...",
+    "sendButton": "إرسال الرسالة",
+    "sendMessageNotice": "إرسال رسالة إلى",
+    "templateLabel": "قالب الرسالة",
+    "selectTemplatePlaceholder": "اختر قالبًا",
+    "previewLabel": "معاينة:",
+    "sendingNotice": "جارٍ إرسال الرسالة إلى {{name}}...",
+    "sentNotice": "✓ تم إرسال الرسالة بنجاح إلى {{name}}",
+    "failedNotice": "✗ فشل إرسال الرسالة إلى {{name}}",
+    "defaultCustomMessage": "يرجى مراجعة لوحة التحكم الخاصة بك للحصول على التحديثات.",
+    "toasts": {
+        "noTemplateOrStudent": "لم يتم اختيار قالب أو الطالب غير متاح.",
+        "templateNotFound": "القالب المحدد غير موجود.",
+        "sending": "جارٍ إرسال الرسالة...",
+        "sent": "تم إرسال الرسالة بنجاح!",
+        "failed": "فشل إرسال الرسالة: {{error}}",
+        "unknownError": "حدث خطأ غير معروف"
+    },
+    "templates": {
+        "welcome": {
+            "name": "رسالة ترحيب",
+            "content": "مرحبًا {{name}}! أهلاً بك في منصتنا التعليمية."
+        },
+        "sessionReminder": {
+            "name": "تذكير بالجلسة",
+            "content": "مرحبًا {{name}}، هذا تذكير بجلستك القادمة."
+        },
+        "assignmentDue": {
+            "name": "موعد تسليم الواجب",
+            "content": "مرحبًا {{name}}، موعد تسليم واجبك يقترب. يرجى إكماله في الوقت المحدد."
+        },
+        "custom": {
+            "name": "رسالة مخصصة",
+            "content": "مرحبًا {{name}}، {{custom_message_text}}"
+        }
+    }
+}

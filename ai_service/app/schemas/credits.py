@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 
 class TransactionType(str, Enum):
@@ -84,16 +84,52 @@ class CreditGrantResponse(BaseModel):
 
 
 # ============================================================================
+# Usage-metering fields (contract K2) — optional, write-only attribution
+# ============================================================================
+
+class MeteringFieldsMixin(BaseModel):
+    """Optional fields that describe WHO used WHICH AI feature, written only to
+    ai_usage_event. They never change the amount, the ledger row or the
+    response; leaving them out is exactly the old request. Deliberately
+    lenient (no length limits, loose list item types): an odd value is clipped
+    or ignored by the metering writer, never a 422 that would cost a charge.
+    The ledger's own user_id / user_role / subject_user_id keep their meaning."""
+    use_case: Optional[str] = Field(None, description="ai_use_case_catalog key, e.g. 'tutor_chat'")
+    actor_kind: Optional[str] = Field(None, description="USER|SYSTEM|API_KEY|PUBLIC|UNKNOWN")
+    actor_user_id: Optional[str] = Field(None, description="Event actor when it differs from user_id (metering only)")
+    actor_role_class: Optional[str] = Field(None, description="ADMIN|TEACHER|STAFF|PARENT|LEARNER|SYSTEM|API_KEY|PUBLIC")
+    actor_roles_raw: Optional[List[Any]] = Field(None, description="The actor's institute roles at spend time")
+    role_source: Optional[str] = Field(None, description="JWT|CALLER|AUTH_LOOKUP|CATALOG_DEFAULT|UNRESOLVED")
+    actor_display_name: Optional[str] = None
+    subject_display_name: Optional[str] = None
+    surface: Optional[str] = Field(
+        None, description="ADMIN_APP|LEARNER_APP|PUBLIC|PARTNER_API|WHATSAPP|PHONE|SCHEDULED|INTERNAL|UNKNOWN")
+    source_service: Optional[str] = Field(None, description="ai_service|admin_core|assessment|community|...")
+    usage_context: Optional[Dict[str, Any]] = Field(
+        None, description="Small JSON context: course/video/flow/call ids and names; subject_user_id for metering")
+    router: Optional[str] = None
+    provider: Optional[str] = None
+    gateway_key_id: Optional[str] = None
+    byo_key: Optional[bool] = None
+    parent_event_id: Optional[str] = None
+    usage_event_id: Optional[str] = Field(None, description="Caller-generated ai_usage_event id (uuid)")
+    tool_key: Optional[str] = Field(None, description="ai_tool_pricing.tool_key behind this charge, if any")
+
+
+# ============================================================================
 # Credit Check Schemas (Pre-flight)
 # ============================================================================
 
-class CreditCheckRequest(BaseModel):
+class CreditCheckRequest(MeteringFieldsMixin):
     """Request to check if institute has sufficient credits."""
     institute_id: str
     request_type: str  # content, image, embedding, etc.
     model: Optional[str] = None  # Model name for tier multiplier
     estimated_tokens: Optional[int] = 0  # Estimated prompt + completion tokens
     character_count: Optional[int] = 0  # For TTS
+    # Metering only (no ledger row on a check).
+    user_id: Optional[str] = None
+    subject_user_id: Optional[str] = None
 
 
 class CreditCheckResponse(BaseModel):
@@ -109,7 +145,7 @@ class CreditCheckResponse(BaseModel):
 # Credit Deduction Schemas
 # ============================================================================
 
-class CreditDeductRequest(BaseModel):
+class CreditDeductRequest(MeteringFieldsMixin):
     """Request to deduct credits after AI operation."""
     institute_id: str
     request_type: str
@@ -162,6 +198,11 @@ class CreditDeductRequest(BaseModel):
             "gates affordability at request start."
         ),
     )
+
+    # In-process hints for the metering writer (never serialized, never sent).
+    _meter_fresh_usage_row: bool = PrivateAttr(default=False)
+    _meter_real_cost_usd: Optional[float] = PrivateAttr(default=None)
+    _meter_metadata: Optional[Dict[str, Any]] = PrivateAttr(default=None)
 
 
 class CreditDeductResponse(BaseModel):
@@ -408,7 +449,7 @@ class InternalGrantOrRefundResponse(BaseModel):
 # Backed by ToolCostEstimator + the DB-tunable `ai_tool_pricing` table.
 # ============================================================================
 
-class InternalChargeToolRequest(BaseModel):
+class InternalChargeToolRequest(MeteringFieldsMixin):
     """Internal (service-to-service) charge for a metered AI tool.
 
     Used by admin_core to bill transcription from `applyTerminalState` on the
@@ -426,6 +467,13 @@ class InternalChargeToolRequest(BaseModel):
     user_role: Optional[str] = Field(None, description="ADMIN|TEACHER|LEARNER|SYSTEM|UNVERIFIED")
     subject_user_id: Optional[str] = Field(None, description="Who the work was about, when != actor")
     idempotency_key: Optional[str] = Field(None, description="Dedup key, e.g. 'transcription:{extractionId}'")
+    rate_snapshot: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "Rate quoted at enqueue {tool_key, flat_base_credits, per_unit_credits, unit_field, "
+            "params, rate_source}; when it names this tool_key it replaces the current rate"
+        ),
+    )
 
 
 class InternalChargeToolResponse(BaseModel):

@@ -1,12 +1,18 @@
+import type { TFunction } from 'i18next';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { FilterConfig } from '@/routes/manage-students/students-list/-types/students-list-types';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { InstituteDetailsType } from '@/schemas/student/student-list/institute-schema';
 import { removeDefaultPrefix } from '@/utils/helpers/removeDefaultPrefix';
-import { ALL_SESSIONS_ID } from '@/routes/manage-students/students-list/-hooks/useStudentFilters';
+import { getBatchOwnName } from '@/utils/helpers/student-management/batch-display-name';
+import {
+    ALL_SESSIONS_ID,
+    TERMINATED_STATUS,
+} from '@/routes/manage-students/students-list/-hooks/useStudentFilters';
 import { CustomFieldSetupItem } from '@/routes/audience-manager/list/-services/get-custom-field-setup';
 
 export const GetFilterData = (
+    t: TFunction,
     instituteDetails: InstituteDetailsType,
     _currentSession: string,
     campaigns?: { id?: string; campaign_name: string }[],
@@ -22,9 +28,18 @@ export const GetFilterData = (
     // DATE/NUMBER custom fields to expose as range popovers. Already gated by
     // the caller (only enabled fields are passed) — range fields have no legacy
     // auto-expose, so an empty/absent list simply renders none.
-    rangeCustomFields?: CustomFieldSetupItem[]
+    rangeCustomFields?: CustomFieldSetupItem[],
+    // From the list response: whether this institute runs trials at all. False hides the
+    // Membership filter, so an institute with no trial memberships is never offered a
+    // Trial/Paid distinction that means nothing there.
+    membershipTypesAvailable = false
 ) => {
-    const statuses = instituteDetails?.student_statuses.map((status, index) => ({
+    // TERMINATED is offered on top of the institute's default roster statuses, but never
+    // applied by default — the normal list stays Active/Inactive, and an admin picks it to
+    // see members who were removed (e.g. terminated out of a practice).
+    const statusLabels: string[] = [...(instituteDetails?.student_statuses || [])];
+    if (!statusLabels.includes(TERMINATED_STATUS)) statusLabels.push(TERMINATED_STATUS);
+    const statuses = statusLabels.map((status, index) => ({
         id: index.toString(),
         label: status,
     }));
@@ -36,7 +51,7 @@ export const GetFilterData = (
 
     const sessionExpiry = instituteDetails?.session_expiry_days.map((days, index) => ({
         id: index.toString(),
-        label: `Expiring in ${days} days`,
+        label: t('sessionExpiry.optionLabel', { days }),
     }));
 
     // Check if any batch has is_org_associated = true
@@ -57,50 +72,76 @@ export const GetFilterData = (
         {
             id: 'batch',
             title: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
+            // Label by the batch's own name where it has one. Composing it from
+            // course + level gave an institute whose batches share a course ten
+            // identical entries, with no way to tell which one you were picking.
             filterList: batchesInScope
                 .map((batch) => ({
                     id: batch.id,
-                    label: `${removeDefaultPrefix(batch.package_dto.package_name)}${batch.level.level_name && batch.level.level_name !== 'DEFAULT' ? ` - ${removeDefaultPrefix(batch.level.level_name)}` : ''}`.trim(),
+                    label:
+                        getBatchOwnName(batch) ||
+                        `${removeDefaultPrefix(batch.package_dto.package_name)}${batch.level.level_name && batch.level.level_name !== 'DEFAULT' ? ` - ${removeDefaultPrefix(batch.level.level_name)}` : ''}`.trim(),
                 }))
                 .slice(0, 10),
         },
         {
             id: 'statuses',
-            title: 'Status',
+            title: t('statuses.title'),
             filterList: statuses || [],
         },
         {
             id: 'gender',
-            title: 'Gender',
+            title: t('gender.title'),
             filterList: genders || [],
         },
         {
             id: 'session_expiry_days',
-            title: `${getTerminology(ContentTerms.Session, SystemTerms.Session)} Expiry`,
+            title: `${getTerminology(ContentTerms.Session, SystemTerms.Session)} ${t('sessionExpiry.titleSuffix')}`,
             filterList: sessionExpiry || [],
+        },
+        ...(membershipTypesAvailable
+            ? [
+                  {
+                      id: 'membership_types',
+                      // Not "Membership": that word already names the sidebar section for
+                      // plans and invites, so reusing it here read as the same thing.
+                      title: 'Member Type',
+                      filterList: [
+                          { id: 'TRIAL', label: 'Trial' },
+                          { id: 'TRIAL_ENDED', label: 'Trial ended' },
+                          { id: 'PAID', label: 'Paid' },
+                      ],
+                  },
+              ]
+            : []),
+        {
+            id: 'joined_range',
+            title: 'Joined',
+            kind: 'DATE_RANGE' as const,
+            filterList: [],
         },
         {
             id: 'payment_statuses',
-            title: 'Payment Status',
+            title: t('paymentStatus.title'),
             filterList: [
-                { id: 'PAID', label: 'Paid' },
-                { id: 'FAILED', label: 'Failed' },
-                { id: 'PAYMENT_FAILED', label: 'Payment Failed' },
+                { id: 'PAID', label: t('paymentStatus.paid') },
+                { id: 'FAILED', label: t('paymentStatus.failed') },
+                { id: 'PAYMENT_FAILED', label: t('paymentStatus.paymentFailed') },
             ],
         },
         {
             id: 'approval_statuses',
-            title: 'Approval Status',
+            title: t('approvalStatus.title'),
             filterList: [
-                { id: 'PENDING_FOR_APPROVAL', label: 'Pending for Approval' },
-                { id: 'INVITED', label: 'Invited' },
+                { id: 'PENDING_FOR_APPROVAL', label: t('approvalStatus.pendingForApproval') },
+                { id: 'INVITED', label: t('approvalStatus.invited') },
             ],
         },
         {
             id: 'learner_type',
-            title: 'Cart Status',
+            title: t('cartStatus.title'),
             filterList: [
-                { id: 'ABANDONED_CART', label: 'Abandoned Cart' },
+                { id: 'ABANDONED_CART', label: t('cartStatus.abandonedCart') },
             ],
         },
     ];
@@ -114,7 +155,7 @@ export const GetFilterData = (
 
         filterData.push({
             id: 'sub_org_user_types',
-            title: 'Role',
+            title: t('role.title'),
             filterList: roles,
         });
     }
@@ -124,7 +165,7 @@ export const GetFilterData = (
     if (subOrgs && subOrgs.length > 0) {
         filterData.push({
             id: 'sub_org_ids',
-            title: 'Sub-Org',
+            title: t('subOrg.title'),
             filterList: subOrgs.map((so) => ({ id: so.id, label: so.name })),
         });
     }
@@ -137,7 +178,7 @@ export const GetFilterData = (
         if (audienceOptions.length > 0) {
             filterData.push({
                 id: 'audience_ids',
-                title: 'Audience',
+                title: t('audience.title'),
                 filterList: audienceOptions,
             });
         }

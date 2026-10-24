@@ -1,0 +1,21 @@
+{
+    "sessionSelector": {
+        "allOption": "सभी {{term}}"
+    },
+    "filterOptions": {
+        "sessionExpiryDays_one": "{{count}} दिन",
+        "sessionExpiryDays_other": "{{count}} दिन",
+        "paymentStatus": {
+            "paid": "भुगतान हो गया",
+            "failed": "विफल",
+            "paymentFailed": "भुगतान विफल"
+        },
+        "approvalStatus": {
+            "pending": "स्वीकृति लंबित",
+            "invited": "आमंत्रित"
+        },
+        "learnerType": {
+            "abandonedCart": "छोड़ी गई कार्ट"
+        }
+    }
+}

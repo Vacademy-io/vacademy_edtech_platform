@@ -1,0 +1,62 @@
+{
+    "facets": {
+        "subject": "Subject",
+        "level": "Class / Exam",
+        "board": "Board",
+        "language": "Language"
+    },
+    "describeSize": {
+        "sources_one": "{{formatted}} source",
+        "sources_other": "{{formatted}} sources",
+        "pages_one": "{{formatted}} page",
+        "pages_other": "{{formatted}} pages"
+    },
+    "card": {
+        "unlocked": "Unlocked",
+        "credits_one": "{{count}} credit",
+        "credits_other": "{{count}} credits",
+        "free": "Free to use",
+        "syllabus": "Syllabus"
+    },
+    "intro": "Ready-made textbooks and libraries from Vacademy — free to use. Pick a board or exam, a class and a subject, then build question papers, assessments and courses straight away — no uploading, no waiting for a book to process.",
+    "manageLibrary": "Manage library",
+    "searchPlaceholder": "Search by title",
+    "clearFilters": "Clear filters",
+    "empty": {
+        "noneMatch": "No libraries match that search",
+        "noneYet": "No libraries published yet",
+        "widenSearch": "Try a different title or clear the search.",
+        "willAppear": "Vacademy-published libraries will appear here as they are released.",
+        "notLoaded": "Nothing loaded yet for {{selection}}",
+        "onItsWay": "We are adding textbooks board by board and class by class. Meanwhile you can upload your own book and use it the same way.",
+        "addOwn": "Add your own book"
+    },
+    "footerNote": "Every library here is free to use, including material we add to it later.",
+    "otherLibrariesHeading": "More libraries",
+    "classLabel": "Class {{number}}",
+    "picker": {
+        "trackBoard": "School board",
+        "trackExam": "Competitive exam",
+        "board": "Board",
+        "stateBoard": "State board…",
+        "stateBoardSelected": "{{name}}",
+        "optionWithCount": "{{name}} ({{count}})",
+        "class": "Class",
+        "subject": "Subject",
+        "exam": "Exam",
+        "medium": "Medium",
+        "all": "All",
+        "comingSoon": "Not loaded yet — coming soon",
+        "pickExam": "Pick an exam to see the books it is built on.",
+        "unavailable": "The curriculum picker could not be loaded. Please refresh."
+    },
+    "results": {
+        "count_one": "{{count}} book · {{selection}}",
+        "count_other": "{{count}} books · {{selection}}"
+    },
+    "aliasNote": {
+        "board": "{{board}} prescribes {{source}} textbooks, so these are the {{source}} books.",
+        "exam": "{{exam}} is built on the {{source}} syllabus — these are the Class {{classes}} books.",
+        "boardOverlap": "{{board}} publishes no textbooks of its own; the {{source}} books cover most of its syllabus."
+    }
+}

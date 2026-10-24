@@ -1,0 +1,44 @@
+{
+    "loadingAccounts": "Chargement des comptes Zoom…",
+    "notSetUpMessage": "L'intégration Zoom n'est pas configurée pour cet établissement. Ajoutez un compte Zoom sous <strong>Paramètres → Session en direct → Intégration Zoom</strong>, ou collez un lien de réunion dans le champ Lien du cours en direct ci-dessous.",
+    "zoomMeetingSettings": "Paramètres de réunion Zoom",
+    "zoomAccount": "Compte Zoom",
+    "defaultSuffix": "(par défaut)",
+    "section": {
+        "entrySecurity": "Accès et sécurité",
+        "audioVideoDefaults": "Paramètres audio / vidéo par défaut",
+        "inMeetingFeatures": "Fonctionnalités pendant la réunion"
+    },
+    "field": {
+        "enableWaitingRoom": "Activer la salle d'attente",
+        "allowJoinBeforeHost": "Autoriser à rejoindre avant l'hôte",
+        "requireZoomLogin": "Exiger une connexion Zoom pour rejoindre",
+        "registrationApproval": "Approbation de l'inscription",
+        "alternativeHosts": "Hôtes alternatifs (e-mails séparés par des virgules)",
+        "alternativeHostsPlaceholder": "ex. cohost1@inst.edu, cohost2@inst.edu",
+        "muteOnEntry": "Couper le son des participants à l'entrée",
+        "startHostVideoOn": "Démarrer avec la vidéo de l'hôte activée",
+        "startParticipantVideoOn": "Démarrer avec la vidéo des participants activée",
+        "audio": "Audio",
+        "enableBreakoutRooms": "Activer les salles de sous-groupes",
+        "startInFocusMode": "Démarrer en mode focus",
+        "allowMultipleDevices": "Autoriser la connexion depuis plusieurs appareils",
+        "addIdentityWatermark": "Ajouter un filigrane d'identité",
+        "automaticRecording": "Enregistrement automatique"
+    },
+    "approval": {
+        "noneRequired": "Aucune inscription requise",
+        "automatic": "Approuver automatiquement",
+        "manual": "Approuver manuellement"
+    },
+    "audio": {
+        "computerAndTelephony": "Ordinateur + téléphonie",
+        "computerOnly": "Audio de l'ordinateur uniquement",
+        "telephonyOnly": "Téléphonie uniquement"
+    },
+    "recording": {
+        "cloud": "Enregistrer sur le cloud Zoom",
+        "local": "Enregistrement local (machine de l'hôte)",
+        "none": "Ne pas enregistrer"
+    }
+}

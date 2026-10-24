@@ -1,0 +1,41 @@
+{
+    "title": "تكامل نظام إدارة التعلم",
+    "loading": "جارٍ التحميل…",
+    "builtInLms": "نظام إدارة التعلم المدمج في Vacademy",
+    "moodleCourseId": "معرّف دورة Moodle",
+    "courseIdInLms": "معرّف الدورة في نظام إدارة التعلم",
+    "enrolSyncNotice": {
+        "prefix": "عند تسجيل المتعلمين في هذه الدورة، يتم إعدادهم في",
+        "suffix": "."
+    },
+    "noConnections": {
+        "prefix": "لا توجد اتصالات بنظام إدارة التعلم بعد. أضف واحدًا ضمن",
+        "settingsPath": "الإعدادات ← ربط نظام إدارة التعلم",
+        "suffix": "، ثم عد إلى هنا لتطبيقه."
+    },
+    "setupHeading": "إعداد نظام إدارة التعلم لهذه الدورة",
+    "lmsConnectionLabel": "اتصال نظام إدارة التعلم",
+    "chooseConnectionPlaceholder": "اختر اتصالًا",
+    "moodleCourseIdPlaceholder": "مثال: 74",
+    "courseIdPlaceholder": "معرّف الدورة في نظام إدارة التعلم",
+    "courseIdHelp": {
+        "prefix": "معرّف هذه الدورة في",
+        "suffix": ". يأتي الموقع/الرمز من الاتصال — يتغيّر معرّف الدورة فقط حسب الدورة."
+    },
+    "additionalFieldsLabel": "حقول إضافية (اختياري)",
+    "fieldKeyPlaceholder": "المفتاح (مثال: roleId)",
+    "fieldValuePlaceholder": "القيمة",
+    "removeFieldAriaLabel": "إزالة الحقل",
+    "addFieldButton": "إضافة حقل",
+    "additionalFieldsHelp": "يتم حفظ أي أزواج مفتاح-قيمة إضافية ضمن إعدادات نظام إدارة التعلم لهذه الدورة بصيغة JSON (مثل حقل مخصص يقرأه أحد سير العمل).",
+    "applyingButton": "جارٍ التطبيق…",
+    "applyButton": "استخدام نظام إدارة التعلم هذا للدورة",
+    "errors": {
+        "loadFailed": "فشل تحميل معلومات نظام إدارة التعلم",
+        "pickConnection": "اختر اتصال نظام إدارة تعلم أولًا.",
+        "applyFailed": "فشل تطبيق اتصال نظام إدارة التعلم"
+    },
+    "toasts": {
+        "applySuccess": "أصبحت هذه الدورة الآن متزامنة مع {{lmsName}}."
+    }
+}

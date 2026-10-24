@@ -1,0 +1,9 @@
+{
+    "tabs": {
+        "selectBatch": "اختيار الدفعة",
+        "selectIndividually": "اختيار فردي"
+    },
+    "batchList": {
+        "selectSectionPlaceholder": "اختر القسم"
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "markBadge": {
+        "marks": "{{marks}} points"
+    },
+    "comboboxField": {
+        "selectLabel": "Sélectionner {{label}}",
+        "searchLabel": "Rechercher {{label}}...",
+        "noResults": "Aucun résultat trouvé."
+    },
+    "selectField": {
+        "selectLabel": "Sélectionner {{label}}"
+    },
+    "dropdown": {
+        "placeholder": "Sélectionner une option"
+    },
+    "dropdownSchema": {
+        "required": "Ce champ est requis"
+    },
+    "modernButton": {
+        "loading": "Chargement..."
+    },
+    "pagination": {
+        "goTo": "Aller à"
+    },
+    "errorState": {
+        "defaultTitle": "Une erreur s'est produite",
+        "retry": "Réessayer",
+        "tryAgain": "Réessayer"
+    },
+    "table": {
+        "loading": "Chargement...",
+        "errorLoadingData": "Erreur de chargement des données"
+    }
+}

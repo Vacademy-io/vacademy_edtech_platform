@@ -1,0 +1,44 @@
+{
+    "title": "{{role}} — Audience Access",
+    "ariaLabel": "Audience access mode",
+    "description": {
+        "part1": "Controls what",
+        "part2": "can see across Recent Leads, Lead List, and Campaigns."
+    },
+    "modes": {
+        "default": {
+            "title": "See everything (default)",
+            "description": "Sees every lead and every campaign, same as an admin."
+        },
+        "counselor": {
+            "title": "Assigned to {{role}}",
+            "description": "Recent Leads and Lead List rows are automatically scoped to leads where the user is the linked counselor. Campaigns are unaffected — {{role}} still sees every campaign."
+        },
+        "audienceList": {
+            "title": "Granted audience lists only",
+            "description": "Sees only the explicitly granted audience lists, and only those lists' responses on Recent Leads."
+        }
+    },
+    "grantedLists": {
+        "label": "Granted audience lists",
+        "loading": "Loading audience lists…",
+        "empty": "No audience lists found for this institute.",
+        "untitledFallback": "Untitled list",
+        "zeroSelectedWarning": "No lists selected yet — this role won't see any leads until at least one is granted."
+    },
+    "assignedOnly": {
+        "title": "Only show leads {{role}} owns",
+        "description": "Also narrows visibility to the leads {{role}} owns, with any lead they add by hand automatically stamped to them — so a lead never disappears from their view the moment they save it. Active only while the institute runs no counsellor pool.",
+        "inertWarning_one": "This institute already runs {{count}} counsellor pool, so this setting has no effect right now.",
+        "inertWarning_other": "This institute already runs {{count}} counsellor pools, so this setting has no effect right now."
+    },
+    "toasts": {
+        "saveFailed": "Failed to save audience access"
+    },
+    "status": {
+        "loading": "Loading…",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "unsaved": "Unsaved changes"
+    }
+}

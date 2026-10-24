@@ -1,0 +1,183 @@
+{
+    "nav": {
+        "title": "हाल की लीड्स"
+    },
+    "heading": {
+        "loading": "लीड्स लोड हो रही हैं…",
+        "leadsCount_one": "{{count}} लीड",
+        "leadsCount_other": "{{count}} लीड्स"
+    },
+    "slaOptions": {
+        "all": "सभी कार्रवाई स्थितियां",
+        "anyOverdueLabel": "कोई समयसीमा चूकी",
+        "anyOverdueHelper": "पहला संपर्क या फ़ॉलो-अप — जो भी समय पार कर चुका हो",
+        "firstContactMissed": "पहला संपर्क चूका",
+        "firstContactComingUp": "पहला संपर्क आने वाला है",
+        "followUpComingUp": "फ़ॉलो-अप आने वाला है",
+        "followUpMissed": "फ़ॉलो-अप चूका"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "पिछले 24 घंटे",
+        "last7Days": "पिछले 7 दिन",
+        "last15Days": "पिछले 15 दिन",
+        "last30Days": "पिछले 30 दिन",
+        "allTime": "सभी समय",
+        "customRange": "कस्टम श्रेणी"
+    },
+    "filters": {
+        "tier": {
+            "label": "सभी स्तर",
+            "hot": "हॉट",
+            "warm": "वॉर्म",
+            "cold": "कोल्ड"
+        },
+        "leadStatus": {
+            "label": "सभी लीड्स",
+            "active": "सक्रिय (नामांकित नहीं)",
+            "converted": "नामांकित / परिवर्तित",
+            "excludeSelected": "चुने हुए हटाएँ"
+        },
+        "sla": {
+            "label": "सभी SLA स्थितियां"
+        },
+        "audience": {
+            "label": "सभी {{term}}",
+            "untitled": "बिना शीर्षक वाली ऑडियंस"
+        },
+        "campaignType": {
+            "label": "सभी {{term}}"
+        },
+        "customDate": {
+            "setDates": "तारीखें सेट करें",
+            "done": "हो गया",
+            "from": "से",
+            "to": "तक"
+        },
+        "calledWithin": {
+            "placeholder": null,
+            "any": null
+        },
+        "workedWithin": {
+            "placeholder": null,
+            "any": null
+        }
+    },
+    "toolbar": {
+        "leadSettings": "लीड सेटिंग्स",
+        "showDeletedTitle": "हटाई गई लीड्स दिखाएं",
+        "backToActiveTitle": "सक्रिय लीड्स पर वापस जाएं",
+        "deletedLeadsButton": "हटाई गई लीड्स",
+        "viewingDeletedButton": "हटाई गई लीड्स देखी जा रही हैं",
+        "exporting": "निर्यात हो रहा है…",
+        "export": "निर्यात करें",
+        "addLead": "नया लीड जोड़ें",
+        "filters": "फ़िल्टर",
+        "summaryShow": "सारांश दिखाएँ",
+        "summaryHide": "सारांश छिपाएँ"
+    },
+    "chips": {
+        "search": "खोज: {{query}}",
+        "audience": "ऑडियंस: {{names}}",
+        "campaignType": "{{term}}: {{types}}",
+        "tier": "स्तर: {{tiers}}",
+        "status": "स्थिति: {{statuses}}",
+        "sla": "SLA: {{states}}",
+        "counsellor": "काउंसलर: {{names}}",
+        "source": "स्रोत: {{source}}",
+        "customField": "{{field}}: {{value}}",
+        "dateRangeCustomWithDates": "तारीख: {{from}} → {{to}}",
+        "dateRangeCustomFallback": "तारीख: कस्टम श्रेणी",
+        "dateRangeFallback": "तारीख श्रेणी",
+        "fallbackSelected": "चयनित",
+        "fallbackField": "फ़ील्ड",
+        "statusActive": "सक्रिय",
+        "statusConverted": "परिवर्तित",
+        "unassigned": "असाइन नहीं किया गया",
+        "removeAriaLabel": "{{label}} हटाएं",
+        "clearAll": "सभी हटाएं",
+        "calledWithin": null,
+        "workedWithin": null,
+        "pinnedTitle": "यह फ़िल्टर इस टैब का है — इसे यहाँ से हटाया नहीं जा सकता",
+        "statusExcluded": "स्टेटस नहीं है: {{statuses}}"
+    },
+    "search": {
+        "placeholder": "लीड्स खोजें",
+        "showing": "दिखाया जा रहा है",
+        "resultsPending": "… में से परिणाम",
+        "resultsCount_one": "{{count}} परिणाम में से",
+        "resultsCount_other": "{{count}} परिणामों में से"
+    },
+    "bulk": {
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित",
+        "selecting": "चयन हो रहा है…",
+        "selectAll_one": "सभी {{count}} चुनें",
+        "selectAll_other": "सभी {{count}} चुनें",
+        "clear": "साफ़ करें",
+        "actionsButton": "बल्क कार्रवाइयां",
+        "assignLeads": "लीड्स असाइन करें",
+        "unassignLeads": "लीड्स अनअसाइन करें",
+        "restoreLeads": "लीड्स पुनर्स्थापित करें",
+        "deleteLeads": "लीड्स हटाएं",
+        "changeStatus": null
+    },
+    "emptyState": {
+        "errorTitle": "लीड्स लोड नहीं हो सकीं",
+        "errorDescription": "लीड्स लाने में कुछ गड़बड़ हो गई। फिर से कोशिश करें।"
+    },
+    "callReasons": {
+        "noSubmissionId": "इस लीड की कोई सबमिशन आईडी नहीं है",
+        "noPhone": "इस लीड का कोई फ़ोन नंबर दर्ज नहीं है",
+        "callInProgress": "एक और कॉल शुरू हो रही है…"
+    },
+    "export": {
+        "columns": {
+            "leadId": "लीड आईडी",
+            "submittedAt": "सबमिट किया गया",
+            "name": "नाम",
+            "email": "ईमेल",
+            "mobile": "मोबाइल",
+            "audience": "ऑडियंस",
+            "campaignType": "{{term}}",
+            "leadStatus": "लीड स्थिति",
+            "counsellor": "काउंसलर",
+            "activityNotes": "गतिविधि और नोट्स",
+            "notesCount": "नोट्स की संख्या",
+            "leadJourney": "लीड यात्रा (निपटान व नोट्स)",
+            "utmCampaign": "UTM कैंपेन"
+        },
+        "notes": {
+            "defaultTitle": "नोट",
+            "updatedBy": "अपडेट किया - {{name}}",
+            "date": "तारीख - {{date}}"
+        },
+        "noLeadsToExport": "निर्यात के लिए कोई लीड नहीं",
+        "exportedLeads_one": "{{count}} लीड निर्यात की गई",
+        "exportedLeads_other": "{{count}} लीड्स निर्यात की गईं",
+        "exportFailed": "हाल की लीड्स निर्यात करने में विफल"
+    },
+    "toasts": {
+        "leadRestored_one": "{{count}} लीड पुनर्स्थापित की गई",
+        "leadRestored_other": "{{count}} लीड्स पुनर्स्थापित की गईं",
+        "restoreFailed": "पुनर्स्थापित करने में विफल। कृपया फिर से कोशिश करें।",
+        "selectAllFailed": "सभी लीड्स चुनने में विफल",
+        "bulkStatusUpdated_one": null,
+        "bulkStatusUpdated_other": null,
+        "bulkStatusUnchanged_one": null,
+        "bulkStatusUnchanged_other": null,
+        "bulkStatusPartial": null,
+        "bulkStatusFailed": null
+    },
+    "filtersPanel": {
+        "title": "फ़िल्टर",
+        "active": "{{count}} लागू",
+        "close": "फ़िल्टर बंद करें",
+        "sections": {
+            "pipeline": "पाइपलाइन",
+            "owner": "ओनर और सोर्स",
+            "activity": "गतिविधि",
+            "campaign": "कैंपेन लिंक",
+            "custom": "कस्टम फ़ील्ड"
+        }
+    }
+}

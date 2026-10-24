@@ -1,0 +1,134 @@
+{
+    "volt": {
+        "title": "Bienvenue sur Volt",
+        "subtitle": "L'avenir des présentations interactives.",
+        "redirecting": "Redirection vers votre espace de travail..."
+    },
+    "alertsDialog": {
+        "title": "Alertes système",
+        "loading": "Chargement...",
+        "loadMore": "Charger plus",
+        "empty": "Aucune alerte trouvée"
+    },
+    "myCourses": {
+        "title": "Mes cours",
+        "viewAll": "Tout voir",
+        "description": "Accès rapide aux cours que vous avez créés et à vos soumissions",
+        "authored": "Cours créés",
+        "inReview": "En cours de révision",
+        "loadError": "Échec du chargement des données des cours"
+    },
+    "page": {
+        "title": "Tableau de bord",
+        "metaDescription": "Cette page affiche le tableau de bord de l'établissement."
+    },
+    "greeting": {
+        "morning": "Bonjour, <strong>{{name}}!</strong>",
+        "afternoon": "Bon après-midi, <strong>{{name}}!</strong>",
+        "evening": "Bonsoir, <strong>{{name}}!</strong>"
+    },
+    "subtitle": {
+        "admin": "Voici comment se porte {{instituteName}} aujourd'hui.",
+        "adminFallbackInstitute": "votre établissement",
+        "nonAdmin": "Suivez vos cours et vos apprenants en un coup d'œil."
+    },
+    "header": {
+        "roleFallback": "Admin"
+    },
+    "welcomeVideo": {
+        "text": "Bienvenue à bord ! Nous sommes ravis de vous compter parmi nous. Configurons votre tableau de bord administrateur pour rendre l'apprentissage fluide et engageant.",
+        "textGeneral": "Bienvenue à bord ! Nous sommes ravis de vous compter parmi nous. Configurons votre tableau de bord administrateur pour que votre établissement fonctionne en toute fluidité."
+    },
+    "profileCard": {
+        "title": "Complétez le profil de votre établissement",
+        "dismissAriaLabel": "Fermer la carte de complétion du profil",
+        "percentComplete": "{{percent}} % complété"
+    },
+    "namingCard": {
+        "title": "Paramètres de dénomination",
+        "description": "Personnalisez les conventions de dénomination utilisées dans tout votre établissement",
+        "button": "Paramètres de dénomination",
+        "dismissAriaLabel": "Fermer la carte des paramètres de dénomination"
+    },
+    "revenueTrends": {
+        "subOrgTitle": "Montant collecté — mon organisation"
+    },
+    "roleTypeCard": {
+        "title": "Utilisateurs par type de rôle"
+    },
+    "aiCard": {
+        "dismissAriaLabel": "Fermer la carte des fonctionnalités IA",
+        "title": "Essayez les nouvelles fonctionnalités IA !",
+        "description": "Découvrez des outils d'IA de pointe pour améliorer votre enseignement",
+        "features": {
+            "pdf": "Questions à partir d'un PDF",
+            "lectureAudio": "Questions à partir de l'audio d'un cours",
+            "sortTopicWise": "Trier les questions par thème",
+            "image": "Questions à partir d'une image",
+            "lectureFeedback": "Obtenir un retour sur le cours",
+            "planLecture": "Planifiez votre cours"
+        },
+        "manyMore": "Et bien plus encore"
+    },
+    "assistant": {
+        "name": "Chatbot de l’établissement",
+        "heading": "Que souhaitez-vous accomplir aujourd’hui ?",
+        "description": "Posez une question ou choisissez une tâche pour commencer.",
+        "openChat": "Ouvrir le chat",
+        "inputLabel": "Interroger {{chatbotName}}",
+        "placeholder": "Comment puis-je vous aider ?",
+        "inputHint": "Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne",
+        "submit": "Demander",
+        "suggestionsLabel": "Tâches suggérées. Sélectionnez-en une pour modifier votre question.",
+        "loading": "Chargement de votre assistant",
+        "unavailable": "L’assistant est temporairement indisponible. Votre tableau de bord reste accessible.",
+        "retry": "Réessayer",
+        "starters": {
+            "overview": {
+                "label": "Frais en attente",
+                "prompt": "Quel est le montant total des frais en attente dans l’établissement ?"
+            },
+            "learner": {
+                "label": "Trouver un apprenant",
+                "prompt": "Aidez-moi à trouver un apprenant par son nom."
+            },
+            "assessments": {
+                "label": "Évaluations en attente",
+                "prompt": "Quels travaux soumis sont encore en attente d’évaluation ?"
+            },
+            "announcement": {
+                "label": "Rédiger une annonce",
+                "prompt": "Aidez-moi à rédiger une annonce pour un groupe."
+            },
+            "schedule": {
+                "label": "Cours du jour",
+                "prompt": "Quels cours sont prévus aujourd’hui ?"
+            },
+            "payments": {
+                "label": "Frais d’un apprenant",
+                "prompt": "Aidez-moi à vérifier les frais en retard d’un apprenant."
+            },
+            "batch": {
+                "label": "Liste d’un groupe",
+                "prompt": "Aidez-moi à trouver les apprenants d’un groupe."
+            },
+            "help": {
+                "label": "Aide pour une tâche",
+                "prompt": "Comment créer un cours ?",
+                "promptGeneral": "Comment ajouter un membre à l'équipe ?"
+            }
+        },
+        "instituteName": "Chatbot de l’établissement {{instituteName}}",
+        "helpDescription": "Demandez-moi comment ou où effectuer une tâche dans votre espace d’administration."
+    },
+    "quickActions": {
+        "title": "Actions rapides"
+    },
+    "overview": {
+        "title": "Vue d’ensemble de l’établissement"
+    },
+    "sourceError": {
+        "message": "Chargement impossible",
+        "retry": "Réessayer"
+    }
+}

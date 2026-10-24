@@ -1,0 +1,27 @@
+{
+    "header": {
+        "title": "Customize \"{{name}}\"",
+        "subtitle": "Edit colors and text on the template. The canvas updates live.",
+        "resetTooltip": "Restore this template's default colors and text",
+        "resetButton": "Reset"
+    },
+    "groups": {
+        "colors": "Colors",
+        "text": "Text",
+        "layout": "Layout"
+    },
+    "fields": {
+        "primaryColor": "Primary Color",
+        "secondaryColor": "Secondary Color",
+        "backgroundColor": "Background",
+        "titleText": "Main Title",
+        "subtitleText": "Subtitle",
+        "presentedText": "Presented-to Line",
+        "forCompletionText": "Completion Line",
+        "borderWidth": {
+            "label": "Border / Accent Width",
+            "hint": "Border thickness (or accent-stripe width for Modern Minimal)."
+        },
+        "hexPlaceholder": "#000000"
+    }
+}

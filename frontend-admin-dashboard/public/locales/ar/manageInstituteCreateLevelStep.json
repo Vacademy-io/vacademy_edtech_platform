@@ -1,0 +1,25 @@
+{
+    "form": {
+        "levelSelectionLabel": "اختيار {{term}}",
+        "selectExisting": "اختر {{term}} موجودًا",
+        "createNew": "إنشاء {{term}} جديد",
+        "selectALevelPlaceholder": "اختر {{term}}",
+        "durationDays_zero": "المدة: {{count}} يوم",
+        "durationDays_one": "يوم واحد",
+        "durationDays_two": "المدة: يومان",
+        "durationDays_few": "المدة: {{count}} أيام",
+        "durationDays_many": "المدة: {{count}} يومًا",
+        "durationDays_other": "{{count}} يومًا",
+        "duplicateFromPreExisting": "نسخ المواد الدراسية من {{term}} موجود مسبقًا",
+        "duplicateFrom": "نسخ من {{term}}",
+        "selectForDuplication": "اختر {{term}} للنسخ",
+        "searchLevel": "ابحث عن {{term}}…",
+        "noLevelsYet": "لا يوجد {{term}} لإعادة استخدامه — أضف واحدًا أدناه.",
+        "searchSession": "ابحث عن {{term}}…",
+        "noOtherSessions": "لا يوجد {{term}} آخر لنسخ المحتوى منه."
+    },
+    "validation": {
+        "pleaseSelectLevel": "يرجى اختيار مستوى",
+        "pleaseSelectSessionToDuplicate": "يرجى اختيار جلسة للنسخ منها"
+    }
+}

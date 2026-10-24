@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleJoinPayloadResponse;
+import vacademy.io.admin_core_service.features.live_session.provider.manager.GoogleMeetManager;
 import vacademy.io.admin_core_service.features.live_session.provider.security.JoinAuthorization;
 import vacademy.io.admin_core_service.features.live_session.provider.security.LiveSessionJoinAuthorizer;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccountStore;
@@ -41,6 +42,7 @@ public class GoogleMeetJoinController {
     private final GoogleAttendanceService attendanceService;
     private final GoogleAccountStore googleAccountStore;
     private final UserRepository userRepository;
+    private final GoogleMeetManager googleMeetManager;
 
     @GetMapping("/google-meet-join")
     public ResponseEntity<GoogleJoinPayloadResponse> join(
@@ -71,12 +73,23 @@ public class GoogleMeetJoinController {
                     user.getUserId(), userName, schedule.getProviderMeetingId());
         }
 
+        GoogleAccount account = schedule.getProviderAccountId() == null ? null
+                : googleAccountStore.findById(schedule.getProviderAccountId()).orElse(null);
         // The host should open Meet signed into the connected organizer account for auto-recording.
-        String organizerEmail = schedule.getProviderAccountId() == null ? null
-                : googleAccountStore.findById(schedule.getProviderAccountId())
-                        .map(GoogleAccount::getOrganizerEmail).orElse(null);
+        String organizerEmail = account == null ? null : account.getOrganizerEmail();
 
-        log.info("google.meet.join scheduleId={} userId={} host={}", scheduleId, user.getUserId(), host);
+        // A teacher/admin on their own Google account is only a participant in Meet; making them a
+        // co-host here gives them host controls, like a BBB moderator join.
+        String cohostEmail = null;
+        if (host) {
+            String email = resolveUserEmail(user);
+            if (googleMeetManager.ensureCohost(account, schedule.getProviderMeetingId(), email)) {
+                cohostEmail = email;
+            }
+        }
+
+        log.info("google.meet.join scheduleId={} userId={} host={} cohost={}",
+                scheduleId, user.getUserId(), host, cohostEmail != null);
 
         return ResponseEntity.ok(GoogleJoinPayloadResponse.builder()
                 .joinUrl(schedule.getCustomMeetingLink())
@@ -84,7 +97,24 @@ public class GoogleMeetJoinController {
                 .providerMeetingId(schedule.getProviderMeetingId())
                 .host(host)
                 .organizerEmail(organizerEmail)
+                .cohostEmail(cohostEmail)
                 .build());
+    }
+
+    /** Login email — JWT first, DB fallback. */
+    private String resolveUserEmail(CustomUserDetails user) {
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            return user.getEmail();
+        }
+        try {
+            return userRepository.findById(user.getUserId())
+                    .map(u -> u.getEmail())
+                    .filter(e -> e != null && !e.isBlank())
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("google.meet.join email lookup failed userId={}", user.getUserId());
+            return null;
+        }
     }
 
     /** Display name — JWT full name, DB fallback, then username. */

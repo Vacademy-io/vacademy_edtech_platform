@@ -1,4 +1,4 @@
-import { SidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
+import { getSidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
 import type { SidebarItemsType } from '@/types/layout-container/layout-container-types';
 import type {
     DisplaySettingsData,
@@ -17,17 +17,50 @@ const SUB_ITEMS_HIDDEN_BY_DEFAULT = new Set<string>([
     // Display Settings → CRM → Leads.
     'counsellors',
     'sales-dashboard',
+    // AI calls waiting to go out. Off until an institute is actually running enough
+    // AI calling for a queue to mean anything -- on a quiet institute nothing ever
+    // waits, so the page would only ever show an empty table.
+    'calling-call-queue',
+    // Blog posts live inside Website Builder (Manage Pages → Blog button), so the
+    // sidebar entry is redundant for most institutes. Opt in for a shortcut.
+    'blog',
 ]);
 
 // Tabs that ship hidden until an institute admin opts them in via the
 // Display Settings UI. Distinct from admissions/fee-management which are
 // shipped hidden for historical sub-org reasons.
-const OPT_IN_TAB_IDS = new Set<string>(['admin-activity-logs', 'ai-copilot-tab', 'mentorship']);
+const OPT_IN_TAB_IDS = new Set<string>([
+    'admin-activity-logs',
+    // Live activity feed. Ships hidden: it surfaces prospect PII (name, email,
+    // phone) to every role that has it enabled, so turning it on is a privacy
+    // decision an institute admin should make deliberately.
+    'live-activity',
+    'ai-copilot-tab',
+    'mentorship',
+    // Access Passes: off until an institute decides to sell or assign passes.
+    'access-passes',
+    // NOTE: the ERP modules are deliberately NOT listed here. The opt-in gate
+    // for ERP is the rail CATEGORY, which ships `visible: false` (see
+    // display-settings.ts). Hiding the modules as well made turning the
+    // category on produce an empty panel with no obvious way to fill it —
+    // one deliberate switch is the gate, not eight.
+]);
 
+// NOTE: built-in tabs are deliberately seeded WITHOUT a `label`.
+//
+// mySidebar treats a saved label as a user customization unless it still matches
+// the built-in name, and then renders it verbatim forever. Seeding the name that
+// i18n/naming-settings resolve to TODAY would therefore freeze it: an institute
+// that saves while the UI is in French, or before renaming "Course" to
+// "Program", would keep the old wording in the nav after the switch. Leaving the
+// label unset keeps every built-in tab on the live, translated name.
+//
+// Display Settings shows these names by falling back to the sidebar entry for
+// display only (see AdminDisplaySettings), which is what fills the Tab Name
+// boxes without writing anything into the saved config.
 function mapSidebarToConfig(menu: SidebarItemsType[]): SidebarTabConfig[] {
     return menu.map((item, index) => ({
         id: item.id,
-        label: item.title,
         route: item.to,
         order: index + 1,
         visible:
@@ -39,7 +72,6 @@ function mapSidebarToConfig(menu: SidebarItemsType[]): SidebarTabConfig[] {
                 const id = sub.subItemId || sub.subItem || `${item.id}-${subIndex + 1}`;
                 return {
                     id,
-                    label: sub.subItem,
                     route: sub.subItemLink || '#',
                     order: subIndex + 1,
                     visible: !SUB_ITEMS_HIDDEN_BY_DEFAULT.has(id),
@@ -64,8 +96,17 @@ function defaultDashboardWidgetsAdmin(): DashboardWidgetConfig[] {
     //   6. LMS operations                — classes, courses, assessments
     //   7. Reference data                — team makeup, institute summary
     //   8. Promotional                   — discovery cards, last slot
+    // Ships OFF for everyone. A connection-health card is only meaningful to an institute
+    // that has actually connected an external LMS, and enabling it starts polling that
+    // customer's site every minute — so an admin opts in rather than opting out.
+    const defaultOff = new Set<DashboardWidgetConfig['id']>(['lmsConnectionHealth']);
+
     const ids: DashboardWidgetConfig['id'][] = [
+        // 0. Integration health — first on the page: a broken LMS connection silently
+        //    breaks enrolment for every course wired to it.
+        'lmsConnectionHealth',
         // 1. Navigation shortcuts
+        'assistantLaunchBar',
         'quickActions',
         // 2. KPIs
         'kpiBand',
@@ -91,6 +132,7 @@ function defaultDashboardWidgetsAdmin(): DashboardWidgetConfig[] {
         'realTimeActiveUsers',
         'currentlyActiveUsers',
         // 6. LMS operations
+        'lmsConnectionHealth',
         'liveClasses',
         'enrollLearners',
         'learningCenter',
@@ -103,11 +145,14 @@ function defaultDashboardWidgetsAdmin(): DashboardWidgetConfig[] {
         // 8. Promotional
         'aiFeaturesCard',
     ];
-    return ids.map((id, idx) => ({ id, order: idx + 1, visible: true }));
+    return ids.map((id, idx) => ({ id, order: idx + 1, visible: !defaultOff.has(id) }));
 }
 
-export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
-    sidebar: mapSidebarToConfig(SidebarItemsData),
+// Everything except `sidebar`, which is built per call below rather than here:
+// anything read off the sidebar entries at module-evaluation time predates
+// i18next.init() (src/index.tsx imports the route tree before ./i18n), and this
+// file is in the route graph.
+const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
     dashboard: {
         widgets: defaultDashboardWidgetsAdmin(),
     },
@@ -144,6 +189,17 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
             { id: 'LEARNER', order: 3, visible: true },
             { id: 'TEACHER', order: 4, visible: true },
             { id: 'ASSESSMENT', order: 5, visible: true },
+            // Quiz Results sits next to Assessment: both answer "how did they do",
+            // one for exams and one for the quiz slides inside the course.
+            // Ordered 5.5 so it slots between Assessment (5) and whatever a role has
+            // at 6, WITHOUT renumbering the tabs after it. Renumbering looked tidier
+            // but collides: 92 of the 94 institutes with a saved courseDetails config
+            // already store a tab at order 6 (32x LIVE_SESSION, 60x PLANNING), and
+            // saved values win the merge — so a shared order is what would actually
+            // ship. Two tabs on the same order make the Display Settings up/down
+            // arrows a dead click, because swapOrder swaps the two order VALUES and
+            // swapping equal numbers changes nothing.
+            { id: 'QUIZ_RESULTS', order: 5.5, visible: true },
             { id: 'LIVE_SESSION', order: 6, visible: false },
             { id: 'PLANNING', order: 7, visible: false },
             { id: 'ACTIVITY', order: 8, visible: false },
@@ -156,6 +212,12 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
             // institute OFFLINE_ACCESS_SETTING master switch.
             { id: 'DOWNLOADS', order: 12, visible: true },
             { id: 'SETTINGS', order: 13, visible: false },
+            // Live AI Tutor (2026-09): 13.5 slots it after Settings without renumbering
+            // tabs institutes have already saved orders for (same trick as QUIZ_RESULTS).
+            { id: 'TUTOR_MODE', order: 13.5, visible: true },
+            // Course knowledge (2026-10): rendered only when the platform has made the
+            // feature available to the institute (course-knowledge GET /status).
+            { id: 'AI_KNOWLEDGE', order: 13.6, visible: true },
         ],
         defaultTab: 'OUTLINE',
     },
@@ -203,6 +265,13 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
         showEnrolledStudentCount: false,
     },
     assessmentPage: { ...DEFAULT_ASSESSMENT_ACTION_SETTINGS },
+    liveClassActions: {
+        allowDeletePastSessions: true,
+    },
+    // Off for every role — an institute opts a role in from Display Settings.
+    leadActions: {
+        showAddLead: false,
+    },
     courseCreation: {
         showCreateCourseWithAI: false,
         requirePackageSelectionForNewChapter: true,
@@ -215,6 +284,10 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
         progressTab: true,
         coursesTab: true,
         notificationTab: false,
+        // On for admin: when an institute turns the Notifications tab on, resending
+        // a message is part of working it. Off for every other role — an outbound
+        // message to a learner is not a read-only action.
+        allowResendMessage: true,
         membershipTab: false,
         paymentHistoryTab: true,
         userTaggingTab: false,
@@ -227,6 +300,10 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
         applicationTab: false,
         leadTab: false,
         fullHistoryTab: false,
+        // OFF by default for every role. Re-running an automation re-sends its
+        // messages, so the tab is opt-in per role from Display Settings rather
+        // than something that appears on every learner profile unasked.
+        workflowsTab: false,
         parentTab: false,
         onboardingTab: false,
         // Default rendering order. Tabs render left-to-right by ascending number.
@@ -250,6 +327,7 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
             lead: 16,
             fullHistory: 17,
             parent: 18,
+            workflows: 19,
         },
         defaultTab: 'overview',
     },
@@ -262,6 +340,10 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
         // Changing credentials signs the learner out, so it stays an admin
         // capability unless an admin explicitly grants it to another role.
         allowEditCredentials: true,
+        // OFF even for admin: permanent delete is opt-in per role from Display Settings.
+        allowDeletePayments: false,
+        // ON for admins; other roles get it only when granted from Display Settings.
+        canApplyDiscounts: true,
     },
     studentManagementActions: {
         showEnrollButton: true,
@@ -287,3 +369,17 @@ export const DEFAULT_ADMIN_DISPLAY_SETTINGS: DisplaySettingsData = {
     leadsFilterCustomFields: [],
     postLoginRedirectRoute: '/dashboard',
 };
+
+/**
+ * Default admin display settings.
+ *
+ * Call this rather than caching the result at module scope — the sidebar entries
+ * it reads resolve through i18n and the institute's naming settings, neither of
+ * which exists while modules are still being evaluated.
+ */
+export function getDefaultAdminDisplaySettings(): DisplaySettingsData {
+    return {
+        ...ADMIN_DEFAULTS_BASE,
+        sidebar: mapSidebarToConfig(getSidebarItemsData()),
+    };
+}

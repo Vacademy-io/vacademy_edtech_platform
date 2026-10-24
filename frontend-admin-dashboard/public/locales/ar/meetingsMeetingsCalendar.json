@@ -1,0 +1,22 @@
+{
+    "untitledMeeting": "اجتماع",
+    "today": "اليوم",
+    "previousMonth": "الشهر السابق",
+    "nextMonth": "الشهر التالي",
+    "dayAriaLabel_zero": "لا توجد اجتماعات لعرضها في {{date}} ({{count}})",
+    "dayAriaLabel_one": "عرض اجتماع واحد في {{date}}",
+    "dayAriaLabel_two": "عرض اجتماعين في {{date}}",
+    "dayAriaLabel_few": "عرض {{count}} اجتماعات في {{date}}",
+    "dayAriaLabel_many": "عرض {{count}} اجتماعًا في {{date}}",
+    "dayAriaLabel_other": "عرض {{count}} اجتماع في {{date}}",
+    "moreCount": "+{{count}} إضافية",
+    "joinMeeting": "الانضمام إلى الاجتماع",
+    "status": {
+        "confirmed": "مؤكد",
+        "pending": "قيد الانتظار",
+        "completed": "مكتمل",
+        "noShow": "لم يحضر",
+        "cancelled": "ملغى",
+        "rescheduled": "أُعيدت جدولته"
+    }
+}

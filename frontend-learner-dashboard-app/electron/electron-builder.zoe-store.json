@@ -1,6 +1,6 @@
 {
   "appId": "com.zoeedtech.app",
-  "productName": "ZOE Edtech",
+  "productName": "ZOE Online School",
   "directories": {
     "buildResources": "resources-zoe",
     "output": "dist-store"
@@ -22,11 +22,17 @@
   "nodeGypRebuild": false,
   "buildDependenciesFromSource": false,
   "npmRebuild": false,
+  "extraMetadata": {
+    "version": "2.5.5"
+  },
   "win": {
     "target": [
       {
         "target": "appx",
-        "arch": ["x64", "ia32"]
+        "arch": [
+          "x64",
+          "ia32"
+        ]
       }
     ],
     "icon": "assets/zoe.ico"
@@ -36,10 +42,12 @@
     "publisher": "CN=86D745F8-F119-414C-B1CF-5361E8FE4A25",
     "publisherDisplayName": "Shiksha Nation",
     "applicationId": "ZOEEdtech",
-    "displayName": "ZOE Edtech",
+    "displayName": "ZOE Online School",
     "backgroundColor": "#131953",
     "showNameOnTiles": true,
     "setBuildNumber": false,
-    "languages": ["en-US"]
+    "languages": [
+      "en-US"
+    ]
   }
 }

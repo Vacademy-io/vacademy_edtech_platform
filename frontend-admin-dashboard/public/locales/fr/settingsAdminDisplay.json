@@ -1,0 +1,187 @@
+{
+    "loading": "Chargement...",
+    "resetToDefaults": "Réinitialiser aux valeurs par défaut",
+    "saveSuccess": "Paramètres d'affichage administrateur enregistrés",
+    "saveFailed": "Échec de l'enregistrement",
+    "common": {
+        "visible": "Visible",
+        "hidden": "Masqué",
+        "locked": "Verrouillé",
+        "default": "Par défaut",
+        "remove": "Supprimer",
+        "route": "Route",
+        "label": "Libellé"
+    },
+    "sections": {
+        "coursesPermissions": "Cours & Autorisations",
+        "layoutNavigation": "Mise en page & Navigation",
+        "contentLearners": "Contenu & Apprenants",
+        "dashboardAccess": "Tableau de bord & Accès"
+    },
+    "coursePage": {
+        "title": "Paramètres de la page de cours",
+        "description": "Contrôlez la visibilité des éléments de la page de cours.",
+        "viewInviteLinks": "Voir les liens d'invitation",
+        "viewShortInviteLinks": "Voir les liens d'invitation courts",
+        "viewCourseConfiguration": "Voir la configuration du cours",
+        "viewCourseOverviewItem": "Voir l'élément d'aperçu du cours",
+        "viewContentNumbering": "Voir la numérotation du contenu",
+        "allowViewSlidesInReadOnly": "Autoriser la consultation des diapositives sur les cours publiés / en cours de révision (lecture seule)",
+        "showAddSubject": "Afficher le bouton « Ajouter une matière » (Plan & Structure du contenu)",
+        "showAddModule": "Afficher le bouton « Ajouter un module » (Plan & Structure du contenu)",
+        "showAddChapter": "Afficher le bouton « Ajouter un chapitre » (Plan & Structure du contenu)",
+        "showAddSlide": "Afficher le bouton « Ajouter une diapositive » (Plan & Structure du contenu)",
+        "showLearnerProgressReport": "Afficher l'onglet « Progression de l'élève » dans les rapports (progression du cours par apprenant)",
+        "showAdvancedCourseIds": "Afficher le menu des identifiants avancés sur les détails du cours (cours / session de forfait / session / niveau)"
+    },
+    "coursePermission": {
+        "title": "Autorisation sur le cours",
+        "description": "Contrôlez ce que ce rôle peut faire sur un cours et ses diapositives.",
+        "directEditPublishedCourse": "Peut modifier directement (sans Copier-pour-modifier / approbation)",
+        "showCopyTo": "Peut copier une diapositive",
+        "showMoveTo": "Peut déplacer une diapositive",
+        "showDelete": "Peut supprimer une diapositive",
+        "canEditCourseStructure": "Peut modifier matière / module / chapitre",
+        "canDeleteCourseStructure": "Peut supprimer matière / module / chapitre",
+        "showBulkUpload": "Afficher le bouton de téléversement en masse (ZIP)",
+        "canDeleteCourse": "Peut supprimer le cours"
+    },
+    "authoredCoursesCard": {
+        "title": "Carte des cours créés",
+        "description": "Contrôlez les actions qui apparaissent sur la carte du cours sous Explorer les cours → Cours créés.",
+        "showCopyToEdit": "Afficher le bouton « Copier pour modifier »"
+    },
+    "courseListCard": {
+        "title": "Carte de la liste des cours",
+        "description": "Contrôlez les détails qui apparaissent sur chaque carte de cours sous Explorer les cours.",
+        "showEnrolledStudentCount": "Afficher le nombre d'élèves inscrits"
+    },
+    "courseCreation": {
+        "title": "Création de cours",
+        "description": "Contrôlez qui peut créer des cours, les points d'entrée IA et les réglages par défaut des chapitres.",
+        "showCreateCourse": "Autoriser la création de cours (afficher le bouton « Ajouter un cours »)",
+        "showCreateCourseWithAI": "Afficher « Créer un cours avec l'IA »",
+        "requirePackageSelectionForNewChapter": "Exiger la sélection d'une session de forfait lors de l'ajout d'un nouveau chapitre",
+        "showAdvancedSettings": "Afficher les paramètres avancés",
+        "limitToSingleLevel": "Limiter le cours à un seul niveau"
+    },
+    "courseListTabs": {
+        "title": "Onglets de la liste des cours",
+        "description": "Configurez les onglets visibles, leur ordre et l'onglet par défaut. Courses In Review est destiné aux rôles non administrateurs et reste masqué pour les administrateurs."
+    },
+    "courseDetailsTabs": {
+        "title": "Onglets des détails du cours",
+        "description": "Choisissez les onglets visibles et définissez l'onglet par défaut.",
+        "offlineLockedNote": "Désactivé car les téléchargements hors ligne sont désactivés pour l'établissement (Paramètres → Accès hors ligne)."
+    },
+    "uiOptions": {
+        "title": "Options d'interface",
+        "description": "Préférences d'interface globales",
+        "showSupportButton": "Afficher le bouton d'assistance",
+        "showSidebar": "Afficher la barre latérale",
+        "showAiCredits": "Afficher les crédits IA",
+        "showStatus": "Afficher le statut",
+        "showSettingsTitle": "Afficher Paramètres",
+        "showSettingsDescription": "Masque l'icône Paramètres dans le rail de la barre latérale. Vous pouvez toujours accéder aux paramètres directement via /settings.",
+        "showRightRailTitle": "Afficher le panneau latéral droit",
+        "showRightRailDescription": "Guides, Assistance, Problèmes, Nouveautés, Explorer & Application Admin"
+    },
+    "sidebarCategories": {
+        "title": "Catégories de la barre latérale",
+        "description": "Configurez la visibilité, l'ordre et la catégorie par défaut de la barre latérale.",
+        "aiTools": "Outils IA",
+        "crm": "CRM",
+        "lms": "LMS"
+    },
+    "sidebarTabs": {
+        "title": "Onglets de la barre latérale",
+        "description": "Ordonnez et basculez la visibilité. Ajoutez des onglets personnalisés avec nom, ordre et route.",
+        "tabName": "Nom de l'onglet",
+        "subTabsLabel": "Sous-onglets",
+        "addSubTab": "Ajouter un sous-onglet",
+        "addCustomTab": "Ajouter un onglet personnalisé",
+        "customTabDefault": "Onglet personnalisé",
+        "customSubTabDefault": "Sous-onglet personnalisé"
+    },
+    "courseContentTypes": {
+        "title": "Types de contenu de cours",
+        "description": "Activez ou désactivez les types de contenu des diapositives. La vidéo dispose d'une option supplémentaire de question intégrée.",
+        "pdf": "PDF",
+        "pptPresentation": "Présentation PPT",
+        "codeEditor": "Éditeur de code",
+        "document": "Document",
+        "question": "Question",
+        "quiz": "Quiz",
+        "assignment": "Devoir",
+        "jupyterNotebook": "Notebook Jupyter",
+        "scratch": "Scratch",
+        "audio": "Audio",
+        "scormPackage": "Package SCORM",
+        "assessment": "Évaluation",
+        "video": "Vidéo",
+        "inVideoQuestionVisible": "Question intégrée à la vidéo visible",
+        "canAddVideoQuestion": "Peut ajouter des questions aux diapositives vidéo",
+        "canConvertSplitScreen": "Peut convertir la vidéo en écran partagé"
+    },
+    "studentSideView": {
+        "overviewTab": "Onglet Aperçu",
+        "coursesTab": "Onglet Cours",
+        "testTab": "Onglet Test",
+        "progressTab": "Onglet Progression",
+        "notificationTab": "Onglet Notification",
+        "membershipTab": "Onglet Adhésion",
+        "paymentHistoryTab": "Onglet Historique des paiements",
+        "userTaggingTab": "Onglet Étiquetage utilisateur",
+        "badgesTab": "Onglet Badges",
+        "fileTab": "Onglet Fichiers",
+        "portalAccessTab": "Onglet Accès au portail",
+        "reportsTab": "Onglet Rapports",
+        "enrollDerollTab": "Onglet Inscription/Désinscription",
+        "enquiryTab": "Onglet Demande de renseignements",
+        "applicationTab": "Onglet Candidature",
+        "leadTab": "Onglet Profil prospect",
+        "fullHistoryTab": "Onglet Historique complet",
+        "workflowsTab": "Onglet Workflows",
+        "parentTab": "Onglet Tuteur",
+        "onboardingTab": "Onglet Intégration"
+    },
+    "learnerManagement": {
+        "title": "Gestion des apprenants",
+        "description": "Configurez les autorisations de gestion des apprenants et les contrôles d'accès.",
+        "allowPortalAccess": "Autoriser l'accès au portail apprenant",
+        "allowViewPassword": "Autoriser la consultation du mot de passe de l'apprenant",
+        "allowEditCredentials": "Autoriser la modification du nom d'utilisateur et du mot de passe de l'apprenant",
+        "allowSendResetPasswordMail": "Autoriser l'envoi d'un e-mail de réinitialisation du mot de passe",
+        "showApprovalToggle": "Afficher le bascule « Demandes d'approbation » sur la liste des apprenants",
+        "allowDeletePayments": "Autoriser la suppression définitive des paiements et factures (irréversible)",
+        "canApplyDiscounts": "Autoriser l'application de remises lors de l'inscription d'apprenants, de l'affectation groupée ou de la création de factures"
+    },
+    "dashboardWidgets": {
+        "title": "Widgets du tableau de bord",
+        "description": "Ordonnez et basculez les widgets visibles par les administrateurs."
+    },
+    "permissions": {
+        "title": "Autorisations",
+        "description": "Configurez la visibilité et les droits de modification de l'établissement et du profil.",
+        "canViewInstituteDetails": "Peut voir les détails de l'établissement",
+        "canEditInstituteDetails": "Peut modifier les détails de l'établissement",
+        "canViewProfileDetails": "Peut voir les détails du profil",
+        "canEditProfileDetails": "Peut modifier les détails du profil"
+    },
+    "orgChart": {
+        "title": "Onglet Organigramme",
+        "description": "Afficher l'onglet Organigramme hiérarchique dans Gérer l'établissement → Équipes. Désactivé par défaut pendant le déploiement de cette fonctionnalité.",
+        "enableTitle": "Activer l'onglet Organigramme",
+        "enableDescription": "Permet aux administrateurs de construire une structure d'équipe hiérarchique avec des responsables d'équipe, des sous-équipes et des libellés de rôle par membre."
+    },
+    "teamPasswords": {
+        "title": "Mots de passe des membres de l'équipe",
+        "description": "Afficher une colonne Mot de passe (et une action « Voir le mot de passe ») pour les membres de l'équipe dans Gérer l'établissement → Équipes. Activé par défaut — désactivez cette option pour masquer les identifiants de connexion à toute personne ayant accès aux Équipes.",
+        "showTitle": "Afficher les mots de passe",
+        "showDescription": "Ajoute une colonne Mot de passe masquée (avec révélation + copie) et une option « Voir le mot de passe » par membre. Les mots de passe sont sensibles — toute personne ayant accès aux Équipes pourra les voir."
+    },
+    "postLoginRedirect": {
+        "title": "Redirection après connexion",
+        "description": "Choisissez où rediriger les administrateurs après la connexion."
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "header": {
+        "title": "الدردشة مع مستند",
+        "subtitle": "أضف ملف PDF، ثم اسأل عنه أي شيء — ملخصات، أسئلة، أو شروحات."
+    },
+    "upload": {
+        "dropTitle": "أفلت مستندك هنا، أو انقر للاختيار",
+        "dropSubtitle": "PDF أو Word أو PowerPoint — أي شيء تريد الدردشة معه.",
+        "fallbackFileName": "الدردشة مع المستند",
+        "statusUploading": "جارٍ الرفع…",
+        "statusProcessing": "جارٍ القراءة…",
+        "statusReady": "جاهز للدردشة",
+        "workingUploading": "جارٍ قراءة ملفك…",
+        "workingProcessing": "جارٍ تجهيز مستندك للدردشة…",
+        "resetAriaLabel": "البدء من جديد بمستند آخر"
+    },
+    "chat": {
+        "emptyTitle": "اسأل أي شيء عن هذا المستند",
+        "emptySubtitle": "استخدم الاقتراحات أدناه، أو اكتب سؤالك الخاص.",
+        "suggestions": {
+            "mainIdea": "ما الفكرة الرئيسية لهذا المستند؟",
+            "summarize": "لخّص النقاط الرئيسية.",
+            "generateQuestions": "أنشئ 5 أسئلة حول المفاهيم الرئيسية."
+        },
+        "pending": "جارٍ قراءة المستند…",
+        "inputPlaceholder": "اسأل أي شيء عن هذا المستند…",
+        "send": "إرسال",
+        "historyTitle": "سجل الدردشة"
+    },
+    "errors": {
+        "unsupportedFormat": "لا يمكننا قراءة ملفات .{{ext}}. جرّب PDF أو Word أو PowerPoint.",
+        "uploadIncomplete": "لم يكتمل الرفع. هل تريد المحاولة مرة أخرى؟",
+        "readFailed": "تعذّرت علينا قراءة هذا الملف. هل تجرّب ملفًا آخر؟",
+        "genericFailure": "حدث خطأ ما أثناء قراءة ملفك. حاول مرة أخرى؟",
+        "noResponse": "لا يوجد رد بعد. هل تحاول السؤال مرة أخرى؟"
+    },
+    "recentFiles": {
+        "title": "محادثاتك الأخيرة",
+        "fallbackLabel": "محادثة مستند",
+        "emptyHint": "ستظهر جلسات الدردشة هنا. أضف مستندًا أعلاه لبدء واحدة."
+    },
+    "tasksList": {
+        "heading": "Vsmart Chat"
+    }
+}

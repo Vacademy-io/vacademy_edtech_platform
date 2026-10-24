@@ -1,0 +1,49 @@
+{
+    "relativeDate": {
+        "unlocksOnDay": "Déverrouille le jour",
+        "dayOneNote": "Le jour 1 est le premier jour d'accès de l'apprenant.",
+        "countedFrom": "Compté à partir de",
+        "enrollmentDate": "La date d'inscription de chaque apprenant",
+        "sessionStartDate": "La date de début du groupe",
+        "opensAt": "S'ouvre à"
+    },
+    "dateBased": {
+        "releaseDate": "Date de publication",
+        "sameMomentNote": "Le même instant calendaire pour tous les apprenants."
+    },
+    "sequential": {
+        "completedAtLeastLabel": "{{level}} précédent(e) complété(e) à au moins (%)"
+    },
+    "completionBased": {
+        "metric": "Indicateur",
+        "averageOfAll": "Moyenne de tous",
+        "averageOfLastN": "Moyenne des N derniers",
+        "howMany": "Combien",
+        "threshold": "Seuil %"
+    },
+    "prerequisite": {
+        "mustFinishFirst": "Doit être terminé en premier",
+        "selectLevelsPlaceholder": "Sélectionner {{level}}s",
+        "completionThreshold": "Seuil d'achèvement %"
+    },
+    "heading": "Règle de déverrouillage — {{item}}",
+    "alerts": {
+        "dripDisabled": "Les conditions de diffusion progressive sont désactivées pour cet établissement, donc rien de ce qui est enregistré ici ne verrouillera de contenu pour l'instant. Activez-les dans Paramètres → Cours → Conditions de diffusion progressive.",
+        "previewOnly": "Cette règle dépend de la progression de l'apprenant, elle reste donc en aperçu : elle est enregistrée, mais les apprenants ne sont pas affectés tant que « Appliquer les règles de progression aux apprenants » n'est pas activé dans Paramètres → Cours → Conditions de diffusion progressive. Les règles par date et par jour s'appliquent dès leur enregistrement.",
+        "courseWideHeading": "Une règle valable pour tout le cours couvre déjà chaque {{level}}",
+        "courseWideFootnote": "Une règle enregistrée ici prend le pas pour ce/cette {{level}}."
+    },
+    "unlockWhen": "Déverrouiller quand",
+    "untilThen": "En attendant",
+    "lockBehavior": "Afficher la carte avec un cadenas et la date de déverrouillage",
+    "hideBehavior": "La masquer complètement",
+    "ruleActive": "Règle active",
+    "ruleActiveNote": "Désactivez pour conserver la règle sans l'appliquer.",
+    "removeRule": "Supprimer la règle",
+    "editingExistingRule": "Modification d'une règle existante",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "confirmRemoveActive": "Supprimer la règle de déverrouillage sur « {{item}} » ? Elle est active, donc ce/cette {{level}} s'ouvrira immédiatement pour tous les apprenants.",
+    "confirmRemove": "Supprimer la règle de déverrouillage sur « {{item}} » ?"
+}

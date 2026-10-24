@@ -1,0 +1,9 @@
+{
+    "heading": "Équipes et jours fériés",
+    "description": "Les règles auxquelles la présence est comparée. Les modifications s'appliquent aux jours marqués à partir de maintenant — un mois déjà traité par la paie n'est pas réévalué.",
+    "tabs": {
+        "shifts": "Équipes",
+        "holidays": "Jours fériés",
+        "configuration": "Configuration"
+    }
+}

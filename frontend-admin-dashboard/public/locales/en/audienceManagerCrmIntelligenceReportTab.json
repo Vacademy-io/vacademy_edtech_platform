@@ -1,0 +1,20 @@
+{
+    "coachingDrillIn": {
+        "loading": "Loading coaching…",
+        "noAnalyzedCalls": "No analyzed calls yet — no coaching for this rep.",
+        "weakestLabel": "Weakest:",
+        "scoreOutOfTen": "{{score}}/10"
+    },
+    "workPatterns": {
+        "sectionTitle": "Counsellor work patterns",
+        "emptyMessage": "No counsellor activity in this range.",
+        "columns": {
+            "counsellor": "Counsellor",
+            "leadsDispositioned": "Leads dispositioned",
+            "calls": "Calls",
+            "connected": "Connected",
+            "reach": "Reach"
+        },
+        "improveHeading": "What they can improve"
+    }
+}

@@ -16,6 +16,7 @@ import {
     VisibilityState,
 } from '@tanstack/react-table';
 import { DashboardLoader } from '../core/dashboard-loader';
+import { useTranslation } from 'react-i18next';
 
 const headerTextCss = 'p-3 border-e border-neutral-300';
 const cellCommonCss = 'p-3';
@@ -64,6 +65,7 @@ export function MyTable<T>({
     onCellClick,
     onHeaderClick,
 }: MyTableProps<T>) {
+    const { t } = useTranslation('uiAtomsA');
     const table = useReactTable({
         data: data?.content || [],
         columns,
@@ -92,8 +94,8 @@ export function MyTable<T>({
     });
 
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error loading data</div>;
+    if (isLoading) return <div>{t('table.loading')}</div>;
+    if (error) return <div>{t('table.errorLoadingData')}</div>;
     if (!data) return null;
     if (!table) return <DashboardLoader />;
 

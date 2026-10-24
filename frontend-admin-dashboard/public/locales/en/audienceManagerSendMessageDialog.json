@@ -1,0 +1,137 @@
+{
+    "dialogTitle": "Send Message",
+    "dialogDescription": "Send a message to leads in “{{campaignName}}”",
+    "stepTitles": {
+        "selectChannel": "Select Channel",
+        "composeContent": "Compose Content",
+        "mapVariables": "Map Variables",
+        "reviewSend": "Review & Send"
+    },
+    "systemFields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "city": "City",
+        "region": "Region",
+        "campaignName": "Campaign Name",
+        "submittedAt": "Submitted At",
+        "sourceType": "Source Type"
+    },
+    "channels": {
+        "whatsapp": {
+            "label": "WhatsApp",
+            "description": "Send templated messages via WhatsApp Business API"
+        },
+        "email": {
+            "label": "Email",
+            "description": "Send emails with customizable subject and HTML body"
+        },
+        "push": {
+            "label": "Push Notification",
+            "description": "Send push notifications to mobile and web users"
+        },
+        "systemAlert": {
+            "label": "System Alert",
+            "description": "Send in-app alerts visible in the notification center"
+        }
+    },
+    "toasts": {
+        "loadWhatsappTemplatesFailed": "Failed to load WhatsApp templates",
+        "loadEmailTemplatesFailed": "Failed to load email templates",
+        "loadTemplateContentFailed": "Failed to load template content",
+        "noneSent": "No messages could be sent. See the breakdown below.",
+        "partialSuccess": "Accepted for {{accepted}} of {{total}} — {{failed}} failed. See the breakdown below.",
+        "sendSuccess_one": "Message accepted for {{count}} recipient",
+        "sendSuccess_other": "Message accepted for {{count}} recipients",
+        "sendFailed": "Failed to send message"
+    },
+    "whatsappStep": {
+        "templateLabel": "Template",
+        "loadingTemplates": "Loading templates...",
+        "selectPlaceholder": "Select an approved template",
+        "emptyText": "No approved template matches your search.",
+        "languageCodeLabel": "Language Code",
+        "templatePreviewLabel": "Template Preview"
+    },
+    "emailStep": {
+        "templateLabel": "Template",
+        "loadingTemplates": "Loading templates...",
+        "selectPlaceholder": "Select a template",
+        "emptyText": "No template matches your search.",
+        "customOption": "Custom — write from scratch",
+        "loadingTemplateContent": "Loading template content...",
+        "emailTypeLabel": "Email Type",
+        "utilityEmail": "Utility Email",
+        "promotionalEmail": "Promotional Email",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "Enter email subject...",
+        "bodyLabel": "Body",
+        "previewTab": "Preview",
+        "editTab": "Edit HTML",
+        "previewEmptyState": "Pick a template or switch to Edit HTML to write content.",
+        "bodyPlaceholder": "Enter email body HTML... use {{token}} for placeholders",
+        "placeholderHintPrefix": "Placeholders like",
+        "placeholderHintSuffix": "are replaced per-recipient on send. Map them in the next step.",
+        "emailTypeHint": "Sent from this address. Manage senders and their daily limits in Settings → Notifications."
+    },
+    "pushStep": {
+        "titleLabel": "Title",
+        "titlePlaceholder": "Notification title...",
+        "bodyLabel": "Body",
+        "bodyPlaceholder": "Notification body..."
+    },
+    "headerMedia": {
+        "label": "Header {{kind}} URL",
+        "hint": "This template has a {{kind}} header, which WhatsApp requires on every send — without it every recipient fails. Pre-filled with the media approved alongside the template.",
+        "imagePreviewAlt": "Header preview",
+        "kindLabels": {
+            "image": "image",
+            "video": "video",
+            "document": "document"
+        }
+    },
+    "variableMapping": {
+        "noVariables": "No variables to map. You can proceed.",
+        "mapHint": "Map each template variable to a lead field.",
+        "columnVariable": "Variable",
+        "columnMappedField": "Mapped Field",
+        "selectFieldPlaceholder": "Select field...",
+        "staticValueOption": "Static value…",
+        "staticValuePlaceholder": "e.g. \"Student\""
+    },
+    "review": {
+        "messageSent": "Message Sent",
+        "sendCompleted": "Send Completed",
+        "statusLabel": "Status",
+        "recipientsLabel": "Recipients",
+        "acceptedLabel": "Accepted",
+        "failedLabel": "Failed",
+        "processingNotice": "Processing in background (batch: {{batchId}})",
+        "close": "Close",
+        "channelHeading": "Channel",
+        "whatsappContentLabel": "Template",
+        "otherContentLabel": "Subject / Title",
+        "contentFallback": "-",
+        "recipientsAllKnown_one": "All {{count}} member of this audience",
+        "recipientsAllKnown_other": "All {{count}} members of this audience",
+        "recipientsAllUnknown": "All members of this audience",
+        "variableMappingsLabel": "Variable Mappings",
+        "staticValueLabel": "Static: \"{{value}}\"",
+        "sending": "Sending...",
+        "sendButtonKnown_one": "Send to {{count}} member",
+        "sendButtonKnown_other": "Send to {{count}} members",
+        "sendButtonUnknown": "Send to all members",
+        "statusValues": {
+            "success": "Success",
+            "failed": "Failed"
+        },
+        "recipientsSelected_one": "{{count}} selected lead",
+        "recipientsSelected_other": "{{count}} selected leads"
+    },
+    "footer": {
+        "back": "Back",
+        "next": "Next"
+    },
+    "dialogDescriptionSelected_one": "Send a message to the {{count}} selected lead",
+    "dialogDescriptionSelected_other": "Send a message to the {{count}} selected leads"
+}

@@ -1,7 +1,18 @@
+import type { TFunction } from 'i18next';
 import { Slide } from '../-hooks/use-slides';
 
 /**
- * Slide type mappings for generating unique names
+ * i18next namespace for this file's translated slide-type labels
+ * (public/locales/{en,ar,hi,fr}/studyLibrarySlideNamingUtils.json).
+ */
+const NAMESPACE = 'studyLibrarySlideNamingUtils';
+
+/**
+ * Slide type mappings for generating unique names.
+ *
+ * These are the English fallback labels used when no `t` (i18next TFunction)
+ * is threaded in by the caller — see `SLIDE_TYPE_NAME_KEYS` for the
+ * translated counterparts.
  */
 export const SLIDE_TYPE_NAMES = {
     // Document types
@@ -30,53 +41,77 @@ export const SLIDE_TYPE_NAMES = {
     PDF: 'PDF Document',
 } as const;
 
+/** Translation key (under `types.*`) for each SLIDE_TYPE_NAMES entry. */
+const SLIDE_TYPE_NAME_KEYS: Record<keyof typeof SLIDE_TYPE_NAMES, string> = {
+    DOC: 'types.document',
+    HTML: 'types.document',
+    PRESENTATION: 'types.presentation',
+    JUPYTER: 'types.jupyterNotebook',
+    SCRATCH: 'types.scratchProject',
+    CODE: 'types.codeEditor',
+    VIDEO: 'types.video',
+    AUDIO: 'types.audio',
+    QUESTION: 'types.question',
+    ASSIGNMENT: 'types.assignment',
+    PDF: 'types.pdfDocument',
+};
+
+/**
+ * Resolve the display label for one SLIDE_TYPE_NAMES entry, translated when
+ * `t` is supplied. `t` is optional so call sites that haven't been threaded
+ * through yet keep working exactly as before (English fallback).
+ */
+function translateSlideType(key: keyof typeof SLIDE_TYPE_NAMES, t?: TFunction): string {
+    return t ? t(`${NAMESPACE}:${SLIDE_TYPE_NAME_KEYS[key]}`) : SLIDE_TYPE_NAMES[key];
+}
+
 /**
  * Get the slide type for naming based on slide properties
  */
-export function getSlideTypeForNaming(slide: Partial<Slide>): string {
+export function getSlideTypeForNaming(slide: Partial<Slide>, t?: TFunction): string {
     // Handle document slides
     if (slide.source_type === 'DOCUMENT' && slide.document_slide?.type) {
         const docType = slide.document_slide.type;
         switch (docType) {
             case 'DOC':
-                return SLIDE_TYPE_NAMES.DOC;
+                return translateSlideType('DOC', t);
             case 'HTML':
-                return SLIDE_TYPE_NAMES.HTML;
+                return translateSlideType('HTML', t);
             case 'PRESENTATION':
-                return SLIDE_TYPE_NAMES.PRESENTATION;
+                return translateSlideType('PRESENTATION', t);
             case 'JUPYTER':
-                return SLIDE_TYPE_NAMES.JUPYTER;
+                return translateSlideType('JUPYTER', t);
             case 'SCRATCH':
-                return SLIDE_TYPE_NAMES.SCRATCH;
+                return translateSlideType('SCRATCH', t);
             case 'CODE':
-                return SLIDE_TYPE_NAMES.CODE;
+                return translateSlideType('CODE', t);
             default:
-                return SLIDE_TYPE_NAMES.DOC;
+                return translateSlideType('DOC', t);
         }
     }
 
     // Handle video slides
     if (slide.source_type === 'VIDEO') {
-        return SLIDE_TYPE_NAMES.VIDEO;
+        return translateSlideType('VIDEO', t);
     }
 
     // Handle question slides
     if (slide.source_type === 'QUESTION') {
-        return SLIDE_TYPE_NAMES.QUESTION;
+        return translateSlideType('QUESTION', t);
     }
 
     // Handle assignment slides
     if (slide.source_type === 'ASSIGNMENT') {
-        return SLIDE_TYPE_NAMES.ASSIGNMENT;
+        return translateSlideType('ASSIGNMENT', t);
     }
 
     // Handle audio slides
     if (slide.source_type === 'AUDIO') {
-        return SLIDE_TYPE_NAMES.AUDIO;
+        return translateSlideType('AUDIO', t);
     }
 
     // Default fallback
-    return 'Slide';
+    return t ? t(`${NAMESPACE}:types.slide`) : 'Slide';
 }
 
 /**
@@ -114,68 +149,72 @@ export function generateUniqueSlideTitle(
 /**
  * Generate a unique slide name for document slides
  */
-export function generateUniqueDocumentSlideTitle(allSlides: Slide[], documentType: string): string {
-    let slideTypeName: string;
+export function generateUniqueDocumentSlideTitle(
+    allSlides: Slide[],
+    documentType: string,
+    t?: TFunction
+): string {
+    let slideTypeKey: keyof typeof SLIDE_TYPE_NAMES;
 
     switch (documentType) {
         case 'DOC':
-            slideTypeName = SLIDE_TYPE_NAMES.DOC;
+            slideTypeKey = 'DOC';
             break;
         case 'HTML':
-            slideTypeName = SLIDE_TYPE_NAMES.HTML;
+            slideTypeKey = 'HTML';
             break;
         case 'PRESENTATION':
-            slideTypeName = SLIDE_TYPE_NAMES.PRESENTATION;
+            slideTypeKey = 'PRESENTATION';
             break;
         case 'JUPYTER':
-            slideTypeName = SLIDE_TYPE_NAMES.JUPYTER;
+            slideTypeKey = 'JUPYTER';
             break;
         case 'SCRATCH':
-            slideTypeName = SLIDE_TYPE_NAMES.SCRATCH;
+            slideTypeKey = 'SCRATCH';
             break;
         case 'CODE':
-            slideTypeName = SLIDE_TYPE_NAMES.CODE;
+            slideTypeKey = 'CODE';
             break;
         default:
-            slideTypeName = SLIDE_TYPE_NAMES.DOC;
+            slideTypeKey = 'DOC';
     }
 
-    return generateUniqueSlideTitle(allSlides, slideTypeName);
+    return generateUniqueSlideTitle(allSlides, translateSlideType(slideTypeKey, t));
 }
 
 /**
  * Generate a unique slide name for video slides
  */
-export function generateUniqueVideoSlideTitle(allSlides: Slide[]): string {
-    return generateUniqueSlideTitle(allSlides, SLIDE_TYPE_NAMES.VIDEO);
+export function generateUniqueVideoSlideTitle(allSlides: Slide[], t?: TFunction): string {
+    return generateUniqueSlideTitle(allSlides, translateSlideType('VIDEO', t));
 }
 
 /**
  * Generate a unique slide name for question slides
  */
-export function generateUniqueQuestionSlideTitle(allSlides: Slide[]): string {
-    return generateUniqueSlideTitle(allSlides, SLIDE_TYPE_NAMES.QUESTION);
+export function generateUniqueQuestionSlideTitle(allSlides: Slide[], t?: TFunction): string {
+    return generateUniqueSlideTitle(allSlides, translateSlideType('QUESTION', t));
 }
 
 /**
  * Generate a unique slide name for assignment slides
  */
-export function generateUniqueAssignmentSlideTitle(allSlides: Slide[]): string {
-    return generateUniqueSlideTitle(allSlides, SLIDE_TYPE_NAMES.ASSIGNMENT);
+export function generateUniqueAssignmentSlideTitle(allSlides: Slide[], t?: TFunction): string {
+    return generateUniqueSlideTitle(allSlides, translateSlideType('ASSIGNMENT', t));
 }
 
 /**
  * Generate a unique slide name for quiz slides
  */
-export function generateUniqueQuizSlideTitle(allSlides: Slide[]): string {
-    return generateUniqueSlideTitle(allSlides, 'Quiz');
+export function generateUniqueQuizSlideTitle(allSlides: Slide[], t?: TFunction): string {
+    return generateUniqueSlideTitle(allSlides, t ? t(`${NAMESPACE}:types.quiz`) : 'Quiz');
 }
 
 /**
  * Generate a unique slide name for audio slides
  */
-export function generateUniqueAudioSlideTitle(allSlides: Slide[]): string {
-    return generateUniqueSlideTitle(allSlides, SLIDE_TYPE_NAMES.AUDIO);
+export function generateUniqueAudioSlideTitle(allSlides: Slide[], t?: TFunction): string {
+    return generateUniqueSlideTitle(allSlides, translateSlideType('AUDIO', t));
 }
 
 type SlideOrderInput = Pick<Slide, 'slide_order'> & Partial<Pick<Slide, 'id'>>;

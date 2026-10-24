@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Buildings, CircleNotch } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -20,6 +21,7 @@ interface SubOrgAssociatedCardProps {
  * Lives in the course Settings tab alongside LMS Integration and Workflow Triggers.
  */
 export const SubOrgAssociatedCard: React.FC<SubOrgAssociatedCardProps> = ({ packageId }) => {
+    const { t } = useTranslation('studyLibrarySubOrgAssociatedCard');
     const queryClient = useQueryClient();
     const [pendingValue, setPendingValue] = useState<boolean | null>(null);
 
@@ -48,10 +50,10 @@ export const SubOrgAssociatedCard: React.FC<SubOrgAssociatedCardProps> = ({ pack
         onSuccess: (next) => {
             setPendingValue(next);
             queryClient.invalidateQueries({ queryKey: ['COURSE_BATCHES', packageId] });
-            toast.success(next ? 'Sub-org association enabled' : 'Sub-org association disabled');
+            toast.success(next ? t('toast.enabled') : t('toast.disabled'));
         },
         onError: () => {
-            toast.error('Failed to update sub-org association');
+            toast.error(t('toast.updateFailed'));
         },
     });
 
@@ -60,24 +62,21 @@ export const SubOrgAssociatedCard: React.FC<SubOrgAssociatedCardProps> = ({ pack
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Buildings className="size-5 text-primary-500" weight="fill" />
-                    Sub-organization
+                    {t('cardTitle')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {isLoading ? (
                     <div className="flex items-center justify-center py-8 text-neutral-500">
-                        <CircleNotch className="mr-2 size-5 animate-spin" /> Loading…
+                        <CircleNotch className="mr-2 size-5 animate-spin" /> {t('loading')}
                     </div>
                 ) : (
                     <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
                         <div className="space-y-0.5">
                             <p className="text-sm font-semibold text-neutral-800">
-                                Sub-org associated
+                                {t('fieldLabel')}
                             </p>
-                            <p className="text-sm text-neutral-500">
-                                When enabled, enrolling a learner into this course creates a
-                                sub-organization for them. Applies to all batches of this course.
-                            </p>
+                            <p className="text-sm text-neutral-500">{t('description')}</p>
                         </div>
                         <Switch
                             checked={enabled}

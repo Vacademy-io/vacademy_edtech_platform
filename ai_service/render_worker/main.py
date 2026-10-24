@@ -12,7 +12,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import Response
@@ -432,6 +432,12 @@ class BboxCheckRequest(BaseModel):
         description="Shot-relative seconds at which to evaluate. Typically [0.3*dur, 0.6*dur, dur-0.1].",
     )
     background: str = Field(default="#0a0e27", description="CSS color used as the harness fill")
+    keep_out: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        max_length=8,
+        description="Canvas rects {l,t,r,b,name} the shot must leave empty (lesson teacher area, caption strip).",
+    )
+    check_squeeze: bool = Field(default=False, description="Also report text squeezed into a too-narrow column")
 
 
 class BboxViolationRect(BaseModel):
@@ -447,6 +453,7 @@ class BboxViolation(BaseModel):
     rect: BboxViolationRect = Field(..., description="Bounding rect at the moment of the violation")
     text: str = Field(default="", description="First 80 chars of the element's text content (empty for media)")
     is_media: bool = Field(default=False, description="True if the element is IMG/SVG/CANVAS/VIDEO")
+    zone: str = Field(default="", description="Keep-out zone hit (empty = canvas overflow)")
 
 
 class BboxCheckResponse(BaseModel):
@@ -485,6 +492,8 @@ async def bbox_check(
             height=request.height,
             timestamps=request.timestamps,
             background=request.background,
+            keep_out=request.keep_out,
+            check_squeeze=request.check_squeeze,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -500,6 +509,7 @@ async def bbox_check(
             rect=BboxViolationRect(**(row.get("rect") or {"l": 0, "t": 0, "r": 0, "b": 0})),
             text=str(row.get("text", "")),
             is_media=bool(row.get("is_media", False)),
+            zone=str(row.get("zone", "") or ""),
         )
         for row in rows
     ]

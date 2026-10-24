@@ -1,0 +1,17 @@
+{
+    "tabsAriaLabel": "Tabs",
+    "tabFatherDetails": "Father Details",
+    "tabMotherDetails": "Mother Details",
+    "tabGuardianDetails": "Guardian Details",
+    "roleFather": "Father",
+    "roleMother": "Mother",
+    "roleGuardian": "Guardian",
+    "selectPlaceholder": "Select",
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "{{title}}'s full name",
+    "mobileNumberLabel": "Mobile Number",
+    "mobileNumberPlaceholder": "Enter mobile number",
+    "emailAddressLabel": "Email Address",
+    "emailPlaceholderExample": "example@email.com",
+    "emailValidationError": "Enter a valid email address"
+}

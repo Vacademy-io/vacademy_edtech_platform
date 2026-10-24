@@ -1,0 +1,39 @@
+{
+    "addToBatches_zero": "إضافة إلى الدفعات (لم يتم تحديد أي دفعة)",
+    "addToBatches_one": "إضافة إلى الدفعات (دفعة واحدة محددة)",
+    "addToBatches_two": "إضافة إلى الدفعات (دفعتان محددتان)",
+    "addToBatches_few": "إضافة إلى الدفعات ({{count}} دفعات محددة)",
+    "addToBatches_many": "إضافة إلى الدفعات ({{count}} دفعة محددة)",
+    "addToBatches_other": "إضافة إلى الدفعات ({{count}} دفعة محددة)",
+    "applyToAllBatches": "تطبيق على جميع الدفعات",
+    "position": {
+        "label": "الموضع",
+        "endOfChapter": "نهاية الفصل",
+        "beginningOfChapter": "بداية الفصل"
+    },
+    "status": {
+        "label": "الحالة",
+        "published": "منشور",
+        "draft": "مسودة"
+    },
+    "notifyLearners": {
+        "label": "إشعار المتعلمين",
+        "on": "مفعّل",
+        "off": "معطّل"
+    },
+    "actions": {
+        "adding": "جارٍ الإضافة…",
+        "add": "إضافة"
+    },
+    "fields": {
+        "subject": "المادة",
+        "module": "الوحدة",
+        "chapter": "الفصل"
+    },
+    "fixedOrSelect": {
+        "loading": "جارٍ تحميل {{label}}…",
+        "select": "اختر {{label}}",
+        "search": "بحث عن {{label}}…",
+        "noMatches": "لا توجد نتائج مطابقة"
+    }
+}

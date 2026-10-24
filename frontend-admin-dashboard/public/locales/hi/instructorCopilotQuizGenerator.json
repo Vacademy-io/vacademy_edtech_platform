@@ -1,0 +1,11 @@
+{
+    "defaultTitle": "क्विज़",
+    "assessmentPaperSuffix": "{{title}} (मूल्यांकन पत्र)",
+    "totalQuestions_one": "कुल प्रश्न: {{count}}",
+    "totalQuestions_other": "कुल प्रश्न: {{count}}",
+    "difficultySuffix": " | कठिनाई: {{difficulty}}",
+    "assessmentInstructions": "निर्देश: सभी प्रश्नों के उत्तर दें। अपने उत्तर स्पष्ट रूप से लिखें।",
+    "questionNumber": "प्रश्न {{number}}",
+    "answerLabel": "उत्तर:",
+    "explanationLabel": "व्याख्या:"
+}

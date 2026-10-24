@@ -16,19 +16,24 @@ import {
     type DripConditionsSettings,
     type DripScheduleDefaults,
 } from '@/types/course-settings';
+import { isProgressRule } from '@/utils/drip-conditions';
 import { Drop, Info, Warning } from '@phosphor-icons/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface DripConditionsCardProps {
     settings: DripConditionsSettings;
     onUpdate: (settings: DripConditionsSettings) => void;
 }
 
-const LEVEL_OPTIONS: Array<{ value: DripConditionContentLevel; label: string }> = [
-    { value: 'subject', label: 'Subject' },
-    { value: 'module', label: 'Module' },
-    { value: 'chapter', label: 'Chapter' },
-    { value: 'slide', label: 'Slide' },
+const buildLevelOptions = (
+    t: TFunction
+): Array<{ value: DripConditionContentLevel; label: string }> => [
+    { value: 'subject', label: t('schedule.level.options.subject') },
+    { value: 'module', label: t('schedule.level.options.module') },
+    { value: 'chapter', label: t('schedule.level.options.chapter') },
+    { value: 'slide', label: t('schedule.level.options.slide') },
 ];
 
 /**
@@ -37,6 +42,9 @@ const LEVEL_OPTIONS: Array<{ value: DripConditionContentLevel; label: string }> 
  * here means a 30-day course is three clicks in the course itself.
  */
 export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings, onUpdate }) => {
+    const { t } = useTranslation('settingsDripConditionsCard');
+    const levelOptions = buildLevelOptions(t);
+
     const schedule: DripScheduleDefaults = {
         ...DEFAULT_DRIP_SCHEDULE,
         ...settings.scheduleDefaults,
@@ -45,9 +53,17 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
     const updateSchedule = (patch: Partial<DripScheduleDefaults>) =>
         onUpdate({ ...settings, scheduleDefaults: { ...schedule, ...patch } });
 
-    // Rules already saved for this institute. Most were written while nothing
-    // read them, so the admin needs to see the number before switching them on.
-    const savedRuleCount = Array.isArray(settings.conditions) ? settings.conditions.length : 0;
+    // Progress rules already saved for this institute. Most were written while
+    // nothing read them, so the admin needs to see the number before switching
+    // them on. Date and day-wise rules are not counted: they already apply.
+    const savedRuleCount = (Array.isArray(settings.conditions) ? settings.conditions : [])
+        .filter((condition) => condition.enabled !== false)
+        .flatMap((condition) =>
+            Array.isArray(condition.drip_condition) ? condition.drip_condition : []
+        )
+        .filter(
+            (config) => config.is_enabled !== false && config.rules?.some(isProgressRule)
+        ).length;
     const isEnforcing = settings.applyConfiguredRules === true;
 
     return (
@@ -56,11 +72,11 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Drop className="size-5 text-blue-600" />
-                        <CardTitle>Drip Conditions</CardTitle>
+                        <CardTitle>{t('header.title')}</CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="drip-global-toggle">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
+                            {settings.enabled ? t('header.enabled') : t('header.disabled')}
                         </Label>
                         <Switch
                             id="drip-global-toggle"
@@ -73,11 +89,7 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
             <CardContent className="space-y-4">
                 <Alert>
                     <Info className="size-4" />
-                    <AlertDescription>
-                        Releases course content gradually instead of all at once. Set the schedule
-                        per course from Course Details → Schedule Unlock, or per item from its
-                        three-dot menu.
-                    </AlertDescription>
+                    <AlertDescription>{t('info.description')}</AlertDescription>
                 </Alert>
 
                 {settings.enabled && (
@@ -86,12 +98,10 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                             <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-1">
                                     <Label htmlFor="drip-enforce" className="font-medium">
-                                        Apply unlock rules to learners
+                                        {t('enforce.label')}
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Off means you can set rules up and preview them without
-                                        anything changing for learners. Turn it on when the
-                                        schedule is ready to go live.
+                                        {t('enforce.hint')}
                                     </p>
                                 </div>
                                 <Switch
@@ -107,14 +117,13 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                                 <Alert className="mt-3 border-warning-300 bg-warning-50">
                                     <Warning className="size-4 text-warning-600" />
                                     <AlertDescription className="text-sm">
-                                        This institute already has{' '}
+                                        {t('enforce.warning.prefix')}{' '}
                                         <strong>
-                                            {savedRuleCount} saved rule
-                                            {savedRuleCount === 1 ? '' : 's'}
+                                            {t('enforce.warning.ruleCount', {
+                                                count: savedRuleCount,
+                                            })}
                                         </strong>
-                                        . Some may be old or unfinished — they have never affected
-                                        learners. Switching this on applies all of them at once, so
-                                        review them in each course first.
+                                        {t('enforce.warning.suffix')}
                                     </AlertDescription>
                                 </Alert>
                             )}
@@ -122,17 +131,16 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
 
                         <div>
                             <h4 className="text-sm font-semibold text-neutral-900">
-                                Default schedule
+                                {t('schedule.title')}
                             </h4>
                             <p className="text-xs text-muted-foreground">
-                                What the per-course scheduler starts from. Every course can still
-                                override it.
+                                {t('schedule.description')}
                             </p>
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-1">
-                                <Label htmlFor="drip-level">Release one</Label>
+                                <Label htmlFor="drip-level">{t('schedule.level.label')}</Label>
                                 <Select
                                     value={schedule.level}
                                     onValueChange={(value) =>
@@ -145,7 +153,7 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {LEVEL_OPTIONS.map((option) => (
+                                        {levelOptions.map((option) => (
                                             <SelectItem key={option.value} value={option.value}>
                                                 {option.label}
                                             </SelectItem>
@@ -155,7 +163,9 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                             </div>
 
                             <div className="space-y-1">
-                                <Label htmlFor="drip-interval">Every … days</Label>
+                                <Label htmlFor="drip-interval">
+                                    {t('schedule.interval.label')}
+                                </Label>
                                 <Input
                                     id="drip-interval"
                                     type="number"
@@ -173,7 +183,9 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                             </div>
 
                             <div className="space-y-1">
-                                <Label htmlFor="drip-start-day">First one opens on day</Label>
+                                <Label htmlFor="drip-start-day">
+                                    {t('schedule.startDay.label')}
+                                </Label>
                                 <Input
                                     id="drip-start-day"
                                     type="number"
@@ -191,7 +203,7 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                             </div>
 
                             <div className="space-y-1">
-                                <Label htmlFor="drip-anchor">Counted from</Label>
+                                <Label htmlFor="drip-anchor">{t('schedule.anchor.label')}</Label>
                                 <Select
                                     value={schedule.anchor}
                                     onValueChange={(value) =>
@@ -205,17 +217,17 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="enrollment">
-                                            Each learner&apos;s enrollment date
+                                            {t('schedule.anchor.enrollment')}
                                         </SelectItem>
                                         <SelectItem value="session_start">
-                                            The batch start date
+                                            {t('schedule.anchor.sessionStart')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-1">
-                                <Label htmlFor="drip-time">Opens at</Label>
+                                <Label htmlFor="drip-time">{t('schedule.time.label')}</Label>
                                 <Input
                                     id="drip-time"
                                     type="time"
@@ -227,7 +239,9 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                             </div>
 
                             <div className="space-y-1">
-                                <Label htmlFor="drip-behavior">Until then</Label>
+                                <Label htmlFor="drip-behavior">
+                                    {t('schedule.behavior.label')}
+                                </Label>
                                 <Select
                                     value={schedule.behavior}
                                     onValueChange={(value) =>
@@ -238,8 +252,12 @@ export const DripConditionsCard: React.FC<DripConditionsCardProps> = ({ settings
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="lock">Show locked</SelectItem>
-                                        <SelectItem value="hide">Hide completely</SelectItem>
+                                        <SelectItem value="lock">
+                                            {t('schedule.behavior.lock')}
+                                        </SelectItem>
+                                        <SelectItem value="hide">
+                                            {t('schedule.behavior.hide')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

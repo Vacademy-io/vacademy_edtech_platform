@@ -1,0 +1,25 @@
+{
+    "dialogTitle": {
+        "update": "{{term}} लिंक अपडेट करें",
+        "create": "{{term}} लिंक बनाएं"
+    },
+    "inviteLink": {
+        "copyTitle": "आमंत्रण लिंक कॉपी करें",
+        "copiedToast": "आमंत्रण लिंक क्लिपबोर्ड पर कॉपी हो गया"
+    },
+    "toast": {
+        "updateSuccess": "आपका आमंत्रण लिंक सफलतापूर्वक अपडेट हो गया है!",
+        "createSuccess": "आपका आमंत्रण लिंक सफलतापूर्वक बन गया है!",
+        "saveError": "आमंत्रण लिंक सहेजने में विफल",
+        "unexpectedError": "एक अप्रत्याशित त्रुटि हुई",
+        "validationFailed": "इन पर सत्यापन विफल: {{fields}}"
+    },
+    "actions": {
+        "close": "बंद करें",
+        "updating": "अपडेट हो रहा है...",
+        "creating": "बन रहा है..."
+    },
+    "customField": {
+        "defaultOptionLabel": "विकल्प {{number}}"
+    }
+}

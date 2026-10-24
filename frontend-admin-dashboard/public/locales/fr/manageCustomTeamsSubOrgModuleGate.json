@@ -1,0 +1,4 @@
+{
+    "notEnabled": "{{term}} ne sont pas activés pour votre rôle",
+    "notEnabledHint": "Demandez à un administrateur de l'établissement d'activer le module {{term}} pour votre rôle dans Paramètres → Paramètres d'affichage."
+}

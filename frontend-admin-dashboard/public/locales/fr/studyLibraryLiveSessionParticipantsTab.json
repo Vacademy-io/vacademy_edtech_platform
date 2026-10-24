@@ -1,0 +1,32 @@
+{
+    "tabs": {
+        "selectBatch": "Sélectionner un lot",
+        "selectIndividually": "Sélectionner individuellement"
+    },
+    "search": {
+        "placeholder": "Rechercher des cours ou des lots…",
+        "clearAriaLabel": "Effacer la recherche"
+    },
+    "emptyStates": {
+        "selectSessionFirst": "Sélectionnez une session ci-dessus pour choisir des participants.",
+        "noSearchMatches": "Aucun cours ou lot ne correspond à votre recherche.",
+        "noCoursesAvailable": "Aucun cours disponible pour cette session."
+    },
+    "actions": {
+        "clear": "Effacer",
+        "selectAllInSession": "Tout sélectionner dans cette session"
+    },
+    "summary": {
+        "selectedOfTotalBatches": "{{selected}} sur {{total}} lots",
+        "courseCount_one": "{{count}} cours",
+        "courseCount_many": "{{count}} cours",
+        "courseCount_other": "{{count}} cours",
+        "withSelections_one": "{{count}} avec sélection",
+        "withSelections_many": "{{count}} avec sélections",
+        "withSelections_other": "{{count}} avec sélections",
+        "batchCount_one": "{{count}} lot",
+        "batchCount_many": "{{count}} lots",
+        "batchCount_other": "{{count}} lots",
+        "footerSelected": "{{batchPart}} sur {{coursePart}} sélectionné(s)"
+    }
+}

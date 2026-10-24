@@ -1,0 +1,18 @@
+{
+    "deletedSuccess": "कोर्स सफलतापूर्वक हटाया गया",
+    "deleteFailed": "कोर्स हटाने में विफल",
+    "exploreTerm": "{{term}} एक्सप्लोर करें",
+    "tabs": {
+        "authoredTerm": "बनाए गए {{term}}",
+        "allTerm": "सभी {{term}}",
+        "termInReview": "समीक्षा में {{term}}",
+        "termApproval": "{{term}} अनुमोदन"
+    },
+    "noTermFound": "कोई {{term}} नहीं मिला",
+    "tryAddingNewTerm": "नया {{term}} जोड़कर देखें।",
+    "courseSettings": "कोर्स सेटिंग्स",
+    "createTermWithAI": "AI से {{term}} बनाएं",
+    "exploreSubtitle": "शैक्षिक संसाधनों को एक ही स्थान पर आसानी से व्यवस्थित, अपलोड और ट्रैक करें।",
+    "noTermFoundForTab": "इस टैब के लिए कोई {{term}} नहीं मिला।",
+    "noTermFoundForFilters": "लागू फ़िल्टर के लिए कोई {{term}} नहीं मिला।"
+}

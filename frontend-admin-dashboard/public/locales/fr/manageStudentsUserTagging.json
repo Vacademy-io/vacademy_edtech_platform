@@ -1,0 +1,26 @@
+{
+  "errors": {
+    "loadTitle": "Impossible de charger les tags",
+    "loadHint": "Une erreur s'est produite lors de la récupération des tags de cet apprenant."
+  },
+  "toast": {
+    "addSuccess": "Tag ajouté avec succès",
+    "addError": "Échec de l'ajout du tag",
+    "removeSuccess": "Tag supprimé avec succès",
+    "removeError": "Échec de la suppression du tag"
+  },
+  "activeSection": {
+    "heading": "Tags",
+    "activeCount_one": "{{count}} actif",
+    "activeCount_many": "{{count}} actifs",
+    "activeCount_other": "{{count}} actifs",
+    "inputPlaceholder": "Ajouter un tag (ex. VIP, Très performant)",
+    "addButton": "Ajouter",
+    "defaultLabel": "(par défaut)",
+    "removeAriaLabel": "Supprimer le tag {{tagName}}",
+    "emptyState": "Aucun tag pour l'instant — ajoutez-en un ci-dessus pour commencer à segmenter cet apprenant."
+  },
+  "inactiveSection": {
+    "heading": "Tags inactifs"
+  }
+}

@@ -1,0 +1,49 @@
+{
+    "refs": {
+        "label_one": "Réfs ({{count}})",
+        "label_many": "Réfs ({{count}})",
+        "label_other": "Réfs ({{count}})",
+        "removeAria": "Retirer {{fileName}}"
+    },
+    "sources": {
+        "label_one": "Source ({{count}})",
+        "label_many": "Sources ({{count}})",
+        "label_other": "Sources ({{count}})",
+        "unknown": "Inconnu",
+        "removeAria": "Retirer {{name}}"
+    },
+    "audio": {
+        "label": "Audio",
+        "original": "Original",
+        "originalTitleAvailable": "Utiliser l'audio original de votre clip source",
+        "originalTitleUnavailable": "L'audio original n'est disponible qu'avec un seul clip source",
+        "aiNarration": "Narration IA",
+        "muteTtsDuringSourceClips": "Couper la synthèse vocale pendant les clips source"
+    },
+    "smartPlan": {
+        "label": "Plan intelligent",
+        "analyzing": "analyse du prompt…",
+        "captureWebsite": "Capturer le site web",
+        "skipWebsite": "Ignorer le site web",
+        "webSearch": "Recherche web",
+        "skipSearch": "Ignorer la recherche",
+        "muteTtsOnClips": "Couper la synthèse vocale sur les clips",
+        "ttsOverClips": "Synthèse vocale sur les clips",
+        "muteTtsTitle": "Couper la narration TTS pendant les plans issus des clips source afin que l'audio original de la démo soit diffusé",
+        "overlayInfographics": "Infographies en superposition",
+        "sideInfographics": "Infographies latérales",
+        "overlayTitle": "Faire flotter les infographies au-dessus des images de la démo (plutôt qu'une carte côte à côte)",
+        "manual": "manuel",
+        "auto": "auto",
+        "hideWhy": "Masquer pourquoi ▴",
+        "why": "Pourquoi ? ▾"
+    },
+    "webCapture": {
+        "label": "Capture web",
+        "ignoredTitle": "{{url}} — ignoré (toujours dans le prompt, non capturé)",
+        "activeTitle": "{{url}} — les captures d'écran et images seront capturées et utilisées comme références",
+        "undo": "annuler",
+        "reEnableAria": "Réactiver la capture pour {{host}}",
+        "skipAria": "Ignorer la capture pour {{host}}"
+    }
+}

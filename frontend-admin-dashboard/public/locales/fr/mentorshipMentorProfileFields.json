@@ -1,0 +1,23 @@
+{
+    "tagSuggestions": {
+        "careerGuidance": "Orientation professionnelle",
+        "examStrategy": "Stratégie d'examen",
+        "doubtSolving": "Résolution de doutes",
+        "interviewPrep": "Préparation aux entretiens",
+        "studyPlanning": "Planification des études"
+    },
+    "maxMenteesPlaceholder": "Laisser vide pour aucune limite",
+    "maxMenteesLabel": "Nombre maximum de mentorés",
+    "maxMenteesHelp": "L'attribution et le tourniquet arrêtent d'ajouter des étudiants une fois que le mentor atteint ce nombre. Laisser vide signifie aucune limite.",
+    "capBelowCurrentWarning_one": "Ce mentor a déjà {{count}} mentoré — les mentorés actuels restent, mais aucun nouvel étudiant ne peut être assigné.",
+    "capBelowCurrentWarning_many": "Ce mentor a déjà {{count}} mentorés — les mentorés actuels restent, mais aucun nouvel étudiant ne peut être assigné.",
+    "capBelowCurrentWarning_other": "Ce mentor a déjà {{count}} mentorés — les mentorés actuels restent, mais aucun nouvel étudiant ne peut être assigné.",
+    "listInFindAMentorLabel": "Afficher dans Trouver un mentor",
+    "listInFindAMentorHelp": "Les étudiants peuvent voir le profil de ce mentor et le solliciter. Les demandes vous parviennent pour approbation — personne n'est associé automatiquement.",
+    "listInFindAMentorAriaLabel": "Afficher ce mentor dans Trouver un mentor",
+    "expertisePlaceholder": "ex. Physique JEE — appuyez sur Entrée pour ajouter",
+    "expertiseLabel": "Expertise",
+    "expertiseHelp": "Ce en quoi ce mentor aide. Les étudiants recherchent l'annuaire à partir de ces éléments.",
+    "removeTagAriaLabel": "Retirer {{tag}}",
+    "tryLabel": "Essayer :"
+}

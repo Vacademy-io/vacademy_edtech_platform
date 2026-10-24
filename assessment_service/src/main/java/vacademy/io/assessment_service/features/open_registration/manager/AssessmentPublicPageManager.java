@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.assessment.entity.*;
+import vacademy.io.assessment_service.features.assessment.enums.AssessmentVisibility;
 import vacademy.io.assessment_service.features.assessment.enums.UserRegistrationSources;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentInstituteMappingRepository;
 import vacademy.io.assessment_service.features.assessment.repository.AssessmentRepository;
@@ -49,21 +50,59 @@ public class AssessmentPublicPageManager {
 
         Assessment assessment = assessmentInstituteMapping.get().getAssessment();
 
+        // Nothing but a PUBLISHED assessment may be registered for. This endpoint
+        // never looked at status, so a DELETED or DRAFT assessment whose row
+        // happened to carry a registration window stayed fully registerable
+        // through its old share link — verified live on 5 prod assessments
+        // (3 DELETED, 2 DRAFT). A deleted assessment must look like a dead link,
+        // not merely a closed one, so this reuses the "not found" rejection.
+        if (!isLive(assessment)) {
+            throw new VacademyException("Assessment not found");
+        }
+
         if (assessment.getBoundEndTime() != null && assessment.getBoundEndTime().before(new Date())) {
             throw new VacademyException("Assessment is ended");
         }
 
-        if (assessment.getRegistrationOpenDate() == null || assessment.getRegistrationCloseDate() == null) {
-            // Private Assessments
+        // Whether a share link may be used is decided by assessment_visibility — the
+        // one field the admin builder actually edits. This used to key off the
+        // registration window alone, so an assessment an admin had switched from
+        // PRIVATE to PUBLIC still answered "Assessment is Private" forever: the
+        // PRIVATE->PUBLIC edit leaves registration_open_date/close_date NULL
+        // (AssessmentParticipantsManager.handleOpenRegistration skips blank dates),
+        // and nothing else in the service ever writes them. 216 rows were stranded
+        // that way, 55 of them published with a circulated link.
+        if (!isPubliclyVisible(assessment)) {
             return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is Private").build());
         }
 
-
-        if (assessment.getRegistrationOpenDate().before(new Date()) && assessment.getRegistrationCloseDate().after(new Date())) {
-            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).serverTimeInGmt(DateUtil.getCurrentUtcTime()).assessmentPublicDto(new AssessmentPublicDto(assessment)).canRegister(true).assessmentCustomFields(assessment.getAssessmentCustomFields()).build());
+        // For a PUBLIC assessment the window is an optional *restriction*, not a
+        // precondition: an unset bound simply means "no limit on that side".
+        // bound_end_time is already enforced above.
+        Date now = new Date();
+        if (assessment.getRegistrationOpenDate() != null && assessment.getRegistrationOpenDate().after(now)) {
+            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
         }
-        return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
+        if (assessment.getRegistrationCloseDate() != null && assessment.getRegistrationCloseDate().before(now)) {
+            return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).assessmentPublicDto(new AssessmentPublicDto(assessment)).serverTimeInGmt(DateUtil.getCurrentUtcTime()).canRegister(false).errorMessage("Assessment is closed").build());
+        }
 
+        return ResponseEntity.ok(GetAssessmentPublicResponseDto.builder().instituteId(assessmentInstituteMapping.get().getInstituteId()).serverTimeInGmt(DateUtil.getCurrentUtcTime()).assessmentPublicDto(new AssessmentPublicDto(assessment)).canRegister(true).assessmentCustomFields(assessment.getAssessmentCustomFields()).build());
+
+    }
+
+    /**
+     * assessment_visibility is NOT NULL in the schema, but treat anything that is
+     * not an explicit PUBLIC as private — a blank or unrecognised value must never
+     * open registration by accident.
+     */
+    /** Only a PUBLISHED assessment is registerable; DRAFT and DELETED are dead links. */
+    static boolean isLive(Assessment assessment) {
+        return "PUBLISHED".equalsIgnoreCase(assessment.getStatus());
+    }
+
+    static boolean isPubliclyVisible(Assessment assessment) {
+        return AssessmentVisibility.PUBLIC.name().equalsIgnoreCase(assessment.getAssessmentVisibility());
     }
 
     private void validateRegisterRequest(Optional<Assessment> assessment) {
@@ -72,11 +111,31 @@ public class AssessmentPublicPageManager {
             throw new VacademyException("Assessment not found");
         }
 
-        if (assessment.get().getRegistrationOpenDate() == null || assessment.get().getRegistrationCloseDate() == null) {
+        // Must mirror getAssessmentPage exactly. When these two disagreed, a PUBLIC
+        // assessment with no registration window rendered the form and then failed
+        // the POST with "Assessment not found" — the worst of both worlds.
+        if (!isLive(assessment.get())) {
             throw new VacademyException("Assessment not found");
         }
 
-        if (!assessment.get().getRegistrationOpenDate().before(new Date()) || !assessment.get().getRegistrationCloseDate().after(new Date())) {
+        // The page throws on an ended assessment but this path never did, so a
+        // direct POST could still register against a finished assessment whose
+        // registration window happened to outlast it.
+        if (assessment.get().getBoundEndTime() != null
+                && assessment.get().getBoundEndTime().before(new Date())) {
+            throw new VacademyException("Assessment is ended");
+        }
+
+        if (!isPubliclyVisible(assessment.get())) {
+            throw new VacademyException("Assessment is Private");
+        }
+
+        Date now = new Date();
+        if (assessment.get().getRegistrationOpenDate() != null && assessment.get().getRegistrationOpenDate().after(now)) {
+            throw new VacademyException("Assessment is closed");
+        }
+
+        if (assessment.get().getRegistrationCloseDate() != null && assessment.get().getRegistrationCloseDate().before(now)) {
             throw new VacademyException("Assessment is closed");
         }
 

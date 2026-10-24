@@ -58,6 +58,7 @@ export const generateCompleteAssessmentFormSchema = z.object({
                     min: z.string(),
                 }),
                 tags: z.array(z.string()).optional(),
+                sectionName: z.string().optional(),
                 questionMark: z.string(),
                 singleChoiceOptions: z
                     .array(

@@ -1,0 +1,47 @@
+{
+    "filesStaged": "{{count}} फ़ाइल(ें) जोड़ने के लिए तैयार",
+    "prompts": {
+        "youtubeUrl": "YouTube URL दर्ज करें",
+        "externalLinkUrl": "बाहरी लिंक URL दर्ज करें",
+        "embedUrl": "एम्बेड करने के लिए URL दर्ज करें"
+    },
+    "defaultTitles": {
+        "youtubeVideo": "YouTube वीडियो",
+        "link": "लिंक",
+        "codeEditor": "कोड एडिटर",
+        "jupyterNotebook": "ज्यूपिटर नोटबुक",
+        "presentation": "प्रस्तुति",
+        "untitledDocument": "बिना शीर्षक वाला दस्तावेज़",
+        "embeddedUrl": "एम्बेडेड URL"
+    },
+    "bubbles": {
+        "uploadFiles": "फ़ाइलें अपलोड करें",
+        "emptyDoc": "खाली दस्तावेज़",
+        "youtube": "YouTube",
+        "externalLink": "बाहरी लिंक",
+        "embedUrl": "URL एम्बेड करें",
+        "pdf": "पीडीएफ़",
+        "doc": "डॉक",
+        "ppt": "पीपीटी",
+        "presentation": "प्रस्तुति",
+        "code": "कोड",
+        "jupyter": "ज्यूपिटर",
+        "image": "छवि",
+        "audio": "ऑडियो",
+        "html": "HTML"
+    },
+    "noItemsToAdd": "जोड़ने के लिए कोई आइटम नहीं",
+    "addedSlides": "{{count}} स्लाइड(स्लाइडें) जोड़ी गईं",
+    "addFailed": "स्लाइड जोड़ने में विफल",
+    "heading": "स्लाइड त्वरित रूप से जोड़ें",
+    "close": "बंद करें",
+    "publishAll": "सभी {{term}} प्रकाशित करें",
+    "stagedItems": "तैयार आइटम ({{count}})",
+    "emptyState": "अभी तक कुछ भी तैयार नहीं है। जोड़ने के लिए ऊपर दिए गए त्वरित विकल्पों का उपयोग करें।",
+    "adding": "जोड़ा जा रहा है...",
+    "done": "पूर्ण",
+    "failed": "विफल",
+    "failedWithReason": "विफल: {{reason}}",
+    "editTitle": "शीर्षक संपादित करें",
+    "remove": "हटाएं"
+}

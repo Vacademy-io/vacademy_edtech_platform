@@ -1,0 +1,1866 @@
+{
+  "generated_at": null,
+  "generated_by": "frontend-admin-dashboard/src/components/common/layout-container/sidebar/nav-manifest.test.ts",
+  "categories": [
+    {
+      "id": "CRM",
+      "label": "CRM",
+      "default_visible": true,
+      "order": 0,
+      "is_default_landing": true
+    },
+    {
+      "id": "LMS",
+      "label": "LMS",
+      "default_visible": true,
+      "order": 1,
+      "is_default_landing": false
+    },
+    {
+      "id": "AI",
+      "label": "AI",
+      "default_visible": true,
+      "order": 2,
+      "is_default_landing": false
+    },
+    {
+      "id": "ERP",
+      "label": "ERP",
+      "default_visible": false,
+      "order": 3,
+      "is_default_landing": false
+    }
+  ],
+  "always_admin_only_tab_ids": [
+    "settings",
+    "admin-activity-logs"
+  ],
+  "non_admin_opt_in_tab_ids": [
+    "manage-institute"
+  ],
+  "admin_only_sub_tabs_never_opt_in_tab_ids": [
+    "engagement-engines"
+  ],
+  "sub_org_module": {
+    "tab_id": "manage-institute",
+    "sub_tab_id": "manage-institute-suborgs",
+    "role_setting": "subOrganizations.moduleEnabled"
+  },
+  "tabs": [
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "category": "CRM",
+      "route": "/dashboard",
+      "order": 1,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "manage-institute",
+      "label": "Manage Institute",
+      "category": "CRM",
+      "route": null,
+      "order": 2,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": false
+      },
+      "sub_tabs": [
+        {
+          "id": "institute-overview",
+          "label": "Institute Overview",
+          "route": "/manage-institute/overview",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "batches",
+          "label": "Batches",
+          "route": "/manage-institute/batches",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "sessions",
+          "label": "Session",
+          "route": "/manage-institute/sessions",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "teams",
+          "label": "Teams",
+          "route": "/manage-institute/teams",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "suborg-teams",
+          "label": "Sub-Org Teams",
+          "route": "/manage-suborg-teams",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "manage-institute-suborgs",
+          "label": "Manage Institute Sub-Orgs",
+          "route": "/manage-custom-teams",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "inventory-management",
+          "label": "Inventory Management",
+          "route": "/manage-inventory",
+          "order": 7,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "manage-packages",
+          "label": "Manage Packages",
+          "route": "/admin-package-management",
+          "order": 8,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-contacts",
+      "label": "Manage Contacts",
+      "category": "CRM",
+      "route": null,
+      "order": 3,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": false
+      },
+      "sub_tabs": [
+        {
+          "id": "contacts-dashboard",
+          "label": "Contacts Dashboard",
+          "route": "/manage-contacts/dashboard",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "all-contacts",
+          "label": "All Contacts",
+          "route": "/manage-contacts",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "linked-contacts",
+          "label": "Linked Course Contacts",
+          "route": "/manage-students/students-list",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "user-tags-main",
+          "label": "User Tags",
+          "route": "/user-tags/institute",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "link-tag",
+          "label": "Link Tag",
+          "route": "/user-tags/link",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "invite",
+          "label": "Invite Users",
+          "route": "/manage-students/invite",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "admissions",
+      "label": "Admissions",
+      "category": "CRM",
+      "route": null,
+      "order": 4,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": false
+      },
+      "sub_tabs": [
+        {
+          "id": "dashboard",
+          "label": "Dashboard",
+          "route": "/admissions/dashboard",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "admission-list",
+          "label": "Admission List",
+          "route": "/admissions/admission-list",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "enquiry",
+          "label": "Enquiries",
+          "route": "/admissions/enquiries",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "application",
+          "label": "Application",
+          "route": "/admissions/application",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "fee-management",
+      "label": "Fee Management",
+      "category": "CRM",
+      "route": null,
+      "order": 5,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": false
+      },
+      "sub_tabs": [
+        {
+          "id": "create-fee-plan",
+          "label": "Create Fee Plan",
+          "route": "/financial-management/fee-plans",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "manage-finances",
+          "label": "Manage Finances",
+          "route": "/financial-management/manage-finances",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "collection-dashboard",
+          "label": "Collection Dashboard",
+          "route": "/financial-management/collection-dashboard",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "pay-installments",
+          "label": "Pay Installments",
+          "route": "/financial-management/pay-installments",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "adjustment-approvals",
+          "label": "Adjustment Approvals",
+          "route": "/financial-management/adjustment-approvals",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "membership-management",
+      "label": "Membership",
+      "category": "CRM",
+      "route": null,
+      "order": 6,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": false
+      },
+      "sub_tabs": [
+        {
+          "id": "payment-dashboard-sub",
+          "label": "Payment Dashboard",
+          "route": "/payment-dashboard",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "manage-payments-sub",
+          "label": "Manage Payments",
+          "route": "/manage-payments",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "membership-expiry-sub",
+          "label": "Manage Expiry",
+          "route": "/membership-expiry",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "membership-stats-sub",
+          "label": "Invite Stats",
+          "route": "/membership-stats",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "communications",
+      "label": "Communications",
+      "category": "CRM",
+      "route": null,
+      "order": 7,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "messaging-dashboard",
+          "label": "Messaging Dashboard",
+          "route": "/communication/dashboard",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "chat",
+          "label": "In-App Messages",
+          "route": "/chat",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "notification-hub",
+          "label": "Notification Hub",
+          "route": "/communication/notification-hub",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "whatsapp-inbox",
+          "label": "WhatsApp Inbox",
+          "route": "/communication/inbox",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "whatsapp-templates",
+          "label": "WhatsApp Templates",
+          "route": "/communication/whatsapp-templates",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "announcement-create",
+          "label": "Create Announcement",
+          "route": "/announcement/create",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "announcement-email-campaigning",
+          "label": "Email Campaigning",
+          "route": "/announcement/email-campaigning",
+          "order": 7,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "announcement-history",
+          "label": "Announcement History",
+          "route": "/announcement/history",
+          "order": 8,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "announcement-schedule",
+          "label": "Schedule Announcement",
+          "route": "/announcement/schedule",
+          "order": 9,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "announcement-approval",
+          "label": "Announcement Approval",
+          "route": "/announcement/approval",
+          "order": 10,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "automations",
+      "label": "Automations",
+      "category": "CRM",
+      "route": null,
+      "order": 8,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": false
+      },
+      "sub_tabs": [
+        {
+          "id": "automation-dashboard",
+          "label": "Automation Dashboard",
+          "route": "/automation/dashboard",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "workflow-list",
+          "label": "Workflows",
+          "route": "/workflow/list",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "chatbot-flows",
+          "label": "Chatbot Flows",
+          "route": "/automation/chatbot-flows",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "website-builder",
+          "label": "Website Builder",
+          "route": "/manage-pages",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "product-pages",
+          "label": "Product Pages",
+          "route": "/manage-pages/product-pages",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "site-assistant",
+          "label": "Site Assistant",
+          "route": "/manage-pages/site-assistant",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "blog",
+          "label": "Blog",
+          "route": "/manage-pages/blog",
+          "order": 7,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "leads",
+      "label": "Leads",
+      "category": "CRM",
+      "route": null,
+      "order": 9,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "lead-list-leads",
+          "label": "Lead List",
+          "route": "/audience-manager/list",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "recent-leads",
+          "label": "Recent Leads",
+          "route": "/audience-manager/recent-leads",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "lead-board",
+          "label": "Lead Board",
+          "route": "/audience-manager/lead-board",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "follow-ups",
+          "label": "Follow-ups",
+          "route": "/audience-manager/follow-ups",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "call-log",
+          "label": "Call Log",
+          "route": "/audience-manager/call-log",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "lead-lookup",
+          "label": "Check Lead",
+          "route": "/audience-manager/lead-lookup",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "onboarding",
+          "label": "Onboarding",
+          "route": "/audience-manager/onboarding",
+          "order": 7,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "ai-intelligence",
+          "label": "AI Intelligence",
+          "route": "/audience-manager/ai-intelligence",
+          "order": 8,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "counsellors",
+          "label": "Counsellors",
+          "route": "/counsellors",
+          "order": 9,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "sales-dashboard",
+          "label": "Sales Dashboard",
+          "route": "/sales-dashboard",
+          "order": 10,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "lead-reports",
+          "label": "Reports",
+          "route": "/audience-manager/reports",
+          "order": 11,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "utm-campaigns",
+          "label": "Campaigns (UTM)",
+          "route": "/audience-manager/reports?tab=utm",
+          "order": 12,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "calling",
+      "label": "Calling",
+      "category": "CRM",
+      "route": null,
+      "order": 10,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "calling-dashboard",
+          "label": "Calling Dashboard",
+          "route": "/calling/dashboard",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "calling-call-log",
+          "label": "Call Log",
+          "route": "/audience-manager/call-log",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "calling-call-queue",
+          "label": "Call Queue",
+          "route": "/calling/call-queue",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": false,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "calling-ai-agents",
+          "label": "AI Agents",
+          "route": "/calling/ai-agents",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "calling-settings",
+          "label": "Calling Settings",
+          "route": "/settings?selectedTab=telephony",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "calling-ai-settings",
+          "label": "AI Calling Settings",
+          "route": "/settings?selectedTab=aiCalling",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "meetings",
+      "label": "Meetings",
+      "category": "CRM",
+      "route": null,
+      "order": 11,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "meetings-dashboard",
+          "label": "Meetings Dashboard",
+          "route": "/meetings/dashboard",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "meetings-my-schedule",
+          "label": "My Schedule",
+          "route": "/meetings/my-schedule",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "meetings-team",
+          "label": "Team Meetings",
+          "route": "/meetings/team",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "mentorship",
+      "label": "Mentorship",
+      "category": "CRM",
+      "route": null,
+      "order": 12,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "mentorship-dashboard",
+          "label": "Overview",
+          "route": "/mentorship/dashboard",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "mentorship-mentors",
+          "label": "Mentors",
+          "route": "/mentorship/mentors",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "mentorship-sessions",
+          "label": "Sessions",
+          "route": "/mentorship/sessions",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "mentorship-requests",
+          "label": "Requests",
+          "route": "/mentorship/requests",
+          "order": 4,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "mentorship-my-mentorship",
+          "label": "My Mentorship",
+          "route": "/mentorship/my-mentorship",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "engagement-engines",
+      "label": "Engagement Engines",
+      "category": "CRM",
+      "route": null,
+      "order": 13,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "engagement-dashboard",
+          "label": "Engagement Dashboard",
+          "route": "/engagement-engines/dashboard",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "engagement-engines-list",
+          "label": "Engines",
+          "route": "/engagement-engines",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "engagement-task-inbox",
+          "label": "Task Inbox",
+          "route": "/engagement-engines/inbox",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-my-hr",
+      "label": "My HR",
+      "category": "ERP",
+      "route": null,
+      "order": 14,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-my-hr-overview",
+          "label": "Overview",
+          "route": "/erp/my-hr",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "erp-my-hr-leave",
+          "label": "My Leave",
+          "route": "/erp/my-hr/leave",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "erp-my-hr-payslips",
+          "label": "My Payslips",
+          "route": "/erp/my-hr/payslips",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "erp-my-hr-tax",
+          "label": "My Tax",
+          "route": "/erp/my-hr/tax",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "erp-my-hr-claims",
+          "label": "My Claims",
+          "route": "/erp/my-hr/claims",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-people",
+      "label": "People",
+      "category": "ERP",
+      "route": null,
+      "order": 15,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-people-employees",
+          "label": "Employees",
+          "route": "/erp/people",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-people-org",
+          "label": "Departments & Designations",
+          "route": "/erp/people/org",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-people-staff-bridge",
+          "label": "Staff Coverage",
+          "route": "/erp/people/staff-bridge",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-leave",
+      "label": "Leave",
+      "category": "ERP",
+      "route": null,
+      "order": 16,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-leave-requests",
+          "label": "Requests",
+          "route": "/erp/leave",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-leave-balances",
+          "label": "Balances",
+          "route": "/erp/leave/balances",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-leave-setup",
+          "label": "Types & Policies",
+          "route": "/erp/leave/setup",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-attendance",
+      "label": "Attendance",
+      "category": "ERP",
+      "route": null,
+      "order": 17,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-attendance-daily",
+          "label": "Daily Board",
+          "route": "/erp/attendance",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-attendance-regularizations",
+          "label": "Regularizations",
+          "route": "/erp/attendance/regularizations",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-attendance-setup",
+          "label": "Shifts & Holidays",
+          "route": "/erp/attendance/setup",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-payroll",
+      "label": "Payroll",
+      "category": "ERP",
+      "route": null,
+      "order": 18,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-payroll-runs",
+          "label": "Runs",
+          "route": "/erp/payroll",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-payroll-adjustments",
+          "label": "Variable Pay",
+          "route": "/erp/payroll/adjustments",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-payroll-salary-setup",
+          "label": "Salary Setup",
+          "route": "/erp/payroll/salary-setup",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-compliance",
+      "label": "Compliance",
+      "category": "ERP",
+      "route": null,
+      "order": 19,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-compliance-filings",
+          "label": "Filings",
+          "route": "/erp/compliance",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-compliance-challans",
+          "label": "Challans",
+          "route": "/erp/compliance/challans",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-compliance-provisions",
+          "label": "Provisions",
+          "route": "/erp/compliance/provisions",
+          "order": 3,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "erp-finance",
+      "label": "Finance",
+      "category": "ERP",
+      "route": null,
+      "order": 20,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "erp-finance-journal",
+          "label": "Journal",
+          "route": "/erp/finance/journal",
+          "order": 1,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
+          "id": "erp-finance-pnl",
+          "label": "P&L Snapshot",
+          "route": "/erp/finance/pnl",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "category": "CRM",
+      "route": "/settings",
+      "order": 21,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": false
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "admin-activity-logs",
+      "label": "Admin Activity Logs",
+      "category": "CRM",
+      "route": "/admin-activity-logs",
+      "order": 22,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": false
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "live-activity",
+      "label": "Live Activity",
+      "category": "CRM",
+      "route": "/live-activity",
+      "order": 23,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": false
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "lms-dashboard",
+      "label": "LMS Dashboard",
+      "category": "LMS",
+      "route": "/lms-dashboard",
+      "order": 24,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "courses",
+      "label": "Courses",
+      "category": "LMS",
+      "route": "/study-library/courses",
+      "order": 25,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "course-creation",
+      "label": "Course Creation",
+      "category": "LMS",
+      "route": null,
+      "order": 26,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "create-course-scratch",
+          "label": "Create new course from scratch",
+          "route": "/study-library/courses?action=create",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "create-course-ai",
+          "label": "Create course from AI",
+          "route": "/study-library/ai-copilot",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "bulk-content-uploading",
+          "label": "Bulk Content Upload",
+          "route": "/study-library/bulk-content-uploading",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "live-sessions",
+      "label": "Live Sessions",
+      "category": "LMS",
+      "route": null,
+      "order": 27,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "live-session-dashboard",
+          "label": "Live Session Dashboard",
+          "route": "/study-library/live-session/dashboard",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "scheduled-sessions",
+          "label": "Scheduled Live Sessions",
+          "route": "/study-library/live-session",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "create-live-session",
+          "label": "Create new",
+          "route": "/study-library/live-session/schedule/step1",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "bulk-schedule-live-session",
+          "label": "Bulk Schedule",
+          "route": "/study-library/live-session/schedule/bulk",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "session-attendance",
+          "label": "Live Session Attendance",
+          "route": "/study-library/attendance-tracker",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "live-session-feedback",
+          "label": "Live Session Feedback",
+          "route": "/study-library/live-session/feedback",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "course-planning-logging",
+      "label": "Course Planning and Logbook",
+      "category": "LMS",
+      "route": null,
+      "order": 28,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "curriculum-planner",
+          "label": "Curriculum timeline Planner",
+          "route": "/planning/planning",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "ai-lecture-planning",
+          "label": "AI Lecture planning",
+          "route": "/ai-center/ai-tools/vsmart-lecture",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "log-course-progress",
+          "label": "Log Course Progress",
+          "route": "/planning/activity-logs",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "institute-pulse",
+      "label": "Institute Pulse",
+      "category": "LMS",
+      "route": "/institute-pulse",
+      "order": 29,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "learning-reports",
+      "label": "Learning Reports",
+      "category": "LMS",
+      "route": "/study-library/reports",
+      "order": 30,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "learning-engagement",
+      "label": "Learning Engagement",
+      "category": "LMS",
+      "route": null,
+      "order": 31,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "interactive-class-volt",
+          "label": "Interactive class",
+          "route": "/study-library/volt",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "create-engaging-content",
+          "label": "Create Engaging Content",
+          "route": "/video-api-studio",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "daily-engagement",
+          "label": "Daily Engagement",
+          "route": "/engagement",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "doubt-management",
+      "label": "Doubt Management",
+      "category": "LMS",
+      "route": "/study-library/doubt-management",
+      "order": 32,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "student-ai",
+      "label": "Student AI",
+      "category": "LMS",
+      "route": "/study-library/student-ai",
+      "order": 33,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "assessments-tests",
+      "label": "Assessments and Tests",
+      "category": "LMS",
+      "route": null,
+      "order": 34,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": [
+        {
+          "id": "assessment-dashboard",
+          "label": "Assessment Dashboard",
+          "route": "/assessment/dashboard",
+          "order": 1,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "scheduled-tests",
+          "label": "Scheduled Tests",
+          "route": "/assessment/assessment-list?selectedTab=liveTests",
+          "order": 2,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "create-deadline-test",
+          "label": "Create Deadline Based Tests",
+          "route": "/assessment/create-assessment/defaultId/EXAM?currentStep=0",
+          "order": 3,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "create-anytime-test",
+          "label": "Create anytime attempt Test",
+          "route": "/assessment/create-assessment/defaultId/MOCK?currentStep=0",
+          "order": 4,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "create-survey",
+          "label": "Create survey",
+          "route": "/assessment/create-assessment/defaultId/SURVEY?currentStep=0",
+          "order": 5,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "test-evaluations",
+          "label": "Test Evaluations",
+          "route": "/evaluation/evaluations",
+          "order": 6,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        },
+        {
+          "id": "scanned-evaluation",
+          "label": "Scanned Answer sheet Evaluation",
+          "route": "/evaluation/evaluation-tool",
+          "order": 7,
+          "admin_only": false,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "question-banks",
+      "label": "Questions Banks and Papers",
+      "category": "LMS",
+      "route": "/assessment/question-papers",
+      "order": 35,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "ai-tools-tab",
+      "label": "AI Tools",
+      "category": "AI",
+      "route": "/ai-center/ai-tools",
+      "order": 36,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "knowledge-base-tab",
+      "label": "Knowledge Base",
+      "category": "AI",
+      "route": "/knowledge-base",
+      "order": 37,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "instructor-copilot-tab",
+      "label": "Instructor Copilot",
+      "category": "AI",
+      "route": "/instructor-copilot",
+      "order": 38,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "ai-copilot-tab",
+      "label": "AI Course Creator",
+      "category": "AI",
+      "route": "/study-library/ai-copilot",
+      "order": 39,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": false
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "content-ai-studio",
+      "label": "Vimotion - Content Studio",
+      "category": "AI",
+      "route": "/video-api-studio/console",
+      "order": 40,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "content-ai-api",
+      "label": "Content AI API",
+      "category": "AI",
+      "route": "/video-api-studio",
+      "order": 41,
+      "default_visible": {
+        "ADMIN": true,
+        "TEACHER": true
+      },
+      "sub_tabs": []
+    },
+    {
+      "id": "access-passes",
+      "label": "Access Passes",
+      "category": "LMS",
+      "route": "/access-passes",
+      "order": 42,
+      "default_visible": {
+        "ADMIN": false,
+        "TEACHER": false
+      },
+      "sub_tabs": []
+    }
+  ]
+}

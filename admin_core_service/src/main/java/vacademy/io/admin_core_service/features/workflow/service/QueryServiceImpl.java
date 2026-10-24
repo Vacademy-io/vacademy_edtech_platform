@@ -65,6 +65,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
     private final SessionScheduleRepository sessionScheduleRepository;
     private final LiveSessionParticipantRepository liveSessionParticipantRepository;
     private final LiveSessionRepository liveSessionRepository;
+    private final vacademy.io.admin_core_service.features.live_session.service.AttendanceCriteriaService attendanceCriteriaService;
     private final InstituteSettingService instituteSettingService;
     private final AudienceResponseRepository audienceResponseRepository;
     private final CustomFieldRepository customFieldRepository;
@@ -98,6 +99,10 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 return getUpcomingAutopayCharges(params);
             case "getManualRenewalDuePlans":
                 return getManualRenewalDuePlans(params);
+            case "getRenewalFailedPlans":
+                return getRenewalFailedPlans(params);
+            case "getAbandonedCartPlans":
+                return getAbandonedCartPlans(params);
             case "updateSSIGMRemaingDaysByOne":
                 return updateSSIGMRemainingDaysByOne(params);
             case "createSessionSchedule":
@@ -246,9 +251,27 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 daysAhead = Integer.parseInt(s.trim());
             }
 
+            // Optional trial/member split. A trial's upcoming charge is its FIRST charge
+            // ("your free trial ends tomorrow"); a member's is a renewal ("your plan renews
+            // tomorrow"). Both land in this one audience, so without this filter a single
+            // workflow had to greet both groups with the same wording — and SuchBliss was
+            // telling paying members their free trial was ending. Absent/blank = both, so
+            // every existing workflow keeps its current audience unchanged.
+            Boolean trialOnly = null;
+            Object rawTrial = params.get("trialOnly");
+            if (rawTrial instanceof Boolean b) {
+                trialOnly = b;
+            } else if (rawTrial instanceof String s && !s.isBlank()) {
+                trialOnly = Boolean.parseBoolean(s.trim());
+            }
+
             List<Object[]> rows = ssigmRepo.findUpcomingAutopayCharges(packageSessionIds, daysAhead);
             List<Map<String, Object>> autopayDueList = new ArrayList<>();
             for (Object[] row : rows) {
+                boolean isTrial = row[8] != null && Boolean.parseBoolean(String.valueOf(row[8]));
+                if (trialOnly != null && trialOnly != isTrial) {
+                    continue;
+                }
                 Map<String, Object> item = new HashMap<>();
                 item.put("userPlanId", String.valueOf(row[0]));
                 item.put("userId", String.valueOf(row[1]));
@@ -258,6 +281,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("nextChargeAt", row[5]);
                 item.put("endDate", row[6]);
                 item.put("chargeDate", row[7] != null ? String.valueOf(row[7]) : "");
+                item.put("isTrial", isTrial);
                 autopayDueList.add(item);
             }
             return Map.of("autopayDueList", autopayDueList, "autopayDueCount", autopayDueList.size());
@@ -300,6 +324,109 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                     "manualRenewalCount", manualRenewalList.size());
         } catch (Exception e) {
             log.error("Error executing getManualRenewalDuePlans", e);
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    /**
+     * "Your payment could not be processed" audience: ACTIVE autopay plans whose charge
+     * was presented and refused (renewal_attempt_count > 0) and not renewed since, with
+     * end_date within [-graceDays, +daysAhead] of today. Params: packageSessionIds
+     * (required), daysAhead (default 3), graceDays (default 3). Output items carry
+     * name / mobileNumber / username / endDateLabel / attempts / lastError.
+     */
+    private Map<String, Object> getRenewalFailedPlans(Map<String, Object> params) {
+        try {
+            List<String> packageSessionIds = (List<String>) params.get("packageSessionIds");
+            if (packageSessionIds == null || packageSessionIds.isEmpty()) {
+                return Map.of("error", "Missing required parameter packageSessionIds");
+            }
+            int daysAhead = readIntParam(params.get("daysAhead"), 3);
+            int graceDays = readIntParam(params.get("graceDays"), 3);
+
+            List<Object[]> rows = ssigmRepo.findRenewalFailedPlans(packageSessionIds, daysAhead, graceDays);
+            List<Map<String, Object>> renewalFailedList = new ArrayList<>();
+            for (Object[] row : rows) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("userPlanId", String.valueOf(row[0]));
+                item.put("userId", String.valueOf(row[1]));
+                item.put("name", row[2] != null ? String.valueOf(row[2]) : "");
+                item.put("mobileNumber", row[3] != null ? String.valueOf(row[3]) : "");
+                item.put("username", row[4] != null ? String.valueOf(row[4]) : "");
+                item.put("attempts", row[5] != null ? ((Number) row[5]).intValue() : 0);
+                item.put("endDate", row[6]);
+                item.put("endDateLabel", row[7] != null ? String.valueOf(row[7]) : "");
+                item.put("lastError", extractLastError(row[8]));
+                renewalFailedList.add(item);
+            }
+            return Map.of("renewalFailedList", renewalFailedList,
+                    "renewalFailedCount", renewalFailedList.size());
+        } catch (Exception e) {
+            log.error("Error executing getRenewalFailedPlans", e);
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    /** The "error" field of a FAILED payment_log's payment_specific_data, else "". */
+    private String extractLastError(Object paymentSpecificData) {
+        if (paymentSpecificData == null) {
+            return "";
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readTree(String.valueOf(paymentSpecificData));
+            return node.path("error").asText("");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Learners who started an enrolment but never completed checkout -- the audience for the
+     * abandoned-cart follow-up. Keyed on plan payment status, not on any particular payment
+     * instrument, so it applies to card, UPI and mandate flows alike. One row per learner, carrying the invite code they last chose
+     * so the message can link them back to the plan they actually wanted.
+     *
+     * <p>Params: instituteId (required), minAgeDays (default 1), maxAgeDays (default 3). The age
+     * window exists so we do not chase someone who is still mid-checkout.
+     */
+    private Map<String, Object> getAbandonedCartPlans(Map<String, Object> params) {
+        try {
+            String instituteId = params.get("instituteId") != null
+                    ? String.valueOf(params.get("instituteId")) : null;
+            if (instituteId == null || instituteId.isBlank()) {
+                return Map.of("error", "Missing required parameter instituteId");
+            }
+            int minAgeDays = readIntParam(params.get("minAgeDays"), 1);
+            int maxAgeDays = readIntParam(params.get("maxAgeDays"), 3);
+
+            // Default to both so existing workflows keep their audience; a caller that wants
+            // only abandoned carts or only failed payments passes the one it means.
+            // An explicitly empty list would expand to "IN ()" and fail as a SQL syntax
+            // error at runtime, so treat empty the same as absent.
+            List<String> statuses = List.of("PENDING_FOR_PAYMENT", "PAYMENT_FAILED");
+            if (params.get("statuses") instanceof List<?> raw && !raw.isEmpty()) {
+                statuses = raw.stream().map(String::valueOf).toList();
+            }
+
+            List<Object[]> rows = ssigmRepo.findAbandonedCartPlans(instituteId, statuses, minAgeDays, maxAgeDays);
+            List<Map<String, Object>> abandonedList = new ArrayList<>();
+            for (Object[] row : rows) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("userPlanId", String.valueOf(row[0]));
+                item.put("userId", String.valueOf(row[1]));
+                item.put("name", row[2] != null ? String.valueOf(row[2]) : "");
+                item.put("mobileNumber", row[3] != null ? String.valueOf(row[3]) : "");
+                item.put("username", row[4] != null ? String.valueOf(row[4]) : "");
+                item.put("planStatus", row[5] != null ? String.valueOf(row[5]) : "");
+                item.put("inviteCode", row[6] != null ? String.valueOf(row[6]) : "");
+                item.put("createdAt", row[7]);
+                abandonedList.add(item);
+            }
+            return Map.of("abandonedCartList", abandonedList,
+                    "abandonedCartCount", abandonedList.size());
+        } catch (Exception e) {
+            log.error("Error executing getAbandonedCartPlans", e);
             return Map.of("error", e.getMessage());
         }
     }
@@ -1092,6 +1219,26 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
         }
     }
 
+    /**
+     * Reads one LMS setting block out of {@code package.course_setting}, plus the
+     * course's own description.
+     *
+     * <p>Params: {@code packageId}, {@code settingKey}, and optionally
+     * {@code defaultCourseDescriptionHtml}.
+     *
+     * <p>Returns {@code lmsConfig} (the {@code setting.<key>.data.data} map, or null
+     * when the package has no such setting) and {@code courseDescription}.
+     *
+     * <p>{@code courseDescription} is {@code package.course_html_description} — the
+     * rich-text course description admins edit in course settings. It is exposed here
+     * so an LMS welcome email can render per-course copy ("How this course is
+     * structured", and for on-demand courses the tips section) from one shared
+     * template: a single workflow serves every course, scoped by package-session
+     * triggers, so the copy cannot live in the template itself. Falls back to
+     * {@code defaultCourseDescriptionHtml} when the course has none, and is never
+     * null — SEND_EMAIL scrubs an unresolved placeholder, so "" simply drops the
+     * section.
+     */
     private Map<String, Object> fetchPackageLMSSetting(Map<String, Object> params) {
         try {
             String packageId = (String) params.get("packageId");
@@ -1105,38 +1252,75 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
             if (packageEntityOpt.isEmpty()) {
                 return Map.of("error", "Package not found with ID: " + packageId);
             }
+            PackageEntity packageEntity = packageEntityOpt.get();
 
-            String settingJson = packageEntityOpt.get().getCourseSetting();
+            // HashMap, not Map.of: lmsConfig is legitimately null for a package with no
+            // such setting, and Map.of rejects null values (it used to throw an NPE here
+            // that surfaced as a generic "error" key).
+            Map<String, Object> result = new HashMap<>();
+            result.put("lmsConfig", null);
+            result.put("courseDescription", resolveCourseDescription(packageEntity, params));
 
+            String settingJson = packageEntity.getCourseSetting();
             if (settingJson == null || settingJson.isEmpty()) {
-                return Map.of("lmsConfig", null);
+                return result;
             }
 
             // Parse JSON
             JsonNode rootNode = objectMapper.readTree(settingJson);
 
             // Navigate: setting -> [settingKey] -> data -> data
-            JsonNode settingNode = rootNode.path("setting").path(settingKey);
-
-            if (settingNode.isMissingNode()) {
-                return Map.of("lmsConfig", null);
-            }
-
-            JsonNode dataNode = settingNode.path("data").path("data");
+            JsonNode dataNode = rootNode.path("setting").path(settingKey).path("data").path("data");
 
             if (dataNode.isMissingNode()) {
-                return Map.of("lmsConfig", null);
+                return result;
             }
 
             // Convert back to Map
-            Map<String, Object> settingData = objectMapper.convertValue(dataNode, Map.class);
-
-            return Map.of("lmsConfig", settingData);
+            result.put("lmsConfig", objectMapper.convertValue(dataNode, Map.class));
+            return result;
 
         } catch (Exception e) {
             log.error("Error executing fetchPackageLMSSetting", e);
             return Map.of("error", e.getMessage());
         }
+    }
+
+    /**
+     * The course's description HTML, or the caller's default when it has none.
+     * Never null.
+     */
+    private String resolveCourseDescription(PackageEntity packageEntity, Map<String, Object> params) {
+        String description = packageEntity.getCourseHtmlDescription();
+        if (!isBlankHtml(description)) {
+            return description;
+        }
+        Object fallback = params.get("defaultCourseDescriptionHtml");
+        String fallbackHtml = fallback == null ? null : String.valueOf(fallback);
+        return isBlankHtml(fallbackHtml) ? "" : fallbackHtml;
+    }
+
+    /** U+00A0, spelled numerically to keep this file pure ASCII. */
+    private static final String NON_BREAKING_SPACE = String.valueOf((char) 160);
+
+    /**
+     * True when this HTML would render as nothing. A rich-text editor that has been
+     * opened and cleared leaves behind markup rather than an empty string — every
+     * Vet Education course sits on a literal {@code <p></p>} — so a plain
+     * {@code isEmpty()} check would treat those as real content and suppress the
+     * caller's default.
+     */
+    private static boolean isBlankHtml(String html) {
+        if (html == null) {
+            return true;
+        }
+        String text = html
+                .replaceAll("(?is)<(script|style)\\b.*?</\\1>", "")
+                .replaceAll("(?s)<[^>]*>", "")
+                .replaceAll("(?i)&nbsp;|&#160;|&#xa0;", " ")
+                // A non-breaking space survives trim(), so fold it to a plain one.
+                .replace(NON_BREAKING_SPACE, " ");
+        return text.trim().isEmpty() && !html.matches("(?is).*<(img|hr|iframe|table)\\b.*");
     }
 
     /**
@@ -1294,14 +1478,19 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                         ? payment.getAmountPaid() : java.math.BigDecimal.ZERO;
                 java.math.BigDecimal remaining  = payment.getAmountExpected().subtract(amountPaid);
 
-                AftInstallment installment = installmentMap.get(payment.getIId());
+                // i_id is null on lump-sum and schedule-generated bills, and Map.of() (used when
+                // no bill in the window has one) throws on a null key.
+                AftInstallment installment = payment.getIId() != null
+                        ? installmentMap.get(payment.getIId()) : null;
 
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("email",              recipientEmail);
                 item.put("recipientName",      recipientName);
                 item.put("studentName",        studentName);
                 item.put("mobileNumber",       recipientPhone);
-                item.put("installmentNumber",  installment != null ? installment.getInstallmentNumber() : "");
+                item.put("installmentNumber",  payment.getInstallmentNumber() != null
+                        ? payment.getInstallmentNumber()
+                        : installment != null ? installment.getInstallmentNumber() : "");
                 item.put("remainingAmount",    remaining.toPlainString());
                 item.put("amountExpected",     payment.getAmountExpected().toPlainString());
                 item.put("amountPaid",         amountPaid.toPlainString());
@@ -2294,6 +2483,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                             logMap.put("engagementData", logEntry.getEngagementData());
                             logMap.put("providerTotalDurationMinutes", logEntry.getProviderTotalDurationMinutes());
                             logMap.put("statusType", logEntry.getStatusType());
+                            logMap.put("attendanceEvaluationJson", logEntry.getAttendanceEvaluationJson());
                             engagementLogsByStudent.computeIfAbsent(userId, k -> new ArrayList<>()).add(logMap);
                         }
                     } catch (Exception e) {
@@ -2383,6 +2573,9 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                         // tags or @media queries needed), and are readable on every
                         // screen size.
                         StringBuilder tableHtml = new StringBuilder();
+                        // Set when at least one card explains a criteria-driven
+                        // absence — the closing note below is only meaningful then.
+                        boolean anyCriteriaAbsence = false;
                         tableHtml.append("<div style=\"margin:16px 0\">");
 
                         // Index engagement logs by sessionId for quick lookup
@@ -2411,6 +2604,27 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                                 }
                             } catch (Exception ignored) {}
                         }
+
+                        // Which of this learner's sessions run a minimum-attendance
+                        // rule. For those, the status shown here is provisional until
+                        // the class platform reports the exact joining time — the
+                        // report is often mailed before that callback lands.
+                        java.util.Set<String> ruledSessionIds = new java.util.HashSet<>();
+                        try {
+                            java.util.Set<String> sids = new java.util.HashSet<>();
+                            for (var d : sessionDetails) {
+                                Object sid = d.get("sessionId");
+                                if (sid != null) sids.add(String.valueOf(sid));
+                            }
+                            if (!sids.isEmpty()) {
+                                for (var ls : liveSessionRepository.findAllById(sids)) {
+                                    if (attendanceCriteriaService.resolve(ls).isActive()) {
+                                        ruledSessionIds.add(ls.getId());
+                                    }
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                        boolean anyProvisional = false;
 
                         for (var session : sessionDetails) {
                             String status = String.valueOf(session.getOrDefault("attendanceStatus", "UNMARKED"));
@@ -2461,7 +2675,12 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                                         talkTime = engNode.path("talkTime").asInt(0);
                                         emojis = engNode.path("emojis").asInt(0);
                                         pollVotes = engNode.path("pollVotes").asInt(0);
-                                        hasEngagementJson = true;
+                                        // The opt-in activeness score lands in the same JSON during
+                                        // the class; on its own it is not BBB engagement and must not
+                                        // read as "0/100" before the analytics callback arrives.
+                                        hasEngagementJson = engNode.has("chats") || engNode.has("raisehand")
+                                                || engNode.has("talks") || engNode.has("talkTime")
+                                                || engNode.has("emojis") || engNode.has("pollVotes");
                                     } catch (Exception ignored) {}
                                 }
 
@@ -2514,6 +2733,40 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                             // One card per session — uses a 2-cell table for the header row
                             // (title + status pill) so it works in Outlook (no flexbox).
                             // Body uses simple <div>s for label/value rows.
+                            // When a minimum-attendance rule decided this row, say so on the
+                            // card. "Absent" next to "Duration: 4 min" reads like a
+                            // contradiction unless the learner is told what the bar was.
+                            // A ruled session with no duration yet: the join click set
+                            // this status, and it may change once the platform reports
+                            // how long the learner actually stayed.
+                            String sessionIdStr = String.valueOf(session.get("sessionId"));
+                            boolean provisional = ruledSessionIds.contains(sessionIdStr)
+                                    && (eng == null || !(eng.get("providerTotalDurationMinutes") instanceof Number));
+                            if (provisional) {
+                                anyProvisional = true;
+                            }
+
+                            String absenceReason = null;
+                            if ("ABSENT".equals(status) && eng != null
+                                    && eng.get("attendanceEvaluationJson") != null) {
+                                try {
+                                    var ev = objectMapper.readTree(
+                                            String.valueOf(eng.get("attendanceEvaluationJson")));
+                                    String why = ev.path("reason").asText("");
+                                    long attSec = ev.path("attendedSeconds").asLong(0);
+                                    // The threshold is not disclosed to learners; only that
+                                    // the time fell short of it.
+                                    if ("BELOW_THRESHOLD".equals(why)) {
+                                        absenceReason = "Marked absent — you were in the class for "
+                                                + fmtHms(attSec) + ", which is below the minimum"
+                                                + " attendance required for this class.";
+                                    } else if ("NO_SHOW".equals(why)) {
+                                        absenceReason = "Marked absent — our records show you did not"
+                                                + " join the class.";
+                                    }
+                                } catch (Exception ignored) {}
+                            }
+
                             String sessionTitle = String.valueOf(session.getOrDefault("title", "-"));
                             String meetingDate = String.valueOf(session.getOrDefault("meetingDate", "-"));
                             String statusBg = "PRESENT".equals(status) ? "#dcfce7" : "#fee2e2";
@@ -2526,8 +2779,16 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                             tableHtml.append("<td style=\"padding:0;text-align:right;vertical-align:middle;white-space:nowrap\">")
                                      .append("<span style=\"display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;color:")
                                      .append(statusColor).append(";background:").append(statusBg).append("\">")
-                                     .append(statusLabel).append("</span>")
-                                     .append("</td>");
+                                     .append(statusLabel).append("</span>");
+                            if (provisional) {
+                                // Names the exact card whose status may still change, rather
+                                // than leaving the learner to guess from a blanket footer.
+                                tableHtml.append("&nbsp;<span style=\"display:inline-block;padding:3px 8px;")
+                                         .append("border-radius:999px;font-size:10px;font-weight:600;")
+                                         .append("color:#475569;background:#f1f5f9;border:1px solid #cbd5e1\">")
+                                         .append("Provisional</span>");
+                            }
+                            tableHtml.append("</td>");
                             tableHtml.append("</tr></table>");
 
                             // Body: label/value rows
@@ -2541,7 +2802,31 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                                      .append("<span style=\"color:").append(engagementColor).append(";font-weight:600\">")
                                      .append(engagementStr).append("</span>")
                                      .append("</div>");
+                            if (absenceReason != null) {
+                                anyCriteriaAbsence = true;
+                                tableHtml.append("<div style=\"margin-top:8px;padding:8px 10px;")
+                                         .append("border-radius:6px;background:#fef2f2;")
+                                         .append("font-size:12px;color:#991b1b;line-height:1.5\">")
+                                         .append(absenceReason).append("</div>");
+                            }
                             tableHtml.append("</div>");
+                        }
+                        // Both notes render inside {{sessionsTableHtml}} so the
+                        // institute's stored Attendance Report template is not touched.
+                        if (anyProvisional) {
+                            tableHtml.append("<p style=\"margin:14px 0 0 0;font-size:12px;")
+                                     .append("color:#64748b;line-height:1.6\">")
+                                     .append("Sessions marked <strong>Provisional</strong> may be updated")
+                                     .append(" once the exact joining time is received from the class")
+                                     .append(" platform.")
+                                     .append("</p>");
+                        }
+                        if (anyCriteriaAbsence) {
+                            tableHtml.append("<p style=\"margin:")
+                                     .append(anyProvisional ? "6px" : "14px")
+                                     .append(" 0 0 0;font-size:12px;color:#64748b;line-height:1.6\">")
+                                     .append("If there is any discrepancy, please contact the faculty.")
+                                     .append("</p>");
                         }
                         tableHtml.append("</div>");
                         s.put("sessionsTableHtml", tableHtml.toString());
@@ -2758,6 +3043,13 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
             // malformed JSON — treat as no order id
         }
         return null;
+    }
+
+    /** "4m 50s" / "6m" / "45s" — learner-facing duration for the attendance report. */
+    private static String fmtHms(long totalSeconds) {
+        long m = totalSeconds / 60, sec = totalSeconds % 60;
+        if (m == 0) return sec + "s";
+        return sec == 0 ? m + "m" : m + "m " + sec + "s";
     }
 }
 

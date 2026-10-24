@@ -83,7 +83,10 @@ public class EngagementSweepJob {
     private void sweepEngine(EngagementEngine engine) {
         // Fresh clock PER ENGINE: a stale tick-start `now` reused across serial engines would
         // hand engine #2+ a lease that is already partly (or fully) expired at birth.
-        Instant now = Instant.now();
+        // Millisecond precision so the lease round-trips exactly: Linux clocks give nanoseconds,
+        // Postgres keeps microseconds and rounds half-up, so about half the stored leases read back
+        // later than the in-memory copy and decideOne skipped them as "lease lost".
+        Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
         List<EngagementMember> due = memberRepository.findDueMembers(engine.getId(), now, membersPerEngine);
         if (due.isEmpty()) return;
 

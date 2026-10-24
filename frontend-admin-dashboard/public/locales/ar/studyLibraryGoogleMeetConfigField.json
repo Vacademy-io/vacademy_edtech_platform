@@ -1,0 +1,35 @@
+{
+    "loadingGoogleAccounts": "جارٍ تحميل حسابات Google…",
+    "notSetUpMessage": "لم يتم إعداد تكامل Google Meet لهذه المؤسسة. قم بربط حساب Google Workspace ضمن <strong>الإعدادات ← الحصة المباشرة ← تكامل Google Meet</strong>، أو الصق رابط اجتماع في حقل رابط الحصة المباشرة أدناه.",
+    "googleMeetSettings": "إعدادات Google Meet",
+    "googleAccountOrganizer": "حساب Google (المنظّم)",
+    "defaultSuffix": "(افتراضي)",
+    "linkCreatedOnAccount": "يتم إنشاء رابط Google Meet على هذا الحساب.",
+    "anyoneWithLinkJoins": "يمكن لأي شخص لديه الرابط الانضمام مباشرة (دون طَرق) — الأنسب للمتعلمين.",
+    "guestsMustKnock": "يجب على الضيوف الطرق، ويقوم المضيف بقبول كل واحد منهم.",
+    "settingsApplyToNewLinks": "تنطبق الإعدادات أدناه على روابط Meet التي تُنشأ الآن؛ الروابط الموجودة تحتفظ بإعداداتها.",
+    "section": {
+        "joinAccess": "صلاحية الانضمام",
+        "recordingAndNotes": "التسجيل والملاحظات",
+        "hostControls": "عناصر تحكم المضيف"
+    },
+    "field": {
+        "whoCanJoin": "من يمكنه الانضمام دون طلب إذن",
+        "autoRecord": "تسجيل هذا الصف تلقائيًا",
+        "autoTranscript": "إنشاء نص مكتوب تلقائيًا",
+        "geminiNotes": "ملاحظات Gemini (\"دوّن الملاحظات نيابةً عني\")",
+        "attendanceReport": "تقرير الحضور من Google",
+        "hostManagement": "تفعيل عناصر تحكم المضيف",
+        "chatHostsOnly": "المضيفون فقط يمكنهم الدردشة",
+        "reactionsHostsOnly": "المضيفون فقط يمكنهم إرسال التفاعلات",
+        "presentHostsOnly": "المضيفون فقط يمكنهم مشاركة الشاشة",
+        "joinAsViewer": "ينضم المتعلمون كمشاهدين (بدون ميكروفون أو كاميرا)"
+    },
+    "access": {
+        "open": "أي شخص لديه الرابط",
+        "trusted": "مؤسستك فقط؛ الآخرون يطلبون الإذن",
+        "restricted": "المدعوون فقط؛ الآخرون يطلبون الإذن"
+    },
+    "planHint": "يبدأ التسجيل والنص المكتوب والملاحظات عندما ينضم المنظِّم أو معلم من Google Workspace الخاص بالمؤسسة، وتُحفظ في Drive الخاص بالمنظِّم. يتطلب التسجيل والنص المكتوب خطة Workspace تتضمن التسجيل (Business Standard أو أعلى، Education Plus)، وتتطلب ملاحظات Gemini ترخيص Gemini. إذا لم تتضمن الخطة ميزة ما، يُنشأ الصف بدونها.",
+    "hostControlsWarning": "حساب المنظِّم ({{email}}) هو المضيف الوحيد. المعلم الذي ينضم بحساب Google آخر يُعامل كمشارك، لذا اترك مشاركة الشاشة مفتوحة إذا كان المعلمون يعرضون من حساباتهم."
+}

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -15,12 +16,14 @@ import { Users, ChartLine, Target, TrendUp, ArrowRight, UserPlus } from '@phosph
 import { getPipelineMetricsQuery, getInstituteId } from '../-services/pipeline-services';
 import type { PipelineMetrics } from '../-types/pipeline-types';
 import PipelineUsersTable from './PipelineUsersTable';
+import { AdmissionsEnhanced } from './AdmissionsEnhanced';
 
 export default function AdmissionDashboard() {
+    const { t } = useTranslation('admissionsAdmissionDashboard');
     const { setNavHeading } = useNavHeadingStore();
     useEffect(() => {
-        setNavHeading('Admission Dashboard');
-    }, []);
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
     useSuspenseQuery(useInstituteQuery());
     const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
@@ -66,13 +69,13 @@ export default function AdmissionDashboard() {
         <div className="space-y-6">
             {/* Filter Bar */}
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800">Admission Pipeline</h2>
+                <h2 className="text-lg font-semibold text-gray-800">{t('filterBar.title')}</h2>
                 <Select value={selectedSession} onValueChange={setSelectedSession}>
-                    <SelectTrigger className="w-[300px]">
-                        <SelectValue placeholder="All Classes" />
+                    <SelectTrigger className="w-72">
+                        <SelectValue placeholder={t('filterBar.allClasses')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Classes</SelectItem>
+                        <SelectItem value="all">{t('filterBar.allClasses')}</SelectItem>
                         {sessionOptions.map((opt: any) => (
                             <SelectItem key={opt.id} value={opt.id}>
                                 {opt.label}
@@ -85,7 +88,7 @@ export default function AdmissionDashboard() {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <KPICard
-                    title="Total Enquiries"
+                    title={t('kpi.totalEnquiries')}
                     value={data.total_enquiries}
                     icon={<Users className="size-5 text-emerald-600" weight="fill" />}
                     borderColor="border-l-emerald-500"
@@ -94,7 +97,7 @@ export default function AdmissionDashboard() {
                     valueColor="text-emerald-700"
                 />
                 <KPICard
-                    title="Total Applications"
+                    title={t('kpi.totalApplications')}
                     value={data.total_applications}
                     icon={<Target className="size-5 text-blue-600" weight="fill" />}
                     borderColor="border-l-blue-500"
@@ -103,7 +106,7 @@ export default function AdmissionDashboard() {
                     valueColor="text-blue-700"
                 />
                 <KPICard
-                    title="Total Admissions"
+                    title={t('kpi.totalAdmissions')}
                     value={data.total_admissions}
                     icon={<ChartLine className="size-5 text-purple-600" weight="fill" />}
                     borderColor="border-l-purple-500"
@@ -116,17 +119,17 @@ export default function AdmissionDashboard() {
             {/* Conversion Rates */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <ConversionCard
-                    title="Enquiry → Application"
+                    title={t('conversion.enquiryToApplication')}
                     rate={data.enquiry_to_application_conversion_rate}
                     color="emerald"
                 />
                 <ConversionCard
-                    title="Application → Admission"
+                    title={t('conversion.applicationToAdmission')}
                     rate={data.application_to_admission_conversion_rate}
                     color="blue"
                 />
                 <ConversionCard
-                    title="Overall Conversion"
+                    title={t('conversion.overall')}
                     rate={data.overall_conversion_rate}
                     color="purple"
                 />
@@ -136,32 +139,35 @@ export default function AdmissionDashboard() {
             <Card className="shadow-sm">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                        Admission Breakdown
+                        {t('breakdown.title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <BreakdownItem
-                            label="From Enquiry"
+                            label={t('breakdown.fromEnquiry.label')}
                             value={data.admissions_from_enquiry}
                             icon={<TrendUp className="size-4 text-emerald-600" weight="bold" />}
-                            description="Full funnel: Enquiry → Application → Admission"
+                            description={t('breakdown.fromEnquiry.description')}
                         />
                         <BreakdownItem
-                            label="From Application Only"
+                            label={t('breakdown.fromApplicationOnly.label')}
                             value={data.admissions_from_application_only}
                             icon={<ArrowRight className="size-4 text-blue-600" weight="bold" />}
-                            description="Started at application stage"
+                            description={t('breakdown.fromApplicationOnly.description')}
                         />
                         <BreakdownItem
-                            label="Direct (Walk-in)"
+                            label={t('breakdown.direct.label')}
                             value={data.direct_admissions}
                             icon={<UserPlus className="size-4 text-amber-600" weight="bold" />}
-                            description="No enquiry or application"
+                            description={t('breakdown.direct.description')}
                         />
                     </div>
                 </CardContent>
             </Card>
+
+            {/* funnel + insights. */}
+            <AdmissionsEnhanced data={data} />
 
             {/* Pipeline Users Table */}
             <PipelineUsersTable
@@ -284,7 +290,7 @@ function LoadingSkeleton() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-                <div className="h-10 w-[300px] animate-pulse rounded bg-gray-200" />
+                <div className="h-10 w-72 animate-pulse rounded bg-gray-200" />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {[...Array(3)].map((_, i) => (

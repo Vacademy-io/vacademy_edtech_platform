@@ -18,7 +18,10 @@ import {
     X
 } from "@phosphor-icons/react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 // Types for the enrollment policy response
 export interface EnrollmentPolicyFrontendAction {
@@ -88,6 +91,20 @@ interface EnrollmentPolicyDialogProps {
     dialogType: EnrollmentPolicyDialogType;
     policyResponse: EnrollmentPolicyResponse | null;
     courseName?: string;
+    /**
+     * The message the backend actually returned for this failure. Used only by
+     * the re-enrollment dialog, whose configured copy is a template the backend
+     * has already resolved (see below); the other variants keep their own copy.
+     */
+    serverMessage?: string;
+    /**
+     * Where "Login now" sends an already-registered learner: the institute's own
+     * learner portal (learner_portal_base_url) + /login. When set, the
+     * already-enrolled dialog offers login instead of "Go to dashboard" — the
+     * learner on the public enrol form is not signed in, and their next step
+     * (renew / pay to continue) lives behind login on their dashboard.
+     */
+    loginUrl?: string;
     onContinue?: () => void;
     onUpgrade?: (url: string) => void;
 }
@@ -97,10 +114,16 @@ const EnrollmentPolicyDialog = ({
     onOpenChange,
     dialogType,
     policyResponse,
-    courseName = "this course",
+    courseName,
+    serverMessage,
+    loginUrl,
     onContinue,
     onUpgrade,
 }: EnrollmentPolicyDialogProps) => {
+    const { t } = useTranslation("enrollmentA");
+    const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const session = getTerminology(ContentTerms.Session, SystemTerms.Session);
+    const resolvedCourseName = courseName ?? t("enrollmentPolicy.thisCourse", { course });
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     // Extract frontend actions from policy response
@@ -154,9 +177,9 @@ const EnrollmentPolicyDialog = ({
                     </div>
                 </div>
                 <div className="text-center space-y-2">
-                    <DialogTitle className="hidden">Enrollment Successful</DialogTitle>
+                    <DialogTitle className="hidden">{t("enrollmentPolicy.successTitle")}</DialogTitle>
                     <DialogDescription className="text-gray-600 text-base max-w-xs mx-auto">
-                        Complete the following steps to activate your access to <span className="font-semibold text-gray-900">{courseName}</span>
+                        {t("enrollmentPolicy.completeStepsPrefix")} <span className="font-semibold text-gray-900">{resolvedCourseName}</span>
                     </DialogDescription>
                 </div>
             </DialogHeader>
@@ -177,7 +200,7 @@ const EnrollmentPolicyDialog = ({
 
                                 <div className="flex-1 text-center sm:text-start space-y-1">
                                     <h4 className="font-bold text-gray-900 text-base">
-                                        {action.type === "whatsapp" ? "WhatsApp Verification" : key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                                        {action.type === "whatsapp" ? t("enrollmentPolicy.whatsappVerification") : key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                                     </h4>
                                     <p className="text-sm text-gray-500 leading-snug">
                                         {action.description}
@@ -212,22 +235,23 @@ const EnrollmentPolicyDialog = ({
     const renderAlreadyEnrolled = () => (
         <>
             <DialogHeader className="space-y-4 pb-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-warning-400 to-primary-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <Warning className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-center space-y-2">
                     <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-800">
-                        Already Enrolled
+                        {t("enrollmentPolicy.alreadyEnrolledTitle")}
                     </DialogTitle>
                     <DialogDescription className="text-gray-600 text-sm sm:text-base leading-relaxed">
-                        {reenrollmentPolicy?.alreadyEnrolledMessage ||
-                            "You are already enrolled in this course. Please complete your current enrollment first."}
+                        {serverMessage ||
+                            reenrollmentPolicy?.alreadyEnrolledMessage ||
+                            t("enrollmentPolicy.alreadyEnrolledMessage", { course })}
                     </DialogDescription>
                 </div>
             </DialogHeader>
 
             <div className="py-4 space-y-4">
-                {/* <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-4">
+                {/* <div className="rounded-xl bg-gradient-to-br from-warning-50 to-primary-50 border border-amber-200 p-4">
                     <div className="flex items-start gap-3">
                         <Sparkle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-amber-800">
@@ -238,12 +262,12 @@ const EnrollmentPolicyDialog = ({
 
                 {/* Upgrade option if available */}
                 {!shouldHidePaidPurchaseUI() && reenrollmentPolicy?.upgradeOptions?.paid_upgrade && (
-                    <div className="rounded-xl bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 p-5">
+                    <div className="rounded-xl bg-gradient-to-br from-primary-50 to-info-50 border border-primary-200 p-5">
                         <div className="flex flex-col items-center text-center space-y-3">
                             <Sparkle className="w-6 h-6 text-primary-600" />
-                            <h4 className="font-semibold text-gray-900">Want to Upgrade?</h4>
+                            <h4 className="font-semibold text-gray-900">{t("enrollmentPolicy.wantToUpgrade")}</h4>
                             <p className="text-sm text-gray-600">
-                                {reenrollmentPolicy.upgradeOptions.paid_upgrade.text || "Upgrade to get access to premium features."}
+                                {reenrollmentPolicy.upgradeOptions.paid_upgrade.text || t("enrollmentPolicy.upgradePremiumFallback")}
                             </p>
                             <MyButton
                                 type="button"
@@ -254,7 +278,7 @@ const EnrollmentPolicyDialog = ({
                                 disabled={isRedirecting}
                                 className="flex items-center gap-2 px-6 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/40"
                             >
-                                <span>Upgrade Now</span>
+                                <span>{t("enrollmentPolicy.upgradeNow")}</span>
                                 <ArrowSquareOut className="w-4 h-4 ms-2" />
                             </MyButton>
                         </div>
@@ -262,7 +286,7 @@ const EnrollmentPolicyDialog = ({
                 )}
             </div>
 
-            <DialogFooter className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
+            <DialogFooter className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row gap-stack">
                 <MyButton
                     type="button"
                     buttonType="secondary"
@@ -272,21 +296,37 @@ const EnrollmentPolicyDialog = ({
                     className="w-full sm:w-auto order-2 sm:order-1"
                 >
                     <X className="w-4 h-4 me-2" />
-                    Close
+                    {t("enrollmentPolicy.close")}
                 </MyButton>
-                <MyButton
-                    type="button"
-                    buttonType="primary"
-                    scale="medium"
-                    layoutVariant="default"
-                    onClick={() => {
-                        onOpenChange(false);
-                        onContinue?.();
-                    }}
-                    className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-primary-500 to-primary-600"
-                >
-                    Go to Dashboard
-                </MyButton>
+                {loginUrl ? (
+                    <MyButton
+                        type="button"
+                        buttonType="primary"
+                        scale="medium"
+                        layoutVariant="default"
+                        onClick={() => {
+                            onOpenChange(false);
+                            window.location.href = loginUrl;
+                        }}
+                        className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-primary-500 to-primary-600"
+                    >
+                        {t("enrollmentPolicy.loginNow")}
+                    </MyButton>
+                ) : (
+                    <MyButton
+                        type="button"
+                        buttonType="primary"
+                        scale="medium"
+                        layoutVariant="default"
+                        onClick={() => {
+                            onOpenChange(false);
+                            onContinue?.();
+                        }}
+                        className="w-full sm:w-auto order-1 sm:order-2 bg-gradient-to-r from-primary-500 to-primary-600"
+                    >
+                        {t("enrollmentPolicy.goToDashboard")}
+                    </MyButton>
+                )}
             </DialogFooter>
         </>
     );
@@ -295,27 +335,34 @@ const EnrollmentPolicyDialog = ({
     const renderReenrollmentBlocked = () => (
         <>
             <DialogHeader className="space-y-4 pb-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-danger-400 to-danger-500 flex items-center justify-center shadow-lg shadow-red-500/30">
                     <Warning className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-center space-y-2">
                     <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-800">
-                        Ready to continue ?
+                        {t("enrollmentPolicy.readyToContinue")}
                     </DialogTitle>
                     <DialogDescription className="text-gray-600 text-sm sm:text-base leading-relaxed">
-                        {reenrollmentPolicy?.reenrollmentBlockedMessage}
+                        {/* The backend substitutes {{allowed_date}} into the configured
+                            copy before throwing, so its message is the only version with
+                            a real date in it — the stored template still reads
+                            "{{allowed_date}}" literally. Prefer the resolved text, and
+                            keep a fallback so this never renders an empty dialog. */}
+                        {serverMessage ||
+                            reenrollmentPolicy?.reenrollmentBlockedMessage ||
+                            t("enrollmentPolicy.reenrollmentBlockedFallback")}
                     </DialogDescription>
                 </div>
             </DialogHeader>
 
             {!shouldHidePaidPurchaseUI() && reenrollmentPolicy?.upgradeOptions?.paid_upgrade && (
                 <div className="py-4">
-                    <div className="rounded-xl bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 p-5">
+                    <div className="rounded-xl bg-gradient-to-br from-primary-50 to-info-50 border border-primary-200 p-5">
                         <div className="flex flex-col items-center text-center space-y-3">
                             <Sparkle className="w-6 h-6 text-primary-600" />
-                            <h4 className="font-semibold text-gray-900">Upgrade to Continue Learning</h4>
+                            <h4 className="font-semibold text-gray-900">{t("enrollmentPolicy.upgradeToContinueLearning")}</h4>
                             <p className="text-sm text-gray-600">
-                                Click below to join membership.
+                                {t("enrollmentPolicy.clickBelowToJoin")}
                             </p>
                             <MyButton
                                 type="button"
@@ -340,28 +387,28 @@ const EnrollmentPolicyDialog = ({
     const renderPaidMemberBlocked = () => (
         <>
             <DialogHeader className="space-y-4 pb-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-info-400 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <Warning className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-center space-y-2">
                     <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-800">
-                        You have an active membership
+                        {t("enrollmentPolicy.activeMembershipTitle")}
                     </DialogTitle>
                     <DialogDescription className="text-gray-600 text-sm sm:text-base leading-relaxed">
                         {onEnrollment?.blockMessage ||
-                            "You are in our active membership plan. Please check whatsapp message and use link from text or email to join session everyday. "}
+                            t("enrollmentPolicy.activeMembershipMessage", { session })}
                     </DialogDescription>
                 </div>
             </DialogHeader>
 
             {!shouldHidePaidPurchaseUI() && reenrollmentPolicy?.upgradeOptions?.paid_upgrade && (
                 <div className="py-4">
-                    <div className="rounded-xl bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 p-5">
+                    <div className="rounded-xl bg-gradient-to-br from-primary-50 to-info-50 border border-primary-200 p-5">
                         <div className="flex flex-col items-center text-center space-y-3">
                             <Sparkle className="w-6 h-6 text-primary-600" />
-                            <h4 className="font-semibold text-gray-900">Upgrade to Continue Learning</h4>
+                            <h4 className="font-semibold text-gray-900">{t("enrollmentPolicy.upgradeToContinueLearning")}</h4>
                             <p className="text-sm text-gray-600">
-                               Click below to join membership.
+                                {t("enrollmentPolicy.clickBelowToJoin")}
                             </p>
                             <MyButton
                                 type="button"

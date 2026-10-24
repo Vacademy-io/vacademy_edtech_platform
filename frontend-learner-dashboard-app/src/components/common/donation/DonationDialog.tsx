@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { MyButton } from "@/components/design-system/button";
@@ -49,6 +50,7 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
   onSlideAccessSuccess,
   targetSlideDetails,
 }) => {
+  const { t } = useTranslation("layoutCommonB");
   // Institute branding state
   const [instituteBranding, setInstituteBranding] = useState<InstituteBranding | null>(null);
   const [brandingLoading, setBrandingLoading] = useState(false);
@@ -172,9 +174,9 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
           <DialogPrimitive.Content
             className="fixed start-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-xl focus:outline-none flex flex-col gap-4"
           >
-            <div className="text-center py-8">
-              <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
-              <p className="text-gray-600">Loading donation options...</p>
+            <div className="text-center py-8 space-y-4">
+              <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
+              <p className="text-gray-600">{t("donation.dialog.loadingOptions")}</p>
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
@@ -191,14 +193,14 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
           <DialogPrimitive.Content
             className="fixed start-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-xl focus:outline-none flex flex-col gap-4"
           >
-            <div className="text-center py-6">
-              <p className="text-red-600 mb-4">{error}</p>
+            <div className="text-center py-6 space-y-4">
+              <p className="text-red-600">{error}</p>
               <MyButton
                 buttonType="primary"
                 scale="medium"
                 onClick={retryFetch}
               >
-                Try Again
+                {t("donation.dialog.tryAgain")}
               </MyButton>
             </div>
           </DialogPrimitive.Content>
@@ -217,11 +219,11 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
           <button
             className="absolute end-2 top-2 text-gray-400 hover:text-gray-700 focus:outline-none"
             onClick={() => onOpenChange(false)}
-            aria-label="Close"
+            aria-label={t("donation.dialog.close")}
           >
             <Cross2Icon className="h-4 w-4" />
           </button>
-          
+
           {/* Institute Branding */}
           {instituteBranding && (
             <div className="mb-2">
@@ -233,15 +235,15 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
               />
             </div>
           )}
-          
+
           <h2 className="text-lg font-semibold text-gray-900 flex items-center justify-center gap-2">
             <Heart className="w-5 h-5 text-red-500" />
-            Support Free Learning
+            {t("donation.dialog.supportFreeLearning")}
           </h2>
-          
+
           {step === 'select' && (
             <p className="text-sm text-gray-600 text-center">
-              Choose an amount to donate
+              {t("donation.dialog.chooseAmount")}
             </p>
           )}
 
@@ -302,7 +304,7 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
                 onClick={handleContinue}
                 disabled={isApiLoading}
               >
-                {isApiLoading ? 'Processing...' : 'Continue'}
+                {isApiLoading ? t("donation.dialog.processing") : t("donation.dialog.continue")}
               </MyButton>
               <MyButton
                 buttonType="secondary"
@@ -312,7 +314,7 @@ export const DonationDialog: React.FC<DonationDialogProps> = ({
                 onClick={handleSkip}
                 disabled={isApiLoading}
               >
-                {isApiLoading ? 'Processing...' : 'Skip'}
+                {isApiLoading ? t("donation.dialog.processing") : t("donation.dialog.skip")}
               </MyButton>
             </div>
           )}

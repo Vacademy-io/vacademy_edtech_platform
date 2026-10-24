@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { FitImage } from "@/components/common/fit-image/FitImage";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import { useCartStore, CartItem } from "../../-stores/cart-store";
 import { CartComponentProps } from "../../-types/course-catalogue-types";
@@ -34,7 +36,7 @@ const SimpleImage = ({ src, fallbackSrc, alt }: { src?: string; fallbackSrc?: st
   }, [src, fallbackSrc]);
 
   if (!finalSrc) return <div className="w-full h-full bg-gray-200" />;
-  return <img src={finalSrc} alt={alt} className="w-full h-full object-cover" />;
+  return <FitImage src={finalSrc} alt={alt} className="w-full h-full" />;
 };
 
 interface CartItemCardProps {
@@ -64,6 +66,7 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
   onRemove,
   quantityMin,
 }) => {
+  const { t } = useTranslation("coursePlayerB");
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(imageUrl || null);
   const [imageLoading, setImageLoading] = useState(true);
 
@@ -87,24 +90,24 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
   }, [imageUrl, item.image]);
 
   return (
-    <div className="w-full max-w-page mx-auto flex flex-row gap-2.5 sm:gap-3 p-2.5 sm:p-3 border border-gray-200 rounded-lg bg-white hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.99]">
+    <div className="w-full max-w-page mx-auto flex flex-row gap-2.5 sm:gap-3 p-2.5 sm:p-3 border border-gray-200 rounded-catalogue-md bg-white hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.99]">
       {/* Item Image - Compact on mobile */}
       {showItemImage && (
-        <div className="flex-shrink-0 w-20 h-32 sm:w-28 sm:h-44 bg-gray-100 rounded-lg overflow-hidden shadow-sm">
+        <div className="flex-shrink-0 w-20 h-32 sm:w-28 sm:h-44 bg-gray-100 rounded-catalogue-md overflow-hidden shadow-sm">
           {imageLoading ? (
             <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
               <div className="text-gray-400 text-xs">...</div>
             </div>
           ) : currentImageUrl ? (
-            <img
+            <FitImage
               src={currentImageUrl}
               alt={item.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full"
               onError={() => setCurrentImageUrl(null)}
             />
           ) : (
             <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <div className="text-gray-400 text-xs">No Img</div>
+              <div className="text-gray-400 text-xs">{t("cart.noImage")}</div>
             </div>
           )}
         </div>
@@ -144,11 +147,11 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
         {/* Controls Row */}
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 sm:border-t-0 sm:pt-0">
           {showQuantitySelector ? (
-            <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg bg-gray-50 shadow-sm hover:bg-gray-100 transition-colors">
+            <div className="flex items-center gap-0.5 border border-gray-200 rounded-catalogue-md bg-gray-50 shadow-sm hover:bg-gray-100 transition-colors">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-white active:bg-gray-200 rounded-s-lg transition-all duration-150"
+                className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-white active:bg-gray-200 rounded-s-catalogue-md transition-all duration-150"
                 onClick={() => item.enrollInviteId && onQuantityChange(item.enrollInviteId, item.quantity - 1)}
                 disabled={item.quantity <= quantityMin || !item.enrollInviteId}
               >
@@ -158,7 +161,7 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-white active:bg-gray-200 rounded-e-lg transition-all duration-150"
+                className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-white active:bg-gray-200 rounded-e-catalogue-md transition-all duration-150"
                 onClick={() => item.enrollInviteId && onQuantityChange(item.enrollInviteId, item.quantity + 1)}
                 disabled={!item.enrollInviteId}
               >
@@ -169,12 +172,12 @@ const CartItemCard: React.FC<CartItemCardProps> = ({
 
           {showRemoveButton && (
             <button
-              className="group flex items-center gap-1 text-red-500 hover:text-red-700 active:text-red-800 transition-all duration-200 px-2 py-1 rounded hover:bg-red-50 active:bg-red-100 active:scale-95"
+              className="group flex items-center gap-1 text-red-500 hover:text-red-700 active:text-red-800 transition-all duration-200 px-2 py-1 rounded-catalogue-xs hover:bg-red-50 active:bg-red-100 active:scale-95"
               onClick={() => item.enrollInviteId && onRemove(item.enrollInviteId)}
               disabled={!item.enrollInviteId}
             >
               <Trash className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:scale-110" />
-              <span className="text-xs font-medium hidden sm:inline">Remove</span>
+              <span className="text-xs font-medium hidden sm:inline">{t("common.remove")}</span>
             </button>
           )}
         </div>
@@ -189,6 +192,7 @@ interface MembershipPlanCardProps {
 }
 
 const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
+  const { t } = useTranslation("coursePlayerB");
   const { setMembershipPlan, membershipPlan } = useCartStore();
   const isSelected = membershipPlan?.id === (plan.enroll_invite_id || plan.id);
 
@@ -206,19 +210,19 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
   };
 
   // Extract fields - handle various possible field names
-  const planName = plan.package_name || "Plan";
+  const planName = plan.package_name || t("cart.plan.defaultName");
   const numberOfBooks = plan.available_slots;
   const maxSeats = plan.max_seats;
   const description = maxSeats
-    ? `Maximum ${maxSeats} books can be rented in this period`
-    : "No limit on total number of books in this period";
+    ? t("cart.plan.maxBooksDescription", { max: maxSeats })
+    : t("cart.plan.noLimitDescription");
   const price = plan.min_plan_actual_price || 0;
   const elevatedPrice = plan.min_plan_elevated_price;
 
   return (
     <div
       className={`
-        rounded-lg p-2 sm:p-3 border-2 transition-all duration-200 cursor-pointer active:scale-[0.97] hover:scale-[1.01]
+        rounded-catalogue-md p-2 sm:p-3 border-2 transition-all duration-200 cursor-pointer active:scale-[0.97] hover:scale-[1.01]
         ${isSelected
           ? 'bg-primary-500 border-primary-500 shadow-md'
           : 'bg-white border-gray-200 hover:border-primary-300 hover:shadow-sm'
@@ -255,7 +259,7 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
           <div className="flex flex-col gap-0.5 sm:gap-1">
             {/* Max books at one time */}
             <div className="flex items-center gap-1">
-              <span className="text-caption sm:text-xs text-gray-500">Books at once:</span>
+              <span className="text-caption sm:text-xs text-gray-500">{t("cart.plan.booksAtOnce")}</span>
               <span className={`font-semibold text-gray-700 ${numberOfBooks ? 'text-caption sm:text-xs' : 'text-sm sm:text-base'}`}>
                 {numberOfBooks ?? '∞'}
               </span>
@@ -263,7 +267,7 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
 
             {/* Max books in period - always show */}
             <div className="flex items-center gap-1">
-              <span className="text-caption sm:text-xs text-gray-500">Books in period:</span>
+              <span className="text-caption sm:text-xs text-gray-500">{t("cart.plan.booksInPeriod")}</span>
               <span className={`font-semibold text-gray-700 ${maxSeats ? 'text-caption sm:text-xs' : 'text-sm sm:text-base'}`}>
                 {maxSeats ?? '∞'}
               </span>
@@ -274,7 +278,7 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
         {/* Select Button */}
         <button
           className={`
-            w-full mt-1.5 sm:mt-2 py-1.5 sm:py-2 px-2 rounded-md text-caption sm:text-xs font-semibold transition-all duration-200 active:scale-95
+            w-full mt-1.5 sm:mt-2 py-1.5 sm:py-2 px-2 rounded-catalogue-sm text-caption sm:text-xs font-semibold transition-all duration-200 active:scale-95
             ${isSelected
               ? 'bg-primary-600 text-white font-bold shadow-sm hover:bg-primary-700'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -282,7 +286,7 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
           `}
           onClick={handleSelectPlan}
         >
-          {isSelected ? 'Selected' : 'Select'}
+          {isSelected ? t("cart.plan.selected") : t("cart.plan.select")}
         </button>
       </div>
     </div>
@@ -295,6 +299,7 @@ const MembershipPlanCard: React.FC<MembershipPlanCardProps> = ({ plan }) => {
  * localStorage (set by the catalogue page) and listens for changes.
  */
 const CrossStoreWarning: React.FC<{ items: CartItem[] }> = ({ items }) => {
+  const { t } = useTranslation("coursePlayerB");
   const [storeFilter, setStoreFilter] = useState<string | null>(() =>
     typeof window === "undefined" ? null : localStorage.getItem("storeFilter")
   );
@@ -324,10 +329,11 @@ const CrossStoreWarning: React.FC<{ items: CartItem[] }> = ({ items }) => {
   // Case A: multiple stores within the cart itself.
   if (distinctStoresInCart.length > 1) {
     return (
-      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        Your cart contains items from {distinctStoresInCart.length} different stores
-        ({distinctStoresInCart.map((s) => s.name).join(", ")}). Each store handles its
-        own fulfillment, so you may need to check out separately.
+      <div className="rounded-catalogue-sm border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        {t("cart.crossStore.multiple", {
+          count: distinctStoresInCart.length,
+          stores: distinctStoresInCart.map((s) => s.name).join(", "),
+        })}
       </div>
     );
   }
@@ -336,10 +342,8 @@ const CrossStoreWarning: React.FC<{ items: CartItem[] }> = ({ items }) => {
   const cartStore = distinctStoresInCart[0];
   if (storeFilter && storeFilter !== cartStore.id) {
     return (
-      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        Your cart items are from <span className="font-semibold">{cartStore.name}</span>,
-        but your active store is different. Switch stores or remove these items to keep
-        things consistent.
+      <div className="rounded-catalogue-sm border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        {t("cart.crossStore.mismatch", { store: cartStore.name })}
       </div>
     );
   }
@@ -355,13 +359,15 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   showRemoveButton = true,
   showPrice = true,
   showEmptyState = true,
-  emptyStateMessage = "Your cart is empty. Add some books!",
+  emptyStateMessage,
   styles = {},
   instituteId, // Accept instituteId prop
   globalSettings,
   onlyLogic = false,
+  isPreviewMode = false,
 }) => {
-
+  const { t } = useTranslation("coursePlayerB");
+  const resolvedEmptyStateMessage = emptyStateMessage || t("cart.emptyDefault");
   const { items, removeItem, updateQuantity, membershipPlan, getItemCount, getTotal, syncCart } = useCartStore();
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [isRentMode, setIsRentMode] = useState(false);
@@ -430,7 +436,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
             const currentToken = await getTokenFromStorage(TokenKey.accessToken);
             if (!currentToken) {
               console.error("[CartComponent] User is NOT authenticated. Redirecting to login instead of courses.");
-              toast.success("Payment successful! Please log in to access your courses.");
+              toast.success(t("cart.toast.loginRequiredAfterPayment"));
 
               // Redirect to Login if we couldn't auth
               localStorage.removeItem("pendingOrderId");
@@ -440,7 +446,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
               return;
             }
 
-            toast.success("Payment successful. Redirecting...");
+            toast.success(t("cart.toast.redirecting"));
             localStorage.removeItem("pendingOrderId");
             setTimeout(() => {
               window.location.href = targetCoursesUrl;
@@ -480,7 +486,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         localStorage.removeItem("pendingUserPassword");
         localStorage.removeItem("pendingAccessToken");
         localStorage.removeItem("pendingRefreshToken");
-        toast.success("Login automated successfully. Welcome!");
+        toast.success(t("cart.toast.loginAutomated"));
 
         // Verify persistence before redirecting to avoid race conditions
         console.log("[CartComponent] Verifying persistence before redirect...");
@@ -626,7 +632,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   };
 
   const padding = styles.padding || "10px";
-  const roundedEdges = styles.roundedEdges ? "rounded-lg" : "";
+  const roundedEdges = styles.roundedEdges ? "rounded-catalogue-md" : "";
   const backgroundColor = styles.backgroundColor || "white";
 
   // Buy-mode additional charges (shipping). Rent mode is intentionally excluded —
@@ -641,18 +647,18 @@ export const CartComponent: React.FC<CartComponentProps> = ({
   const buyModeGrandTotal = buyModeSubtotal + additionalChargesTotal;
 
   const paymentBanner = paymentMessage ? (
-    <div className={`w-full p-4 mb-4 rounded-lg flex items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300 ${paymentMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+    <div className={`w-full p-4 mb-4 rounded-catalogue-md flex items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300 ${paymentMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
       paymentMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
         'bg-blue-50 text-blue-700 border border-blue-200'
       }`}>
       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
-        <span className="font-bold whitespace-nowrap">Payment Status:</span>
+        <span className="font-bold whitespace-nowrap">{t("cart.paymentStatus")}</span>
         <span className="font-medium">{paymentMessage.text}</span>
       </div>
       <button
         onClick={() => setPaymentMessage(null)}
         className="p-1 hover:bg-black/5 rounded-full transition-colors flex-shrink-0"
-        aria-label="Dismiss"
+        aria-label={t("cart.dismiss")}
       >
         <X className="h-4 w-4" />
       </button>
@@ -666,9 +672,9 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         style={{ backgroundColor, padding }}
       >
         {paymentBanner}
-        <div className="text-center">
-          <div className="text-5xl mb-2">🛒</div>
-          <p className="text-gray-600 text-sm sm:text-base">{emptyStateMessage}</p>
+        <div className="text-center space-y-2">
+          <div className="text-5xl">🛒</div>
+          <p className="text-gray-600 text-sm sm:text-base">{resolvedEmptyStateMessage}</p>
         </div>
       </div>
     );
@@ -701,13 +707,13 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         >
           {paymentBanner}
           {/* Cart Items Section */}
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">Your Books</h2>
+          <div className="space-y-stack">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800">{t("cart.yourBooks")}</h2>
             <div className="flex overflow-x-auto gap-3 pb-4 snap-x pe-4 scrollbar-hide">
               {items.map((item) => (
                 <div
                   key={item.enrollInviteId || item.id}
-                  className="flex-shrink-0 w-32 sm:w-36 snap-start flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 relative group active:scale-[0.98]"
+                  className="flex-shrink-0 w-32 sm:w-36 snap-start flex flex-col bg-white rounded-catalogue-md border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 relative group active:scale-[0.98]"
                 >
                   {/* Delete Button - Overlay Top Right */}
                   {showRemoveButton && (
@@ -746,12 +752,12 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
           {/* Membership Plans Section */}
           <div className="mt-5">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Subscription Plans</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">{t("cart.subscriptionPlans")}</h2>
 
             {isLoadingPlans ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack">
                 {[1, 2].map((i) => (
-                  <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse" />
+                  <div key={i} className="h-32 bg-gray-200 rounded-catalogue-md animate-pulse" />
                 ))}
               </div>
             ) : sortedMembershipPlans.length > 0 ? (
@@ -762,31 +768,31 @@ export const CartComponent: React.FC<CartComponentProps> = ({
               </div>
             ) : (
               <div className="text-center py-6 text-gray-500">
-                <p className="text-sm">No membership plans available at the moment.</p>
+                <p className="text-sm">{t("cart.noPlansAvailable")}</p>
               </div>
             )}
 
             {/* Security Deposit Notice */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-catalogue-md">
               <p className="text-xs sm:text-sm text-blue-700">
-                <span className="font-semibold">Note:</span> A refundable security deposit of <span className="font-semibold">₹300</span> is included in all subscription plan prices and will be returned upon membership completion.
+                {t("cart.securityDeposit")}
               </p>
             </div>
           </div>
 
           {/* Subtotal, Total and Checkout Button Section */}
           {items.length > 0 && (
-            <div className="mt-5 bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+            <div className="mt-5 bg-gray-50 rounded-catalogue-md p-3 sm:p-4 border border-gray-200 space-y-stack">
 
-              <div className="flex justify-between items-center pt-3 border-t border-gray-200 mb-3">
-                <span className="text-base sm:text-lg font-semibold text-gray-900">Total</span>
+              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                <span className="text-base sm:text-lg font-semibold text-gray-900">{t("cart.total")}</span>
                 <span className="text-base sm:text-lg font-bold text-gray-900">₹{getTotal().toFixed(2)}</span>
               </div>
 
               <Button
                 onClick={() => {
                   if (!membershipPlan) {
-                    toast.error("Please select a membership plan before checkout", {
+                    toast.error(t("cart.selectPlanFirst"), {
                       duration: 2000,
                     });
                     return;
@@ -797,7 +803,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
                   if (maxBooksAllowed && totalBooksInCart > maxBooksAllowed) {
                     toast.error(
-                      `You can rent a maximum of ${maxBooksAllowed} books in this period`,
+                      t("cart.maxBooksExceeded", { max: maxBooksAllowed }),
                       {
                         duration: 4000,
                       }
@@ -808,10 +814,10 @@ export const CartComponent: React.FC<CartComponentProps> = ({
                   console.log("[CartComponent] Proceeding to checkout (Rent) with items:", items, "Plan:", membershipPlan);
                   setIsCheckoutFormOpen(true);
                 }}
-                className="w-full bg-primary-400 hover:bg-primary-500 active:bg-primary-500 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-lg shadow-md transition-all duration-200 active:scale-[0.98]"
+                className="w-full bg-primary-400 hover:bg-primary-500 active:bg-primary-500 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-catalogue-md shadow-md transition-all duration-200 active:scale-[0.98]"
                 size="lg"
               >
-                Checkout
+                {t("cart.checkout")}
               </Button>
             </div>
           )}
@@ -823,6 +829,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
           totalAmount={getTotal()}
           items={items}
           membershipPlan={membershipPlan}
+          isPreviewMode={isPreviewMode}
           isRentMode={true}
         />
       </>
@@ -856,10 +863,10 @@ export const CartComponent: React.FC<CartComponentProps> = ({
 
       {/* Checkout Button for Buy mode */}
       {items.length > 0 && !isRentMode && (
-        <div className="mt-5 bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
-          <div className="space-y-1.5 pt-2 mb-3">
+        <div className="mt-5 bg-gray-50 rounded-catalogue-md p-3 sm:p-4 border border-gray-200 space-y-stack">
+          <div className="space-y-1.5 pt-2">
             <div className="flex justify-between items-center text-sm text-gray-700">
-              <span>Subtotal ({buyModeItemQty} {buyModeItemQty === 1 ? "book" : "books"})</span>
+              <span>{t("cart.subtotalCount", { count: buyModeItemQty })}</span>
               <span className="font-medium">₹{buyModeSubtotal.toFixed(2)}</span>
             </div>
             {resolvedAdditionalCharges.map((charge) => (
@@ -869,7 +876,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
               </div>
             ))}
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-              <span className="text-base sm:text-lg font-semibold text-gray-900">Total</span>
+              <span className="text-base sm:text-lg font-semibold text-gray-900">{t("cart.total")}</span>
               <span className="text-base sm:text-lg font-bold text-gray-900">₹{buyModeGrandTotal.toFixed(2)}</span>
             </div>
           </div>
@@ -879,10 +886,10 @@ export const CartComponent: React.FC<CartComponentProps> = ({
               console.log("[CartComponent] Proceeding to checkout (Buy) with items:", items, "charges:", resolvedAdditionalCharges);
               setIsCheckoutFormOpen(true);
             }}
-            className="w-full bg-primary-400 hover:bg-primary-500 active:bg-primary-500 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-lg shadow-md transition-all duration-200 active:scale-[0.98]"
+            className="w-full bg-primary-400 hover:bg-primary-500 active:bg-primary-500 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-catalogue-md shadow-md transition-all duration-200 active:scale-[0.98]"
             size="lg"
           >
-            Checkout
+            {t("cart.checkout")}
           </Button>
         </div>
       )}
@@ -894,6 +901,7 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         totalAmount={buyModeGrandTotal}
         items={items}
         membershipPlan={membershipPlan}
+        isPreviewMode={isPreviewMode}
         isRentMode={false}
         additionalCharges={resolvedAdditionalCharges}
       />

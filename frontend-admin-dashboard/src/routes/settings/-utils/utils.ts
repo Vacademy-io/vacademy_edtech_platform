@@ -15,12 +15,15 @@ import AiSettings from '../-components/AiSettings';
 import ScheduledReportsSettings from '../-components/ScheduledReportsSettings';
 import SchoolSettings from '../-components/School/SchoolSettings';
 import WhiteLabelSettings from '../-components/WhiteLabelSettings';
+import AppStatusSettings from '../-components/AppStatusSettings';
 import AssessmentSettings from '../-components/AssessmentSettings';
 import WhatsAppSettings from '../-components/WhatsAppSettings/WhatsAppSettings';
 import LeadSettings from '../-components/LeadSettings';
 import GuardianSettings from '../-components/GuardianSettings';
 import OnboardingSettings from '../-components/OnboardingSettings';
 import GtmSettings from '../-components/GtmSettings';
+import UtmSettings from '../-components/UtmSettings';
+import SecuritySettings from '../-components/SecuritySettings';
 import TncSettings from '../-components/Tnc/TncSettings';
 import IntegrationSettings from '../-components/IntegrationSettings';
 import DoubtManagementSettings from '../-components/DoubtManagementSettings';
@@ -37,7 +40,9 @@ import LmsSettings from '../-components/Lms/LmsSettings';
 import AiCallingSettings from '../-components/AiCallingSettings';
 import CrmIntelligenceSettings from '../-components/CrmIntelligenceSettings';
 import AssistantToolsSettings from '../-components/AssistantToolsSettings';
+import MCPServerSettings from '../-components/MCPServerSettings';
 import BadgesRewardsSettings from '../-components/BadgesRewards/BadgesRewardsSettings';
+import EngagementSettings from '../-components/EngagementSettings';
 import LanguageSettings from '../-components/LanguageSettings';
 import AppearanceSettings from '../-components/Appearance/AppearanceSettings';
 import LearnerActivitySettings from '../-components/LearnerActivitySettings';
@@ -65,7 +70,13 @@ export const SETTINGS_DOMAIN_ORDER: SettingsDomain[] = [
 
 /** Sub-group display order within each domain. */
 export const SETTINGS_GROUP_ORDER: Record<SettingsDomain, string[]> = {
-    General: ['Branding & Identity', 'Roles & Access', 'Data & Fields', 'Platform Configuration'],
+    General: [
+        'Branding & Identity',
+        'Roles & Access',
+        'Security',
+        'Data & Fields',
+        'Platform Configuration',
+    ],
     LMS: [
         'Course & Curriculum',
         'Assessment & Certification',
@@ -114,6 +125,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             group: 'Branding & Identity',
         },
         {
+            tab: SettingsTabs.AppStatus,
+            value: 'App Status',
+            component: AppStatusSettings,
+            domain: 'General',
+            group: 'Branding & Identity',
+        },
+        {
             tab: SettingsTabs.Naming,
             value: 'Naming Settings',
             component: NamingSettings,
@@ -134,6 +152,14 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             component: TncSettings,
             domain: 'General',
             group: 'Roles & Access',
+        },
+        // ── General — Security ───────────────────────────────────────────────
+        {
+            tab: SettingsTabs.Security,
+            value: 'Security Settings',
+            component: SecuritySettings,
+            domain: 'General',
+            group: 'Security',
         },
         // ── General — Data & Fields ──────────────────────────────────────────
         {
@@ -172,6 +198,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             domain: 'General',
             group: 'Platform Configuration',
         },
+        {
+            tab: SettingsTabs.McpServer,
+            value: 'MCP Server',
+            component: MCPServerSettings,
+            domain: 'General',
+            group: 'Platform Configuration',
+        },
         // ── LMS — Course & Curriculum ────────────────────────────────────────
         {
             tab: SettingsTabs.Course,
@@ -206,6 +239,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.BadgesRewards,
             value: 'Badges & Rewards',
             component: BadgesRewardsSettings,
+            domain: 'LMS',
+            group: 'Assessment & Certification',
+        },
+        {
+            tab: SettingsTabs.Engagement,
+            value: 'Daily Engagement',
+            component: EngagementSettings,
             domain: 'LMS',
             group: 'Assessment & Certification',
         },
@@ -396,6 +436,16 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.GtmSettings,
             value: 'GTM Settings',
             component: GtmSettings,
+            domain: 'Integrations',
+            group: 'Third-Party Connections',
+        },
+        {
+            // Its own entry, not a section of GTM: attribution is first-party
+            // and needs no tag manager, so an institute that has never used
+            // one would never think to look under "GTM" for campaign links.
+            tab: SettingsTabs.UtmSettings,
+            value: 'Campaign Links (UTM)',
+            component: UtmSettings,
             domain: 'Integrations',
             group: 'Third-Party Connections',
         },

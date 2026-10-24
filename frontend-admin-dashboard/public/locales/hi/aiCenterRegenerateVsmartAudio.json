@@ -1,0 +1,33 @@
+{
+    "heading": "वीस्मार्ट ऑडियो",
+    "fields": {
+        "text": {
+            "label": "टेक्स्ट",
+            "placeholder": "टेक्स्ट दर्ज करें"
+        },
+        "numQuestions": {
+            "label": "प्रश्नों की संख्या",
+            "placeholder": "प्रश्नों की संख्या दर्ज करें"
+        },
+        "classLevel": {
+            "label": "कक्षा स्तर",
+            "placeholder": "कक्षा स्तर दर्ज करें"
+        },
+        "topics": {
+            "label": "विषय",
+            "placeholder": "विषय दर्ज करें"
+        },
+        "questionType": {
+            "label": "प्रश्न प्रकार",
+            "placeholder": "प्रश्न प्रकार दर्ज करें"
+        },
+        "questionLanguage": {
+            "label": "प्रश्न की भाषा",
+            "placeholder": "प्रश्न की भाषा दर्ज करें"
+        }
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "regenerate": "पुनः बनाएं"
+    }
+}

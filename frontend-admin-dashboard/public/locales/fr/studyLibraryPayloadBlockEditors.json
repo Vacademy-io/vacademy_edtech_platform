@@ -1,0 +1,62 @@
+{
+    "flashcard": {
+        "title": "Carte mémoire",
+        "flip": "Retourner",
+        "front": "RECTO",
+        "back": "VERSO",
+        "frontPlaceholder": "Recto de la carte…",
+        "backPlaceholder": "Verso de la carte…",
+        "aspectRatio": "Format :"
+    },
+    "tabs": {
+        "title": "Contenu à onglets",
+        "addTab": "Ajouter un onglet",
+        "tabDefaultLabel": "Onglet {{number}}",
+        "tabLabelPlaceholder": "Libellé de l'onglet",
+        "contentPlaceholder": "Contenu de l'onglet…"
+    },
+    "quiz": {
+        "title": "Quiz",
+        "mcq": "QCM",
+        "trueFalse": "Vrai/Faux",
+        "true": "Vrai",
+        "false": "Faux",
+        "questionPlaceholder": "Question…",
+        "optionPlaceholder": "Option {{letter}}…",
+        "addOption": "Ajouter une option",
+        "explanationLabel": "Explication (affichée après la réponse)",
+        "explanationPlaceholder": "Pourquoi est-ce la bonne réponse ?"
+    },
+    "timeline": {
+        "title": "Chronologie",
+        "addStep": "Ajouter une étape",
+        "stepDefaultTitle": "Étape {{number}}",
+        "stepTitlePlaceholder": "Titre de l'étape",
+        "descriptionPlaceholder": "Description (facultatif)",
+        "stepColorAriaLabel": "Couleur de l'étape"
+    },
+    "columns": {
+        "title": "Colonnes ({{count}})",
+        "addColumn": "Ajouter une colonne",
+        "removeLast": "Supprimer la dernière",
+        "columnPlaceholder": "Colonne {{number}}…"
+    },
+    "accordion": {
+        "title": "Accordéon",
+        "addSection": "Ajouter une section",
+        "sectionDefaultHeading": "Section {{number}}",
+        "toggleSectionAriaLabel": "Basculer la section",
+        "sectionHeadingPlaceholder": "Titre de la section",
+        "sectionContentPlaceholder": "Contenu de la section…"
+    },
+    "code": {
+        "languageAriaLabel": "Langage du code",
+        "placeholder": "// code"
+    },
+    "multiLangCode": {
+        "title": "Éditeur de code {{language}}",
+        "languageAriaLabel": "Langage",
+        "placeholder": "# code {{language}} — les apprenants disposent d'un exécuteur interactif",
+        "output": "Sortie :"
+    }
+}

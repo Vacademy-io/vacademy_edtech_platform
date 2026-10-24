@@ -1,0 +1,29 @@
+{
+    "column": {
+        "revenue": "राजस्व",
+        "payingLeads": "भुगतान करने वाले लीड",
+        "payments": "भुगतान",
+        "avgDealValue": "औसत डील मूल्य",
+        "source": "स्रोत",
+        "counsellor": "काउंसलर"
+    },
+    "kpi": {
+        "revenueSub": "परिवर्तित लीड से प्राप्त"
+    },
+    "dailyRevenue": {
+        "title": "दैनिक राजस्व",
+        "barTooltip_one": "{{date}}: {{amount}} ({{count}} भुगतान)",
+        "barTooltip_other": "{{date}}: {{amount}} ({{count}} भुगतान)",
+        "footnote": "राजस्व उन लीड के लिए भुगतान की तारीख पर दर्ज किया जाता है जिनकी प्रोफ़ाइल परिवर्तित हो चुकी है।"
+    },
+    "bySource": {
+        "title": "स्रोत के अनुसार राजस्व"
+    },
+    "byCounsellor": {
+        "title": "काउंसलर के अनुसार राजस्व"
+    },
+    "empty": {
+        "noRevenue": "इस अवधि में कोई राजस्व नहीं है।",
+        "noCounsellorRevenue": "इस अवधि में किसी काउंसलर से संबद्ध राजस्व नहीं है।"
+    }
+}

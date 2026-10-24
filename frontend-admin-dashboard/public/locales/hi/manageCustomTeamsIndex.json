@@ -1,0 +1,8 @@
+{
+    "helmetTitle": "{{termPlural}} प्रबंधित करें",
+    "heading": "{{termPlural}} प्रबंधित करें",
+    "subtitle": "अपने सभी {{termPlural}} पोर्टल को एक ही जगह प्रबंधित और मॉनिटर करें।",
+    "tabs": {
+        "registrationLinks": "पंजीकरण लिंक"
+    }
+}

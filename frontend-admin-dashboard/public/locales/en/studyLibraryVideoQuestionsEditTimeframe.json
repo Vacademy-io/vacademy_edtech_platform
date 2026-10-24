@@ -1,0 +1,10 @@
+{
+    "invalidTimestamp": "Invalid timestamp. Please enter a valid time in MM:SS format or seconds also current timestamp should be less than video length",
+    "timeStampTitle": "Time Stamp",
+    "hrsLabel": "hrs",
+    "minLabel": "min",
+    "secLabel": "sec",
+    "useCurrentPosition": "Use Current Position",
+    "allowSkipLabel": "Allow students to skip this question",
+    "editButton": "Edit"
+}

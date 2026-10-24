@@ -1,5 +1,14 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { FitImage } from "@/components/common/fit-image/FitImage";
+import { useTranslation } from "react-i18next";
+import { useLocation } from "@tanstack/react-router";
 import { Page, GlobalSettings, CourseCatalogueData } from "../-types/course-catalogue-types";
+import { useCatalogueLocale } from "../-utils/catalogue-locale";
+import {
+  hasVisibleWhenRules,
+  localizeComponentProps,
+  sectionVisibility,
+} from "../-utils/catalogue-site-language";
 import {
   buildComponentStyle,
   buildResponsiveCSS,
@@ -9,9 +18,31 @@ import {
   type ComponentStyle,
 } from "../-utils/style-utils";
 import { SectionDecorations, hasDecorations } from "../-utils/catalogue-decorations";
+import { blockTypeLabel } from "../-utils/preview-bridge";
 import { CatalogueLink } from "./CatalogueLink";
+import PhoneInput from "react-phone-input-2";
+// Same stylesheet every other phone field in the app imports. Mixing this with
+// react-phone-input-2's other skins in one bundle stacks the flag on top of the
+// country name, so this must stay `bootstrap.css`.
+import "react-phone-input-2/lib/bootstrap.css";
 import {
+  phoneFieldHasInput,
+  usePreferredPhoneCountries,
+} from "@/hooks/use-preferred-phone-countries";
+import {
+  CaretLeft,
+  CaretRight,
   GraduationCap,
+  Train,
+  Bank,
+  Newspaper,
+  Exam,
+  Books,
+  FileText,
+  SquaresFour,
+  Fire,
+  Student,
+  ChalkboardTeacher,
   Rocket,
   Target,
   UsersThree,
@@ -34,13 +65,22 @@ import {
   Check,
 } from "@phosphor-icons/react";
 import { HeaderComponent } from "./components/HeaderComponent";
+import { headerOffsetClass } from "./header/header-chrome";
 import { HtmlPageSection } from './components/HtmlPageSection';
 import { HtmlBlockSection } from "./components/HtmlBlockSection";
 import { ProductPageOfferComponent } from "./components/ProductPageOfferComponent";
+import { FolderBrowserComponent } from "./components/FolderBrowserComponent";
+import { AccessPassGridComponent } from "./components/AccessPassGridComponent";
 import { DetailBlocksComponent } from "./components/DetailBlocksComponent";
+import { BlogComponent } from "./components/BlogComponent";
+import { JobOpeningsComponent } from "./components/JobOpeningsComponent";
 import { LeadFormComponent } from "./components/LeadFormComponent";
 import { submitWebsiteLead, isSpamSubmission } from "../-utils/website-lead";
 import { emitLeadCaptured } from "../-utils/catalogue-tracking";
+import { useNewsletterSignup } from "./components/newsletter/use-newsletter-signup";
+import { CtaBand } from "./components/promo/CtaBand";
+import { StepsCards } from "./components/promo/StepsCards";
+import { PromoPopup } from "./components/promo/PromoPopup";
 import { BannerComponent } from "./components/BannerComponent";
 import { CourseCatalogComponent } from "./components/CourseCatalogComponent";
 // Removed CourseRecommendationsComponent import as it's not used
@@ -48,13 +88,26 @@ import { CourseCatalogComponent } from "./components/CourseCatalogComponent";
 import { FooterComponent } from "./components/FooterComponent";
 import { HeroSectionComponent } from "./components/HeroSectionComponent";
 import { MediaShowcaseComponent } from "./components/MediaShowcaseComponent";
+import { PlainVideoPlayer } from "./components/PlainVideoPlayer";
+import { isDirectVideoFile } from "../-utils/video-url";
+import { normalizeResourceUrl, trackResourceDownload, useResourceUnlocked } from "../-utils/resource-unlock";
 import { StatsHighlightsComponent } from "./components/StatsHighlightsComponent";
+import { CourseShowcaseComponent } from "./components/CourseShowcaseComponent";
 import { TestimonialSectionComponent } from "./components/TestimonialSectionComponent";
 import { CartComponent } from "./components/CartComponent";
 import { BuyRentSectionComponent } from "./components/BuyRentSectionComponent";
 import { BookCatalogueComponent } from "./components/BookCatalogueComponent";
 import { BookDetailsComponent } from "./components/BookDetailsComponent";
+import { DocumentViewerComponent } from "./components/DocumentViewerComponent";
 import { Policy } from "./components/Policy";
+import { RAIL_CLONE_PROPS, useAutoScrollRail, useRailArrows } from "../-utils/use-auto-scroll-rail";
+import { useCatalogueSearchParams } from "../-utils/catalogue-url-state";
+
+// Opt-in section: loaded only by pages that have a learningPath, so every
+// other page (and the logged-in app, which bundles this renderer) skips it.
+const LearningPathComponent = lazy(() =>
+  import("./components/LearningPathComponent").then((m) => ({ default: m.LearningPathComponent })),
+);
 
 interface JsonRendererProps {
   page: Page;
@@ -64,8 +117,19 @@ interface JsonRendererProps {
   courseData?: any; // Course data for dynamic content
   catalogueData?: CourseCatalogueData; // Full catalogue data for route matching
   isPreviewMode?: boolean; // When true, shows component selection UI for admin editor
+  /** The editor's own marks — hidden-block strips and per-block frames inside
+   *  columns and tabs. Defaults to isPreviewMode; the headless AI preview
+   *  (not framed) turns them off, as it shoots the page as visitors see it. */
+  previewChrome?: boolean;
+  /** Preview "Browse" mode: the page is clickable as on the live site and
+   *  clicking no longer selects blocks. */
+  previewInteractive?: boolean;
+  /** Preview only: the real route of the page shown as the root page, for the
+   *  header's active nav item. */
+  previewPath?: string;
   selectedComponentId?: string | null; // Currently selected component to highlight
-  onComponentClick?: (componentId: string, pageId: string) => void; // Callback for component click in preview mode
+  /** Preview click on a block; parentId is set for a block inside a column or tab. */
+  onComponentClick?: (componentId: string, pageId: string, parentId?: string) => void;
 }
 
 export const JsonRenderer: React.FC<JsonRendererProps> = ({
@@ -76,15 +140,63 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
   courseData,
   catalogueData,
   isPreviewMode = false,
+  previewChrome = isPreviewMode,
+  previewInteractive = false,
+  previewPath,
   selectedComponentId = null,
   onComponentClick,
 }) => {
+  // Site language (catalogue-locale): the dictionary for the visitor's
+  // language, undefined in the base language or on a single-language site.
+  const { dict } = useCatalogueLocale();
+
+  /** A section with visibleWhen rules (e.g. "Start free" only on the
+   *  unfiltered Courses view) follows the URL through VisibleWhenGate, around
+   *  its whole wrapper so a hidden section leaves no styled band behind.
+   *  Sections without rules render exactly as before — no URL subscription. */
+  const withVisibleWhen = (
+    component: { id?: string; visibleWhen?: unknown },
+    element: React.ReactNode,
+  ): React.ReactNode =>
+    element && hasVisibleWhenRules(component) ? (
+      <VisibleWhenGate key={component.id} rules={component.visibleWhen} isPreviewMode={isPreviewMode}>
+        {element}
+      </VisibleWhenGate>
+    ) : (
+      element
+    );
+
+  /** Builder preview only: a block that can be picked on its own. */
+  const previewFrame = (component: { id: string; style?: any }, element: React.ReactNode, parentId?: string) => (
+    <PreviewBlockFrame
+      key={component.id}
+      id={component.id}
+      sticky={component.style?.sticky}
+      selected={component.id === selectedComponentId}
+      interactive={previewInteractive}
+      onSelect={() => onComponentClick?.(component.id, page.id, parentId)}
+    >
+      {element}
+    </PreviewBlockFrame>
+  );
+
   /** Slot-child rendering (columnLayout columns, accordion/tab slots): same
    *  ComponentStyle treatment as top-level components — children previously
-   *  went through bare renderComponent and silently lost their style. */
-  const renderChild = (child: any): React.ReactNode => {
+   *  went through bare renderComponent and silently lost their style.
+   *  In the builder preview each child is pickable on its own (parentId = the
+   *  column layout or tabs block holding it). */
+  const renderChild = (child: any, parentId?: string): React.ReactNode => {
     const rendered = renderComponent(child);
-    if (!rendered) return null;
+    if (!rendered) {
+      return previewChrome && child?.enabled === false
+        ? previewFrame(child, <HiddenBlockStrip type={child.type} />, parentId)
+        : null;
+    }
+    const styled = renderStyledChild(child, rendered);
+    return withVisibleWhen(child, previewChrome ? previewFrame(child, styled, parentId) : styled);
+  };
+
+  const renderStyledChild = (child: any, rendered: React.ReactNode): React.ReactNode => {
     const hasStyle = child.style && Object.keys(child.style).length > 0;
     if (!hasStyle) return <React.Fragment key={child.id}>{rendered}</React.Fragment>;
     return (
@@ -105,7 +217,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
   };
 
   const renderComponent = (component: any) => {
-    const { type, props, id, enabled = true, showCondition } = component;
+    const { type, props: baseProps, id, enabled = true, showCondition } = component;
 
     // Check if component is enabled
     if (!enabled) {
@@ -141,6 +253,17 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
       }
     }
 
+    // Authored text in the visitor's language — the very same object as the
+    // base props when there is no dictionary. Slot children are localized
+    // when renderChild reaches them.
+    const localizedProps = localizeComponentProps(baseProps, dict);
+    // Style-panel Background Color is painted on the wrapper, but these blocks
+    // paint their own opaque section (bg-catalogue-bg) on top of it and only
+    // honour props.backgroundColor — so the picked colour never showed. Hand
+    // it to the block when it has no colour of its own (mirror of the shell
+    // canvas adopting props.backgroundColor in ComponentStyleWrapper).
+    const props = withStyleBackground(type, localizedProps, component.style);
+
     switch (type) {
       case "header":
         return (
@@ -151,6 +274,12 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
             authLinks={props.authLinks}
             catalogueData={catalogueData}
             tagName={tagName}
+            instituteId={instituteId}
+            globalSettings={globalSettings}
+            // The untranslated props, for logic that keys on authored labels
+            // or links (which button opens the lead form, and so on).
+            baseProps={baseProps}
+            previewPath={previewPath}
           />
         );
       case "banner":
@@ -197,6 +326,10 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
             {...props}
             catalogueData={catalogueData}
             tagName={tagName}
+            baseProps={baseProps}
+            // The brand footer's newsletter needs it; the original footer ignores it.
+            instituteId={instituteId}
+            globalSettings={globalSettings}
           />
         );
       case "heroSection":
@@ -205,11 +338,25 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
       case "MediaShowcaseComponent":
         return <MediaShowcaseComponent key={id} {...props} />;
       case "statsHighlights":
-        return <StatsHighlightsComponent key={id} {...props} />;
+        // baseProps: each stat's icon is picked from its authored label, so
+        // the icons stay the same in every language.
+        return <StatsHighlightsComponent key={id} {...props} baseProps={baseProps} />;
+      case "courseShowcase":
+        // Curated strip (new / on sale / one tag / hand-picked). Unlike
+        // productCourseGrid this shows a LIMITED, chosen set — no filters.
+        return (
+          <CourseShowcaseComponent
+            key={id}
+            {...props}
+            instituteId={instituteId}
+            tagName={tagName}
+            globalSettings={globalSettings}
+          />
+        );
       case "testimonialSection":
         return <TestimonialSectionComponent key={id} {...props} />;
       case "cartComponent":
-        return <CartComponent key={id} {...props} instituteId={instituteId} globalSettings={globalSettings} />;
+        return <CartComponent key={id} {...props} instituteId={instituteId} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
       case "buyRentSection":
         return <BuyRentSectionComponent key={id} {...props} tagName={tagName} />;
       case "policyRenderer":
@@ -219,12 +366,26 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         return <FaqSectionRenderer key={id} {...props} />;
       case "videoEmbed":
         return <VideoEmbedRenderer key={id} {...props} />;
+      case "documentViewer":
+        return <DocumentViewerComponent key={id} {...props} />;
       case "ctaBanner":
-        return <CtaBannerRenderer key={id} {...props} />;
+        // variant "band" (opt-in): eyebrow, two styled buttons, phone mockup.
+        return props?.variant === "band" ? <CtaBand key={id} {...props} /> : <CtaBannerRenderer key={id} {...props} />;
       case "pricingTable":
         return <PricingTableRenderer key={id} {...props} />;
       case "contactForm":
-        return <ContactFormRenderer key={id} {...props} instituteId={instituteId} tagName={tagName} />;
+        // baseFields: answers are submitted under the authored field names
+        // and labels, whatever language the visitor reads the form in.
+        return (
+          <ContactFormRenderer
+            key={id}
+            {...props}
+            baseFields={baseProps?.fields}
+            instituteId={instituteId}
+            tagName={tagName}
+            isPreviewMode={isPreviewMode}
+          />
+        );
       case "teamSection":
         return <TeamSectionRenderer key={id} {...props} />;
       case "announcementFeed":
@@ -239,7 +400,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
           <TabsAccordionRenderer
             key={id}
             {...props}
-            renderSlot={(comps: any[]) => comps.map(renderChild)}
+            renderSlot={(comps: any[]) => comps.map((child) => renderChild(child, id))}
           />
         );
       case "trustChip":
@@ -258,11 +419,64 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         return <FeatureGridRenderer key={id} {...props} />;
       case "detailBlocks":
         // Dense per-item spec blocks (programmes/services/plans). isPreviewMode
-        // so an unconfigured section guides the admin instead of vanishing.
-        return <DetailBlocksComponent key={id} {...props} isPreviewMode={isPreviewMode} />;
+        // so an unconfigured section guides the admin instead of vanishing;
+        // baseProps so anchor ids (deep links) come from the authored titles.
+        return (
+          <DetailBlocksComponent key={id} {...props} isPreviewMode={isPreviewMode} baseProps={baseProps} />
+        );
 
       case "marquee":
         return <MarqueeRenderer key={id} {...props} />;
+
+      case "promoPopup":
+        // Opens over the page (portal into the site's theme wrapper) on its own
+        // trigger; in the editor preview a strip marks it and selecting it
+        // opens the popup.
+        return (
+          <PromoPopup
+            key={id}
+            {...props}
+            componentId={id}
+            instituteId={instituteId}
+            tagName={tagName}
+            isPreviewMode={isPreviewMode}
+            showPreviewStrip={previewChrome}
+            isSelected={id === selectedComponentId}
+          />
+        );
+
+      case "blog":
+        // Live-reads the institute's published posts (Manage Pages → Blog /
+        // MCP). Renders the list, or one article when the URL carries a slug
+        // after this page's route — see BlogComponent.
+        return (
+          <BlogComponent
+            key={id}
+            {...props}
+            instituteId={instituteId}
+            tagName={tagName}
+            // Recommended-course cards under an article use the site's card settings.
+            globalSettings={globalSettings}
+            pageRoute={page.route || ""}
+            isPreviewMode={isPreviewMode}
+          />
+        );
+
+      case "jobOpenings":
+        // Careers: job cards, or one job as its own page when the URL carries
+        // its slug after this page's route (same address shape as a blog
+        // post). baseProps: slugs come from the authored titles, so a job has
+        // one address in every site language.
+        return (
+          <JobOpeningsComponent
+            key={id}
+            {...props}
+            baseProps={baseProps}
+            tagName={tagName}
+            pageRoute={page.route || ""}
+            isPreviewMode={isPreviewMode}
+          />
+        );
 
       case "leadForm":
         // An Audience campaign's form rendered inline — the form definition
@@ -280,9 +494,10 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
       case "buttonBlock":
         return <ButtonBlockRenderer key={id} {...props} />;
       case "newsletterSignup":
-        return <NewsletterSignupRenderer key={id} {...props} instituteId={instituteId} tagName={tagName} />;
+        return <NewsletterSignupRenderer key={id} {...props} instituteId={instituteId} tagName={tagName} isPreviewMode={isPreviewMode} />;
       case "stepsProcess":
-        return <StepsProcessRenderer key={id} {...props} />;
+        // variant "cards" (opt-in): one row of numbered cards.
+        return props?.variant === "cards" ? <StepsCards key={id} {...props} /> : <StepsProcessRenderer key={id} {...props} />;
 
       case "productCourseGrid":
         // In the catalogue context, render as a standard course catalog grid
@@ -306,7 +521,56 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
             instituteId={instituteId}
             tagName={tagName}
             isPreviewMode={isPreviewMode}
+            // Joins the site-wide cart when globalSettings.siteCart is on;
+            // otherwise the section keeps its own basket, exactly as before.
+            globalSettings={globalSettings}
           />
+        );
+
+      case "folderBrowser":
+        // A shared folder library (Manage Pages → Folders), read live; a
+        // product page inside the open folder shows its courses inline.
+        return (
+          <FolderBrowserComponent
+            key={id}
+            {...props}
+            instituteId={instituteId}
+            tagName={tagName}
+            isPreviewMode={isPreviewMode}
+            globalSettings={globalSettings}
+          />
+        );
+
+      case "accessPassGrid":
+        // Published Access Passes (one purchase -> several courses), read live.
+        // Buying goes through the pass invite on the enroll-by-invite page.
+        return (
+          <AccessPassGridComponent
+            key={id}
+            {...props}
+            instituteId={instituteId}
+            tagName={tagName}
+            isPreviewMode={isPreviewMode}
+            globalSettings={globalSettings}
+          />
+        );
+
+      case "learningPath":
+        // Ordered product pages as numbered steps, or a stream's paths as
+        // cards — read live, like productPageOffer. Its own boundary: while
+        // the section's code loads, only this section is empty.
+        return (
+          <Suspense key={id} fallback={null}>
+            <LearningPathComponent
+              {...props}
+              // Opt-in sharedWith: it reads goals / featured path from a section on this page.
+              pageSections={props?.sharedWith ? page.components : undefined}
+              instituteId={instituteId}
+              tagName={tagName}
+              globalSettings={globalSettings}
+              isPreviewMode={isPreviewMode}
+            />
+          </Suspense>
         );
 
       case "htmlPage":
@@ -320,6 +584,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
             css={props.css as string}
             siteCss={(globalSettings as any)?.customCss as string | undefined}
             tagName={tagName}
+            courseData={courseData}
           />
         );
 
@@ -383,7 +648,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
                   alignSelf: slotComponents.some((c: any) => c?.style?.sticky?.enabled) ? 'stretch' : undefined,
                 }}
               >
-                {slotComponents.map((child: any) => renderChild(child))}
+                {slotComponents.map((child: any) => renderChild(child, id))}
               </div>
             ))}
           </div>
@@ -401,76 +666,176 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
   const hasHeader = page.id !== 'header' && page.components.some(
     (component) => component.type === 'header' && component.enabled !== false
   );
+  // A compact header bar (barSize "compact") is 64px at every width.
+  const pageHeaderProps = hasHeader
+    ? (page.components.find((component) => component.type === 'header' && component.enabled !== false) as any)?.props
+    : undefined;
+
+  /** One top-level section inside its style / preview wrapper. */
+  const renderTopLevel = (component: Page["components"][number]) => {
+    const rendered = renderComponent(component);
+    if (!rendered) {
+      // Switched off in the editor: visitors see nothing, the preview a strip.
+      return previewChrome && component.enabled === false
+        ? previewFrame(component, <HiddenBlockStrip type={component.type} />)
+        : null;
+    }
+
+    const componentStyle = buildComponentStyle(component.style);
+    const responsiveCSS = buildResponsiveCSS(component.id, component.style);
+    const hoverClass = getHoverClass(component.style);
+    const hasOverlay = component.style?.backgroundImage && component.style?.backgroundOverlay;
+    const hasStyle = component.style && Object.keys(component.style).length > 0;
+
+    if (isPreviewMode) {
+      const isSelected = component.id === selectedComponentId;
+      const shell = hasSectionShell(component.style);
+      const shellStyles = shell ? buildSectionShellStyles(component.style!) : null;
+      const outerStyle = shellStyles ? shellStyles.canvasStyle : componentStyle;
+      const decor = hasDecorations(component.style?.ornaments, component.style?.dividers);
+      // Select mode: clicks land on this wrapper (nested blocks opt back in).
+      const contentPointerEvents = previewInteractive ? undefined : ('none' as const);
+      return (
+        <div
+          key={component.id}
+          id={component.anchorId || undefined}
+          data-component-id={component.id}
+          data-cid={component.id}
+          // Browse mode: the section behaves as on the live site (same
+          // markup, so open menus and tabs keep their state across modes).
+          onClick={previewInteractive ? undefined : () => onComponentClick?.(component.id, page.id)}
+          className={`relative ${component.style?.customClass || ''} ${hoverClass} ${isSelected ? 'outline outline-2 outline-blue-500 outline-offset-[-2px]' : previewInteractive ? '' : 'hover:outline hover:outline-1 hover:outline-blue-300 hover:outline-offset-[-1px]'}`}
+          style={{ cursor: previewInteractive ? undefined : 'pointer', ...outerStyle, ...(component.style?.ornaments?.length ? { overflow: 'hidden' } : {}) }}
+        >
+          {responsiveCSS && <style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />}
+          {hasOverlay && (
+            <div style={{ position: 'absolute', inset: 0, backgroundColor: component.style!.backgroundOverlay, zIndex: 0, borderRadius: outerStyle.borderRadius }} />
+          )}
+          {decor && <SectionDecorations ornaments={component.style?.ornaments} dividers={component.style?.dividers} />}
+          <div
+            style={
+              shellStyles
+                ? { ...shellStyles.contentStyle, pointerEvents: contentPointerEvents, position: 'relative', zIndex: 1 }
+                : { pointerEvents: contentPointerEvents, position: hasOverlay || decor ? 'relative' : undefined, zIndex: hasOverlay || decor ? 1 : undefined }
+            }
+          >
+            {rendered}
+          </div>
+          {isSelected && !previewInteractive && (
+            <div className="absolute top-0 start-0 z-50 bg-primary-500 text-white text-xs px-2 py-0.5 rounded-ee-md font-medium select-none">
+              {component.type}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Normal (non-preview) rendering with style wrapper
+    if (hasStyle) {
+      return (
+        <ComponentStyleWrapper key={component.id} component={component} componentStyle={componentStyle} responsiveCSS={responsiveCSS} hoverClass={hoverClass} motionOff={(globalSettings as any)?.motion?.personality === 'none'}>
+          {rendered}
+        </ComponentStyleWrapper>
+      );
+    }
+
+    // Plain rendering — still add anchor ID if present
+    if (component.anchorId) {
+      return <div key={component.id} id={component.anchorId} className="catalogue-block-anchor">{rendered}</div>;
+    }
+    return <React.Fragment key={component.id}>{rendered}</React.Fragment>;
+  };
 
   return (
     <div
-      className={`page w-full ${hasHeader ? 'pt-16 md:pt-20' : ''}`}
+      className={`page w-full ${hasHeader ? headerOffsetClass(pageHeaderProps) : ''}`}
       data-page-id={page.id}
     >
-      {page.components.map((component) => {
-        const rendered = renderComponent(component);
-        if (!rendered) return null;
+      {page.components.map((component) => withVisibleWhen(component, renderTopLevel(component)))}
+    </div>
+  );
+};
 
-        const componentStyle = buildComponentStyle(component.style);
-        const responsiveCSS = buildResponsiveCSS(component.id, component.style);
-        const hoverClass = getHoverClass(component.style);
-        const hasOverlay = component.style?.backgroundImage && component.style?.backgroundOverlay;
-        const hasStyle = component.style && Object.keys(component.style).length > 0;
+/**
+ * Builder preview only: wraps a block inside a column or tab (or a hidden
+ * block) so a click picks that block rather than the section around it. The
+ * section's content is click-through in Select mode, so this frame opts back
+ * in and keeps its own content inert. Browse mode leaves clicks alone.
+ */
+const PreviewBlockFrame: React.FC<{
+  id: string;
+  /** The block's sticky rail: the frame sticks in its place (the block's own
+   *  sticky has no room to move inside a frame its own height). */
+  sticky?: { enabled?: boolean; top?: number };
+  selected: boolean;
+  interactive: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}> = ({ id, sticky, selected, interactive, onSelect, children }) => (
+  <div
+    data-cid={id}
+    style={sticky?.enabled ? { position: 'sticky', top: `${sticky.top ?? 88}px` } : undefined}
+    onClick={
+      interactive
+        ? undefined
+        : (event) => {
+            event.stopPropagation();
+            onSelect();
+          }
+    }
+    className={`${interactive ? '' : 'pointer-events-auto cursor-pointer'} ${
+      selected
+        ? 'outline outline-2 outline-blue-500 outline-offset-[-2px]'
+        : interactive
+          ? ''
+          : 'hover:outline hover:outline-1 hover:outline-blue-300 hover:outline-offset-[-1px]'
+    }`}
+  >
+    <div className={interactive ? undefined : 'pointer-events-none'}>{children}</div>
+  </div>
+);
 
-        if (isPreviewMode) {
-          const isSelected = component.id === selectedComponentId;
-          const shell = hasSectionShell(component.style);
-          const shellStyles = shell ? buildSectionShellStyles(component.style!) : null;
-          const outerStyle = shellStyles ? shellStyles.canvasStyle : componentStyle;
-          const decor = hasDecorations(component.style?.ornaments, component.style?.dividers);
-          return (
-            <div
-              key={component.id}
-              id={component.anchorId || undefined}
-              data-component-id={component.id}
-              data-cid={component.id}
-              onClick={() => onComponentClick?.(component.id, page.id)}
-              className={`relative ${component.style?.customClass || ''} ${hoverClass} ${isSelected ? 'outline outline-2 outline-blue-500 outline-offset-[-2px]' : 'hover:outline hover:outline-1 hover:outline-blue-300 hover:outline-offset-[-1px]'}`}
-              style={{ cursor: 'pointer', ...outerStyle, ...(component.style?.ornaments?.length ? { overflow: 'hidden' } : {}) }}
-            >
-              {responsiveCSS && <style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />}
-              {hasOverlay && (
-                <div style={{ position: 'absolute', inset: 0, backgroundColor: component.style!.backgroundOverlay, zIndex: 0, borderRadius: outerStyle.borderRadius }} />
-              )}
-              {decor && <SectionDecorations ornaments={component.style?.ornaments} dividers={component.style?.dividers} />}
-              <div
-                style={
-                  shellStyles
-                    ? { ...shellStyles.contentStyle, pointerEvents: 'none', position: 'relative', zIndex: 1 }
-                    : { pointerEvents: 'none', position: hasOverlay || decor ? 'relative' : undefined, zIndex: hasOverlay || decor ? 1 : undefined }
-                }
-              >
-                {rendered}
-              </div>
-              {isSelected && (
-                <div className="absolute top-0 start-0 z-50 bg-primary-500 text-white text-xs px-2 py-0.5 rounded-ee-md font-medium select-none">
-                  {component.type}
-                </div>
-              )}
-            </div>
-          );
-        }
+/** Builder preview only: a block switched off in the editor, dimmed and
+ *  labelled so it can still be found and picked. Visitors never see it. */
+const HiddenBlockStrip: React.FC<{ type: string }> = ({ type }) => {
+  const { t } = useTranslation("coursePlayerA");
+  return (
+    <div className="mx-auto my-2 max-w-5xl rounded-catalogue-md border border-dashed border-catalogue-border px-4 py-3 text-center text-sm text-catalogue-text-muted opacity-70">
+      {t("jsonRenderer.hiddenBlock", { label: blockTypeLabel(type) })}
+    </div>
+  );
+};
 
-        // Normal (non-preview) rendering with style wrapper
-        if (hasStyle) {
-          return (
-            <ComponentStyleWrapper key={component.id} component={component} componentStyle={componentStyle} responsiveCSS={responsiveCSS} hoverClass={hoverClass} motionOff={(globalSettings as any)?.motion?.personality === 'none'}>
-              {rendered}
-            </ComponentStyleWrapper>
-          );
-        }
+/**
+ * Shows its section only when the section's visibleWhen rules hold for the
+ * current query string. In the builder preview a section hidden for the URL
+ * still renders, marked, so the admin can see and select it.
+ */
+const VisibleWhenGate: React.FC<{ rules: unknown; isPreviewMode: boolean; children: React.ReactNode }> = ({
+  rules,
+  isPreviewMode,
+  children,
+}) => {
+  const searchStr = useLocation({ select: (location) => location.searchStr || "" });
+  const visibility = sectionVisibility({ visibleWhen: rules }, searchStr, isPreviewMode);
+  if (visibility === "hide") return null;
+  if (visibility === "hint") return <HiddenForUrlHint>{children}</HiddenForUrlHint>;
+  return <>{children}</>;
+};
 
-        // Plain rendering — still add anchor ID if present
-        if (component.anchorId) {
-          return <div key={component.id} id={component.anchorId}>{rendered}</div>;
-        }
-        return <React.Fragment key={component.id}>{rendered}</React.Fragment>;
-      })}
+/**
+ * Builder preview only: a section whose visibleWhen rules hide it for the
+ * current URL (e.g. "Start free" on a filtered Courses view). Visitors never
+ * see it; the admin sees it dimmed and labelled so it can still be selected.
+ */
+const HiddenForUrlHint: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useTranslation("coursePlayerA");
+  return (
+    <div className="relative rounded-catalogue-md border border-dashed border-catalogue-border">
+      <span className="absolute end-2 top-2 z-10 rounded-full bg-catalogue-bg-elevated px-2 py-0.5 text-xs font-medium text-catalogue-text-muted shadow-sm">
+        {t("jsonRenderer.hiddenForUrl", "Hidden for this URL")}
+      </span>
+      <div className="opacity-60">{children}</div>
     </div>
   );
 };
@@ -486,6 +851,28 @@ const isHexDark = (hex?: string): boolean => {
   const b = parseInt(raw.slice(4, 6), 16);
   // Rec. 601 relative luminance; < 0.55 reads as "dark".
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55;
+};
+
+/** Blocks whose own section is opaque unless props.backgroundColor is set,
+ *  so a style-panel Background Color on the wrapper is never seen. Blocks
+ *  outside this list either let the wrapper show through already or give
+ *  props.backgroundColor extra meaning (hero drops its image, header and
+ *  footer have their own pickers) — they keep their current behaviour. */
+const STYLE_BG_TO_PROPS_TYPES = new Set([
+  'sectionHeading', 'faqSection', 'contactForm', 'announcementFeed',
+  'tabsAccordion', 'featureGrid', 'newsletterSignup', 'stepsProcess',
+]);
+
+/** Props with the style-panel Background Color handed to the block, when it
+ *  is a plain #rrggbb (what the picker writes, and what sectionText can read
+ *  for contrast) and the style paints no image or gradient over it. */
+const withStyleBackground = <P,>(type: string, props: P, style?: ComponentStyle): P => {
+  const styleBg = style?.backgroundColor;
+  if (!STYLE_BG_TO_PROPS_TYPES.has(type)) return props;
+  if (typeof styleBg !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(styleBg.trim())) return props;
+  if (style?.backgroundImage || style?.gradient || style?.backgroundLayers?.length) return props;
+  if ((props as { backgroundColor?: unknown } | undefined)?.backgroundColor) return props;
+  return { ...props, backgroundColor: styleBg.trim() };
 };
 
 /**
@@ -526,6 +913,86 @@ const FEATURE_ICON_MAP: Record<string, React.ComponentType<any>> = {
   GraduationCap, Rocket, Target, UsersThree, Code, Brain, Trophy, Lightbulb,
   ShieldCheck, ChartLineUp, Clock, Star, BookOpen, Certificate, ChatsCircle,
   Wrench, Sparkle, Medal, Briefcase, Globe,
+  Train, Bank, Newspaper, Exam, Books, FileText, SquaresFour, Fire, Student, ChalkboardTeacher,
+};
+
+/**
+ * Prev/next arrows over a full-bleed card rail (featureGrid 'carousel'), the
+ * same affordance the product-page rail has. Hidden until there is somewhere
+ * to go; swipe and snap stay the primary way to move on touch screens.
+ */
+const RailArrows: React.FC<{ canPrev: boolean; canNext: boolean; onMove: (dir: number) => void }> = ({ canPrev, canNext, onMove }) => {
+  const { t } = useTranslation("coursePlayerB");
+  const cls =
+    "catalogue-btn catalogue-btn-secondary absolute top-1/2 hidden size-10 -translate-y-1/2 justify-center rounded-full border-catalogue-border bg-catalogue-bg catalogue-btn-icon shadow-lg md:inline-flex";
+  return (
+    <>
+      {canPrev && (
+        <button type="button" onClick={() => onMove(-1)} aria-label={t("common.previousSlide")} className={`${cls} left-3`}>
+          <CaretLeft className="size-5" weight="bold" aria-hidden="true" />
+        </button>
+      )}
+      {canNext && (
+        <button type="button" onClick={() => onMove(1)} aria-label={t("common.nextSlide")} className={`${cls} right-3`}>
+          <CaretRight className="size-5" weight="bold" aria-hidden="true" />
+        </button>
+      )}
+    </>
+  );
+};
+
+/**
+ * featureGrid style 'categoryTiles': a row of icon tiles that filter the page.
+ * Each tile writes `?<filterParam>=<value>` (a tile with no value clears it =
+ * "All"), and the sections below opt in with visibleWhen rules on that param.
+ * The tile matching the current URL is filled, so the visitor always sees
+ * which category they are in. No navigation, no scroll jump.
+ */
+const CategoryTilesRenderer: React.FC<any> = ({ headerText, subheading, features = [], filterParam, backgroundColor }) => {
+  const txt = sectionText(backgroundColor);
+  const param = String(filterParam || 'cat').trim() || 'cat';
+  const { get, update } = useCatalogueSearchParams();
+  const current = (get(param) || '').toLowerCase();
+  return (
+    <section style={sectionBg(backgroundColor)} className="catalogue-section bg-catalogue-bg">
+      <div className="catalogue-shell">
+        {headerText && <h2 className={`mb-2 text-center catalogue-h2 ${txt.heading}`}>{headerText}</h2>}
+        {subheading && <p className={`catalogue-lead catalogue-measure mb-8 text-center ${txt.muted}`}>{subheading}</p>}
+        <div
+          role="tablist"
+          aria-label={headerText || param}
+          className="catalogue-no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:justify-center sm:gap-4 sm:overflow-visible sm:px-0"
+        >
+          {features.map((f: any, i: number) => {
+            const value = String(f.value || '').trim();
+            const active = value.toLowerCase() === current;
+            const IconComp = f.iconName ? FEATURE_ICON_MAP[f.iconName] : undefined;
+            return (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => update({ [param]: value || null })}
+                className={`flex w-28 shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-catalogue-lg border p-4 text-center transition-all duration-200 sm:w-36 sm:p-5 ${
+                  active
+                    ? 'border-transparent bg-primary-500 text-primary-foreground shadow-lg'
+                    : 'border-catalogue-border bg-catalogue-bg-subtle text-catalogue-text-primary hover:-translate-y-0.5 hover:shadow-md'
+                }`}
+              >
+                {IconComp ? (
+                  <IconComp size={40} weight="duotone" aria-hidden="true" className={active ? '' : 'text-catalogue-brand-ink'} />
+                ) : f.icon ? (
+                  <span className="text-3xl" aria-hidden="true">{f.icon}</span>
+                ) : null}
+                <span className="text-sm font-semibold leading-tight">{f.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
 };
 
 const FaqSectionRenderer: React.FC<any> = ({ headerText, subheading, faqs = [], backgroundColor }) => {
@@ -569,7 +1036,13 @@ const FaqSectionRenderer: React.FC<any> = ({ headerText, subheading, faqs = [], 
   );
 };
 
-const VideoEmbedRenderer: React.FC<any> = ({ url = '', title, caption, aspectRatio = '16:9', autoplay = false }) => {
+const VideoEmbedRenderer: React.FC<any> = ({ url = '', title, caption, aspectRatio = '16:9', autoplay = false, poster = '' }) => {
+  const { t } = useTranslation("coursePlayerA");
+  // An UPLOADED file (mp4/webm) gets the play/pause-only player rather than an
+  // iframe: framing a raw media URL hands the visitor the browser's stock media
+  // page, complete with a download menu and no styling hooks. YouTube/Vimeo
+  // links keep the iframe below.
+  const isFile = isDirectVideoFile(url);
   const getEmbedUrl = (rawUrl: string) => {
     if (!rawUrl) return '';
     const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([A-Za-z0-9_-]{11})/);
@@ -584,13 +1057,15 @@ const VideoEmbedRenderer: React.FC<any> = ({ url = '', title, caption, aspectRat
     <section className="catalogue-section-tight">
       <div className="catalogue-shell-narrow">
         {title && <h2 className="mb-6 text-center text-2xl font-bold text-catalogue-text-primary">{title}</h2>}
-        {embedUrl ? (
+        {isFile ? (
+          <PlainVideoPlayer src={url} poster={poster} title={title || caption} paddingBottom={padMap[aspectRatio] || '56.25%'} />
+        ) : embedUrl ? (
           <div className="relative w-full overflow-hidden rounded-xl shadow-lg" style={{ paddingBottom: padMap[aspectRatio] || '56.25%' }}>
-            <iframe src={embedUrl} className="absolute inset-0 size-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={title || 'Video'} />
+            <iframe src={embedUrl} className="absolute inset-0 size-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={title || t("jsonRenderer.video")} />
           </div>
         ) : (
           <div className="flex items-center justify-center rounded-xl bg-catalogue-bg-muted text-catalogue-text-muted" style={{ aspectRatio: aspectRatio.replace(':', '/') }}>
-            No video URL configured
+            {t("jsonRenderer.noVideoUrlConfigured")}
           </div>
         )}
         {caption && <p className="mt-3 text-center text-sm text-catalogue-text-muted">{caption}</p>}
@@ -604,6 +1079,9 @@ const CtaBannerRenderer: React.FC<any> = ({ heading, subheading, backgroundColor
   // Intentional white: the button sits on the author-colored banner surface,
   // so it must stay white in every theme/mode (not a token surface).
   const ctaButtonClass = 'mt-4 inline-block rounded-lg bg-white px-8 py-3 font-semibold shadow-md transition hover:opacity-90'; // design-lint-ignore: intentional white over author-colored surface
+  // Optional author colours for the button; defaults keep the white button
+  // with banner-coloured text.
+  const ctaButtonStyle = { color: button?.textColor || backgroundColor, backgroundColor: button?.backgroundColor || undefined }; // design-lint-ignore: page-builder dynamic button color
   return (
     <section style={{ backgroundColor }} className="catalogue-section">
       <div className={`catalogue-shell flex ${isSplit ? 'items-center justify-between gap-8 flex-wrap' : 'flex-col items-center text-center'}`}>
@@ -617,12 +1095,12 @@ const CtaBannerRenderer: React.FC<any> = ({ heading, subheading, backgroundColor
               type="button"
               onClick={() => dispatchOpenAudienceForm(button.audienceId, button.formTitle || button.text)}
               className={ctaButtonClass}
-              style={{ color: backgroundColor }}
+              style={ctaButtonStyle}
             >
               {button.text}
             </button>
           ) : (
-            <CatalogueLink to={button.target || '#'} className={ctaButtonClass} style={{ color: backgroundColor }}>
+            <CatalogueLink to={button.target || '#'} className={ctaButtonClass} style={ctaButtonStyle}>
               {button.text}
             </CatalogueLink>
           ))}
@@ -631,7 +1109,9 @@ const CtaBannerRenderer: React.FC<any> = ({ heading, subheading, backgroundColor
   );
 };
 
-const PricingTableRenderer: React.FC<any> = ({ headerText, subheading, plans = [] }) => (
+const PricingTableRenderer: React.FC<any> = ({ headerText, subheading, plans = [] }) => {
+  const { t } = useTranslation("coursePlayerA");
+  return (
   <section className="catalogue-section bg-catalogue-bg">
     <div className="catalogue-shell">
       {headerText && <h2 className="mb-2 text-center catalogue-h2 text-catalogue-text-primary">{headerText}</h2>}
@@ -639,7 +1119,7 @@ const PricingTableRenderer: React.FC<any> = ({ headerText, subheading, plans = [
       <div className={`grid gap-6 ${plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
         {plans.map((plan: any, i: number) => (
           <div key={i} data-stagger-item style={{ ['--stagger-i' as any]: i }} className={`relative flex flex-col rounded-2xl border-2 p-8 ${plan.highlighted ? 'border-primary-500 shadow-xl' : 'border-catalogue-border'}`}>
-            {plan.highlighted && <div className="absolute -top-3 start-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold text-white" style={{ backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' }}>Recommended</div>}
+            {plan.highlighted && <div className="absolute -top-3 start-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-semibold text-white" style={{ backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' }}>{t("jsonRenderer.recommended")}</div>}
             <h3 className="text-xl font-bold text-catalogue-text-primary">{plan.name}</h3>
             {plan.description && <p className="mt-1 text-sm text-catalogue-text-muted">{plan.description}</p>}
             <div className="mt-4 flex items-baseline gap-1">
@@ -663,7 +1143,8 @@ const PricingTableRenderer: React.FC<any> = ({ headerText, subheading, plans = [
       </div>
     </div>
   </section>
-);
+  );
+};
 
 /** Pull the visitor's identity out of authored form fields by name heuristics
  *  (the same heuristics the audience submit service uses). */
@@ -682,7 +1163,15 @@ const extractLeadIdentity = (fields: any[], formData: Record<string, string>) =>
   return { email, phone, fullName, rest };
 };
 
-const ContactFormRenderer: React.FC<any> = ({ heading, subheading, fields = [], submitLabel = 'Send Message', successMessage, backgroundColor, audienceId, instituteId, tagName }) => {
+const ContactFormRenderer: React.FC<any> = ({ heading, subheading, fields = [], baseFields, submitLabel, successMessage, backgroundColor, audienceId, instituteId, tagName, isPreviewMode }) => {
+  const { t } = useTranslation("coursePlayerA");
+  // The authored fields, index-paired with the shown ones (a translation
+  // keeps the list's order). Answers are keyed, and the visitor's email /
+  // phone / name found, by the authored names and labels, so a हिन्दी visitor's
+  // lead lands in the same campaign fields as an English one. The shown
+  // (translated) label is for display only.
+  const submitFields: any[] =
+    Array.isArray(baseFields) && Array.isArray(fields) && baseFields.length === fields.length ? baseFields : fields;
   // HISTORY: this form used to fake success with no network call — every
   // submission on every institute site was silently discarded. It now submits
   // through the hardened catalogue-lead pipeline; audienceId (optional, set in
@@ -693,14 +1182,40 @@ const ContactFormRenderer: React.FC<any> = ({ heading, subheading, fields = [], 
   const [honeypot, setHoneypot] = React.useState('');
   const mountedAt = React.useRef(Date.now());
   const [formData, setFormData] = React.useState<Record<string, string>>({});
+  // Dial code currently selected per phone field, so submit can tell "+91 and
+  // nothing else" (the visitor never touched an OPTIONAL phone field) apart
+  // from a real number. Submitting the bare dial code makes every such lead
+  // collide on the same "+91" identity.
+  const [phoneDials, setPhoneDials] = React.useState<Record<string, string>>({});
+
+  // Detect the phone field the same way LeadCollectionModal does — some
+  // authored configs type it "text" and only the name/label says phone.
+  const isPhoneField = (f: any) =>
+    f?.type === 'tel' || /phone|mobile|contact|whatsapp/i.test(`${f?.name || ''} ${f?.label || ''}`);
+  // Start on the institute's configured country (or the visitor's, on
+  // GEO_FIRST), and stop moving once a number has been typed.
+  const hasTypedPhone = submitFields.some(
+    (f) => isPhoneField(f) && phoneFieldHasInput(formData[f.name]),
+  );
+  const { defaultCountry, preferredCountries } = usePreferredPhoneCountries({ freeze: hasTypedPhone });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // The editor preview never creates a lead (the page shell says so too).
+    if (isPreviewMode) return;
     setError('');
     // Spam verdicts show the success state — never tell a bot it was caught.
     if (isSpamSubmission(honeypot, mountedAt.current)) { setSubmitted(true); return; }
-    const { email, phone, fullName, rest } = extractLeadIdentity(fields, formData);
-    if (!email) { setError('Please include your email address.'); return; }
-    if (!instituteId) { setError('This form is not connected yet — please try again later.'); return; }
+    // Drop dial-code-only values before they become a lead's phone number.
+    const submitData = { ...formData };
+    for (const f of submitFields) {
+      if (!isPhoneField(f)) continue;
+      const digits = (submitData[f.name] || '').replace(/\D/g, '');
+      if (!digits || digits === (phoneDials[f.name] || '')) submitData[f.name] = '';
+    }
+    const { email, phone, fullName, rest } = extractLeadIdentity(submitFields, submitData);
+    if (!email) { setError(t("jsonRenderer.includeEmailAddress")); return; }
+    if (!instituteId) { setError(t("jsonRenderer.formNotConnected")); return; }
     setSubmitting(true);
     try {
       await submitWebsiteLead({
@@ -715,7 +1230,7 @@ const ContactFormRenderer: React.FC<any> = ({ heading, subheading, fields = [], 
       });
       setSubmitted(true);
     } catch {
-      setError('Something went wrong — please try again.');
+      setError(t("jsonRenderer.somethingWentWrongRetry"));
     } finally {
       setSubmitting(false);
     }
@@ -728,27 +1243,58 @@ const ContactFormRenderer: React.FC<any> = ({ heading, subheading, fields = [], 
         {subheading && <p className={`mb-10 text-center ${txt.muted}`}>{subheading}</p>}
         {submitted ? (
           <div className="rounded-xl border border-green-200 bg-green-50 p-8 text-center text-green-700 font-medium">
-            {successMessage || 'Thank you! We\'ll be in touch soon.'}
+            {successMessage || t("jsonRenderer.contactFormSuccessDefault")}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-catalogue-border bg-catalogue-bg p-8 shadow-sm">
-            {fields.map((field: any) => (
-              <div key={field.name}>
-                <label className="mb-1 block text-sm font-medium text-catalogue-text-secondary">{field.label}{field.required && <span className="ms-1 text-red-500">*</span>}</label>
-                {field.type === 'textarea' ? (
-                  <textarea required={field.required} rows={4} value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })} className="w-full rounded-lg border border-catalogue-border bg-catalogue-bg text-catalogue-text-primary px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none" />
-                ) : (
-                  <input type={field.type} required={field.required} value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })} className="w-full rounded-lg border border-catalogue-border bg-catalogue-bg text-catalogue-text-primary px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none" />
-                )}
-              </div>
-            ))}
+            {fields.map((shown: any, i: number) => {
+              // The authored field keys the value and decides the input
+              // (phone or not); only the label shown is the translated one.
+              const field = submitFields[i] ?? shown;
+              return (
+                <div key={field.name}>
+                  <label className="mb-1 block text-sm font-medium text-catalogue-text-secondary">{shown?.label}{field.required && <span className="ms-1 text-red-500">*</span>}</label>
+                  {field.type === 'textarea' ? (
+                    <textarea required={field.required} rows={4} value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })} className="w-full rounded-lg border border-catalogue-border bg-catalogue-bg text-catalogue-text-primary px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none" />
+                  ) : isPhoneField(field) ? (
+                    // Country picker + dial code. Stored as +<digits> so the lead
+                    // reaches the CRM in E.164 — a bare 10-digit number is what
+                    // makes outbound calling drop the connection.
+                    <PhoneInput
+                      country={defaultCountry}
+                      preferredCountries={preferredCountries}
+                      enableSearch
+                      countryCodeEditable={false}
+                      enableAreaCodes={false}
+                      value={formData[field.name] || ''}
+                      onChange={(value, data: any) => {
+                        const digits = (value || '').replace(/\D/g, '');
+                        setPhoneDials((prev) => ({ ...prev, [field.name]: data?.dialCode || '' }));
+                        setFormData((prev) => ({ ...prev, [field.name]: digits ? `+${digits}` : '' }));
+                      }}
+                      inputProps={{ required: field.required }}
+                      placeholder={t("leadCollectionModal.phonePlaceholder")}
+                      containerClass="!w-full"
+                      inputClass="!w-full !h-11 !rounded-lg !border-catalogue-border !bg-catalogue-bg !text-catalogue-text-primary !text-sm"
+                      // No buttonClass: the flag button is absolutely positioned OVER the
+                      // input's left edge, so giving it an opaque background paints out the
+                      // input's border and rounded corner — the control then reads as two
+                      // detached boxes. The app's own .react-tel-input theming already gives
+                      // it the divider and radius.
+                    />
+                  ) : (
+                    <input type={field.type} required={field.required} value={formData[field.name] || ''} onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })} className="w-full rounded-lg border border-catalogue-border bg-catalogue-bg text-catalogue-text-primary px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none" />
+                  )}
+                </div>
+              );
+            })}
             {/* Honeypot — hidden from humans, filled by bots. */}
             <div className="sr-only" aria-hidden="true">
-              <label>Company website<input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
+              <label>{t("jsonRenderer.companyWebsite")}<input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
             </div>
             {error && <p className="rounded-lg bg-warning-50 px-4 py-2.5 text-sm text-catalogue-text-secondary" role="alert">{error}</p>}
             <button type="submit" disabled={submitting} className="w-full rounded-lg py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60" style={{ backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' }}>
-              {submitting ? 'Sending…' : submitLabel}
+              {submitting ? t("jsonRenderer.sendingEllipsis") : (submitLabel || t("jsonRenderer.sendMessage"))}
             </button>
           </form>
         )}
@@ -805,7 +1351,9 @@ const AnnouncementFeedRenderer: React.FC<any> = ({ headerText, subheading, annou
   </section>
 );
 
-const ImageGalleryRenderer: React.FC<any> = ({ headerText, images = [], columns = 3, showCaptions = false }) => (
+const ImageGalleryRenderer: React.FC<any> = ({ headerText, images = [], columns = 3, showCaptions = false }) => {
+  const { t } = useTranslation("coursePlayerA");
+  return (
   <section className="catalogue-section-tight bg-catalogue-bg">
     <div className="catalogue-shell">
       {headerText && <h2 className="mb-8 text-center catalogue-h2 text-catalogue-text-primary">{headerText}</h2>}
@@ -813,9 +1361,9 @@ const ImageGalleryRenderer: React.FC<any> = ({ headerText, images = [], columns 
         {images.map((img: any, i: number) => (
           <div key={i} data-stagger-item style={{ ['--stagger-i' as any]: i }} className="group overflow-hidden rounded-xl">
             {img.src ? (
-              <img src={img.src} alt={img.alt || ''} className="w-full object-cover transition group-hover:scale-105" style={{ aspectRatio: '4/3' }} />
+              <FitImage src={img.src} alt={img.alt || ''} className="w-full transition group-hover:scale-105" style={{ aspectRatio: '4/3' }} />
             ) : (
-              <div className="flex w-full items-center justify-center rounded-xl bg-catalogue-bg-muted text-catalogue-text-muted" style={{ aspectRatio: '4/3' }}>No image</div>
+              <div className="flex w-full items-center justify-center rounded-xl bg-catalogue-bg-muted text-catalogue-text-muted" style={{ aspectRatio: '4/3' }}>{t("jsonRenderer.noImage")}</div>
             )}
             {showCaptions && img.caption && <p className="mt-2 text-center text-sm text-catalogue-text-muted">{img.caption}</p>}
           </div>
@@ -823,7 +1371,8 @@ const ImageGalleryRenderer: React.FC<any> = ({ headerText, images = [], columns 
       </div>
     </div>
   </section>
-);
+  );
+};
 
 /* ─── Spacer / Divider ─────────────────────────────────────────────────── */
 
@@ -979,6 +1528,7 @@ const TabsAccordionRenderer: React.FC<any> = ({ mode = 'tabs', items = [], defau
 /* ─── Logo Cloud ───────────────────────────────────────────────────────── */
 
 const MARQUEE_SPEED_MAP: Record<string, string> = { slow: '45s', medium: '30s', fast: '18s' };
+const MARQUEE_TEXT_SIZE: Record<string, string> = { xs: 'text-xs', sm: 'text-sm', base: 'text-base', lg: 'text-lg', xl: 'text-xl' };
 
 /* ─── Marquee (announcement ticker) ────────────────────────────────────── */
 
@@ -1001,36 +1551,86 @@ const MarqueeRenderer: React.FC<any> = ({
   iconColor = '#facc15', // design-lint-ignore: page-builder default color
   fontSize = 'sm',
 }) => {
+  const { t } = useTranslation("coursePlayerA");
   const list = (Array.isArray(items) ? items : []).filter((it: any) => it && it.text);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const unitRef = useRef<HTMLDivElement>(null);
+  // Copies of the items in each half of the track. The loop is seamless only
+  // when one half is at least as wide as the band: two short items doubled
+  // ran out halfway across a desktop screen, and the ticker looked stuck.
+  const [copies, setCopies] = useState(1);
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const unit = unitRef.current;
+    if (!viewport || !unit || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const width = unit.offsetWidth;
+      if (width > 0) setCopies(Math.max(1, Math.ceil(viewport.clientWidth / width)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    observer.observe(unit);
+    return () => observer.disconnect();
+  }, [list.length]);
   if (list.length === 0) return null;
-  const row = [...list, ...list];
-  return (
-    <section
-      className="catalogue-marquee-viewport overflow-hidden py-3"
-      style={{ backgroundColor }}
-      aria-label="Announcements"
-    >
+  // The duration covers one half, so it grows with the copies to keep the speed.
+  const seconds = parseFloat(MARQUEE_SPEED_MAP[speed] || "30s") * copies;
+  // Each item carries its own trailing space (no flex gap), so a half is
+  // exactly N items wide and translate(-50%) lands on the next copy.
+  const half = (part: number) =>
+    Array.from({ length: copies }, (_, copy) => (
       <div
-        className={`catalogue-marquee flex items-center gap-10 ${pauseOnHover === false ? 'catalogue-marquee-nopause' : ''}`}
-        style={{
-          animationDuration: MARQUEE_SPEED_MAP[speed] || '30s',
-          // The keyframes scroll left; 'right' simply plays them backwards.
-          animationDirection: direction === 'right' ? 'reverse' : undefined,
-          color: textColor,
-        }}
+        key={`${part}-${copy}`}
+        ref={part === 0 && copy === 0 ? unitRef : undefined}
+        aria-hidden={part > 0 || copy > 0 || undefined}
+        className="flex shrink-0 items-center"
       >
-        {row.map((item: any, i: number) => (
-          <span
-            key={i}
-            aria-hidden={i >= list.length}
-            className={`flex shrink-0 items-center gap-2 whitespace-nowrap font-medium ${fontSize === 'base' ? 'text-base' : 'text-sm'}`}
-          >
-            {(item.icon || defaultIcon) && (
-              <span style={{ color: iconColor }} aria-hidden="true">{item.icon || defaultIcon}</span>
-            )}
-            {item.text}
-          </span>
-        ))}
+        {list.map((item: any, i: number) => {
+          const itemClass = `flex shrink-0 items-center gap-2 whitespace-nowrap pe-10 font-medium ${MARQUEE_TEXT_SIZE[fontSize] || 'text-sm'}`;
+          const content = (
+            <>
+              {(item.icon || defaultIcon) && (
+                <span style={{ color: iconColor }} aria-hidden="true">{item.icon || defaultIcon}</span>
+              )}
+              {item.text}
+            </>
+          );
+          // A linked item opens a page, scrolls to a #section or opens an
+          // external URL (CatalogueLink). Only the first copy is tabbable — the
+          // loop copies are aria-hidden duplicates.
+          return item.link ? (
+            <CatalogueLink
+              key={i}
+              to={item.link}
+              tabIndex={part > 0 || copy > 0 ? -1 : undefined}
+              className={`${itemClass} underline-offset-4 hover:underline focus-visible:underline`}
+            >
+              {content}
+            </CatalogueLink>
+          ) : (
+            <span key={i} className={itemClass}>{content}</span>
+          );
+        })}
+      </div>
+    ));
+  return (
+    // The band keeps its colour edge to edge; only the moving text fades at
+    // the sides (the mask on the band itself faded the colour into a smudge).
+    <section style={{ backgroundColor }} aria-label={t("jsonRenderer.announcements")}>
+      <div ref={viewportRef} className="catalogue-marquee-viewport overflow-hidden py-3">
+        <div
+          className={`catalogue-marquee flex items-center ${pauseOnHover === false ? 'catalogue-marquee-nopause' : ''}`}
+          style={{
+            animationDuration: `${seconds}s`,
+            // The keyframes scroll left; 'right' simply plays them backwards.
+            animationDirection: direction === 'right' ? 'reverse' : undefined,
+            color: textColor,
+          }}
+        >
+          {half(0)}
+          {half(1)}
+        </div>
       </div>
     </section>
   );
@@ -1206,7 +1806,9 @@ const SectionHeadingRenderer: React.FC<any> = ({
 
 /* ─── Map Embed ────────────────────────────────────────────────────────── */
 
-const MapEmbedRenderer: React.FC<any> = ({ embedUrl, height = '400px', borderRadius = '8px', title }) => (
+const MapEmbedRenderer: React.FC<any> = ({ embedUrl, height = '400px', borderRadius = '8px', title }) => {
+  const { t } = useTranslation("coursePlayerA");
+  return (
   <section className="py-8 px-4">
     <div className="mx-auto max-w-5xl">
       {title && <h3 className="mb-4 text-xl font-semibold text-catalogue-text-primary">{title}</h3>}
@@ -1219,20 +1821,22 @@ const MapEmbedRenderer: React.FC<any> = ({ embedUrl, height = '400px', borderRad
           allowFullScreen
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
-          title={title || 'Map'}
+          title={title || t("jsonRenderer.map")}
         />
       ) : (
         <div className="flex items-center justify-center rounded bg-catalogue-bg-muted text-catalogue-text-muted" style={{ height, borderRadius }}>
-          No map URL configured
+          {t("jsonRenderer.noMapUrlConfigured")}
         </div>
       )}
     </div>
   </section>
-);
+  );
+};
 
 /* ─── Countdown Timer ──────────────────────────────────────────────────── */
 
 const CountdownTimerRenderer: React.FC<any> = ({ targetDate, heading, expiredMessage, backgroundColor = '#1E293B', textColor = 'white', style = 'cards' }) => { // design-lint-ignore: page-builder default color
+  const { t } = useTranslation("coursePlayerA");
   const [timeLeft, setTimeLeft] = React.useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [expired, setExpired] = React.useState(false);
 
@@ -1256,16 +1860,16 @@ const CountdownTimerRenderer: React.FC<any> = ({ targetDate, heading, expiredMes
   if (expired) {
     return (
       <section style={{ backgroundColor }} className="catalogue-section-tight px-4 text-center">
-        <p className="text-xl font-semibold" style={{ color: textColor }}>{expiredMessage || 'The event has started!'}</p>
+        <p className="text-xl font-semibold" style={{ color: textColor }}>{expiredMessage || t("jsonRenderer.eventStarted")}</p>
       </section>
     );
   }
 
   const units = [
-    { label: 'Days', value: timeLeft.days },
-    { label: 'Hours', value: timeLeft.hours },
-    { label: 'Mins', value: timeLeft.minutes },
-    { label: 'Secs', value: timeLeft.seconds },
+    { label: t("jsonRenderer.days"), value: timeLeft.days },
+    { label: t("jsonRenderer.hours"), value: timeLeft.hours },
+    { label: t("jsonRenderer.mins"), value: timeLeft.minutes },
+    { label: t("jsonRenderer.secs"), value: timeLeft.seconds },
   ];
 
   return (
@@ -1304,12 +1908,136 @@ const TextBlockRenderer: React.FC<any> = ({ content = '', maxWidth = '800px', al
 
 /* ─── Feature Grid ─────────────────────────────────────────────────────── */
 
+/**
+ * One card of the featureGrid `resource` style — a free-resources library
+ * card: 16:9 thumbnail (with an optional badge such as "Featured"), chips for
+ * age group / duration, title, description and a full-width action button.
+ * A link flagged `gated` (or every link, with the grid's `gateAll`) opens the grid's gate list form first (see
+ * -utils/resource-unlock.ts); once that list is unlocked it is a plain link.
+ */
+const ResourceCard: React.FC<{ feature: any; index: number; gateAudienceId: string; gateTitle?: string; gateAll?: boolean }> = ({
+  feature: f, index, gateAudienceId, gateTitle, gateAll = false,
+}) => {
+  const unlocked = useResourceUnlocked(gateAudienceId);
+  const chips: string[] = (f.chips || []).filter(Boolean);
+  const cta = f.link?.text && f.link?.url ? { ...f.link, url: normalizeResourceUrl(f.link.url) } : null;
+  // `gateAll` = the author gated the whole section; `cta.gated` = this card only.
+  const gated = !!(cta && (gateAll || cta.gated) && gateAudienceId && !unlocked);
+  const badge = (f.badge || '').trim();
+
+  const trackOpen = () => {
+    if (cta && !cta.url.startsWith('#')) trackResourceDownload({ url: cta.url, title: f.title, audienceId: gateAudienceId });
+  };
+
+  const openGate = () => {
+    window.dispatchEvent(new CustomEvent('openAudienceForm', {
+      detail: {
+        audienceId: gateAudienceId,
+        title: gateTitle || f.title,
+        unlockUrl: cta.url,
+        unlockLabel: cta.text,
+        unlockTitle: f.title,
+      },
+    }));
+  };
+
+  return (
+    <article
+      data-stagger-item
+      style={{ ['--stagger-i' as any]: index }}
+      className="catalogue-card-elevated group flex flex-col overflow-hidden text-start"
+    >
+      {f.image && (
+        <div className="relative aspect-video w-full overflow-hidden bg-catalogue-bg-subtle">
+          <FitImage
+            src={f.image}
+            alt=""
+            loading="lazy"
+            className="size-full transition-transform duration-500 ease-out group-hover:scale-105"
+          />
+          {badge && (
+            <span className="absolute start-3 top-3 inline-flex items-center rounded-full bg-catalogue-bg-elevated px-3 py-1 text-xs font-semibold text-primary-500 shadow-sm">
+              {badge}
+            </span>
+          )}
+        </div>
+      )}
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        {!f.image && badge && (
+          <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary-500 px-3 py-1 text-xs font-semibold text-catalogue-bg-elevated">
+            {badge}
+          </span>
+        )}
+        {chips.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {chips.map((c: string, j: number) => (
+              <span key={j} className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-500 ring-1 ring-primary-100">{c}</span>
+            ))}
+          </div>
+        )}
+        <h3 className="text-lg font-semibold tracking-tight text-catalogue-text-primary">{f.title}</h3>
+        {f.description && (
+          <p className="mt-1.5 text-sm leading-relaxed text-catalogue-text-muted">{f.description}</p>
+        )}
+        {cta && (
+          <div className="mt-auto pt-5">
+            {gated ? (
+              <button type="button" onClick={openGate} className="catalogue-btn catalogue-btn-primary w-full justify-center">
+                {cta.text}
+              </button>
+            ) : (
+              // Every open counts — after the unlock and on ungated cards too — so
+              // the admin sees each lead's full list, not just the first file.
+              // Captured on a wrapper, not passed as the link's onClick: that
+              // would replace CatalogueLink's own handler for site pages.
+              // onAuxClick covers a middle-click into a new tab.
+              <div
+                onClickCapture={trackOpen}
+                onAuxClick={(e) => { if (e.button === 1) trackOpen(); }}
+              >
+                <CatalogueLink to={cta.url} className="catalogue-btn catalogue-btn-primary w-full justify-center">
+                  {cta.text}
+                </CatalogueLink>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+};
+
 const FeatureGridRenderer: React.FC<any> = ({
   headerText, subheading, columns = 3, features = [], style = 'cards', iconSize = 'large', backgroundColor, align,
-  layout,
+  layout, gateAudienceId = '', gateTitle, gateAll = false, autoScroll = false, autoScrollIntervalMs, autoScrollLoop = false, filterParam,
 }) => {
+  // 'carousel' rails (photo / resource) can advance on their own, one card at a time.
+  const railRef = React.useRef<HTMLDivElement>(null);
+  const { looping } = useAutoScrollRail(railRef, {
+    enabled: layout === 'carousel' && !!autoScroll,
+    intervalMs: autoScrollIntervalMs,
+    itemCount: features.length,
+    loop: !!autoScrollLoop,
+  });
+  // Endless ring: a second lap of the same slides (see useAutoScrollRail).
+  const loopCopy = (slides: React.ReactNode[]) =>
+    looping
+      ? slides.map((s, i) => (React.isValidElement(s) ? React.cloneElement(s, { key: `loop-${i}`, ...RAIL_CLONE_PROPS }) : null))
+      : null;
+  const arrows = useRailArrows(railRef, { enabled: layout === 'carousel', itemCount: features.length });
   const sizeMap: Record<string, string> = { small: 'text-xl', medium: 'text-2xl', large: 'text-3xl' };
   const txt = sectionText(backgroundColor);
+  if (style === 'categoryTiles') {
+    return (
+      <CategoryTilesRenderer
+        headerText={headerText}
+        subheading={subheading}
+        features={features}
+        filterParam={filterParam}
+        backgroundColor={backgroundColor}
+      />
+    );
+  }
   const cardClass =
     style === 'cards' ? 'catalogue-card-elevated group p-6 sm:p-7' :
     style === 'bordered' ? 'rounded-xl border-2 border-catalogue-border p-6' :
@@ -1430,6 +2158,56 @@ const FeatureGridRenderer: React.FC<any> = ({
     );
   }
 
+  // "resource" — free-resources library cards (thumbnail + chips + button),
+  // with optional email-gated links. Headings stay centred unless the author
+  // asked for left: the cards carry prose, the section title does not.
+  if (style === 'resource') {
+    const headLeft = align === 'left';
+    const gateId = String(gateAudienceId || '').trim();
+    return (
+      <section style={sectionBg(backgroundColor)} className="catalogue-section bg-catalogue-bg">
+        <div className="catalogue-shell">
+          {headerText && <h2 className={`mb-2 catalogue-h2 ${headLeft ? '' : 'text-center'} ${txt.heading}`}>{headerText}</h2>}
+          {subheading && <p className={`catalogue-lead mb-8 ${headLeft ? '' : 'catalogue-measure text-center'} ${txt.muted}`}>{subheading}</p>}
+          {layout !== 'carousel' && (
+            <div className={`grid gap-6 grid-cols-1 sm:grid-cols-2 ${columns >= 3 ? 'lg:grid-cols-3' : ''} ${columns >= 4 ? 'xl:grid-cols-4' : ''}`}>
+              {features.map((f: any, i: number) => (
+                <ResourceCard key={i} feature={f} index={i} gateAudienceId={gateId} gateTitle={gateTitle} gateAll={!!gateAll} />
+              ))}
+            </div>
+          )}
+        </div>
+        {layout === 'carousel' && (
+          // Same full-bleed rail as the photo style: `columns` cards per view,
+          // the next one peeking in, swipe / snap native.
+          <div className="relative">
+            <div ref={railRef} className="catalogue-carousel-bleed catalogue-no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto py-2">
+              {(() => {
+                const slides = features.map((f: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex min-w-reg-250 shrink-0 snap-start [&>*]:w-full"
+                    // Width per card follows the authored column count — a computed value, not a token.
+                    style={{ flexBasis: `calc((100% - ${(Math.min(Math.max(Number(columns) || 4, 1), 4) - 1) * 1.25}rem) / ${Math.min(Math.max(Number(columns) || 4, 1), 4)})` }}
+                  >
+                    <ResourceCard feature={f} index={i} gateAudienceId={gateId} gateTitle={gateTitle} gateAll={!!gateAll} />
+                  </div>
+                ));
+                return (
+                  <>
+                    {slides}
+                    {loopCopy(slides)}
+                  </>
+                );
+              })()}
+            </div>
+            <RailArrows canPrev={arrows.canPrev} canNext={arrows.canNext} onMove={arrows.scrollByPage} />
+          </div>
+        )}
+      </section>
+    );
+  }
+
   // "photo" — the offering-card shape: the image IS the card, with the copy
   // over a scrim and an optional CTA. Cards with no image fall back to a tinted
   // card carrying the same title/description/CTA, because the designs this
@@ -1520,8 +2298,12 @@ const FeatureGridRenderer: React.FC<any> = ({
           // Full-bleed rail: the shell would clip the edge-to-edge scroll, and
           // scroll-padding (baked into catalogue-carousel-bleed) is what keeps
           // snap alignment honest against the gutter.
-          <div className="catalogue-carousel-bleed catalogue-no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2">
-            {cards}
+          <div className="relative">
+            <div ref={railRef} className="catalogue-carousel-bleed catalogue-no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2">
+              {cards}
+              {loopCopy(cards)}
+            </div>
+            <RailArrows canPrev={arrows.canPrev} canNext={arrows.canNext} onMove={arrows.scrollByPage} />
           </div>
         ) : (
           <div className="catalogue-shell">
@@ -1637,7 +2419,9 @@ const openWhatsApp = (phone?: string, message?: string) => {
   );
 };
 
-const ButtonBlockRenderer: React.FC<any> = ({ text = 'Button', url = '#', target = '_self', variant = 'filled', size = 'large', alignment = 'center', backgroundColor = '', textColor = '', borderRadius = '8px', fullWidth = false, action = 'link', audienceId = '', formTitle = '', whatsappPhone = '', whatsappMessage = '' }) => {
+const ButtonBlockRenderer: React.FC<any> = ({ text, url = '#', target = '_self', variant = 'filled', size = 'large', alignment = 'center', backgroundColor = '', textColor = '', borderRadius = '8px', fullWidth = false, action = 'link', audienceId = '', formTitle = '', whatsappPhone = '', whatsappMessage = '' }) => {
+  const { t } = useTranslation("coursePlayerA");
+  const buttonText = text || t("jsonRenderer.button");
   const bg = backgroundColor || 'hsl(var(--primary-500, 217 91% 60%))';
   const fg = textColor || (variant === 'filled' ? 'white' : bg);
   const padding = size === 'small' ? '10px 24px' : size === 'large' ? '16px 40px' : '12px 32px';
@@ -1657,17 +2441,17 @@ const ButtonBlockRenderer: React.FC<any> = ({ text = 'Button', url = '#', target
     <section className="py-8 px-4 sm:px-6 lg:px-8" style={{ textAlign: alignment as any }}>
       {action === 'whatsapp' ? (
         <button type="button" onClick={() => openWhatsApp(whatsappPhone, whatsappMessage)} className={className} style={styleProps}>
-          {text}
+          {buttonText}
         </button>
       ) : action === 'openForm' && audienceId ? (
         // Any button can be a registration point: opens the campaign's form as
         // a popup instead of navigating.
-        <button type="button" onClick={() => dispatchOpenAudienceForm(audienceId, formTitle || text)} className={className} style={styleProps}>
-          {text}
+        <button type="button" onClick={() => dispatchOpenAudienceForm(audienceId, formTitle || buttonText)} className={className} style={styleProps}>
+          {buttonText}
         </button>
       ) : (
         <CatalogueLink to={url || '#'} target={target} className={className} style={styleProps}>
-          {text}
+          {buttonText}
         </CatalogueLink>
       )}
     </section>
@@ -1676,40 +2460,15 @@ const ButtonBlockRenderer: React.FC<any> = ({ text = 'Button', url = '#', target
 
 /* ─── Newsletter Signup ────────────────────────────────────────────────── */
 
-const NewsletterSignupRenderer: React.FC<any> = ({ heading, subheading, placeholder = 'Enter your email', buttonText = 'Subscribe', layout = 'inline', backgroundColor, successMessage, audienceId, instituteId, tagName }) => {
+const NewsletterSignupRenderer: React.FC<any> = ({ heading, subheading, placeholder, buttonText, layout = 'inline', backgroundColor, successMessage, audienceId, instituteId, tagName, isPreviewMode }) => {
+  const { t } = useTranslation("coursePlayerA");
   // HISTORY: previously set the success flag with no network call — every
   // subscription was silently discarded. Now submits through the catalogue-lead
-  // pipeline; audienceId (optional) routes to a chosen campaign.
-  const [email, setEmail] = React.useState('');
-  const [submitted, setSubmitted] = React.useState(false);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [honeypot, setHoneypot] = React.useState('');
-  const mountedAt = React.useRef(Date.now());
+  // pipeline; audienceId (optional) routes to a chosen campaign. The submit
+  // logic is shared with the brand footer's newsletter (same sourceId here).
+  const { email, setEmail, honeypot, setHoneypot, submitted, submitting, error, handleSubmit } =
+    useNewsletterSignup({ instituteId, audienceId, tagName, sourceSuffix: 'newsletter' });
   const txt = sectionText(backgroundColor);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    setError('');
-    if (isSpamSubmission(honeypot, mountedAt.current)) { setSubmitted(true); return; }
-    if (!instituteId) { setError('This form is not connected yet — please try again later.'); return; }
-    setSubmitting(true);
-    try {
-      await submitWebsiteLead({
-        instituteId,
-        audienceId,
-        email,
-        sourceType: 'NEWSLETTER',
-        sourceId: `${tagName || 'catalogue'}:newsletter`,
-      });
-      setSubmitted(true);
-    } catch {
-      setError('Something went wrong — please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <section style={sectionBg(backgroundColor)} className="catalogue-section px-4 sm:px-6 lg:px-8 bg-catalogue-bg-subtle">
@@ -1717,20 +2476,24 @@ const NewsletterSignupRenderer: React.FC<any> = ({ heading, subheading, placehol
         {heading && <h3 className={`mb-2 text-2xl font-bold ${txt.heading}`}>{heading}</h3>}
         {subheading && <p className={`mb-6 ${txt.muted}`}>{subheading}</p>}
         {submitted ? (
-          <p className="text-lg font-medium text-green-600">{successMessage || 'Thank you for subscribing!'}</p>
+          <p className="text-lg font-medium text-green-600">{successMessage || t("jsonRenderer.newsletterSuccessDefault")}</p>
         ) : (
-          <form onSubmit={handleSubmit} className={`flex ${layout === 'stacked' ? 'flex-col' : ''} gap-3`}>
+          <form
+            // The editor preview never creates a lead.
+            onSubmit={isPreviewMode ? (e) => e.preventDefault() : handleSubmit}
+            className={`flex ${layout === 'stacked' ? 'flex-col' : ''} gap-3`}
+          >
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={placeholder}
+              placeholder={placeholder || t("jsonRenderer.enterYourEmail")}
               className="flex-1 rounded-lg border border-catalogue-border bg-catalogue-bg px-4 py-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
             />
             {/* Honeypot — hidden from humans, filled by bots. */}
             <div className="sr-only" aria-hidden="true">
-              <label>Company website<input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
+              <label>{t("jsonRenderer.companyWebsite")}<input type="text" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
             </div>
             <button
               type="submit"
@@ -1738,7 +2501,7 @@ const NewsletterSignupRenderer: React.FC<any> = ({ heading, subheading, placehol
               className="rounded-lg px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               style={{ backgroundColor: 'hsl(var(--primary-500, 217 91% 60%))' }}
             >
-              {submitting ? '…' : buttonText}
+              {submitting ? '…' : (buttonText || t("jsonRenderer.subscribe"))}
             </button>
           </form>
         )}
@@ -2048,7 +2811,7 @@ const ComponentStyleWrapper: React.FC<{
         ref={ref}
         id={component.anchorId || undefined}
         data-cid={component.id}
-        className={`${component.style?.customClass || ''} ${hoverClass} ${staggerClass}`}
+        className={`${component.style?.customClass || ''} ${hoverClass} ${staggerClass}${component.anchorId ? ' catalogue-block-anchor' : ''}`}
         style={{ ...canvasStyle, ...animationStyle, ...decorClip, ...authoredPaddingVars(component.style) }}
       >
         {responsiveCSS && <style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />}
@@ -2077,7 +2840,7 @@ const ComponentStyleWrapper: React.FC<{
       ref={ref}
       id={component.anchorId || undefined}
       data-cid={component.id}
-      className={`${component.style?.customClass || ''} ${hoverClass} ${staggerClass}`}
+      className={`${component.style?.customClass || ''} ${hoverClass} ${staggerClass}${component.anchorId ? ' catalogue-block-anchor' : ''}`}
       style={{
         ...componentStyle,
         ...animationStyle,

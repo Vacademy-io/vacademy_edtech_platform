@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -14,7 +15,7 @@ import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
 import { linkCounsellorToEnquiry } from '../-services/link-counsellor';
 import { useEligibleAssigneesDebounced } from '@/services/user-autosuggest';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 interface AssignCounsellorDialogProps {
     open: boolean;
@@ -29,6 +30,7 @@ export const AssignCounsellorDialog = ({
     enquiryId,
     onSuccess,
 }: AssignCounsellorDialogProps) => {
+    const { t } = useTranslation('admissionsAssignCounsellorDialog');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCounsellor, setSelectedCounsellor] = useState<{
         id: string;
@@ -49,7 +51,7 @@ export const AssignCounsellorDialog = ({
     const assignMutation = useMutation({
         mutationFn: () => linkCounsellorToEnquiry(enquiryId, selectedCounsellor!.id),
         onSuccess: () => {
-            toast.success('Counsellor assigned successfully');
+            toast.success(t('toast.assignSuccess'));
             queryClient.invalidateQueries({ queryKey: ['enquiries'] });
             queryClient.invalidateQueries({
                 queryKey: ['counsellor-details', selectedCounsellor!.id],
@@ -58,13 +60,13 @@ export const AssignCounsellorDialog = ({
             handleClose();
         },
         onError: (error: any) => {
-            toast.error(error?.response?.data?.message || 'Failed to assign counsellor');
+            toast.error(error?.response?.data?.message || t('toast.assignFailed'));
         },
     });
 
     const handleAssign = () => {
         if (!selectedCounsellor) {
-            toast.error('Please select a counsellor');
+            toast.error(t('toast.selectCounsellor'));
             return;
         }
         assignMutation.mutate();
@@ -78,27 +80,25 @@ export const AssignCounsellorDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Assign Counsellor</DialogTitle>
-                    <DialogDescription>
-                        Search and select a counsellor to assign to this enquiry
-                    </DialogDescription>
+                    <DialogTitle>{t('title')}</DialogTitle>
+                    <DialogDescription>{t('description')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
                     {!selectedCounsellor ? (
                         <div>
-                            <Label htmlFor="counsellorSearch">Search Counsellor</Label>
+                            <Label htmlFor="counsellorSearch">{t('searchLabel')}</Label>
                             <Input
                                 id="counsellorSearch"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Type to search by name..."
+                                placeholder={t('searchPlaceholder')}
                                 className="mt-1"
                             />
                             {isLoadingCounsellors && (
-                                <p className="mt-2 text-sm text-gray-500">Searching...</p>
+                                <p className="mt-2 text-sm text-gray-500">{t('searching')}</p>
                             )}
                             {counsellors && counsellors.length > 0 && (
                                 <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
@@ -130,13 +130,13 @@ export const AssignCounsellorDialog = ({
                                 counsellors.length === 0 &&
                                 !isLoadingCounsellors && (
                                     <p className="mt-2 text-sm text-gray-500">
-                                        No counsellors found
+                                        {t('noCounsellorsFound')}
                                     </p>
                                 )}
                         </div>
                     ) : (
                         <div>
-                            <Label>Selected Counsellor</Label>
+                            <Label>{t('selectedCounsellorLabel')}</Label>
                             <div className="mt-1 flex items-center justify-between rounded-md border bg-gray-50 p-3">
                                 <div>
                                     <div className="font-medium">
@@ -161,14 +161,14 @@ export const AssignCounsellorDialog = ({
                         onClick={handleClose}
                         disabled={assignMutation.isPending}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
                         onClick={handleAssign}
                         disabled={!selectedCounsellor || assignMutation.isPending}
                     >
-                        {assignMutation.isPending ? 'Assigning...' : 'Assign'}
+                        {assignMutation.isPending ? t('assigning') : t('assign')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

@@ -47,9 +47,10 @@ export interface AudienceRule {
     /** TAG */
     tagIds: string[];
     tagScope: 'ALL' | 'DEFAULT' | 'INSTITUTE';
-    /** AUDIENCE (campaign) */
-    campaignId: string;
-    campaignName: string;
+    /** AUDIENCE (campaign) — multi-select, one recipient row per campaign. */
+    campaignIds: string[];
+    /** Names captured at pick/hydrate time, so rows stay labelled before the campaign list loads. */
+    campaignNames: Record<string, string>;
     fieldFilters: FieldFilter[];
     exclusions: RuleExclusion[];
 }

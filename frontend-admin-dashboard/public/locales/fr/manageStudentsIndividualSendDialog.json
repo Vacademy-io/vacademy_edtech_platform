@@ -1,0 +1,151 @@
+{
+    "dialogTitle": "Envoyer {{channelLabel}}",
+    "dialogDescription": {
+        "withStudent": "Envoyer un(e) {{contentType}} à {{name}}.",
+        "noStudent": "Aucun apprenant sélectionné."
+    },
+    "channelLabel": {
+        "EMAIL": "e-mail",
+        "WHATSAPP": "WhatsApp"
+    },
+    "contentType": {
+        "EMAIL": "e-mail à partir d'un modèle",
+        "WHATSAPP": "message WhatsApp à partir d'un modèle"
+    },
+    "steps": {
+        "selectTemplate": "Choisir le modèle",
+        "composeContent": "Rédiger le contenu",
+        "mapVariables": "Associer les variables",
+        "reviewSend": "Vérifier et envoyer"
+    },
+    "systemFields": {
+        "fullName": "Nom complet",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "city": "Ville",
+        "region": "Région",
+        "gender": "Genre",
+        "enrollmentId": "Identifiant d'inscription",
+        "fathersName": "Nom du père",
+        "mothersName": "Nom de la mère",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe"
+    },
+    "toasts": {
+        "loadEmailTemplatesFailed": "Échec du chargement des modèles d'e-mail",
+        "loadWaTemplatesFailed": "Échec du chargement des modèles WhatsApp",
+        "loadTemplateContentFailed": "Échec du chargement du contenu du modèle",
+        "noEmailAddress": "Cet apprenant n'a pas d'adresse e-mail.",
+        "noMobileNumber": "Cet apprenant n'a pas de numéro de mobile.",
+        "emailSent": "E-mail envoyé",
+        "selectWaTemplateFirst": "Veuillez d'abord sélectionner un modèle WhatsApp",
+        "whatsappSent": "Message WhatsApp envoyé",
+        "sendFailed": "Échec de l'envoi",
+        "whatsappQueued": "WhatsApp a accepté le message — la livraison est confirmée séparément",
+        "whatsappRejected": "WhatsApp a refusé ce message — il n'a pas été envoyé",
+        "whatsappRejectedWithReason": "WhatsApp a refusé ce message : {{reason}}",
+        "emailRejected": "L'e-mail n'a pas été accepté pour la livraison",
+        "emailRejectedWithReason": "L'e-mail n'a pas été accepté : {{reason}}"
+    },
+    "emailTemplateStep": {
+        "templateLabel": "Modèle",
+        "loadingTemplates": "Chargement des modèles...",
+        "selectPlaceholder": "Sélectionner un modèle",
+        "emptyText": "Aucun modèle ne correspond à votre recherche.",
+        "customOption": "Personnalisé — rédiger à partir de zéro",
+        "loadingContent": "Chargement du contenu du modèle..."
+    },
+    "emailComposeStep": {
+        "emailTypeLabel": "Type d'e-mail",
+        "emailTypeUtility": "E-mail utilitaire",
+        "emailTypePromotional": "E-mail promotionnel",
+        "emailTypeTransactional": "E-mail transactionnel",
+        "subjectLabel": "Objet",
+        "subjectPlaceholder": "Saisissez l'objet de l'e-mail...",
+        "bodyLabel": "Corps du message",
+        "previewTab": "Aperçu",
+        "editTab": "Modifier le HTML",
+        "emptyBodyPreview": "Choisissez un modèle ou passez à « Modifier le HTML » pour rédiger le contenu.",
+        "bodyPlaceholder": "Saisissez le corps HTML de l'e-mail... utilisez {{varSyntax}} pour les variables",
+        "bodyHelpPrefix": "Les variables comme",
+        "bodyHelpSuffix": "sont remplacées par les données de l'apprenant lors de l'envoi. Associez-les à l'étape suivante."
+    },
+    "waTemplateStep": {
+        "templateLabel": "Modèle",
+        "loadingTemplates": "Chargement des modèles...",
+        "selectPlaceholder": "Sélectionner un modèle approuvé",
+        "emptyText": "Aucun modèle approuvé ne correspond à votre recherche.",
+        "languageCodeLabel": "Code de langue",
+        "templatePreviewLabel": "Aperçu du modèle",
+        "previewHint": "Les parties surlignées sont des variables — l'étape suivante les remplit avec les données de cet apprenant.",
+        "headerBadge": "En-tête {{kind}}"
+    },
+    "mediaKind": {
+        "image": "image",
+        "video": "vidéo",
+        "document": "document"
+    },
+    "headerMediaField": {
+        "label": "URL de l'en-tête {{kind}}",
+        "helpText": "Ce modèle comporte un en-tête de type {{kind}}, que WhatsApp exige à chaque envoi — sans quoi le message échoue. Préremplie avec le média approuvé avec le modèle.",
+        "previewAlt": "Aperçu de l'en-tête"
+    },
+    "variableMappingStep": {
+        "noVariables": "Aucune variable à associer. Vous pouvez continuer.",
+        "mapHint": "Associez chaque variable à un champ de l'apprenant, ou saisissez une valeur fixe.",
+        "columnVariable": "Variable",
+        "columnSource": "Source",
+        "columnResolvedValue": "Valeur résolue",
+        "sourcePlaceholder": "Sélectionner une source...",
+        "literalOption": "Valeur fixe...",
+        "literalPlaceholder": "Saisissez une valeur",
+        "unresolved": "(non résolu)",
+        "livePreviewLabel": "Aperçu du message",
+        "sourceSearchPlaceholder": "Rechercher un champ...",
+        "sourceNoMatch": "Aucun champ ne correspond à votre recherche."
+    },
+    "reviewStep": {
+        "messageSent": "Message envoyé",
+        "sendCompleted": "Envoi terminé",
+        "statusLabel": "Statut",
+        "acceptedLabel": "Accepté",
+        "failedLabel": "Échoué",
+        "close": "Fermer",
+        "noSubject": "(sans objet)",
+        "channelHeading": "Canal",
+        "subjectLabel": "Objet",
+        "templateLabel": "Modèle",
+        "recipientLabel": "Destinataire",
+        "variablesLabel": "Variables",
+        "empty": "(vide)",
+        "sending": "Envoi en cours...",
+        "sendTo": "Envoyer à {{name}}",
+        "delivered": "Remis",
+        "notDelivered": "Non remis",
+        "confirmingDelivery": "Confirmation de la remise…",
+        "deliveryLabel": "Remise",
+        "sendFailed": "Message non envoyé",
+        "noReason": "Aucun motif communiqué par le fournisseur.",
+        "deliveryStatus": {
+            "SENT": "Envoyé",
+            "DELIVERED": "Remis",
+            "READ": "Lu",
+            "FAILED": "Échec"
+        },
+        "messagePreviewLabel": "Message qui sera envoyé"
+    },
+    "footer": {
+        "back": "Retour",
+        "next": "Suivant"
+    },
+    "templatePicker": {
+        "showFullMessage": "Afficher le message complet",
+        "showLess": "Afficher moins"
+    },
+    "waPreview": {
+        "image": "Image",
+        "video": "Vidéo",
+        "document": "Document",
+        "emptyBody": "Ce modèle n'a pas de corps de message."
+    }
+}

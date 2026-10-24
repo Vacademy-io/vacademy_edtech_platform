@@ -1,0 +1,46 @@
+{
+    "adminList": {
+        "noAdmins": "इस संगठन का अभी तक कोई एडमिन दर्ज नहीं है।",
+        "unnamedAdmin": "अनाम एडमिन",
+        "noEmailOnRecord": "कोई ईमेल दर्ज नहीं है"
+    },
+    "picker": {
+        "label": "सब-ऑर्गनाइज़ेशन *",
+        "placeholder": "एक संगठन चुनें",
+        "memberCount_one": " · {{count}} सदस्य",
+        "memberCount_other": " · {{count}} सदस्य",
+        "createNewOption": "+ नया संगठन बनाएं",
+        "skipOption": "किसी संगठन से न जोड़ें",
+        "emptyState": "इस बैच में अभी तक कोई संगठन नामांकित नहीं है — पहला संगठन बनाएं।"
+    },
+    "skippedNotice": "बिना किसी संगठन से जुड़े एक सामान्य {{learnerTerm}} के रूप में नामांकित। मानक नामांकन ऑटोमेशन चलेगा, सब-ऑर्ग सदस्य वाला नहीं।",
+    "adminInfo": {
+        "heading": "संगठन के एडमिन",
+        "contactLine": "संगठन संपर्क: {{email}}{{mobile}}"
+    },
+    "newOrgForm": {
+        "heading": "नए संगठन का विवरण",
+        "nameLabel": "संगठन का नाम *",
+        "namePlaceholder": "जैसे, Green Valley Clinic",
+        "emailLabel": "ईमेल",
+        "emailPlaceholder": "contact@organisation.com",
+        "phoneLabel": "फ़ोन",
+        "phonePlaceholder": "संपर्क नंबर"
+    },
+    "role": {
+        "label": "संगठन के अंदर भूमिका",
+        "staffOption": "स्टाफ़ — {{learnerTerm}} (डिफ़ॉल्ट)",
+        "adminOption": "एडमिन + {{learnerTerm}}",
+        "adminOnlyOption": "केवल एडमिन",
+        "adminOnlyDescription": "कोर्स एक्सेस के बिना संगठन की सूची प्रबंधित करता है। एडमिन-ओनली सदस्यों के लिए सदस्य-नामांकन ऑटोमेशन नहीं चलते।",
+        "adminDescription": "कोर्स एक्सेस मिलता है और संगठन की सूची भी प्रबंधित करता है — वे संगठन एडमिन के रूप में दिखेंगे।",
+        "staffDescription": "केवल कोर्स एक्सेस। संगठन पर कोई एडमिन अधिकार नहीं।"
+    },
+    "emptyState": {
+        "heading": "कोई संगठन-लिंक्ड {{batchTerm}} चयनित नहीं है"
+    },
+    "warningBanner": {
+        "message_one": "यह बैच संगठनों को बेचा जाता है। चुनें कि प्रत्येक चयनित {{learnerSingular}} किस संगठन से जुड़ेगा और उसकी भूमिका क्या होगी। यही विकल्प इस रन के हर {{learnerPlural}} पर लागू होगा।",
+        "message_other": "ये बैच संगठनों को बेचे जाते हैं। चुनें कि प्रत्येक चयनित {{learnerSingular}} किस संगठन से जुड़ेगा और उसकी भूमिका क्या होगी। यही विकल्प इस रन के हर {{learnerPlural}} पर लागू होगा।"
+    }
+}

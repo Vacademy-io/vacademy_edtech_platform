@@ -142,7 +142,7 @@ export function shouldShowCompactToggle(pathname: string): boolean {
     }
 
     // Don't show on full-screen routes
-    const fullScreenRoutes = ['/evaluator-ai', '/slides'];
+    const fullScreenRoutes = ['/slides'];
     if (fullScreenRoutes.some(route => pathname.includes(route))) {
         return false;
     }

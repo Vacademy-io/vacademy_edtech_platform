@@ -34,6 +34,7 @@ class VideoCostPreviewRequest(BaseModel):
     review_mode: bool = False
     attachments_count: int = 0
     host: Optional["HostConfig"] = None
+    lesson: Optional["LessonConfig"] = None
     # When true, the estimator adds an AI video (Veo) upper-bound row to
     # the breakdown so the FE pre-submit panel surfaces the worst-case
     # spend. Ultra/super_ultra tiers only — silently ignored otherwise.
@@ -51,6 +52,14 @@ class VideoCostPreviewResponse(BaseModel):
     selections: Dict[str, Any]
     estimate: Dict[str, Any]
     balance: Dict[str, Any]
+
+
+# Upper bound on indexed input assets per run. Images are cheap (one metadata
+# JSON each) so the ceiling is set by prompt budget, not media cost; the
+# per-image OCR block scales down as the count rises. Videos stay capped at
+# MAX_INPUT_VIDEOS in the service layer.
+MAX_INPUT_ASSETS = 20
+MAX_INPUT_VIDEOS = 5
 
 
 class ReferenceFileItem(BaseModel):
@@ -270,6 +279,39 @@ class HostConfig(BaseModel):
                     "or saved_avatar_id (resolved server-side)."
                 )
         return self
+
+
+class LessonTeacherConfig(BaseModel):
+    """The on-screen teacher of a lesson — a Spatius avatar the institute may
+    use (platform stock or its own, as listed by GET /tutor/options)."""
+    avatar_id: str = Field(..., min_length=8, max_length=160, description="Spatius avatar id.")
+    name: Optional[str] = Field(default=None, max_length=60, description="Shown on the teacher panel.")
+    title: Optional[str] = Field(default=None, max_length=60, description="e.g. 'Maths teacher'.")
+
+
+class LessonConfig(BaseModel):
+    """Lesson mode: an education video taught by a teacher at a board.
+
+    The planner paces it as a lesson (6-20 s sections, no shot cap, hook →
+    concepts → worked example → recap), the narration is written as a
+    teacher, and — when `teacher` is set — a Spatius avatar appears beside
+    the board in a per-section layout."""
+    enabled: bool = True
+    teacher: Optional[LessonTeacherConfig] = Field(
+        default=None, description="None = board-only lesson (no on-screen teacher).",
+    )
+    layout: Literal["auto", "corner", "bubble", "side", "presenter", "board"] = Field(
+        default="auto",
+        description=(
+            "Where the teacher sits. corner = small cut-out bottom-right; bubble = round "
+            "270 px bubble bottom-right; side = slim right panel (25%); presenter = right "
+            "panel (36%); board = no teacher. 'auto' lets the planner choose per section "
+            "(presenter for the hook, side for explanations, corner for dense boards)."
+        ),
+    )
+    subject: Optional[str] = Field(default=None, max_length=80, description="e.g. 'Mathematics', 'Physics'.")
+    include_worked_example: bool = True
+    include_recap: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -698,6 +740,13 @@ class VideoGenerationRequest(BaseModel):
             "videos where the TTS script is the main content."
         )
     )
+    lesson: Optional[LessonConfig] = Field(
+        default=None,
+        description=(
+            "Lesson mode for education videos: lesson pacing, a teacher's narration and "
+            "(optionally) a Spatius teacher beside the board. Not combinable with `host`."
+        ),
+    )
     host: Optional[HostConfig] = Field(
         default=None,
         description=(
@@ -757,7 +806,14 @@ class VideoGenerationRequest(BaseModel):
             self.input_video_ids = [self.input_video_id]
         # If both set, list takes precedence
         if self.input_video_ids:
-            self.input_video_ids = self.input_video_ids[:5]  # cap at 5
+            # Polymorphic asset ids: this list carries both indexed videos and
+            # indexed images and the schema cannot tell them apart (kind lives
+            # on the row). The old flat cap of 5 was sized for videos — each is
+            # a large download plus an index job — and silently truncated an
+            # image-led run to 5 stills, which is not enough to walk a product
+            # flow. Ceiling raised for images; the video-specific cap is
+            # enforced in the service layer, where `kind` is known.
+            self.input_video_ids = self.input_video_ids[:MAX_INPUT_ASSETS]
             # Set singular to first for backward compat downstream
             self.input_video_id = self.input_video_ids[0]
             # Multi-source forces TTS (can't splice different audio tracks)

@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "ربط القالب",
+        "templateBody": "نص القالب",
+        "noBodyContent": "لا يوجد محتوى للنص"
+    },
+    "errors": {
+        "loadFields": "فشل تحميل الحقول المتاحة",
+        "saveMapping": "فشل حفظ ربط القالب. يرجى المحاولة مرة أخرى."
+    },
+    "mappings": {
+        "sectionTitle": "ربط القيم الديناميكية",
+        "vacademyDataField": "حقل بيانات Vacademy",
+        "dataCategory": "فئة البيانات",
+        "selectCategoryPlaceholder": "اختر فئة البيانات...",
+        "field": "الحقل",
+        "selectFieldPlaceholder": "اختر الحقل...",
+        "mappedTo": "مرتبط بـ:"
+    },
+    "preview": {
+        "title": "معاينة رسالة واتساب",
+        "completeAllToSeePreview": "أكمل جميع الربطات لرؤية المعاينة الكاملة"
+    },
+    "completionStatus": {
+        "title": "حالة الاكتمال",
+        "mapped": "تم الربط",
+        "pending": "قيد الانتظار",
+        "allComplete": "تم إكمال جميع الربطات!"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ...",
+        "saveMapping": "حفظ الربط"
+    }
+}

@@ -48,8 +48,25 @@ public class GoogleOAuthService {
     @Value("${google.oauth.scopes:openid email https://www.googleapis.com/auth/meetings.space.created https://www.googleapis.com/auth/meetings.space.readonly}")
     private String scopes;
 
+    /**
+     * Read access to Drive files Google Meet created — lets the server download a Meet recording
+     * into the library. Google classes it as RESTRICTED (unverified apps get a warning screen and a
+     * 100-user cap unless a Workspace admin marks Vacademy as Trusted), so it is opt-in per connect
+     * rather than part of {@link #scopes}: the regular connect flow stays unaffected.
+     */
+    public static final String DRIVE_MEET_READONLY_SCOPE = "https://www.googleapis.com/auth/drive.meet.readonly";
+
     /** Build the Google consent URL the admin's browser is sent to. {@code state} is our CSRF/session id. */
     public String buildAuthorizeUrl(String state) {
+        return buildAuthorizeUrl(state, false);
+    }
+
+    /**
+     * @param driveAccess also request {@link #DRIVE_MEET_READONLY_SCOPE}. With
+     *                    include_granted_scopes=true the grant is incremental, so a later plain
+     *                    reconnect keeps it.
+     */
+    public String buildAuthorizeUrl(String state, boolean driveAccess) {
         if (clientId == null || clientId.isBlank()) {
             throw new VacademyException("Google OAuth is not configured (google.oauth.client-id missing)");
         }
@@ -59,7 +76,7 @@ public class GoogleOAuthService {
                 + "?response_type=code"
                 + "&client_id=" + enc(clientId)
                 + "&redirect_uri=" + enc(redirectUri)
-                + "&scope=" + enc(scopes)
+                + "&scope=" + enc(driveAccess ? scopes + " " + DRIVE_MEET_READONLY_SCOPE : scopes)
                 + "&access_type=offline"
                 + "&include_granted_scopes=true"
                 + "&prompt=consent"

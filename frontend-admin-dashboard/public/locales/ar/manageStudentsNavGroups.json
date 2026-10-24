@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "overview": "نظرة عامة",
+        "courses": "الدورات",
+        "learningProgress": "التقدم",
+        "testRecord": "الاختبارات",
+        "paymentHistory": "سجل المدفوعات",
+        "enrollDeroll": "تسجيل / إلغاء تسجيل",
+        "membership": "العضوية",
+        "lead": "ملف العميل المحتمل",
+        "enquiry": "الاستفسار",
+        "application": "الطلب",
+        "notifications": "التواصل",
+        "portalAccess": "الوصول إلى البوابة",
+        "userTagging": "تصنيف المستخدم",
+        "badges": "الشارات",
+        "files": "الملفات",
+        "parent": "ولي الأمر",
+        "onboarding": "التهيئة",
+        "subOrg": "المؤسسة الفرعية",
+        "reports": "التقارير",
+        "fullHistory": "السجل الكامل",
+        "workflows": "سير العمل"
+    }
+}

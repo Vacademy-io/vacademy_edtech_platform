@@ -10,17 +10,17 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-    CheckCircle2,
+    CheckCircle,
     FileText,
     Clock,
     Gauge,
-    TrendingDown,
+    TrendDown,
     Sigma,
     Target,
     Shuffle,
-    Award,
+    Medal,
     ListChecks,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Section } from '@/types/assessments/assessment-data-type';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Route } from '..';
@@ -36,6 +36,11 @@ import {
 } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-utils/helper';
 import { calculateAverageMarks, calculateAveragePenalty } from '../-utils/helper';
 import { QuestionData } from '@/types/assessments/assessment-steps';
+import {
+    QuestionOptionsList,
+    optionsFromQuestionData,
+    type QuestionOptionView,
+} from '@/components/common/assessment/question-options-list';
 import { useMemo, useState, useEffect } from 'react';
 import TipTapEditor from '@/components/tiptap/TipTapEditor';
 import { CriteriaPreviewDialog } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/StepComponents/-components/CriteriaPreviewDialog';
@@ -47,6 +52,8 @@ import {
 import { CriteriaStatusBadge } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/StepComponents/-components/CriteriaStatusBadge';
 import { AddEditCriteriaDialog } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-components/StepComponents/-components/AddEditCriteriaDialog';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { sanitizeRichHtml } from '@/lib/sanitize-html';
 
 interface QuestionDuration {
     hrs: string;
@@ -62,6 +69,7 @@ interface Question {
     questionDuration: QuestionDuration;
     evaluation_criteria_json?: string | null;
     criteria_template_id?: string | null; // From API, indicates if from template
+    options?: QuestionOptionView[];
 }
 
 // Custom hook for data transformation
@@ -89,6 +97,7 @@ const useAdaptiveMarking = (questionsForSection: QuestionData[]) => {
                 },
                 evaluation_criteria_json: questionData.evaluation_criteria_json || null,
                 criteria_template_id: questionData.criteria_template_id || null,
+                options: optionsFromQuestionData(questionData),
             };
         });
     }, [questionsForSection]);
@@ -120,7 +129,7 @@ const StatTile = ({
                     <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex min-w-0 flex-col">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                    <p className="text-caption font-medium uppercase tracking-wider text-slate-500">
                         {label}
                     </p>
                     <p className="truncate text-lg font-bold tabular-nums text-slate-900">
@@ -149,7 +158,7 @@ const FeatureBadge = ({
                 {value}
             </span>
         )}
-        <CheckCircle2 className="h-3.5 w-3.5" />
+        <CheckCircle className="h-3.5 w-3.5" />
     </div>
 );
 
@@ -165,6 +174,7 @@ const SectionInfo = ({
     examType: string;
     assessmentDetails: any;
 }) => {
+    const { t } = useTranslation('assessmentQuestionsSection');
     const avgMarks = calculateAverageMarks(adaptiveMarking);
     const totalMarks = calculateTotalMarks(adaptiveMarking);
     const avgPenalty = calculateAveragePenalty(adaptiveMarking);
@@ -179,13 +189,13 @@ const SectionInfo = ({
                         <div className="mb-2 flex items-center gap-2">
                             <FileText className="h-3.5 w-3.5 text-slate-500" />
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                Section Description
+                                {t('sectionInfo.descriptionTitle')}
                             </h4>
                         </div>
                         <div
                             className="custom-html-content prose prose-sm max-w-none text-sm text-slate-700"
                             dangerouslySetInnerHTML={{
-                                __html: section.description.content || '',
+                                __html: sanitizeRichHtml(section.description.content),
                             }}
                         />
                     </CardContent>
@@ -197,15 +207,15 @@ const SectionInfo = ({
                     {showSectionDuration && (
                         <StatTile
                             icon={Clock}
-                            label="Section Duration"
-                            value={`${section.duration} min`}
+                            label={t('stats.sectionDuration.label')}
+                            value={t('stats.sectionDuration.value', { duration: section.duration })}
                             accent="primary"
                         />
                     )}
                     {examType !== 'SURVEY' && (
                         <StatTile
                             icon={Gauge}
-                            label="Avg. Marks / Question"
+                            label={t('stats.avgMarksPerQuestion')}
                             value={avgMarks}
                             accent="primary"
                         />
@@ -213,15 +223,15 @@ const SectionInfo = ({
                     {examType !== 'SURVEY' && (
                         <StatTile
                             icon={Sigma}
-                            label="Total Marks"
+                            label={t('stats.totalMarks')}
                             value={totalMarks}
                             accent="amber"
                         />
                     )}
                     {avgPenalty > 0 && (
                         <StatTile
-                            icon={TrendingDown}
-                            label="Negative Marking"
+                            icon={TrendDown}
+                            label={t('stats.negativeMarking')}
                             value={avgPenalty}
                             accent="rose"
                         />
@@ -234,17 +244,17 @@ const SectionInfo = ({
                 section.problem_randomization) && (
                 <div className="flex flex-wrap gap-2">
                     {section.partial_marking && (
-                        <FeatureBadge icon={Award} label="Partial Marking" />
+                        <FeatureBadge icon={Medal} label={t('badges.partialMarking')} />
                     )}
                     {section.cutoff_marks > 0 && (
                         <FeatureBadge
                             icon={Target}
-                            label="Cutoff Marks"
+                            label={t('badges.cutoffMarks')}
                             value={section.cutoff_marks}
                         />
                     )}
                     {section.problem_randomization && (
-                        <FeatureBadge icon={Shuffle} label="Problem Randomization" />
+                        <FeatureBadge icon={Shuffle} label={t('badges.problemRandomization')} />
                     )}
                 </div>
             )}
@@ -262,6 +272,7 @@ const QuestionsTable = ({
     examType: string;
     assessmentDetails: any;
 }) => {
+    const { t } = useTranslation('assessmentQuestionsSection');
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
     const [criteriaPreview, setCriteriaPreview] = useState<CriteriaJson | null>(null);
     const [criteriaDialogOpen, setCriteriaDialogOpen] = useState(false);
@@ -283,7 +294,7 @@ const QuestionsTable = ({
         // Validate parsed criteria structure
         if (!parsed || !parsed.criteria || !Array.isArray(parsed.criteria)) {
             console.error('Invalid criteria structure:', parsed);
-            toast.error('Unable to preview criteria. Invalid data format.');
+            toast.error(t('toasts.invalidCriteriaFormat'));
             return;
         }
 
@@ -316,7 +327,9 @@ const QuestionsTable = ({
             <div className="mb-3 flex items-center gap-2">
                 <ListChecks className="h-4 w-4 text-slate-500" />
                 <h3 className="text-sm font-semibold text-slate-900">
-                    {examType === 'SURVEY' ? 'Survey Questions' : 'Adaptive Marking Rules'}
+                    {examType === 'SURVEY'
+                        ? t('table.heading.survey')
+                        : t('table.heading.adaptiveMarking')}
                 </h3>
                 <Badge
                     variant="secondary"
@@ -331,33 +344,33 @@ const QuestionsTable = ({
                         <TableHeader className="bg-slate-50">
                             <TableRow className="border-b border-slate-200 hover:bg-slate-50">
                                 <TableHead className="w-16 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                    #
+                                    {t('table.columns.index')}
                                 </TableHead>
                                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                    Question
+                                    {t('table.columns.question')}
                                 </TableHead>
                                 <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                    Type
+                                    {t('table.columns.type')}
                                 </TableHead>
                                 {examType !== 'SURVEY' && (
                                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                        Marks
+                                        {t('table.columns.marks')}
                                     </TableHead>
                                 )}
                                 {examType !== 'SURVEY' && (
                                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                        Penalty
+                                        {t('table.columns.penalty')}
                                     </TableHead>
                                 )}
                                 {examType !== 'SURVEY' && (
                                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                        Criteria
+                                        {t('table.columns.criteria')}
                                     </TableHead>
                                 )}
                                 {assessmentDetails[1]?.saved_data?.duration_distribution ===
                                     'QUESTION' && (
                                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                        Time
+                                        {t('table.columns.time')}
                                     </TableHead>
                                 )}
                             </TableRow>
@@ -380,6 +393,7 @@ const QuestionsTable = ({
                                                 onChange={() => {}}
                                                 editable={false}
                                             />
+                                            <QuestionOptionsList options={question.options} />
                                         </TableCell>
                                         <TableCell className="align-top">
                                             <Badge
@@ -419,7 +433,7 @@ const QuestionsTable = ({
                                                     />
                                                 ) : (
                                                     <span className="text-xs italic text-slate-400">
-                                                        Not set
+                                                        {t('table.criteriaNotSet')}
                                                     </span>
                                                 )}
                                             </TableCell>
@@ -474,6 +488,7 @@ const QuestionsTable = ({
 };
 
 const AssessmentQuestionsSection = ({ section, index }: { section: Section; index: number }) => {
+    const { t } = useTranslation('assessmentQuestionsSection');
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { data: assessmentDetails, isLoading: isAssessmentDetailsLoading } = useSuspenseQuery(
@@ -511,8 +526,7 @@ const AssessmentQuestionsSection = ({ section, index }: { section: Section; inde
                                 {section.name}
                             </h3>
                             <p className="text-xs text-slate-500">
-                                {counts.totalQuestions} question
-                                {counts.totalQuestions === 1 ? '' : 's'}
+                                {t('accordion.questionCount', { count: counts.totalQuestions })}
                             </p>
                         </div>
                     </div>
@@ -522,7 +536,7 @@ const AssessmentQuestionsSection = ({ section, index }: { section: Section; inde
                                 variant="secondary"
                                 className="bg-sky-50 font-medium text-sky-700 hover:bg-sky-50"
                             >
-                                MCQ · Single {counts.MCQS}
+                                {t('accordion.mcqSingle', { count: counts.MCQS })}
                             </Badge>
                         )}
                         {counts.MCQM > 0 && (
@@ -530,11 +544,11 @@ const AssessmentQuestionsSection = ({ section, index }: { section: Section; inde
                                 variant="secondary"
                                 className="bg-violet-50 font-medium text-violet-700 hover:bg-violet-50"
                             >
-                                MCQ · Multiple {counts.MCQM}
+                                {t('accordion.mcqMultiple', { count: counts.MCQM })}
                             </Badge>
                         )}
                         <Badge className="bg-primary-500 font-semibold tabular-nums text-white hover:bg-primary-500">
-                            Total {counts.totalQuestions}
+                            {t('accordion.total', { count: counts.totalQuestions })}
                         </Badge>
                     </div>
                 </div>
@@ -556,7 +570,7 @@ const AssessmentQuestionsSection = ({ section, index }: { section: Section; inde
                         <div className="flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2">
                             <Sigma className="h-4 w-4 text-primary-600" />
                             <span className="text-xs font-medium uppercase tracking-wider text-primary-700">
-                                Section Total
+                                {t('sectionTotal')}
                             </span>
                             <span className="text-lg font-bold tabular-nums text-primary-700">
                                 {calculateTotalMarks(adaptiveMarking)}

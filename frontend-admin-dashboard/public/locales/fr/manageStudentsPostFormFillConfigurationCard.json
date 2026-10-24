@@ -1,0 +1,41 @@
+{
+    "title": "Configuration après remplissage du formulaire",
+    "redirectPath": {
+        "label": "Chemin de redirection (facultatif)",
+        "placeholder": "/dashboard ou https://example.com",
+        "helpText": "Si défini, l'utilisateur sera immédiatement redirigé vers ce chemin après une inscription réussie, en contournant la page de succès."
+    },
+    "showLoginButton": {
+        "label": "Afficher le bouton de connexion",
+        "helpText": "Afficher le bouton de connexion sur la page de succès si la redirection n'est pas immédiate."
+    },
+    "content": {
+        "label": "Contenu de la page de succès (facultatif)",
+        "placeholder": "Contenu HTML/texte",
+        "helpText": "Contenu personnalisé à afficher sur la page de succès. Remplace le message par défaut. Vous pouvez utiliser du HTML.",
+        "tokensPrefix": "Jetons pris en charge :",
+        "tokensJoiner": "et",
+        "tokensSuffix": "Ils sont remplacés au moment de l'exécution par le titre du cours et le montant payé par l'apprenant pour le plan choisi."
+    },
+    "collectBillingContactDetails": {
+        "label": "Recueillir les coordonnées du contact de facturation",
+        "helpText": "Permettre aux apprenants d'ajouter un contact de facturation distinct (nom, e-mail, rôle) lors de l'inscription. L'e-mail de facturation reçoit également les factures et les avis de renouvellement."
+    },
+    "billingContactFields": {
+        "heading": "Champs du contact de facturation",
+        "helpText": "Personnalisez les libellés visibles par les apprenants, marquez les champs comme facultatifs et (pour le troisième champ) fournissez des options de liste déroulante sous forme de liste séparée par des virgules. Laissez les options vides pour l'afficher comme un champ de texte libre.",
+        "fieldLabelTemplate": "Libellé du champ {{field}}",
+        "fieldLabelPlaceholder": "Libellé du champ",
+        "fieldNames": {
+            "name": "nom",
+            "email": "e-mail",
+            "role": "rôle"
+        },
+        "required": "Obligatoire",
+        "options": {
+            "label": "Options (séparées par des virgules)",
+            "placeholder": "Propriétaire, Responsable, Finance",
+            "helpText": "Laissez vide pour afficher ce champ comme un champ de texte libre."
+        }
+    }
+}

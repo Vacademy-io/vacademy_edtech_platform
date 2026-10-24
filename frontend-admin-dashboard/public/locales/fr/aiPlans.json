@@ -1,0 +1,251 @@
+{
+    "tab": "Forfait et facturation",
+    "heading": "Forfait IA et facturation",
+    "subheadingCatalog": "Un prix mensuel fixe pour l'IA au quotidien. Ce qu'un forfait ne couvre pas continue d'utiliser vos crédits.",
+    "subheadingManage": "Votre forfait IA, ses renouvellements, le prélèvement automatique et les factures.",
+    "brand": {
+        "neutral": "votre équipe plateforme",
+        "neutralTitle": "Votre équipe plateforme",
+        "neutralWord": "Plateforme"
+    },
+    "mode": {
+        "INCLUDED": "Illimité",
+        "ALLOWANCE": "Sur l'allocation",
+        "CHARGED": "Utilise des crédits"
+    },
+    "period": {
+        "month": "mois",
+        "quarter": "trimestre",
+        "halfYear": "6 mois",
+        "year": "an",
+        "months": "{{months}} mois"
+    },
+    "price": {
+        "perPeriodPlusGst": "{{price}} / {{period}} + GST",
+        "perPeriod": "{{price}} / {{period}}",
+        "inclusiveRate": "{{total}} GST {{rate}} % incluse",
+        "inclusive": "{{total}} GST incluse",
+        "noTax": "{{total}} au total"
+    },
+    "status": {
+        "pending": "En attente de paiement",
+        "active": "Actif",
+        "trial": "Essai",
+        "cancels": "Prend fin le {{date}}",
+        "paymentDue": "Paiement dû",
+        "overdue": "Paiement en retard",
+        "ended": "Terminé"
+    },
+    "actions": {
+        "subscribe": "S'abonner",
+        "upgrade": "Passer à ce forfait",
+        "downgrade": "Changer au renouvellement",
+        "current": "Forfait actuel",
+        "contact": "Contacter {{brand}}",
+        "changePlan": "Changer de forfait",
+        "choosePlan": "Choisir un autre forfait",
+        "cancelPlan": "Résilier le forfait",
+        "resume": "Garder mon forfait",
+        "keep": "Retour",
+        "editBilling": "Coordonnées de facturation",
+        "payNow": "Payer maintenant",
+        "cancel": "Annuler",
+        "close": "Fermer",
+        "save": "Enregistrer",
+        "done": "Terminé",
+        "ok": "OK"
+    },
+    "catalog": {
+        "title": "Choisissez un forfait IA",
+        "compareTitle": "Comparer les forfaits",
+        "empty": "Aucun forfait n'est disponible pour votre établissement pour le moment."
+    },
+    "card": {
+        "yourPlan": "Votre forfait",
+        "allowance": "{{credits}} crédits par {{period}} pour les fonctions sur allocation.",
+        "details": "Voir ce qui est inclus"
+    },
+    "detail": {
+        "allowanceNoCarry": "Les crédits non utilisés ne sont pas reportés.",
+        "group": {
+            "INCLUDED": "Illimité dans le cadre d'un usage raisonnable",
+            "ALLOWANCE": "Payé sur l'allocation du forfait",
+            "CHARGED": "Utilise vos crédits"
+        }
+    },
+    "compare": {
+        "show": "Comparer les forfaits côte à côte",
+        "hide": "Masquer la comparaison",
+        "caption": "Ce que comprend chaque forfait",
+        "feature": "Fonction",
+        "price": "Prix",
+        "allowance": "Allocation",
+        "allowanceValue": "{{credits}} crédits",
+        "none": "Aucune"
+    },
+    "footnotes": {
+        "fairUse": "Illimité signifie illimité dans le cadre d'un usage raisonnable. Au-delà d'une limite d'usage raisonnable, ou avec un modèle hors forfait, l'usage est débité de vos crédits.",
+        "uncovered": "Ce qu'un forfait ne couvre pas continue d'utiliser vos crédits. Les prix sont affichés hors GST ; le total inclut la GST."
+    },
+    "checkout": {
+        "title": "S'abonner à {{plan}}",
+        "upgradeTitle": "Passer à {{plan}}",
+        "confirmTitle": "Confirmation de votre paiement",
+        "startsOnPayment": "Commence dès réception de votre paiement et se renouvelle chaque {{period}}.",
+        "anchorNote": "Payer en retard ne raccourcit jamais une période : la date de renouvellement est fixée au premier paiement.",
+        "upgradeToday": "Payez {{amount}} aujourd'hui pour le reste de cette période (jusqu'au {{date}}). Le nouveau forfait démarre dès que le paiement est validé.",
+        "quoteLoading": "Calcul du montant pour le reste de cette période…",
+        "quoteFailed": "Impossible de calculer le montant du changement. Réessayez dans un instant.",
+        "base": "Prix du forfait",
+        "gst": "GST",
+        "gstRate": "GST ({{rate}} %)",
+        "total": "Total",
+        "pay": "Payer {{amount}}",
+        "payPending": "Payer",
+        "supplierLine": "Vous paierez {{supplier}} en toute sécurité via Razorpay. Votre facture sera émise par {{legal}}.",
+        "supplierFallback": "la plateforme",
+        "launching": "Ouverture de la page de paiement sécurisée…",
+        "confirming": "Confirmation de votre paiement…",
+        "confirmingHint": "Cela prend généralement quelques secondes.",
+        "slow": "Cela prend plus de temps que d'habitude. Vous pouvez fermer cette fenêtre : nous vous écrirons dès que le paiement sera confirmé, et le forfait apparaîtra ici.",
+        "successTitle": "Paiement reçu",
+        "successBody": "Votre forfait IA est actif. La facture est ci-dessous et a été envoyée à votre adresse de facturation.",
+        "errorTitle": "Le paiement n'a pas pu aboutir"
+    },
+    "autopay": {
+        "title": "Prélèvement automatique",
+        "explain": "Renouvelez automatiquement avec UPI Autopay ou un mandat par carte. Vous recevrez un avis au moins 24 heures avant chaque prélèvement, et vous pouvez le désactiver à tout moment.",
+        "ceilingNote": "Le prélèvement automatique fonctionne pour les renouvellements jusqu'à {{amount}} par paiement. Sans lui, vous recevrez un lien de paiement avant chaque renouvellement.",
+        "aboveCeiling": "Ce forfait coûte plus de {{amount}} par renouvellement : les renouvellements se font par lien de paiement.",
+        "methodLabel": "Mode de prélèvement",
+        "method": {
+            "UPI": "UPI Autopay",
+            "CARD": "Carte",
+            "EMANDATE": "Mandat bancaire"
+        },
+        "mobile": "Numéro de mobile pour le prélèvement",
+        "mobileHint": "Votre banque ou votre application UPI envoie les avis de prélèvement à ce numéro.",
+        "mobileInvalid": "Saisissez un numéro de mobile indien valide à 10 chiffres.",
+        "on": "Activé",
+        "onWithMethod": "Activé · {{method}}",
+        "off": "Désactivé",
+        "pending": "En cours de configuration",
+        "paused": "En pause",
+        "setUp": "Activer le prélèvement automatique",
+        "setUpTitle": "Activer le prélèvement automatique",
+        "setUpNote": "Vous autoriserez un paiement remboursable de 1 ₹ pour enregistrer le mandat. Les renouvellements seront ensuite prélevés automatiquement.",
+        "continue": "Continuer",
+        "turnOff": "Désactiver le prélèvement",
+        "turnedOff": "Le prélèvement automatique est désactivé. Vous recevrez un lien de paiement avant le prochain renouvellement.",
+        "returned": "Merci. L'activation peut prendre une minute à apparaître."
+    },
+    "billing": {
+        "title": "Informations GST pour votre facture",
+        "description": "Ajoutez votre GSTIN pour récupérer le crédit de taxe. Laissez vide si votre établissement n'est pas enregistré à la GST.",
+        "legalName": "Raison sociale sur la facture",
+        "legalNamePlaceholder": "Nom enregistré de votre établissement",
+        "gstin": "GSTIN",
+        "optional": "(facultatif)",
+        "state": "État",
+        "placeOfSupply": "(lieu de fourniture)",
+        "placeOfSupplyRequired": "(lieu de fourniture, obligatoire)",
+        "selectState": "Choisir l'État",
+        "address": "Adresse de facturation",
+        "email": "E-mail de facturation",
+        "emailPlaceholder": "accounts@your-institute.com",
+        "savedHint": "Enregistré lors de votre dernier achat. Modifiez si besoin.",
+        "editTitle": "Coordonnées de facturation",
+        "futureOnly": "Les modifications ne s'appliquent qu'aux prochaines factures. Les factures déjà émises gardent leurs informations.",
+        "saved": "Coordonnées de facturation enregistrées",
+        "errors": {
+            "gstinInvalid": "Saisissez un GSTIN valide de 15 caractères, par ex. 27AAAAA0000A1Z5",
+            "stateRequired": "Choisissez votre État pour appliquer la bonne GST (CGST/SGST ou IGST)",
+            "legalNameRequired": "Saisissez la raison sociale à imprimer sur la facture",
+            "emailInvalid": "Saisissez un e-mail de facturation valide"
+        }
+    },
+    "manage": {
+        "currentPeriod": "Période en cours",
+        "periodRange": "{{start}} – {{end}}",
+        "renewsOn": "Renouvellement le",
+        "endsOn": "Fin le",
+        "pendingBody": "Votre forfait démarre dès réception du paiement.",
+        "dueBody": "Votre renouvellement de {{amount}} est dû le {{date}}.",
+        "overdueBody": "Le paiement de {{amount}} est en retard. Les avantages du forfait sont suspendus et l'usage de l'IA est débité de vos crédits jusqu'au paiement. Sans paiement, le forfait prend fin le {{date}}.",
+        "debitScheduled": "{{amount}} sera prélevé automatiquement le {{date}}.",
+        "pendingSwitch": "Passage à {{plan}} le {{date}}.",
+        "cancelledNote": "Votre forfait ne sera pas renouvelé. Vous le gardez jusqu'au {{date}} ; ensuite l'usage de l'IA est débité de vos crédits.",
+        "linkRenewalNote": "Le prélèvement automatique est désactivé : nous enverrons un lien de paiement 7 jours avant chaque renouvellement.",
+        "anchorNote": "Payer un renouvellement en retard ne déplace pas la date de renouvellement.",
+        "cancelDone": "Votre forfait prendra fin le {{date}}.",
+        "resumeDone": "Votre forfait sera renouvelé normalement.",
+        "alreadyPaid": "Ce paiement est déjà effectué."
+    },
+    "confirm": {
+        "cancelTitle": "Résilier votre forfait IA ?",
+        "cancelBody": "Vous gardez {{plan}} jusqu'au {{date}}. Ensuite, l'usage de l'IA est débité de vos crédits. La période en cours n'est pas remboursée.",
+        "resumeTitle": "Garder votre forfait IA ?",
+        "resumeBody": "Votre forfait sera renouvelé le {{date}} comme d'habitude.",
+        "autopayOffTitle": "Désactiver le prélèvement automatique ?",
+        "autopayOffBody": "Les renouvellements ne seront plus prélevés automatiquement. Nous enverrons un lien de paiement avant chaque renouvellement."
+    },
+    "downgrade": {
+        "title": "Passer à {{plan}} au renouvellement ?",
+        "body": "Vous gardez votre forfait actuel jusqu'au {{date}}. {{plan}} démarre à votre prochain renouvellement, à son prix. Rien n'est prélevé ni remboursé maintenant.",
+        "confirm": "Changer au renouvellement",
+        "done": "Passage à {{plan}} le {{date}}."
+    },
+    "contact": {
+        "title": "Contacter {{brand}}",
+        "body": "Ce changement de forfait doit être fait par {{brand}}. Contactez-les et ils s'en occuperont.",
+        "bodyEmail": "Ce changement de forfait doit être fait par {{brand}}. Écrivez à {{email}} et ils s'en occuperont."
+    },
+    "invoices": {
+        "title": "Factures et avoirs",
+        "popoverTitle": "Factures et avoirs du forfait IA",
+        "empty": "Les factures de votre forfait IA apparaîtront ici.",
+        "loadFailed": "Impossible de charger les factures. Réessayez plus tard.",
+        "invoice": "Facture",
+        "creditNote": "Avoir",
+        "creditNoteBadge": "Avoir",
+        "period": "{{start}} – {{end}}",
+        "inclGst": "dont GST {{tax}}",
+        "downloadInvoice": "Télécharger la facture",
+        "downloadAria": "Télécharger {{number}} (PDF)",
+        "downloadFailed": "Impossible de télécharger le PDF. Réessayez."
+    },
+    "entry": {
+        "seePlans": "Voir les forfaits IA",
+        "comparePlans": "Comparer les forfaits",
+        "plansLink": "Forfaits",
+        "manage": "Gérer le forfait",
+        "payNow": "Paiement dû · payer",
+        "paymentDue": "Paiement dû",
+        "promoTitle": "Vous utilisez l'IA chaque jour ?",
+        "promoFrom": "Forfaits à partir de {{price}} / {{period}} + GST.",
+        "promoBody": "Un prix mensuel fixe pour l'IA au quotidien.",
+        "lowCredit": "Crédits bientôt épuisés ? Un forfait IA couvre l'usage quotidien pour un prix mensuel fixe."
+    },
+    "errors": {
+        "generic": "Une erreur s'est produite. Rien n'a été prélevé. Réessayez.",
+        "paymentFailed": "Le paiement n'a pas abouti. Rien n'a été prélevé.",
+        "linkUnavailable": "Impossible de lancer le paiement. Rien n'a été prélevé. Réessayez.",
+        "ALREADY_SUBSCRIBED": "Vous avez déjà un forfait IA. Modifiez-le depuis le détail du forfait.",
+        "NOT_OFFERED": "Ce forfait n'est plus disponible.",
+        "BUYER_STATE_REQUIRED": "Choisissez votre État pour appliquer la bonne GST.",
+        "INVALID_GSTIN": "Saisissez un GSTIN valide de 15 caractères, par ex. 27AAAAA0000A1Z5",
+        "CURRENCY_NOT_SUPPORTED": "Les forfaits IA ne peuvent être achetés qu'en roupies indiennes pour le moment.",
+        "RETURN_URL_NOT_ALLOWED": "Le paiement ne peut pas être lancé depuis cette adresse. Ouvrez l'administration depuis votre adresse habituelle et réessayez.",
+        "CONTACT_SALES": "Ce changement doit être fait par {{brand}}. Contactez-les.",
+        "PAY_RENEWAL_FIRST": "Payez d'abord votre renouvellement, puis vous pourrez changer de forfait.",
+        "OPEN_UPGRADE_EXISTS": "Un paiement de changement est déjà ouvert. Terminez-le ou attendez son expiration.",
+        "STOREFRONT_OFF": "Les forfaits IA ne sont pas disponibles pour votre établissement pour le moment.",
+        "PAYMENTS_DISABLED": "Les paiements de forfaits sont suspendus pour le moment. Réessayez plus tard.",
+        "AUTOPAY_DISABLED": "Le prélèvement automatique n'est pas disponible. Désactivez-le pour payer par lien.",
+        "AUTOPAY_UNAVAILABLE": "Le prélèvement automatique n'est pas disponible pour ce paiement. Désactivez-le pour payer par lien, ou vérifiez l'e-mail de facturation et le mobile.",
+        "NO_SUBSCRIPTION": "Il n'y a aucun forfait IA à modifier.",
+        "CONFLICT": "Quelque chose a changé entre-temps. Actualisez la page et réessayez.",
+        "DEBIT_IN_PROGRESS": "Un paiement automatique pour ce renouvellement est en cours. Réessayez une fois qu'il est passé (généralement sous un jour).",
+        "BUYER_ADDRESS_REQUIRED": "Ajoutez le nom et l'adresse de facturation : ils figurent sur la facture GST."
+    }
+}

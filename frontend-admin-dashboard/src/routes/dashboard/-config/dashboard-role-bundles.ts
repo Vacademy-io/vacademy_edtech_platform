@@ -77,19 +77,29 @@ const EVALUATOR_BUNDLE: RoleBundle = {
 const ROLE_TO_BUNDLE: Record<string, RoleBundle> = {
     ADMIN: ADMIN_BUNDLE,
     TEACHER: TEACHER_BUNDLE,
-    'COURSE CREATOR': COURSE_CREATOR_BUNDLE,
+    // The backend role is 'CONTENT CREATOR' (see the role count / team pages); the old
+    // 'COURSE CREATOR' key never matched, so content creators fell through to the fallback.
+    'CONTENT CREATOR': COURSE_CREATOR_BUNDLE,
     'ASSESSMENT CREATOR': ASSESSMENT_CREATOR_BUNDLE,
     EVALUATOR: EVALUATOR_BUNDLE,
 };
 
-// Falls back to ADMIN_BUNDLE so unknown roles get a sensible default rather
-// than an empty dashboard. ADMIN always wins if present in the role list.
+/**
+ * ADMIN always wins if present in the role list. Anything else that isn't a known role —
+ * custom roles ("Counsellor", "Operations"), or no roles at all — gets the least-privileged
+ * staff bundle (TEACHER_BUNDLE), never the admin one: the admin bundle is what turns on the
+ * finance snapshot. Pass the CURRENT institute's roles.
+ *
+ * TEACHER_BUNDLE still keeps quick actions and the KPI band "on"; both decide their own
+ * content from the roles (quickActionsForRoles / KpiBand render nothing for a role they
+ * don't know), so this fallback hides nothing a custom role could actually see before.
+ */
 export const bundleForRoles = (roles: string[]): RoleBundle => {
-    if (!roles?.length) return ADMIN_BUNDLE;
+    if (!roles?.length) return TEACHER_BUNDLE;
     if (roles.includes('ADMIN')) return ADMIN_BUNDLE;
     for (const r of roles) {
         const bundle = ROLE_TO_BUNDLE[r];
         if (bundle) return bundle;
     }
-    return ADMIN_BUNDLE;
+    return TEACHER_BUNDLE;
 };

@@ -3,11 +3,18 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { assessmentTypes } from "@/types/assessment";
 import { PlayCircle, CalendarDots, ClockCounterClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const tabIcons = {
   [assessmentTypes.LIVE]: PlayCircle,
   [assessmentTypes.UPCOMING]: CalendarDots,
   [assessmentTypes.PAST]: ClockCounterClockwise,
+};
+
+const tabLabelKeys: Record<string, string> = {
+  [assessmentTypes.LIVE]: "scheduleTest.tabs.live",
+  [assessmentTypes.UPCOMING]: "scheduleTest.tabs.upcoming",
+  [assessmentTypes.PAST]: "scheduleTest.tabs.past",
 };
 
 const ScheduleTestTabList = ({
@@ -17,6 +24,7 @@ const ScheduleTestTabList = ({
   selectedTab: string;
   totalAssessments: { [key: string]: number };
 }) => {
+  const { t } = useTranslation("assessment");
   return (
     <div className="flex items-center pb-4 overflow-x-auto">
       <TabsList className="h-auto p-1 bg-muted w-full sm:w-auto">
@@ -34,7 +42,7 @@ const ScheduleTestTabList = ({
             >
               <Icon className="w-4 h-4" />
               <span>
-                {type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}
+                {t(tabLabelKeys[type as assessmentTypes])}
               </span>
               {count > 0 && (
                 <Badge

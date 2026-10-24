@@ -1,0 +1,152 @@
+{
+    "student": {
+        "fallbackName": "الطالب"
+    },
+    "masthead": {
+        "instituteFallback": "المؤسسة",
+        "progressReportFallback": "تقرير التقدم"
+    },
+    "verdict": {
+        "studentFallback": "الطالب",
+        "rollLabel": "رقم القيد {{roll}}",
+        "enrolmentLabel": "رقم التسجيل {{no}}",
+        "generatedLabel": "تم الإنشاء في {{date}}"
+    },
+    "common": {
+        "stats": {
+            "present": "حاضر",
+            "absent": "غائب",
+            "late": "متأخر",
+            "attended": "حضر",
+            "missed": "فائت",
+            "attendance": "الحضور",
+            "totalSessions": "إجمالي الجلسات",
+            "totalClasses": "إجمالي الحصص",
+            "assigned": "مُكلَّف به",
+            "submitted": "تم التسليم",
+            "onTime": "في الوقت المحدد",
+            "pending": "قيد الانتظار",
+            "avgScore": "متوسط الدرجات",
+            "resolved": "تم الحل"
+        },
+        "headings": {
+            "attendance": "الحضور",
+            "strengths": "نقاط القوة",
+            "areasToImprove": "مجالات التحسين",
+            "liveClasses": "الحصص المباشرة",
+            "assignments": "الواجبات",
+            "achievements": "الإنجازات",
+            "courseProgress": "تقدم المقرر",
+            "studyHabits": "عادات الدراسة"
+        }
+    },
+    "attendance": {
+        "vsLastPeriod": "مقارنة بالفترة السابقة"
+    },
+    "thinking": {
+        "heading": "كيف يفكر {{name}}",
+        "fromAnalysis_zero": "لا توجد محاولات حديثة تم تحليلها بالذكاء الاصطناعي ({{count}})",
+        "fromAnalysis_one": "من تحليل الذكاء الاصطناعي لمحاولة حديثة واحدة ({{count}})",
+        "fromAnalysis_two": "من تحليل الذكاء الاصطناعي لمحاولتين حديثتين ({{count}})",
+        "fromAnalysis_few": "من تحليل الذكاء الاصطناعي لـ {{count}} محاولات حديثة",
+        "fromAnalysis_many": "من تحليل الذكاء الاصطناعي لـ {{count}} محاولة حديثة",
+        "fromAnalysis_other": "من تحليل الذكاء الاصطناعي لـ {{count}} محاولة حديثة",
+        "profileTitle": "ملف مهارات التفكير",
+        "profileCaption": "الدقة عبر المستويات المعرفية (تصنيف بلوم)",
+        "confidenceTitle": "المعرفة مقابل التخمين",
+        "confidenceCaption": "معايرة الثقة عبر الأسئلة المُجاب عنها",
+        "confidentlyRight": "صحيح بثقة",
+        "rightButUnsure": "صحيح لكن غير متأكد",
+        "confidentlyWrong": "خاطئ بثقة",
+        "confidenceLabel": "الثقة",
+        "radarAriaLabel": "مخطط رادار لمهارات التفكير",
+        "donutAriaLabel": "مخطط دائري لمعايرة الثقة"
+    },
+    "bloomLevels": {
+        "remember": "التذكر",
+        "understand": "الفهم",
+        "apply": "التطبيق",
+        "analyze": "التحليل",
+        "evaluate": "التقييم",
+        "create": "الإبداع"
+    },
+    "topicMastery": {
+        "title": "إتقان المواضيع",
+        "caption": "الدقة لكل موضوع، جميع المحاولات خلال هذه الفترة"
+    },
+    "subjects": {
+        "title": "الدرجات حسب المادة",
+        "caption": "عبر التقييمات والواجبات والاختبارات القصيرة والأسئلة",
+        "vsClassCaption": "أداء المادة مقارنة بمتوسط الفصل",
+        "vsClassSuffix": "الفصل {{value}}%"
+    },
+    "assessments": {
+        "title": "التقييمات",
+        "caption": "{{count}} في هذه الفترة",
+        "rank": "الترتيب {{rank}}"
+    },
+    "trend": {
+        "title": "الدرجات عبر الزمن",
+        "classAverage": "متوسط الصف",
+        "ariaLabel": "الدرجة في كل تقييم مقارنة بمتوسط الصف"
+    },
+    "gradeMix": {
+        "title": "الدرجات المحققة",
+        "summary": "{{good}} من {{total}} اختبارات بدرجة B أو أعلى",
+        "testCount": "{{count}} اختبار",
+        "range": {
+            "ap": "90% فأكثر",
+            "a": "80–89%",
+            "bp": "70–79%",
+            "b": "60–69%",
+            "c": "50–59%",
+            "d": "أقل من 50%"
+        }
+    },
+    "misconceptions": {
+        "title": "ما يجب العمل عليه لاحقًا",
+        "caption": "مفاهيم خاطئة محددة وكيفية تصحيحها"
+    },
+    "habits": {
+        "caption": "دقائق الدراسة اليومية خلال هذه الفترة",
+        "longestStreak": "أطول سلسلة متواصلة",
+        "streakDay_zero": "أيام",
+        "streakDay_one": "يوم",
+        "streakDay_two": "يومان",
+        "streakDay_few": "أيام",
+        "streakDay_many": "يومًا",
+        "streakDay_other": "يوم",
+        "consistency": "الانتظام",
+        "activeDaysOf": "الأيام النشطة / {{total}}"
+    },
+    "achievements": {
+        "caption": "الشارات والشهادات المكتسبة"
+    },
+    "courseProgress": {
+        "percentComplete": "اكتمل {{percentage}}% إجمالًا"
+    },
+    "doubts": {
+        "title": "الأسئلة والتفاعل",
+        "questionsAsked": "الأسئلة المطروحة",
+        "avgResolutionTime": "متوسط وقت الحل",
+        "hoursSuffix": "ساعة"
+    },
+    "aiInsights": {
+        "whatWeNoticed": "ما لاحظناه",
+        "recommendedNextSteps": "الخطوات التالية الموصى بها",
+        "priorityMedium": "متوسطة",
+        "summary": "ملخص الذكاء الاصطناعي"
+    },
+    "narrative": {
+        "detailedAnalysis": "تحليل مفصل",
+        "learningFrequency": "تكرار التعلم",
+        "progress": "التقدم",
+        "effortVsOutput": "الجهد مقابل النتيجة",
+        "topicsImproving": "مواضيع في تحسن",
+        "topicsNeedingAttention": "مواضيع تحتاج إلى اهتمام",
+        "actionChecklist": "قائمة الإجراءات"
+    },
+    "sparkline": {
+        "minutesTooltip": "{{minutes}} دقيقة"
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "button": {
+        "label": "Appeler tous avec l'IA",
+        "viewProgress": "View AI call progress"
+    },
+    "dialog": {
+        "heading": "Appeler tous les prospects avec l'IA"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "starting": "Démarrage…",
+        "callLeads_one": "Appeler {{count}} prospect",
+        "callLeads_many": "Appeler {{count}} de prospects",
+        "callLeads_other": "Appeler {{count}} prospects",
+        "callLeadsGeneric": "Appeler les prospects"
+    },
+    "body": {
+        "checkingEligibility": "Vérification du nombre de prospects pouvant être appelés…",
+        "eligibleOfTotal_one": "<bold>{{eligible}}</bold> prospect sur {{count}} dans cette liste peut être appelé (il a un numéro de contact enregistré).",
+        "eligibleOfTotal_many": "<bold>{{eligible}}</bold> prospects sur {{count}} de prospects dans cette liste peuvent être appelés (ils ont un numéro de contact enregistré).",
+        "eligibleOfTotal_other": "<bold>{{eligible}}</bold> prospects sur {{count}} dans cette liste peuvent être appelés (ils ont un numéro de contact enregistré).",
+        "disclaimer": "L'agent IA appelle chacun d'eux, à un rythme régulé en arrière-plan, et consomme des crédits d'appel. Le résultat et l'attribution du conseiller de chaque prospect se font automatiquement après l'appel. Cette action est irréversible une fois lancée.",
+        "noneEligible": "Aucun prospect de cette liste n'a de numéro de contact à appeler.",
+        "scope": {
+            "label": "Qui appeler",
+            "selectedOption_one": "Uniquement le {{count}} prospect sélectionné",
+            "selectedOption_many": "Uniquement les {{count}} de prospects sélectionnés",
+            "selectedOption_other": "Uniquement les {{count}} prospects sélectionnés",
+            "allOption_one": "Le {{count}} prospect éligible de cette liste",
+            "allOption_many": "Les {{count}} de prospects éligibles de cette liste",
+            "allOption_other": "Les {{count}} prospects éligibles de cette liste"
+        },
+        "parallel": {
+            "label": "Appels simultanés",
+            "options": {
+                "one": "1 — un appel à la fois",
+                "two": "2 en parallèle",
+                "three": "3 en parallèle"
+            },
+            "caption": "Le prochain appel démarre dès qu'un appel se termine, en maintenant au plus ce nombre d'appels actifs à la fois."
+        }
+    },
+    "toast": {
+        "noneDispatched": "Aucun appel IA n'a été passé",
+        "queued_one": "{{count}} appel IA mis en file d'attente",
+        "queued_many": "{{count}} d'appels IA mis en file d'attente",
+        "queued_other": "{{count}} appels IA mis en file d'attente"
+    },
+    "errors": {
+        "startFailed": "Impossible de démarrer la campagne d'appels IA"
+    }
+}

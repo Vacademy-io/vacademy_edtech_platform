@@ -79,11 +79,14 @@ public class PolicyGate {
      * creates tasks only, which respect the floor.
      */
     public Instant clampToAllowedWindow(EngagementEngine engine, Instant proposed) {
-        ZoneId zone = ZoneId.of(quietTimezone);              // pinned — engine cannot move it
+        ZoneId floorZone = ZoneId.of(quietTimezone);         // pinned — engine cannot move it
         int floorStart = quietStartHour * 60;
         int floorEnd = quietEndHour * 60;
 
         Integer engStart = null, engEnd = null;
+        // The engine's own hours are in the zone the admin picked in the wizard (quietHours.timezone),
+        // not the floor's: reading "21-8 Europe/London" as IST let sends go out around 02:30 London.
+        ZoneId engineZone = floorZone;
         try {
             JsonNode qh = objectMapper.readTree(engine.getQuietHours());
             if (qh.hasNonNull("startHour") && qh.hasNonNull("endHour")) {
@@ -96,23 +99,46 @@ public class PolicyGate {
                     engEnd = ee;
                 }
             }
+            if (qh.hasNonNull("timezone")) {
+                try {
+                    engineZone = ZoneId.of(qh.get("timezone").asText());
+                } catch (Exception badZone) {
+                    // unknown zone id → keep the floor's zone
+                }
+            }
         } catch (Exception ignored) {
             // unparseable engine quiet hours → institute floor alone applies
         }
 
-        ZonedDateTime t = proposed.atZone(zone);
-        // Walk forward in 15-min steps to the first minute that is neither floor- nor engine-quiet.
-        // Bounded to 24h of steps; the floor+engine union can never cover a full day (floor is
-        // 11h and the engine interval is ignored if it equals a full wrap), so a slot always exists.
+        Instant slot = firstAllowed(proposed, floorZone, floorStart, floorEnd, engineZone, engStart, engEnd);
+        if (slot != null) return slot;
+        // The engine's hours plus the floor cover the whole day (e.g. an admin who read the
+        // pickers as "active hours" and chose 8-21). Returning the proposed time here sent at
+        // 2 AM; the floor is the compliance minimum, so fall back to it alone.
+        log.warn("Engine {}: its quiet hours and the institute floor leave no free time; using the floor only",
+                engine.getId());
+        slot = firstAllowed(proposed, floorZone, floorStart, floorEnd, engineZone, null, null);
+        return slot != null ? slot : proposed;
+    }
+
+    /**
+     * The first 15-minute step within 24h that is neither floor-quiet (in the floor's zone) nor
+     * engine-quiet (in the engine's zone), or null when every step is blocked.
+     */
+    private static Instant firstAllowed(Instant proposed, ZoneId floorZone, int floorStart, int floorEnd,
+                                        ZoneId engineZone, Integer engStart, Integer engEnd) {
+        ZonedDateTime t = proposed.atZone(floorZone);
         for (int i = 0; i <= 96; i++) {
             ZonedDateTime candidate = t.plusMinutes(15L * i).withSecond(0).withNano(0);
-            int minute = candidate.getHour() * 60 + candidate.getMinute();
-            if (!inInterval(minute, floorStart, floorEnd)
-                    && (engStart == null || !inInterval(minute, engStart, engEnd))) {
-                return candidate.toInstant();
+            int floorMinute = candidate.getHour() * 60 + candidate.getMinute();
+            if (inInterval(floorMinute, floorStart, floorEnd)) continue;
+            if (engStart != null) {
+                ZonedDateTime local = candidate.withZoneSameInstant(engineZone);
+                if (inInterval(local.getHour() * 60 + local.getMinute(), engStart, engEnd)) continue;
             }
+            return candidate.toInstant();
         }
-        return t.toInstant(); // unreachable in practice; fail open rather than loop
+        return null;
     }
 
     /** [start, end) minutes-of-day membership, wrapping past midnight when start > end. */

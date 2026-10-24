@@ -1,0 +1,101 @@
+{
+    "installmentPresets": {
+        "annual": "سنوي",
+        "halfYearly": "نصف سنوي",
+        "quarterly": "ربع سنوي",
+        "monthly": "شهري",
+        "custom": "مخصص"
+    },
+    "feeTypePresets": {
+        "tuitionFee": {
+            "label": "رسوم دراسية",
+            "description": "الرسوم الدراسية المعتادة للعام الأكاديمي"
+        },
+        "examFee": {
+            "label": "رسوم الامتحان",
+            "description": "رسوم الامتحانات والتقييم"
+        },
+        "libraryFee": {
+            "label": "رسوم المكتبة",
+            "description": "رسوم الوصول إلى المكتبة ومواردها"
+        },
+        "transportFee": {
+            "label": "رسوم النقل",
+            "description": "رسوم النقل المدرسي"
+        },
+        "hostelFee": {
+            "label": "رسوم السكن الداخلي",
+            "description": "رسوم الإقامة في السكن الداخلي"
+        },
+        "labFee": {
+            "label": "رسوم المختبر",
+            "description": "رسوم استخدام المختبر والمواد"
+        }
+    },
+    "feeTypeEditor": {
+        "defaultName": "نوع الرسوم {{number}}",
+        "installmentCount_zero": "{{count}} أقساط",
+        "installmentCount_one": "{{count}} قسط واحد",
+        "installmentCount_two": "{{count}} قسطان",
+        "installmentCount_few": "{{count}} أقساط",
+        "installmentCount_many": "{{count}} قسطًا",
+        "installmentCount_other": "{{count}} قسط",
+        "remove": "إزالة",
+        "feeName": {
+            "label": "اسم الرسوم",
+            "placeholder": "مثال: رسوم دراسية"
+        },
+        "description": {
+            "label": "الوصف",
+            "placeholder": "وصف مختصر"
+        },
+        "totalAmount": {
+            "label": "المبلغ الإجمالي (₹)",
+            "placeholder": "مثال: 50000"
+        },
+        "hasInstallments": "يحتوي على أقساط",
+        "refundable": "قابل للاسترداد",
+        "latePenalty": "غرامة التأخير",
+        "penaltyPercentagePlaceholder": "%",
+        "paymentFrequency": "تكرار الدفع",
+        "installmentCountPlaceholder": "عدد الأقساط",
+        "installmentTable": {
+            "remaining": "متبقٍ ₹{{amount}} للتوزيع",
+            "exceeds": "يتجاوز الإجمالي بمقدار ₹{{amount}}",
+            "columns": {
+                "number": "#",
+                "amount": "المبلغ (₹)",
+                "startDate": "تاريخ البدء",
+                "endDate": "تاريخ الانتهاء",
+                "dueDate": "تاريخ الاستحقاق"
+            },
+            "total": "الإجمالي"
+        }
+    },
+    "classMultiSelect": {
+        "label": "اختر الصف",
+        "placeholder": "اختر الصفوف...",
+        "selectedCount_zero": "تم تحديد {{count}} صف",
+        "selectedCount_one": "تم تحديد {{count}} صف واحد",
+        "selectedCount_two": "تم تحديد {{count}} صفين",
+        "selectedCount_few": "تم تحديد {{count}} صفوف",
+        "selectedCount_many": "تم تحديد {{count}} صفًا",
+        "selectedCount_other": "تم تحديد {{count}} صف",
+        "searchPlaceholder": "ابحث عن الصفوف...",
+        "noClassesAvailable": "لا توجد صفوف متاحة",
+        "noSearchResults": "لا توجد صفوف مطابقة لبحثك"
+    },
+    "summary": {
+        "feeTypes": "أنواع الرسوم",
+        "totalAmount": "المبلغ الإجمالي"
+    },
+    "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "draft": "مسودة"
+    },
+    "feeTypesSection": {
+        "title": "أنواع الرسوم",
+        "addFeeType": "إضافة نوع رسوم"
+    }
+}

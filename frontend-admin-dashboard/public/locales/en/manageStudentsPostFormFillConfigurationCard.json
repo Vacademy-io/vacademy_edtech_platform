@@ -1,0 +1,41 @@
+{
+    "title": "Post Form Fill Configuration",
+    "redirectPath": {
+        "label": "Redirect Path (Optional)",
+        "placeholder": "/dashboard or https://example.com",
+        "helpText": "If set, the user will be instantly redirected to this path after successful enrollment, skipping the success page."
+    },
+    "showLoginButton": {
+        "label": "Show Login Button",
+        "helpText": "Display the login button on the success page if not redirecting immediately."
+    },
+    "content": {
+        "label": "Success Page Content (Optional)",
+        "placeholder": "HTML/Text Content",
+        "helpText": "Custom content to display on the success page. Overrides the default message. You may use HTML.",
+        "tokensPrefix": "Supported tokens:",
+        "tokensJoiner": "and",
+        "tokensSuffix": "They are replaced at runtime with the course title and the amount the learner paid for their selected plan."
+    },
+    "collectBillingContactDetails": {
+        "label": "Collect Billing Contact Details",
+        "helpText": "Let learners add a separate billing contact (name, email, role) during enrollment. The billing email also receives invoices and renewal notices."
+    },
+    "billingContactFields": {
+        "heading": "Billing Contact Fields",
+        "helpText": "Customize the labels learners see, mark fields optional, and (for the third field) supply dropdown options as a comma-separated list. Leave the options blank to render it as a free-text input.",
+        "fieldLabelTemplate": "Field {{field}} label",
+        "fieldLabelPlaceholder": "Field label",
+        "fieldNames": {
+            "name": "name",
+            "email": "email",
+            "role": "role"
+        },
+        "required": "Required",
+        "options": {
+            "label": "Options (comma-separated)",
+            "placeholder": "Owner, Manager, Finance",
+            "helpText": "Leave blank to render this field as a free-text input."
+        }
+    }
+}

@@ -1,0 +1,281 @@
+{
+    "scene": {
+        "label": "Scene {{index}}",
+        "dataNotAvailable": "Scene data not available."
+    },
+    "stateBadge": {
+        "wrapped": "Wrapped",
+        "inProduction": "In production",
+        "scheduled": "Scheduled",
+        "cut": "Cut from production",
+        "reshoot": "Reshoot needed"
+    },
+    "runSummary": {
+        "productionBudget": "Production budget",
+        "totalTokens": "Total tokens",
+        "promptTokens": "· Prompt",
+        "completionTokens": "· Completion",
+        "imagesGenerated": "Images generated",
+        "ttsCharacters": "TTS characters",
+        "estimatedCost": "Estimated cost",
+        "elapsed": "Elapsed",
+        "noTokenData": "Token + cost telemetry wasn't persisted for this run. (Older videos from before token accounting was added.)",
+        "cumulativeNote": "Cumulative for the whole run. Per-stage breakdown isn't available yet.",
+        "artifacts": "Artifacts",
+        "run": "Run"
+    },
+    "artifactLabel": {
+        "script": "Script",
+        "narration": "Narration",
+        "wordTimings": "Word timings",
+        "timeline": "Timeline",
+        "renderedMp4": "Rendered MP4",
+        "audio": "Audio"
+    },
+    "shotPlanner": {
+        "legacyRun": "ShotPlanner didn't run for this video — this is a v2 (legacy) pipeline run.",
+        "awaitingBrief": "Awaiting brief lock-in before planning shots.",
+        "inProduction": "ShotPlanner is calling the LLM — emits the full shot list with intent_role, audio_policy, background_treatment, transition_in, and any plan-level recurring_motifs in a single hop.",
+        "planSummary": "Plan summary",
+        "shots": "shots",
+        "narrated": "narrated",
+        "intrinsic": "intrinsic",
+        "recurringMotifs": "Recurring motifs",
+        "noMotifs": "Planner didn't register any cross-shot motifs for this video.",
+        "where": "Where:",
+        "when": "When:",
+        "distribution": "Distribution",
+        "intentRoles": "Intent roles",
+        "backgrounds": "Backgrounds (≤2 contract)",
+        "shotGrid": "Shot grid ({{count}})"
+    },
+    "narrationWriter": {
+        "legacyRun": "NarrationWriter didn't run — this is a v2 pipeline run (the monolithic Narration node covers the same surface).",
+        "waitingForShotPlan": "Writers' room is waiting for the shot plan.",
+        "inProduction": "NarrationWriter is authoring per-shot narration in one LLM call. Each shot gets a line budgeted at ~150 wpm × duration; intrinsic_only shots get an empty string and skip per-shot TTS.",
+        "authoredCopy": "Authored copy",
+        "totalWords": "total words",
+        "shotsVoiced": "shots voiced",
+        "avgWordsPerShot": "avg w/shot",
+        "silentShots_one": "{{count}} shot left silent (intrinsic_only — Veo audio / source clip plays alone).",
+        "silentShots_other": "{{count}} shots left silent (intrinsic_only — Veo audio / source clip plays alone).",
+        "perShotWordCount": "Per-shot word count",
+        "noShotsAuthored": "No shots authored yet.",
+        "masterConcat": "Master concat"
+    },
+    "beats": {
+        "noRun": "BeatPlanner didn't run for this video.",
+        "notStarted": "The beat plan hasn't started yet.",
+        "inProduction": "BeatPlanner is outlining the story beats. The Director will use these as the planning frame for shot boundaries — duration estimates are calibrated at ~150 words/minute.",
+        "planHeading": "Beat plan",
+        "summary_one": "{{count}} beat feeding the Director's shot plan.",
+        "summary_other": "{{count}} beats feeding the Director's shot plan.",
+        "planLocked": "Beat plan locked. The Director used these beats to scope shots before TTS.",
+        "wpmNote": " Duration estimates at {{wpm}} wpm.",
+        "beatFallbackLabel": "Beat {{number}}"
+    },
+    "pitch": {
+        "brief": "The brief",
+        "promptUnavailable": "Prompt text not available for this run.",
+        "briefCaption": "The original prompt that drove this production.",
+        "configuration": "Configuration",
+        "configUnavailable": "Configuration snapshot not persisted for this run. (Older videos predate the user_selections snapshot in /status.)",
+        "advanced": "Advanced",
+        "noAdvancedOverrides": "No advanced overrides recorded.",
+        "field": {
+            "contentType": "Content type",
+            "qualityTier": "Quality tier",
+            "orientation": "Orientation",
+            "targetDuration": "Target duration",
+            "targetAudience": "Target audience",
+            "language": "Language",
+            "voice": "Voice",
+            "voiceId": "Voice ID",
+            "captions": "Captions",
+            "backgroundMusic": "Background music",
+            "soundEffects": "Sound effects",
+            "hostAvatar": "Host avatar",
+            "referenceFiles": "Reference files",
+            "targetStage": "Target stage",
+            "model": "Model",
+            "htmlQuality": "HTML quality",
+            "subShotsEnabled": "Sub-shots enabled",
+            "routingOverrides": "Routing overrides",
+            "visualPreferences": "Visual preferences",
+            "avatarImageUrl": "Avatar image URL",
+            "inputVideoIds": "Input video IDs",
+            "inputVideoAudio": "Input video audio",
+            "muteTtsOnSourceClips": "Mute TTS on source clips",
+            "backgroundMusicVolume": "Background music volume"
+        }
+    },
+    "format": {
+        "on": "On",
+        "off": "Off",
+        "none": "None",
+        "avatarWithId": "Avatar ({{id}})",
+        "avatar": "Avatar",
+        "rawClips": "Raw clips"
+    },
+    "research": {
+        "notNeeded": "No external research was needed for this brief.",
+        "notOpened": "Research desk hasn't opened yet.",
+        "investigating": "Investigating sources… results will populate as the intent router finishes its sweep.",
+        "urlsScraped": "URLs scraped",
+        "pageCaptures": "Page captures",
+        "captureAlt": "capture {{number}}",
+        "scrapedExcerpt": "Scraped excerpt",
+        "webSearchQuery": "Web search query",
+        "synthesizedAnswer": "Synthesized answer",
+        "citedSources": "Cited sources",
+        "noArtifacts": "Research wrapped, but the captured artifacts aren't available for this run."
+    },
+    "screenplay": {
+        "notFinished": "Screenplay isn't finished yet — sit tight while the writer's room drafts the narration.",
+        "openRawFile": "Open raw file",
+        "copied": "Copied!",
+        "copyScript": "Copy script",
+        "loading": "Loading screenplay…",
+        "urlUnavailable": "Screenplay URL not available for this run. The narration audio + word timings are still accessible from the Narration node.",
+        "previewFailed": "Inline preview failed to load. Use <bold>Open raw file</bold> above to view the screenplay directly.",
+        "previewFailedNote": "(S3 CORS, network drop, or the file is no longer present at the persisted URL.)",
+        "couldNotLoad": "Could not load the screenplay text."
+    },
+    "narration": {
+        "notRecorded": "Narration isn't recorded yet.",
+        "voiceover": "Voiceover",
+        "openAudioFile": "Open audio file"
+    },
+    "wordTimings": {
+        "heading": "Word timings",
+        "count_one": "{{count}} word",
+        "count_other": "{{count}} words",
+        "loading": "Loading timings…",
+        "couldNotLoad": "Could not load timings."
+    },
+    "storyboard": {
+        "notMapped": "Storyboard isn't mapped yet — director's still planning shots.",
+        "noSceneDetails": "Shot plan finalized — scene details aren't available for this run, but each scene still appears as its own node in the diagram.",
+        "scenesMapped_one": "{{count}} scene mapped",
+        "scenesMapped_other": "{{count}} scenes mapped"
+    },
+    "filming": {
+        "scenesWrapped": "Scenes wrapped",
+        "scenesFilmed": "Scenes filmed",
+        "wrappedNoCounters": "Filming wrapped — per-scene counters aren't available for this run.",
+        "notStarted": "Filming hasn't started yet.",
+        "diagramHint": "Each scene appears as its own node in the diagram on tier-Premium and above — click any scene there to view its narration excerpt and stills."
+    },
+    "sceneDetail": {
+        "intentRoleTitle": "Intent role: {{value}}",
+        "backgroundTreatmentTitle": "Background treatment: {{value}}",
+        "transitionInTitle": "Transition in: {{value}}",
+        "bgPrefix": "bg ·",
+        "aiVideoBadge": "AI VIDEO",
+        "aiVideoTitle": "Generated by fal.ai Veo 3.1 Lite",
+        "intrinsicAudioBadge": "INTRINSIC AUDIO",
+        "intrinsicAudioTitle": "audio_policy=intrinsic_only — master narration is silenced in this window; the shot's own audio plays alone.",
+        "aiVideoHeading": "AI-generated video shot",
+        "aiVideoBody": "This shot was generated with fal.ai Veo. Cost contributes to the per-video AI video cap. Editing inside the editor re-runs the Veo call.",
+        "intrinsicHeading": "Intrinsic-only audio policy",
+        "intrinsicBody": "Master narration is muted in this scene's [{{start}}s, {{end}}s] window. The shot plays its own audio ({{audioSource}}) alone. Per-shot TTS was skipped — re-narrate via the source asset, not this panel.",
+        "veoGeneratedAudio": "Veo-generated audio",
+        "sourceClipAudio": "source clip audio",
+        "liveProgress": "Live progress",
+        "elapsedSuffix": "{{sec}}s elapsed",
+        "currentSubstage": "Current substage:",
+        "regenAttempts": "Regen attempts by gate",
+        "verdictLog": "Verdict log",
+        "verdict": {
+            "pass": "pass",
+            "shippedOriginal": "shipped original"
+        },
+        "externalCalls": "External calls",
+        "callState": {
+            "done": "done",
+            "failed": "failed",
+            "polling": "polling",
+            "queued": "queued"
+        },
+        "sceneAlt": "Scene {{number}}",
+        "textDrivenScene": "Text-driven scene — no still or B-roll on this beat",
+        "assets": "Assets",
+        "stillLabel": "Still",
+        "brollClipLabel": "B-roll clip",
+        "productionError": "Production error"
+    },
+    "sceneNarration": {
+        "heading": "Narration",
+        "plannerBrief": "Planner brief",
+        "spokenNarration": "Spoken narration",
+        "intrinsicNote": "Intrinsic-only shot — no per-shot narration was authored. The shot's own audio plays alone."
+    },
+    "perShotAudio": {
+        "heading": "Per-shot voiceover",
+        "mp3": "mp3",
+        "wordTimings": "word timings",
+        "scriptTxt": "script.txt"
+    },
+    "aiVideoTelemetry": {
+        "heading": "AI video telemetry",
+        "cost": "cost",
+        "elapsed": "elapsed",
+        "veoAudio": "Veo audio",
+        "on": "on",
+        "off": "off",
+        "openVeoOutput": "Open Veo output",
+        "segments_one": "Segment ({{count}})",
+        "segments_other": "Segments ({{count}})",
+        "seg": "seg",
+        "cached": "cached"
+    },
+    "regenerate": {
+        "describeChangeError": "Describe what to change before regenerating.",
+        "regenerationFailedFallback": "Regeneration failed",
+        "successToast": "Scene regenerated. Re-render the MP4 to see the change.",
+        "saveFailedFallback": "Failed to save",
+        "cta": "Regenerate this scene with AI",
+        "heading": "Regenerate Scene {{number}}",
+        "close": "Close",
+        "placeholder": "Describe what to change… e.g. 'Make the title green and add a subtle fade-in for the subtitle'",
+        "readyNotice": "✓ New version ready. Accept to apply, or discard and try a different prompt.",
+        "acceptSave": "Accept & save",
+        "discard": "Discard",
+        "generating": "Generating… (10–60s)",
+        "generate": "Generate",
+        "footerNote": "The AI rewrites just this shot's HTML — narration, timing, and other shots stay untouched. After accepting, re-render the MP4 to see the result."
+    },
+    "htmlPreviewTitle": "Scene {{number}} HTML",
+    "narrationPlayer": {
+        "pause": "Pause",
+        "play": "Play this beat with narration",
+        "playbackErrorFallback": "Could not start playback"
+    },
+    "talent": {
+        "noHost": "No host configured for this run.",
+        "onCallSheet": "Talent is on the call sheet — recording starts after the storyboard is locked.",
+        "takesRecorded": "Takes recorded",
+        "inProductionNote": "Each take pairs a Seedream identity image with a slice of the narration audio, then fal.ai renders the lip-synced talking head. Per-take previews appear once the avatar batch wraps.",
+        "takesInTheCan": "Takes in the can",
+        "takesCount_one": "{{count}} take",
+        "takesCount_other": "{{count}} takes",
+        "takeAlt": "Take {{number}}",
+        "noPreview": "No preview",
+        "takeLabel": "Take {{number}}",
+        "wrappedNoPreviews": "Performance is wrapped — per-take previews aren't available for this run."
+    },
+    "score": {
+        "noScore": "No background score was generated for this run.",
+        "notArrived": "Composer hasn't arrived on set yet.",
+        "chunksComposed": "Chunks composed",
+        "inProductionNote": "Google Lyria renders the score in chunks (~30s each), then a render worker concatenates them into the final track that lives alongside the narration.",
+        "defaultLabel": "Background Music",
+        "wrappedNote": "Score wrapped — the merged track is mixed into the final cut.",
+        "composedIn_one": "Composed in {{count}} chunk via Lyria.",
+        "composedIn_other": "Composed in {{count}} chunks via Lyria."
+    },
+    "finalCut": {
+        "notAssembled": "Final cut not assembled yet.",
+        "description": "The final cut is the assembled timeline + voiceover. The embedded player on the Final Cut node has the same content; clicking <bold>Watch fullscreen</bold> there opens the full-bleed view."
+    }
+}

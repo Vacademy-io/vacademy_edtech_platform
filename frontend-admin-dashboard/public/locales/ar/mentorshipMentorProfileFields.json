@@ -1,0 +1,26 @@
+{
+    "tagSuggestions": {
+        "careerGuidance": "التوجيه المهني",
+        "examStrategy": "استراتيجية الامتحان",
+        "doubtSolving": "حل الاستفسارات",
+        "interviewPrep": "التحضير للمقابلات",
+        "studyPlanning": "تخطيط الدراسة"
+    },
+    "maxMenteesPlaceholder": "اتركه فارغًا لعدم وجود حد",
+    "maxMenteesLabel": "الحد الأقصى للمتدربين",
+    "maxMenteesHelp": "يتوقف التعيين والتناوب عن إضافة طلاب بمجرد وصول الموجّه إلى هذا العدد. الحقل الفارغ يعني بلا حد.",
+    "capBelowCurrentWarning_zero": "لديه بالفعل {{count}} متدرب — يبقى الحاليون، لكن لا يمكن تعيين طلاب جدد.",
+    "capBelowCurrentWarning_one": "لديه بالفعل متدرب واحد — يبقى الحاليون، لكن لا يمكن تعيين طلاب جدد.",
+    "capBelowCurrentWarning_two": "لديه بالفعل متدربان — يبقى الحاليون، لكن لا يمكن تعيين طلاب جدد.",
+    "capBelowCurrentWarning_few": "لديه بالفعل {{count}} متدربين — يبقى الحاليون، لكن لا يمكن تعيين طلاب جدد.",
+    "capBelowCurrentWarning_many": "لديه بالفعل {{count}} متدربًا — يبقى الحاليون، لكن لا يمكن تعيين طلاب جدد.",
+    "capBelowCurrentWarning_other": "لديه بالفعل {{count}} متدرب — يبقى الحاليون، لكن لا يمكن تعيين طلاب جدد.",
+    "listInFindAMentorLabel": "الإدراج في البحث عن موجّه",
+    "listInFindAMentorHelp": "يمكن للطلاب رؤية ملف هذا الموجّه وطلبه. تصل الطلبات إليك للموافقة — لا يتم إقران أحد تلقائيًا.",
+    "listInFindAMentorAriaLabel": "إدراج هذا الموجّه في البحث عن موجّه",
+    "expertisePlaceholder": "مثال: فيزياء JEE — اضغط Enter للإضافة",
+    "expertiseLabel": "الخبرة",
+    "expertiseHelp": "ما يساعد فيه هذا الموجّه. يبحث الطلاب في الدليل باستخدام هذه الكلمات.",
+    "removeTagAriaLabel": "إزالة {{tag}}",
+    "tryLabel": "جرّب:"
+}

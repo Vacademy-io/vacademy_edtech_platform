@@ -22,6 +22,22 @@ public interface TimelineEventRepository extends JpaRepository<TimelineEvent, St
     Page<TimelineEvent> findByTypeAndTypeIdOrderByCreatedAtDesc(String type, String typeId, Pageable pageable);
 
     /**
+     * The CALL_MADE event already written for one telephony call (matched on the call_log_id
+     * in its metadata). Lets the call-ended and recording-uploaded paths share one row.
+     */
+    @Query(value = """
+            SELECT * FROM timeline_event
+            WHERE type = 'LEAD'
+              AND type_id = :typeId
+              AND action_type = 'CALL_MADE'
+              AND metadata_json ->> 'call_log_id' = :callLogId
+            ORDER BY created_at
+            LIMIT 1
+            """, nativeQuery = true)
+    java.util.Optional<TimelineEvent> findCallEvent(@Param("typeId") String typeId,
+                                                    @Param("callLogId") String callLogId);
+
+    /**
      * Fetch ALL timeline events/notes for a student across all stages (enquiry,
      * application, enrollment).
      * Pinned notes appear first, then ordered by creation date descending.

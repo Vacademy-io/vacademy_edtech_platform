@@ -1,0 +1,78 @@
+{
+    "title": "Export Settings",
+    "sections": {
+        "layout": "Layout Settings",
+        "display": "Display Settings",
+        "paper": "Paper Settings",
+        "customFields": "Custom Fields Settings",
+        "advanced": "Advanced Settings"
+    },
+    "layout": {
+        "columnsPerPage": "Columns per Page",
+        "spaceForRoughWork": "Space for Rough Work",
+        "roughWorkPosition": {
+            "none": "None",
+            "bottom": "Bottom"
+        },
+        "roughWorkSize": {
+            "label": "Rough Work Space Size",
+            "small": "Small (50mm)",
+            "medium": "Medium (100mm)",
+            "large": "Large (150mm)"
+        },
+        "pagePadding": {
+            "label": "Page Padding",
+            "low": "Low (10mm)",
+            "medium": "Medium (20mm)",
+            "high": "High (30mm)"
+        },
+        "fontSize": {
+            "label": "Font Size",
+            "small": "Small (10pt)",
+            "medium": "Medium (12pt)",
+            "large": "Large (14pt)"
+        },
+        "imageSize": {
+            "label": "Image Size",
+            "maintainAspectRatio": "Maintain image aspect ratio"
+        }
+    },
+    "display": {
+        "showInstitutionLetterhead": "Show Institute Letterhead",
+        "showFirstPageInstructions": "Show Instructions on First Page",
+        "showAdaptiveMarkingRules": "Show Adaptive Marking Rules - Entire Assessment",
+        "showSectionInstructions": "Show Section-wise Instructions",
+        "showSectionDuration": "Show Section-wise Duration",
+        "showMarksPerQuestion": "Show Marks per Question",
+        "showAdaptiveMarkingRulesSection": "Show Adaptive Marking Rules - Section-wise",
+        "showCheckboxesBeforeOptions": "Show Checkboxes before Options",
+        "showPageNumbers": "Show Page Numbers"
+    },
+    "paper": {
+        "createSets": "Create Question Papers Sets",
+        "includeQuestionSetCode": "Include Question Set Code",
+        "randomizeQuestions": "Randomize Questions",
+        "randomizeOptions": "Randomize Options"
+    },
+    "customFields": {
+        "include": "Include Custom Input Fields",
+        "selectTypePlaceholder": "Select field type",
+        "type": {
+            "blank": "Blank (Default)",
+            "blocks": "Blocks",
+            "input": "Input Box",
+            "checkbox": "Checkbox"
+        },
+        "newFieldPlaceholder": "Enter new field label",
+        "add": "Add"
+    },
+    "advanced": {
+        "answerSpacing": "Answer Spacing",
+        "customSpacing": "Custom Spacing",
+        "customSpacingHint": "Configure custom space for answers."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "save": "Save"
+    }
+}

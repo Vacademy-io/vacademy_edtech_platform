@@ -1,0 +1,86 @@
+---
+title: "Guardrails"
+description: "The safety limits built into the MCP server, from per-request checks to single-use confirmations."
+icon: "lock"
+---
+
+This page lists the safety limits the MCP server enforces, in one place. Each limit below is enforced by the server, except that the yes in a two-step confirmation is given in your chat, so read the preview (see [Confirmations](/mcp-server/usage/confirmations)).
+
+## 1. Three gates on every request
+
+Each time an AI app lists its tools or calls one, the server checks three gates:
+
+1. **A valid sign-in for this institute's URL.** The connection was approved for this server URL and has not been revoked or expired.
+2. **Server on and role allowed.** The MCP server is switched on for the institute, and the person's role may connect (learners and parents never can).
+3. **The area or edit is on for your role.** This includes edits that are turned on separately (opt-in).
+
+On top of that, the AI app acts as the person who approved it, and in the CRM it sees only the leads their admin portal shows them.
+
+Turning the server off, removing a role from **Who can connect**, turning off an area or revoking a connection takes effect on the **next request**. When someone changes role or leaves, revoke their rows in **Active connections**.
+
+## 2. Identity is pinned on the server
+
+- The user and the institute come from the approved connection, **never from the AI app's request**. The server overwrites them on every call.
+- A connection works only on the server URL it was approved for, so it cannot be pointed at another institute.
+- In the CRM, the AI app sees only the leads the approving person's admin portal shows them.
+
+## 3. Only listed tools exist
+
+The server offers a fixed list of tools. A feature that exists elsewhere in the product is not reachable over MCP unless it is on that list. Each tool also tells the AI app whether it only reads or can change data, so apps that ask before running write tools can do so.
+
+## 4. Areas, levels and edits turned on separately
+
+- Each area is **Off**, **View** or **Edit**, for everyone or per role. Per-role settings only **add** access, and never let a learner or parent role connect.
+- Every edit carries a label on the settings page: **Drafts only**, **Adds only**, **Not-live courses only**, **Adds to live data**, **Changes live** or **Calls or messages leads**.
+- Edits that are **turned on separately** (opt-in) are never switched on by an area's Edit level or by **Turn everything on**.
+
+[Risk levels](/mcp-server/settings/risk-levels) is the full reference for the labels and for which edits are turned on separately.
+
+## 5. Drafts before live
+
+Many edits can only save drafts:
+
+- website pages and sites
+- blog posts
+- automations (a draft automation never runs)
+- new courses and their slides
+
+A person publishes them in your admin portal. Tools that only add records, such as creating a lead campaign, never remove or rename anything.
+
+## 6. Two-step confirmation
+
+Most live edits that are turned on separately, changes to existing CRM leads, and anything that contacts a person work in two steps. The tool first returns a **preview** and changes nothing. The AI app shows it to you, and calls again with a confirmation code only after you say yes.
+
+The code is tied to that exact request and lasts a short time. A changed request, or data that changed since the preview, needs a new preview and a new yes. Some codes work only once. See [Confirmations](/mcp-server/usage/confirmations) for the details.
+
+A few edits apply directly, such as course invite-page edits and a course's images or intro video. See [Risk levels](/mcp-server/settings/risk-levels).
+
+## 7. Limits on contacting people
+
+Calling or messaging a lead is the most sensitive thing the AI app can do, so the CRM adds extra limits:
+
+- **Single-use confirmations.** One yes sends one call, one message or one campaign. Repeating the same confirmation is refused.
+- **The exact people you saw.** A campaign or bulk action contacts exactly the leads listed in its preview, re-checked against your access when it runs.
+- **Hourly caps per person** on outbound calls and messages. The AI app can check how many are left before it previews.
+- **Respect for opt-outs.** Leads who have opted out are not called or messaged.
+- **Approved templates only.** WhatsApp messages use your institute's approved templates.
+- **Calling rules.** AI calls follow your institute's calling settings, such as calling hours and limits per lead.
+- **Admins only** for AI calling campaigns.
+
+## 8. Data stays inside your institute
+
+- Every tool works only inside the institute in the connection.
+- In the CRM, every ID the AI app passes (a lead, a list, a call, a meeting, a counsellor) is checked to belong to your institute **and** to the leads you may see before it is used. An unknown ID is refused, not guessed.
+- CRM lists come in pages, and bulk actions have a ceiling per request.
+- Bulk contact details and learner logins are delivered as private, expiring download links, never as chat text. See [Data and privacy](/mcp-server/security/data-and-pii).
+
+## 9. Your plan's modules
+
+The CRM areas show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called).
+
+## 10. Tokens and records
+
+- AI apps receive their own short-lived access token (one hour), not the person's password. Refresh tokens can be used only once.
+- The approving person's admin portal session is stored encrypted on the server.
+- Only institute admins can create client IDs or revoke connections.
+- Tool calls are recorded. CRM records keep only actions, IDs and choices, not notes, phone numbers or message text. See [Audit log](/mcp-server/security/audit-log).

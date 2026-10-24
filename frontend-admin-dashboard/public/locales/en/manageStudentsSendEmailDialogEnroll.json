@@ -1,0 +1,80 @@
+{
+    "dialogTitle": "Send Email to Students",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "sendButton_one": "Send to {{count}}",
+    "sendButton_other": "Send to {{count}}",
+    "composeNotice_one": "Compose your email below. {{count}} student with an email address will receive it.",
+    "composeNotice_other": "Compose your email below. {{count}} students with email addresses will receive it.",
+    "templateLabel": "Email Template (Optional)",
+    "selectTemplatePlaceholder": "Select a template",
+    "noTemplateOption": "No template - Start fresh",
+    "subjectLabel": "Subject *",
+    "showPreview": "Show Preview",
+    "subjectPlaceholder": "Your email subject",
+    "bodyLabel": "Body *",
+    "clickToInsertVariables": "Click buttons below to insert variables:",
+    "bodyPlaceholder": "Type your email message here... Click the buttons above to insert variables.",
+    "customMessageLabel": "Custom Message Text (for custom_message_text placeholder)",
+    "customMessagePlaceholder": "Enter your custom message...",
+    "sendingProgress": "Sending Progress ({{done}}/{{total}}):",
+    "status": {
+        "pending": "Pending...",
+        "sent": "Sent",
+        "failed": "Failed"
+    },
+    "toasts": {
+        "templateLoaded": "Template \"{{name}}\" loaded.",
+        "subjectBodyRequired": "Subject and body are required.",
+        "noValidRecipients": "No valid recipients to send email to.",
+        "processingEmails": "Processing emails...",
+        "noPayloadPrepared": "Could not prepare payload for any student.",
+        "sendSuccess_one": "Successfully sent {{count}} email.",
+        "sendSuccess_other": "Successfully sent {{count}} emails.",
+        "sendPartial": "Sent {{sent}}, failed {{failed}} email(s).",
+        "sendFailed": "Failed to send emails.",
+        "errorPrefix": "Error: {{message}}",
+        "unexpectedError": "An unexpected error occurred."
+    },
+    "templates": {
+        "welcome": {
+            "name": "Welcome Email",
+            "subject": "Welcome to Our Learning Platform",
+            "content": "Dear {{name}},\n\nWelcome to our learning platform! We are excited to have you join us.\n\nYour login credentials:\nEmail: {{email}}\nMobile: {{mobile_number}}\n\nBest regards,\nThe Team"
+        },
+        "sessionUpdate": {
+            "name": "Session Update",
+            "subject": "Session Update - {{name}}",
+            "content": "Hi {{name}},\n\nThis is an update regarding your current session.\n\nPlease check your dashboard for the latest information.\n\nBest regards,\nThe Team"
+        },
+        "custom": {
+            "name": "Custom Email",
+            "subject": "Important Update",
+            "content": "Dear {{name}},\n\n{{custom_message_text}}\n\nBest regards,\nThe Team"
+        }
+    },
+    "placeholders": {
+        "studentName": "Student Name",
+        "emailAddress": "Email Address",
+        "mobileNumber": "Mobile Number",
+        "customMessage": "Custom Message",
+        "courseName": "Course Name",
+        "batchName": "Batch Name",
+        "loginUsername": "Login Username",
+        "registrationDate": "Registration Date",
+        "currentDate": "Current Date"
+    },
+    "previewSampleData": {
+        "name": "John Doe",
+        "courseName": "Mathematics Course",
+        "batchName": "Batch A"
+    },
+    "preview": {
+        "heading": "Email Preview",
+        "close": "Close",
+        "usingFirstStudent": "Preview using data from the first selected student",
+        "subjectLabel": "Subject:",
+        "bodyLabel": "Email Body:",
+        "emptyState": "No content to preview. Add a subject or body to see the preview."
+    }
+}

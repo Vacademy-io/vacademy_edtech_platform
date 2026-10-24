@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
@@ -44,6 +45,7 @@ export interface SelectedSubmissionsFilterInterface {
 }
 
 const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
+    const { t } = useTranslation('evaluationAssessmentSubmissionsTab');
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const { BatchesFilterData } = useFilterDataForAssesment(initData);
     const instituteId = getInstituteId();
@@ -553,7 +555,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                             : ''
                                     }`}
                                 >
-                                    Internal Participants
+                                    {t('internalParticipants')}
                                 </span>
                             </TabsTrigger>
                             <Separator orientation="vertical" className="h-full bg-gray-500" />
@@ -572,7 +574,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                             : ''
                                     }`}
                                 >
-                                    External Participants
+                                    {t('externalParticipants')}
                                 </span>
                             </TabsTrigger>
                         </TabsList>
@@ -618,7 +620,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                             batchSelectionTab === 'batch' ? 'text-primary-500' : ''
                                         }`}
                                     >
-                                        Batch Selection
+                                        {t('batchSelection')}
                                     </span>
                                 </TabsTrigger>
                                 <TabsTrigger
@@ -636,7 +638,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                                 : ''
                                         }`}
                                     >
-                                        Individual Selection
+                                        {t('individualSelection')}
                                     </span>
                                 </TabsTrigger>
                             </TabsList>

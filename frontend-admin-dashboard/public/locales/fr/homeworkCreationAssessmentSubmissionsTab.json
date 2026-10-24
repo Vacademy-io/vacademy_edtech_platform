@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "attempted": "Tentés",
+        "ongoing": "En cours",
+        "pending": "En attente"
+    },
+    "participantsTabs": {
+        "internal": "Participants internes",
+        "external": "Participants externes"
+    },
+    "batchSelectionTabs": {
+        "batch": "Sélection par lot",
+        "individual": "Sélection individuelle"
+    },
+    "actions": {
+        "revaluate": "Réévaluer"
+    },
+    "dialogs": {
+        "revaluateResultTitle": "Réévaluer le résultat"
+    },
+    "toasts": {
+        "exportPdfSuccess": "Les données de la liste des soumissions des étudiants ont été exportées avec succès au format PDF",
+        "exportCsvSuccess": "Les données de la liste des soumissions des étudiants ont été exportées avec succès au format CSV"
+    }
+}

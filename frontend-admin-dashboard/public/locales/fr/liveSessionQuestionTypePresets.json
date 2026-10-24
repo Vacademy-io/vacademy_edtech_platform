@@ -1,0 +1,46 @@
+{
+    "questionTypes": {
+        "mcqs": {
+            "label": "QCM — Réponse unique",
+            "hint": "Quatre options, une seule bonne réponse. Le style de question par défaut."
+        },
+        "mcqm": {
+            "label": "QCM — Réponses multiples",
+            "hint": "Quatre options où toute combinaison peut être correcte."
+        },
+        "trueFalse": {
+            "label": "Vrai / Faux",
+            "hint": "Énoncés à deux options — vérifications rapides de la mémorisation."
+        },
+        "oneWord": {
+            "label": "Réponse en un mot",
+            "hint": "Les apprenants saisissent une réponse courte. Corrigé automatiquement par correspondance exacte."
+        },
+        "longAnswer": {
+            "label": "Réponse longue",
+            "hint": "Consignes de rédaction ouvertes — évaluation manuelle par l’enseignant."
+        }
+    },
+    "presets": {
+        "mcqOnly": {
+            "label": "QCM uniquement (réponse unique)",
+            "description": "Ensemble objectif classique — le plus rapide à corriger, le plus simple pour les apprenants."
+        },
+        "mcqTf": {
+            "label": "QCM + Vrai / Faux",
+            "description": "Mélange objectif qui ajoute des vérifications rapides de mémorisation aux QCM."
+        },
+        "mcqOneword": {
+            "label": "QCM + un mot",
+            "description": "Reconnaissance + mémorisation — les apprenants choisissent et saisissent aussi des réponses courtes."
+        },
+        "mixedAll": {
+            "label": "Évaluation mixte (tous les types)",
+            "description": "Un équilibre entre QCM, Vrai/Faux, un mot et réponse longue."
+        },
+        "subjectiveObjective": {
+            "label": "Mélange subjectif + objectif",
+            "description": "QCM pour la mémorisation, réponses longues pour l’application. Correction manuelle nécessaire."
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "title": "تفاصيل الوصول",
+    "description": "عرض تعيينات الوصول والأذونات الممنوحة لـ {{userName}}.",
+    "noAccess": "لا يوجد وصول خاص معيّن لهذا المستخدم.",
+    "columns": {
+        "type": "النوع",
+        "name": "الاسم",
+        "permissions": "الأذونات",
+        "linkage": "الربط"
+    },
+    "accessType": {
+        "course": "الدورة",
+        "session": "الجلسة",
+        "invite": "الدعوة",
+        "global": "عام"
+    },
+    "linkageType": {
+        "direct": "مباشر"
+    },
+    "notAvailable": "غير متوفر"
+}

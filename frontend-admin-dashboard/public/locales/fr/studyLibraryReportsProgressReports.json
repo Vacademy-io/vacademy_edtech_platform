@@ -1,0 +1,53 @@
+{
+    "validation": {
+        "batchRequired": "Sélectionnez au moins un groupe",
+        "studentRequired": "L'apprenant est requis"
+    },
+    "toast": {
+        "exportSuccess": "Rapport exporté",
+        "exportFailed": "Échec de l'exportation du PDF",
+        "csvExportSuccess": "CSV exporté",
+        "csvExportFailed": "Échec de l'export CSV",
+        "learnerNotInBatches": "Cet apprenant n’est inscrit dans aucun des groupes sélectionnés."
+    },
+    "form": {
+        "selectStudent": "Sélectionner un étudiant",
+        "searchStudent": "Rechercher un étudiant...",
+        "noStudentsFound": "Aucun étudiant trouvé",
+        "generateReport": "Générer le rapport",
+        "fixErrorsPrefix": "Veuillez corriger les erreurs suivantes :",
+        "loadingStudents": "Chargement…",
+        "learnerHint": "{{count}} disponible(s)",
+        "pickBatchFirst": "Choisissez d’abord un {{batch}}."
+    },
+    "report": {
+        "exporting": "Exportation...",
+        "exportPdf": "Exporter en PDF",
+        "subjectWiseHeading": "Rapport de progression par matière",
+        "exportCsv": "Exporter en CSV",
+        "batchCount": "{{term}} · {{count}} sélectionné(s)",
+        "batchLoadFailed": "Impossible de charger le rapport pour {{name}}."
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "Progression par {{subjectTerm}} — {{batchTerm}}",
+        "learnerProgressReport": "Rapport de progression de l'apprenant",
+        "learnerLabel": "Apprenant",
+        "termCompleted": "{{term}} terminé(e)",
+        "termsTracked": "{{term}}s suivi(e)s",
+        "termWiseProgress": "Progression par {{term}}",
+        "termColonName": "{{term}} : {{name}}",
+        "completed": "Terminé",
+        "dailyTimeAvg": "Temps quotidien (moy.)",
+        "termDailyTimeAvg": "Temps quotidien (moy.) — {{term}}",
+        "termWiseProgressReport": "Rapport de progression par {{term}}",
+        "learningProgressReport": "Rapport de progression d'apprentissage"
+    },
+    "csv": {
+        "fileStem": "progression-apprenant",
+        "title": "Progression par {{term}}",
+        "moduleCompleted": "{{module}} terminé (%)",
+        "moduleCompletedByBatch": "{{module}} terminé par le {{batch}} (%)",
+        "dailyTimeMin": "Temps quotidien moyen (min)",
+        "dailyTimeByBatchMin": "Temps quotidien moyen du {{batch}} (min)"
+    }
+}

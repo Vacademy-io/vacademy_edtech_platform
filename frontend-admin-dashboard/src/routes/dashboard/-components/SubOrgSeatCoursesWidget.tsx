@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, BookOpen, UserCirclePlus } from '@phosphor-icons/react';
@@ -42,33 +44,35 @@ interface CourseRow {
     name: string;
     sub: string;
 }
-const coursesFromInvites = (invites: unknown): CourseRow[] => {
-    if (!Array.isArray(invites)) return [];
-    const byId = new Map<string, CourseRow>();
-    invites.forEach((inv) => {
-        const pss = (
-            inv as {
-                package_sessions?: {
-                    id?: string;
-                    package_name?: string;
-                    level_name?: string;
-                    session_name?: string;
-                }[];
-            }
-        )?.package_sessions;
-        if (Array.isArray(pss)) {
-            pss.forEach((ps) => {
-                if (!ps?.id || byId.has(ps.id)) return;
-                byId.set(ps.id, {
-                    id: ps.id,
-                    name: (ps.package_name ?? '').trim() || 'Course',
-                    sub: [ps.level_name, ps.session_name].filter(Boolean).join(' · '),
+const buildCoursesFromInvites =
+    (t: TFunction) =>
+    (invites: unknown): CourseRow[] => {
+        if (!Array.isArray(invites)) return [];
+        const byId = new Map<string, CourseRow>();
+        invites.forEach((inv) => {
+            const pss = (
+                inv as {
+                    package_sessions?: {
+                        id?: string;
+                        package_name?: string;
+                        level_name?: string;
+                        session_name?: string;
+                    }[];
+                }
+            )?.package_sessions;
+            if (Array.isArray(pss)) {
+                pss.forEach((ps) => {
+                    if (!ps?.id || byId.has(ps.id)) return;
+                    byId.set(ps.id, {
+                        id: ps.id,
+                        name: (ps.package_name ?? '').trim() || t('courses.fallbackName'),
+                        sub: [ps.level_name, ps.session_name].filter(Boolean).join(' · '),
+                    });
                 });
-            });
-        }
-    });
-    return [...byId.values()];
-};
+            }
+        });
+        return [...byId.values()];
+    };
 
 /**
  * SUB-ORG admin widget: recent learner enrollments + the org's course catalogue,
@@ -77,6 +81,7 @@ const coursesFromInvites = (invites: unknown): CourseRow[] => {
  */
 export default function SubOrgSeatCoursesWidget() {
     const navigate = useNavigate();
+    const { t } = useTranslation('dashboardSubOrgSeatCoursesWidget');
     const instituteDetails = useInstituteDetailsStore((state) => state.instituteDetails);
     const inr = (n: number) => formatInstituteMoney(n, resolveInstituteCurrency(instituteDetails));
     const instituteId = getCurrentInstituteId();
@@ -114,10 +119,10 @@ export default function SubOrgSeatCoursesWidget() {
 
     // Courses ranked by how many learners they have (active courses first).
     const courses = useMemo(() => {
-        return coursesFromInvites(scopedInvites)
+        return buildCoursesFromInvites(t)(scopedInvites)
             .map((c) => ({ ...c, learners: learnerByCourse.get(c.id) ?? 0 }))
             .sort((a, b) => b.learners - a.learners);
-    }, [scopedInvites, learnerByCourse]);
+    }, [scopedInvites, learnerByCourse, t]);
 
     const recent = useMemo(
         () =>
@@ -139,7 +144,7 @@ export default function SubOrgSeatCoursesWidget() {
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                     <UserCirclePlus size={14} weight="duotone" />
                 </span>
-                <h3 className="text-sm font-semibold text-neutral-900">Learners & courses</h3>
+                <h3 className="text-sm font-semibold text-neutral-900">{t('heading')}</h3>
             </div>
 
             {isLoading ? (
@@ -150,17 +155,17 @@ export default function SubOrgSeatCoursesWidget() {
                     <div className="rounded-lg border border-neutral-200 p-3">
                         <div className="mb-2 flex items-center justify-between gap-2">
                             <span className="text-xs font-medium text-neutral-600">
-                                Recent enrollments
+                                {t('recentEnrollments.label')}
                             </span>
                             {owing > 0 && (
                                 <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
-                                    {owing} owe fees
+                                    {t('recentEnrollments.oweFees', { count: owing })}
                                 </span>
                             )}
                         </div>
                         {recent.length === 0 ? (
                             <p className="py-4 text-center text-xs text-neutral-400">
-                                No enrollments yet
+                                {t('recentEnrollments.empty')}
                             </p>
                         ) : (
                             <div className="space-y-2.5">
@@ -173,19 +178,22 @@ export default function SubOrgSeatCoursesWidget() {
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                 <div className="line-clamp-1 text-xs font-medium text-neutral-800">
-                                                    {(l.full_name ?? '').trim() || 'Learner'}
+                                                    {(l.full_name ?? '').trim() ||
+                                                        t('recentEnrollments.learnerFallback')}
                                                 </div>
                                                 <div className="text-xs text-neutral-400">
-                                                    Joined {shortDate(l.enrolled_date)}
+                                                    {t('recentEnrollments.joined', {
+                                                        date: shortDate(l.enrolled_date),
+                                                    })}
                                                 </div>
                                             </div>
                                             {due > 0 ? (
                                                 <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
-                                                    {inr(due)} due
+                                                    {t('recentEnrollments.due', { amount: inr(due) })}
                                                 </span>
                                             ) : (
                                                 <span className="shrink-0 rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 ring-1 ring-success-200">
-                                                    Paid
+                                                    {t('recentEnrollments.paid')}
                                                 </span>
                                             )}
                                         </div>
@@ -200,7 +208,7 @@ export default function SubOrgSeatCoursesWidget() {
                         <div className="mb-1.5 flex items-center justify-between gap-2">
                             <span className="flex items-center gap-1.5 text-xs font-medium text-neutral-600">
                                 <BookOpen size={13} weight="duotone" className="text-emerald-500" />
-                                My courses
+                                {t('courses.label')}
                             </span>
                             <span className="text-xs font-semibold tabular-nums text-neutral-800">
                                 {nfmt(courses.length)}
@@ -208,7 +216,7 @@ export default function SubOrgSeatCoursesWidget() {
                         </div>
                         {courses.length === 0 ? (
                             <p className="py-4 text-center text-xs text-neutral-400">
-                                No courses assigned yet
+                                {t('courses.empty')}
                             </p>
                         ) : (
                             <div className="max-h-28 space-y-1.5 overflow-y-auto">
@@ -226,7 +234,9 @@ export default function SubOrgSeatCoursesWidget() {
                                         </div>
                                         <span
                                             className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium tabular-nums text-blue-600"
-                                            title={`${c.learners} learner(s)`}
+                                            title={t('courses.learnerCountTitle', {
+                                                count: c.learners,
+                                            })}
                                         >
                                             {nfmt(c.learners)}
                                         </span>
@@ -239,7 +249,7 @@ export default function SubOrgSeatCoursesWidget() {
                             onClick={() => navigate({ to: '/manage-suborg-teams' })}
                             className="mt-2 flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                         >
-                            Manage
+                            {t('manage')}
                             <ArrowRight size={12} weight="bold" />
                         </button>
                     </div>

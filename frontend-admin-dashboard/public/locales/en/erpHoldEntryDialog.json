@@ -1,0 +1,12 @@
+{
+    "heading": "Hold payslip",
+    "headingWithCode": "Hold payslip — {{code}}",
+    "reasonRequired": "Give a reason for the hold — it is stored against the payslip.",
+    "cancel": "Cancel",
+    "holding": "Holding…",
+    "holdPayslip": "Hold payslip",
+    "description": "Holding removes this employee's net pay from the run total. Their payslip stays computed, so releasing it later needs no recalculation.",
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "e.g. Bank details unverified — awaiting cancelled cheque.",
+    "reasonHint": "Shown on the payroll register and to whoever reconciles the transfer."
+}

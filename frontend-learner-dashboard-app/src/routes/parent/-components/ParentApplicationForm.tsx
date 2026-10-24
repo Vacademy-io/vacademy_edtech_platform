@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { BASE_URL } from "@/constants/urls";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useStudyLibraryQuery } from "@/services/study-library/getStudyLibraryDetails";
@@ -91,6 +92,7 @@ export function ParentApplicationForm({
   /** Child profile to prefill student details */
   child: ChildProfile;
 }) {
+  const { t } = useTranslation("parent");
   const [trackingId, setTrackingId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [enquiryResult, setEnquiryResult] = useState<any>(null);
@@ -111,8 +113,8 @@ export function ParentApplicationForm({
       const levelName = batch.level?.level_name || "";
       return levelName ? `${pkgName} - ${levelName}` : pkgName;
     }
-    return "Selected Session";
-  }, [instituteData, destinationPackageSessionId]);
+    return t("admissionPortal.applicationForm.selectedSession");
+  }, [instituteData, destinationPackageSessionId, t]);
 
   const sessionLabel = useMemo(() => {
     if (!instituteData?.batches_for_sessions) return "";
@@ -124,8 +126,8 @@ export function ParentApplicationForm({
       const pkgName = batch.session?.session_name || "";
       return pkgName;
     }
-    return "Selected Session";
-  }, [instituteData, destinationPackageSessionId]);
+    return t("admissionPortal.applicationForm.selectedSession");
+  }, [instituteData, destinationPackageSessionId, t]);
 
   const [parentTypeToPrefill, setParentTypeToPrefill] =
     useState<ParentType>(null);
@@ -231,7 +233,7 @@ export function ParentApplicationForm({
     setForm((f) => ({ ...f, ...mapped }));
     setShowParentTypePrompt(false);
     setParentTypeToPrefill(null);
-    toast.success("Enquiry data loaded");
+    toast.success(t("admissionPortal.applicationForm.enquiryLoaded"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentTypeToPrefill]);
 
@@ -240,7 +242,7 @@ export function ParentApplicationForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!instituteData?.id) {
-      toast.error("Institute context not found");
+      toast.error(t("admissionPortal.applicationForm.instituteNotFound"));
       return;
     }
 
@@ -321,9 +323,7 @@ export function ParentApplicationForm({
           // ignore and continue
         }
 
-        toast.success(
-          "Application submitted. Go to payments to complete the fee.",
-        );
+        toast.success(t("admissionPortal.applicationForm.submitSuccess"));
         if (onComplete) onComplete();
       }
     } catch {
@@ -335,11 +335,17 @@ export function ParentApplicationForm({
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Application Form</h2>
-      <h4>Session : {sessionLabel}</h4>
+      <h2 className="text-lg font-semibold">
+        {t("admissionPortal.applicationForm.heading")}
+      </h2>
+      <h4>
+        {t("admissionPortal.applicationForm.sessionLabel", {
+          session: sessionLabel,
+        })}
+      </h4>
       <div className="flex items-center gap-2">
         <Input
-          placeholder="Enquiry / Tracking ID (optional)"
+          placeholder={t("admissionPortal.applicationForm.trackingIdPlaceholder")}
           value={trackingId}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             setTrackingId(e.target.value)
@@ -347,36 +353,43 @@ export function ParentApplicationForm({
         />
         <Button
           onClick={() => {
-            if (!trackingId) return toast.error("Enter tracking id");
+            if (!trackingId)
+              return toast.error(
+                t("admissionPortal.applicationForm.enterTrackingId"),
+              );
             if (!instituteData?.id)
-              return toast.error("Institute context not found");
+              return toast.error(
+                t("admissionPortal.applicationForm.instituteNotFound"),
+              );
             setSearching(true);
           }}
           className="bg-blue-500"
           disabled={searching}
         >
-          {searching ? "Loading..." : "Load Enquiry"}
+          {searching
+            ? t("admissionPortal.applicationForm.loading")
+            : t("admissionPortal.applicationForm.loadEnquiry")}
         </Button>
       </div>
 
       {/* Prompt for parent type selection if needed */}
       {showParentTypePrompt && (
-        <div className="mb-4 p-4 border rounded bg-gray-50 flex flex-col items-start">
-          <span className="mb-2">
-            Is the enquiry parent the Father or Mother?
+        <div className="mb-4 p-4 border rounded bg-gray-50 flex flex-col items-start gap-2">
+          <span>
+            {t("admissionPortal.applicationForm.parentTypePrompt")}
           </span>
           <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => setParentTypeToPrefill("FATHER")}
             >
-              Father
+              {t("admissionPortal.applicationForm.father")}
             </Button>
             <Button
               variant="outline"
               onClick={() => setParentTypeToPrefill("MOTHER")}
             >
-              Mother
+              {t("admissionPortal.applicationForm.mother")}
             </Button>
           </div>
         </div>
@@ -384,11 +397,15 @@ export function ParentApplicationForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Student Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Student Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t("admissionPortal.applicationForm.sections.student")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div>
-              <label className="text-xs">Student Name</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.studentName")}
+              </label>
               <Input
                 value={form.child_name}
                 onChange={(e) =>
@@ -398,7 +415,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Date of Birth</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.dateOfBirth")}
+              </label>
               <Input
                 type="date"
                 value={form.child_dob ?? ""}
@@ -409,7 +428,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Gender</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.gender")}
+              </label>
               <Select
                 value={form.child_gender}
                 onValueChange={(value) =>
@@ -417,17 +438,29 @@ export function ParentApplicationForm({
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Gender" />
+                  <SelectValue
+                    placeholder={t(
+                      "admissionPortal.applicationForm.fields.selectGender",
+                    )}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MALE">Male</SelectItem>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="MALE">
+                    {t("admissionPortal.applicationForm.genderOptions.male")}
+                  </SelectItem>
+                  <SelectItem value="FEMALE">
+                    {t("admissionPortal.applicationForm.genderOptions.female")}
+                  </SelectItem>
+                  <SelectItem value="OTHER">
+                    {t("admissionPortal.applicationForm.genderOptions.other")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-xs">Blood Group</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.bloodGroup")}
+              </label>
               <Input
                 value={form.blood_group}
                 onChange={(e) =>
@@ -436,7 +469,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Mother Tongue</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.motherTongue")}
+              </label>
               <Input
                 value={form.mother_tongue}
                 onChange={(e) =>
@@ -445,7 +480,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Languages Known</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.languagesKnown")}
+              </label>
               <Input
                 value={form.languages_known}
                 onChange={(e) =>
@@ -454,14 +491,18 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Category</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.category")}
+              </label>
               <Input
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
             </div>
             <div>
-              <label className="text-xs">Nationality</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.nationality")}
+              </label>
               <Input
                 value={form.nationality}
                 onChange={(e) =>
@@ -473,11 +514,15 @@ export function ParentApplicationForm({
         </div>
 
         {/* Parent Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Parent Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t("admissionPortal.applicationForm.sections.parent")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div>
-              <label className="text-xs">Father Name</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.fatherName")}
+              </label>
               <Input
                 value={form.father_name}
                 onChange={(e) =>
@@ -486,7 +531,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Father Phone</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.fatherPhone")}
+              </label>
               <Input
                 value={form.father_phone}
                 onChange={(e) =>
@@ -495,7 +542,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Father Email</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.fatherEmail")}
+              </label>
               <Input
                 value={form.father_email}
                 onChange={(e) =>
@@ -504,7 +553,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Mother Name</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.motherName")}
+              </label>
               <Input
                 value={form.mother_name}
                 onChange={(e) =>
@@ -513,7 +564,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Mother Phone</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.motherPhone")}
+              </label>
               <Input
                 value={form.mother_phone}
                 onChange={(e) =>
@@ -522,7 +575,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Mother Email</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.motherEmail")}
+              </label>
               <Input
                 value={form.mother_email}
                 onChange={(e) =>
@@ -534,11 +589,17 @@ export function ParentApplicationForm({
         </div>
 
         {/* Academic Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Academic Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t("admissionPortal.applicationForm.sections.academic")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div>
-              <label className="text-xs">Previous School Name</label>
+              <label className="text-xs">
+                {t(
+                  "admissionPortal.applicationForm.fields.previousSchoolName",
+                )}
+              </label>
               <Input
                 value={form.previous_school_name}
                 onChange={(e) =>
@@ -547,7 +608,11 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Previous School Board</label>
+              <label className="text-xs">
+                {t(
+                  "admissionPortal.applicationForm.fields.previousSchoolBoard",
+                )}
+              </label>
               <Input
                 value={form.previous_school_board}
                 onChange={(e) =>
@@ -556,7 +621,11 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Last Class Attended</label>
+              <label className="text-xs">
+                {t(
+                  "admissionPortal.applicationForm.fields.lastClassAttended",
+                )}
+              </label>
               <Input
                 value={form.last_class_attended}
                 onChange={(e) =>
@@ -565,7 +634,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Last Exam Result</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.lastExamResult")}
+              </label>
               <Input
                 value={form.last_exam_result}
                 onChange={(e) =>
@@ -574,7 +645,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Subjects Studied</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.subjectsStudied")}
+              </label>
               <Input
                 value={form.subjects_studied}
                 onChange={(e) =>
@@ -584,14 +657,16 @@ export function ParentApplicationForm({
             </div>
             <div>
               <label className="text-xs flex items-center gap-1">
-                Applying For Class
+                {t("admissionPortal.applicationForm.fields.applyingForClass")}
               </label>
               <div className="flex items-center gap-2 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm font-medium">
                 <span className="flex-1 truncate">{packageSessionLabel}</span>
               </div>
             </div>
             <div>
-              <label className="text-xs">Academic Year</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.academicYear")}
+              </label>
               <Input
                 value={form.academic_year}
                 onChange={(e) =>
@@ -600,7 +675,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Board Preference</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.boardPreference")}
+              </label>
               <Input
                 value={form.board_preference}
                 onChange={(e) =>
@@ -612,11 +689,15 @@ export function ParentApplicationForm({
         </div>
 
         {/* Address Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Address Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t("admissionPortal.applicationForm.sections.address")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div>
-              <label className="text-xs">Address Line</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.addressLine")}
+              </label>
               <Input
                 value={form.address_line}
                 onChange={(e) =>
@@ -625,14 +706,18 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">City</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.city")}
+              </label>
               <Input
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
               />
             </div>
             <div>
-              <label className="text-xs">PIN Code</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.pinCode")}
+              </label>
               <Input
                 value={form.pin_code}
                 onChange={(e) => setForm({ ...form, pin_code: e.target.value })}
@@ -642,11 +727,15 @@ export function ParentApplicationForm({
         </div>
 
         {/* Identity Documents Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Identity Documents</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t("admissionPortal.applicationForm.sections.identityDocuments")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div>
-              <label className="text-xs">ID Number</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.idNumber")}
+              </label>
               <Input
                 value={form.id_number}
                 onChange={(e) =>
@@ -655,7 +744,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">ID Type</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.idType")}
+              </label>
               <Input
                 value={form.id_type}
                 onChange={(e) => setForm({ ...form, id_type: e.target.value })}
@@ -665,11 +756,17 @@ export function ParentApplicationForm({
         </div>
 
         {/* Transfer Certificate Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Transfer Certificate (TC)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t(
+              "admissionPortal.applicationForm.sections.transferCertificate",
+            )}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div>
-              <label className="text-xs">TC Number</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.tcNumber")}
+              </label>
               <Input
                 value={form.tc_number}
                 onChange={(e) =>
@@ -678,7 +775,9 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">TC Issue Date</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.tcIssueDate")}
+              </label>
               <Input
                 type="date"
                 value={form.tc_issue_date || ""}
@@ -696,16 +795,18 @@ export function ParentApplicationForm({
                 id="tc_pending"
               />
               <label className="text-xs" htmlFor="tc_pending">
-                TC Pending
+                {t("admissionPortal.applicationForm.fields.tcPending")}
               </label>
             </div>
           </div>
         </div>
 
         {/* Medical & Special Needs Section */}
-        <div className="border rounded p-4">
-          <h3 className="font-semibold mb-2">Medical & Special Needs</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border rounded p-4 space-y-2">
+          <h3 className="font-semibold">
+            {t("admissionPortal.applicationForm.sections.medical")}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-stack">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={form.has_special_education_needs || false}
@@ -715,7 +816,9 @@ export function ParentApplicationForm({
                 id="special_needs"
               />
               <label className="text-xs" htmlFor="special_needs">
-                Has Special Education Needs
+                {t(
+                  "admissionPortal.applicationForm.fields.hasSpecialNeeds",
+                )}
               </label>
             </div>
             <div className="flex items-center gap-2">
@@ -727,11 +830,15 @@ export function ParentApplicationForm({
                 id="physically_challenged"
               />
               <label className="text-xs" htmlFor="physically_challenged">
-                Is Physically Challenged
+                {t(
+                  "admissionPortal.applicationForm.fields.physicallyChallenged",
+                )}
               </label>
             </div>
             <div>
-              <label className="text-xs">Medical Conditions</label>
+              <label className="text-xs">
+                {t("admissionPortal.applicationForm.fields.medicalConditions")}
+              </label>
               <Input
                 value={form.medical_conditions}
                 onChange={(e) =>
@@ -740,7 +847,11 @@ export function ParentApplicationForm({
               />
             </div>
             <div>
-              <label className="text-xs">Dietary Restrictions</label>
+              <label className="text-xs">
+                {t(
+                  "admissionPortal.applicationForm.fields.dietaryRestrictions",
+                )}
+              </label>
               <Input
                 value={form.dietary_restrictions}
                 onChange={(e) =>
@@ -753,7 +864,9 @@ export function ParentApplicationForm({
 
         <div className="flex gap-2">
           <Button type="submit" disabled={submitting} className="bg-blue-700">
-            {submitting ? "Submitting..." : "Submit Application"}
+            {submitting
+              ? t("admissionPortal.applicationForm.submitting")
+              : t("admissionPortal.applicationForm.submit")}
           </Button>
           <Button
             variant="ghost"
@@ -796,7 +909,7 @@ export function ParentApplicationForm({
               });
             }}
           >
-            Reset
+            {t("admissionPortal.applicationForm.reset")}
           </Button>
         </div>
       </form>

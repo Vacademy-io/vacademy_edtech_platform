@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCallback, useEffect } from "react";
 import { isMobileSafari, isIOS, isChrome } from "react-device-detect";
+import { Capacitor } from "@capacitor/core";
 
 type Props = {
   disabled?: boolean;
@@ -25,7 +26,16 @@ declare global {
 
 export type FullScreenStatus = "pending" | "on" | "off" | "not-supported";
 
+/**
+ * The iOS app already fills the screen, and element fullscreen inside its
+ * WKWebView makes iOS overlay a "capacitor://localhost/... is in full screen.
+ * Swipe down to exit." banner on top of the question.
+ */
+const isIOSApp = () => Capacitor.getPlatform() === "ios";
+
 export const triggerFullscreen = () => {
+  if (isIOSApp()) return;
+
   const methods = [
     "requestFullscreen",
     "webkitRequestFullscreen",
@@ -90,9 +100,10 @@ export function useFullScreenDetection(
     }
 
     /**
-     * 'Mobile Safari' and 'iOS Chrome' don't support fullscreen.
+     * 'Mobile Safari' and 'iOS Chrome' don't support fullscreen; the iOS app
+     * never requests it (see triggerFullscreen).
      */
-    if (isMobileSafari || (isChrome && isIOS)) {
+    if (isMobileSafari || (isChrome && isIOS) || isIOSApp()) {
       setFullScreenStatus("not-supported");
       return;
     }

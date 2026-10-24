@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import useOrganizationStore from '../-zustand-store/step1OrganizationZustand';
 import { PRESET_THEMES, getThemeShades } from '@/constants/themes/preset-themes';
+import { useTranslation } from 'react-i18next';
 
 const organizationThemeSetup = z.object({
     instituteThemeCode: z.union([z.string(), z.undefined()]),
@@ -20,6 +21,7 @@ const Step2OrganizationTheme: React.FC<OrganizationOnboardingProps> = ({
     handleCompleteCurrentStep,
     completedSteps,
 }) => {
+    const { t } = useTranslation('signupOnboardingStep2OrganizationTheme');
     const [selectedTheme, setSelectedTheme] = useState(PRESET_THEMES[0]?.code || 'primary');
     // const [customColor, setCustomColor] = useState('#ED7424');
     // const [openCustomDialog, setOpenCustomDialog] = useState(false);
@@ -53,7 +55,7 @@ const Step2OrganizationTheme: React.FC<OrganizationOnboardingProps> = ({
 
     return (
         <div className="my-6 flex w-full max-w-3xl flex-col items-center justify-center gap-4 p-4">
-            <h1 className="mb-4 text-[1.6rem]">Set your organization theme</h1>
+            <h1 className="mb-4 text-[1.6rem]">{t('heading')}</h1>
 
             <div className="mb-20 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:mb-2">
                 {PRESET_THEMES.map((theme) => {
@@ -69,7 +71,7 @@ const Step2OrganizationTheme: React.FC<OrganizationOnboardingProps> = ({
                                     ? 'ring-2 ring-primary-500 ring-offset-2'
                                     : 'ring-1 ring-gray-200'
                             )}
-                            aria-label={`Select ${theme.name} theme`}
+                            aria-label={t('selectThemeAriaLabel', { themeName: theme.name })}
                         >
                             <div className="flex flex-col">
                                 {shades?.map((shade, index) => (
@@ -105,7 +107,7 @@ const Step2OrganizationTheme: React.FC<OrganizationOnboardingProps> = ({
                     }}
                     className="w-full max-w-sm lg:w-auto"
                 >
-                    Continue
+                    {t('continue')}
                 </MyButton>
             </div>
         </div>

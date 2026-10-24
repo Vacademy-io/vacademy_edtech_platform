@@ -5,8 +5,10 @@ import LoginImage from '@/assets/svgs/login-image.svg';
 import useInstituteLogoStore from '@/components/common/layout-container/sidebar/institutelogo-global-zustand';
 import React, { useEffect, useRef, useState } from 'react';
 import { getSubdomain, HOLISTIC_SUBDOMAIN } from '@/utils/subdomain';
+import { useTranslation } from 'react-i18next';
 
 export const SplashScreen = ({ children, isAnimationEnabled }: SplashScreenProps) => {
+    const { t } = useTranslation('loginSplashContainer');
     const { instituteLogo, brandingDisplay } = useInstituteLogoStore();
     const [animationDone, setAnimationDone] = useState(!isAnimationEnabled);
     const animationTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -90,21 +92,21 @@ export const SplashScreen = ({ children, isAnimationEnabled }: SplashScreenProps
                         {instituteLogo ? (
                             <img
                                 src={instituteLogo}
-                                alt="Institute Logo"
+                                alt={t('instituteLogoAlt')}
                                 className={logoImgClass}
                                 style={customLogoStyle}
                             />
                         ) : getSubdomain() === HOLISTIC_SUBDOMAIN ? (
                             <img
                                 src="/holistic-logo.svg"
-                                alt="Holistic Login"
+                                alt={t('holisticLoginAlt')}
                                 className="size-2/3 rounded-full"
                             />
                         ) : null}
                     </motion.div>
                 </motion.div>
                 {getSubdomain() === HOLISTIC_SUBDOMAIN ? (
-                    <img src="/holistic-login.svg" alt="Holistic Login" className="size-2/3" />
+                    <img src="/holistic-login.svg" alt={t('holisticLoginAlt')} className="size-2/3" />
                 ) : (
                     <LoginImage />
                 )}

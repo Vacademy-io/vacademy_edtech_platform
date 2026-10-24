@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, UserPlus } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     getTerminology,
@@ -19,6 +20,7 @@ export default function EnrollLearnersWidget({
     learnerCount = 0,
 }: EnrollLearnersWidgetProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('dashboardEnrollLearnersWidget');
 
     const handleInviteStudents = () => {
         navigate({ to: '/manage-students/invite' });
@@ -40,25 +42,32 @@ export default function EnrollLearnersWidget({
                         <UserPlus size={18} className="text-primary-500" weight="duotone" />
                         <div>
                             <CardTitle className="text-sm font-semibold">
-                                Enroll {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
+                                {t('header.title', {
+                                    term: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                                })}
                             </CardTitle>
                             <CardDescription className="mt-1 text-xs text-neutral-600">
-                                Manage{' '}
-                                {getTerminology(
-                                    RoleTerms.Learner,
-                                    SystemTerms.Learner
-                                ).toLocaleLowerCase()}{' '}
-                                enrollment and invitations
+                                {t('header.description', {
+                                    term: getTerminology(
+                                        RoleTerms.Learner,
+                                        SystemTerms.Learner
+                                    ).toLocaleLowerCase(),
+                                })}
                             </CardDescription>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary" className="text-xs">
-                            {learnerCount} {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
+                            {t('badges.learnerCount', {
+                                count: learnerCount,
+                                term: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                            })}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
-                            {batchCount}{' '}
-                            {getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch)}
+                            {t('badges.batchCount', {
+                                count: batchCount,
+                                term: getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch),
+                            })}
                         </Badge>
                     </div>
                 </div>
@@ -74,7 +83,9 @@ export default function EnrollLearnersWidget({
                         onClick={handleInviteStudents}
                     >
                         <Plus size={16} />
-                        Invite New {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
+                        {t('actions.inviteNew', {
+                            term: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                        })}
                     </MyButton>
 
                     <MyButton
@@ -86,7 +97,9 @@ export default function EnrollLearnersWidget({
                         onClick={handleManageStudents}
                     >
                         <Users size={16} />
-                        Manage {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)} List
+                        {t('actions.manageList', {
+                            term: getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner),
+                        })}
                     </MyButton>
 
                     <MyButton
@@ -98,7 +111,7 @@ export default function EnrollLearnersWidget({
                         onClick={handleEnrollRequests}
                     >
                         <UserPlus size={16} />
-                        Enrollment Requests
+                        {t('actions.enrollmentRequests')}
                     </MyButton>
                 </div>
             </div>

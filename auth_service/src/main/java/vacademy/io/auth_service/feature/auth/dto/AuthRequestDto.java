@@ -25,6 +25,11 @@ public class AuthRequestDto {
     private String deviceType; // NEW: "WEB", "MOBILE", "TABLET" — optional, defaults to "WEB" in session
                                // creation
     // Optional WhatsApp template override for generic OTP sends (e.g. a live
-    // session's configured OTP template). Null = institute default template.
+    // session's configured OTP template, or a form field configured to verify
+    // itself). Null = institute default template.
     private String templateName;
+    // Language of the named template. Only read alongside templateName; null
+    // falls back to English. A Meta template is registered per language, so a
+    // template approved only in "en_US" must say so or the send is rejected.
+    private String languageCode;
 }

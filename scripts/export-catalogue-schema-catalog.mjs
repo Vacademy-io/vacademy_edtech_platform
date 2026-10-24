@@ -4,12 +4,19 @@
  * catalog" for the AI Page Builder (ai_service composer prompt).
  *
  * Single source of truth: the admin editor's component-templates.ts (every
- * component type + canonical props) and the shared style engine / decorations
- * vocabulary. Regenerate whenever templates or the engine change:
+ * component type + canonical props), the shared style engine / decorations
+ * vocabulary, and the learner design-pattern registry
+ * (frontend-learner-dashboard-app/src/routes/$tagName/-ai/design-patterns.ts:
+ * patterns, page recipes, the header/footer and site-settings contracts, with
+ * full examples taken from the Brahm Varchas fixture and scrubbed of its ids).
+ * Regenerate whenever templates, the engine or the registry change:
  *
  *   node scripts/export-catalogue-schema-catalog.mjs
+ *   node scripts/export-catalogue-schema-catalog.mjs --check   # exit 1 when an output is stale (CI)
  *
- * Output: ai_service/app/data/catalogue_schema_catalog.json
+ * Outputs:
+ *   ai_service/app/data/catalogue_schema_catalog.json
+ *   frontend-admin-dashboard/src/routes/manage-pages/-utils/generated/design-patterns.json
  */
 import path from 'node:path';
 import fs from 'node:fs';
@@ -18,19 +25,26 @@ import { createRequire } from 'node:module';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ADMIN = path.join(ROOT, 'frontend-admin-dashboard');
+const LEARNER = path.join(ROOT, 'frontend-learner-dashboard-app');
 const OUT = path.join(ROOT, 'ai_service/app/data/catalogue_schema_catalog.json');
+const ADMIN_PATTERNS_OUT = path.join(ADMIN, 'src/routes/manage-pages/-utils/generated/design-patterns.json');
+const PATTERN_REGISTRY = path.join(LEARNER, 'src/routes/$tagName/-ai/design-patterns.ts');
+const FIXTURES = {
+    'brahm-varchas-site': path.join(ADMIN, 'src/routes/manage-pages/-components/__fixtures__/brahm-varchas-site.json'),
+};
+const CHECK = process.argv.includes('--check');
 
 // pnpm nests esbuild under vite — resolve it through vite's own require.
 const adminRequire = createRequire(path.join(ADMIN, 'package.json'));
 const viteRequire = createRequire(adminRequire.resolve('vite/package.json'));
 const esbuild = viteRequire('esbuild');
 
-/** Bundle a TS/TSX module from the admin app and import it. */
+/** Bundle a TS/TSX module (a path relative to the admin app, or absolute) and import it. */
 async function importTs(relPath) {
     // Emit inside the admin app so bare imports (react) resolve at import time
     const outfile = path.join(ADMIN, `.tmp-schema-export-${path.basename(relPath).replace(/\W/g, '_')}.mjs`);
     await esbuild.build({
-        entryPoints: [path.join(ADMIN, relPath)],
+        entryPoints: [path.isAbsolute(relPath) ? relPath : path.join(ADMIN, relPath)],
         bundle: true,
         format: 'esm',
         platform: 'node',
@@ -44,8 +58,32 @@ async function importTs(relPath) {
     return mod;
 }
 
-const { componentTemplates } = await importTs('src/routes/manage-pages/-utils/component-templates.ts');
+// Templates are built through i18next (`buildComponentTemplates(t)`) so the
+// editor can translate the default copy. The composer prompt wants the ENGLISH
+// defaults as example props, so resolve every key against the English catalog
+// here — a raw key like "blog.heading" would otherwise become example text.
+const { buildComponentTemplates } = await importTs('src/routes/manage-pages/-utils/component-templates.ts');
+const EN_TEMPLATES = JSON.parse(
+    fs.readFileSync(path.join(ADMIN, 'public/locales/en/managePagesComponentTemplates.json'), 'utf8')
+);
+const t = (key, opts) => {
+    const value = key.split('.').reduce((acc, part) => (acc && typeof acc === 'object' ? acc[part] : undefined), EN_TEMPLATES);
+    if (typeof value === 'string') return value;
+    if (opts && typeof opts.defaultValue === 'string') return opts.defaultValue;
+    throw new Error(`Missing English template copy for "${key}"`);
+};
+const componentTemplates = buildComponentTemplates(t);
 const { ORNAMENT_PRESETS } = await importTs('src/routes/manage-pages/-utils/catalogue-decorations.tsx');
+const {
+    DESIGN_PATTERNS,
+    DESIGN_RECIPES,
+    CHROME_CONTRACT,
+    GLOBAL_SETTINGS_CONTRACT,
+    FIXTURE_BRAND_NAMES,
+    UUID_PATTERN,
+    fullExampleOf,
+    scrubExample,
+} = await importTs(PATTERN_REGISTRY);
 
 /* ─── Which component types the AI may emit ────────────────────────────── */
 
@@ -83,6 +121,9 @@ const USAGE = {
         'of sectionHeading+featureGrid whenever the job is to DOCUMENT offerings rather than sell them: one ' +
         'block per offering, keeping every real name — never merge or summarise a list of offerings into a few ' +
         'generic buckets. It has no price/image/enrol fields by design, so it is safe on informational pages.',
+    jobOpenings:
+        'For a CAREERS page (route "careers"): a card per job, each job on its own page /<page>/<slug> with an ' +
+        'external Apply link. Only jobs the admin gave; never invent roles, pay or form links.',
 };
 // The FULL prop surface the renderers actually read, per component.
 //
@@ -104,7 +145,10 @@ const CAPABILITIES = {
         'left: {title, subheading, description (HTML), tags[], button, buttons[{text,action,target,variant:primary|secondary}]}. ' +
         'eyebrow: {text, style: badge|plain}. statChips[{value,label}] — proof numbers under the copy. ' +
         'right: {image, alt, imageCollage[]} — with NO image, use layout centered, because the split grid ' +
-        'collapses to a single column and a half-empty fold looks broken.',
+        'collapses to a single column and a half-empty fold looks broken. ' +
+        'variant "editorial" (only when the design shows it): breadcrumb[{label,route}], eyebrow.style "rule" (a short ' +
+        'line before an uppercase eyebrow), left.titleAccent (a second headline line in the accent colour), ' +
+        'left.checklist[] (check bullets), left.buttons[], right.image unframed, mediaWidth (px), outlineColor — pattern hero.editorial.',
     featureGrid:
         'style: cards | tinted | glass | gradient-border | panel | bordered | minimal | plain | PHOTO. columns: 2|3|4. ' +
         'iconSize: small|medium|large. ' +
@@ -120,12 +164,16 @@ const CAPABILITIES = {
         'swipeable full-bleed row instead of a grid. Reach for photo+carousel whenever the reference ' +
         'shows a row of picture cards rather than an icon grid.',
     testimonialSection:
-        'layout: grid-scroll (default) | carousel (one quote at a time with prev/next arrows). ' +
-        'testimonials[]: {name, role, quote (or text/feedback), avatar (image URL), rating (1-5), highlight}. ' +
-        'Use carousel when the reference shows a single large quote with navigation.',
+        'layout: grid-scroll (default) | carousel (prev/next arrows + dots). ' +
+        'testimonials[]: {name, role, quote (or text/feedback), avatar (the student photo — an image URL), rating (1-5), highlight}. ' +
+        'Carousel only: cardsPerView 1-4 (cards in view on desktop; tablets show at most 2, phones 1; default 1 = one ' +
+        'large quote at a time), autoplay (advance one card on a timer, pauses on hover), autoplayIntervalMs (default 5000). ' +
+        'Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote.',
     stepsProcess:
-        'variant: timeline-cards | alternating (plain numbered steps look dated). nodeStyle: icon|dot. ' +
-        'connectorStyle: line|dashed|dots|none. steps[]: {number, title, description, icon/iconName, chips[], meta, state}.',
+        'variant: timeline-cards | alternating | cards (plain numbered steps look dated). nodeStyle: icon|dot. ' +
+        'connectorStyle: line|dashed|dots|none. steps[]: {number, title, description, icon/iconName, chips[], meta, state}. ' +
+        'variant "cards" is one row of white numbered cards on a tinted band (a "How it works" row): headerText, subheading, ' +
+        'backgroundColor, textColor, accentColor (number circles), steps[{number,title,description}] — pattern steps.cards.',
     logoCloud:
         'layout: grid (static partner wall) | marquee (a moving ticker). display: logo|label-pill. ' +
         'marqueeSpeed: slow|medium|fast. logos[]: {image, alt, label, url} — label-only entries make it an ' +
@@ -138,7 +186,8 @@ const CAPABILITIES = {
         'Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need ' +
         'a CTA use featureGrid with per-feature image + link.',
     marquee:
-        'A continuously scrolling strip of short claims. items[]: {icon (emoji is correct here), text, image, label}. ' +
+        'A continuously scrolling strip of short claims. items[]: {icon (emoji is correct here), text, link, image, label}. ' +
+        'link (optional) makes the item clickable: a page slug, "#anchorId" of a section on the page, or a full URL. ' +
         'speed: slow|medium|fast. direction: left|right. pauseOnHover. Emoji icons are the intended style for ' +
         'this component only.',
     tabsAccordion:
@@ -147,7 +196,50 @@ const CAPABILITIES = {
     imageGallery: 'columns: 2|3|4. gap. showCaptions. images[]: {src, alt, caption}.',
     ctaBanner:
         'layout: centered | split. {heading, subheading, button {enabled,text,action,target,style: white|primary|outline}}. ' +
-        'The renderer reads exactly these keys — headerText/buttonText are ignored and produce an empty band.',
+        'The renderer reads exactly these keys — headerText/buttonText are ignored and produce an empty band. ' +
+        'variant "band" (only when the design shows it): a full-width band with eyebrow, heading, subheading, button and ' +
+        'secondaryButton {enabled,text,action: navigate|openForm,target,audienceId,formTitle,style: primary|olive|outline-light|' +
+        'outline-dark,icon: arrow}, bandSize md|lg, mockup {kind: phone, image} (an app banner), backgroundColor, textColor, ' +
+        'eyebrowColor, subheadingColor — patterns cta.band, cta.band.light, cta.band.app. Leave every audienceId EMPTY: ' +
+        'link_lead_form wires the primary button, and the admin picks the secondary button\'s campaign in the editor.',
+    courseCatalog:
+        'Every look below is OPT-IN (absent = the original grid) — use one only when the design shows it, and see the ' +
+        'catalog.* patterns for exact JSON. hero {enabled, breadcrumb[], title, lead, stats[{kind: courses|streams|categories, ' +
+        'label}] (LIVE numbers — never author them), search{enabled,placeholder,buttonText}, popular[{label, searchValue | ' +
+        'streamSlug+categorySlug | quickFilterId | route}], resultsHeader{enabled}, quickFilterBar{label, variant: tint|filled}}; ' +
+        'quickFilters[{id,label,kind: popular|new|free|bestseller|language|priceMax,value}]; streams {enabled, source: ' +
+        'folderLibrary|tags, libraryId, items[], variant: pills|icons, showCounts, labelMode: title|subtitle|both, allLabel, ' +
+        'allSubtitle, sticky}; filterSidebar {variant: editorial, order[], width, promo{enabled,eyebrow,title,text,button,' +
+        'screenImage}}; priceFilter.control checkbox; categoryFilter {scope: all, labelMode, sort: count, hideComingSoon, ' +
+        'visibleCount}; customFilters[{id,label,source: courseFormats|options,options[{id,label,tags[],levels[]}]}]; ' +
+        'render.cardStyle editorial + render.card{streamLabel,formatLabels,freeCtaByFormat}; render.pagination{mode: loadMore,' +
+        'pageSize}; render.gridHeading{title,showSort}; groupLanguageVersions; columnSections[{id, kind: free-courses|spotlight|' +
+        'coming-soon, placement: before-grid|after-grid, showWhen, title, subtitle, …}]. Ids (streams.libraryId, spotlight ' +
+        'cta ids) are chosen by the admin — leave them empty, never invent one.',
+    learningPath:
+        'mode single (one product page as numbered steps) | list (a folder library\'s product pages as path cards). ' +
+        'listLayout "featured" (only when the design shows it): goals[{key,label,tags[]}] chips, featured{code,badge,image}, ' +
+        'pathExtras[{code,stepLabels[],mergeSteps[[1,2]],comingSoon[{title,position,audienceId}],goalTags[]}], ' +
+        'showGoals/showFeatured/showGrid (split one list over two sections around a band), moreTitle, moreNote, sharedWith ' +
+        '(the id of the section holding goals/featured/pathExtras) — patterns learningPath.*.',
+    header:
+        'Site chrome: the header shared by every page, kept in globalSettings.layout (over the MCP: website_edit(set_layout)). ' +
+        'Opt-in looks (absent = the original header; use only ' +
+        'when the design shows them): barSize compact (64px bar), contentWidth contained, navStyle editorial (13px text nav, ' +
+        'current page bold), logoOnly, languageSwitcherStyle segmented (हिन्दी | EN), cartDisplay whenNotEmpty, activeStyle ' +
+        'pill|underline, megaMenuStyle editorial, navigation[{label,route,type: link|megaMenu,megaMenu{libraryId,eyebrow,' +
+        'helpLabel,helpRoute,categoriesHeading,showLegend,footnote}}] — patterns header.editorial, header.megaMenu. ' +
+        'megaMenu.libraryId is a folder library the admin picks: leave it empty, never invent one.',
+    jobOpenings:
+        'template classic|poster|list|editorial|dark|minimal|spotlight|split (cards + job page). jobs[]: {title, slug, ' +
+        'image, summary, location, jobType, compensation, details[{label,value}], description (HTML), applyUrl (https), enabled}.',
+    footer:
+        'Site chrome: the footer shared by every page, kept in globalSettings.layout (over the MCP: website_edit(set_layout)). ' +
+        'layout two-column|three-column|four-column, ' +
+        'leftSection{title,text,socials[]}, rightSection1-3{title,links[]}, bottomNote. variant "brand" (only when the design ' +
+        'shows it): leftSection.logo, leftSection.tagline, rightSection4, newsletter{enabled,heading,subheading,placeholder,' +
+        'buttonText,note,successMessage,audienceId}, bottomTagline, showLanguageSwitcher — patterns footer.brand, footer.newsletter. ' +
+        'newsletter.audienceId is a campaign the admin picks: leave it empty, never invent one.',
 };
 
 const DATA_BOUND = {
@@ -169,6 +261,28 @@ const DATA_BOUND = {
         "productPageCode must be chosen by the admin from their existing product pages, so leave it as " +
         "an empty string and NEVER invent a code or course entries. Use it when the brief mentions " +
         "selling/enrolling a specific set of paid programs; use courseCatalog for the full course grid.",
+    folderBrowser:
+        "Renders a LIVE folder library (Class → Subject → …) that visitors open one level at a time; a " +
+        "product page inside the open folder shows its courses with add-to-cart. The folders live in a " +
+        "shared library the admin builds in Manage Pages → Folders and binds by hand, so NEVER ADD this " +
+        "section to a page (a generated one has no library and renders as nothing). When a page already " +
+        "has one, keep its libraryId/rootFolderId exactly as they are; you may change only title/subtitle/" +
+        "align and the look (layout: cards|tiles|list, imageShape: landscape|square|portrait|none, columns " +
+        "2-5, show* toggles). For a generated course listing use courseCatalog or productPageOffer.",
+    accessPassGrid:
+        "Renders the institute's LIVE published Access Passes (one purchase that unlocks several courses) " +
+        "as cards with a details dialog and a Buy button into the pass's checkout. Passes are created by the " +
+        "admin in LMS → Access Passes, so NEVER invent pass names, prices or courses. Set ONLY " +
+        "title/subtitle/buyLabel/columns (2-4) and the showCourses/showPrice toggles; leave tag as an empty " +
+        "string unless the admin names a pass tag to filter by. Use it when the brief mentions memberships, " +
+        "passes or all-access bundles; it renders nothing until a pass is published.",
+    learningPath:
+        "Renders LIVE learning paths: one product page's courses as numbered steps (mode 'single', productPageCode) " +
+        "or the product pages of a folder library as path cards (mode 'list', libraryId/folderId). The product page " +
+        "and library are chosen by the admin, so NEVER ADD this section (a generated one renders as nothing). When a " +
+        "page already has one, keep productPageCode/libraryId/folderId exactly as they are; you may change only " +
+        "title/subtitle/labels/showStepNumbers/showTotal/streamFromUrl, and the featured-layout look (listLayout, goals, " +
+        "featured.badge, showGoals/showFeatured/showGrid, moreTitle, moreNote) when the design shows it.",
     courseCatalog: 'Renders the institute\'s LIVE course grid. Configure filters/title only — never invent course entries.',
     bookCatalogue: 'Renders the LIVE book store. Configure presentation only.',
     cartComponent: 'Live cart. Placement only.',
@@ -176,6 +290,12 @@ const DATA_BOUND = {
     bookDetails: 'Live single-book detail context.',
     buyRentSection: 'Live buy/rent controls.',
     policyRenderer: 'Renders stored policy documents. Placement only.',
+    blog:
+        'Live blog: reads the institute\'s PUBLISHED posts (written in Manage Pages → Blog or by an AI app over ' +
+        'the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at ' +
+        '/<page>/<post-slug>, so put it on a DEDICATED page (route "blog"), never on the home page. Placement + ' +
+        'look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category ("" = all), show* toggles. ' +
+        'Never invent posts — there are none in the page JSON.',
 };
 
 // Collapse the columnLayout template variants into one canonical entry.
@@ -248,15 +368,93 @@ const doctrine = [
     'Styling: presets first; theme tokens over raw hex except where the brand demands a specific color.',
 ];
 
+/* ─── Design patterns, recipes and contracts (learner registry) ─────────── */
+
+const fixtureCache = new Map();
+const readFixture = (name) => {
+    if (!fixtureCache.has(name)) {
+        if (!FIXTURES[name]) throw new Error(`Unknown pattern fixture "${name}"`);
+        fixtureCache.set(name, JSON.parse(fs.readFileSync(FIXTURES[name], 'utf8')));
+    }
+    return fixtureCache.get(name);
+};
+
+// A full example is the real Brahm Varchas JSON with every institute id,
+// display name, uploaded-asset URL, absolute link, tagline and brand name
+// replaced by a placeholder, so an AI can copy its shape but never another
+// institute's records, links or name.
+const patterns = DESIGN_PATTERNS.map((p) => {
+    let full;
+    if (p.fullFrom) {
+        const raw = fullExampleOf(readFixture(p.fullFrom.fixture), p.fullFrom);
+        if (raw === undefined) throw new Error(`Pattern ${p.id}: fullFrom ${JSON.stringify(p.fullFrom)} does not resolve`);
+        const brandNames = FIXTURE_BRAND_NAMES[p.fullFrom.fixture] ?? [];
+        full = scrubExample(raw, p.bound, brandNames);
+        const text = JSON.stringify(full);
+        if (new RegExp(UUID_PATTERN.source, 'i').test(text) || /cloudfront\.net|https?:\/\//i.test(text)) {
+            throw new Error(`Pattern ${p.id}: the full example still carries a fixture id, asset URL or link`);
+        }
+        const leaked = brandNames.find((name) => text.toLowerCase().includes(name.toLowerCase()));
+        if (leaked) throw new Error(`Pattern ${p.id}: the full example still names the fixture's brand ("${leaked}")`);
+    }
+    const { fullFrom, ...rest } = p;
+    return {
+        ...rest,
+        ...(full !== undefined ? { full, fullSource: `${fullFrom.fixture}#${fullFrom.pointer}` } : {}),
+    };
+});
+
+const templateProps = (type) => components.find((c) => c.type === type)?.exampleProps;
+const chrome = Object.fromEntries(
+    Object.entries(CHROME_CONTRACT).map(([type, contract]) => [type, { ...contract, exampleProps: templateProps(type) }])
+);
+
+const globalSettingsContract = {
+    description:
+        'Opt-in site settings a design may need beyond the theme preset / fonts / motion (globalSettingsSchema). ' +
+        'Each is absent on an ordinary site; set one only when the design calls for it. See `patterns` for exact JSON.',
+    fields: GLOBAL_SETTINGS_CONTRACT,
+};
+
 const catalog = {
     _generated: 'scripts/export-catalogue-schema-catalog.mjs — do not edit by hand',
-    version: 1,
+    version: 2,
     components,
     styleSchema,
     globalSettingsSchema,
+    globalSettingsContract,
+    chrome,
+    patterns,
+    recipes: DESIGN_RECIPES,
     doctrine,
 };
 
-fs.mkdirSync(path.dirname(OUT), { recursive: true });
-fs.writeFileSync(OUT, JSON.stringify(catalog, null, 2));
-console.log(`wrote ${path.relative(ROOT, OUT)} — ${components.length} component types`);
+// The admin editor's copy (template library / variant labels read it).
+const adminPatterns = {
+    _generated: 'scripts/export-catalogue-schema-catalog.mjs — do not edit by hand',
+    source: 'frontend-learner-dashboard-app/src/routes/$tagName/-ai/design-patterns.ts',
+    patterns,
+    recipes: DESIGN_RECIPES,
+};
+
+const outputs = [
+    [OUT, `${JSON.stringify(catalog, null, 2)}`],
+    [ADMIN_PATTERNS_OUT, `${JSON.stringify(adminPatterns, null, 2)}\n`],
+];
+
+if (CHECK) {
+    const stale = outputs.filter(([file, body]) => !fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== body);
+    if (stale.length) {
+        for (const [file] of stale) console.error(`stale: ${path.relative(ROOT, file)}`);
+        console.error('Run: node scripts/export-catalogue-schema-catalog.mjs  and commit the outputs.');
+        process.exit(1);
+    }
+    console.log(`up to date — ${components.length} component types, ${patterns.length} patterns`);
+} else {
+    for (const [file, body] of outputs) {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, body);
+    }
+    console.log(`wrote ${path.relative(ROOT, OUT)} — ${components.length} component types, ${patterns.length} patterns`);
+    console.log(`wrote ${path.relative(ROOT, ADMIN_PATTERNS_OUT)}`);
+}

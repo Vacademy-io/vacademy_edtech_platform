@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.airtel;
 
+import vacademy.io.admin_core_service.features.telephony.core.PhoneNumbers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.telephony.enums.CorrelationStrategy;
@@ -36,7 +37,7 @@ public class AirtelOutboundCallInitiator implements OutboundCallInitiator {
 
     @Override
     public OutboundCallHandle initiate(BridgeCallRequest req, ProviderCredentials creds) {
-        httpClient.click2dial(creds, req.getFrom(), toE164(req.getTo()));
+        httpClient.click2dial(creds, req.getFrom(), PhoneNumbers.toE164(req.getTo()));
         return OutboundCallHandle.builder()
                 .providerCallId(null)               // learned later from the CDR feed
                 .initialStatus("click2dial-requested")
@@ -57,17 +58,4 @@ public class AirtelOutboundCallInitiator implements OutboundCallInitiator {
         return ProviderError.unknown(null);
     }
 
-    /**
-     * Normalise a lead number to E.164 with a leading +. Indian-aware (the only
-     * market today); other formats pass through with their digits + a leading +.
-     */
-    static String toE164(String raw) {
-        if (raw == null) return null;
-        String digits = raw.replaceAll("[^0-9]", "");
-        if (digits.isEmpty()) return null;
-        if (digits.length() == 10) return "+91" + digits;              // bare Indian mobile
-        if (digits.length() == 11 && digits.startsWith("0")) return "+91" + digits.substring(1);
-        if (digits.length() == 12 && digits.startsWith("91")) return "+" + digits;
-        return "+" + digits;                                            // already has a country code
-    }
 }

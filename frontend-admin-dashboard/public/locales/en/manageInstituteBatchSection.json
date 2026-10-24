@@ -1,0 +1,55 @@
+{
+    "toast": {
+        "batchDeletedSuccess": "Batch deleted successfully",
+        "batchDeleteFailed": "Failed to delete batch",
+        "inviteLinkCopied": "Invite link copied to clipboard"
+    },
+    "batchCard": {
+        "studentCount_one": "{{count}} {{term}}",
+        "studentCount_other": "{{count}} {{term}}s",
+        "inviteCodeLabel": "Invite Code:",
+        "enrollButton": "Enroll {{term}}",
+        "viewBatchButton": "View Batch",
+        "enrollShort": "Enroll",
+        "viewShort": "View",
+        "startsOn": "Starts {{date}}",
+        "startedOn": "Started {{date}}"
+    },
+    "deleteDialog": {
+        "heading": "Delete Batch",
+        "cancel": "Cancel",
+        "confirm": "Yes, Delete",
+        "confirmMessage": "Are you sure you want to delete the batch \"{{batchName}}\"? This action cannot be undone.",
+        "learnerWarning_one": "{{count}} {{learner}} is enrolled in this batch.",
+        "learnerWarning_other": "{{count}} {{learners}} are enrolled in this batch."
+    },
+    "section": {
+        "noBatches": "No batches found for this package.",
+        "noBatchesInSession": "No batches found for this package in the selected session.",
+        "showAll": "Show all {{count}}"
+    },
+    "status": {
+        "active": "Active",
+        "upcoming": "Upcoming",
+        "inactive": "Inactive"
+    },
+    "menu": {
+        "label": "More actions",
+        "view": "View batch",
+        "copyInvite": "Copy invite link",
+        "delete": "Delete batch"
+    },
+    "course": {
+        "totalBatches": "Total {{term}}: {{count}}",
+        "totalLearners": "Total {{term}}: {{count}}",
+        "createBatch": "Create {{term}} here",
+        "openCourse": "Open {{term}}",
+        "addBatch": "Add {{term}}"
+    },
+    "list": {
+        "name": "Name",
+        "status": "Status",
+        "inviteCode": "Invite code",
+        "startDate": "Start"
+    }
+}

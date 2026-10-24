@@ -1,0 +1,45 @@
+{
+    "title": "छात्र परीक्षा रिपोर्ट",
+    "toast": {
+        "exportPdfSuccess": "परीक्षा रिपोर्ट डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया!"
+    },
+    "info": {
+        "subject": "विषय:",
+        "attemptDate": "प्रयास तिथि:",
+        "marks": "अंक:",
+        "completionTime": "पूर्णता समय:",
+        "minutes": "{{value}} मिनट",
+        "startTime": "आरंभ समय:",
+        "endTime": "समाप्ति समय:"
+    },
+    "score": {
+        "heading": "स्कोर रिपोर्ट",
+        "rank": "रैंक",
+        "percentile": "पर्सेंटाइल",
+        "marks": "अंक"
+    },
+    "response": {
+        "heading": "प्रतिक्रिया विवरण",
+        "attempted": "प्रयास किए गए:",
+        "skipped": "छोड़े गए:"
+    },
+    "marksBreakdown": {
+        "heading": "अंक विवरण",
+        "correctRespondents": "सही उत्तर देने वाले:",
+        "partiallyCorrectRespondents": "आंशिक रूप से सही उत्तर देने वाले:",
+        "wrongRespondents": "गलत उत्तर देने वाले:",
+        "skipped": "छोड़े गए:"
+    },
+    "review": {
+        "heading": "उत्तर समीक्षा",
+        "question": "प्रश्न ({{number}}.)",
+        "timeTakenSeconds_one": "{{count}} सेकंड",
+        "timeTakenSeconds_other": "{{count}} सेकंड",
+        "studentAnswer": "छात्र का उत्तर:",
+        "marksLabel": "{{marks}} अंक",
+        "correctAnswer": "सही उत्तर:",
+        "explanation": "स्पष्टीकरण:",
+        "noResponse": "कोई प्रतिक्रिया नहीं",
+        "empty": "कोई उत्तर समीक्षा उपलब्ध नहीं है"
+    }
+}

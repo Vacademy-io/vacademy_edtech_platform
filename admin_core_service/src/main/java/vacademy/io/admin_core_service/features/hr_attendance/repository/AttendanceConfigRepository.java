@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface AttendanceConfigRepository extends JpaRepository<AttendanceConfig, String> {
 
     Optional<AttendanceConfig> findByInstituteId(String instituteId);
+
+    /** Institutes that opted into scheduled auto-checkout (AutoCheckoutJob fan-out). */
+    java.util.List<AttendanceConfig> findByAutoCheckoutEnabledTrue();
 }

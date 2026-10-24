@@ -886,10 +886,10 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
             </DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">
               Please wait while we load the available subscription plans for
-              this course.
+              this {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
             </DialogPrimitive.Description>
-            <div className="text-center py-8">
-              <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+            <div className="text-center py-8 space-y-4">
+              <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
               <p className="text-gray-600">Loading subscription options...</p>
             </div>
           </DialogPrimitive.Content>
@@ -912,8 +912,8 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
               There was an error loading the subscription options. Please try
               again.
             </DialogPrimitive.Description>
-            <div className="text-center py-6">
-              <p className="text-red-600 mb-4">{error}</p>
+            <div className="text-center py-6 space-y-4">
+              <p className="text-red-600">{error}</p>
               <MyButton
                 buttonType="primary"
                 scale="medium"
@@ -945,7 +945,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
             </DialogPrimitive.Title>
             <DialogPrimitive.Description className="sr-only">
               Choose a subscription plan and complete your payment to enroll in
-              this course.
+              this {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
             </DialogPrimitive.Description>
             <button
               className="absolute end-2 top-2 text-gray-400 hover:text-gray-700 focus:outline-none"
@@ -962,7 +962,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
 
             {step === "plans" ? (
               <Card className="shadow-lg border bg-white w-full">
-                <CardContent className="p-5 sm:p-6">
+                <CardContent className="p-5 sm:p-card-lg">
                   {/* Small Subheading */}
                   <div className="mb-4">
                     <h3 className="text-sm font-medium text-gray-700">
@@ -1026,7 +1026,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
                                       setValidationError("");
                                     }}
                                   >
-                                    <CardContent className="p-6">
+                                    <CardContent className="p-card-lg">
                                       {/* Plan Name */}
                                       <h4 className="text-xl font-bold text-gray-900 mb-2">
                                         {plan.name}
@@ -1100,7 +1100,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
                                                 >
                                                   <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
                                                   <span className="text-sm text-gray-700">
-                                                    Course access included
+                                                    {getTerminology(ContentTerms.Course, SystemTerms.Course)} access included
                                                   </span>
                                                 </div>,
                                               ];
@@ -1288,15 +1288,15 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
                   {!isSupportedVendor ? (
                     /* PAYPAL / MANUAL etc. aren't wired into this in-course dialog —
                        show a clear notice instead of a broken Stripe form. */
-                    <div className="border border-orange-300 bg-orange-50 rounded p-4 text-sm">
-                      <div className="flex items-center gap-2 text-orange-700 mb-2">
+                    <div className="border border-orange-300 bg-orange-50 rounded p-4 text-sm space-y-2">
+                      <div className="flex items-center gap-2 text-orange-700">
                         <Lock size={16} />
                         <span className="font-medium">
                           {vendor} payments aren't available here yet
                         </span>
                       </div>
                       <p className="text-orange-600">
-                        This course's payment provider ({vendor}) isn't supported
+                        This {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}'s payment provider ({vendor}) isn't supported
                         on this screen yet. Please use the enrollment link to
                         complete your payment, or contact support.
                       </p>
@@ -1344,7 +1344,7 @@ export const SubscriptionPaymentDialog: React.FC<PaymentDialogProps> = ({
                     <div className="border border-blue-200 bg-blue-50 rounded p-4 text-sm text-blue-700">
                       You'll be securely redirected to{" "}
                       {isCashfree ? "Cashfree" : "PhonePe"} to complete your
-                      payment, then brought back to your course.
+                      payment, then brought back to your {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
                     </div>
                   ) : (
                     <>

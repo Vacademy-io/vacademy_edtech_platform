@@ -1,0 +1,89 @@
+{
+    "pageTitle": "प्रश्न पत्र बनाएं",
+    "fallbackKnowledgeBase": "नॉलेज बेस",
+    "steps": {
+        "chooseMaterial": "सामग्री चुनें",
+        "planPaper": "पेपर की योजना बनाएं",
+        "reviewQuestions": "प्रश्नों की समीक्षा करें"
+    },
+    "errors": {
+        "notEnoughCredits": "पर्याप्त क्रेडिट नहीं हैं।",
+        "reopenFailed": "इस पेपर को दोबारा नहीं खोला जा सका",
+        "rebuildTopicMapFailed": "टॉपिक मैप को दोबारा नहीं बनाया जा सका",
+        "planFailed": "पेपर की योजना नहीं बनाई जा सकी",
+        "startGenerationFailed": "जनरेशन शुरू नहीं हो सका",
+        "generationFailed": "जनरेशन विफल हुआ",
+        "sectionMissing": "इस प्रश्न का सेक्शन अब योजना में मौजूद नहीं है।",
+        "rewriteFailed": "इस प्रश्न को दोबारा नहीं लिखा जा सका",
+        "saveFailed": "पेपर सेव नहीं हो सका"
+    },
+    "toasts": {
+        "topicMapRebuilt": "टॉपिक मैप दोबारा बनाया गया",
+        "questionRewritten": "प्रश्न दोबारा लिखा गया",
+        "savedToQuestionBank": "आपके प्रश्न बैंक में सेव किया गया"
+    },
+    "resumingMessage": "आपका पेपर दोबारा खोला जा रहा है…",
+    "scope": {
+        "materialHeading": "पेपर में क्या शामिल होना चाहिए?",
+        "materialDescription": "इस नॉलेज बेस की पूरी सामग्री में मिले टॉपिक। पूरे टॉपिक को शामिल करने के लिए उसे चुनें, या सब-टॉपिक चुनने के लिए उसे खोलें। पूरे नॉलेज बेस से लेने के लिए कुछ भी न चुनें।",
+        "rebuildButton": "दोबारा बनाएं",
+        "rebuildingButton": "दोबारा बनाया जा रहा है…",
+        "noTopicMap": "अभी तक कोई टॉपिक मैप नहीं है। किसी दस्तावेज़ की प्रोसेसिंग पूरी होते ही यह अपने आप बन जाता है।",
+        "buildTopicMapButton": "टॉपिक मैप बनाएं",
+        "buildingButton": "बनाया जा रहा है…",
+        "paperKindHeading": "किस तरह का पेपर चाहिए?",
+        "numQuestionsLabel": "प्रश्नों की संख्या",
+        "numQuestionsPlaceholder": "20",
+        "durationLabel": "अवधि (मिनट)",
+        "durationPlaceholder": "90",
+        "difficultyLabel": "कुल कठिनाई स्तर",
+        "difficulty": {
+            "easy": "आसान",
+            "medium": "मध्यम",
+            "hard": "कठिन",
+            "mixed": "मिश्रित"
+        },
+        "gradeLabel": "कक्षा या स्तर",
+        "gradePlaceholder": "उदा. कक्षा 9",
+        "examStyleLabel": "किसी पैटर्न का पालन करें (वैकल्पिक)",
+        "examStylePlaceholder": "उदा. CBSE बोर्ड पैटर्न",
+        "planPaperButton": "पेपर की योजना बनाएं",
+        "planningButton": "योजना बनाई जा रही है…",
+        "planHint": "किसी भी प्रश्न के लिखे जाने से पहले आपको पूरी योजना दिखेगी और आप उसे बदल सकते हैं।"
+    },
+    "blueprint": {
+        "questionsCount_one": "{{count}} प्रश्न",
+        "questionsCount_other": "{{count}} प्रश्न",
+        "marksCount_one": "{{formatted}} अंक",
+        "marksCount_other": "{{formatted}} अंक",
+        "durationSuffix": " · {{minutes}} मिनट",
+        "changeMaterialButton": "सामग्री बदलें",
+        "generateButton_one": "{{count}} प्रश्न बनाएं",
+        "generateButton_other": "{{count}} प्रश्न बनाएं",
+        "generateCreditsSuffix": " · ≈{{credits}} क्रेडिट",
+        "insufficientCredits": "इसके लिए लगभग {{needed}} क्रेडिट चाहिए, लेकिन केवल {{available}} ही उपलब्ध हैं।",
+        "askForChangeHeading": "बदलाव के लिए कहें",
+        "suggestions": {
+            "numericals": "न्यूमेरिकल्स का एक सेक्शन जोड़ें",
+            "harderSectionB": "सेक्शन B को कठिन बनाएं",
+            "moreApplicationBased": "अधिक एप्लीकेशन-आधारित प्रश्न"
+        },
+        "refinePlaceholder": "उदा. लंबे उत्तर वाले प्रश्न हटाएं और चैप्टर 2 से 5 और MCQ जोड़ें",
+        "updatePlanButton": "योजना अपडेट करें",
+        "updatingButton": "अपडेट किया जा रहा है…"
+    },
+    "generating": {
+        "writingHeading_one": "आपकी सामग्री से {{count}} प्रश्न लिखा जा रहा है",
+        "writingHeading_other": "आपकी सामग्री से {{count}} प्रश्न लिखे जा रहे हैं",
+        "hint": "आमतौर पर इसमें कुछ मिनट लगते हैं। आप यह पेज छोड़ सकते हैं — पेपर बनना जारी रहेगा और आपके प्रश्न बैंक के ड्राफ्ट में मिलेगा।"
+    },
+    "review": {
+        "deliveredCount": "{{planned}} में से {{delivered}} प्रश्न लिखे गए",
+        "needFixing_one": "{{count}} में सुधार चाहिए",
+        "needFixing_other": "{{count}} में सुधार चाहिए",
+        "allChecksPassed": "सभी जांचें पास हुईं",
+        "saveButton": "प्रश्न बैंक में सेव करें",
+        "savingButton": "सेव किया जा रहा है…"
+    },
+    "syllabusNote": "यह आधिकारिक पाठ्यक्रम है, पाठ्यपुस्तक नहीं: प्रश्न पत्र सूचीबद्ध इकाइयों के भीतर रहता है, और प्रश्न मानक पाठ्यक्रम से बनाए जाते हैं, किसी पृष्ठ का हवाला देकर नहीं।"
+}

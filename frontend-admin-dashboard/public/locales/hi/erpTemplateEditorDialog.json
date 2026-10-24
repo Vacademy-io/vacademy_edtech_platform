@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "headingEdit": "वेतन टेम्पलेट",
+        "headingNew": "नया वेतन टेम्पलेट",
+        "close": "बंद करें",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "saveTemplate": "टेम्पलेट सहेजें",
+        "createTemplate": "टेम्पलेट बनाएं",
+        "loadError": "यह टेम्पलेट लोड नहीं हो सका।",
+        "retrying": "फिर से प्रयास किया जा रहा है…",
+        "retry": "पुनः प्रयास करें"
+    },
+    "toast": {
+        "updated": "टेम्पलेट अपडेट किया गया",
+        "created": "टेम्पलेट बनाया गया",
+        "saveError": "वेतन टेम्पलेट सहेजा नहीं जा सका।"
+    },
+    "info": "इन घटकों का योग कर्मचारी के CTC के बराबर होना ज़रूरी नहीं है — बचे हुए हिस्से को संतुलित करने के लिए पेरोल एक <bold1>विशेष भत्ता</bold1> जोड़ देता है। जिस टेम्पलेट के घटक CTC से <bold2>अधिक</bold2> हों उसे अस्वीकार कर दिया जाता है, इसलिए निश्चित राशियों और प्रतिशतों को इसके भीतर ही रखें।",
+    "form": {
+        "nameLabel": "टेम्पलेट का नाम",
+        "namePlaceholder": "मानक स्टाफ संरचना",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "यह टेम्पलेट किसके लिए है।",
+        "defaultLabel": "नई नियुक्तियों के लिए इसे डिफ़ॉल्ट टेम्पलेट के रूप में उपयोग करें"
+    },
+    "components": {
+        "heading": "घटक",
+        "rowCount_one": "{{count}} पंक्ति",
+        "rowCount_other": "{{count}} पंक्तियाँ",
+        "addRow": "घटक पंक्ति जोड़ें",
+        "row": "पंक्ति {{number}}",
+        "removeRow": "पंक्ति {{number}} हटाएं",
+        "componentLabel": "घटक",
+        "componentLoading": "घटक लोड हो रहे हैं…",
+        "componentSelect": "घटक चुनें",
+        "componentSearchPlaceholder": "कोड या नाम से खोजें",
+        "componentEmpty": "कोई घटक नहीं मिला। घटक टैब से एक जोड़ें।",
+        "calculationLabel": "गणना",
+        "monthlyAmountLabel": "मासिक राशि",
+        "monthlyAmountPlaceholder": "25000",
+        "percentageLabel": "प्रतिशत",
+        "percentagePlaceholder": "40",
+        "percentageDescription": "इस गणना द्वारा बताए गए आधार का प्रतिशत।",
+        "formulaLabel": "सूत्र",
+        "formulaPlaceholder": "#BASIC * 0.1 + 1500",
+        "formulaHelp": "उपलब्ध वेरिएबल: #CTC (वार्षिक), #CTC_MONTHLY, #BASIC, #GROSS, और इस टेम्पलेट के किसी भी घटक के लिए #<COMPONENT_CODE>। परिणाम मासिक राशि होती है।",
+        "minLabel": "न्यूनतम (वैकल्पिक)",
+        "minPlaceholder": "कोई न्यूनतम सीमा नहीं",
+        "maxLabel": "अधिकतम (वैकल्पिक)",
+        "maxPlaceholder": "कोई ऊपरी सीमा नहीं",
+        "displayOrderLabel": "प्रदर्शन क्रम"
+    },
+    "validation": {
+        "nameRequired": "टेम्पलेट को एक नाम दें",
+        "descriptionMax": "विवरण 500 अक्षरों से कम रखें",
+        "componentsMin": "टेम्पलेट में कम से कम एक घटक होना चाहिए",
+        "componentRequired": "एक घटक चुनें",
+        "amountNumber": "राशि एक संख्या होनी चाहिए",
+        "percentageNumber": "प्रतिशत एक संख्या होना चाहिए",
+        "minNumber": "न्यूनतम एक संख्या होनी चाहिए",
+        "maxNumber": "अधिकतम एक संख्या होनी चाहिए",
+        "wholeNumbers": "केवल पूर्ण संख्याएं",
+        "enterAmount": "मासिक राशि दर्ज करें",
+        "enterPercentage": "एक प्रतिशत दर्ज करें",
+        "percentageRange": "प्रतिशत 0 से 100 के बीच होना चाहिए",
+        "enterFormula": "एक सूत्र दर्ज करें",
+        "maxAtLeastMin": "अधिकतम, न्यूनतम से कम नहीं होना चाहिए"
+    }
+}

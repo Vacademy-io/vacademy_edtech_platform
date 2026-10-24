@@ -1,0 +1,73 @@
+{
+    "pageTitle": "आवेदन - प्रवेश",
+    "navHeading": "आवेदन प्रबंधन",
+    "search": {
+        "placeholder": "ट्रैकिंग आईडी, नाम से खोजें..."
+    },
+    "filters": {
+        "classLabel": "कक्षा",
+        "statusLabel": "स्थिति"
+    },
+    "session": {
+        "placeholder": "सत्र चुनें",
+        "newGoTo": "नए आवेदन इसमें जाएँगे"
+    },
+    "buttons": {
+        "newApplication": "नया आवेदन",
+        "bulkImport": "बल्क आयात",
+        "previous": "पिछला",
+        "next": "अगला"
+    },
+    "table": {
+        "loading": "आवेदन लोड हो रहे हैं...",
+        "empty": {
+            "title": "कोई आवेदन नहीं मिला",
+            "subtitle": "अपने फ़िल्टर समायोजित करके देखें"
+        },
+        "headers": {
+            "trackingId": "ट्रैकिंग आईडी",
+            "studentName": "छात्र का नाम",
+            "class": "कक्षा",
+            "parentName": "अभिभावक का नाम",
+            "mobile": "मोबाइल",
+            "date": "दिनांक",
+            "status": "स्थिति",
+            "actions": "कार्रवाई"
+        },
+        "error": "आवेदन लोड नहीं हो सके। कृपया फिर से कोशिश करें।"
+    },
+    "status": {
+        "submitted": "सबमिट किया गया",
+        "admitted": "प्रवेशित",
+        "approved": "स्वीकृत",
+        "pending": "लंबित",
+        "rejected": "अस्वीकृत",
+        "admissionCompleted": "पूर्ण"
+    },
+    "pagination": {
+        "showing_one": "कुल {{count}} प्रविष्टि में से {{from}} से {{to}} तक दिखाया जा रहा है",
+        "showing_other": "कुल {{count}} प्रविष्टियों में से {{from}} से {{to}} तक दिखाया जा रहा है"
+    },
+    "modal": {
+        "title": "आवेदन प्रकार चुनें",
+        "subtitle": "चुनें कि आप नया आवेदन कैसे बनाना चाहते हैं",
+        "newApplication": {
+            "title": "नया आवेदन",
+            "description": "एक नया आवेदन फ़ॉर्म शुरू करें"
+        },
+        "fromEnquiry": {
+            "title": "पूछताछ से",
+            "description": "मौजूदा पूछताछ से आवेदन बनाएं"
+        }
+    },
+    "toast": {
+        "enquiryAlreadyConverted": "यह पूछताछ पहले ही आवेदन में परिवर्तित की जा चुकी है।"
+    },
+    "header": {
+        "title": "आवेदन",
+        "subtitle": "आवेदनों की समीक्षा करें, शुल्क लें, फिर प्रवेश दें।"
+    },
+    "quickViews": {
+        "all": "सभी आवेदन"
+    }
+}

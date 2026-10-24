@@ -2,6 +2,7 @@ import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 ('use client');
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from '@tanstack/react-router';
 import { MyButton } from '@/components/design-system/button';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
@@ -20,6 +21,7 @@ import { convertHtmlToPdf } from './-helper/helper';
 import { formatHTMLString } from './-components/slide-operations/formatHtmlString';
 import { EMPTY_LEXICAL_INNER } from './-components/lexical-editor/lexical-doc-marker';
 import { docHtmlToLexicalIfSafe } from './-components/lexical-editor/convert-yoopta';
+import { HTML_DOC_TYPE } from './-components/html-doc/html-doc-utils';
 import {
     Plus,
     YoutubeLogo,
@@ -84,6 +86,7 @@ export interface ChapterSearchParamsForQuickAdd {
 }
 
 export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAdd }) {
+    const { t } = useTranslation('quickAdd');
     const router = useRouter();
     const { getPackageSessionId } = useInstituteDetailsStore();
 
@@ -230,21 +233,21 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             }
         });
         setStaged((prev) => [...prev, ...next]);
-        toast.success(`${next.length} file(s) staged`);
+        toast.success(t('filesStaged', { count: next.length }));
     };
 
     const removeStaged = (id: string) => setStaged((prev) => prev.filter((s) => s.id !== id));
     // removed unused keyboard reordering handler (drag is primary)
 
     const addYouTubeToStage = async () => {
-        const url = prompt('Enter YouTube URL');
+        const url = prompt(t('prompts.youtubeUrl'));
         if (!url) return;
         setStaged((prev) => [
             ...prev,
             {
                 id: crypto.randomUUID(),
                 kind: 'YOUTUBE',
-                title: 'YouTube Video',
+                title: t('defaultTitles.youtubeVideo'),
                 url,
                 file: null,
                 mime: null,
@@ -253,14 +256,14 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
     };
 
     const addExternalLinkToStage = async () => {
-        const url = prompt('Enter external link URL');
+        const url = prompt(t('prompts.externalLinkUrl'));
         if (!url) return;
         setStaged((prev) => [
             ...prev,
             {
                 id: crypto.randomUUID(),
                 kind: 'EXTERNAL_LINK',
-                title: 'Link',
+                title: t('defaultTitles.link'),
                 url,
                 file: null,
                 mime: null,
@@ -274,7 +277,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             {
                 id: crypto.randomUUID(),
                 kind: 'CODE',
-                title: 'Code Editor',
+                title: t('defaultTitles.codeEditor'),
                 file: null,
                 url: null,
                 mime: null,
@@ -288,7 +291,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             {
                 id: crypto.randomUUID(),
                 kind: 'JUPYTER',
-                title: 'Jupyter Notebook',
+                title: t('defaultTitles.jupyterNotebook'),
                 file: null,
                 url: null,
                 mime: null,
@@ -302,7 +305,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             {
                 id: crypto.randomUUID(),
                 kind: 'PRESENTATION',
-                title: 'Presentation',
+                title: t('defaultTitles.presentation'),
                 file: null,
                 url: null,
                 mime: null,
@@ -316,7 +319,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             {
                 id: crypto.randomUUID(),
                 kind: 'EMPTY_DOC',
-                title: 'Untitled Document',
+                title: t('defaultTitles.untitledDocument'),
                 file: null,
                 url: null,
                 mime: null,
@@ -325,14 +328,14 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
     };
 
     const addEmbedUrlToStage = async () => {
-        const url = prompt('Enter URL to embed');
+        const url = prompt(t('prompts.embedUrl'));
         if (!url) return;
         setStaged((prev) => [
             ...prev,
             {
                 id: crypto.randomUUID(),
                 kind: 'EMBED',
-                title: 'Embedded URL',
+                title: t('defaultTitles.embeddedUrl'),
                 file: null,
                 url,
                 mime: null,
@@ -366,85 +369,85 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
         return [
             allow('bulk') && {
                 key: 'bulk',
-                label: 'Upload files',
+                label: t('bubbles.uploadFiles'),
                 icon: <Plus className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
             {
                 key: 'empty-doc',
-                label: 'Empty Doc',
+                label: t('bubbles.emptyDoc'),
                 icon: <FileDoc className="size-4" />,
                 onClick: addEmptyDocToStage,
             },
             allow('youtube') && {
                 key: 'youtube',
-                label: 'YouTube',
+                label: t('bubbles.youtube'),
                 icon: <YoutubeLogo className="size-4" />,
                 onClick: addYouTubeToStage,
             },
             {
                 key: 'link',
-                label: 'External link',
+                label: t('bubbles.externalLink'),
                 icon: <LinkSimple className="size-4" />,
                 onClick: addExternalLinkToStage,
             },
             {
                 key: 'embed-url',
-                label: 'Embed URL',
+                label: t('bubbles.embedUrl'),
                 icon: <LinkSimple className="size-4" />,
                 onClick: addEmbedUrlToStage,
             },
             allow('pdf') && {
                 key: 'pdf',
-                label: 'PDF',
+                label: t('bubbles.pdf'),
                 icon: <FilePdf className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
             allow('doc') && {
                 key: 'doc',
-                label: 'Doc',
+                label: t('bubbles.doc'),
                 icon: <FileDoc className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
             allow('pdf') && {
                 key: 'ppt',
-                label: 'PPT',
+                label: t('bubbles.ppt'),
                 icon: <PresentationChart className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
             allow('presentation') && {
                 key: 'presentation',
-                label: 'Presentation',
+                label: t('bubbles.presentation'),
                 icon: <PresentationChart className="size-4" />,
                 onClick: addPresentationToStage,
             },
             allow('code') && {
                 key: 'code',
-                label: 'Code',
+                label: t('bubbles.code'),
                 icon: <Code className="size-4" />,
                 onClick: addCodeToStage,
             },
             allow('jupyter') && {
                 key: 'jupyter',
-                label: 'Jupyter',
+                label: t('bubbles.jupyter'),
                 icon: <PresentationChart className="size-4" />,
                 onClick: addJupyterToStage,
             },
             {
                 key: 'image',
-                label: 'Image',
+                label: t('bubbles.image'),
                 icon: <ImageIcon className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
             {
                 key: 'audio',
-                label: 'Audio',
+                label: t('bubbles.audio'),
                 icon: <MusicNotes className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
             {
                 key: 'html',
-                label: 'HTML',
+                label: t('bubbles.html'),
                 icon: <FileHtml className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
             },
@@ -454,11 +457,11 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             icon: JSX.Element;
             onClick: () => void;
         }[];
-    }, [roleDisplay?.contentTypes]);
+    }, [roleDisplay?.contentTypes, t]);
 
     const onAddAll = async () => {
         if (staged.length === 0) {
-            toast.error('No items to add');
+            toast.error(t('noItemsToAdd'));
             return;
         }
         try {
@@ -753,7 +756,13 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                         slide_order: 0,
                         document_slide: {
                             id: crypto.randomUUID(),
-                            type: 'DOC',
+                            // 'HTML', not 'DOC': a self-contained HTML file keeps its
+                            // own <style>/<script>, so it must land on the creative
+                            // HTML path (sandboxed iframe in both admin and learner).
+                            // 'DOC' routes it into the rich-text editors, which parse
+                            // the markup into blocks — scripts never run and inline
+                            // <br/> is dropped, so interactive docs render as dead text.
+                            type: HTML_DOC_TYPE,
                             data: normalized,
                             title: item.title,
                             cover_file_id: '',
@@ -775,7 +784,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                     const id = crypto.randomUUID();
                     const resp: string = await addUpdateDocumentSlide({
                         id,
-                        title: item.title || 'Link',
+                        title: item.title || t('defaultTitles.link'),
                         image_file_id: '',
                         description: 'External link',
                         slide_order: 0,
@@ -783,7 +792,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                             id: crypto.randomUUID(),
                             type: 'DOC',
                             data: normalized,
-                            title: item.title || 'Link',
+                            title: item.title || t('defaultTitles.link'),
                             cover_file_id: '',
                             total_pages: 1,
                             published_data: normalized,
@@ -800,7 +809,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                     const id = crypto.randomUUID();
                     const resp: string = await addUpdateDocumentSlide({
                         id,
-                        title: item.title || 'Embedded URL',
+                        title: item.title || t('defaultTitles.embeddedUrl'),
                         image_file_id: '',
                         description: 'Embedded URL',
                         slide_order: 0,
@@ -808,7 +817,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                             id: crypto.randomUUID(),
                             type: 'DOC',
                             data: normalized,
-                            title: item.title || 'Embedded URL',
+                            title: item.title || t('defaultTitles.embeddedUrl'),
                             cover_file_id: '',
                             total_pages: 1,
                             published_data: normalized,
@@ -828,7 +837,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                     const id = crypto.randomUUID();
                     const resp: string = await addUpdateDocumentSlide({
                         id,
-                        title: item.title || 'Untitled Document',
+                        title: item.title || t('defaultTitles.untitledDocument'),
                         image_file_id: '',
                         description: null,
                         slide_order: 0,
@@ -836,7 +845,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                             id: crypto.randomUUID(),
                             type: 'DOC',
                             data: normalized,
-                            title: item.title || 'Untitled Document',
+                            title: item.title || t('defaultTitles.untitledDocument'),
                             cover_file_id: '',
                             total_pages: totalPages || 1,
                             published_data: normalized,
@@ -961,7 +970,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                 slideOrderPayload: reordered,
             });
 
-            toast.success(`Added ${createdIds.length} slide(s)`);
+            toast.success(t('addedSlides', { count: createdIds.length }));
 
             // Navigate back to slides main view (remove quickAdd param) and replace history
             router.navigate({
@@ -980,7 +989,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
             });
         } catch (err) {
             console.error(err);
-            toast.error('Failed to add slides');
+            toast.error(t('addFailed'));
             // mark current item as failed if we can’t granularly identify which
             setStaged((prev) =>
                 prev.map((it) =>
@@ -995,10 +1004,10 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
     return (
         <div className="flex size-full flex-col gap-4 p-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Quick Add Slides</h2>
+                <h2 className="text-lg font-semibold">{t('heading')}</h2>
                 <div className="flex items-center gap-2">
                     <button
-                        aria-label="Close"
+                        aria-label={t('close')}
                         className="rounded p-1 text-neutral-500 hover:bg-neutral-100"
                         onClick={() => {
                             router.navigate({
@@ -1025,7 +1034,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                         onClick={onAddAll}
                         disabled={staged.length === 0}
                     >
-                        {`Publish All ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide)}`}
+                        {t('publishAll', { term: getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide) })}
                     </MyButton>
                 </div>
             </div>
@@ -1064,11 +1073,11 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
 
             <div className="rounded-lg border bg-white">
                 <div className="border-b p-3 text-sm text-neutral-600">
-                    Staged items ({staged.length})
+                    {t('stagedItems', { count: staged.length })}
                 </div>
                 {staged.length === 0 ? (
                     <div className="p-6 text-sm text-neutral-500">
-                        Nothing staged yet. Use the quick actions above to add.
+                        {t('emptyState')}
                     </div>
                 ) : (
                     <ul className="divide-y">
@@ -1147,7 +1156,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                                                         setEditingId(s.id);
                                                         setEditingTitle(s.title);
                                                     }}
-                                                    aria-label="Edit title"
+                                                    aria-label={t('editTitle')}
                                                 >
                                                     <PencilSimple className="size-4" />
                                                 </button>
@@ -1161,19 +1170,19 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                                             {s.status === 'loading' && (
                                                 <span className="flex items-center gap-1 text-primary-600">
                                                     <CircleNotch className="size-3 animate-spin" />
-                                                    Adding...
+                                                    {t('adding')}
                                                 </span>
                                             )}
                                             {s.status === 'done' && (
                                                 <span className="flex items-center gap-1 text-green-600">
                                                     <CheckCircle className="size-3" />
-                                                    Done
+                                                    {t('done')}
                                                 </span>
                                             )}
                                             {s.status === 'failed' && (
                                                 <span className="flex items-center gap-1 text-red-600">
                                                     <XCircle className="size-3" />
-                                                    {`Failed${s.error ? `: ${s.error}` : ''}`}
+                                                    {s.error ? t('failedWithReason', { reason: s.error }) : t('failed')}
                                                 </span>
                                             )}
                                         </div>
@@ -1184,7 +1193,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                                         className="rounded border px-2 py-1 text-xs text-red-600 hover:bg-red-50"
                                         onClick={() => removeStaged(s.id)}
                                     >
-                                        Remove
+                                        {t('remove')}
                                     </button>
                                 </div>
                             </li>

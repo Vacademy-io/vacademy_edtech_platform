@@ -20,6 +20,19 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
 
     Optional<EnrollInvite> findByInviteCode(String inviteCode);
 
+    /**
+     * setting_json of the institute's live invites that mention a trial at all. A cheap LIKE
+     * prefilter; the JSON is parsed in Java because a jsonb cast inside a native query trips
+     * over Hibernate's ":" parameter parsing, and one malformed invite must not fail the query.
+     */
+    @Query(value = """
+            SELECT ei.setting_json FROM enroll_invite ei
+            WHERE ei.institute_id = :instituteId
+              AND ei.status <> 'DELETED'
+              AND ei.setting_json LIKE '%TRIAL_DAYS%'
+            """, nativeQuery = true)
+    List<String> findTrialBearingSettingJson(@Param("instituteId") String instituteId);
+
     // Sub-org registration templates (tag=SUB_ORG_REGISTRATION) for the builder list.
     List<EnrollInvite> findByInstituteIdAndTagAndStatusInOrderByCreatedAtDesc(
             String instituteId, String tag, List<String> statuses);
@@ -29,6 +42,16 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
     @Query("UPDATE EnrollInvite ei SET ei.status = :status WHERE ei.id IN :enrollInviteIds")
     void updateStatusByIds(@Param("enrollInviteIds") List<String> enrollInviteIds, @Param("status") String status);
 
+    /**
+     * The invite list behind the Invite page and the course-details "Invite Links"
+     * dialog. Every filter is optional; {@code searchName} matches name or invite
+     * code and is applied ON TOP of the package-session scope, so a search inside
+     * one course's dialog never leaks invites from the rest of the institute.
+     *
+     * <p>Carries no ORDER BY of its own — the caller's {@link Pageable} sort is
+     * appended by Spring Data (qualified to the {@code ei} alias), and
+     * {@code EnrollInviteService} defaults it to {@code created_at DESC}.
+     */
     @Query(value = """
     SELECT
         ei.id AS id,
@@ -45,6 +68,8 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
         ei.web_page_meta_data_json AS webPageMetaDataJson,
         ei.created_at AS createdAt,
         ei.updated_at AS updatedAt,
+        ei.created_by_user_id AS createdByUserId,
+        ei.updated_by_user_id AS updatedByUserId,
         ei.short_url AS shortUrl,
         (
             SELECT ARRAY_REMOVE(ARRAY_AGG(DISTINCT ps.id), NULL)
@@ -58,7 +83,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
     FROM enroll_invite ei
     WHERE ei.institute_id = :instituteId
       AND (:#{#tags == null || #tags.isEmpty()} = true OR ei.tag IN (:tags))
-      AND (:#{#tags == null || #tags.isEmpty()} = false OR ei.tag IS DISTINCT FROM 'SUB_ORG_REGISTRATION')
+      AND (:#{#tags == null || #tags.isEmpty()} = false OR (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')))
       AND (:#{#enrollInviteStatus == null || #enrollInviteStatus.isEmpty()} = true OR ei.status IN (:enrollInviteStatus))
       AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR EXISTS (
           SELECT 1 FROM package_session_learner_invitation_to_payment_option psl
@@ -68,13 +93,16 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
           SELECT 1 FROM package_session_learner_invitation_to_payment_option psl
           WHERE psl.enroll_invite_id = ei.id AND psl.payment_option_id IN (:paymentOptionIds) AND psl.status != 'DELETED'
       ))
+      AND (:#{#searchName == null || #searchName.isBlank()} = true
+           OR LOWER(ei.name) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%'))
+           OR LOWER(ei.invite_code) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%')))
     """,
             countQuery = """
     SELECT COUNT(*)
     FROM enroll_invite ei
     WHERE ei.institute_id = :instituteId
       AND (:#{#tags == null || #tags.isEmpty()} = true OR ei.tag IN (:tags))
-      AND (:#{#tags == null || #tags.isEmpty()} = false OR ei.tag IS DISTINCT FROM 'SUB_ORG_REGISTRATION')
+      AND (:#{#tags == null || #tags.isEmpty()} = false OR (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')))
       AND (:#{#enrollInviteStatus == null || #enrollInviteStatus.isEmpty()} = true OR ei.status IN (:enrollInviteStatus))
       AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR EXISTS (
           SELECT 1 FROM package_session_learner_invitation_to_payment_option psl
@@ -84,6 +112,9 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
           SELECT 1 FROM package_session_learner_invitation_to_payment_option psl
           WHERE psl.enroll_invite_id = ei.id AND psl.payment_option_id IN (:paymentOptionIds) AND psl.status != 'DELETED'
       ))
+      AND (:#{#searchName == null || #searchName.isBlank()} = true
+           OR LOWER(ei.name) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%'))
+           OR LOWER(ei.invite_code) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%')))
     """,
             nativeQuery = true)
     Page<EnrollInviteWithSessionsProjection> getEnrollInvitesWithFilters(
@@ -93,6 +124,7 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
             @Param("tags") List<String> tags,
             @Param("enrollInviteStatus") List<String> enrollInviteStatus,
             @Param("packageSessionStatuses") List<String> packageSessionStatuses,
+            @Param("searchName") String searchName,
             Pageable pageable
     );
 
@@ -101,27 +133,28 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
             "ei.status as \"status\", ei.institute_id as \"instituteId\", ei.vendor as \"vendor\", ei.vendor_id as \"vendorId\", " +
             "ei.currency as \"currency\", ei.tag as \"tag\", ei.web_page_meta_data_json as \"webPageMetaDataJson\", " +
             "ei.created_at as \"createdAt\", ei.updated_at as \"updatedAt\", ei.short_url as \"shortUrl\", " +
+            "ei.created_by_user_id as \"createdByUserId\", ei.updated_by_user_id as \"updatedByUserId\", " +
             "ARRAY_REMOVE(ARRAY_AGG(DISTINCT ps.id), NULL) as \"packageSessionIds\" " +
             "FROM enroll_invite ei " +
             "LEFT JOIN package_session_learner_invitation_to_payment_option psl ON ei.id = psl.enroll_invite_id " +
             "LEFT JOIN package_session ps ON psl.package_session_id = ps.id " +
             "WHERE ei.institute_id = :instituteId " +
-            "AND ei.tag IS DISTINCT FROM 'SUB_ORG_REGISTRATION' " +
+            "AND (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')) " +
             "AND (COALESCE(:enrollInviteStatus, NULL) IS NULL OR ei.status IN (:enrollInviteStatus)) " +
-            "AND (:searchName IS NULL OR :searchName = '' OR " +
-            "     LOWER(ei.name) LIKE LOWER(CONCAT('%', :searchName, '%')) OR " +
-            "     LOWER(ei.invite_code) LIKE LOWER(CONCAT('%', :searchName, '%'))) " +
+            "AND (CAST(:searchName AS text) IS NULL OR CAST(:searchName AS text) = '' OR " +
+            "     LOWER(ei.name) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%')) OR " +
+            "     LOWER(ei.invite_code) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%'))) " +
             "AND (COALESCE(:packageSessionStatuses, NULL) IS NULL OR ps.status IN (:packageSessionStatuses)) " +
             "GROUP BY ei.id",
             countQuery = "SELECT COUNT(DISTINCT ei.id) FROM enroll_invite ei " +
                     "LEFT JOIN package_session_learner_invitation_to_payment_option psl ON ei.id = psl.enroll_invite_id " +
                     "LEFT JOIN package_session ps ON psl.package_session_id = ps.id " +
                     "WHERE ei.institute_id = :instituteId " +
-                    "AND ei.tag IS DISTINCT FROM 'SUB_ORG_REGISTRATION' " +
+                    "AND (ei.tag IS NULL OR ei.tag NOT IN ('SUB_ORG_REGISTRATION', 'ACCESS_PASS')) " +
                     "AND (COALESCE(:enrollInviteStatus, NULL) IS NULL OR ei.status IN (:enrollInviteStatus)) " +
-                    "AND (:searchName IS NULL OR :searchName = '' OR " +
-                    "     LOWER(ei.name) LIKE LOWER(CONCAT('%', :searchName, '%')) OR " +
-                    "     LOWER(ei.invite_code) LIKE LOWER(CONCAT('%', :searchName, '%'))) " +
+                    "AND (CAST(:searchName AS text) IS NULL OR CAST(:searchName AS text) = '' OR " +
+                    "     LOWER(ei.name) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%')) OR " +
+                    "     LOWER(ei.invite_code) LIKE LOWER(CONCAT('%', CAST(:searchName AS text), '%'))) " +
                     "AND (COALESCE(:packageSessionStatuses, NULL) IS NULL OR ps.status IN (:packageSessionStatuses))",
             nativeQuery = true)
     Page<EnrollInviteWithSessionsProjection> getEnrollInvitesByInstituteIdAndSearchName(

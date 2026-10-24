@@ -1,0 +1,23 @@
+{
+    "errors": {
+        "urlRequired": "يرجى إدخال رابط URL لدفتر الملاحظات",
+        "urlInvalid": "يرجى إدخال رابط URL صالح",
+        "loadFailed": "فشل تحميل دفتر الملاحظات. يرجى التحقق من الرابط والمحاولة مرة أخرى."
+    },
+    "toast": {
+        "saveSuccess": "تم حفظ إعدادات دفتر الملاحظات بنجاح!"
+    },
+    "configureTitle": "تكوين دفتر ملاحظات Jupyter",
+    "configureDescription": "أدخل رابط دفتر ملاحظات Jupyter لتضمينه في هذه الشريحة.",
+    "projectNameLabel": "اسم المشروع (اختياري)",
+    "projectNamePlaceholder": "مشروع Jupyter الخاص بي",
+    "notebookUrlLabel": "رابط دفتر الملاحظات *",
+    "previewNotebook": "معاينة دفتر الملاحظات",
+    "notConfiguredTitle": "لم يتم تكوين أي دفتر ملاحظات",
+    "notConfiguredDescription": "لم يتم تكوين رابط دفتر ملاحظات لهذه الشريحة بعد.",
+    "configureNotebook": "تكوين دفتر الملاحظات",
+    "defaultProjectName": "دفتر ملاحظات Jupyter",
+    "notebookLabel": "دفتر الملاحظات",
+    "open": "فتح",
+    "edit": "تعديل"
+}

@@ -1,0 +1,30 @@
+{
+    "noAssessmentLinked": "No assessment linked to this slide.",
+    "status": {
+        "scheduled": "Scheduled",
+        "closed": "Closed",
+        "open": "Open"
+    },
+    "availability": {
+        "range": "{{opens}} → {{closes}}",
+        "from": "From {{opens}}",
+        "until": "Until {{closes}}",
+        "anytime": "Anytime"
+    },
+    "linkedAssessment": "Linked assessment",
+    "loadingEllipsis": "Loading…",
+    "viewSubmissions": "View Submissions",
+    "manageInAssessments": "Manage in Assessments",
+    "couldNotLoadDetails": "Could not load assessment details. The link may still work for learners.",
+    "totalMarks": "Total marks",
+    "availableToLearners": "Available to learners",
+    "lockedUntil": "This slide is locked for learners until {{date}}.",
+    "itOpens": "it opens",
+    "closedOnDate": "This slide closed on {{date}} — learners can no longer attempt it.",
+    "closedNoDate": "This slide closed — learners can no longer attempt it.",
+    "instructions": "Instructions",
+    "loadingInstructions": "Loading instructions…",
+    "noInstructionsProvided": "No instructions provided.",
+    "submitted": "submitted",
+    "enrolled": "enrolled"
+}

@@ -75,6 +75,15 @@ jobs:
           ECR_REGISTRY: public.ecr.aws/e0x1f4p4
           REPOSITORY: ai-service/ai-service-repo
           GIT_SHA: ${{ github.sha }}
+          # YouTube captions proxy + Supadata (services/youtube_captions). Passed via
+          # env, not inlined, so proxy URLs / passwords with shell metacharacters
+          # survive intact. All optional; applied below only when non-empty.
+          YT_CAPTIONS_PROXY: ${{ secrets.YT_CAPTIONS_PROXY }}
+          WEBSHARE_PROXY_USERNAME: ${{ secrets.WEBSHARE_PROXY_USERNAME }}
+          WEBSHARE_PROXY_PASSWORD: ${{ secrets.WEBSHARE_PROXY_PASSWORD }}
+          YT_CAPTIONS_PROXY_HTTP_URL: ${{ secrets.YT_CAPTIONS_PROXY_HTTP_URL }}
+          YT_CAPTIONS_PROXY_HTTPS_URL: ${{ secrets.YT_CAPTIONS_PROXY_HTTPS_URL }}
+          SUPADATA_API_KEY: ${{ secrets.SUPADATA_API_KEY }}
         run: |
           if kubectl get deployment "$DEPLOYMENT_NAME" --namespace "$NAMESPACE" >/dev/null 2>&1; then
             kubectl set env deployment/"$DEPLOYMENT_NAME" \
@@ -82,6 +91,7 @@ jobs:
               APP_ENV=stage \
               LLM_BASE_URL=https://openrouter.ai/api/v1/chat/completions \
               OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} \
+              ISOQUANT_API_KEY=${{ secrets.ISOQUANT_API_KEY }} \
               LLM_TIMEOUT_SECONDS=60.0 \
               S3_AWS_ACCESS_KEY=${{ secrets.S3_AWS_ACCESS_KEY }} \
               S3_AWS_ACCESS_SECRET=${{ secrets.S3_AWS_ACCESS_SECRET }} \
@@ -92,7 +102,8 @@ jobs:
               RUNPOD_API_KEY=${{ secrets.RUNPOD_API_KEY }} \
               RUNPOD_ENDPOINT_ID=${{ secrets.RUNPOD_ENDPOINT_ID }} \
               FAL_API_KEY=${{ secrets.FAL_API_KEY }} \
-              LLM_DEFAULT_MODEL=google/gemini-2.5-flash \
+              LLM_DEFAULT_MODEL=z-ai/glm-5.3-flash \
+              LLM_FALLBACK_MODEL=google/gemini-2.5-flash \
               DB_USERNAME=${{ secrets.DB_USERNAME }} \
               DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
               ADMIN_CORE_SERVICE_DB_URL=jdbc:postgresql://pgbouncer:6432/admin_core_service \
@@ -109,6 +120,44 @@ jobs:
               SERPER_API_KEYS=${{ secrets.SERPER_API_KEYS }} \
               GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }} \
               INTERNAL_SERVICE_TOKEN=${{ secrets.INTERNAL_SERVICE_TOKEN }}
+
+            # Smallest.ai (Live AI Tutor voice + cloning). Set only when the GitHub
+            # secret is present: the cluster's shared `vacademy-secrets` (envFrom)
+            # also carries it, and an empty explicit env would override that with "".
+            if [ -n "${{ secrets.SMALLEST_API_KEY }}" ]; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                SMALLEST_API_KEY=${{ secrets.SMALLEST_API_KEY }}
+            fi
+
+            # Spatius (premium teacher avatar). Same rule: only when the secret is
+            # present; the feature stays dark without SPATIUS_API_KEY + SPATIUS_APP_ID.
+            if [ -n "${{ secrets.SPATIUS_API_KEY }}" ] && [ -n "${{ secrets.SPATIUS_APP_ID }}" ]; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                SPATIUS_API_KEY=${{ secrets.SPATIUS_API_KEY }} SPATIUS_APP_ID=${{ secrets.SPATIUS_APP_ID }}
+            fi
+
+            # YouTube captions proxy + Supadata. Same rule: each one only when its GitHub
+            # secret is non-empty, so an unset secret never blanks the value already in
+            # `vacademy-secrets` (envFrom). Values are never echoed.
+            yt_env=()
+            for name in YT_CAPTIONS_PROXY WEBSHARE_PROXY_USERNAME WEBSHARE_PROXY_PASSWORD \
+                        YT_CAPTIONS_PROXY_HTTP_URL YT_CAPTIONS_PROXY_HTTPS_URL SUPADATA_API_KEY; do
+              if [ -n "${!name}" ]; then
+                yt_env+=("$name=${!name}")
+              fi
+            done
+            if [ "${#yt_env[@]}" -gt 0 ]; then
+              echo "Applying ${#yt_env[@]} YouTube-caption env var(s) from GitHub secrets"
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" "${yt_env[@]}" >/dev/null
+            fi
+
+            # Encryption key for the Claude key pool (llm_provider_keys). It lives in its
+            # own k8s secret mounted only into ai-service, never in the shared
+            # `vacademy-secrets`; without it the pool stays empty and calls use OpenRouter.
+            if kubectl get secret ai-llm-key-encryption --namespace "$NAMESPACE" >/dev/null 2>&1; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                --from=secret/ai-llm-key-encryption --keys=LLM_KEY_ENCRYPTION_KEY
+            fi
 
             # Apply resource limits from deployment YAML (helm upgrade not used in CI,
             # so patch directly to keep requests/limits in sync with the checked-in values).

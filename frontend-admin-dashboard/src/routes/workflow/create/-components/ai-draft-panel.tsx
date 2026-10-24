@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkle, CircleNotch, ArrowRight, Warning, CheckCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
@@ -73,6 +74,7 @@ export function AiDraftPanel({
     instituteId: string;
     onComplete: () => void;
 }) {
+    const { t } = useTranslation('workflowAiDraftPanel');
     const [goal, setGoal] = useState('');
     const [stage, setStage] = useState<'idle' | 'plan' | 'decisions'>('idle');
     const [planning, setPlanning] = useState(false);
@@ -129,7 +131,11 @@ export function AiDraftPanel({
                 controller.signal
             );
             if (res.error) {
-                toast({ title: 'Could not plan', description: res.error, variant: 'destructive' });
+                toast({
+                    title: t('toasts.planFailedTitle'),
+                    description: res.error,
+                    variant: 'destructive',
+                });
                 return;
             }
             setPlan(res);
@@ -137,8 +143,8 @@ export function AiDraftPanel({
         } catch (e) {
             if (!controller.signal.aborted) {
                 toast({
-                    title: 'Planning failed',
-                    description: e instanceof Error ? e.message : 'Unknown error',
+                    title: t('toasts.planningFailedTitle'),
+                    description: e instanceof Error ? e.message : t('toasts.unknownError'),
                     variant: 'destructive',
                 });
             }
@@ -197,20 +203,23 @@ export function AiDraftPanel({
             });
             if (res.error || !res.workflow) {
                 toast({
-                    title: 'Could not build',
-                    description: res.error ?? 'No workflow returned',
+                    title: t('toasts.buildFailedTitle'),
+                    description: res.error ?? t('toasts.noWorkflowReturned'),
                     variant: 'destructive',
                 });
                 return;
             }
             if (res.warnings?.length) {
-                toast({ title: 'Loaded with notes', description: res.warnings.join(' ') });
+                toast({
+                    title: t('toasts.loadedWithNotesTitle'),
+                    description: res.warnings.join(' '),
+                });
             }
             loadIntoBuilder(res.workflow);
         } catch (e) {
             toast({
-                title: 'Build failed',
-                description: e instanceof Error ? e.message : 'Unknown error',
+                title: t('toasts.buildErrorTitle'),
+                description: e instanceof Error ? e.message : t('toasts.unknownError'),
                 variant: 'destructive',
             });
         } finally {
@@ -287,13 +296,12 @@ export function AiDraftPanel({
         <div className="rounded-lg border border-primary-100 bg-primary-50 p-4">
             <div className="mb-2 flex items-center gap-2">
                 <Sparkle size={18} weight="fill" className="text-primary-500" />
-                <h3 className="text-subtitle font-semibold text-neutral-700">Describe your automation</h3>
-                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-caption text-primary-600">AI</span>
+                <h3 className="text-subtitle font-semibold text-neutral-700">{t('heading')}</h3>
+                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-caption text-primary-600">
+                    {t('aiBadge')}
+                </span>
             </div>
-            <p className="mb-3 text-body text-neutral-500">
-                Tell me what you want. I&apos;ll propose a plan, then ask you to choose the templates,
-                audiences and variable mappings — so the workflow that lands is ready to publish.
-            </p>
+            <p className="mb-3 text-body text-neutral-500">{t('intro')}</p>
 
             <Textarea
                 value={goal}
@@ -301,7 +309,7 @@ export function AiDraftPanel({
                     setGoal(e.target.value);
                     if (plan) resetFromGoal();
                 }}
-                placeholder="e.g. 3 days after someone fills the JEE lead form, if they haven't enrolled, WhatsApp them the brochure."
+                placeholder={t('goalPlaceholder')}
                 className="min-h-20 bg-white text-body"
                 disabled={planning}
             />
@@ -309,17 +317,18 @@ export function AiDraftPanel({
             <div className="mt-3 flex justify-end gap-2">
                 {planning && (
                     <MyButton buttonType="secondary" onClick={() => abortRef.current?.abort()}>
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                 )}
                 <MyButton buttonType="primary" onClick={runPlan} disabled={planning || !goal.trim()}>
                     {planning ? (
                         <span className="flex items-center gap-2">
-                            <CircleNotch size={16} className="animate-spin" /> Planning…
+                            <CircleNotch size={16} className="animate-spin" /> {t('actions.planning')}
                         </span>
                     ) : (
                         <span className="flex items-center gap-2">
-                            <Sparkle size={16} weight="fill" /> {plan ? 'Re-plan' : 'Draft with AI'}
+                            <Sparkle size={16} weight="fill" />{' '}
+                            {plan ? t('actions.replan') : t('actions.draftWithAi')}
                         </span>
                     )}
                 </MyButton>
@@ -329,7 +338,7 @@ export function AiDraftPanel({
             {plan?.plan && (
                 <div className="mt-4 rounded-md border border-neutral-200 bg-white p-3">
                     <p className="mb-1 text-body font-semibold text-neutral-700">
-                        {plan.plan.summary ?? 'Proposed workflow'}
+                        {plan.plan.summary ?? t('plan.defaultSummary')}
                     </p>
                     <ol className="mb-2 flex flex-col gap-1">
                         {(plan.plan.steps ?? []).map((s, i) => (
@@ -359,7 +368,7 @@ export function AiDraftPanel({
                         <div className="flex justify-end">
                             <MyButton buttonType="primary" onClick={() => setStage('decisions')}>
                                 <span className="flex items-center gap-2">
-                                    Looks good — choose details <ArrowRight size={16} />
+                                    {t('plan.chooseDetails')} <ArrowRight size={16} />
                                 </span>
                             </MyButton>
                         </div>
@@ -370,7 +379,7 @@ export function AiDraftPanel({
             {/* ── Decisions ── */}
             {stage === 'decisions' && decisions.length > 0 && (
                 <div className="mt-4 flex flex-col gap-4 rounded-md border border-neutral-200 bg-white p-3">
-                    <p className="text-body font-medium text-neutral-700">A few choices only you can make:</p>
+                    <p className="text-body font-medium text-neutral-700">{t('decisions.heading')}</p>
                     {decisions.map((d) => (
                         <DecisionControl
                             key={d.id}
@@ -385,8 +394,8 @@ export function AiDraftPanel({
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-caption text-neutral-400">
                             {missingRequired.length === 0
-                                ? 'All set'
-                                : `Still needed: ${missingLabels.join(' • ')}`}
+                                ? t('decisions.allSet')
+                                : t('decisions.stillNeeded', { items: missingLabels.join(' • ') })}
                         </span>
                         <MyButton
                             buttonType="primary"
@@ -395,11 +404,12 @@ export function AiDraftPanel({
                         >
                             {building ? (
                                 <span className="flex items-center gap-2">
-                                    <CircleNotch size={16} className="animate-spin" /> Building…
+                                    <CircleNotch size={16} className="animate-spin" />{' '}
+                                    {t('actions.building')}
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-2">
-                                    <CheckCircle size={16} weight="fill" /> Build workflow
+                                    <CheckCircle size={16} weight="fill" /> {t('actions.buildWorkflow')}
                                 </span>
                             )}
                         </MyButton>
@@ -426,6 +436,7 @@ function DecisionControl({
     answers: Record<string, unknown>;
     templatesFor: (kind: string) => TemplateItem[];
 }) {
+    const { t } = useTranslation('workflowAiDraftPanel');
     const label = (
         <label className="text-caption font-medium text-neutral-600">{decision.prompt ?? decision.id}</label>
     );
@@ -474,7 +485,9 @@ function DecisionControl({
             return (
                 <div className="flex flex-col gap-1">
                     {label}
-                    <span className="text-caption text-neutral-400">Choose the template above first.</span>
+                    <span className="text-caption text-neutral-400">
+                        {t('decisions.chooseTemplateFirst')}
+                    </span>
                 </div>
             );
         }
@@ -483,7 +496,7 @@ function DecisionControl({
                 {label}
                 {keys.length === 0 && (
                     <span className="text-caption text-neutral-400">
-                        This template has no variables to map — nothing to do here.
+                        {t('decisions.noVariables')}
                     </span>
                 )}
                 {keys.map((k) => (
@@ -495,7 +508,7 @@ function DecisionControl({
                             type="text"
                             value={current[k] ?? ''}
                             onChange={(e) => onChange({ ...current, [k]: e.target.value })}
-                            placeholder="e.g. #item['full_name'] or a fixed value"
+                            placeholder={t('decisions.varMapPlaceholder')}
                             className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-body text-neutral-700 focus:border-primary-400 focus:outline-none"
                         />
                     </div>
@@ -523,15 +536,18 @@ function DecisionControl({
 
 /** Channel badge so the admin can see at a glance whether a step sends Email or WhatsApp. */
 function ChannelChip({ nodeType }: { nodeType?: string }) {
+    const { t } = useTranslation('workflowAiDraftPanel');
     if (nodeType === 'SEND_EMAIL') {
         return (
-            <span className="ml-2 rounded-full bg-info-50 px-2 py-0.5 text-caption text-info-600">Email</span>
+            <span className="ms-2 rounded-full bg-info-50 px-2 py-0.5 text-caption text-info-600">
+                {t('channels.email')}
+            </span>
         );
     }
     if (nodeType === 'SEND_WHATSAPP' || nodeType === 'COMBOT') {
         return (
-            <span className="ml-2 rounded-full bg-success-50 px-2 py-0.5 text-caption text-success-600">
-                WhatsApp
+            <span className="ms-2 rounded-full bg-success-50 px-2 py-0.5 text-caption text-success-600">
+                {t('channels.whatsapp')}
             </span>
         );
     }
@@ -552,9 +568,10 @@ function TemplateSelect({
     onChange: (v: unknown) => void;
     templates: TemplateItem[];
 }) {
+    const { t: translate } = useTranslation('workflowAiDraftPanel');
     const [search, setSearch] = useState('');
     const filtered = search.trim()
-        ? templates.filter((t) => t.name.toLowerCase().includes(search.trim().toLowerCase()))
+        ? templates.filter((tmpl) => tmpl.name.toLowerCase().includes(search.trim().toLowerCase()))
         : templates;
     return (
         <div className="flex flex-col gap-1">
@@ -564,7 +581,7 @@ function TemplateSelect({
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search templates…"
+                    placeholder={translate('templateSelect.searchPlaceholder')}
                     className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-caption text-neutral-600 focus:border-primary-400 focus:outline-none"
                 />
             )}
@@ -573,17 +590,18 @@ function TemplateSelect({
                 onChange={(e) => onChange(e.target.value)}
                 className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-body text-neutral-700 focus:border-primary-400 focus:outline-none"
             >
-                <option value="">Select a template…</option>
-                {filtered.map((t) => (
-                    <option key={t.id ?? t.name} value={t.name}>
-                        {t.name}
+                <option value="">{translate('templateSelect.selectPlaceholder')}</option>
+                {filtered.map((tmpl) => (
+                    <option key={tmpl.id ?? tmpl.name} value={tmpl.name}>
+                        {tmpl.name}
                     </option>
                 ))}
             </select>
             {templates.length === 0 && (
                 <span className="text-caption text-warning-600">
-                    No {kind === 'WHATSAPP_TEMPLATE' ? 'WhatsApp' : 'email'} templates found — create one in
-                    Settings → Templates first.
+                    {kind === 'WHATSAPP_TEMPLATE'
+                        ? translate('templateSelect.noneFoundWhatsapp')
+                        : translate('templateSelect.noneFoundEmail')}
                 </span>
             )}
         </div>

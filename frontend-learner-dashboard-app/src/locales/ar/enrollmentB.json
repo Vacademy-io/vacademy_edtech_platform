@@ -1,0 +1,170 @@
+{
+  "toast": {
+    "enrollmentSuccessRedirecting": "تم التسجيل بنجاح! جارٍ التوجيه إلى لوحة التحكم...",
+    "loginSuccessRedirecting": "تم تسجيل الدخول بنجاح! جارٍ التوجيه إلى لوحة التحكم...",
+    "autoRenewalConsentRequired": "يرجى الموافقة على شروط التجديد التلقائي للمتابعة."
+  },
+  "errors": {
+    "failedToLoadInstallmentSchedule": "تعذّر تحميل جدول الأقساط. يرجى المحاولة مرة أخرى.",
+    "selectAtLeastOneInstallment": "يرجى اختيار قسط واحد على الأقل لدفعه.",
+    "paymentAmountMustBePositive": "يجب أن يكون مبلغ الدفع أكبر من صفر.",
+    "noCpoPaymentOptionFound": "لم يتم العثور على خيار دفع بالتقسيط.",
+    "enrollmentSucceededNoUserPlanId": "تم التسجيل بنجاح، لكن لم يتم استلام معرّف الخطة. يرجى المحاولة مرة أخرى.",
+    "noPendingInstallmentsGenerated": "لم يتم إنشاء أي أقساط معلّقة. يرجى التواصل مع الدعم.",
+    "failedToCreateRazorpayOrder": "تعذّر إنشاء طلب Razorpay",
+    "failedToInitiatePayment": "تعذّر بدء عملية الدفع",
+    "stripeNotReady": "خدمة الدفع عبر Stripe غير جاهزة بعد. يرجى الانتظار والمحاولة مرة أخرى.",
+    "paymentProcessingFailed": "فشلت معالجة الدفع",
+    "paymentFailed": "فشلت عملية الدفع",
+    "completePaymentForm": "يرجى إكمال نموذج الدفع",
+    "cpoVendorNotSupported": "بوابة الدفع هذه غير مدعومة للتسجيل بالتقسيط. يرجى التواصل مع الدعم.",
+    "enrollmentFailed": "فشل التسجيل",
+    "phonepeCheckoutFailed": "تعذّر بدء عملية الدفع عبر PhonePe. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+    "failedToInitiatePhonepePayment": "تعذّر بدء الدفع عبر PhonePe",
+    "enrollmentCreatedNoUserPlanId": "تم إنشاء التسجيل، لكن لم يتم استلام معرّف خطة المستخدم. يرجى التواصل مع الدعم.",
+    "emailRequiredForPayment": "البريد الإلكتروني مطلوب لإتمام الدفع.",
+    "loginRequiredForPayment": "يرجى تسجيل الدخول لإتمام الدفع.",
+    "failedToInitializePaymentContactSupport": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+    "failedToLoadCashfree": "تعذّر تحميل بوابة الدفع Cashfree.",
+    "paymentInitializationFailed": "فشل بدء عملية الدفع.",
+    "failedToInitiateCashfreePayment": "تعذّر بدء الدفع عبر Cashfree",
+    "razorpayComponentNotReady": "عنصر Razorpay غير جاهز",
+    "failedToCompleteEnrollment": "تعذّر إكمال التسجيل",
+    "userPlanIdNotReceived": "لم يتم استلام معرّف خطة المستخدم.",
+    "paymentSessionMissingLoginRequired": "جلسة الدفع غير موجودة في الاستجابة. يرجى تسجيل الدخول لإتمام الدفع.",
+    "emailRequired": "البريد الإلكتروني مطلوب.",
+    "failedToInitializePayment": "فشل بدء عملية الدفع.",
+    "failedToInitializePaymentFallback": "فشل بدء عملية الدفع"
+  },
+  "autopay": {
+    "trialBanner": "فعّل تجربتك المجانية لمدة {{trialDays}} يومًا مقابل ₹{{authAmount}}، ويمكنك الإلغاء في أي وقت خلال {{trialDays}} يومًا.",
+    "setupHeading": "كيف تودّ إعداد التجديد التلقائي؟",
+    "upiLabel": "UPI Autopay",
+    "upiHint": "GPay وPhonePe وPaytm",
+    "cardLabel": "بطاقة",
+    "cardHint": "بطاقة خصم / ائتمان",
+    "consentTrial": {
+      "agreePrefix": "أوافق:",
+      "authorizedToday": "سيتم اعتماده اليوم",
+      "refundedSuffix": "(سيُسترد)",
+      "toStartMy": "لبدء",
+      "trialDaysLabel": "تجربتي المجانية لمدة {{days}} يومًا",
+      "fromDay": ". اعتبارًا من اليوم",
+      "listSeparator": "،",
+      "willBeChargedCycle": "سيتم خصمه في كل دورة فوترة من وسيلة الدفع المحفوظة لدي، ما لم ألغِ قبل ذلك."
+    },
+    "consentAutoRenew": {
+      "agreePrefix": "أوافق على التجديد التلقائي:",
+      "willBeChargedPeriod": "سيتم خصمه من وسيلة الدفع المحفوظة لدي في كل دورة فوترة. يمكنني الإلغاء في أي وقت من ملفي الشخصي."
+    }
+  },
+  "stepBadge": {
+    "ofThree": "الخطوة {{step}} من 3",
+    "ofTwo": "الخطوة {{step}} من 2"
+  },
+  "wizardPills": {
+    "details": "التفاصيل",
+    "plan": "الخطة",
+    "confirm": "تأكيد",
+    "pay": "الدفع"
+  },
+  "bundledCourses": {
+    "whatsIncluded": "ما الذي يتضمنه",
+    "detailsLoading": "جارٍ تحميل تفاصيل {{course}}...",
+    "fallbackLabel": "{{course}} {{index}}"
+  },
+  "badges": {
+    "installmentPlan": "خطة تقسيط",
+    "free": "مجاني"
+  },
+  "footer": {
+    "privacyPolicy": "سياسة الخصوصية",
+    "termsAndConditions": "الشروط والأحكام"
+  },
+  "defaultCourseEnrollmentName": "التسجيل في {{course}}",
+  "defaultCourseEnrollmentDescription": "الدفع مقابل التسجيل في {{course}}",
+  "defaultThisCourse": "هذا {{course}}",
+  "planDuration": {
+    "days_zero": "{{count}} يوم",
+    "days_one": "{{count}} يوم",
+    "days_two": "{{count}} يومين",
+    "days_few": "{{count}} أيام",
+    "days_many": "{{count}} يومًا",
+    "days_other": "{{count}} يومًا",
+    "months_zero": "{{count}} شهر",
+    "months_one": "{{count}} شهر",
+    "months_two": "{{count}} شهرين",
+    "months_few": "{{count}} أشهر",
+    "months_many": "{{count}} شهرًا",
+    "months_other": "{{count}} شهرًا"
+  },
+  "planDescriptions": {
+    "payInInstallments": "الدفع على أقساط",
+    "donationPlan": "الوصول إلى خطة التبرع.",
+    "freePlan": "الوصول إلى الخطة المجانية.",
+    "oneTimePlan": "الوصول إلى خطة الدفع لمرة واحدة.",
+    "subscriptionPlan": "الوصول إلى خطة الاشتراك."
+  },
+  "subscriptionPlan": {
+    "discount": {
+      "percentageOff": "خصم {{amount}}%",
+      "fixedOff": "خصم {{currency}}{{amount}}"
+    },
+    "unit": {
+      "month": "شهر",
+      "days": "أيام"
+    }
+  },
+  "successStep": {
+    "title": "تم إرسال طلب التسجيل!",
+    "defaultMessage": {
+      "intro": "شكرًا لاهتمامك بـ {{courseName}}. تم إرسال طلب التسجيل الخاص بك بنجاح. تم إرسال بيانات تسجيل الدخول إلى عنوان بريدك الإلكتروني المسجَّل",
+      "outro": ". يرجى تسجيل الدخول باستخدام البريد الإلكتروني وكلمة المرور المُرسَلَين"
+    },
+    "approvalRequired": {
+      "title": "الموافقة مطلوبة",
+      "body": "يقوم فريقنا حاليًا بمراجعة طلب التسجيل الخاص بك. ستصلك رسالة بريد إلكتروني بمجرد الموافقة عليه."
+    },
+    "redirectingToDashboard": "جارٍ التوجيه إلى لوحة التحكم...",
+    "continue": "متابعة",
+    "loginNow": "تسجيل الدخول الآن"
+  },
+  "cardValidator": {
+    "tooShort": "رقم البطاقة قصير جدًا",
+    "typeNotRecognized": "نوع البطاقة غير معروف",
+    "invalidLength": "طول رقم البطاقة غير صالح لبطاقات {{cardType}}",
+    "invalidNumber": "رقم البطاقة غير صالح",
+    "invalidMonth": "شهر غير صالح",
+    "expired": "انتهت صلاحية البطاقة",
+    "cvvRequired": "رمز CVV مطلوب",
+    "cvvLength": "يجب أن يتكوّن رمز CVV من {{expectedLength}} أرقام",
+    "brands": {
+      "visa": "Visa",
+      "mastercard": "Mastercard",
+      "amex": "American Express",
+      "discover": "Discover",
+      "diners": "Diners Club",
+      "jcb": "JCB",
+      "unknown": "غير معروف"
+    }
+  },
+  "fieldValidation": {
+    "required": "هذا الحقل مطلوب",
+    "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+    "invalidPhone": "يرجى إدخال رقم هاتف صالح",
+    "invalidUrl": "يرجى إدخال رابط صالح",
+    "invalidNumber": "يرجى إدخال رقم صالح",
+    "invalidDate": "يرجى إدخال تاريخ صالح"
+  },
+  "ewayEncryption": {
+    "libraryUnavailable": "مكتبة التشفير غير متاحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+    "encryptFailed": "تعذّر تشفير معلومات الدفع. يرجى المحاولة مرة أخرى.",
+    "unexpectedError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+  },
+  "useStripePayment": {
+    "notInitialized": "لم يتم تهيئة Stripe. يرجى تحديث الصفحة.",
+    "cardElementNotFound": "لم يتم العثور على عنصر البطاقة. يرجى تحديث الصفحة.",
+    "processingFailed": "فشلت معالجة الدفع",
+    "unexpectedError": "حدث خطأ غير متوقع"
+  }
+}

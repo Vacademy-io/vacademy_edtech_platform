@@ -57,10 +57,12 @@ interface Course {
     };
 }
 
-const mockCourses: Course[] = [
+// A function (not a module-scope array) so the titles pick up the institute's
+// naming settings at render time rather than freezing them at import.
+const getMockCourses = (): Course[] => [
     {
         id: '1',
-        title: '2-Level Course Structure',
+        title: `2-Level ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Structure`,
         level: 2,
         structure: {
             courseName: 'Introduction to Web Development',
@@ -72,7 +74,7 @@ const mockCourses: Course[] = [
                 },
                 {
                     id: 's1-2',
-                    name: 'Course Overview: Syllabus and Learning Objectives',
+                    name: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Overview: Syllabus and Learning Objectives`,
                     type: 'pdf',
                 },
                 {
@@ -85,7 +87,7 @@ const mockCourses: Course[] = [
     },
     {
         id: '2',
-        title: '3-Level Course Structure',
+        title: `3-Level ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Structure`,
         level: 3,
         structure: {
             courseName: 'Frontend Fundamentals',
@@ -117,7 +119,7 @@ const mockCourses: Course[] = [
     },
     {
         id: '3',
-        title: '4-Level Course Structure',
+        title: `4-Level ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Structure`,
         level: 4,
         structure: {
             courseName: 'Full-Stack JavaScript Development Mastery',
@@ -129,7 +131,7 @@ const mockCourses: Course[] = [
                     chapters: [
                         {
                             id: 'c3-1-1',
-                            name: 'Chapter 1.1: Express.js Fundamentals and Middleware',
+                            name: `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} 1.1: Express.js Fundamentals and Middleware`,
                             isOpen: true,
                             slides: [
                                 {
@@ -146,7 +148,7 @@ const mockCourses: Course[] = [
                         },
                         {
                             id: 'c3-1-2',
-                            name: 'Chapter 1.2: Databases and ORM/ODM Integration',
+                            name: `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} 1.2: Databases and ORM/ODM Integration`,
                             isOpen: false,
                             slides: [
                                 {
@@ -164,7 +166,7 @@ const mockCourses: Course[] = [
     },
     {
         id: '4',
-        title: '5-Level Course Structure',
+        title: `5-Level ${getTerminology(ContentTerms.Course, SystemTerms.Course)} Structure`,
         level: 5,
         structure: {
             courseName: 'Advanced Software Engineering Principles',
@@ -181,7 +183,7 @@ const mockCourses: Course[] = [
                             chapters: [
                                 {
                                     id: 'c4-1-1-1',
-                                    name: 'Chapter 1.1.1: Horizontal and Vertical Scaling Strategies',
+                                    name: `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} 1.1.1: Horizontal and Vertical Scaling Strategies`,
                                     isOpen: true,
                                     slides: [
                                         {
@@ -193,7 +195,7 @@ const mockCourses: Course[] = [
                                 },
                                 {
                                     id: 'c4-1-1-2',
-                                    name: 'Chapter 1.1.2: Microservices Architecture Considerations',
+                                    name: `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} 1.1.2: Microservices Architecture Considerations`,
                                     isOpen: false,
                                     slides: [
                                         {
@@ -219,7 +221,7 @@ const mockCourses: Course[] = [
                             chapters: [
                                 {
                                     id: 'c4-2-1-1',
-                                    name: 'Chapter 2.1.1: Implementing CI/CD with Jenkins and Docker',
+                                    name: `${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters)} 2.1.1: Implementing CI/CD with Jenkins and Docker`,
                                     isOpen: true,
                                     slides: [
                                         {
@@ -527,8 +529,8 @@ function AddCourseStep2StructureTypes({
 
     // Filter courses based on settings
     const availableCourses = fixCourseDepth
-        ? mockCourses.filter((course) => course.level === defaultDepth)
-        : mockCourses;
+        ? getMockCourses().filter((course) => course.level === defaultDepth)
+        : getMockCourses();
 
     return (
         <div className="overflow-x-hidden  text-gray-800 dark:bg-neutral-950 dark:text-gray-200">

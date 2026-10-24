@@ -4,6 +4,7 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Check, Plus, Trash } from '@phosphor-icons/react';
 import { useFormState, useWatch } from 'react-hook-form';
 import type { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatStructure } from '../../-utils/helper';
 
@@ -72,6 +73,7 @@ export const AnswerOptionsEditor = ({
     examType,
     enableOptionModalCompose = false,
 }: AnswerOptionsEditorProps) => {
+    const { t } = useTranslation('assessmentQuestionEditorParts');
     const { control, getValues, setValue } = form;
     const basePath = `questions.${currentQuestionIndex}.${optionsKey}`;
     const isSurvey = examType === 'SURVEY';
@@ -130,10 +132,10 @@ export const AnswerOptionsEditor = ({
     };
 
     const hint = isSurvey
-        ? 'Respondents pick one option — survey questions have no correct answer.'
+        ? t('answerOptions.hint.survey')
         : selectionMode === 'single'
-          ? 'Mark exactly one option as correct.'
-          : 'Mark every option that counts as correct.';
+          ? t('answerOptions.hint.single')
+          : t('answerOptions.hint.multiple');
 
     return (
         <div className="flex w-full flex-col gap-3">
@@ -150,13 +152,13 @@ export const AnswerOptionsEditor = ({
                         onClick={handleAddOption}
                     >
                         <Plus size={14} />
-                        Add option
+                        {t('answerOptions.addOption')}
                     </MyButton>
                 }
             />
             <div
                 role={selectionMode === 'single' ? 'radiogroup' : 'group'}
-                aria-label="Answer options"
+                aria-label={t('answerOptions.ariaLabel')}
                 className="grid grid-cols-1 gap-3 lg:grid-cols-2"
             >
                 {options.map((opt, optionIndex) => {
@@ -180,8 +182,14 @@ export const AnswerOptionsEditor = ({
                                     type="button"
                                     role={selectionMode === 'single' ? 'radio' : 'checkbox'}
                                     aria-checked={isCorrect}
-                                    aria-label={`Mark option ${letter.toUpperCase()} as correct`}
-                                    title={isCorrect ? 'Correct answer' : 'Mark as correct'}
+                                    aria-label={t('answerOptions.markCorrect.ariaLabel', {
+                                        letter: letter.toUpperCase(),
+                                    })}
+                                    title={
+                                        isCorrect
+                                            ? t('answerOptions.markCorrect.titleCorrect')
+                                            : t('answerOptions.markCorrect.titleMark')
+                                    }
                                     onClick={() => handleToggle(optionIndex)}
                                     className={cn(
                                         'mt-1 flex size-5 shrink-0 items-center justify-center border-2 transition-colors',
@@ -216,7 +224,9 @@ export const AnswerOptionsEditor = ({
                                                 hideToolbar
                                                 borderless
                                                 enableModalCompose={enableOptionModalCompose}
-                                                placeholder={`Option ${letter.toUpperCase()}`}
+                                                placeholder={t('answerOptions.optionPlaceholder', {
+                                                    letter: letter.toUpperCase(),
+                                                })}
                                             />
                                         </FormControl>
                                         <FormMessage />
@@ -228,8 +238,10 @@ export const AnswerOptionsEditor = ({
                                     type="button"
                                     className="mt-1 shrink-0 rounded-sm p-0.5 text-neutral-400 opacity-0 transition-opacity hover:text-danger-500 focus-visible:opacity-100 group-hover:opacity-100"
                                     onClick={() => handleRemoveOption(optionIndex)}
-                                    aria-label={`Remove option ${letter.toUpperCase()}`}
-                                    title="Remove option"
+                                    aria-label={t('answerOptions.removeOption.ariaLabel', {
+                                        letter: letter.toUpperCase(),
+                                    })}
+                                    title={t('answerOptions.removeOption.title')}
                                 >
                                     <Trash size={16} />
                                 </button>

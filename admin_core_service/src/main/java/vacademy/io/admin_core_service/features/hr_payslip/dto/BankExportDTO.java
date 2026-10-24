@@ -27,4 +27,5 @@ public class BankExportDTO {
     private BigDecimal totalAmount;
     private String generatedBy;
     private LocalDateTime generatedAt;
+    private String currency;
 }

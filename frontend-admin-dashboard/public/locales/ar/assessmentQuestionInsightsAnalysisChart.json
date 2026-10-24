@@ -1,0 +1,8 @@
+{
+    "legend": {
+        "correct": "صحيح",
+        "partiallyCorrect": "صحيح جزئيًا",
+        "wrongResponse": "إجابة خاطئة",
+        "skipped": "تم التخطي"
+    }
+}

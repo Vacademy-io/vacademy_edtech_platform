@@ -367,6 +367,33 @@ export class CourseCatalogueService {
     }
   }
 
+  /**
+   * In-flight + short-lived cache in front of getCourseCatalogueByTag.
+   *
+   * A root-mounted host has to look at the root catalogue's page list before
+   * it can tell whether "/about" is one of its pages or a second catalogue's
+   * tag — and the page component then fetches the same catalogue to render it.
+   * Sharing the promise turns that into one request. The TTL is deliberately
+   * short (an editor publishing sees the change on the next navigation) and the
+   * cache is per tab, so it never masks a Publish for longer than a reload.
+   */
+  private static readonly memo = new Map<string, { at: number; promise: Promise<CourseCatalogueData> }>();
+  private static readonly MEMO_TTL_MS = 30_000;
+
+  static getCourseCatalogueByTagMemo(
+    instituteId: string,
+    tagName: string
+  ): Promise<CourseCatalogueData> {
+    const key = `${instituteId}::${tagName}`;
+    const hit = this.memo.get(key);
+    if (hit && Date.now() - hit.at < this.MEMO_TTL_MS) return hit.promise;
+    const promise = this.getCourseCatalogueByTag(instituteId, tagName);
+    this.memo.set(key, { at: Date.now(), promise });
+    // A failed fetch must not be served from cache for 30s.
+    promise.catch(() => { if (this.memo.get(key)?.promise === promise) this.memo.delete(key); });
+    return promise;
+  }
+
   static async getCourseCatalogueByTag(
     instituteId: string,
     tagName: string
@@ -453,6 +480,11 @@ export class CourseCatalogueService {
                   };
                 }
                 
+                // Carry the catalogue ROW id through. The parsed
+                // catalogue_json has no id of its own, and without this an
+                // institute running several sites (different tags) cannot tell
+                // their traffic apart in analytics.
+                parsedData.catalogueId = response.data.id;
                 return parsedData;
         } catch (parseError) {
           console.error("[CourseCatalogueService] Error parsing catalogue_json:", parseError);

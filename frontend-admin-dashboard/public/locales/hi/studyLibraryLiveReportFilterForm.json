@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "startDateRequired": "आरंभ तिथि आवश्यक है",
+        "endDateRequired": "समाप्ति तिथि आवश्यक है",
+        "learnerRequired": "लर्नर आवश्यक है",
+        "dateRangeWithinMonth": "तिथि सीमा एक महीने के भीतर होनी चाहिए।",
+        "batchRequired": "कम से कम एक बैच चुनें"
+    },
+    "selectPlaceholder": "{{term}} चुनें",
+    "searchPlaceholder": "{{term}} खोजें...",
+    "loading": "लोड हो रहा है…",
+    "generateReport": "रिपोर्ट बनाएं",
+    "fixFollowing": "कृपया निम्न को ठीक करें:",
+    "learnerNotInBatches": "यह शिक्षार्थी चुने गए किसी भी बैच में नामांकित नहीं है।",
+    "learnerHint": "{{count}} उपलब्ध",
+    "pickBatchFirst": "पहले {{batch}} चुनें।"
+}

@@ -7,6 +7,7 @@
 // { courseId, sessionId, levelId } triple the grid's batch picker expects.
 
 import Papa from 'papaparse';
+import type { TFunction } from 'i18next';
 import type { BulkSessionRow } from '../-schema/bulkSchema';
 
 /** Minimal shape we need from `instituteDetails.batches_for_sessions`. */
@@ -28,7 +29,23 @@ export const SCHEDULE_CSV_HEADERS = [
     'platform',
     'link',
     'package_session_ids',
+    'teacher_emails',
     'description',
+] as const;
+
+/**
+ * Headers accepted for the teacher column. `instructors` is what the template
+ * shipped with first, so files downloaded before the rename keep importing.
+ */
+const TEACHER_HEADERS = [
+    'teacher_emails',
+    'teacher_email',
+    'teachers',
+    'teacher',
+    'instructors',
+    'instructor_emails',
+    'instructor_email',
+    'instructor',
 ] as const;
 
 const REQUIRED_HEADERS = ['title', 'start_date', 'start_time'] as const;
@@ -70,6 +87,7 @@ export const downloadScheduleTemplate = (batches: BatchForSessionLite[]) => {
             platform: 'zoom',
             link: 'https://zoom.us/j/123456789',
             package_session_ids: idCell,
+            teacher_emails: 'teacher@example.com|another.teacher@example.com',
             description: 'Quick revision before the test',
         },
         {
@@ -82,6 +100,7 @@ export const downloadScheduleTemplate = (batches: BatchForSessionLite[]) => {
             platform: 'bbb',
             link: '',
             package_session_ids: exampleIds[0] ?? 'PASTE_PACKAGE_SESSION_ID',
+            teacher_emails: '',
             description: '',
         },
     ];
@@ -104,6 +123,25 @@ export const downloadBatchReference = (batches: BatchForSessionLite[]) => {
     triggerDownload(csv, 'live-session-batch-reference.csv');
 };
 
+/**
+ * Build + download the teacher reference: every staff member the teacher
+ * column can name, with the email (recommended) and username that match them.
+ */
+export const downloadTeacherReference = (
+    users: Array<{ full_name: string; email: string | null; username?: string | null; roles?: string[] }>
+) => {
+    const data = [...users]
+        .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+        .map((u) => ({
+            name: u.full_name ?? '',
+            email: u.email ?? '',
+            username: u.username ?? '',
+            roles: (u.roles ?? []).join('|'),
+        }));
+    const csv = Papa.unparse({ fields: ['name', 'email', 'username', 'roles'], data });
+    triggerDownload(csv, 'live-session-teacher-reference.csv');
+};
+
 /** One row's creation outcome, used to build the downloadable results report. */
 export interface ScheduleResultRow {
     /** 0-based row index in the submitted grid. */
@@ -112,21 +150,30 @@ export interface ScheduleResultRow {
     success: boolean;
     session_id?: string;
     error?: string;
+    /** Non-fatal per-row notes (e.g. instructors that couldn't be matched). */
+    warnings?: string[];
 }
 
 /**
  * Download a row-wise outcome report (one line per session) with a status and a
  * remarks column — the error message for failed rows, "Created" for successes.
  */
-export const downloadResultsCsv = (results: ScheduleResultRow[]) => {
+export const downloadResultsCsv = (results: ScheduleResultRow[], t: TFunction) => {
     const data = [...results]
         .sort((a, b) => a.index - b.index)
         .map((r) => ({
             row: r.index + 1,
             title: r.title ?? '',
-            status: r.success ? 'Success' : 'Failed',
+            status: r.success ? t('status.success') : t('status.failed'),
             session_id: r.success ? r.session_id ?? '' : '',
-            remarks: r.success ? 'Created' : r.error ?? 'Unknown error',
+            // A successful row with warnings reports them instead of a bare
+            // "Created" — an instructor that didn't stick is exactly the kind of
+            // thing an admin will otherwise never notice.
+            remarks: r.success
+                ? r.warnings?.length
+                    ? r.warnings.join(' ')
+                    : t('status.created')
+                : r.error ?? t('status.unknownError'),
         }));
     const csv = Papa.unparse({
         fields: ['row', 'title', 'status', 'session_id', 'remarks'],
@@ -152,6 +199,15 @@ export interface ScheduleCsvParseResult {
 const cell = (row: Record<string, unknown>, key: string): string =>
     String(row[key] ?? '').trim();
 
+/** The first non-empty cell among several accepted spellings of one column. */
+const firstCell = (row: Record<string, unknown>, keys: readonly string[]): string => {
+    for (const key of keys) {
+        const value = cell(row, key);
+        if (value) return value;
+    }
+    return '';
+};
+
 /**
  * Parse a schedule CSV into grid rows, validating each row and reverse-mapping
  * `package_session_ids` to the grid's `selectedLevels`. Invalid rows are
@@ -160,7 +216,8 @@ const cell = (row: Record<string, unknown>, key: string): string =>
  */
 export const parseScheduleCsv = (
     file: File,
-    opts: { batches: BatchForSessionLite[]; allowedPlatforms: string[] }
+    opts: { batches: BatchForSessionLite[]; allowedPlatforms: string[] },
+    t: TFunction
 ): Promise<ScheduleCsvParseResult> => {
     const batchById = new Map(opts.batches.map((b) => [b.id, b]));
     const allowed = new Set(opts.allowedPlatforms.map((p) => p.toLowerCase()));
@@ -181,8 +238,7 @@ export const parseScheduleCsv = (
                             {
                                 rowNumber: 0,
                                 messages: [
-                                    `Missing required column(s): ${missing.join(', ')}. ` +
-                                        `Use the downloaded template header row.`,
+                                    t('errors.missingColumns', { columns: missing.join(', ') }),
                                 ],
                             },
                         ],
@@ -207,32 +263,35 @@ export const parseScheduleCsv = (
                     const link = cell(raw, 'link');
                     const description = cell(raw, 'description');
 
-                    if (!title) messages.push('Title is required');
-                    if (!startDate) messages.push('start_date is required');
+                    if (!title) messages.push(t('errors.titleRequired'));
+                    if (!startDate) messages.push(t('errors.startDateRequired'));
                     else if (!DATE_RE.test(startDate))
-                        messages.push('Invalid start_date (use YYYY-MM-DD)');
-                    if (!startTime) messages.push('start_time is required');
+                        messages.push(t('errors.invalidStartDate'));
+                    if (!startTime) messages.push(t('errors.startTimeRequired'));
                     else if (!TIME_RE.test(startTime))
-                        messages.push('Invalid start_time (use 24h HH:mm)');
+                        messages.push(t('errors.invalidStartTime'));
 
                     const h = parseInt(durationHours, 10);
                     const m = parseInt(durationMinutes, 10);
                     if ((isNaN(h) ? 0 : h) === 0 && (isNaN(m) ? 0 : m) === 0)
-                        messages.push('Duration must be greater than zero');
+                        messages.push(t('errors.durationRequired'));
 
                     if (allowed.size && !allowed.has(platform))
                         messages.push(
-                            `Unknown or disabled platform "${platform}". ` +
-                                `Allowed: ${opts.allowedPlatforms.join(', ')}`
+                            t('errors.unknownPlatform', {
+                                platform,
+                                allowed: opts.allowedPlatforms.join(', '),
+                            })
                         );
 
                     if (!AUTO_LINK_PLATFORMS.has(platform)) {
-                        if (!link) messages.push(`Link is required for platform "${platform}"`);
+                        if (!link)
+                            messages.push(t('errors.linkRequired', { platform }));
                         else {
                             try {
                                 new URL(link);
                             } catch {
-                                messages.push('Invalid link URL');
+                                messages.push(t('errors.invalidLink'));
                             }
                         }
                     }
@@ -247,7 +306,7 @@ export const parseScheduleCsv = (
                         for (const id of ids) {
                             const b = batchById.get(id);
                             if (!b) {
-                                messages.push(`Unknown batch id: ${id}`);
+                                messages.push(t('errors.unknownBatchId', { id }));
                                 continue;
                             }
                             selectedLevels.push({
@@ -257,6 +316,25 @@ export const parseScheduleCsv = (
                             });
                         }
                     }
+
+                    // Teachers: email (recommended), username or user id,
+                    // separated by | ; or , (none of which can appear in an
+                    // email or username). Deliberately NOT validated here:
+                    // the grid matches them against the staff directory and
+                    // flags what matched nobody on the row itself. Failing a
+                    // whole row over one mistyped email would cost the admin
+                    // the import.
+                    const instructorsCell = firstCell(raw, TEACHER_HEADERS);
+                    const instructorIdentifiers = instructorsCell
+                        ? Array.from(
+                              new Set(
+                                  instructorsCell
+                                      .split(/[|;,\n]+/)
+                                      .map((v) => v.trim())
+                                      .filter(Boolean)
+                              )
+                          )
+                        : [];
 
                     if (messages.length) {
                         errors.push({ rowNumber, title: title || undefined, messages });
@@ -274,6 +352,7 @@ export const parseScheduleCsv = (
                         link,
                         description,
                         selectedLevels,
+                        instructorIdentifiers,
                     });
                 });
 
@@ -283,7 +362,9 @@ export const parseScheduleCsv = (
                 resolve({
                     validRows: [],
                     totalCount: 0,
-                    errors: [{ rowNumber: 0, messages: [error.message || 'Failed to read CSV'] }],
+                    errors: [
+                        { rowNumber: 0, messages: [error.message || t('errors.failedToReadCsv')] },
+                    ],
                 });
             },
         });

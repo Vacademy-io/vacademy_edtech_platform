@@ -1,0 +1,22 @@
+{
+    "start": "Start",
+    "issueCount_one": "{{count}} issue",
+    "issueCount_other": "{{count}} issues",
+    "issues": {
+        "selectTriggerEvent": "Select a trigger event",
+        "selectQuery": "Select a query",
+        "selectRecipientsSource": "Select a data source for recipients",
+        "selectWhatsappTemplate": "Select a WhatsApp template",
+        "setRecipientsExpression": "Set recipients expression",
+        "enterUrl": "Enter a URL",
+        "setSourceExpression": "Set source expression",
+        "setFilterCondition": "Set filter condition",
+        "setConditionExpression": "Set condition expression",
+        "setDelayValue": "Set delay value",
+        "selectTable": "Select a table",
+        "enterNotificationTitle": "Enter notification title",
+        "enterNotificationBody": "Enter notification body",
+        "setDelayDuration": "Set delay duration",
+        "selectLeadStatus": "Select a lead status"
+    }
+}

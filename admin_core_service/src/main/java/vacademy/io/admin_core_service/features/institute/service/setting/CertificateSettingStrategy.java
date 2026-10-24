@@ -17,6 +17,7 @@ import vacademy.io.common.institute.entity.Institute;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -120,6 +121,7 @@ public class CertificateSettingStrategy extends IInstituteSettingStrategy{
                     dto.setVerificationShowCourse(incoming.getVerificationShowCourse() != null ? incoming.getVerificationShowCourse() : existing.getVerificationShowCourse());
                     dto.setVerificationShowIssueDate(incoming.getVerificationShowIssueDate() != null ? incoming.getVerificationShowIssueDate() : existing.getVerificationShowIssueDate());
                     dto.setVerificationShowCompletion(incoming.getVerificationShowCompletion() != null ? incoming.getVerificationShowCompletion() : existing.getVerificationShowCompletion());
+                    dto.setVerificationShowFullDetails(incoming.getVerificationShowFullDetails() != null ? incoming.getVerificationShowFullDetails() : existing.getVerificationShowFullDetails());
                     // Same preserve-on-null merge as every field above: the settings
                     // screen posts only what it edits, so a null here means "leave it",
                     // not "clear it". Clearing a verification document is done by
@@ -136,6 +138,17 @@ public class CertificateSettingStrategy extends IInstituteSettingStrategy{
                     return dto;
                 })
                 .collect(Collectors.toList());
+
+        // Keep every entry the request does not mention. The settings UI only ever sends
+        // COURSE_COMPLETION, so without this a routine save from Settings → Certificates wiped
+        // any other kind of certificate the institute had configured (SUB_ORG_AFFILIATION —
+        // the partner Certificate of Affiliation — is stored as a sibling entry here).
+        Set<String> requested = certificateSettingRequest.getRequest().keySet();
+        existingByKey.forEach((key, existing) -> {
+            if (key != null && !requested.contains(key) && existing != null) {
+                certificateSetting.add(existing);
+            }
+        });
 
         CertificateSettingDataDto dataDto = new CertificateSettingDataDto();
         dataDto.setData(certificateSetting);

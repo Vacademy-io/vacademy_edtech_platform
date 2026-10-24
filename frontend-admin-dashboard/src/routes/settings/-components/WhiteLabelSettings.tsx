@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import {
     Plus,
     Trash2,
     Star,
+    Copy,
 } from 'lucide-react';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -33,14 +35,24 @@ import {
     Phone
 } from 'lucide-react';
 import PreferredCountriesSelector from './PreferredCountriesSelector';
+import { SearchableSelect } from '@/components/design-system/searchable-select';
+import { getSubOrgs } from '@/routes/manage-custom-teams/-services/custom-team-services';
 import {
     parsePreferredCountriesString,
     stringifyPreferredCountries,
     countryCodeToFlag,
 } from '../-utils/countries';
+import PhoneCountryGeoModeField from './PhoneCountryGeoModeField';
+import GoogleSignInBrandingCard from './GoogleSignInBrandingCard';
+import {
+    DEFAULT_PHONE_COUNTRY_GEO_MODE,
+    PHONE_COUNTRY_GEO_MODES,
+    type PhoneCountryGeoMode,
+} from '@/services/domain-routing';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { WHITE_LABEL_SETUP, WHITE_LABEL_STATUS } from '@/constants/urls';
 import { getInstituteId } from '@/constants/helper';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -114,6 +126,12 @@ interface RoutingConfig {
      */
     comma_separated_preferred_country?: string;
     /**
+     * Decides whether the list above is the last word, or whether the country a
+     * form is actually being opened from may override it. One of
+     * PHONE_COUNTRY_GEO_MODES; undefined behaves as INSTITUTE_FIRST.
+     */
+    phone_country_geo_mode?: string;
+    /**
      * When true, the institute name is hidden wherever the logo is rendered
      * (login page, sidebar header). Useful when the logo already contains the
      * institute name. Default (undefined / false): name is shown as before.
@@ -140,7 +158,65 @@ interface RoutingConfig {
      * (undefined / false): name sits beside the logo, as before.
      */
     stack_name_below_logo?: boolean;
+    /**
+     * Sub-organisation this domain serves. Not styling — the routing row's
+     * institute stays the PARENT, so this id is the only thing that tells one
+     * sub-org's portal from another's. It drives the logo/name/theme overlay AND
+     * the login scoping in loginFlowHandler.
+     *
+     * Null or omitted leaves an existing mapping alone; '' clears it.
+     */
+    sub_org_id?: string | null;
 }
+
+/**
+ * How often, and how many times, the settings page re-asks the server whether a
+ * pending domain has gone live. ~10 minutes covers the common in-zone case
+ * (Cloudflare provisions a *.vacademy.io host in under a minute) without
+ * hammering the Cloudflare API on behalf of an external domain whose owner has
+ * not added their CNAME yet — that one is picked up on the next page visit.
+ */
+/**
+ * Radix's Select refuses an empty-string item value, so "not linked" needs a
+ * sentinel. It maps back to '' on submit, which is what the backend reads as
+ * "clear the link" — an omitted field means "leave it alone" instead.
+ */
+const NO_SUB_ORG = '__none__';
+
+/** Sub-org list rows come back under several field spellings depending on endpoint. */
+type RawSubOrg = Record<string, unknown>;
+
+interface SubOrgOption {
+    id: string;
+    /** Absent when the row carries no name — the label is resolved at render. */
+    name?: string;
+}
+
+const firstString = (org: RawSubOrg | undefined, keys: string[]): string | undefined => {
+    for (const key of keys) {
+        const value = org?.[key];
+        if (typeof value === 'string' && value.trim()) return value;
+    }
+    return undefined;
+};
+
+/**
+ * Deliberately does NOT resolve a fallback label. This runs inside a fetch
+ * effect, and calling `t()` there without `t` in the dependency array freezes
+ * whatever the catalog held at that moment — which, before the lazy namespace
+ * lands, is the raw key. The label is resolved at render instead.
+ */
+const normaliseSubOrg = (org: RawSubOrg | undefined): SubOrgOption | null => {
+    const id = firstString(org, ['sub_org_id', 'suborgId', 'subOrgId', 'suborg_id', 'id']);
+    if (!id) return null;
+    return {
+        id,
+        name: firstString(org, ['name', 'institute_name', 'instituteName', 'subOrgName']),
+    };
+};
+
+const ACTIVATION_POLL_INTERVAL_MS = 30_000;
+const MAX_ACTIVATION_POLLS = 20;
 
 // UI-enforced caps so operators can't enter values that break the layout.
 export const LOGO_DIMENSION_LIMITS = {
@@ -158,6 +234,16 @@ interface RoutingEntry extends RoutingConfig {
     pages_status?: string | null;
     /** CNAME target (<project>.pages.dev) the customer must point an external domain at. */
     pages_cname_target?: string | null;
+    /**
+     * The admin picked this host as the portal URL for the roles it serves. An
+     * intent — it only becomes `is_portal_url` once Cloudflare activates the host.
+     */
+    is_primary?: boolean;
+    /**
+     * This host is what the institute's <role>_portal_base_url actually holds, i.e.
+     * the domain outbound learner emails use right now.
+     */
+    is_portal_url?: boolean;
 }
 
 interface WhiteLabelStatusResponse {
@@ -167,6 +253,8 @@ interface WhiteLabelStatusResponse {
     learner_portal_url: string | null;
     admin_portal_url: string | null;
     teacher_portal_url: string | null;
+    /** Roles whose portal URL the server adopted during THIS read, because the chosen host had just gone live. */
+    roles_adopted_now?: string[];
     routing_entries: RoutingEntry[];
 }
 
@@ -184,11 +272,11 @@ interface DomainFormEntry {
 
 const ROLES = ['LEARNER', 'ADMIN', 'TEACHER'] as const;
 
-const roleLabel = (role: string): string => {
+const roleLabel = (role: string, t: (key: string) => string): string => {
     switch (role?.toUpperCase()) {
-        case 'LEARNER': return 'Learner Portal';
-        case 'ADMIN':   return 'Admin Portal';
-        case 'TEACHER': return 'Teacher Portal';
+        case 'LEARNER': return t('roles.learnerPortal');
+        case 'ADMIN':   return t('roles.adminPortal');
+        case 'TEACHER': return t('roles.teacherPortal');
         default:        return role;
     }
 };
@@ -207,10 +295,207 @@ const fqdn = (entry: RoutingEntry): string => {
     return `${entry.subdomain}.${entry.domain}`;
 };
 
+// ─── Short-link domain ────────────────────────────────────────────────────────
+
+/**
+ * The zone we own. A portal on `*.vacademy.io` needs no short-link record from
+ * anyone — those links already run on the platform default `u.vacademy.io`.
+ */
+const PLATFORM_ZONE = 'vacademy.io';
+
+/**
+ * The label a white-label short link is served from, and the nginx ingress that
+ * label has to resolve to.
+ *
+ * Every short domain in production (u.aanandham.uk, u.readonrent.com,
+ * u.elevateeducation.in, u.suchbliss.com) is a plain A record to this address —
+ * not a CNAME — and unproxied, because cert-manager answers an HTTP-01 challenge
+ * that has to reach the origin directly.
+ *
+ * Overridable so a change of ingress address is a deploy, not a code change.
+ */
+const SHORT_LINK_LABEL = 'u';
+const SHORT_LINK_INGRESS_IP = import.meta.env.VITE_SHORT_LINK_INGRESS_IP || '5.223.55.238';
+
+/**
+ * Public suffixes made of two labels. Without them an apex host like
+ * `myschool.co.in` would be trimmed to `co.in`, and the record would name a
+ * domain the customer does not own.
+ */
+const MULTI_LABEL_PUBLIC_SUFFIXES = new Set([
+    'co.in',
+    'org.in',
+    'net.in',
+    'ac.in',
+    'edu.in',
+    'gen.in',
+    'firm.in',
+    'ind.in',
+    'co.uk',
+    'org.uk',
+    'ac.uk',
+    'me.uk',
+    'net.uk',
+    'sch.uk',
+    'com.au',
+    'edu.au',
+    'net.au',
+    'org.au',
+    'co.nz',
+    'ac.nz',
+    'org.nz',
+    'co.za',
+    'org.za',
+    'com.sg',
+    'edu.sg',
+    'com.my',
+    'edu.my',
+    'com.np',
+    'com.bd',
+    'edu.bd',
+    'com.pk',
+    'edu.pk',
+    'com.br',
+    'com.mx',
+    'co.jp',
+    'or.jp',
+    'ac.jp',
+]);
+
+/**
+ * The registrable domain a short link would hang off — the public suffix plus
+ * one label — derived from a full host.
+ *
+ * Deliberately NOT read off `RoutingEntry.domain`: the backend splits on the
+ * first dot, so an apex host entered as `aanandham.uk` is stored as
+ * domain `uk` / subdomain `aanandham`, and `u.uk` is not a domain anyone owns.
+ * Running the reassembled host through this instead gets `aanandham.uk` back.
+ *
+ * Returns '' for anything that is not a host, so callers can filter on it.
+ */
+const shortLinkRootDomain = (fullDomain: string): string => {
+    const host = (fullDomain || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/\.+$/, '');
+    if (!host || !host.includes('.')) return '';
+
+    const labels = host.split('.');
+    if (labels.some((l) => l === '' || l === '*')) return '';
+
+    const keep = MULTI_LABEL_PUBLIC_SUFFIXES.has(labels.slice(-2).join('.')) ? 3 : 2;
+    return labels.length <= keep ? host : labels.slice(labels.length - keep).join('.');
+};
+
 let nextFormId = 1;
 const makeFormId = () => `form-${nextFormId++}`;
 
-const emptyConfig = (): RoutingConfig => ({});
+/**
+ * A new entry starts on the same values the backend would apply if these were
+ * left unsent (DomainRoutingAdminService).
+ *
+ * <p>They have to match. The switches render `checked={!!config[field]}`, so an
+ * empty config drew six OFF switches — while the backend stored NULL and every
+ * login page read NULL as ON. Admins configured portals seeing "all off" and
+ * shipped "all on", self-signup included. Stating the defaults here is what
+ * makes the form agree with what saving it actually does.
+ */
+const emptyConfig = (): RoutingConfig => ({
+    // Off until somebody asks for it — an open self-registration link is the one
+    // flag here with real consequence.
+    allow_signup: false,
+    allow_google_auth: true,
+    allow_github_auth: true,
+    allow_email_otp_auth: true,
+    // Off, unlike its siblings: the login pages read this one as
+    // `allowPhoneAuth === true`, so null already meant off — and it also decides
+    // whether learners get enrolled with a phone number as their username.
+    allow_phone_auth: false,
+    allow_username_password_auth: true,
+    convert_username_password_to_lowercase: false,
+});
+
+// ─── Unsaved draft ────────────────────────────────────────────────────────────
+
+/**
+ * The settings screen mounts exactly ONE tab component at a time, so opening any
+ * other setting unmounts this one and takes every typed-but-unsaved domain with
+ * it. Domains here are long, hand-copied out of a customer's email, and a setup
+ * often needs a dozen rows — losing them to a stray click costs real work.
+ *
+ * Parking the in-progress form in sessionStorage makes that round trip
+ * survivable. It is per-institute, dropped the moment a setup actually saves,
+ * and best-effort: a browser that refuses storage just behaves as before.
+ */
+const DRAFT_STORAGE_PREFIX = 'vacademy:white-label-draft:';
+
+const draftKey = (instituteId: string) => `${DRAFT_STORAGE_PREFIX}${instituteId}`;
+
+const defaultFormEntries = (): DomainFormEntry[] => [
+    { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
+    { id: makeFormId(), role: 'ADMIN',   domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
+];
+
+const readDraft = (instituteId: string | null | undefined): DomainFormEntry[] | null => {
+    if (!instituteId || typeof sessionStorage === 'undefined') return null;
+    try {
+        const raw = sessionStorage.getItem(draftKey(instituteId));
+        if (!raw) return null;
+        const parsed: unknown = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) return null;
+        const entries: DomainFormEntry[] = parsed
+            .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
+            .map((e) => ({
+                id: makeFormId(),
+                role: (ROLES as readonly string[]).includes(String(e.role))
+                    ? (e.role as DomainFormEntry['role'])
+                    : 'LEARNER',
+                domain: typeof e.domain === 'string' ? e.domain : '',
+                isPrimary: e.isPrimary === true,
+                expanded: false,
+                config:
+                    e.config && typeof e.config === 'object'
+                        ? (e.config as RoutingConfig)
+                        : emptyConfig(),
+            }));
+        return entries.length > 0 ? entries : null;
+    } catch {
+        return null;
+    }
+};
+
+const writeDraft = (instituteId: string | null | undefined, entries: DomainFormEntry[]) => {
+    if (!instituteId || typeof sessionStorage === 'undefined') return;
+    try {
+        sessionStorage.setItem(
+            draftKey(instituteId),
+            // `expanded` is view state, not input: restoring it would reopen
+            // panels the admin had deliberately collapsed.
+            JSON.stringify(
+                entries.map((e) => ({
+                    role: e.role,
+                    domain: e.domain,
+                    isPrimary: e.isPrimary,
+                    config: e.config,
+                }))
+            )
+        );
+    } catch {
+        // Private mode or quota. The form still works; it just won't survive
+        // a tab switch, which is exactly the old behaviour.
+    }
+};
+
+const clearDraft = (instituteId: string | null | undefined) => {
+    if (!instituteId || typeof sessionStorage === 'undefined') return;
+    try {
+        sessionStorage.removeItem(draftKey(instituteId));
+    } catch {
+        // Nothing to do — a draft we cannot remove is also one we cannot read.
+    }
+};
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -221,6 +506,7 @@ const ImageUploadButton = ({
     fileId?: string;
     onChange: (fileId: string | undefined) => void;
 }) => {
+    const { t } = useTranslation('settingsWhiteLabel');
     const instituteId = getInstituteId() || 'admin';
     const [isUploading, setIsUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -255,7 +541,7 @@ const ImageUploadButton = ({
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            toast.error('Failed to upload image');
+            toast.error(t('imageUpload.uploadFailed'));
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
@@ -276,13 +562,13 @@ const ImageUploadButton = ({
 
             {previewUrl ? (
                 <div className="group relative size-12 shrink-0 rounded-md border border-slate-200 overflow-hidden bg-slate-50">
-                    <img src={previewUrl} alt="Icon preview" className="size-full object-cover" />
+                    <img src={previewUrl} alt={t('imageUpload.iconPreviewAlt')} className="size-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             className="p-1 rounded text-white hover:bg-white/20"
-                            title="Change image"
+                            title={t('imageUpload.changeImage')}
                         >
                             <Pencil className="size-3" />
                         </button>
@@ -290,7 +576,7 @@ const ImageUploadButton = ({
                             type="button"
                             onClick={() => onChange(undefined)}
                             className="p-1 rounded text-white hover:bg-red-500/80"
-                            title="Remove image"
+                            title={t('imageUpload.removeImage')}
                         >
                             <Trash2 className="size-3" />
                         </button>
@@ -315,7 +601,7 @@ const ImageUploadButton = ({
 
             <div className="flex-1 space-y-1">
                 <Input
-                    placeholder="or enter file UUID"
+                    placeholder={t('imageUpload.fileUuidPlaceholder')}
                     value={fileId || ''}
                     onChange={(e) => onChange(e.target.value || undefined)}
                     className="h-8 text-sm"
@@ -325,18 +611,20 @@ const ImageUploadButton = ({
     );
 };
 
-const StatusBadge = ({ configured }: { configured: boolean }) =>
-    configured ? (
+const StatusBadge = ({ configured }: { configured: boolean }) => {
+    const { t } = useTranslation('settingsWhiteLabel');
+    return configured ? (
         <Badge className="gap-1 bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
             <CheckCircle2 className="size-3" />
-            Configured
+            {t('status.configured')}
         </Badge>
     ) : (
         <Badge variant="secondary" className="gap-1">
             <AlertCircle className="size-3" />
-            Not Configured
+            {t('status.notConfigured')}
         </Badge>
     );
+};
 
 const DnsRecordRow = ({ record }: { record: DnsRecordResult }) => (
     <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm font-mono">
@@ -366,32 +654,127 @@ const pagesStatusClass = (status: string): string => {
     }
 };
 
-const PagesDomainRow = ({ record }: { record: PagesDomainResult }) => (
-    <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm space-y-1.5">
-        <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-                <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-semibold text-violet-700">
-                    PAGES
-                </span>
-                <span className="truncate font-mono text-slate-700">{record.name}</span>
-                <span className="hidden shrink-0 text-slate-400 sm:inline">→</span>
-                <span className="hidden truncate font-mono text-slate-500 sm:inline">{record.project}</span>
+const PagesDomainRow = ({ record }: { record: PagesDomainResult }) => {
+    const { t } = useTranslation('settingsWhiteLabel');
+    return (
+        <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-2.5 text-sm space-y-1.5">
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-xs font-semibold text-violet-700">
+                        PAGES
+                    </span>
+                    <span className="truncate font-mono text-slate-700">{record.name}</span>
+                    <span className="hidden shrink-0 text-slate-400 sm:inline">→</span>
+                    <span className="hidden truncate font-mono text-slate-500 sm:inline">{record.project}</span>
+                </div>
+                <Badge variant="outline" className={`ml-3 shrink-0 text-xs ${pagesStatusClass(record.status)}`}>
+                    {record.status || record.action}
+                </Badge>
             </div>
-            <Badge variant="outline" className={`ml-3 shrink-0 text-xs ${pagesStatusClass(record.status)}`}>
-                {record.status || record.action}
-            </Badge>
+            {record.status?.toLowerCase() !== 'active' && record.pages_cname_target && (
+                <p className="text-xs text-slate-500">
+                    {t('pagesDomain.cnameHint')}{' '}
+                    <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-slate-700">
+                        {record.name} → {record.pages_cname_target}
+                    </code>
+                    . {t('pagesDomain.sslHint')}
+                </p>
+            )}
         </div>
-        {record.status?.toLowerCase() !== 'active' && record.pages_cname_target && (
-            <p className="text-xs text-slate-500">
-                If this is a custom (non-vacademy.io) domain, add a CNAME at your DNS provider:{' '}
-                <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-slate-700">
-                    {record.name} → {record.pages_cname_target}
-                </code>
-                . SSL activates automatically once Cloudflare validates it.
-            </p>
-        )}
-    </div>
-);
+    );
+};
+
+/**
+ * The one DNS record a customer has to add for short links to run on their own
+ * domain, laid out the way a registrar's form asks for it (Type / Name / Value)
+ * so it can be pasted straight into the same email as the portal CNAMEs.
+ */
+const ShortLinkDnsRow = ({ rootDomain }: { rootDomain: string }) => {
+    const { t } = useTranslation('settingsWhiteLabel');
+    const host = `${SHORT_LINK_LABEL}.${rootDomain}`;
+
+    const fields = [
+        { label: t('shortLinkDns.dnsType'), value: 'A' },
+        { label: t('shortLinkDns.dnsName'), value: SHORT_LINK_LABEL },
+        { label: t('shortLinkDns.dnsValue'), value: SHORT_LINK_INGRESS_IP },
+        { label: t('shortLinkDns.dnsTtl'), value: t('shortLinkDns.ttlAuto') },
+        { label: t('shortLinkDns.dnsProxy'), value: t('shortLinkDns.proxyOff') },
+    ];
+
+    const handleCopy = async () => {
+        const text = [
+            ...fields.map((f) => `${f.label}: ${f.value}`),
+            '',
+            `${t('shortLinkDns.hostLabel')}: https://${host}`,
+        ].join('\n');
+        // copyTextToClipboard reports failure rather than pretending; a silent
+        // no-op here would have the admin send an email with nothing in it.
+        if (await copyTextToClipboard(text)) toast.success(t('shortLinkDns.copied'));
+        else toast.error(t('shortLinkDns.copyFailed'));
+    };
+
+    return (
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="truncate font-mono text-sm text-slate-700">{host}</span>
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                >
+                    <Copy className="size-3" />
+                    {t('shortLinkDns.copy')}
+                </button>
+            </div>
+            <div className="space-y-1 text-xs">
+                {fields.map((f) => (
+                    <div key={f.label} className="flex gap-3">
+                        <span className="w-16 shrink-0 text-slate-500">{f.label}</span>
+                        <span className="break-all font-mono text-slate-800">{f.value}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Shown beside the portal DNS instructions so the short-link record goes out in
+ * the same message, instead of being discovered weeks later.
+ *
+ * Display only. The record is inert until the host is ALSO added to the ingress
+ * (TLS host + a `/s` rule) and registered against the institute in
+ * media_service — which is why the footnote spells out the ordering. Two live
+ * institutes have a short domain registered with neither, and every link they
+ * mint is dead.
+ */
+const ShortLinkDnsCard = ({ domains }: { domains: string[] }) => {
+    const { t } = useTranslation('settingsWhiteLabel');
+    if (domains.length === 0) return null;
+
+    return (
+        <Card className="border-slate-200">
+            <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                    <Link2 className="size-4 text-slate-500" />
+                    {t('shortLinkDns.title')}
+                </CardTitle>
+                <CardDescription>{t('shortLinkDns.description')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                {domains.map((d) => (
+                    <ShortLinkDnsRow key={d} rootDomain={d} />
+                ))}
+                <Alert className="border-amber-100 bg-amber-50">
+                    <AlertCircle className="size-4 text-amber-600" />
+                    <AlertDescription className="text-sm text-amber-700">
+                        {t('shortLinkDns.platformNote')}
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+    );
+};
 
 const PortalUrlRow = ({ label, url }: { label: string; url: string | null | undefined }) => {
     if (!url) return null;
@@ -409,8 +792,9 @@ const PortalUrlRow = ({ label, url }: { label: string; url: string | null | unde
 
 /** Displays a single config value in the current config table */
 const ConfigValue = ({ label, value }: { label: string; value: any }) => {
+    const { t } = useTranslation('settingsWhiteLabel');
     if (value === null || value === undefined || value === '') return null;
-    const display = typeof value === 'boolean' ? (value ? '✓ Yes' : '✗ No') : String(value);
+    const display = typeof value === 'boolean' ? (value ? t('configValue.yes') : t('configValue.no')) : String(value);
     return (
         <div className="flex items-center justify-between gap-2 text-xs">
             <span className="text-slate-500 shrink-0">{label}</span>
@@ -427,35 +811,37 @@ const ConfigFormSection = ({
 }: {
     config: RoutingConfig;
     onUpdate: (field: keyof RoutingConfig, value: any) => void;
-}) => (
+}) => {
+    const { t } = useTranslation('settingsWhiteLabel');
+    return (
     <div className="space-y-5 pt-4">
         {/* Branding */}
         <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Palette className="size-4 text-blue-500" />
-                Branding
+                {t('configForm.branding.heading')}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Tab Title</Label>
-                    <Input placeholder="My School" value={config.tab_text || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.branding.tabTitleLabel')}</Label>
+                    <Input placeholder={t('configForm.branding.tabTitlePlaceholder')} value={config.tab_text || ''}
                            onChange={e => onUpdate('tab_text', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Tab Icon File ID</Label>
+                    <Label className="text-xs text-slate-500">{t('configForm.branding.tabIconLabel')}</Label>
                     <ImageUploadButton
                         fileId={config.tab_icon_file_id}
                         onChange={(id) => onUpdate('tab_icon_file_id', id)}
                     />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Theme / Color</Label>
-                    <Input placeholder="#4F46E5 or theme-name" value={config.theme || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.branding.themeLabel')}</Label>
+                    <Input placeholder={t('configForm.branding.themePlaceholder')} value={config.theme || ''}
                            onChange={e => onUpdate('theme', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Font Family</Label>
-                    <Input placeholder="Inter, Roboto, etc." value={config.font_family || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.branding.fontFamilyLabel')}</Label>
+                    <Input placeholder={t('configForm.branding.fontFamilyPlaceholder')} value={config.font_family || ''}
                            onChange={e => onUpdate('font_family', e.target.value)} className="h-8 text-sm" />
                 </div>
             </div>
@@ -465,11 +851,10 @@ const ConfigFormSection = ({
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <Label className="text-xs font-medium text-slate-700 cursor-pointer" htmlFor="switch-hide_institute_name">
-                            Hide institute name
+                            {t('configForm.branding.hideNameLabel')}
                         </Label>
                         <p className="text-[11px] text-slate-400">
-                            Enable if your logo already contains the institute name. Hides
-                            the name in the sidebar and login page.
+                            {t('configForm.branding.hideNameHint')}
                         </p>
                     </div>
                     <Switch
@@ -481,11 +866,10 @@ const ConfigFormSection = ({
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <Label className="text-xs font-medium text-slate-700 cursor-pointer" htmlFor="switch-stack_name_below_logo">
-                            Stack name below logo
+                            {t('configForm.branding.stackNameLabel')}
                         </Label>
                         <p className="text-xs text-slate-400">
-                            Render the institute name centered underneath the logo instead
-                            of beside it, in the sidebar header.
+                            {t('configForm.branding.stackNameHint')}
                         </p>
                     </div>
                     <Switch
@@ -497,7 +881,7 @@ const ConfigFormSection = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <Label className="text-xs text-slate-500">
-                            Logo width (px)
+                            {t('configForm.branding.logoWidthLabel')}
                         </Label>
                         <Input
                             type="number"
@@ -522,13 +906,12 @@ const ConfigFormSection = ({
                             className="h-8 text-sm"
                         />
                         <p className="text-[10px] text-slate-400">
-                            Leave blank to use default. Set 250+ AND clear the height to
-                            make the sidebar logo span the full width, edge to edge.
+                            {t('configForm.branding.logoWidthHint')}
                         </p>
                     </div>
                     <div className="space-y-1">
                         <Label className="text-xs text-slate-500">
-                            Logo height (px)
+                            {t('configForm.branding.logoHeightLabel')}
                         </Label>
                         <Input
                             type="number"
@@ -553,9 +936,7 @@ const ConfigFormSection = ({
                             className="h-8 text-sm"
                         />
                         <p className="text-[10px] text-slate-400">
-                            Leave blank to scale proportionally to the width (required for
-                            a full-width sidebar logo). Set a value to fit the logo inside
-                            a fixed box instead.
+                            {t('configForm.branding.logoHeightHint')}
                         </p>
                     </div>
                 </div>
@@ -568,17 +949,17 @@ const ConfigFormSection = ({
         <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <KeyRound className="size-4 text-amber-500" />
-                Authentication
+                {t('configForm.auth.heading')}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {([
-                    ['allow_signup', 'Allow Sign Up'],
-                    ['allow_google_auth', 'Google Auth'],
-                    ['allow_github_auth', 'GitHub Auth'],
-                    ['allow_email_otp_auth', 'Email OTP Auth'],
-                    ['allow_phone_auth', 'Phone Auth'],
-                    ['allow_username_password_auth', 'Username/Password Auth'],
-                    ['convert_username_password_to_lowercase', 'Convert Username to Lowercase'],
+                    ['allow_signup', t('configForm.auth.allowSignup')],
+                    ['allow_google_auth', t('configForm.auth.googleAuth')],
+                    ['allow_github_auth', t('configForm.auth.githubAuth')],
+                    ['allow_email_otp_auth', t('configForm.auth.emailOtpAuth')],
+                    ['allow_phone_auth', t('configForm.auth.phoneAuth')],
+                    ['allow_username_password_auth', t('configForm.auth.usernamePasswordAuth')],
+                    ['convert_username_password_to_lowercase', t('configForm.auth.convertUsernameLowercase')],
                 ] as [keyof RoutingConfig, string][]).map(([field, label]) => (
                     <div key={field} className="flex items-center justify-between rounded-md border border-slate-100 bg-slate-50/50 px-3 py-2">
                         <Label className="text-xs text-slate-600 cursor-pointer" htmlFor={`switch-${field}`}>
@@ -600,11 +981,11 @@ const ConfigFormSection = ({
         <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Phone className="size-4 text-sky-500" />
-                Phone Input Preferences
+                {t('configForm.phone.heading')}
             </div>
             <div className="space-y-1.5">
                 <Label className="text-xs text-slate-500">
-                    Preferred Countries
+                    {t('configForm.phone.preferredCountriesLabel')}
                 </Label>
                 <PreferredCountriesSelector
                     value={parsePreferredCountriesString(
@@ -618,11 +999,14 @@ const ConfigFormSection = ({
                     }
                 />
                 <p className="text-[11px] text-slate-400">
-                    The first selected country is pre-selected in phone inputs across the
-                    learner and admin portals. The full list determines the order of the
-                    country picker. Use the ↑ / ↓ arrows on each chip to reorder.
+                    {t('configForm.phone.preferredCountriesHint')}
                 </p>
             </div>
+            <PhoneCountryGeoModeField
+                value={config.phone_country_geo_mode}
+                preferredCountriesValue={config.comma_separated_preferred_country}
+                onChange={(mode) => onUpdate('phone_country_geo_mode', mode)}
+            />
         </div>
 
         <Separator />
@@ -631,27 +1015,27 @@ const ConfigFormSection = ({
         <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Route className="size-4 text-green-500" />
-                Routes
+                {t('configForm.routes.heading')}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Redirect URL</Label>
-                    <Input placeholder="/dashboard" value={config.redirect || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.routes.redirectLabel')}</Label>
+                    <Input placeholder={t('configForm.routes.redirectPlaceholder')} value={config.redirect || ''}
                            onChange={e => onUpdate('redirect', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">After Login Route</Label>
-                    <Input placeholder="/dashboard" value={config.after_login_route || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.routes.afterLoginLabel')}</Label>
+                    <Input placeholder={t('configForm.routes.afterLoginPlaceholder')} value={config.after_login_route || ''}
                            onChange={e => onUpdate('after_login_route', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">After Logout Route</Label>
-                    <Input placeholder="/login" value={config.admin_portal_after_logout_route || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.routes.afterLogoutLabel')}</Label>
+                    <Input placeholder={t('configForm.routes.afterLogoutPlaceholder')} value={config.admin_portal_after_logout_route || ''}
                            onChange={e => onUpdate('admin_portal_after_logout_route', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Home Icon Click Route</Label>
-                    <Input placeholder="/" value={config.home_icon_click_route || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.routes.homeClickLabel')}</Label>
+                    <Input placeholder={t('configForm.routes.homeClickPlaceholder')} value={config.home_icon_click_route || ''}
                            onChange={e => onUpdate('home_icon_click_route', e.target.value)} className="h-8 text-sm" />
                 </div>
             </div>
@@ -663,53 +1047,85 @@ const ConfigFormSection = ({
         <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Link2 className="size-4 text-violet-500" />
-                Links
+                {t('configForm.links.heading')}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Privacy Policy URL</Label>
-                    <Input placeholder="https://myschool.com/privacy" value={config.privacy_policy_url || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.links.privacyPolicyLabel')}</Label>
+                    <Input placeholder={t('configForm.links.privacyPolicyPlaceholder')} value={config.privacy_policy_url || ''}
                            onChange={e => onUpdate('privacy_policy_url', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Terms & Conditions URL</Label>
-                    <Input placeholder="https://myschool.com/terms" value={config.terms_and_condition_url || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.links.termsLabel')}</Label>
+                    <Input placeholder={t('configForm.links.termsPlaceholder')} value={config.terms_and_condition_url || ''}
                            onChange={e => onUpdate('terms_and_condition_url', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Play Store Link</Label>
-                    <Input placeholder="https://play.google.com/..." value={config.play_store_app_link || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.links.playStoreLabel')}</Label>
+                    <Input placeholder={t('configForm.links.playStorePlaceholder')} value={config.play_store_app_link || ''}
                            onChange={e => onUpdate('play_store_app_link', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">App Store Link</Label>
-                    <Input placeholder="https://apps.apple.com/..." value={config.app_store_app_link || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.links.appStoreLabel')}</Label>
+                    <Input placeholder={t('configForm.links.appStorePlaceholder')} value={config.app_store_app_link || ''}
                            onChange={e => onUpdate('app_store_app_link', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Windows App Link</Label>
-                    <Input placeholder="https://..." value={config.windows_app_link || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.links.windowsLabel')}</Label>
+                    <Input placeholder={t('configForm.links.genericUrlPlaceholder')} value={config.windows_app_link || ''}
                            onChange={e => onUpdate('windows_app_link', e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Mac App Link</Label>
-                    <Input placeholder="https://..." value={config.mac_app_link || ''}
+                    <Label className="text-xs text-slate-500">{t('configForm.links.macLabel')}</Label>
+                    <Input placeholder={t('configForm.links.genericUrlPlaceholder')} value={config.mac_app_link || ''}
                            onChange={e => onUpdate('mac_app_link', e.target.value)} className="h-8 text-sm" />
                 </div>
             </div>
         </div>
     </div>
-);
+    );
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
+    const { t } = useTranslation('settingsWhiteLabel');
     const instituteId = getInstituteId();
 
-    const [formEntries, setFormEntries] = useState<DomainFormEntry[]>([
-        { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
-        { id: makeFormId(), role: 'ADMIN',   domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
-    ]);
+    // A draft parked by an earlier visit to this tab beats the blank form, and
+    // counts as unsaved input from the very first render — so the status prefill
+    // below leaves it alone instead of overwriting it on arrival.
+    const [initialForm] = useState(() => {
+        const draft = readDraft(instituteId);
+        return { entries: draft ?? defaultFormEntries(), fromDraft: draft !== null };
+    });
+
+    const [formEntries, setFormEntries] = useState<DomainFormEntry[]>(initialForm.entries);
+    const [draftRestored, setDraftRestored] = useState(initialForm.fromDraft);
+    const [hasUnsavedEdits, setHasUnsavedEdits] = useState(initialForm.fromDraft);
+
+    /**
+     * The same flag as `hasUnsavedEdits`, readable synchronously from callbacks
+     * that must not wait for a re-render — chiefly the activation poll below.
+     *
+     * Every status read used to call prefillFromStatus, which replaces
+     * formEntries wholesale. With the poll running every 30s while any domain is
+     * still activating, a domain typed but not yet applied was silently wiped
+     * mid-edit; switching tabs and back did the same thing on mount.
+     */
+    const hasUnsavedEditsRef = useRef(initialForm.fromDraft);
+
+    const markEdited = () => {
+        hasUnsavedEditsRef.current = true;
+        setHasUnsavedEdits(true);
+    };
+
+    // Persist while dirty, so unmounting this screen (any settings-tab switch)
+    // no longer costs the admin what they had typed.
+    useEffect(() => {
+        if (!hasUnsavedEditsRef.current) return;
+        writeDraft(instituteId, formEntries);
+    }, [formEntries, instituteId]);
 
     const [status, setStatus] = useState<WhiteLabelStatusResponse | null>(null);
     const [statusLoading, setStatusLoading] = useState(false);
@@ -718,19 +1134,68 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
     useEffect(() => { if (instituteId) fetchStatus(); }, [instituteId]);
 
+    // Sub-orgs of this institute, for the per-domain linkage picker. Most
+    // institutes have none, in which case the picker never renders and the page
+    // looks exactly as it did. Best-effort: a failure here must not block
+    // white-label setup, so it degrades to "no sub-orgs" rather than erroring.
+    const [subOrgs, setSubOrgs] = useState<SubOrgOption[]>([]);
+
+    useEffect(() => {
+        if (!instituteId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const raw: unknown = await getSubOrgs(instituteId);
+                const list: RawSubOrg[] = Array.isArray(raw)
+                    ? (raw as RawSubOrg[])
+                    : (raw as { content?: RawSubOrg[] } | null)?.content ?? [];
+                const options = list
+                    .map((o) => normaliseSubOrg(o))
+                    .filter((o): o is SubOrgOption => o !== null);
+                if (!cancelled) setSubOrgs(options);
+            } catch (err) {
+                console.error('[WhiteLabel] Failed to load sub-orgs', err);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [instituteId]);
+
+    const subOrgSearchPlaceholder = t('subOrg.searchPlaceholder');
+    const subOrgSearchEmpty = t('subOrg.searchEmpty');
+
+    /**
+     * Options for the per-domain sub-org picker: "parent institute" pinned first,
+     * then every sub-org sorted by name. An institute running white-label for its
+     * franchisees has dozens of these, and the old plain <Select> offered no
+     * search — finding one meant scrolling an unordered list.
+     */
+    const subOrgOptions = useMemo(
+        () => [
+            { value: NO_SUB_ORG, label: t('subOrg.none') },
+            ...subOrgs
+                .map((o) => ({ value: o.id, label: o.name || t('subOrg.untitled') }))
+                .sort((a, b) => a.label.localeCompare(b.label)),
+        ],
+        [subOrgs, t]
+    );
+
     // ── Pre-fill from existing routing entries ────────────────────────────────
-    const prefillFromStatus = (data: WhiteLabelStatusResponse) => {
+    const prefillFromStatus = (data: WhiteLabelStatusResponse, force = false) => {
+        // Anything the admin has typed outranks the server copy. Without this the
+        // 30-second activation poll — or simply re-opening the tab — replaced the
+        // whole form with the saved rows, so an unapplied domain just vanished.
+        if (hasUnsavedEditsRef.current && !force) return;
         if (!data.routing_entries || data.routing_entries.length === 0) return;
 
         const newEntries: DomainFormEntry[] = data.routing_entries.map((r) => {
             const fullDomain = fqdn(r);
-            let isPrimary = false;
-            if (r.role === 'LEARNER' && data.learner_portal_url)
-                isPrimary = data.learner_portal_url.replace(/^https?:\/\//, '') === fullDomain;
-            else if (r.role === 'ADMIN' && data.admin_portal_url)
-                isPrimary = data.admin_portal_url.replace(/^https?:\/\//, '') === fullDomain;
-            else if (r.role === 'TEACHER' && data.teacher_portal_url)
-                isPrimary = data.teacher_portal_url.replace(/^https?:\/\//, '') === fullDomain;
+            // The server stores the primary choice on the routing row, so read it
+            // rather than inferring it from the portal URL. Inferring is wrong now
+            // that a choice is only applied once its host goes live: a pending
+            // primary would come back un-starred, and the next Save would clear it.
+            const isPrimary = r.is_primary === true;
 
             return {
                 id: makeFormId(),
@@ -762,10 +1227,16 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     mac_app_link: r.mac_app_link ?? undefined,
                     comma_separated_preferred_country:
                         r.comma_separated_preferred_country ?? undefined,
+                    phone_country_geo_mode: r.phone_country_geo_mode ?? undefined,
                     hide_institute_name: r.hide_institute_name ?? undefined,
                     logo_width_px: r.logo_width_px ?? undefined,
                     logo_height_px: r.logo_height_px ?? undefined,
                     stack_name_below_logo: r.stack_name_below_logo ?? undefined,
+                    // Round-trip the linkage. Before this the wizard didn't know the
+                    // field existed, so every save posted a config without it and the
+                    // backend blanked sub_org_id — un-branding the portal and
+                    // disabling its login scoping.
+                    sub_org_id: r.sub_org_id ?? undefined,
                 },
             };
         });
@@ -784,6 +1255,18 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
             console.log('[WhiteLabel] Status response:', res.data);
             setStatus(res.data);
             prefillFromStatus(res.data);
+
+            // The server adopts a chosen domain into the institute's portal URL the
+            // moment Cloudflare activates it. That can land on a poll rather than an
+            // action, so say so — otherwise the change is invisible.
+            const adopted = res.data.roles_adopted_now ?? [];
+            if (adopted.length > 0) {
+                toast.success(
+                    t('toast.portalUrlAdopted', {
+                        roles: adopted.map((r) => roleLabel(r, t)).join(', '),
+                    })
+                );
+            }
         } catch (err) {
             console.error('[WhiteLabel] Failed to load status', err);
         } finally {
@@ -791,11 +1274,59 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         }
     };
 
+    // ── Auto-poll while a domain is still activating ──────────────────────────
+    // Cloudflare validates an external domain minutes — sometimes hours — after
+    // it is added, and it has no webhook to tell us. Every status read reconciles
+    // server-side, so simply asking again is what turns "stored once the URL goes
+    // active" into something that happens while the admin watches, rather than
+    // the next time somebody happens to open this page. Bounded, so a domain
+    // whose CNAME never lands doesn't poll forever.
+    const [pollsLeft, setPollsLeft] = useState(MAX_ACTIVATION_POLLS);
+
+    const hasActivatingDomain = (status?.routing_entries ?? []).some(
+        (e) => !!e.pages_status && e.pages_status.toLowerCase() !== 'active'
+    );
+
+    /**
+     * Customer root domains that would need a short-link record, taken from the
+     * saved routing rows AND from whatever is currently typed into the form —
+     * so the record is on screen while the admin is still drafting the email
+     * that asks for the portal CNAMEs, not only after setup has run.
+     *
+     * Deduped: learner/admin/teacher on one domain is one record, not three.
+     */
+    const shortLinkDomains = useMemo(() => {
+        const roots = new Set<string>();
+        for (const e of status?.routing_entries ?? []) {
+            const root = shortLinkRootDomain(fqdn(e));
+            if (root && root !== PLATFORM_ZONE) roots.add(root);
+        }
+        for (const e of formEntries) {
+            const root = shortLinkRootDomain(e.domain);
+            if (root && root !== PLATFORM_ZONE) roots.add(root);
+        }
+        return [...roots].sort();
+    }, [status?.routing_entries, formEntries]);
+
+    // Held in a ref so the poll effect doesn't re-run on every render just
+    // because fetchStatus is a new closure each time.
+    const fetchStatusRef = useRef(fetchStatus);
+    fetchStatusRef.current = fetchStatus;
+
+    useEffect(() => {
+        if (!hasActivatingDomain || pollsLeft <= 0) return;
+        const timer = setTimeout(() => {
+            setPollsLeft((n) => n - 1);
+            void fetchStatusRef.current();
+        }, ACTIVATION_POLL_INTERVAL_MS);
+        return () => clearTimeout(timer);
+    }, [hasActivatingDomain, pollsLeft]);
+
     const handleSetup = async () => {
-        if (!instituteId) { toast.error('No institute selected'); return; }
+        if (!instituteId) { toast.error(t('toast.noInstituteSelected')); return; }
 
         const nonEmpty = formEntries.filter(e => e.domain.trim());
-        if (nonEmpty.length === 0) { toast.error('Add at least one domain entry'); return; }
+        if (nonEmpty.length === 0) { toast.error(t('toast.addAtLeastOneDomain')); return; }
 
         setSetupLoading(true);
         setLastSetupResult(null);
@@ -814,11 +1345,18 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                 payload
             );
             setLastSetupResult(res.data);
-            toast.success('White-label setup completed! 🎉');
+            toast.success(t('toast.setupCompleted'));
+            setPollsLeft(MAX_ACTIVATION_POLLS);
+            // Saved: drop the draft and let the form re-read what the server
+            // actually stored (normalised domains, generated rows, and so on).
+            clearDraft(instituteId);
+            hasUnsavedEditsRef.current = false;
+            setHasUnsavedEdits(false);
+            setDraftRestored(false);
             await fetchStatus();
         } catch (err: any) {
-            const errMsg = err?.response?.data?.message || err?.response?.data || 'Setup failed.';
-            toast.error(typeof errMsg === 'string' ? errMsg : 'Setup failed');
+            const errMsg = err?.response?.data?.message || err?.response?.data || t('toast.setupFailed');
+            toast.error(typeof errMsg === 'string' ? errMsg : t('toast.setupFailed'));
         } finally {
             setSetupLoading(false);
         }
@@ -826,6 +1364,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
     // ── Form entry CRUD ───────────────────────────────────────────────────────
     const addEntry = () => {
+        markEdited();
         setFormEntries(prev => [
             ...prev,
             { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: false, expanded: false, config: emptyConfig() },
@@ -833,14 +1372,17 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
     };
 
     const removeEntry = (id: string) => {
+        markEdited();
         setFormEntries(prev => prev.filter(e => e.id !== id));
     };
 
     const updateEntry = (id: string, field: keyof DomainFormEntry, value: any) => {
+        markEdited();
         setFormEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
     };
 
     const updateEntryConfig = (id: string, field: keyof RoutingConfig, value: any) => {
+        markEdited();
         setFormEntries(prev =>
             prev.map(e =>
                 e.id === id ? { ...e, config: { ...e.config, [field]: value } } : e
@@ -849,7 +1391,18 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
     };
 
     const toggleExpand = (id: string) => {
+        // Deliberately not an edit: opening a panel to read it must not start
+        // pinning a draft, nor block the form from picking up server changes.
         setFormEntries(prev => prev.map(e => e.id === id ? { ...e, expanded: !e.expanded } : e));
+    };
+
+    const discardDraft = () => {
+        clearDraft(instituteId);
+        hasUnsavedEditsRef.current = false;
+        setHasUnsavedEdits(false);
+        setDraftRestored(false);
+        if (status?.routing_entries?.length) prefillFromStatus(status, true);
+        else setFormEntries(defaultFormEntries());
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -861,15 +1414,14 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg">
                             <Globe className="size-5 text-slate-400" />
-                            White-Label Domain Setup
+                            {t('header.title')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Alert className="border-slate-200 bg-slate-50">
                             <Info className="size-4 text-slate-500" />
                             <AlertDescription className="text-slate-600">
-                                <strong>Not available on this deployment.</strong> Cloudflare API
-                                credentials are not configured. Contact your platform administrator.
+                                <strong>{t('notAvailable.strong')}</strong> {t('notAvailable.description')}
                             </AlertDescription>
                         </Alert>
                     </CardContent>
@@ -879,7 +1431,10 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
     }
 
     return (
-        <div className="space-y-6 max-w-3xl">
+        // Wider than the other settings screens on purpose: a domain row carries
+        // a role, a full FQDN, a sub-org and three actions side by side, and at
+        // max-w-3xl the domain input was squeezed to about 60px.
+        <div className="max-w-5xl space-y-6">
             {/* ── Header ── */}
             <Card>
                 <CardHeader>
@@ -887,10 +1442,10 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                         <div className="space-y-1">
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <Globe className="size-5 text-blue-600" />
-                                White-Label Domain Setup
+                                {t('header.title')}
                             </CardTitle>
                             <CardDescription>
-                                Configure custom domains, branding, auth settings and more for each portal.
+                                {t('header.description')}
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -901,7 +1456,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                             ) : null}
                             <button onClick={fetchStatus} disabled={statusLoading}
                                     className="rounded p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                                    title="Refresh status">
+                                    title={t('header.refreshStatus')}>
                                 <RefreshCw className="size-4" />
                             </button>
                         </div>
@@ -915,21 +1470,21 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                             <LinkIcon className="size-4 text-blue-600" />
-                            Current Configuration
+                            {t('currentConfig.title')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Primary URLs */}
                         <div>
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                                Primary Portal URLs (Institute Default)
+                                {t('currentConfig.primaryUrlsLabel')}
                             </p>
                             <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-3">
                                 <PortalUrlRow label={getTerminology(RoleTerms.Learner, SystemTerms.Learner)} url={status.learner_portal_url} />
                                 <PortalUrlRow label={getTerminology(RoleTerms.Admin, SystemTerms.Admin)} url={status.admin_portal_url} />
                                 <PortalUrlRow label={getTerminology(RoleTerms.Teacher, SystemTerms.Teacher)} url={status.teacher_portal_url} />
                                 {!status.learner_portal_url && !status.admin_portal_url && !status.teacher_portal_url && (
-                                    <p className="text-sm text-slate-400 italic">No portal URLs set.</p>
+                                    <p className="text-sm text-slate-400 italic">{t('currentConfig.noPortalUrls')}</p>
                                 )}
                             </div>
                         </div>
@@ -942,15 +1497,19 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                     <div className="flex items-center gap-2">
                                         <TableIcon className="size-4 text-slate-500" />
                                         <p className="text-sm font-semibold text-slate-700">
-                                            Domain Routing Entries
+                                            {t('currentConfig.domainRoutingEntries')}
                                         </p>
                                         <Badge variant="secondary" className="text-xs">
-                                            {status.routing_entries.length} total
+                                            {t('currentConfig.totalBadge', { count: status.routing_entries.length })}
                                         </Badge>
                                     </div>
                                     <div className="space-y-2">
                                         {status.routing_entries.map((entry) => (
-                                            <RoutingEntryCard key={entry.id} entry={entry} />
+                                            <RoutingEntryCard
+                                                key={entry.id}
+                                                entry={entry}
+                                                subOrgs={subOrgs}
+                                            />
                                         ))}
                                     </div>
                                 </div>
@@ -960,92 +1519,154 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                 </Card>
             )}
 
+            {/* ── Short link DNS record (to forward to the customer) ── */}
+            <ShortLinkDnsCard domains={shortLinkDomains} />
+
+            {/* ── Brand name on Google's "Continue with Google" screen ── */}
+            <GoogleSignInBrandingCard learnerPortalUrl={status?.learner_portal_url ?? null} />
+
             {/* ── Setup / Update Form ── */}
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base">
-                        {status?.is_configured ? 'Add / Update Domains' : 'New Setup'}
+                        {status?.is_configured ? t('setupCard.titleUpdate') : t('setupCard.titleNew')}
                     </CardTitle>
                     <CardDescription>
-                        Add domain entries below. Click <strong>⚙ Settings</strong> on each entry to
-                        configure branding, authentication, routes, and links.
+                        {t('setupCard.descriptionPart1')} <strong>{t('setupCard.settingsLabel')}</strong> {t('setupCard.descriptionPart2')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <Alert className="border-blue-100 bg-blue-50">
                         <Info className="size-4 text-blue-600" />
                         <AlertDescription className="text-blue-700 text-sm">
-                            <strong>Tip:</strong> Enter{' '}
-                            <code className="text-xs bg-blue-100 px-1 py-0.5 rounded">my-school.vacademy.io</code> for
-                            Vacademy subdomains, or{' '}
-                            <code className="text-xs bg-blue-100 px-1 py-0.5 rounded">learn.myschool.com</code> for
-                            custom domains. Mark one per role as ⭐ Primary.
+                            <strong>{t('setupCard.tip.label')}</strong> {t('setupCard.tip.enterPrefix')}{' '}
+                            <code className="text-xs bg-blue-100 px-1 py-0.5 rounded">my-school.vacademy.io</code> {t('setupCard.tip.vacademySuffix')}{' '}
+                            <code className="text-xs bg-blue-100 px-1 py-0.5 rounded">learn.myschool.com</code> {t('setupCard.tip.customSuffix')}
                         </AlertDescription>
                     </Alert>
+
+                    {draftRestored && (
+                        <Alert className="border-amber-200 bg-amber-50">
+                            <Info className="size-4 text-amber-600" />
+                            <AlertDescription className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-amber-800">
+                                <span>{t('setupCard.draftRestored')}</span>
+                                <button
+                                    type="button"
+                                    onClick={discardDraft}
+                                    className="font-medium underline underline-offset-2 hover:text-amber-900"
+                                >
+                                    {t('setupCard.discardDraft')}
+                                </button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
                     {/* Dynamic entries */}
                     <div className="space-y-3">
                         {formEntries.map((entry, idx) => (
                             <div key={entry.id}
                                  className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-                                {/* Top row: entry number, role, domain, primary, expand, delete */}
-                                <div className="flex items-start gap-3 p-4">
+                                {/* Top row: entry number, role, domain, primary, expand, delete.
+                                    Wrapping, and every track sized with minmax(0, …): the fixed
+                                    140px/200px columns plus three buttons used to eat the whole
+                                    row, leaving the domain input — the one field holding a long
+                                    FQDN — narrower than the word "learn.". */}
+                                <div className="flex flex-wrap items-start gap-x-3 gap-y-2 p-4">
                                     <span className="mt-2 flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
                                         {idx + 1}
                                     </span>
 
-                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-3">
+                                    <div
+                                        className={`grid flex-1 basis-[460px] grid-cols-1 gap-3 ${
+                                            subOrgs.length > 0
+                                                ? 'sm:grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[150px_minmax(0,1.5fr)_minmax(0,1fr)]'
+                                                : 'sm:grid-cols-[150px_minmax(0,1fr)]'
+                                        }`}
+                                    >
                                         <div className="space-y-1">
-                                            <Label className="text-xs text-slate-500">Role</Label>
+                                            <Label className="text-xs text-slate-500">{t('setupCard.roleLabel')}</Label>
                                             <Select value={entry.role}
                                                     onValueChange={v => updateEntry(entry.id, 'role', v)}>
                                                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     {ROLES.map(r => (
-                                                        <SelectItem key={r} value={r}>{roleLabel(r)}</SelectItem>
+                                                        <SelectItem key={r} value={r}>{roleLabel(r, t)}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
 
                                         <div className="space-y-1">
-                                            <Label className="text-xs text-slate-500">Domain</Label>
-                                            <Input placeholder="learn.myschool.com" value={entry.domain}
+                                            <Label className="text-xs text-slate-500">{t('setupCard.domainLabel')}</Label>
+                                            <Input placeholder={t('setupCard.domainPlaceholder')} value={entry.domain}
                                                    onChange={e => updateEntry(entry.id, 'domain',
                                                        e.target.value.toLowerCase().replace(/\s/g, ''))}
                                                    className="h-9" />
                                         </div>
+
+                                        {/* Sub-org linkage. Only rendered when this institute
+                                            actually has sub-orgs, so the row is unchanged for
+                                            everyone else. Picking one brands the portal with
+                                            that sub-org's logo/name/theme AND restricts login
+                                            to its members. */}
+                                        {subOrgs.length > 0 && (
+                                            <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+                                                <Label className="text-xs text-slate-500">
+                                                    {t('subOrg.label')}
+                                                </Label>
+                                                <SearchableSelect
+                                                    options={subOrgOptions}
+                                                    value={entry.config.sub_org_id || NO_SUB_ORG}
+                                                    onChange={(v) =>
+                                                        updateEntryConfig(
+                                                            entry.id,
+                                                            'sub_org_id',
+                                                            v === NO_SUB_ORG ? '' : v
+                                                        )
+                                                    }
+                                                    placeholder={t('subOrg.none')}
+                                                    searchPlaceholder={subOrgSearchPlaceholder}
+                                                    emptyText={subOrgSearchEmpty}
+                                                    triggerClassName="h-9 px-3 text-sm"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* Primary */}
-                                    <button type="button"
-                                            onClick={() => updateEntry(entry.id, 'isPrimary', !entry.isPrimary)}
-                                            className={`mt-6 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                                                entry.isPrimary
-                                                    ? 'bg-amber-100 text-amber-700 border border-amber-200'
-                                                    : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-slate-100 hover:text-slate-600'
-                                            }`}
-                                            title={entry.isPrimary ? 'Primary domain for this role' : 'Set as primary'}>
-                                        <Star className={`size-3 ${entry.isPrimary ? 'fill-amber-500' : ''}`} />
-                                        {entry.isPrimary ? 'Primary' : 'Set primary'}
-                                    </button>
-
-                                    {/* Expand config */}
-                                    <button type="button" onClick={() => toggleExpand(entry.id)}
-                                            className="mt-6 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                                            title="Toggle settings">
-                                        {entry.expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-                                        Settings
-                                    </button>
-
-                                    {/* Remove */}
-                                    {formEntries.length > 1 && (
-                                        <button type="button" onClick={() => removeEntry(entry.id)}
-                                                className="mt-6 rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                                title="Remove">
-                                            <Trash2 className="size-4" />
+                                    {/* Actions travel together: on a narrow row they wrap
+                                        onto their own line and hand the whole width back
+                                        to the fields, rather than each squeezing them. */}
+                                    <div className="ml-auto mt-6 flex shrink-0 items-center gap-2">
+                                        {/* Primary */}
+                                        <button type="button"
+                                                onClick={() => updateEntry(entry.id, 'isPrimary', !entry.isPrimary)}
+                                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                                                    entry.isPrimary
+                                                        ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                                        : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-slate-100 hover:text-slate-600'
+                                                }`}
+                                                title={entry.isPrimary ? t('setupCard.primaryTooltip') : t('setupCard.setPrimaryTooltip')}>
+                                            <Star className={`size-3 ${entry.isPrimary ? 'fill-amber-500' : ''}`} />
+                                            {entry.isPrimary ? t('setupCard.primary') : t('setupCard.setPrimary')}
                                         </button>
-                                    )}
+
+                                        {/* Expand config */}
+                                        <button type="button" onClick={() => toggleExpand(entry.id)}
+                                                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                                                title={t('setupCard.toggleSettingsTooltip')}>
+                                            {entry.expanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                                            {t('setupCard.settingsToggle')}
+                                        </button>
+
+                                        {/* Remove */}
+                                        {formEntries.length > 1 && (
+                                            <button type="button" onClick={() => removeEntry(entry.id)}
+                                                    className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                                    title={t('setupCard.removeTooltip')}>
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Expanded config section */}
@@ -1065,7 +1686,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     <button type="button" onClick={addEntry}
                             className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 transition-colors w-full justify-center">
                         <Plus className="size-4" />
-                        Add another domain
+                        {t('setupCard.addAnotherDomain')}
                     </button>
 
                     <Separator />
@@ -1075,14 +1696,18 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                         <MyButton id="white-label-setup-btn" onClick={handleSetup}
                                   disabled={setupLoading} buttonType="primary" scale="large" layoutVariant="default">
                             {setupLoading ? (
-                                <><Loader2 className="size-4 animate-spin mr-2" /> Configuring…</>
-                            ) : status?.is_configured ? 'Update White-Label Setup' : 'Apply White-Label Setup'}
+                                <><Loader2 className="size-4 animate-spin mr-2" /> {t('setupCard.configuring')}</>
+                            ) : status?.is_configured ? t('setupCard.updateButton') : t('setupCard.applyButton')}
                         </MyButton>
-                        {status?.is_configured && (
-                            <p className="text-xs text-slate-500">
-                                Existing entries are preserved. Only listed domains are created/updated.
+                        {hasUnsavedEdits ? (
+                            <p className="text-xs font-medium text-amber-600">
+                                {t('setupCard.unsavedChanges')}
                             </p>
-                        )}
+                        ) : status?.is_configured ? (
+                            <p className="text-xs text-slate-500">
+                                {t('setupCard.preservedHint')}
+                            </p>
+                        ) : null}
                     </div>
                 </CardContent>
             </Card>
@@ -1093,7 +1718,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base text-emerald-700">
                             <CheckCircle2 className="size-5" />
-                            Setup Complete
+                            {t('setupResult.title')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1107,11 +1732,10 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                 <Separator />
                                 <div className="space-y-2">
                                     <p className="text-sm font-semibold text-slate-700">
-                                        Pages Custom Domains
+                                        {t('setupResult.pagesCustomDomains')}
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                        These attach the host to the app so it is actually served. A DNS
-                                        record alone is not enough.
+                                        {t('setupResult.pagesHint')}
                                     </p>
                                     <div className="space-y-1.5">
                                         {lastSetupResult.pages_domains_configured!.map((r, i) => (
@@ -1125,7 +1749,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                             <>
                                 <Separator />
                                 <div className="space-y-2">
-                                    <p className="text-sm font-semibold text-slate-700">DNS Records Configured</p>
+                                    <p className="text-sm font-semibold text-slate-700">{t('setupResult.dnsRecordsConfigured')}</p>
                                     <div className="space-y-1.5">
                                         {lastSetupResult.dns_records_configured.map((r, i) => (
                                             <DnsRecordRow key={i} record={r} />
@@ -1151,7 +1775,12 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
 // ─── Routing Entry Card (current config display) ──────────────────────────────
 
-function RoutingEntryCard({ entry }: { entry: RoutingEntry }) {
+function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: SubOrgOption[] }) {
+    const { t } = useTranslation('settingsWhiteLabel');
+    const subOrgName = entry.sub_org_id
+        ? subOrgs.find((o) => o.id === entry.sub_org_id)?.name ?? entry.sub_org_id
+        : null;
+
     const [expanded, setExpanded] = useState(false);
     const full = fqdn(entry);
 
@@ -1165,10 +1794,21 @@ function RoutingEntryCard({ entry }: { entry: RoutingEntry }) {
         entry.allow_github_auth != null || entry.allow_email_otp_auth != null ||
         entry.allow_phone_auth != null || entry.allow_username_password_auth != null ||
         entry.comma_separated_preferred_country ||
+        entry.phone_country_geo_mode ||
         entry.hide_institute_name != null ||
         entry.logo_width_px != null || entry.logo_height_px != null ||
         entry.stack_name_below_logo != null
     );
+
+    // Under GEO_FIRST the first configured country is NOT what a phone field
+    // starts on — the visitor's own country is — so the star and its "default
+    // selected country" tooltip below have to know the mode before claiming it.
+    const savedGeoMode: PhoneCountryGeoMode = PHONE_COUNTRY_GEO_MODES.includes(
+        (entry.phone_country_geo_mode ?? '') as PhoneCountryGeoMode
+    )
+        ? (entry.phone_country_geo_mode as PhoneCountryGeoMode)
+        : DEFAULT_PHONE_COUNTRY_GEO_MODE;
+    const firstCountryIsDefault = savedGeoMode !== 'GEO_FIRST';
 
     const preferredCountryCodes = parsePreferredCountriesString(
         entry.comma_separated_preferred_country
@@ -1180,7 +1820,7 @@ function RoutingEntryCard({ entry }: { entry: RoutingEntry }) {
             <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                     <Badge variant="outline" className={roleBadgeClass(entry.role)}>
-                        {roleLabel(entry.role)}
+                        {roleLabel(entry.role, t)}
                     </Badge>
                     <a href={`https://${full}`} target="_blank" rel="noopener noreferrer"
                        className="flex items-center gap-1 text-sm text-blue-600 hover:underline font-mono truncate">
@@ -1189,34 +1829,76 @@ function RoutingEntryCard({ entry }: { entry: RoutingEntry }) {
                     </a>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                    {/* Two different facts, deliberately shown separately: which host
+                        the admin chose, and which one outbound links actually use.
+                        They diverge for as long as a chosen host stays pending, and
+                        that gap is the thing an admin otherwise cannot explain. */}
+                    {entry.is_portal_url ? (
+                        <Badge
+                            variant="outline"
+                            className="gap-1 border-emerald-200 bg-emerald-50 text-xs text-emerald-700"
+                            title={t('routingEntryCard.portalUrlTooltip')}
+                        >
+                            <CheckCircle2 className="size-3" />
+                            {t('routingEntryCard.portalUrl')}
+                        </Badge>
+                    ) : entry.is_primary ? (
+                        <Badge
+                            variant="outline"
+                            className="gap-1 border-amber-200 bg-amber-50 text-xs text-amber-700"
+                            title={t('routingEntryCard.primaryPendingTooltip')}
+                        >
+                            <Star className="size-3" />
+                            {t('routingEntryCard.primaryPending')}
+                        </Badge>
+                    ) : null}
+                    {subOrgName && (
+                        <Badge
+                            variant="outline"
+                            className="border-sky-200 bg-sky-50 text-xs text-sky-700"
+                            title={t('subOrg.badgeTooltip')}
+                        >
+                            {subOrgName}
+                        </Badge>
+                    )}
                     {entry.pages_status && (
                         <Badge
                             variant="outline"
                             className={`text-xs capitalize ${pagesStatusClass(entry.pages_status)}`}
-                            title="Cloudflare custom-domain status"
+                            title={t('routingEntryCard.cloudflareStatusTooltip')}
                         >
                             {entry.pages_status}
                         </Badge>
                     )}
                     {entry.tab_text && (
                         <span className="text-xs text-slate-500 hidden sm:inline">
-                            Tab: {entry.tab_text}
+                            {t('routingEntryCard.tabPrefix', { value: entry.tab_text })}
                         </span>
                     )}
                     {entry.theme && (
                         <span className="text-xs text-slate-500 hidden sm:inline">
-                            Theme: {entry.theme}
+                            {t('routingEntryCard.themePrefix', { value: entry.theme })}
                         </span>
                     )}
                     {hasConfig && (
                         <button onClick={() => setExpanded(!expanded)}
                                 className="rounded p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                                title="Show details">
+                                title={t('routingEntryCard.showDetailsTooltip')}>
                             {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                         </button>
                     )}
                 </div>
             </div>
+
+            {/* Chosen but not yet live: say what happens next, so the admin doesn't
+                assume the choice failed to save and re-submit it. */}
+            {entry.is_primary && !entry.is_portal_url && (
+                <div className="border-t border-amber-100 bg-amber-50/60 px-4 py-2">
+                    <p className="text-xs text-amber-800">
+                        {t('routingEntryCard.willBeAdoptedOnceActive')}
+                    </p>
+                </div>
+            )}
 
             {/* CNAME record to add — shown for a pending external (non-vacademy.io) domain */}
             {entry.pages_status &&
@@ -1225,25 +1907,25 @@ function RoutingEntryCard({ entry }: { entry: RoutingEntry }) {
                 !full.toLowerCase().endsWith('.vacademy.io') && (
                     <div className="border-t border-amber-100 bg-amber-50 px-4 py-3">
                         <p className="mb-2 text-xs font-medium text-amber-800">
-                            Add this DNS record at your provider for{' '}
-                            <span className="font-mono">{entry.domain}</span> to activate this domain:
+                            {t('routingEntryCard.cnameInstructionPrefix')}{' '}
+                            <span className="font-mono">{entry.domain}</span> {t('routingEntryCard.cnameInstructionSuffix')}
                         </p>
                         <div className="space-y-1 text-xs font-mono">
                             <div className="flex gap-3">
-                                <span className="w-12 text-slate-500">Type</span>
+                                <span className="w-12 text-slate-500">{t('routingEntryCard.dnsType')}</span>
                                 <span className="text-slate-800">CNAME</span>
                             </div>
                             <div className="flex gap-3">
-                                <span className="w-12 text-slate-500">Name</span>
+                                <span className="w-12 text-slate-500">{t('routingEntryCard.dnsName')}</span>
                                 <span className="text-slate-800">{entry.subdomain}</span>
                             </div>
                             <div className="flex gap-3">
-                                <span className="w-12 text-slate-500">Value</span>
+                                <span className="w-12 text-slate-500">{t('routingEntryCard.dnsValue')}</span>
                                 <span className="break-all text-slate-800">{entry.pages_cname_target}</span>
                             </div>
                         </div>
                         <p className="mt-2 text-xs text-amber-700">
-                            SSL activates automatically once Cloudflare validates the record.
+                            {t('routingEntryCard.sslAutoActivate')}
                         </p>
                     </div>
                 )}
@@ -1252,53 +1934,57 @@ function RoutingEntryCard({ entry }: { entry: RoutingEntry }) {
             {expanded && (
                 <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-3">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1.5">
-                        <ConfigValue label="Domain" value={entry.domain} />
-                        <ConfigValue label="Subdomain" value={entry.subdomain} />
-                        <ConfigValue label="Tab Title" value={entry.tab_text} />
-                        <ConfigValue label="Tab Icon" value={entry.tab_icon_file_id} />
-                        <ConfigValue label="Theme" value={entry.theme} />
-                        <ConfigValue label="Font" value={entry.font_family} />
-                        <ConfigValue label="Redirect" value={entry.redirect} />
-                        <ConfigValue label="After Login" value={entry.after_login_route} />
-                        <ConfigValue label="After Logout" value={entry.admin_portal_after_logout_route} />
-                        <ConfigValue label="Home Click" value={entry.home_icon_click_route} />
-                        <ConfigValue label="Sign Up" value={entry.allow_signup} />
-                        <ConfigValue label="Google Auth" value={entry.allow_google_auth} />
-                        <ConfigValue label="GitHub Auth" value={entry.allow_github_auth} />
-                        <ConfigValue label="Email OTP" value={entry.allow_email_otp_auth} />
-                        <ConfigValue label="Phone Auth" value={entry.allow_phone_auth} />
-                        <ConfigValue label="User/Pass Auth" value={entry.allow_username_password_auth} />
-                        <ConfigValue label="Privacy Policy" value={entry.privacy_policy_url} />
-                        <ConfigValue label="Terms" value={entry.terms_and_condition_url} />
-                        <ConfigValue label="Play Store" value={entry.play_store_app_link} />
-                        <ConfigValue label="App Store" value={entry.app_store_app_link} />
-                        <ConfigValue label="Windows" value={entry.windows_app_link} />
-                        <ConfigValue label="Mac" value={entry.mac_app_link} />
-                        <ConfigValue label="Hide Institute Name" value={entry.hide_institute_name} />
-                        <ConfigValue label="Logo Width (px)" value={entry.logo_width_px} />
-                        <ConfigValue label="Logo Height (px)" value={entry.logo_height_px} />
-                        <ConfigValue label="Stack Name Below Logo" value={entry.stack_name_below_logo} />
+                        <ConfigValue label={t('routingEntryCard.fields.domain')} value={entry.domain} />
+                        <ConfigValue label={t('routingEntryCard.fields.subdomain')} value={entry.subdomain} />
+                        <ConfigValue label={t('routingEntryCard.fields.tabTitle')} value={entry.tab_text} />
+                        <ConfigValue label={t('routingEntryCard.fields.tabIcon')} value={entry.tab_icon_file_id} />
+                        <ConfigValue label={t('routingEntryCard.fields.theme')} value={entry.theme} />
+                        <ConfigValue label={t('routingEntryCard.fields.font')} value={entry.font_family} />
+                        <ConfigValue label={t('routingEntryCard.fields.redirect')} value={entry.redirect} />
+                        <ConfigValue label={t('routingEntryCard.fields.afterLogin')} value={entry.after_login_route} />
+                        <ConfigValue label={t('routingEntryCard.fields.afterLogout')} value={entry.admin_portal_after_logout_route} />
+                        <ConfigValue label={t('routingEntryCard.fields.homeClick')} value={entry.home_icon_click_route} />
+                        <ConfigValue label={t('routingEntryCard.fields.signUp')} value={entry.allow_signup} />
+                        <ConfigValue label={t('routingEntryCard.fields.googleAuth')} value={entry.allow_google_auth} />
+                        <ConfigValue label={t('routingEntryCard.fields.githubAuth')} value={entry.allow_github_auth} />
+                        <ConfigValue label={t('routingEntryCard.fields.emailOtp')} value={entry.allow_email_otp_auth} />
+                        <ConfigValue label={t('routingEntryCard.fields.phoneAuth')} value={entry.allow_phone_auth} />
+                        <ConfigValue label={t('routingEntryCard.fields.userPassAuth')} value={entry.allow_username_password_auth} />
+                        <ConfigValue label={t('routingEntryCard.fields.privacyPolicy')} value={entry.privacy_policy_url} />
+                        <ConfigValue label={t('routingEntryCard.fields.terms')} value={entry.terms_and_condition_url} />
+                        <ConfigValue label={t('routingEntryCard.fields.playStore')} value={entry.play_store_app_link} />
+                        <ConfigValue label={t('routingEntryCard.fields.appStore')} value={entry.app_store_app_link} />
+                        <ConfigValue label={t('routingEntryCard.fields.windows')} value={entry.windows_app_link} />
+                        <ConfigValue label={t('routingEntryCard.fields.mac')} value={entry.mac_app_link} />
+                        <ConfigValue label={t('routingEntryCard.fields.hideInstituteName')} value={entry.hide_institute_name} />
+                        <ConfigValue label={t('routingEntryCard.fields.logoWidth')} value={entry.logo_width_px} />
+                        <ConfigValue label={t('routingEntryCard.fields.logoHeight')} value={entry.logo_height_px} />
+                        <ConfigValue label={t('routingEntryCard.fields.stackNameBelowLogo')} value={entry.stack_name_below_logo} />
+                        <ConfigValue
+                            label={t('configForm.phone.geoModeLabel')}
+                            value={t(`configForm.phone.geoModes.${savedGeoMode}.label`)}
+                        />
                     </div>
                     {preferredCountryCodes.length > 0 && (
                         <div className="mt-3 border-t border-slate-200 pt-3">
                             <div className="flex items-center gap-2 text-xs">
-                                <span className="text-slate-500">Preferred Countries</span>
+                                <span className="text-slate-500">{t('routingEntryCard.preferredCountries')}</span>
                                 <div className="flex flex-wrap gap-1">
                                     {preferredCountryCodes.map((code, idx) => (
                                         <span
                                             key={code}
                                             className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-mono ${
-                                                idx === 0
+                                                idx === 0 && firstCountryIsDefault
                                                     ? 'border-amber-200 bg-amber-50 text-amber-800'
                                                     : 'border-slate-200 bg-slate-50 text-slate-600'
                                             }`}
                                             title={
-                                                idx === 0
-                                                    ? 'Default selected country'
+                                                idx === 0 && firstCountryIsDefault
+                                                    ? t('routingEntryCard.defaultCountryTooltip')
                                                     : undefined
                                             }
                                         >
-                                            {idx === 0 && (
+                                            {idx === 0 && firstCountryIsDefault && (
                                                 <Star className="size-2.5 fill-amber-500 text-amber-500" />
                                             )}
                                             <span className="text-sm leading-none">

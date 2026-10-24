@@ -127,8 +127,11 @@ public class SSEConnectionManager {
                 // the *Manager tracing aspect into an ERROR Sentry event. Drop this one emitter and
                 // continue; debug-level since a disconnected client is expected, not an error.
                 log.debug("Dropping unsendable SSE connection for user {}: {}", userId, e.toString());
-                iterator.remove();
-                connectionMetadata.remove(emitter);
+                // NOT iterator.remove(): connections is a CopyOnWriteArraySet whose snapshot iterator
+                // throws UnsupportedOperationException on remove — that aborted the whole fan-out and
+                // left the dead emitter registered (user stuck "online"). Removing by value is safe
+                // mid-iteration on a COW set, and removeConnection also clears the user/institute maps.
+                removeConnection(userId, emitter);
             }
         }
     }

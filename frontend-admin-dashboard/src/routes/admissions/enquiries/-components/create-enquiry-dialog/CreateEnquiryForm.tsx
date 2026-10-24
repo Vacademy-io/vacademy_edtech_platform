@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useEnquiryForm } from '../../-hooks/useEnquiryForm';
 import { defaultEnquiryFormValues, EnquiryForm } from '../../-schema/EnquirySchema';
@@ -95,6 +96,12 @@ const convertFieldsToPayload = (fields: any[], instituteId: string) => {
             status: field.status || 'ACTIVE',
             individual_order: field.individual_order ?? field.order ?? index,
             group_internal_order: field.group_internal_order ?? 0,
+            // Per-form required-ness. The nested `isMandatory` below is the shared master row
+            // that every other form using this field reads; this key is the one that belongs to
+            // THIS form, and it is what the Required switch must persist to.
+            is_mandatory: Boolean(
+                typeof field.isRequired === 'boolean' ? field.isRequired : true
+            ),
             custom_field: {
                 ...(customFieldData.id && { id: customFieldData.id }),
                 ...(customFieldData.guestId && { guestId: customFieldData.guestId }),
@@ -152,7 +159,8 @@ export const CreateEnquiryForm: React.FC<CreateEnquiryFormProps> = ({ onSuccess 
         formState: { errors },
     } = form;
 
-    const createCampaign = useCreateAudienceCampaign();
+    const { t: tCreateAudienceCampaign } = useTranslation('audienceManagerUseCreateAudienceCampaign');
+    const createCampaign = useCreateAudienceCampaign(tCreateAudienceCampaign);
 
     // Get sessions from institute store
     const sessions = useMemo(() => {
@@ -476,6 +484,7 @@ export const CreateEnquiryForm: React.FC<CreateEnquiryFormProps> = ({ onSuccess 
                                 });
                             }}
                             placeholder="Select enquiry type"
+                            customInputPlaceholder="Enter enquiry type"
                             initialOptions={[
                                 { value: 'Admission', label: 'Admission' },
                                 { value: 'Mid-term', label: 'Mid-term' },

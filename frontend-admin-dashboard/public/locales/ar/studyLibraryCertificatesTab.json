@@ -1,0 +1,13 @@
+{
+    "selectBatchToSeeCertificateInfo": "اختر دفعة لعرض معلومات الشهادة الخاصة بهذه الدورة.",
+    "certificates": "الشهادات",
+    "issueAndManageCertificates": "أصدر شهادات إتمام هذه الدورة وأدرها.",
+    "certificatesTurnedOff": "الشهادات معطّلة لهذه الدورة",
+    "courseOverridesInstituteDefault": "تتجاوز هذه الدورة الإعداد الافتراضي للمؤسسة. لن يحصل المتعلمون على شهادات حتى يتم تفعيلها.",
+    "instituteDefaultIsOff": "الإعداد الافتراضي للمؤسسة معطّل. لا يزال بإمكانك تفعيل الشهادات لهذه الدورة فقط من أيقونة الإعدادات أعلاه.",
+    "design": "التصميم:",
+    "uploadedForThisCourse": "تم رفعه لهذه الدورة",
+    "instituteDefault": "الإعداد الافتراضي للمؤسسة",
+    "chosenForThisCourse": "— تم اختياره لهذه الدورة.",
+    "inheritedFromInstitute": "— موروث من المؤسسة."
+}

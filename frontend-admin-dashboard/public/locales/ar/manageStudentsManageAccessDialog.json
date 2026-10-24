@@ -1,0 +1,115 @@
+{
+    "dialogTitle": "إدارة صلاحية الوصول للدورة",
+    "unlimitedLabel": "غير محدود",
+    "modes": {
+        "extend": {
+            "label": "التمديد بعدد أيام",
+            "hint": "يضيف أيامًا فوق تاريخ الانتهاء الحالي. بالنسبة للمتعلمين الذين انتهت صلاحيتهم بالفعل، يُحسب التمديد اعتبارًا من اليوم حتى يحصلوا على التمديد الكامل."
+        },
+        "setFromEnrollment": {
+            "label": "تحديد إجمالي الأيام من تاريخ التسجيل",
+            "hint": "يعيد حساب تاريخ الانتهاء كتاريخ التسجيل + عدد الأيام هذا، متجاهلاً القيمة الحالية."
+        },
+        "setDate": {
+            "label": "تحديد تاريخ انتهاء دقيق",
+            "hint": "يستبدل تاريخ الانتهاء بهذا التاريخ المحدد."
+        },
+        "unlimited": {
+            "label": "منح وصول غير محدود",
+            "hint": "يلغي تاريخ الانتهاء تمامًا — يحتفظ المتعلم بالوصول إلى أجل غير مسمى."
+        }
+    },
+    "config": {
+        "changePrompt": "غيّر مدة احتفاظ <strong>{{name}}</strong> بالوصول إلى الدورات المحددة.",
+        "noEnrollments": "لا توجد تسجيلات لإدارتها",
+        "unnamedCourse": "دورة بدون اسم",
+        "expiresExpired": "تنتهي في {{date}} — منتهية",
+        "expiresRemaining_zero": "تنتهي في {{date}} — {{count}} يوم متبقٍ",
+        "expiresRemaining_one": "تنتهي في {{date}} — {{count}} يوم متبقٍ",
+        "expiresRemaining_two": "تنتهي في {{date}} — {{count}} يومان متبقيان",
+        "expiresRemaining_few": "تنتهي في {{date}} — {{count}} أيام متبقية",
+        "expiresRemaining_many": "تنتهي في {{date}} — {{count}} يومًا متبقيًا",
+        "expiresRemaining_other": "تنتهي في {{date}} — {{count}} يوم متبقٍ",
+        "unlimitedAccess": "وصول غير محدود",
+        "whatToChange": "ما الذي تريد تغييره",
+        "daysToAdd": "الأيام المراد إضافتها",
+        "totalDaysOfAccess": "إجمالي أيام الوصول",
+        "negativeHint": "استخدم رقمًا سالبًا لتقصير مدة الوصول.",
+        "newExpiryDate": "تاريخ الانتهاء الجديد",
+        "reasonLabel": "السبب (اختياري)",
+        "reasonPlaceholder": "مثال: تعويض عن إعادة جدولة الدفعة",
+        "reasonHint": "يُحفظ مع التغيير حتى يتمكن أي شخص يراجع السجل من معرفة السبب."
+    },
+    "resultList": {
+        "enrollmentFallback": "تسجيل",
+        "daysDelta_zero": "({{sign}}{{count}} يوم)",
+        "daysDelta_one": "({{sign}}{{count}} يوم)",
+        "daysDelta_two": "({{sign}}{{count}} يومان)",
+        "daysDelta_few": "({{sign}}{{count}} أيام)",
+        "daysDelta_many": "({{sign}}{{count}} يومًا)",
+        "daysDelta_other": "({{sign}}{{count}} يوم)"
+    },
+    "preview": {
+        "willChange_zero": "سيتغير {{count}} تسجيل",
+        "willChange_one": "سيتغير {{count}} تسجيل",
+        "willChange_two": "سيتغير {{count}} تسجيلان",
+        "willChange_few": "سيتغير {{count}} تسجيلات",
+        "willChange_many": "سيتغير {{count}} تسجيلاً",
+        "willChange_other": "سيتغير {{count}} تسجيل",
+        "skippedCount_zero": "تم تخطي {{count}} عنصر",
+        "skippedCount_one": "تم تخطي {{count}} عنصر",
+        "skippedCount_two": "تم تخطي {{count}} عنصرين",
+        "skippedCount_few": "تم تخطي {{count}} عناصر",
+        "skippedCount_many": "تم تخطي {{count}} عنصرًا",
+        "skippedCount_other": "تم تخطي {{count}} عنصر",
+        "notSaved": "لم يتم حفظ أي شيء بعد."
+    },
+    "results": {
+        "updatedCount_zero": "تم تحديث {{count}} عنصر",
+        "updatedCount_one": "تم تحديث {{count}} عنصر",
+        "updatedCount_two": "تم تحديث {{count}} عنصرين",
+        "updatedCount_few": "تم تحديث {{count}} عناصر",
+        "updatedCount_many": "تم تحديث {{count}} عنصرًا",
+        "updatedCount_other": "تم تحديث {{count}} عنصر",
+        "skippedCount_zero": "تم تخطي {{count}} عنصر",
+        "skippedCount_one": "تم تخطي {{count}} عنصر",
+        "skippedCount_two": "تم تخطي {{count}} عنصرين",
+        "skippedCount_few": "تم تخطي {{count}} عناصر",
+        "skippedCount_many": "تم تخطي {{count}} عنصرًا",
+        "skippedCount_other": "تم تخطي {{count}} عنصر",
+        "failedCount_zero": "فشل {{count}} عنصر",
+        "failedCount_one": "فشل {{count}} عنصر",
+        "failedCount_two": "فشل {{count}} عنصران",
+        "failedCount_few": "فشلت {{count}} عناصر",
+        "failedCount_many": "فشل {{count}} عنصرًا",
+        "failedCount_other": "فشل {{count}} عنصر"
+    },
+    "history": {
+        "loading": "جارٍ تحميل السجل…",
+        "empty": "لم يتم تسجيل أي تغييرات على الوصول حتى الآن.",
+        "byActor": " · بواسطة {{name}}",
+        "reasonQuote": "«{{reason}}»"
+    },
+    "footer": {
+        "backToChanges": "العودة إلى التغييرات",
+        "viewHistory": "عرض السجل",
+        "checking": "جارٍ التحقق…",
+        "previewChanges": "معاينة التغييرات",
+        "back": "رجوع",
+        "applying": "جارٍ التطبيق…",
+        "applyChanges": "تطبيق التغييرات",
+        "done": "تم"
+    },
+    "toasts": {
+        "previewFailed": "فشلت المعاينة",
+        "accessChangeFailed": "فشل تغيير الوصول",
+        "accessUpdated_zero": "تم تحديث الوصول لـ {{count}} تسجيل",
+        "accessUpdated_one": "تم تحديث الوصول لـ {{count}} تسجيل",
+        "accessUpdated_two": "تم تحديث الوصول لـ {{count}} تسجيلين",
+        "accessUpdated_few": "تم تحديث الوصول لـ {{count}} تسجيلات",
+        "accessUpdated_many": "تم تحديث الوصول لـ {{count}} تسجيلاً",
+        "accessUpdated_other": "تم تحديث الوصول لـ {{count}} تسجيل",
+        "partialUpdate": "تم تحديث {{updated}}، وفشل {{failed}}.",
+        "noChanges": "لم يتم تغيير أي تسجيل."
+    }
+}

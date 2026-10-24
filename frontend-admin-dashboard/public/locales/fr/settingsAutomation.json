@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Automatisations générales",
+        "subtitle": "Configurez des e-mails et des rappels automatiques — aucune configuration technique nécessaire. Choisissez une fonctionnalité ci-dessous et activez les messages que vous souhaitez."
+    },
+    "sections": {
+        "general": {
+            "label": "Automatisations générales",
+            "tagline": "E-mails automatiques pour chaque partie de votre plateforme."
+        },
+        "parents": {
+            "label": "Parents",
+            "tagline": "Tenez les parents informés — mêmes déclencheurs, mais les e-mails vont à l'adresse du parent."
+        },
+        "admin": {
+            "label": "Admin & Équipe",
+            "tagline": "Alertes opérationnelles et synthèses de rapports envoyées à votre équipe admin / enseignants."
+        }
+    },
+    "card": {
+        "onCount_one": "{{count}} activée",
+        "onCount_many": "{{count}} activées",
+        "onCount_other": "{{count}} activées",
+        "off": "Désactivé",
+        "optionsAvailable_one": "{{count}} option disponible",
+        "optionsAvailable_many": "{{count}} options disponibles",
+        "optionsAvailable_other": "{{count}} options disponibles",
+        "open": "Ouvrir"
+    },
+    "loading": "Chargement de vos automatisations…",
+    "helpCard": {
+        "title": "Besoin de quelque chose de personnalisé ?",
+        "description": "Vous cherchez une automatisation qui n'est pas listée ici, ou souhaitez affiner les destinataires et les conditions ? Vous pouvez utiliser le <1>générateur de workflow avancé</1> pour concevoir exactement ce dont vous avez besoin."
+    }
+}

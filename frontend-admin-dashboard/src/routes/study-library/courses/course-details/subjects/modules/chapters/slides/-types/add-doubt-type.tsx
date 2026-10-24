@@ -5,6 +5,14 @@ export interface DoubtAssignee {
     status: string;
 }
 
+export type DoubtStatusKind = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
+export interface DoubtLearnerStatus {
+    key: string;
+    label: string;
+    kind: DoubtStatusKind;
+}
+
 export interface DoubtType {
     id?: string;
     user_id: string;
@@ -25,6 +33,16 @@ export interface DoubtType {
     html_text: string;
     // Backend only ever emits ACTIVE | RESOLVED | DELETED; non-RESOLVED renders as "Pending" in UI.
     status: 'ACTIVE' | 'RESOLVED' | 'DELETED';
+    /**
+     * Configurable workflow status key (PENDING / RESOLVED built in; IN_PROGRESS etc. from
+     * settings). Response: always set on top-level doubts. Request: set to move the doubt; the
+     * backend derives `status` from the status's kind.
+     */
+    workflow_status?: string;
+    /** Request only: a note for the activity trail (attached to a status change when one happens). */
+    remark?: string;
+    /** Response only: the learner-facing label/kind for the current status. */
+    learner_status?: DoubtLearnerStatus;
     parent_id: string | null;
     parent_level: number;
     doubt_assignee_request_user_ids: string[];

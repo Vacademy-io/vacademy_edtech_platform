@@ -1,0 +1,49 @@
+{
+    "relativeDate": {
+        "unlocksOnDay": "يُفتح في اليوم",
+        "dayOneNote": "اليوم الأول هو أول يوم وصول للمتعلم.",
+        "countedFrom": "يُحتسب اعتبارًا من",
+        "enrollmentDate": "تاريخ التسجيل الخاص بكل متعلم",
+        "sessionStartDate": "تاريخ بدء الدفعة",
+        "opensAt": "يُفتح في الساعة"
+    },
+    "dateBased": {
+        "releaseDate": "تاريخ الإصدار",
+        "sameMomentNote": "نفس اللحظة الزمنية لكل المتعلمين."
+    },
+    "sequential": {
+        "completedAtLeastLabel": "إتمام {{level}} السابق بنسبة لا تقل عن (%)"
+    },
+    "completionBased": {
+        "metric": "المقياس",
+        "averageOfAll": "متوسط الكل",
+        "averageOfLastN": "متوسط آخر N",
+        "howMany": "كم عدد",
+        "threshold": "الحد الأدنى %"
+    },
+    "prerequisite": {
+        "mustFinishFirst": "يجب إنهاؤه أولاً",
+        "selectLevelsPlaceholder": "اختر {{level}}",
+        "completionThreshold": "حد إتمام %"
+    },
+    "heading": "قاعدة الفتح — {{item}}",
+    "alerts": {
+        "dripDisabled": "شروط الإصدار التدريجي مُعطّلة لهذه المؤسسة، لذا لن يتم قفل أي محتوى بما يُحفظ هنا حتى الآن. فعّلها من الإعدادات ← الدورة ← شروط الإصدار التدريجي.",
+        "previewOnly": "تعتمد هذه القاعدة على تقدّم المتعلم، لذا تبقى في وضع المعاينة: يتم الحفظ، لكن المتعلمين لن يتأثروا حتى يتم تفعيل \"تطبيق قواعد التقدّم على المتعلمين\" من الإعدادات ← الدورة ← شروط الإصدار التدريجي. أما قواعد التاريخ واليوم فتُطبَّق فور حفظها.",
+        "courseWideHeading": "توجد بالفعل قاعدة على مستوى الدورة تغطي كل {{level}}",
+        "courseWideFootnote": "القاعدة المحفوظة هنا لها الأولوية بالنسبة لهذا {{level}}."
+    },
+    "unlockWhen": "يُفتح عندما",
+    "untilThen": "حتى ذلك الحين",
+    "lockBehavior": "إظهار البطاقة مع قفل وتاريخ الفتح",
+    "hideBehavior": "إخفاؤها بالكامل",
+    "ruleActive": "القاعدة مفعّلة",
+    "ruleActiveNote": "أوقف التفعيل للاحتفاظ بالقاعدة دون تطبيقها.",
+    "removeRule": "إزالة القاعدة",
+    "editingExistingRule": "جارٍ تعديل قاعدة موجودة",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "confirmRemoveActive": "إزالة قاعدة الفتح على \"{{item}}\"؟ إنها مفعّلة، لذا سيُفتح هذا {{level}} فورًا لكل متعلم.",
+    "confirmRemove": "إزالة قاعدة الفتح على \"{{item}}\"؟"
+}

@@ -1,0 +1,136 @@
+{
+    "pageTitle": "محرك تفاعل جديد",
+    "heading": "محرك جديد",
+    "steps": {
+        "basics": "الأساسيات",
+        "dataPoints": "نقاط البيانات",
+        "channels": "القنوات",
+        "audience": "الجمهور",
+        "cadence": "الوتيرة",
+        "review": "المراجعة"
+    },
+    "basics": {
+        "name": "اسم المحرك",
+        "namePlaceholder": "إعادة إشراك {{learners}} غير النشطين",
+        "objective": "الهدف (باختصار)",
+        "objectivePlaceholder": "إعادة {{learners}} الذين توقفوا عن التفاعل",
+        "brief": "الموجز",
+        "briefHint": "صف الهدف والنبرة وما يجب قوله وما يجب تجنبه وأي روابط. يصبح هذا تعليمات الذكاء الاصطناعي، وكلما كان أدق كان أفضل.",
+        "briefPlaceholder": "أنت تعيد إشراك {{learners}} الذين توقفوا عن الحضور. كن ودودًا ومختصرًا…",
+        "language": "اللغة"
+    },
+    "dataPoints": {
+        "intro": "اختر الإشارات التي يمكن للذكاء الاصطناعي قراءتها عن كل شخص. سياق أكثر يعني رسائل أذكى وفي توقيت أفضل.",
+        "sensitive": "حساس",
+        "alwaysOn": "مفعّل دائمًا",
+        "consent": "أؤكد أن هذه المؤسسة لديها موافقة على استخدام نقاط البيانات الحساسة أعلاه في المراسلة.",
+        "sensitivity": {
+            "LOW": "low",
+            "MEDIUM": "medium",
+            "HIGH": "sensitive · high"
+        }
+    },
+    "channels": {
+        "intro": "ما القنوات التي يمكن لهذا المحرك استخدامها؟ إلى أن تتأهل القناة، تراجع كل رسالة قبل إرسالها. يحتاج واتساب إلى قوالب معتمدة من Meta (تُعد بعد الإنشاء).",
+        "enableAria": "تفعيل {{channel}}",
+        "auto": "إرسال استباقي تلقائي (بعد تأهل هذه القناة؛ وحتى ذلك الحين تراجع كل رسالة وترسلها)",
+        "autoAria": "إرسال استباقي تلقائي على {{channel}}",
+        "autoReply": "الرد التلقائي على الردود (يرد الذكاء الاصطناعي خلال 24 ساعة؛ المال والغضب وطلبات الإيقاف وحالات عدم اليقين تصل إليك دائمًا)",
+        "autoReplyAria": "الرد التلقائي على الردود في {{channel}}",
+        "autoTitle": "Auto-send proactively",
+        "autoHint": "After this channel graduates; until then you review and send each one.",
+        "autoReplyTitle": "Auto-answer replies",
+        "autoReplyHint": "AI replies within 24h; money, anger, requests to stop and uncertainty always come to you.",
+        "callNote": "The engine proposes a call for your team. Calls are never placed from the task inbox.",
+        "whatsappNote": "Needs Meta-approved templates — the AI proposes them after you create the engine."
+    },
+    "audience": {
+        "intro": "من يجب أن يتفاعل معه هذا المحرك؟ اجمع بين {{batches}} و{{audiences}}. تُزال التكرارات تلقائيًا.",
+        "select": "اختر {{audiences}}",
+        "count_zero": "لم يتم اختيار أي مصدر.",
+        "count_one": "تم اختيار مصدر واحد.",
+        "count_two": "تم اختيار مصدرين.",
+        "count_few": "تم اختيار {{count}} مصادر.",
+        "count_many": "تم اختيار {{count}} مصدرًا.",
+        "count_other": "تم اختيار {{count}} مصدر.",
+        "audiencesHint": "CRM audience campaigns (first 100)."
+    },
+    "cadence": {
+        "recheck": "إعادة فحص كل شخص كل (ساعات)",
+        "recheckHint": "حد أدنى للأمان. يقرر الذكاء الاصطناعي التوقيت الفعلي؛ وهذا يحد من عدد مرات عودته إلى الشخص.",
+        "quietHours": "ساعات الهدوء",
+        "quietHint": "لا رسائل بين هذه الساعات، وفق المنطقة الزمنية أدناه. يظل الحد الأدنى لساعات الهدوء الخاص بالمؤسسة مطبقًا أيضًا.",
+        "from": "من",
+        "to": "إلى",
+        "timezone": "المنطقة الزمنية",
+        "legendQuiet": "Quiet (no messages)",
+        "legendOpen": "Can send"
+    },
+    "autonomy": {
+        "title": "الاستقلالية",
+        "hint": "إعدادات تنطبق فقط على القنوات التي ضبطتها على الإرسال التلقائي.",
+        "firstN": "التأهل بعد N من الإرسالات المعتمدة",
+        "firstNPlaceholder": "الافتراضي (5)",
+        "firstNHint": "تبقى كل قناة إرسال تلقائي في وضع المساعد إلى أن تعتمد هذا العدد من مسوداتها على تلك القناة، ثم تبدأ الإرسال بنفسها. اتركه فارغًا للقيمة الافتراضية.",
+        "holdout": "نسبة المجموعة الضابطة %",
+        "holdoutHint": "جزء من الجمهور (0–100%) يُسجَّل ولا يُراسَل أبدًا، لتقيس الأثر الحقيقي للمحرك بالمقارنة معه."
+    },
+    "review": {
+        "name": "الاسم",
+        "objective": "الهدف",
+        "language": "اللغة",
+        "dataPoints": "نقاط البيانات",
+        "dataPointsNone": "المفعّلة دائمًا فقط",
+        "channels": "القنوات",
+        "audienceSources": "مصادر الجمهور",
+        "cadence": "الوتيرة",
+        "cadenceValue": "كل {{hours}} ساعة",
+        "quietHours": "ساعات الهدوء",
+        "autoSendChannels": "قنوات الإرسال التلقائي",
+        "autoSendNone": "لا شيء (مساعد فقط)",
+        "holdout": "المجموعة الضابطة",
+        "draftNote": "يبدأ المحرك كمسودة. بعد إنشائه، سجّل الجمهور و(لواتساب) أعدّ القوالب، ثم فعّله.",
+        "consentGiven": "consent given",
+        "whatNext": "What happens next",
+        "next": {
+            "draft": {
+                "title": "Starts as a Draft",
+                "text": "Nothing is sent yet."
+            },
+            "enroll": {
+                "title": "Enroll the audience",
+                "text": "Use “Resolve audience” on the engine page to add the people from your sources."
+            },
+            "templates": {
+                "title": "Approve WhatsApp templates",
+                "text": "The AI proposes them; you approve and submit; Meta reviews."
+            },
+            "activate": {
+                "title": "Dry run, then activate",
+                "text": "See simulated drafts in the task inbox before anything goes out."
+            }
+        }
+    },
+    "actions": {
+        "back": "رجوع",
+        "continue": "متابعة",
+        "create": "إنشاء المحرك",
+        "creating": "جارٍ الإنشاء…",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "nameAndBrief": "يحتاج المحرك إلى اسم وموجز."
+    },
+    "subtitle": "Six short steps. You can review everything before it is created — nothing is sent until you activate it.",
+    "stepHints": {
+        "basics": "Name, brief, language",
+        "dataPoints": "What the AI may read",
+        "channels": "Where it can message",
+        "audience": "Who it engages",
+        "cadence": "Timing & autonomy",
+        "review": "Check and create"
+    },
+    "footer": {
+        "step": "Step {{n}} of {{total}} · {{label}}"
+    }
+}

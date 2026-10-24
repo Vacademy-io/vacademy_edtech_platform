@@ -1,0 +1,63 @@
+{
+    "form": {
+        "studentRequired": "الطالب مطلوب",
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "endDateRequired": "تاريخ الانتهاء مطلوب",
+        "dateRangeTooLong": "يجب أن يكون الفرق بين تاريخ البدء وتاريخ الانتهاء أقل من شهر واحد.",
+        "selectStudent": "اختر الطالب",
+        "searchStudent": "ابحث عن طالب...",
+        "noStudentsFound": "لم يتم العثور على طلاب",
+        "errorsHeading": "يرجى تصحيح الأخطاء التالية:",
+        "batchRequired": "اختر دفعة واحدة على الأقل",
+        "loadingStudents": "جارٍ التحميل…",
+        "learnerHint": "{{count}} متاح",
+        "pickBatchFirst": "اختر {{batch}} أولًا."
+    },
+    "actions": {
+        "generateReport": "إنشاء التقرير",
+        "exporting": "جارٍ التصدير…",
+        "exportPdf": "تصدير PDF",
+        "exportCsv": "تصدير CSV"
+    },
+    "toast": {
+        "exportSuccess": "تم تصدير تقرير المتعلم",
+        "exportFailed": "فشل تصدير PDF",
+        "csvExportSuccess": "تم تصدير CSV",
+        "csvExportFailed": "فشل تصدير CSV",
+        "learnerNotInBatches": "هذا المتعلم غير مسجل في أي من الدفعات المختارة."
+    },
+    "report": {
+        "duration": "المدة:",
+        "courseCompletedLabel": "{{term}} مكتمل",
+        "dailyTimeSpentAvg": "متوسط الوقت اليومي المستغرق",
+        "concentrationScoreAvg": "متوسط درجة التركيز",
+        "dailyLearningPerformance": "أداء التعلم اليومي",
+        "trackDailyProgress": "تتبّع التقدم اليومي وأنماط النشاط",
+        "activitySummary": "ملخص النشاط",
+        "learningTimeline": "الجدول الزمني للتعلم",
+        "dateLabel": "التاريخ:",
+        "batchCount": "{{term}} · تم اختيار {{count}}",
+        "batchLoadFailed": "تعذر تحميل تقرير {{name}}.",
+        "loadFailed": "حدث خطأ أثناء تحميل التقرير. يرجى المحاولة مرة أخرى."
+    },
+    "csv": {
+        "fileStem": "learner-timeline",
+        "summaryTitle": "الملخص",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
+        "learnerCourseCompleted": "اكتمال {{term}} (%)",
+        "batchCourseCompleted": "اكتمال {{term}} لـ {{batch}} (%)",
+        "learnerDailyTimeMin": "متوسط الوقت اليومي (دقيقة)",
+        "batchDailyTimeMin": "متوسط الوقت اليومي لـ {{batch}} (دقيقة)",
+        "learnerConcentration": "درجة التركيز (%)",
+        "batchConcentration": "درجة تركيز {{batch}} (%)",
+        "dailyTitle": "الوقت اليومي",
+        "date": "التاريخ",
+        "learnerTimeMin": "الوقت المستغرق (دقيقة)",
+        "batchAvgTimeMin": "متوسط وقت {{batch}} (دقيقة)",
+        "slidesTitle": "الجدول الزمني للتعلم",
+        "slide": "{{term}} الدراسة",
+        "concentration": "درجة التركيز (%)",
+        "timeSpentMin": "الوقت المستغرق (دقيقة)"
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है…",
+    "toast": {
+        "updated": "शिफ्ट अपडेट हुई",
+        "created": "शिफ्ट बनाई गई"
+    },
+    "errors": {
+        "save": "शिफ्ट सहेजी नहीं जा सकी।"
+    },
+    "dialog": {
+        "editHeading": "शिफ्ट संपादित करें",
+        "addHeading": "शिफ्ट जोड़ें",
+        "saveChanges": "बदलाव सहेजें",
+        "createShift": "शिफ्ट बनाएं"
+    },
+    "fields": {
+        "name": "नाम",
+        "namePlaceholder": "सामान्य शिफ्ट",
+        "code": "कोड",
+        "codePlaceholder": "GEN",
+        "codeDescription": "बड़े अक्षर, बिना स्पेस — कर्मचारियों को थोक में असाइन करते समय उपयोग होता है।",
+        "startTime": "शुरुआत का समय",
+        "endTime": "समाप्ति का समय",
+        "breakMinutes": "ब्रेक (मिनट)",
+        "breakDescription": "काम किए गए घंटों से घटाया जाता है।",
+        "gracePeriodMinutes": "छूट अवधि (मिनट)",
+        "gracePeriodDescription": "दिन को देर से गिनने से पहले कोई कितनी देर से चेक-इन कर सकता है।",
+        "minHoursFullDay": "पूरे दिन के लिए न्यूनतम घंटे",
+        "minHoursHalfDay": "आधे दिन के लिए न्यूनतम घंटे"
+    },
+    "switches": {
+        "nightShiftLabel": "रात्रि शिफ्ट",
+        "nightShiftDescription": "यह शिफ्ट आधी रात के पार जाती है — 00:00 के बाद चेक-आउट फिर भी उसी दिन का माना जाता है जिस दिन यह शुरू हुई थी।",
+        "defaultShiftLabel": "डिफ़ॉल्ट शिफ्ट",
+        "defaultShiftDescription": "जिन कर्मचारियों को कोई शिफ्ट नहीं सौंपी गई है उन्हें इसी शिफ्ट में माना जाता है।"
+    },
+    "validation": {
+        "nameRequired": "शिफ्ट को एक नाम दें",
+        "codeMinLength": "कोड कम से कम 2 अक्षरों का होना चाहिए",
+        "codeFormat": "केवल बड़े अक्षर, अंक और अंडरस्कोर — कोई स्पेस नहीं",
+        "startTimeRequired": "शुरुआत का समय आवश्यक है",
+        "endTimeRequired": "समाप्ति का समय आवश्यक है",
+        "wholeMinutesOnly": "केवल पूर्ण मिनट",
+        "hoursExampleFull": "घंटे, जैसे 8 या 7.5",
+        "hoursExampleHalf": "घंटे, जैसे 4"
+    }
+}

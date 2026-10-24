@@ -1,13 +1,16 @@
 package vacademy.io.admin_core_service.features.packages.repository;
 
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vacademy.io.admin_core_service.features.packages.dto.PackageDetailProjection;
 import vacademy.io.admin_core_service.features.packages.dto.PackageDetailV2Projection;
+import vacademy.io.admin_core_service.features.packages.dto.PackagePopularityProjection;
 import vacademy.io.common.institute.entity.LevelProjection;
 import vacademy.io.common.institute.entity.PackageEntity;
 import vacademy.io.common.institute.entity.session.PackageSession;
@@ -19,6 +22,18 @@ import java.util.Optional;
 
 @Repository
 public interface PackageRepository extends JpaRepository<PackageEntity, String> {
+
+    // Read time per package session (ps_read_time). Most queries here compute it with
+    // LEFT JOIN LATERAL (... WHERE cpsm.package_session_id = ps.id) and per-slide question
+    // counts, so only the sessions being returned are summed. They used to aggregate every
+    // slide on the platform (~55k) on every call and keep the few rows they needed: the
+    // learner course lists took 130-180 ms per call for 2-3 courses, now 5-11 ms (verified
+    // identical results across 13 queries on 2026-10-23).
+    //
+    // The two getCatalogPackageDetail admin listings keep the platform-wide aggregate on
+    // purpose: they return hundreds of sessions (380 for one institute), where one
+    // aggregate beats per-session lookups (1.9 s vs 5-7 s measured).
+
 
     // Get all distinct sessions of an institute_id
     @Query(value = "SELECT DISTINCT s.* FROM session s " +
@@ -160,6 +175,80 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             """, nativeQuery = true)
     List<String> findAllDistinctTagsByInstituteId(@Param("instituteId") String instituteId);
 
+    /**
+     * Tags of every non-deleted course of the institute, published to the catalogue or not.
+     * The admin Courses filter and the course form's tag picker read this: an institute whose
+     * courses are all unpublished got an empty list from the catalogue-only query above, so
+     * tags it had set on its courses could never be filtered on or re-picked.
+     */
+    @Query(value = """
+            SELECT DISTINCT TRIM(t.tag)
+            FROM package_institute pi
+            JOIN package p ON pi.package_id = p.id
+            CROSS JOIN LATERAL unnest(string_to_array(p.comma_separated_tags, ',')) AS t(tag)
+            WHERE pi.institute_id = :instituteId
+            AND p.status != 'DELETED'
+            AND p.comma_separated_tags IS NOT NULL
+            AND p.comma_separated_tags != ''
+            AND TRIM(t.tag) != ''
+            ORDER BY 1 ASC
+            """, nativeQuery = true)
+    List<String> findAllDistinctAdminTagsByInstituteId(@Param("instituteId") String instituteId);
+
+    /**
+     * Distinct learners actively enrolled in each catalogue course of ONE institute: the input
+     * of the public popularity ranks ({@code CatalogPopularityService}, cached 10 minutes per
+     * institute and read on the replica). Courses nobody is enrolled in return no row.
+     *
+     * <p>Every part of the shape is load-bearing:
+     * <ul>
+     *   <li>Scoped by institute through EXISTS on package_institute, so the planner walks only
+     *       this institute's courses and their batches into the enrolment table. Never drop the
+     *       scope: an unscoped aggregate over student_session_institute_group_mapping is exactly
+     *       what must not run here (the production primary was OOM-killed once by an unscoped
+     *       analytics query). EXISTS rather than a join, so a course mapped to the institute more
+     *       than once (one package_institute row per group) is not counted twice.</li>
+     *   <li>{@code m.status = 'ACTIVE'} is a LITERAL on purpose: every package_session- or
+     *       institute-led index on the enrolment table is partial WHERE status = 'ACTIVE', and a
+     *       bound parameter or an IN list cannot use a partial index.</li>
+     *   <li>Same "member" definition as
+     *       {@code StudentSessionInstituteGroupMappingRepository#existsActiveMembership}:
+     *       ABANDONED_CART and PAYMENT_FAILED rows are ACTIVE too but grant nothing. Invited and
+     *       pending-approval rows sit on the course's INVITED batch, which the
+     *       {@code ps.status IN ('ACTIVE', 'HIDDEN')} join already leaves out.</li>
+     *   <li>COUNT(DISTINCT user_id) per course, not per batch: a learner in two batches of one
+     *       course counts once.</li>
+     *   <li>Same course gate as the public v2 search (ACTIVE and published to the catalogue), so
+     *       the endpoint never names a course id the catalogue does not already show.</li>
+     * </ul>
+     * The statement timeout bounds the worst case on the small replica pool. Keep apostrophes and
+     * semicolons out of any SQL comment added inside the string (see RepositoryQueryStringsTest).
+     */
+    @QueryHints(@QueryHint(name = "jakarta.persistence.query.timeout", value = "10000"))
+    @Query(value = """
+            SELECT ps.package_id AS packageId,
+                   COUNT(DISTINCT m.user_id) AS learnerCount
+            FROM package p
+            JOIN package_session ps
+                ON ps.package_id = p.id
+                AND ps.status IN ('ACTIVE', 'HIDDEN')
+            JOIN student_session_institute_group_mapping m
+                ON m.package_session_id = ps.id
+                AND m.status = 'ACTIVE'
+                AND m.user_id IS NOT NULL
+                AND (m.type IS NULL OR m.type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
+            WHERE p.status = 'ACTIVE'
+                AND p.is_course_published_to_catalaouge = true
+                AND EXISTS (
+                    SELECT 1
+                    FROM package_institute pi
+                    WHERE pi.package_id = p.id
+                        AND pi.institute_id = :instituteId
+                )
+            GROUP BY ps.package_id
+            """, nativeQuery = true)
+    List<PackagePopularityProjection> countActiveLearnersPerCatalogPackage(@Param("instituteId") String instituteId);
+
     @Query(value = "SELECT DISTINCT p.* FROM package p " +
             "JOIN package_institute pi ON p.id = pi.package_id " +
             "LEFT JOIN package_session ps_level_filter ON p.id = ps_level_filter.package_id AND ps_level_filter.status != 'DELETED' "
@@ -278,9 +367,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 ON fspm.package_session_id = ps.id AND fspm.suborg_id IS NULL
                 AND (:#{#facultySubjectSessionStatus == null || #facultySubjectSessionStatus.isEmpty()} = true OR fspm.status IN (:facultySubjectSessionStatus))
 
-            LEFT JOIN (
+            LEFT JOIN LATERAL (
                 SELECT
-                    cpsm.package_session_id,
                     SUM(
                         CASE
                             WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -291,34 +379,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                     ELSE 10
                                 END
                             WHEN s.source_type = 'QUESTION' THEN 5
-                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                            WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                SELECT COUNT(*) FROM assignment_slide_question asq
+                                WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                            ), 0) * 3
+                            WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                SELECT COUNT(*) FROM quiz_slide_question qsq
+                                WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                            ), 0) * 2
                             ELSE 0
                         END
                     ) AS total_read_time_minutes
-                FROM slide s
+                FROM chapter_package_session_mapping cpsm
+                JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                JOIN slide s ON s.id = cs.slide_id
                 LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                 LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN (
-                    SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM assignment_slide_question
-                    WHERE status IN (:assignmentQuestionStatusList)
-                    GROUP BY assignment_slide_id
-                ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                LEFT JOIN (
-                    SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM quiz_slide_question
-                    WHERE status IN (:questionStatusList)
-                    GROUP BY quiz_slide_id
-                ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                WHERE
-                    s.status IN (:slideStatusList)
+                WHERE cpsm.package_session_id = ps.id
+                    AND s.status IN (:slideStatusList)
                     AND cs.status IN (:slideStatusList)
                     AND cpsm.status IN (:chapterPackageStatusList)
-                GROUP BY cpsm.package_session_id
-            ) ps_read_time ON ps.id = ps_read_time.package_session_id
+            ) ps_read_time ON TRUE
 
             WHERE
                 (:instituteId IS NULL OR pi.institute_id = :instituteId)
@@ -497,46 +578,39 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 ON fspm.package_session_id = ps.id AND fspm.suborg_id IS NULL
                 AND (:#{#facultySubjectSessionStatus == null || #facultySubjectSessionStatus.isEmpty()} = true OR fspm.status IN (:facultySubjectSessionStatus))
 
-            LEFT JOIN (
-                SELECT cpsm.package_session_id,
-                       SUM(
-                           CASE
-                               WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(v.published_video_length, 0) / 60000.0, 2)
-                               WHEN s.source_type = 'DOCUMENT' THEN
-                                   CASE
-                                       WHEN d.type = 'PDF' THEN LEAST(COALESCE(d.published_document_total_pages, d.total_pages) * 3, 120)
-                                       WHEN d.type = 'PRESENTATION' THEN LEAST(COALESCE(d.published_document_total_pages, d.total_pages) * 2, 60)
-                                       ELSE 10
-                                   END
-                               WHEN s.source_type = 'QUESTION' THEN 5
-                               WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                               WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
-                               ELSE 0
-                           END
-                       ) AS total_read_time_minutes
-                FROM slide s
-                JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                LEFT JOIN video v ON v.id = s.source_id AND s.source_type = 'VIDEO'
-                LEFT JOIN document_slide d ON d.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN (
-                    SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM assignment_slide_question
-                    WHERE status IN (:assignmentQuestionStatusList)
-                    GROUP BY assignment_slide_id
-                ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                LEFT JOIN (
-                    SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM quiz_slide_question
-                    WHERE status IN (:questionStatusList)
-                    GROUP BY quiz_slide_id
-                ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                WHERE
-                    s.status IN (:slideStatusList)
+            LEFT JOIN LATERAL (
+                SELECT
+                    SUM(
+                        CASE
+                            WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
+                            WHEN s.source_type = 'DOCUMENT' THEN
+                                CASE
+                                    WHEN ds.type = 'PDF' THEN LEAST(COALESCE(ds.published_document_total_pages, ds.total_pages) * 3, 120)
+                                    WHEN ds.type = 'PRESENTATION' THEN LEAST(COALESCE(ds.published_document_total_pages, ds.total_pages) * 2, 60)
+                                    ELSE 10
+                                END
+                            WHEN s.source_type = 'QUESTION' THEN 5
+                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                SELECT COUNT(*) FROM assignment_slide_question asq
+                                WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                            ), 0) * 3
+                            WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                SELECT COUNT(*) FROM quiz_slide_question qsq
+                                WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                            ), 0) * 2
+                            ELSE 0
+                        END
+                    ) AS total_read_time_minutes
+                FROM chapter_package_session_mapping cpsm
+                JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                JOIN slide s ON s.id = cs.slide_id
+                LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
+                LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
+                WHERE cpsm.package_session_id = ps.id
+                    AND s.status IN (:slideStatusList)
                     AND cs.status IN (:slideStatusList)
                     AND cpsm.status IN (:chapterPackageStatusList)
-                GROUP BY cpsm.package_session_id
-            ) ps_read_time ON ps.id = ps_read_time.package_session_id
+            ) ps_read_time ON TRUE
 
             WHERE
                 (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
@@ -681,9 +755,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                         :#{#facultySubjectSessionStatus == null || #facultySubjectSessionStatus.isEmpty()} = true
                         OR fspm.status IN (:facultySubjectSessionStatus)
                     )
-                LEFT JOIN (
+                LEFT JOIN LATERAL (
                     SELECT
-                        cpsm.package_session_id,
                         SUM(
                             CASE
                                 WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -694,34 +767,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                         ELSE 10
                                     END
                                 WHEN s.source_type = 'QUESTION' THEN 5
-                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                                WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                    SELECT COUNT(*) FROM assignment_slide_question asq
+                                    WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                                ), 0) * 3
+                                WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                    SELECT COUNT(*) FROM quiz_slide_question qsq
+                                    WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                                ), 0) * 2
                                 ELSE 0
                             END
                         ) AS total_read_time_minutes
-                    FROM slide s
+                    FROM chapter_package_session_mapping cpsm
+                    JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                    JOIN slide s ON s.id = cs.slide_id
                     LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                     LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                    LEFT JOIN (
-                        SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM assignment_slide_question
-                        WHERE status IN (:assignmentQuestionStatusList)
-                        GROUP BY assignment_slide_id
-                    ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                    LEFT JOIN (
-                        SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM quiz_slide_question
-                        WHERE status IN (:questionStatusList)
-                        GROUP BY quiz_slide_id
-                    ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                    JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                    JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                    WHERE
-                        s.status IN (:slideStatusList)
+                    WHERE cpsm.package_session_id = ps.id
+                        AND s.status IN (:slideStatusList)
                         AND cs.status IN (:slideStatusList)
                         AND cpsm.status IN (:chapterPackageStatusList)
-                    GROUP BY cpsm.package_session_id
-                ) ps_read_time ON ps.id = ps_read_time.package_session_id
+                ) ps_read_time ON TRUE
                 WHERE
                     p.is_course_published_to_catalaouge = true
                     AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
@@ -956,6 +1022,14 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     )
                 )
                 AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
+                AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
+                AND (
+                    :#{#tags == null || #tags.isEmpty()} = true
+                    OR EXISTS (
+                        SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
+                        WHERE tag ILIKE ANY (array[:#{#tags}])
+                    )
+                )
 
             GROUP BY
                 p.id, p.package_name, p.thumbnail_file_id, p.is_course_published_to_catalaouge,
@@ -1013,6 +1087,14 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 )
                             )
                             AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
+                            AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
+                            AND (
+                                :#{#tags == null || #tags.isEmpty()} = true
+                                OR EXISTS (
+                                    SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
+                                    WHERE tag ILIKE ANY (array[:#{#tags}])
+                                )
+                            )
                         """, nativeQuery = true)
     Page<PackageDetailProjection> getCatalogPackageDetail(
             @Param("name") String name,
@@ -1032,6 +1114,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("packageSessionIds") List<String> packageSessionIds,
             @Param("packageSessionFilter") String packageSessionFilter,
             @Param("sessionIds") List<String> sessionIds,
+            @Param("levelIds") List<String> levelIds,
+            @Param("tags") List<String> tags,
             Pageable pageable);
 
     @Query(value = """
@@ -1423,9 +1507,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                         :#{#facultyPackageSessionStatus == null || #facultyPackageSessionStatus.isEmpty()} = true
                         OR fspm.status IN (:facultyPackageSessionStatus)
                     )
-                LEFT JOIN (
+                LEFT JOIN LATERAL (
                     SELECT
-                        cpsm.package_session_id,
                         SUM(
                             CASE
                                 WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -1436,34 +1519,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                         ELSE 10
                                     END
                                 WHEN s.source_type = 'QUESTION' THEN 5
-                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                                WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                    SELECT COUNT(*) FROM assignment_slide_question asq
+                                    WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                                ), 0) * 3
+                                WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                    SELECT COUNT(*) FROM quiz_slide_question qsq
+                                    WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                                ), 0) * 2
                                 ELSE 0
                             END
                         ) AS total_read_time_minutes
-                    FROM slide s
+                    FROM chapter_package_session_mapping cpsm
+                    JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                    JOIN slide s ON s.id = cs.slide_id
                     LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                     LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                    LEFT JOIN (
-                        SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM assignment_slide_question
-                        WHERE status IN (:assignmentQuestionStatusList)
-                        GROUP BY assignment_slide_id
-                    ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                    LEFT JOIN (
-                        SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM quiz_slide_question
-                        WHERE status IN (:questionStatusList)
-                        GROUP BY quiz_slide_id
-                    ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                    JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                    JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                    WHERE
-                        s.status IN (:slideStatusList)
+                    WHERE cpsm.package_session_id = ps.id
+                        AND s.status IN (:slideStatusList)
                         AND cs.status IN (:slideStatusList)
                         AND cpsm.status IN (:chapterPackageStatusList)
-                    GROUP BY cpsm.package_session_id
-                ) ps_read_time ON ps.id = ps_read_time.package_session_id
+                ) ps_read_time ON TRUE
                 WHERE
                     p.is_course_published_to_catalaouge = true
                     AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
@@ -1840,9 +1916,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     OR fspm.status IN (:facultySubjectSessionStatus)
                 )
 
-            LEFT JOIN (
+            LEFT JOIN LATERAL (
                 SELECT
-                    cpsm.package_session_id,
                     SUM(
                         CASE
                             WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -1853,34 +1928,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                     ELSE 10
                                 END
                             WHEN s.source_type = 'QUESTION' THEN 5
-                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                            WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                SELECT COUNT(*) FROM assignment_slide_question asq
+                                WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                            ), 0) * 3
+                            WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                SELECT COUNT(*) FROM quiz_slide_question qsq
+                                WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                            ), 0) * 2
                             ELSE 0
                         END
                     ) AS total_read_time_minutes
-                FROM slide s
+                FROM chapter_package_session_mapping cpsm
+                JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                JOIN slide s ON s.id = cs.slide_id
                 LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                 LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN (
-                    SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM assignment_slide_question
-                    WHERE status IN (:assignmentQuestionStatusList)
-                    GROUP BY assignment_slide_id
-                ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                LEFT JOIN (
-                    SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM quiz_slide_question
-                    WHERE status IN (:questionStatusList)
-                    GROUP BY quiz_slide_id
-                ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                WHERE
-                    s.status IN (:slideStatusList)
+                WHERE cpsm.package_session_id = ps.id
+                    AND s.status IN (:slideStatusList)
                     AND cs.status IN (:slideStatusList)
                     AND cpsm.status IN (:chapterPackageStatusList)
-                GROUP BY cpsm.package_session_id
-            ) ps_read_time ON ps.id = ps_read_time.package_session_id
+            ) ps_read_time ON TRUE
 
             WHERE
                 (:instituteId IS NULL OR pi.institute_id = :instituteId)
@@ -2164,9 +2232,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
               ON fspm.package_session_id = ps.id AND fspm.suborg_id IS NULL
               AND (:#{#facultySubjectSessionStatus == null || #facultySubjectSessionStatus.isEmpty()} = true OR fspm.status IN (:facultySubjectSessionStatus))
 
-            LEFT JOIN (
+            LEFT JOIN LATERAL (
                 SELECT
-                    cpsm.package_session_id,
                     SUM(
                         CASE
                             WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -2177,34 +2244,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                     ELSE 10
                                 END
                             WHEN s.source_type = 'QUESTION' THEN 5
-                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                            WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                SELECT COUNT(*) FROM assignment_slide_question asq
+                                WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                            ), 0) * 3
+                            WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                SELECT COUNT(*) FROM quiz_slide_question qsq
+                                WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                            ), 0) * 2
                             ELSE 0
                         END
                     ) AS total_read_time_minutes
-                FROM slide s
+                FROM chapter_package_session_mapping cpsm
+                JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                JOIN slide s ON s.id = cs.slide_id
                 LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                 LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN (
-                    SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM assignment_slide_question
-                    WHERE status IN (:assignmentQuestionStatusList)
-                    GROUP BY assignment_slide_id
-                ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                LEFT JOIN (
-                    SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM quiz_slide_question
-                    WHERE status IN (:questionStatusList)
-                    GROUP BY quiz_slide_id
-                ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                WHERE
-                    s.status IN (:slideStatusList)
+                WHERE cpsm.package_session_id = ps.id
+                    AND s.status IN (:slideStatusList)
                     AND cs.status IN (:slideStatusList)
                     AND cpsm.status IN (:chapterPackageStatusList)
-                GROUP BY cpsm.package_session_id
-            ) ps_read_time ON ps.id = ps_read_time.package_session_id
+            ) ps_read_time ON TRUE
 
             WHERE
               (CAST(:instituteId AS text) IS NULL OR pi.institute_id = :instituteId)
@@ -2344,9 +2404,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 ON fspm.package_session_id = ps.id AND fspm.suborg_id IS NULL
                 AND (:#{#facultySubjectSessionStatus == null || #facultySubjectSessionStatus.isEmpty()} = true OR fspm.status IN (:facultySubjectSessionStatus))
 
-            LEFT JOIN (
+            LEFT JOIN LATERAL (
                 SELECT
-                    cpsm.package_session_id,
                     SUM(
                         CASE
                             WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -2357,39 +2416,33 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                     ELSE 10
                                 END
                             WHEN s.source_type = 'QUESTION' THEN 5
-                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                            WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                SELECT COUNT(*) FROM assignment_slide_question asq
+                                WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                            ), 0) * 3
+                            WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                SELECT COUNT(*) FROM quiz_slide_question qsq
+                                WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                            ), 0) * 2
                             ELSE 0
                         END
                     ) AS total_read_time_minutes
-                FROM slide s
+                FROM chapter_package_session_mapping cpsm
+                JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                JOIN slide s ON s.id = cs.slide_id
                 LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                 LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN (
-                    SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM assignment_slide_question
-                    WHERE status IN (:assignmentQuestionStatusList)
-                    GROUP BY assignment_slide_id
-                ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                LEFT JOIN (
-                    SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM quiz_slide_question
-                    WHERE status IN (:questionStatusList)
-                    GROUP BY quiz_slide_id
-                ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                WHERE
-                    s.status IN (:slideStatusList)
+                WHERE cpsm.package_session_id = ps.id
+                    AND s.status IN (:slideStatusList)
                     AND cs.status IN (:slideStatusList)
                     AND cpsm.status IN (:chapterPackageStatusList)
-                GROUP BY cpsm.package_session_id
-            ) ps_read_time ON ps.id = ps_read_time.package_session_id
+            ) ps_read_time ON TRUE
 
             WHERE
                 p.is_course_published_to_catalaouge = true
                 AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                 AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
+                AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                 AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                 AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
                 AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
@@ -2433,6 +2486,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                             p.is_course_published_to_catalaouge = true
                             AND (:instituteId IS NULL OR pi.institute_id = :instituteId)
                             AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
+                            AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                             AND (:#{#packageStatus == null || #packageStatus.isEmpty()} = true OR p.status IN (:packageStatus))
                     AND (:#{#packageTypes == null || #packageTypes.isEmpty()} = true OR p.package_type IN (:packageTypes))
                             AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
@@ -2462,6 +2516,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("userId") String userId,
             @Param("instituteId") String instituteId,
             @Param("levelIds") List<String> levelIds,
+            @Param("sessionIds") List<String> sessionIds,
             @Param("packageStatus") List<String> packageStatus,
             @Param("packageTypes") List<String> packageTypes,
             @Param("packageSessionStatus") List<String> packageSessionStatus,
@@ -2540,9 +2595,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                 ON fspm.package_session_id = ps.id AND fspm.suborg_id IS NULL
                 AND (:#{#facultySubjectSessionStatus == null || #facultySubjectSessionStatus.isEmpty()} = true OR fspm.status IN (:facultySubjectSessionStatus))
 
-            LEFT JOIN (
+            LEFT JOIN LATERAL (
                 SELECT
-                    cpsm.package_session_id,
                     SUM(
                         CASE
                             WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -2553,34 +2607,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                     ELSE 10
                                 END
                             WHEN s.source_type = 'QUESTION' THEN 5
-                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                            WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                            WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                SELECT COUNT(*) FROM assignment_slide_question asq
+                                WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                            ), 0) * 3
+                            WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                SELECT COUNT(*) FROM quiz_slide_question qsq
+                                WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                            ), 0) * 2
                             ELSE 0
                         END
                     ) AS total_read_time_minutes
-                FROM slide s
+                FROM chapter_package_session_mapping cpsm
+                JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                JOIN slide s ON s.id = cs.slide_id
                 LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                 LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                LEFT JOIN (
-                    SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM assignment_slide_question
-                    WHERE status IN (:assignmentQuestionStatusList)
-                    GROUP BY assignment_slide_id
-                ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                LEFT JOIN (
-                    SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                    FROM quiz_slide_question
-                    WHERE status IN (:questionStatusList)
-                    GROUP BY quiz_slide_id
-                ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                WHERE
-                    s.status IN (:slideStatusList)
+                WHERE cpsm.package_session_id = ps.id
+                    AND s.status IN (:slideStatusList)
                     AND cs.status IN (:slideStatusList)
                     AND cpsm.status IN (:chapterPackageStatusList)
-                GROUP BY cpsm.package_session_id
-            ) ps_read_time ON ps.id = ps_read_time.package_session_id
+            ) ps_read_time ON TRUE
 
             WHERE
                 p.is_course_published_to_catalaouge = true
@@ -3018,6 +3065,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     p.course_depth AS courseDepth,
                     p.course_html_description AS courseHtmlDescriptionHtml,
                         p.package_type AS packageType,
+                    p.created_at AS createdAt,
                     ps.id AS packageSessionId,
                     l.id AS levelId,
                     l.level_name AS levelName,
@@ -3054,7 +3102,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     ) AS facultyUserIds,
                     ps.available_slots AS availableSlots,
                     ps.max_seats AS maxSeats,
-                    p.created_by_user_id AS createdByUserId
+                    p.created_by_user_id AS createdByUserId,
+                    CASE WHEN p.course_setting LIKE '%COMING_SOON%' THEN p.course_setting END AS comingSoonSettingJson
 
                 FROM package p
                 JOIN package_session ps ON ps.package_id = p.id
@@ -3073,9 +3122,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     ON ps.id = payment_info.package_session_id AND payment_info.row_num = 1
 
                 -- Read time subquery
-                LEFT JOIN (
+                LEFT JOIN LATERAL (
                     SELECT
-                        cpsm.package_session_id,
                         SUM(
                             CASE
                                 WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -3086,34 +3134,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                         ELSE 10
                                     END
                                 WHEN s.source_type = 'QUESTION' THEN 5
-                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                                WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                    SELECT COUNT(*) FROM assignment_slide_question asq
+                                    WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                                ), 0) * 3
+                                WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                    SELECT COUNT(*) FROM quiz_slide_question qsq
+                                    WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                                ), 0) * 2
                                 ELSE 0
                             END
                         ) AS total_read_time_minutes
-                    FROM slide s
+                    FROM chapter_package_session_mapping cpsm
+                    JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                    JOIN slide s ON s.id = cs.slide_id
                     LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                     LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                    LEFT JOIN (
-                        SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM assignment_slide_question
-                        WHERE status IN (:assignmentQuestionStatusList)
-                        GROUP BY assignment_slide_id
-                    ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                    LEFT JOIN (
-                        SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM quiz_slide_question
-                        WHERE status IN (:questionStatusList)
-                        GROUP BY quiz_slide_id
-                    ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                    JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                    JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                    WHERE
-                        s.status IN (:slideStatusList)
+                    WHERE cpsm.package_session_id = ps.id
+                        AND s.status IN (:slideStatusList)
                         AND cs.status IN (:slideStatusList)
                         AND cpsm.status IN (:chapterPackageStatusList)
-                    GROUP BY cpsm.package_session_id
-                ) ps_read_time ON ps.id = ps_read_time.package_session_id
+                ) ps_read_time ON TRUE
 
                 WHERE
                     p.is_course_published_to_catalaouge = true
@@ -3127,6 +3168,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:name IS NULL OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
+                    AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
                     AND (
                         :#{#facultyIds == null || #facultyIds.isEmpty()} = true OR
                         EXISTS (
@@ -3179,6 +3221,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:name IS NULL OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
+                    AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
                     AND (
                     :#{#facultyIds == null || #facultyIds.isEmpty()} = true OR
                     EXISTS (
@@ -3213,6 +3256,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("paymentOptionStatus") List<String> paymentOptionStatus,
             @Param("paymentPlanStatus") List<String> paymentPlanStatus,
             @Param("createdByUserId") String createdByUserId,
+            @Param("packageIds") List<String> packageIds,
             Pageable pageable);
 
     @Query(value = """
@@ -3312,7 +3356,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     payment_info.currency AS currency,
                     ps.available_slots AS availableSlots,
                     ps.max_seats AS maxSeats,
-                    p.created_by_user_id AS createdByUserId
+                    p.created_by_user_id AS createdByUserId,
+                    CASE WHEN p.course_setting LIKE '%COMING_SOON%' THEN p.course_setting END AS comingSoonSettingJson
 
                 FROM package p
                 JOIN package_session ps ON ps.package_id = p.id
@@ -3333,9 +3378,8 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     ON ps.id = payment_info.package_session_id AND payment_info.row_num = 1
 
                 -- Read time subquery
-                LEFT JOIN (
+                LEFT JOIN LATERAL (
                     SELECT
-                        cpsm.package_session_id,
                         SUM(
                             CASE
                                 WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -3346,34 +3390,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                         ELSE 10
                                     END
                                 WHEN s.source_type = 'QUESTION' THEN 5
-                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                                WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                    SELECT COUNT(*) FROM assignment_slide_question asq
+                                    WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                                ), 0) * 3
+                                WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                    SELECT COUNT(*) FROM quiz_slide_question qsq
+                                    WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                                ), 0) * 2
                                 ELSE 0
                             END
                         ) AS total_read_time_minutes
-                    FROM slide s
+                    FROM chapter_package_session_mapping cpsm
+                    JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                    JOIN slide s ON s.id = cs.slide_id
                     LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                     LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                    LEFT JOIN (
-                        SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM assignment_slide_question
-                        WHERE status IN (:assignmentQuestionStatusList)
-                        GROUP BY assignment_slide_id
-                    ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                    LEFT JOIN (
-                        SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM quiz_slide_question
-                        WHERE status IN (:questionStatusList)
-                        GROUP BY quiz_slide_id
-                    ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                    JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                    JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                    WHERE
-                        s.status IN (:slideStatusList)
+                    WHERE cpsm.package_session_id = ps.id
+                        AND s.status IN (:slideStatusList)
                         AND cs.status IN (:slideStatusList)
                         AND cpsm.status IN (:chapterPackageStatusList)
-                    GROUP BY cpsm.package_session_id
-                ) ps_read_time ON ps.id = ps_read_time.package_session_id
+                ) ps_read_time ON TRUE
 
                 WHERE
                     p.is_course_published_to_catalaouge = true
@@ -3386,6 +3423,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
+                    AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
                     AND (
                         :#{#facultyIds == null || #facultyIds.isEmpty()} = true OR
                         EXISTS (
@@ -3440,6 +3478,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#packageSessionStatus == null || #packageSessionStatus.isEmpty()} = true OR ps.status IN (:packageSessionStatus))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
+                    AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
                     AND (
                         :#{#facultyIds == null || #facultyIds.isEmpty()} = true OR
                         EXISTS (
@@ -3474,15 +3513,15 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
             @Param("paymentOptionStatus") List<String> paymentOptionStatus,
             @Param("paymentPlanStatus") List<String> paymentPlanStatus,
             @Param("createdByUserId") String createdByUserId,
+            @Param("packageIds") List<String> packageIds,
             Pageable pageable);
 
     @Query(value = """
                 SELECT
                     SUM(COALESCE(ps_read_time.total_read_time_minutes, 0))
                 FROM package_session ps
-                LEFT JOIN (
+                LEFT JOIN LATERAL (
                     SELECT
-                        cpsm.package_session_id,
                         SUM(
                             CASE
                                 WHEN s.source_type = 'VIDEO' THEN ROUND(COALESCE(vs.published_video_length, 0) / 60000.0, 2)
@@ -3493,34 +3532,27 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                         ELSE 10
                                     END
                                 WHEN s.source_type = 'QUESTION' THEN 5
-                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE(aqc.question_count, 0) * 3
-                                WHEN s.source_type = 'QUIZ' THEN COALESCE(qqc.question_count, 0) * 2
+                                WHEN s.source_type = 'ASSIGNMENT' THEN COALESCE((
+                                    SELECT COUNT(*) FROM assignment_slide_question asq
+                                    WHERE asq.assignment_slide_id = s.source_id AND asq.status IN (:assignmentQuestionStatusList)
+                                ), 0) * 3
+                                WHEN s.source_type = 'QUIZ' THEN COALESCE((
+                                    SELECT COUNT(*) FROM quiz_slide_question qsq
+                                    WHERE qsq.quiz_slide_id = s.source_id AND qsq.status IN (:questionStatusList)
+                                ), 0) * 2
                                 ELSE 0
                             END
                         ) AS total_read_time_minutes
-                    FROM slide s
+                    FROM chapter_package_session_mapping cpsm
+                    JOIN chapter_to_slides cs ON cs.chapter_id = cpsm.chapter_id
+                    JOIN slide s ON s.id = cs.slide_id
                     LEFT JOIN video vs ON vs.id = s.source_id AND s.source_type = 'VIDEO'
                     LEFT JOIN document_slide ds ON ds.id = s.source_id AND s.source_type = 'DOCUMENT'
-                    LEFT JOIN (
-                        SELECT assignment_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM assignment_slide_question
-                        WHERE status IN (:assignmentQuestionStatusList)
-                        GROUP BY assignment_slide_id
-                    ) aqc ON aqc.slide_id = s.source_id AND s.source_type = 'ASSIGNMENT'
-                    LEFT JOIN (
-                        SELECT quiz_slide_id AS slide_id, COUNT(*) AS question_count
-                        FROM quiz_slide_question
-                        WHERE status IN (:questionStatusList)
-                        GROUP BY quiz_slide_id
-                    ) qqc ON qqc.slide_id = s.source_id AND s.source_type = 'QUIZ'
-                    JOIN chapter_to_slides cs ON cs.slide_id = s.id
-                    JOIN chapter_package_session_mapping cpsm ON cpsm.chapter_id = cs.chapter_id
-                    WHERE
-                        s.status IN (:slideStatusList)
+                    WHERE cpsm.package_session_id = ps.id
+                        AND s.status IN (:slideStatusList)
                         AND cs.status IN (:slideStatusList)
                         AND cpsm.status IN (:chapterPackageStatusList)
-                    GROUP BY cpsm.package_session_id
-                ) ps_read_time ON ps.id = ps_read_time.package_session_id
+                ) ps_read_time ON TRUE
                 WHERE
                     ps.package_id = :packageId
                     AND ps.status IN (:packageSessionStatus)

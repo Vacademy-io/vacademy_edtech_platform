@@ -1,0 +1,10 @@
+{
+    "select": "Sélectionner",
+    "pen": "Stylo",
+    "tick": "Coche",
+    "cross": "Croix",
+    "text": "Texte",
+    "box": "Rectangle",
+    "circle": "Cercle",
+    "delete": "Supprimer"
+}

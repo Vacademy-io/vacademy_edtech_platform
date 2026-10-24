@@ -127,6 +127,13 @@ public class CertificateSettingDto {
     private Boolean verificationShowIssueDate;
     private Boolean verificationShowCompletion;
 
+    // Opt-in: show the learner's full name, username, first/last name and email
+    // on the verification page and document instead of the masked name. For
+    // institutes whose printed certificate is meant to be checked against the
+    // learner's record. Null/false keeps the masked default, so nothing changes
+    // for an institute that never sets it.
+    private Boolean verificationShowFullDetails;
+
     // What a scanned QR actually opens.
     //
     // PAGE (default, and what every existing institute keeps) renders the built-in

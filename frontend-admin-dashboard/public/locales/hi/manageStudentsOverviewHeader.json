@@ -1,0 +1,42 @@
+{
+    "tiles": {
+        "courseProgress": {
+            "label": "कोर्स प्रगति",
+            "hint": {
+                "onTrack": "सही रफ़्तार पर",
+                "paceCheckNeeded": "गति जाँचें",
+                "behindSchedule": "समय से पीछे"
+            }
+        },
+        "attendance": {
+            "label": "उपस्थिति",
+            "hint": {
+                "aboveTarget": "लक्ष्य से ऊपर",
+                "watchList": "निगरानी सूची में",
+                "belowTarget": "लक्ष्य से नीचे"
+            }
+        },
+        "tests": {
+            "label": "परीक्षण",
+            "hint": {
+                "pending_one": "{{count}} शेष",
+                "pending_other": "{{count}} शेष"
+            }
+        },
+        "outstanding": {
+            "label": "बकाया राशि",
+            "hint": {
+                "actionRequired": "कार्रवाई आवश्यक",
+                "paidInFull": "पूरा भुगतान हो चुका"
+            }
+        },
+        "leadScore": {
+            "label": "लीड स्कोर",
+            "hint": {
+                "hotLead": "गर्म लीड",
+                "nurture": "पोषण करें",
+                "cold": "ठंडी लीड"
+            }
+        }
+    }
+}

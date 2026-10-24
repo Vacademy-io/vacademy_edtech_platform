@@ -1,0 +1,37 @@
+{
+    "title": "Classement d'engagement",
+    "subtitle": "Meilleurs utilisateurs par engagement",
+    "allCenters": "Tous les centres",
+    "emptyStateFiltered": "Aucune donnée de classement pour le centre « {{center}} »",
+    "emptyStateDefault": "Aucune donnée de classement disponible",
+    "totalUsers_one": "{{count}} utilisateur au total",
+    "totalUsers_many": "{{count}} utilisateurs au total",
+    "totalUsers_other": "{{count}} utilisateurs au total",
+    "exportCsv": "Exporter en CSV",
+    "table": {
+        "rank": "Rang",
+        "user": "Utilisateur",
+        "contact": "Contact",
+        "outgoing": "Sortants",
+        "incoming": "Entrants",
+        "total": "Total",
+        "score": "Score",
+        "anonymous": "Anonyme",
+        "childLabel": "Enfant : {{name}}"
+    },
+    "csv": {
+        "rank": "Rang",
+        "name": "Nom",
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "center": "Centre",
+        "totalMessages": "Total des messages",
+        "engagementScore": "Score d'engagement",
+        "notAvailable": "N/D"
+    },
+    "pagination": {
+        "pageOf": "Page {{current}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant"
+    }
+}

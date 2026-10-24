@@ -89,6 +89,7 @@ export interface Slide {
         time_limit_in_minutes?: number | null;
         marks_per_question?: number;
         negative_marking?: number;
+        partial_marking?: boolean | null;
         questions?: BackendQuestion[];
     } | null;
     is_loaded: boolean;

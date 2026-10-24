@@ -1,0 +1,20 @@
+{
+    "playTitle": "تشغيل هذا اللوح كما يراه المتعلم",
+    "play": "تشغيل",
+    "couldNotLoadPlan": "تعذّر تحميل الخطة",
+    "teachingPlan": "خطة التدريس",
+    "loadingPlan": "جارٍ تحميل الخطة…",
+    "objectives": "الأهداف",
+    "boardTitle": "اللوح {{order}}: {{title}}",
+    "estimatedMinutes_zero": "~{{count}} دقيقة",
+    "estimatedMinutes_one": "~دقيقة واحدة",
+    "estimatedMinutes_two": "~دقيقتان",
+    "estimatedMinutes_few": "~{{count}} دقائق",
+    "estimatedMinutes_many": "~{{count}} دقيقة",
+    "estimatedMinutes_other": "~{{count}} دقيقة",
+    "boardAfterConcept": "اللوح بعد المفهوم {{order}}: {{title}}",
+    "teacherSays": "يقول المعلم:",
+    "checkLabel": "تحقّق · {{type}}",
+    "expectedLabel": "المتوقع: {{expected}}",
+    "notesLabel": "ملاحظات:"
+}

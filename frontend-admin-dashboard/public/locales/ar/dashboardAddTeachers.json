@@ -1,0 +1,32 @@
+{
+    "trigger": {
+        "inviteUsers": "دعوة مستخدمين"
+    },
+    "dialog": {
+        "title": "إضافة عضو فريق"
+    },
+    "tabs": {
+        "existingMembers": "الأعضاء الحاليون",
+        "inviteNew": "دعوة عضو جديد"
+    },
+    "existing": {
+        "searchPlaceholder": "ابحث عن أعضاء الفريق...",
+        "noMatchingMembers": "لم يتم العثور على أعضاء مطابقين",
+        "noMembersAvailable": "لا يوجد أعضاء فريق متاحون",
+        "assignButton": "تعيين {{name}}"
+    },
+    "invite": {
+        "form": {
+            "namePlaceholder": "الاسم الكامل (الأول والأخير)",
+            "nameLabel": "الاسم الكامل",
+            "emailPlaceholder": "أدخل البريد الإلكتروني",
+            "emailLabel": "البريد الإلكتروني"
+        },
+        "inviteButton": "دعوة مستخدم"
+    },
+    "validation": {
+        "nameRequired": "الاسم الكامل مطلوب",
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "emailInvalid": "صيغة البريد الإلكتروني غير صحيحة"
+    }
+}

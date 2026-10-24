@@ -1,0 +1,17 @@
+{
+    "trigger": {
+        "label": "Trier les questions par thème"
+    },
+    "dialog": {
+        "title": "Trier les questions par thème",
+        "options": {
+            "topic": "Sélectionner les questions couvrant un thème donné",
+            "pages": "Sélectionner des questions à partir de pages spécifiques",
+            "questionNo": "Sélectionner un ensemble de questions"
+        },
+        "extractButton": "Extraire"
+    },
+    "tasksList": {
+        "heading": "Vsmart Organizer"
+    }
+}

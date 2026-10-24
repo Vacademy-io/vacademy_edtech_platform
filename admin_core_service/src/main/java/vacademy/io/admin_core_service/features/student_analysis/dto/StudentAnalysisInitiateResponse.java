@@ -16,4 +16,6 @@ public class StudentAnalysisInitiateResponse {
         private String processId;
         private String status;
         private String message;
+        /** Learner's name, so the admin activity log row reads "generated progress report for …". */
+        private String learnerName;
 }

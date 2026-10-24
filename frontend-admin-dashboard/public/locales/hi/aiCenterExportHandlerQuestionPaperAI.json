@@ -1,0 +1,13 @@
+{
+    "button": {
+        "exporting": "निर्यात हो रहा है...",
+        "export": "{{format}} निर्यात करें",
+        "setSuffix": " (सेट {{letter}})"
+    },
+    "dialog": {
+        "generatingPdf": "PDF तैयार किया जा रहा है",
+        "pleaseWait": "इसमें कुछ समय लग सकता है",
+        "cancelAriaLabel": "PDF निर्माण रद्द करें",
+        "progressComplete": "{{progress}}% पूर्ण"
+    }
+}

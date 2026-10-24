@@ -1,0 +1,84 @@
+{
+    "filters": {
+        "everyone": "Tout le monde",
+        "hasAttempted": "A tenté",
+        "notStarted": "Non commencé",
+        "atRisk": "À risque"
+    },
+    "sorts": {
+        "lowestAverage": "Moyenne la plus basse",
+        "highestAverage": "Moyenne la plus élevée",
+        "nameAz": "Nom (A–Z)",
+        "mostQuizzesDone": "Le plus de quiz effectués",
+        "fewestQuizzesDone": "Le moins de quiz effectués",
+        "mostRecentActivity": "Activité la plus récente"
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "mobile": "Mobile",
+        "quizzesAttempted": "Quiz tentés",
+        "quizzesInCourse": "Quiz dans le cours",
+        "totalAttempts": "Tentatives totales",
+        "marksObtained": "Points obtenus",
+        "maxMarksAttempted": "Points max (tentés)",
+        "maxMarksCourse": "Points max (cours)",
+        "averagePercent": "Moyenne %",
+        "bestPercent": "Meilleur %",
+        "lowestPercent": "Plus bas %",
+        "correct": "Correct",
+        "wrong": "Incorrect",
+        "skipped": "Ignoré",
+        "quizzesPassed": "Quiz réussis",
+        "lastActivity": "Dernière activité"
+    },
+    "table": {
+        "learner": "Apprenant",
+        "quizzesDone": "Quiz effectués",
+        "averageScore": "Score moyen",
+        "notStarted": "Non commencé",
+        "passed": "Réussi",
+        "noPassMark": "Pas de note de passage",
+        "attempts": "Tentatives",
+        "lastActivity": "Dernière activité"
+    },
+    "stats": {
+        "learners": "Apprenants",
+        "quizzesInCourse_one": "{{count}} quiz dans ce cours",
+        "quizzesInCourse_many": "{{count}} de quiz dans ce cours",
+        "quizzesInCourse_other": "{{count}} quiz dans ce cours",
+        "haveAttempted": "Ont tenté",
+        "haveNotStarted_one": "{{count}} n'a pas commencé",
+        "haveNotStarted_many": "{{count}} n'ont pas commencé",
+        "haveNotStarted_other": "{{count}} n'ont pas commencé",
+        "classAverage": "Moyenne de la classe",
+        "ofLearnersWhoStarted": "Des apprenants ayant commencé",
+        "atRisk": "À risque",
+        "averagingUnder50": "Moyenne inférieure à 50 %"
+    },
+    "searchPlaceholder": "Rechercher des apprenants",
+    "filterLearnersAriaLabel": "Filtrer les apprenants",
+    "actions": {
+        "exportCsv": "Exporter en CSV",
+        "refreshAriaLabel": "Actualiser les résultats des apprenants",
+        "clearFilters": "Effacer les filtres",
+        "retry": "Réessayer"
+    },
+    "truncatedNotice": "Ce groupe compte plus d'apprenants que le rapport n'en affiche à la fois — la liste ci-dessous est limitée.",
+    "empty": {
+        "noneEnrolledTitle": "Aucun apprenant inscrit à ce groupe pour le moment",
+        "noneEnrolledSubtitle": "Une fois les apprenants inscrits, leur progression aux quiz apparaîtra ici.",
+        "noMatchTitle": "Aucun apprenant ne correspond à ces filtres",
+        "noMatchSubtitle": "Essayez un autre terme de recherche ou effacez les filtres."
+    },
+    "errors": {
+        "couldNotLoad": "Impossible de charger les résultats des apprenants",
+        "couldNotLoadSubtitle": "La requête a échoué. Vérifiez votre connexion et réessayez."
+    },
+    "toast": {
+        "nothingToExport": "Rien à exporter avec ces filtres.",
+        "exported_one": "{{count}} apprenant exporté",
+        "exported_many": "{{count}} d'apprenants exportés",
+        "exported_other": "{{count}} apprenants exportés"
+    }
+}

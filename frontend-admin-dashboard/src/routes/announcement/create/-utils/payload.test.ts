@@ -1,8 +1,36 @@
 import { describe, expect, it } from 'vitest';
+import type { TFunction } from 'i18next';
 import { buildCreatePayload, expandRecipients, interpretApiError } from './payload';
 import { validateSection } from './validation';
 import type { AudienceRule, BatchOption, WhatsAppConfig } from '../-types';
 import type { WhatsAppTemplateDTO } from '@/routes/communication/whatsapp-templates/-services/template-api';
+import validationStrings from '../../../../../public/locales/en/announcementValidation.json';
+import payloadStrings from '../../../../../public/locales/en/announcementPayload.json';
+
+/** Minimal stand-in for i18next's `t`, resolving dotted keys against the real en catalog and
+ * interpolating `{{var}}` placeholders — enough for these tests to assert on real copy. */
+const makeT = (catalog: Record<string, unknown>): TFunction =>
+    ((key: string, vars?: Record<string, unknown>) => {
+        const value = key
+            .split('.')
+            .reduce<unknown>(
+                (node, segment) =>
+                    node && typeof node === 'object'
+                        ? (node as Record<string, unknown>)[segment]
+                        : undefined,
+                catalog
+            );
+        let text = typeof value === 'string' ? value : key;
+        if (vars) {
+            Object.entries(vars).forEach(([varKey, varValue]) => {
+                text = text.replace(new RegExp(`{{${varKey}}}`, 'g'), String(varValue));
+            });
+        }
+        return text;
+    }) as TFunction;
+
+const tValidation = makeT(validationStrings);
+const tPayload = makeT(payloadStrings);
 
 const rule = (patch: Partial<AudienceRule>): AudienceRule => ({
     key: patch.key ?? 'r1',
@@ -12,8 +40,8 @@ const rule = (patch: Partial<AudienceRule>): AudienceRule => ({
     userIds: [],
     tagIds: [],
     tagScope: 'ALL',
-    campaignId: '',
-    campaignName: '',
+    campaignIds: [],
+    campaignNames: {},
     fieldFilters: [],
     exclusions: [],
     ...patch,
@@ -270,11 +298,11 @@ describe('validateSection', () => {
     };
 
     it('blocks an empty audience', () => {
-        expect(validateSection('recipients', input).blockers).toHaveLength(1);
+        expect(validateSection('recipients', tValidation, input).blockers).toHaveLength(1);
     });
 
     it('blocks a batch rule with no batch selected', () => {
-        const result = validateSection('recipients', {
+        const result = validateSection('recipients', tValidation, {
             ...input,
             rules: [rule({ key: 'r1', type: 'PACKAGE_SESSION' })],
         });
@@ -282,7 +310,7 @@ describe('validateSection', () => {
     });
 
     it('requires a sub-organisation role when an org batch is selected', () => {
-        const result = validateSection('recipients', {
+        const result = validateSection('recipients', tValidation, {
             ...input,
             rules: [rule({ key: 'r1', type: 'PACKAGE_SESSION', packageSessionIds: ['org'] })],
             batchById: { org: batch('org', true) },
@@ -291,7 +319,7 @@ describe('validateSection', () => {
     });
 
     it('requires a media URL for a media-header WhatsApp template', () => {
-        const result = validateSection('delivery', {
+        const result = validateSection('delivery', tValidation, {
             ...input,
             mediums: ['WHATSAPP'] as never,
             selectedWaTemplate: template,
@@ -301,7 +329,7 @@ describe('validateSection', () => {
     });
 
     it('requires custom text when a variable is bound to “Custom”', () => {
-        const result = validateSection('delivery', {
+        const result = validateSection('delivery', tValidation, {
             ...input,
             mediums: ['WHATSAPP'] as never,
             selectedWaTemplate: template,
@@ -319,7 +347,7 @@ describe('validateSection', () => {
 
 describe('interpretApiError', () => {
     it('maps a scheduling field error onto the delivery section', () => {
-        const failure = interpretApiError({
+        const failure = interpretApiError(tPayload, {
             response: {
                 status: 400,
                 data: { details: { 'scheduling.startDate': 'Must be future' } },
@@ -330,7 +358,7 @@ describe('interpretApiError', () => {
     });
 
     it('explains a permission failure rather than showing a bare status', () => {
-        const failure = interpretApiError({ response: { status: 403, data: {} } });
+        const failure = interpretApiError(tPayload, { response: { status: 403, data: {} } });
         expect(failure.message).toMatch(/permission/i);
     });
 });

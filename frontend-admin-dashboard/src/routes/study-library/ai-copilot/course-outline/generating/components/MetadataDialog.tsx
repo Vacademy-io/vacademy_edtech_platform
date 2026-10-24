@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -35,6 +36,7 @@ export const MetadataDialog: React.FC<MetadataDialogProps> = ({
     metadata,
     onSave,
 }) => {
+    const { t } = useTranslation('studyLibraryMetadataDialog');
     const [courseName, setCourseName] = useState('');
     const [courseDescription, setCourseDescription] = useState('');
     const [tags, setTags] = useState<string[]>([]);
@@ -61,9 +63,9 @@ export const MetadataDialog: React.FC<MetadataDialogProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[95vw] sm:w-full sm:max-w-lg max-h-[90vh] flex flex-col p-0 sm:p-6">
                 <DialogHeader>
-                    <DialogTitle>Course Details</DialogTitle>
+                    <DialogTitle>{t('courseDetails')}</DialogTitle>
                     <DialogDescription>
-                        Edit your course metadata
+                        {t('editYourCourseMetadata')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -71,11 +73,11 @@ export const MetadataDialog: React.FC<MetadataDialogProps> = ({
                     {/* Course Thumbnail Preview */}
                     {metadata?.mediaImageUrl && (
                         <div>
-                            <Label className="mb-2 block">Course Thumbnail</Label>
+                            <Label className="mb-2 block">{t('courseThumbnail')}</Label>
                             <div className="relative aspect-video rounded-lg overflow-hidden bg-neutral-100 border border-neutral-200">
                                 <img
                                     src={metadata.mediaImageUrl}
-                                    alt="Course thumbnail"
+                                    alt={t('courseThumbnailAlt')}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -85,47 +87,47 @@ export const MetadataDialog: React.FC<MetadataDialogProps> = ({
                     {/* Course Name */}
                     <div>
                         <Label htmlFor="courseName" className="mb-2 block">
-                            Course Name
+                            {t('courseName')}
                         </Label>
                         <Input
                             id="courseName"
                             value={courseName}
                             onChange={(e) => setCourseName(e.target.value)}
-                            placeholder="Enter course name"
+                            placeholder={t('enterCourseName')}
                         />
                     </div>
 
                     {/* Course Description */}
                     <div>
                         <Label htmlFor="courseDescription" className="mb-2 block">
-                            Course Description
+                            {t('courseDescription')}
                         </Label>
                         <Textarea
                             id="courseDescription"
                             value={courseDescription}
                             onChange={(e) => setCourseDescription(e.target.value)}
-                            placeholder="Enter course description"
+                            placeholder={t('enterCourseDescription')}
                             className="min-h-[100px]"
                         />
                     </div>
 
                     {/* Tags */}
                     <div>
-                        <Label className="mb-2 block">Tags</Label>
+                        <Label className="mb-2 block">{t('tags')}</Label>
                         <TagInput
                             tags={tags}
                             onChange={setTags}
-                            placeholder="Add tags..."
+                            placeholder={t('addTags')}
                         />
                     </div>
                 </div>
 
                 <DialogFooter>
                     <MyButton buttonType="secondary" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton buttonType="primary" onClick={handleSave}>
-                        Save Changes
+                        {t('saveChanges')}
                     </MyButton>
                 </DialogFooter>
             </DialogContent>

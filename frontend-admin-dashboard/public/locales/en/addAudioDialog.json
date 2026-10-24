@@ -1,0 +1,29 @@
+{
+    "dropzone": {
+        "title": "Import your audio file",
+        "hint": "Drag or click to upload",
+        "formats": "Supports MP3, WAV, OGG, AAC, M4A",
+        "selected": "Selected: {{fileName}}",
+        "duration": "Duration: {{minutes}}:{{seconds}}"
+    },
+    "fields": {
+        "title": "Title",
+        "titlePlaceholder": "Enter audio title",
+        "description": "Description (Optional)",
+        "descriptionPlaceholder": "Enter a description for this audio...",
+        "coverImage": "Cover Image (Optional)",
+        "changeImage": "Change Image",
+        "uploadImage": "Upload Image",
+        "transcript": "Transcript (Optional)",
+        "transcriptPlaceholder": "Paste or type the audio transcript here..."
+    },
+    "toasts": {
+        "reorderFailed": "Slide created but reordering failed",
+        "createSuccess": "Audio slide created successfully!",
+        "createFailed": "Failed to create audio slide"
+    },
+    "actions": {
+        "uploading": "Uploading...",
+        "submit": "Create Audio Slide"
+    }
+}

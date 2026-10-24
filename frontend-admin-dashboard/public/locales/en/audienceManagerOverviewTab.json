@@ -1,0 +1,43 @@
+{
+    "kpi": {
+        "totalLeads": {
+            "label": "Total Leads",
+            "sub": "{{active}} active · {{lost}} lost"
+        },
+        "conversionRate": {
+            "label": "Conversion Rate",
+            "sub": "{{converted}} of {{total}} converted"
+        },
+        "avgResponseTime": {
+            "label": "Avg Response Time",
+            "sub_one": "{{count}} lead responded",
+            "sub_other": "{{count}} leads responded"
+        },
+        "tatMet": {
+            "label": "TAT Met",
+            "subCount": "{{count}} within TAT",
+            "subDisabled": "TAT disabled in settings"
+        }
+    },
+    "status": {
+        "title": "Status distribution",
+        "donutAriaLabel": "Status distribution donut",
+        "totalUnit": "leads"
+    },
+    "trend": {
+        "title": "Daily trend",
+        "submittedLegend": "Submitted",
+        "convertedLegend": "Converted",
+        "noData": "No data",
+        "ariaLabel": "Daily submitted and converted leads"
+    },
+    "breakdown": {
+        "bySource": "By Source",
+        "byTier": "By Tier"
+    },
+    "tier": {
+        "hot": "Hot",
+        "warm": "Warm",
+        "cold": "Cold"
+    }
+}

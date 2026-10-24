@@ -172,10 +172,18 @@ export const useEnrollmentStatus = (instituteId: string | null) => {
         }
       }
 
-      // Merge, preferring local entries (richer session/level data) on conflict.
+      // Merge, preferring local entries (richer session/level data) on conflict
+      // — except the skeletal fallback ones: they carry no package id, and
+      // letting one replace the backend entry makes an enrolled learner look
+      // un-enrolled (course page in preview mode, slides not clickable). The
+      // course page fills the institute store from details-non-batches, so
+      // batches_for_sessions is empty there and every local entry is skeletal.
       const merged = new Map<string, EnrolledSession>();
       for (const s of backendSessions) merged.set(s.id, s);
-      for (const s of localSessions) merged.set(s.id, s);
+      for (const s of localSessions) {
+        const backend = merged.get(s.id);
+        merged.set(s.id, backend && !s.package_dto.id ? backend : s);
+      }
 
       setEnrolledSessions(Array.from(merged.values()));
     } catch {

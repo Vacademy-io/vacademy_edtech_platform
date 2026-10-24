@@ -1,0 +1,12 @@
+{
+    "success": "نجاح",
+    "error": "خطأ",
+    "updateBatchSuccess": "تم تحديث الدفعة بنجاح",
+    "updateBatchError": "فشل تحديث الدفعة. يرجى المحاولة مرة أخرى.",
+    "extendSessionSuccess": "تم تمديد الجلسة بنجاح",
+    "extendSessionError": "فشل تمديد الجلسة. يرجى المحاولة مرة أخرى.",
+    "terminateStudentSuccess": "تم إنهاء تسجيل الطالب بنجاح",
+    "terminateStudentError": "فشل إنهاء التسجيل. يرجى المحاولة مرة أخرى.",
+    "deleteStudentSuccess": "تم حذف الطالب بنجاح",
+    "deleteStudentError": "فشل حذف الطالب. يرجى المحاولة مرة أخرى."
+}

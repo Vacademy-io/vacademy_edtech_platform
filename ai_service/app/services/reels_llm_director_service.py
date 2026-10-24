@@ -31,7 +31,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-import httpx
+from .use_case_chat import chat_json, models_for
 
 from ..config import get_settings
 
@@ -47,8 +47,14 @@ logger = logging.getLogger(__name__)
 _DISABLE_ENV = "REELS_LLM_DIRECTOR_DISABLED"
 
 _LLM_TIMEOUT_S = 30.0
+# The model comes from the 'reels_director' use case (ai_model_defaults, set in
+# the super-admin portal; GLM by default) and the call walks its fallback chain
+# through llm_router.chat_with_chain. REELS_DIRECTOR_LLM_MODEL, when set, is
+# tried first (emergency override). Reasoning effort is pinned low: the call
+# runs inside a render with a 30 s per-request budget.
+_USE_CASE = "reels_director"
 _LLM_MODEL_ENV = "REELS_DIRECTOR_LLM_MODEL"
-_LLM_DEFAULT_MODEL = "anthropic/claude-3-5-haiku"
+_REASONING_EFFORT = "low"
 
 # Spec validation bounds — matches research §12.2/§12.3 rules.
 HOOK_MAX_END_S = 2.6              # hook is the 0..~2.5s window
@@ -393,7 +399,8 @@ class LLMDirector:
         self._settings = get_settings()
         self._api_key = self._settings.openrouter_api_key
         self._llm_url = self._settings.llm_base_url
-        self._model = os.getenv(_LLM_MODEL_ENV, "").strip() or _LLM_DEFAULT_MODEL
+        self._models = models_for(_USE_CASE, env=_LLM_MODEL_ENV)
+        self._model = self._models[0]
 
     @property
     def enabled(self) -> bool:
@@ -483,12 +490,12 @@ class LLMDirector:
         return valid, bg_concept, bg_concepts
 
     async def _call_llm(self, user_prompt: str) -> Optional[str]:
-        """Reuses the same multi-attempt pattern as ReelsPreviewService:
-        response_format=json_object → plain → plain-retry. 5xx/timeout/429
-        are transient; 4xx other than 400/408/429 are fatal.
+        """One call through the model chain: response_format=json_object
+        first, the chain again without it if a model rejected the parameter
+        (400). Transport errors / 5xx / empty replies move to the next model.
+        None when every model failed — the caller's fallback path takes over.
         """
         payload = {
-            "model": self._model,
             "messages": [
                 {"role": "system", "content": REEL_DIRECTOR_SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
@@ -496,50 +503,16 @@ class LLMDirector:
             "temperature": 0.5,    # a little spice for varied hook phrasing
             "max_tokens": 800,
         }
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-        }
-
-        attempts: list[dict] = [
-            {**payload, "response_format": {"type": "json_object"}},
+        result = await chat_json(
             payload,
-            payload,
-        ]
-        last_err: Optional[str] = None
-        try:
-            async with httpx.AsyncClient(timeout=_LLM_TIMEOUT_S) as client:
-                for attempt in attempts:
-                    try:
-                        resp = await client.post(self._llm_url, headers=headers, json=attempt)
-                    except httpx.TimeoutException as e:
-                        last_err = f"timeout: {e}"
-                        continue
-                    except httpx.HTTPError as e:
-                        last_err = f"transport: {e}"
-                        continue
-                    if resp.status_code == 200:
-                        try:
-                            return resp.json()["choices"][0]["message"]["content"]
-                        except Exception as e:
-                            logger.warning(
-                                f"[LLMDirector] unwrap failed: {e}; body={resp.text[:300]!r}"
-                            )
-                            return None
-                    if resp.status_code == 400 and "response_format" in resp.text:
-                        continue   # provider rejects the strict-json hint
-                    if 500 <= resp.status_code < 600 or resp.status_code in (408, 429):
-                        last_err = f"{resp.status_code}: {resp.text[:200]!r}"
-                        continue
-                    logger.warning(f"[LLMDirector] {resp.status_code}: {resp.text[:300]!r}")
-                    return None
-        except Exception as e:
-            logger.warning(f"[LLMDirector] unexpected error: {e}")
-            return None
-
-        if last_err:
-            logger.warning(f"[LLMDirector] gave up after retries: {last_err}")
-        return None
+            use_case=_USE_CASE,
+            models=self._models,
+            api_key=self._api_key,
+            timeout=_LLM_TIMEOUT_S,
+            label="LLMDirector",
+            reasoning_effort=_REASONING_EFFORT,
+        )
+        return result.content if result is not None else None
 
 
 # ---------------------------------------------------------------------------

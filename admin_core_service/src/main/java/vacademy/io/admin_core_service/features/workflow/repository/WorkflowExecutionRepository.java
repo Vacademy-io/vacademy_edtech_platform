@@ -62,6 +62,43 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
         List<WorkflowExecution> findByWorkflowTriggerIdInOrderByStartedAtDesc(
                         @Param("triggerIds") List<String> triggerIds);
 
+        /**
+         * The automations that ran for one learner, newest first — backs the Workflows tab
+         * on the learner side-view.
+         *
+         * <p>Scoped by institute as well as user because an auth user can be a learner at
+         * more than one institute, and an admin of institute A must not see the runs
+         * institute B fired for the same person. The institute comes off the workflow (the
+         * execution has no institute column of its own).</p>
+         *
+         * <p>Backed by {@code idx_workflow_execution_subject_user} (V488), a partial index on
+         * the non-null subject rows.</p>
+         */
+        @Query(value = "SELECT we FROM WorkflowExecution we JOIN FETCH we.workflow w " +
+                        "WHERE we.subjectUserId = :userId " +
+                        "  AND w.instituteId = :instituteId",
+                        countQuery = "SELECT COUNT(we) FROM WorkflowExecution we " +
+                                        "WHERE we.subjectUserId = :userId " +
+                                        "  AND we.workflow.instituteId = :instituteId")
+        Page<WorkflowExecution> findBySubjectUserId(@Param("userId") String userId,
+                        @Param("instituteId") String instituteId,
+                        Pageable pageable);
+
+        /**
+         * Load one execution with every association the Retry path copies onto the new run.
+         *
+         * <p>All three are {@code LAZY}, and retry deliberately runs OUTSIDE a transaction (the
+         * new row must be committed before the async worker looks it up), so touching any of
+         * them on a detached entity would throw {@code LazyInitializationException}. Fetching
+         * them up-front is what makes the detached entity safe to read.</p>
+         */
+        @Query("SELECT we FROM WorkflowExecution we " +
+                        "JOIN FETCH we.workflow " +
+                        "LEFT JOIN FETCH we.workflowSchedule " +
+                        "LEFT JOIN FETCH we.workflowTrigger " +
+                        "WHERE we.id = :id")
+        Optional<WorkflowExecution> findByIdForRetry(@Param("id") String id);
+
         List<WorkflowExecution> findByWorkflowIdOrderByStartedAtDesc(String workflowId);
 
         List<WorkflowExecution> findByWorkflowScheduleIdOrderByStartedAtDesc(String workflowScheduleId);

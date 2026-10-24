@@ -1,0 +1,8 @@
+{
+    "courseNotFound": "Course Not found",
+    "subjectNotFound": "Subject Not found",
+    "levelNotFound": "Level Not found",
+    "heading": "Manage Your Modules",
+    "subtitle": "Explore and manage modules for {{level}} {{subject}}. Click on a module to view and organize chapters, eBooks, and video lectures, or add new resources to expand your study materials.",
+    "selectSession": "Select {{term}}"
+}

@@ -1,0 +1,58 @@
+{
+    "errors": {
+        "couldNotLoad": "इस शिक्षार्थी के परिणाम लोड नहीं हो सके"
+    },
+    "actions": {
+        "retry": "पुनः प्रयास करें"
+    },
+    "unnamedLearner": "अनाम शिक्षार्थी",
+    "header": {
+        "quizzesDone": "पूर्ण क्विज़",
+        "average": "औसत",
+        "marksSoFar": "अब तक के अंक",
+        "outOfAcrossAllQuizzes": "सभी क्विज़ में कुल {{total}} में से",
+        "attempts": "प्रयास",
+        "passedFraction": "{{passed}}/{{total}} उत्तीर्ण"
+    },
+    "empty": {
+        "noQuizzesTitle": "इस कोर्स में अभी तक कोई क्विज़ नहीं है",
+        "noQuizzesSubtitle": "किसी अध्याय में क्विज़ स्लाइड जोड़ें और इस शिक्षार्थी के परिणाम यहाँ दिखाई देंगे।"
+    },
+    "untitledQuiz": "शीर्षकहीन क्विज़",
+    "notMappedToChapter": "किसी अध्याय से मैप नहीं किया गया",
+    "notAttempted": "प्रयास नहीं किया",
+    "tries_one": "{{count}} प्रयास",
+    "tries_other": "{{count}} प्रयास",
+    "couldNotLoadAnswers": "इस शिक्षार्थी के उत्तर लोड नहीं हो सके।",
+    "noRecordedAttempts": "कोई दर्ज प्रयास नहीं है।",
+    "attemptNumber": "प्रयास {{number}}",
+    "ofTotal": "कुल {{total}} में से",
+    "countsAsScoreTitle": "यह वह प्रयास है जिससे उनका स्कोर लिया जाता है",
+    "countsAsScore": "स्कोर के रूप में गिना जाता है",
+    "correctCount_one": "{{count}} सही",
+    "correctCount_other": "{{count}} सही",
+    "wrongCount_one": "{{count}} गलत",
+    "wrongCount_other": "{{count}} गलत",
+    "skippedCount_one": "{{count}} छोड़ा गया",
+    "skippedCount_other": "{{count}} छोड़े गए",
+    "notAnsweredCount_one": "{{count}} अनुत्तरित",
+    "notAnsweredCount_other": "{{count}} अनुत्तरित",
+    "needManualMarkingCount_one": "{{count}} को मैन्युअल मूल्यांकन की आवश्यकता है",
+    "needManualMarkingCount_other": "{{count}} को मैन्युअल मूल्यांकन की आवश्यकता है",
+    "verdict": {
+        "correct": "सही",
+        "wrong": "गलत",
+        "partial": "आंशिक",
+        "skipped": "छोड़ा गया",
+        "needsMarking": "मूल्यांकन आवश्यक",
+        "notAnswered": "अनुत्तरित"
+    },
+    "questionNumber": "प्रश्न {{number}}.",
+    "untitledQuestion": "शीर्षकहीन प्रश्न",
+    "correctAnswerAriaLabel": "सही उत्तर",
+    "learnerAnswerAriaLabel": "शिक्षार्थी का उत्तर",
+    "untitledOption": "शीर्षकहीन विकल्प",
+    "theirAnswer": "उनका उत्तर",
+    "answeredLabel": "उत्तर दिया:",
+    "expectedLabel": "अपेक्षित:"
+}

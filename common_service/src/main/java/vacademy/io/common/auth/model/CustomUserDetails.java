@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import vacademy.io.common.auth.dto.UserServiceDTO;
 import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.entity.UserRole;
+import vacademy.io.common.auth.service.UserRoleService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,8 +57,12 @@ public class CustomUserDetails extends User implements UserDetails {
         // Create a list to store authorities strings
         List<String> auths = new ArrayList<>();
 
-        // Iterate through each UserRole for the user
-        for (UserRole role : userRoles.stream().filter((role) -> role.getInstituteId().equals(instituteId)).toList()) {
+        // Iterate through each UserRole the user still holds in this institute. Revoked roles
+        // (disabled / deleted / cancelled) grant nothing, even while an old token is alive.
+        for (UserRole role : userRoles.stream()
+                .filter((role) -> role.getInstituteId().equals(instituteId))
+                .filter(UserRoleService::grantsAccess)
+                .toList()) {
             // Get individual authorities from the role and convert them to uppercase
             role.getRole().getAuthorities().forEach(
                     userAuthority -> auths.add(userAuthority.getName().toUpperCase()));

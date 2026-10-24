@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "quickAccess": "Quick Access",
+        "programming": "Programming",
+        "optionBased": "Option Based",
+        "mathBased": "Math Based",
+        "writingSkills": "Writing Skills",
+        "readingSkills": "Reading Skills"
+    },
+    "questionTypes": {
+        "mcqSingle": "Multiple Choice Questions (Single correct)",
+        "mcqMultiple": "Multiple Choice Questions (Multiple correct)",
+        "numerical": "Numerical",
+        "trueFalse": "True False",
+        "coding": "Coding Question",
+        "longAnswer": "Long Answer",
+        "singleWord": "Single Word",
+        "comprehensionMcqSingle": "Comprehension Multiple Choice Questions (Single correct)",
+        "comprehensionMcqMultiple": "Comprehension Multiple Choice Questions (Multiple correct)",
+        "comprehensionNumeric": "Comprehension Numeric"
+    },
+    "dialog": {
+        "title": "Create Question Paper Manually"
+    }
+}

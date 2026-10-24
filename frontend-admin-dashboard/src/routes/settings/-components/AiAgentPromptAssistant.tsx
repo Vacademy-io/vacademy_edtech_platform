@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { toast } from 'sonner';
-import { CaretDown, CaretUp, CheckCircle, Sparkle } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, CheckCircle, Sparkle, Warning } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,13 +11,20 @@ import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 import {
     AGENT_ASSIST_CREDIT_COST,
-    analyzeAgentPrompt,
-    draftAgentPrompt,
-    feedbackReviseAgentPrompt,
-    improveAgentPrompt,
+    runAssistJob,
+    type AssistAgentFields,
     type AssistAnalysis,
-    type AssistDerived,
+    type AssistJobRequest,
+    type AssistOperation,
 } from '../-services/ai-agent-assist';
+
+/** The agent fields a rewrite updates together, so prompt and side fields never drift apart. */
+export interface AgentAssistUpdate {
+    systemPrompt?: string;
+    openingLine?: string;
+    extractionQuestions?: string[];
+    dispositions?: string[];
+}
 
 interface AiAgentPromptAssistantProps {
     instituteId: string;
@@ -23,12 +32,10 @@ interface AiAgentPromptAssistantProps {
     agentId?: string;
     /** Current system prompt in the editor. */
     prompt: string;
-    /** Agent language (passed to draft). */
-    language?: string;
-    /** Push a new/revised prompt into the editor. */
-    onPromptChange: (prompt: string) => void;
-    /** Offer derived side-fields (opening line, questions, dispositions) to the editor. */
-    onApplyDerived: (derived: AssistDerived) => void;
+    /** Current opening line, questions, outcomes, name, language (unsaved edits included). */
+    fields: AssistAgentFields;
+    /** Apply a rewrite: prompt + opening line + questions + outcomes in one go. */
+    onApply: (update: AgentAssistUpdate) => void;
 }
 
 const scoreTone = (score: number) =>
@@ -36,122 +43,292 @@ const scoreTone = (score: number) =>
 const scoreBarTone = (score: number) =>
     score >= 75 ? 'bg-success-500' : score >= 50 ? 'bg-warning-500' : 'bg-danger-500';
 
+/**
+ * Called from mutation onError handlers, which are plain callbacks with no
+ * hooks available, so it goes through the i18next singleton rather than a
+ * passed-in `t`.
+ */
 const errMsg = (err: unknown): string => {
-    const e = err as { response?: { status?: number; data?: { ex?: string; message?: string } } };
-    if (e?.response?.status === 402) return 'Not enough AI credits';
-    return e?.response?.data?.ex ?? e?.response?.data?.message ?? 'The AI assistant failed — retry';
+    const e = err as {
+        assistMessage?: string;
+        message?: string;
+        response?: { status?: number; data?: { ex?: string; message?: string } };
+    };
+    if (e?.response?.status === 402)
+        return i18next.t('settingsAiAgentPromptAssistant:errors.insufficientCredits');
+    if (e?.message === 'assist-timeout')
+        return i18next.t('settingsAiAgentPromptAssistant:errors.timeout');
+    return (
+        e?.assistMessage ??
+        e?.response?.data?.ex ??
+        e?.response?.data?.message ??
+        i18next.t('settingsAiAgentPromptAssistant:errors.genericFailure')
+    );
 };
 
+const sameList = (a?: string[], b?: string[]) =>
+    (a ?? []).join('\n').trim() === (b ?? []).join('\n').trim();
+
+/** The update a proposal applies; side fields only when the model returned them. */
+const toUpdate = (res: AssistAnalysis): AgentAssistUpdate => {
+    const opening = res.opening_line ?? res.derived?.opening_line;
+    return {
+        ...(res.prompt ? { systemPrompt: res.prompt } : {}),
+        ...(opening ? { openingLine: opening } : {}),
+        ...(res.derived?.extraction_questions?.length
+            ? { extractionQuestions: res.derived.extraction_questions }
+            : {}),
+        ...(res.derived?.dispositions?.length ? { dispositions: res.derived.dispositions } : {}),
+    };
+};
+
+function LintList({ items }: { items?: string[] }) {
+    const { t } = useTranslation('settingsAiAgentPromptAssistant');
+    if (!items?.length) return null;
+    return (
+        <div className="space-y-1 rounded-md border border-warning-200 bg-warning-50 p-2">
+            <p className="flex items-center gap-1 text-caption font-medium text-warning-700">
+                <Warning className="size-3.5" />
+                {t('lint.title')}
+            </p>
+            {items.map((l, i) => (
+                <p key={i} className="text-caption text-neutral-600">
+                    • {l}
+                </p>
+            ))}
+        </div>
+    );
+}
+
 /**
- * AI-assisted authoring for an agent's system prompt: draft from a plain brief,
- * score against the live-call rubric, apply selected suggestions, and (for saved
- * agents) revise from post-call feedback grounded in real transcripts. Everything
- * is SUGGESTIVE — nothing changes until the admin clicks apply.
+ * AI-assisted authoring for an agent: draft from a plain brief, score against the
+ * live-call rubric, apply selected suggestions, regenerate from the admin's notes, and
+ * (for saved agents) revise from post-call feedback grounded in real calls. Every
+ * rewrite returns the prompt, opening line, questions and outcomes as ONE proposal —
+ * nothing changes until the admin clicks "Apply all".
  */
 export function AiAgentPromptAssistant({
     instituteId,
     agentId,
     prompt,
-    language,
-    onPromptChange,
-    onApplyDerived,
+    fields,
+    onApply,
 }: AiAgentPromptAssistantProps) {
+    const { t } = useTranslation('settingsAiAgentPromptAssistant');
     const [analysis, setAnalysis] = useState<AssistAnalysis | null>(null);
     const [brief, setBrief] = useState('');
+    const [notes, setNotes] = useState('');
     const [picked, setPicked] = useState<Set<number>>(new Set());
     const [showDims, setShowDims] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [feedbackOpen, setFeedbackOpen] = useState(false);
-    const [pendingRevision, setPendingRevision] = useState<AssistAnalysis | null>(null);
+    const [proposal, setProposal] = useState<AssistAnalysis | null>(null);
+    const [showFullPrompt, setShowFullPrompt] = useState(false);
+    const [elapsed, setElapsed] = useState(0);
 
-    const applyResult = (res: AssistAnalysis, replacePrompt: boolean) => {
-        setAnalysis(res);
-        setPicked(new Set());
-        if (replacePrompt && res.prompt) onPromptChange(res.prompt);
-    };
+    const base: AssistJobRequest = { instituteId, agentId, prompt, ...fields };
 
-    const draft = useMutation({
-        mutationFn: () => draftAgentPrompt(instituteId, brief, language),
-        onSuccess: (res) => {
-            applyResult(res, true);
-            if (res.derived) onApplyDerived(res.derived);
-            toast.success('Draft ready — review the score and refine');
+    const job = useMutation({
+        mutationFn: ({ op, extra }: { op: AssistOperation; extra: Partial<AssistJobRequest> }) => {
+            setElapsed(0);
+            return runAssistJob(op, { ...base, ...extra }, setElapsed);
+        },
+        onSuccess: (res, { op }) => {
+            setPicked(new Set());
+            if (op === 'analyze') {
+                setAnalysis(res);
+            } else {
+                setProposal(res);
+                setShowFullPrompt(false);
+            }
         },
         onError: (e) => toast.error(errMsg(e)),
     });
-    const analyze = useMutation({
-        mutationFn: () => analyzeAgentPrompt(instituteId, prompt),
-        onSuccess: (res) => applyResult(res, false),
-        onError: (e) => toast.error(errMsg(e)),
-    });
-    const improve = useMutation({
-        mutationFn: (additions: string[]) => improveAgentPrompt(instituteId, prompt, additions),
-        onSuccess: (res) => {
-            applyResult(res, true);
-            toast.success('Suggestions applied — prompt updated and re-scored');
-        },
-        onError: (e) => toast.error(errMsg(e)),
-    });
-    const revise = useMutation({
-        mutationFn: () => feedbackReviseAgentPrompt(instituteId, agentId, prompt, feedback),
-        onSuccess: (res) => setPendingRevision(res),
-        onError: (e) => toast.error(errMsg(e)),
-    });
+    const running = job.isPending ? job.variables?.op : undefined;
+    const busy = job.isPending;
+    const cost = `(${t('creditCost', { count: AGENT_ASSIST_CREDIT_COST })})`;
 
-    const busy = draft.isPending || analyze.isPending || improve.isPending || revise.isPending;
     const suggestions = analysis?.suggestions ?? [];
     const hasPrompt = prompt.trim().length > 0;
+
+    const applyProposal = () => {
+        if (!proposal) return;
+        onApply(toUpdate(proposal));
+        setAnalysis(proposal);
+        setProposal(null);
+        setNotes('');
+        setFeedback('');
+        setFeedbackOpen(false);
+        toast.success(t('toasts.applied'));
+    };
+
+    const proposalOpening = proposal
+        ? proposal.opening_line ?? proposal.derived?.opening_line
+        : undefined;
 
     return (
         <div className="space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <div className="flex items-center justify-between">
                 <p className="flex items-center gap-1.5 text-body font-semibold text-neutral-600">
                     <Sparkle className="size-4 text-primary-500" />
-                    Prompt assistant
+                    {t('header.title')}
                 </p>
                 {analysis && (
                     <span className="text-caption text-neutral-500">
-                        {analysis.persona ? `Detected: ${analysis.persona}` : ''}
+                        {analysis.persona
+                            ? t('header.detected', { persona: analysis.persona })
+                            : ''}
                     </span>
                 )}
             </div>
 
-            {/* Draft-from-brief (empty prompt) or Review (existing prompt) */}
-            {!hasPrompt ? (
-                <div className="space-y-1.5">
-                    <Label>Describe your agent in plain words</Label>
-                    <Textarea
-                        rows={3}
-                        value={brief}
-                        onChange={(e) => setBrief(e.target.value)}
-                        placeholder="e.g. We run a NEET coaching institute. The agent should call new leads, qualify their class and target year, answer fee questions, and book a counselling session."
-                    />
-                    <MyButton
-                        buttonType="primary"
-                        scale="small"
-                        disable={busy || brief.trim().length < 10}
-                        onClick={() => draft.mutate()}
-                    >
-                        {draft.isPending
-                            ? 'Drafting…'
-                            : `Draft with AI (${AGENT_ASSIST_CREDIT_COST} credit)`}
-                    </MyButton>
-                </div>
-            ) : (
-                <MyButton
-                    buttonType="secondary"
-                    scale="small"
-                    disable={busy}
-                    onClick={() => analyze.mutate()}
-                >
-                    {analyze.isPending
-                        ? 'Reviewing…'
-                        : `Review prompt (${AGENT_ASSIST_CREDIT_COST} credit)`}
-                </MyButton>
+            {busy && (
+                <p className="text-caption text-neutral-500">
+                    {t('progress.working', { seconds: elapsed })}
+                </p>
             )}
 
+            {/* ── Proposal: one preview for every rewrite, applied as a set ── */}
+            {proposal && (
+                <div className="space-y-2 rounded-md border border-primary-200 bg-primary-50 p-2">
+                    <p className="text-caption font-medium text-neutral-700">
+                        {t('proposal.title', { score: proposal.score })}
+                    </p>
+                    {proposal.change_summary && (
+                        <p className="whitespace-pre-line text-caption text-neutral-600">
+                            {proposal.change_summary}
+                        </p>
+                    )}
+                    {(proposal.call_insights ?? []).map((ci, i) => (
+                        <p key={i} className="text-caption text-neutral-500">
+                            • {ci}
+                        </p>
+                    ))}
+
+                    <div className="space-y-1.5 rounded-md border border-neutral-200 bg-white p-2">
+                        <p className="text-caption font-medium text-neutral-600">
+                            {t('proposal.willUpdate')}
+                        </p>
+                        {proposalOpening && (
+                            <div>
+                                <p className="text-caption text-neutral-500">
+                                    {t('proposal.openingLine')}
+                                    {proposalOpening.trim() === (fields.openingLine ?? '').trim()
+                                        ? ` · ${t('proposal.unchanged')}`
+                                        : ''}
+                                </p>
+                                <p className="text-body text-neutral-700">{proposalOpening}</p>
+                            </div>
+                        )}
+                        {!!proposal.derived?.extraction_questions?.length && (
+                            <div>
+                                <p className="text-caption text-neutral-500">
+                                    {t('proposal.questions')}
+                                    {sameList(
+                                        proposal.derived.extraction_questions,
+                                        fields.extractionQuestions
+                                    )
+                                        ? ` · ${t('proposal.unchanged')}`
+                                        : ''}
+                                </p>
+                                <p className="text-caption text-neutral-700">
+                                    {proposal.derived.extraction_questions.join(' · ')}
+                                </p>
+                            </div>
+                        )}
+                        {!!proposal.derived?.dispositions?.length && (
+                            <div>
+                                <p className="text-caption text-neutral-500">
+                                    {t('proposal.outcomes')}
+                                    {sameList(proposal.derived.dispositions, fields.dispositions)
+                                        ? ` · ${t('proposal.unchanged')}`
+                                        : ''}
+                                </p>
+                                <p className="text-caption text-neutral-700">
+                                    {proposal.derived.dispositions.join(' · ')}
+                                </p>
+                            </div>
+                        )}
+                        {proposal.prompt && (
+                            <div>
+                                <button
+                                    type="button"
+                                    className="flex items-center gap-1 text-caption text-neutral-500 hover:text-primary-600"
+                                    onClick={() => setShowFullPrompt((v) => !v)}
+                                >
+                                    {t('proposal.prompt', {
+                                        before: prompt.length.toLocaleString(),
+                                        after: proposal.prompt.length.toLocaleString(),
+                                    })}
+                                    {showFullPrompt ? (
+                                        <CaretUp className="size-3" />
+                                    ) : (
+                                        <CaretDown className="size-3" />
+                                    )}
+                                </button>
+                                {showFullPrompt && (
+                                    <pre className="mt-1 max-h-72 overflow-auto whitespace-pre-wrap rounded-md bg-neutral-50 p-2 text-caption text-neutral-700">
+                                        {proposal.prompt}
+                                    </pre>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <LintList items={proposal.lint} />
+
+                    <div className="flex gap-2">
+                        <MyButton buttonType="primary" scale="small" onClick={applyProposal}>
+                            {t('proposal.applyAll')}
+                        </MyButton>
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            onClick={() => setProposal(null)}
+                        >
+                            {t('proposal.discard')}
+                        </MyButton>
+                    </div>
+                </div>
+            )}
+
+            {/* Draft-from-brief (empty prompt) or Review (existing prompt) */}
+            {!proposal &&
+                (!hasPrompt ? (
+                    <div className="space-y-1.5">
+                        <Label>{t('brief.label')}</Label>
+                        <Textarea
+                            rows={3}
+                            value={brief}
+                            onChange={(e) => setBrief(e.target.value)}
+                            placeholder={t('brief.placeholder')}
+                        />
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            disable={busy || brief.trim().length < 10}
+                            onClick={() => job.mutate({ op: 'draft', extra: { brief } })}
+                        >
+                            {running === 'draft'
+                                ? t('brief.drafting')
+                                : `${t('brief.action')} ${cost}`}
+                        </MyButton>
+                    </div>
+                ) : (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={busy}
+                        onClick={() => job.mutate({ op: 'analyze', extra: {} })}
+                    >
+                        {running === 'analyze'
+                            ? t('review.reviewing')
+                            : `${t('review.action')} ${cost}`}
+                    </MyButton>
+                ))}
+
             {/* Score + dimensions */}
-            {analysis && (
+            {analysis && !proposal && (
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
                         <span className={cn('text-h3 font-bold', scoreTone(analysis.score))}>
@@ -169,7 +346,12 @@ export function AiAgentPromptAssistant({
                             className="flex items-center gap-1 text-caption text-neutral-500 hover:text-primary-600"
                             onClick={() => setShowDims((v) => !v)}
                         >
-                            Details {showDims ? <CaretUp className="size-3" /> : <CaretDown className="size-3" />}
+                            {t('details.toggle')}{' '}
+                            {showDims ? (
+                                <CaretUp className="size-3" />
+                            ) : (
+                                <CaretDown className="size-3" />
+                            )}
                         </button>
                     </div>
                     {showDims && (
@@ -186,7 +368,7 @@ export function AiAgentPromptAssistant({
                                                   : 'text-danger-600'
                                         )}
                                     >
-                                        {d.score}/10
+                                        {t('details.dimensionScore', { score: d.score })}
                                     </span>
                                     <span className="font-medium text-neutral-600">{d.label}:</span>
                                     <span className="text-neutral-500">{d.comment}</span>
@@ -195,10 +377,12 @@ export function AiAgentPromptAssistant({
                         </div>
                     )}
 
+                    <LintList items={analysis.lint} />
+
                     {/* Suggestions — pick and apply */}
                     {suggestions.length > 0 && (
                         <div className="space-y-1.5">
-                            <Label>Suggested improvements</Label>
+                            <Label>{t('suggestions.label')}</Label>
                             {suggestions.map((sg, i) => (
                                 <label
                                     key={i}
@@ -232,114 +416,103 @@ export function AiAgentPromptAssistant({
                                 scale="small"
                                 disable={busy || picked.size === 0}
                                 onClick={() =>
-                                    improve.mutate(
-                                        Array.from(picked).map((i) => suggestions[i]!.addition)
-                                    )
+                                    job.mutate({
+                                        op: 'improve',
+                                        extra: {
+                                            additions: Array.from(picked).map(
+                                                (i) => suggestions[i]!.addition
+                                            ),
+                                        },
+                                    })
                                 }
                             >
-                                {improve.isPending
-                                    ? 'Applying…'
-                                    : `Apply ${picked.size || ''} selected (${AGENT_ASSIST_CREDIT_COST} credit)`}
+                                {running === 'improve'
+                                    ? t('suggestions.applying')
+                                    : `${t('suggestions.applySelected', { count: picked.size })} ${cost}`}
                             </MyButton>
                         </div>
                     )}
 
-                    {/* Derived side-fields */}
-                    {analysis.derived && (
+                    {/* Derived side-fields (review only — rewrites apply them with the prompt) */}
+                    {analysis.derived && !analysis.prompt && (
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="text-caption text-neutral-500">
-                                Derived from this prompt:
+                                {t('derived.label')}
                             </span>
                             <MyButton
                                 buttonType="text"
                                 scale="small"
                                 onClick={() => {
-                                    onApplyDerived(analysis.derived!);
-                                    toast.success('Opening line, questions and outcomes filled in');
+                                    onApply(toUpdate({ ...analysis, prompt: undefined }));
+                                    toast.success(t('toasts.derivedApplied'));
                                 }}
                             >
                                 <CheckCircle className="mr-1 size-3.5" />
-                                Use suggested opening line, questions & outcomes
+                                {t('derived.useButton')}
                             </MyButton>
                         </div>
                     )}
                 </div>
             )}
 
+            {/* Regenerate from the admin's own notes */}
+            {hasPrompt && !proposal && (
+                <div className="space-y-1.5 border-t border-neutral-200 pt-2">
+                    <Label>{t('regenerate.label')}</Label>
+                    <Textarea
+                        rows={3}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder={t('regenerate.placeholder')}
+                    />
+                    <p className="text-caption text-neutral-500">{t('regenerate.hint')}</p>
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={busy || notes.trim().length < 5}
+                        onClick={() => job.mutate({ op: 'regenerate', extra: { notes } })}
+                    >
+                        {running === 'regenerate'
+                            ? t('regenerate.running')
+                            : `${t('regenerate.action')} ${cost}`}
+                    </MyButton>
+                </div>
+            )}
+
             {/* Post-call feedback loop (saved agents only) */}
-            {agentId && hasPrompt && (
+            {agentId && hasPrompt && !proposal && (
                 <div className="space-y-1.5 border-t border-neutral-200 pt-2">
                     <button
                         type="button"
                         className="flex items-center gap-1 text-caption font-medium text-neutral-600 hover:text-primary-600"
                         onClick={() => setFeedbackOpen((v) => !v)}
                     >
-                        Improve from call feedback{' '}
-                        {feedbackOpen ? <CaretUp className="size-3" /> : <CaretDown className="size-3" />}
+                        {t('feedback.toggle')}{' '}
+                        {feedbackOpen ? (
+                            <CaretUp className="size-3" />
+                        ) : (
+                            <CaretDown className="size-3" />
+                        )}
                     </button>
-                    {feedbackOpen && !pendingRevision && (
+                    {feedbackOpen && (
                         <div className="space-y-1.5">
                             <Textarea
                                 rows={3}
                                 value={feedback}
                                 onChange={(e) => setFeedback(e.target.value)}
-                                placeholder="e.g. It gives up too easily when someone says 'email me'. Callers asked about fees and it had no answer."
+                                placeholder={t('feedback.placeholder')}
                             />
-                            <p className="text-caption text-neutral-500">
-                                The assistant also reads this agent&apos;s recent real calls
-                                (transcripts, outcomes) to ground the revision.
-                            </p>
+                            <p className="text-caption text-neutral-500">{t('feedback.hint')}</p>
                             <MyButton
                                 buttonType="secondary"
                                 scale="small"
                                 disable={busy || feedback.trim().length < 5}
-                                onClick={() => revise.mutate()}
+                                onClick={() => job.mutate({ op: 'feedback', extra: { feedback } })}
                             >
-                                {revise.isPending
-                                    ? 'Revising…'
-                                    : `Suggest revision (${AGENT_ASSIST_CREDIT_COST} credit)`}
+                                {running === 'feedback'
+                                    ? t('feedback.revising')
+                                    : `${t('feedback.action')} ${cost}`}
                             </MyButton>
-                        </div>
-                    )}
-                    {pendingRevision && (
-                        <div className="space-y-1.5 rounded-md border border-primary-200 bg-primary-50 p-2">
-                            <p className="text-caption font-medium text-neutral-700">
-                                Proposed revision (score {pendingRevision.score})
-                            </p>
-                            {pendingRevision.change_summary && (
-                                <p className="whitespace-pre-line text-caption text-neutral-600">
-                                    {pendingRevision.change_summary}
-                                </p>
-                            )}
-                            {(pendingRevision.call_insights ?? []).map((ci, i) => (
-                                <p key={i} className="text-caption text-neutral-500">
-                                    • {ci}
-                                </p>
-                            ))}
-                            <div className="flex gap-2">
-                                <MyButton
-                                    buttonType="primary"
-                                    scale="small"
-                                    onClick={() => {
-                                        if (pendingRevision.prompt)
-                                            onPromptChange(pendingRevision.prompt);
-                                        setAnalysis(pendingRevision);
-                                        setPendingRevision(null);
-                                        setFeedback('');
-                                        setFeedbackOpen(false);
-                                        toast.success('Revised prompt applied — remember to Save');
-                                    }}
-                                >
-                                    Apply revision
-                                </MyButton>
-                                <MyButton
-                                    buttonType="secondary"
-                                    scale="small"
-                                    onClick={() => setPendingRevision(null)}
-                                >
-                                    Discard
-                                </MyButton>
-                            </div>
                         </div>
                     )}
                 </div>

@@ -32,6 +32,18 @@ interface LayoutContainerProps {
      * they did before the contract existed.
      */
     fullWidth?: boolean;
+    /**
+     * Pin the page to the viewport: the main column becomes exactly one
+     * screen tall and the content wrapper a min-h-0 flex column, so a route
+     * can give each of its panes its own scroll (tutor whiteboard, chat rail)
+     * instead of growing the whole page. Implies fullWidth.
+     */
+    fillViewport?: boolean;
+    /**
+     * Distraction-free: no app sidebar, nav rail or top bar — the route owns
+     * the whole viewport (Live AI Tutor lessons). Implies fillViewport.
+     */
+    immersive?: boolean;
 }
 
 export const LayoutContainer = ({
@@ -41,10 +53,13 @@ export const LayoutContainer = ({
     hideBrandingHeader,
     enableChatbotPanel = true, // Docked panel enabled by default
     fullWidth = false,
+    fillViewport: fillViewportProp = false,
+    immersive = false,
 }: LayoutContainerProps) => {
+    const fillViewport = fillViewportProp || immersive;
     const { setHasCustomSidebar } = useStore();
     const { isOpen: chatbotIsOpen } = useChatbotContext();
-    const { panelWidth, setIsDockedMode } = useChatbotPanelStore();
+    const { panelWidth, setIsDockedMode, viewMode, setViewMode } = useChatbotPanelStore();
     const [isMobile, setIsMobile] = useState(false);
     const isPlayTheme = usePlayTheme();
     const isCleanerPlayTheme = useCleanerPlayTheme();
@@ -95,8 +110,12 @@ export const LayoutContainer = ({
         return () => setHasCustomSidebar(false);
     }, [hasCustomSidebar, setHasCustomSidebar]);
 
-    // Show docked panel only on desktop when enableChatbotPanel is true
-    const showDockedPanel = enableChatbotPanel && chatbotIsOpen && !isMobile;
+    // Show the desktop panel only when enableChatbotPanel is true. Docked = a
+    // right-hand column that takes width from the page; popup = a centered
+    // overlay that leaves the page alone.
+    const showDesktopPanel = enableChatbotPanel && chatbotIsOpen && !isMobile;
+    const showDockedPanel = showDesktopPanel && viewMode !== "popup";
+    const showPopupPanel = showDesktopPanel && viewMode === "popup";
 
     // Play desktop nav: sidebar hiding is institute-config driven (not
     // per-route), and the standard sidebar already renders its desktop
@@ -111,20 +130,22 @@ export const LayoutContainer = ({
 
     return (
         <>
-            <MySidebar
-                sidebarComponent={sidebarComponent}
-                hideBrandingHeader={hideBrandingHeader}
-            />
-            {showPlayRail && <PlayNavRail />}
+            {!immersive && (
+                <MySidebar
+                    sidebarComponent={sidebarComponent}
+                    hideBrandingHeader={hideBrandingHeader}
+                />
+            )}
+            {showPlayRail && !immersive && <PlayNavRail />}
             <SidebarInset
-                className="overflow-x-hidden w-full"
+                className={cn("overflow-x-hidden w-full", fillViewport && "h-svh max-h-svh overflow-hidden")}
                 style={{
                     // Reduce content width when chatbot panel is open (desktop only)
                     marginRight: showDockedPanel ? `${panelWidth}px` : "0",
                     transition: "margin-right 0.2s ease-in-out",
                 }}
             >
-                <Navbar />
+                {!immersive && <Navbar />}
                 {/* One content contract for every routed page: centered, capped
                     at screen-xl, with a consistent gutter + top rhythm. Routes
                     that self-manage (className="!m-0 !p-0 max-w-none") still
@@ -133,9 +154,11 @@ export const LayoutContainer = ({
                 <div
                     className={cn(
                         "overflow-x-hidden",
-                        fullWidth
-                            ? "m-3 md:m-5 max-w-full"
-                            : "mx-auto w-full max-w-screen-xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6",
+                        fillViewport
+                            ? cn("flex min-h-0 flex-1 flex-col max-w-full", immersive ? "p-2 md:p-3" : "p-3 md:p-4")
+                            : fullWidth
+                              ? "m-3 md:m-5 max-w-full"
+                              : "mx-auto w-full max-w-screen-xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6",
                         (isPlayTheme || isCleanerPlayTheme) && isMobile && "pb-20",
                         className
                     )}
@@ -150,6 +173,21 @@ export const LayoutContainer = ({
                     style={{ width: panelWidth }}
                 >
                     <ChatbotSidePanel />
+                </div>
+            )}
+            {/* Popup view: same panel, centered over a dimmed page. Clicking the
+                backdrop docks it again rather than closing the conversation. */}
+            {showPopupPanel && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm md:p-8"
+                    onClick={() => setViewMode("docked")}
+                >
+                    <div
+                        className="h-full w-full max-w-3xl overflow-hidden rounded-2xl shadow-2xl ring-1 ring-border/40"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <ChatbotSidePanel />
+                    </div>
                 </div>
             )}
             {/* Play + Cleaner Play: mobile bottom tab bar (skin-aware inside) */}

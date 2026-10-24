@@ -1,0 +1,207 @@
+{
+    "nav": {
+        "title": "العملاء المحتملون الجدد"
+    },
+    "heading": {
+        "loading": "جارٍ تحميل العملاء المحتملين…",
+        "leadsCount_zero": "{{count}} عميل محتمل",
+        "leadsCount_one": "عميل محتمل واحد ({{count}})",
+        "leadsCount_two": "عميلان محتملان ({{count}})",
+        "leadsCount_few": "{{count}} عملاء محتملين",
+        "leadsCount_many": "{{count}} عميلاً محتملاً",
+        "leadsCount_other": "{{count}} عميل محتمل"
+    },
+    "slaOptions": {
+        "all": "جميع حالات الإجراءات",
+        "anyOverdueLabel": "فات موعد نهائي",
+        "anyOverdueHelper": "أول تواصل أو متابعة — أيهما تجاوز موعده",
+        "firstContactMissed": "فات موعد أول تواصل",
+        "firstContactComingUp": "أول تواصل قادم",
+        "followUpComingUp": "متابعة قادمة",
+        "followUpMissed": "فاتت المتابعة"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "آخر 24 ساعة",
+        "last7Days": "آخر 7 أيام",
+        "last15Days": "آخر 15 يومًا",
+        "last30Days": "آخر 30 يومًا",
+        "allTime": "كل الأوقات",
+        "customRange": "نطاق مخصص"
+    },
+    "filters": {
+        "tier": {
+            "label": "جميع المستويات",
+            "hot": "ساخن",
+            "warm": "دافئ",
+            "cold": "بارد"
+        },
+        "leadStatus": {
+            "label": "جميع العملاء المحتملين",
+            "active": "نشط (غير مسجَّل)",
+            "converted": "مسجَّل / محوَّل",
+            "excludeSelected": "استبعاد المحدد"
+        },
+        "sla": {
+            "label": "جميع حالات SLA"
+        },
+        "audience": {
+            "label": "كل {{term}}",
+            "untitled": "جمهور بلا عنوان"
+        },
+        "campaignType": {
+            "label": "كل {{term}}"
+        },
+        "customDate": {
+            "setDates": "تحديد التواريخ",
+            "done": "تم",
+            "from": "من",
+            "to": "إلى"
+        },
+        "calledWithin": {
+            "placeholder": null,
+            "any": null
+        },
+        "workedWithin": {
+            "placeholder": null,
+            "any": null
+        }
+    },
+    "toolbar": {
+        "leadSettings": "إعدادات العملاء المحتملين",
+        "showDeletedTitle": "إظهار العملاء المحتملين المحذوفين",
+        "backToActiveTitle": "العودة إلى العملاء المحتملين النشطين",
+        "deletedLeadsButton": "العملاء المحتملون المحذوفون",
+        "viewingDeletedButton": "عرض المحذوفين",
+        "exporting": "جارٍ التصدير…",
+        "export": "تصدير",
+        "addLead": "إضافة عميل محتمل",
+        "filters": "عوامل التصفية",
+        "summaryShow": "إظهار الملخص",
+        "summaryHide": "إخفاء الملخص"
+    },
+    "chips": {
+        "search": "بحث: {{query}}",
+        "audience": "الجمهور: {{names}}",
+        "campaignType": "{{term}}: {{types}}",
+        "tier": "المستوى: {{tiers}}",
+        "status": "الحالة: {{statuses}}",
+        "sla": "SLA: {{states}}",
+        "counsellor": "المستشار: {{names}}",
+        "source": "المصدر: {{source}}",
+        "customField": "{{field}}: {{value}}",
+        "dateRangeCustomWithDates": "التاريخ: {{from}} → {{to}}",
+        "dateRangeCustomFallback": "التاريخ: نطاق مخصص",
+        "dateRangeFallback": "نطاق التاريخ",
+        "fallbackSelected": "محدَّد",
+        "fallbackField": "الحقل",
+        "statusActive": "نشط",
+        "statusConverted": "محوَّل",
+        "unassigned": "غير مُسنَد",
+        "removeAriaLabel": "إزالة {{label}}",
+        "clearAll": "مسح الكل",
+        "calledWithin": null,
+        "workedWithin": null,
+        "pinnedTitle": "مثبَّت بواسطة هذا التبويب — لا يمكن إزالته من هنا",
+        "statusExcluded": "الحالة ليست: {{statuses}}"
+    },
+    "search": {
+        "placeholder": "البحث عن العملاء المحتملين",
+        "showing": "عرض",
+        "resultsPending": "من … نتائج",
+        "resultsCount_zero": "من {{count}} نتيجة",
+        "resultsCount_one": "من نتيجة واحدة ({{count}})",
+        "resultsCount_two": "من نتيجتين ({{count}})",
+        "resultsCount_few": "من {{count}} نتائج",
+        "resultsCount_many": "من {{count}} نتيجة",
+        "resultsCount_other": "من {{count}} نتيجة"
+    },
+    "bulk": {
+        "selectedCount_zero": "{{count}} محدَّد",
+        "selectedCount_one": "محدَّد واحد ({{count}})",
+        "selectedCount_two": "محدَّدان ({{count}})",
+        "selectedCount_few": "{{count}} محدَّدة",
+        "selectedCount_many": "{{count}} محدَّدًا",
+        "selectedCount_other": "{{count}} محدَّد",
+        "selecting": "جارٍ التحديد…",
+        "selectAll_zero": "تحديد الكل ({{count}})",
+        "selectAll_one": "تحديد الكل ({{count}})",
+        "selectAll_two": "تحديد الكل ({{count}})",
+        "selectAll_few": "تحديد الكل ({{count}})",
+        "selectAll_many": "تحديد الكل ({{count}})",
+        "selectAll_other": "تحديد الكل ({{count}})",
+        "clear": "مسح",
+        "actionsButton": "إجراءات جماعية",
+        "assignLeads": "إسناد العملاء المحتملين",
+        "unassignLeads": "إلغاء إسناد العملاء المحتملين",
+        "restoreLeads": "استعادة العملاء المحتملين",
+        "deleteLeads": "حذف العملاء المحتملين",
+        "changeStatus": null
+    },
+    "emptyState": {
+        "errorTitle": "تعذّر تحميل العملاء المحتملين",
+        "errorDescription": "حدث خطأ أثناء جلب العملاء المحتملين. حاول مرة أخرى."
+    },
+    "callReasons": {
+        "noSubmissionId": "لا يوجد معرّف إرسال لهذا العميل المحتمل",
+        "noPhone": "لا يوجد رقم هاتف مسجَّل لهذا العميل المحتمل",
+        "callInProgress": "جارٍ بدء مكالمة أخرى…"
+    },
+    "export": {
+        "columns": {
+            "leadId": "معرّف العميل المحتمل",
+            "submittedAt": "تاريخ الإرسال",
+            "name": "الاسم",
+            "email": "البريد الإلكتروني",
+            "mobile": "الجوال",
+            "audience": "الجمهور",
+            "campaignType": "{{term}}",
+            "leadStatus": "حالة العميل المحتمل",
+            "counsellor": "المستشار",
+            "activityNotes": "النشاط والملاحظات",
+            "notesCount": "عدد الملاحظات",
+            "leadJourney": "رحلة العميل المحتمل (التصرف والملاحظات)",
+            "utmCampaign": "حملة UTM"
+        },
+        "notes": {
+            "defaultTitle": "ملاحظة",
+            "updatedBy": "حدَّثها - {{name}}",
+            "date": "التاريخ - {{date}}"
+        },
+        "noLeadsToExport": "لا يوجد عملاء محتملون للتصدير",
+        "exportedLeads_zero": "تم تصدير {{count}} عميل محتمل",
+        "exportedLeads_one": "تم تصدير عميل محتمل واحد ({{count}})",
+        "exportedLeads_two": "تم تصدير عميلين محتملين ({{count}})",
+        "exportedLeads_few": "تم تصدير {{count}} عملاء محتملين",
+        "exportedLeads_many": "تم تصدير {{count}} عميلاً محتملاً",
+        "exportedLeads_other": "تم تصدير {{count}} عميل محتمل",
+        "exportFailed": "فشل تصدير العملاء المحتملين الجدد"
+    },
+    "toasts": {
+        "leadRestored_zero": "تمت استعادة {{count}} عميل محتمل",
+        "leadRestored_one": "تمت استعادة عميل محتمل واحد ({{count}})",
+        "leadRestored_two": "تمت استعادة عميلين محتملين ({{count}})",
+        "leadRestored_few": "تمت استعادة {{count}} عملاء محتملين",
+        "leadRestored_many": "تمت استعادة {{count}} عميلاً محتملاً",
+        "leadRestored_other": "تمت استعادة {{count}} عميل محتمل",
+        "restoreFailed": "فشلت الاستعادة. حاول مرة أخرى.",
+        "selectAllFailed": "فشل تحديد جميع العملاء المحتملين",
+        "bulkStatusUpdated_one": null,
+        "bulkStatusUpdated_other": null,
+        "bulkStatusUnchanged_one": null,
+        "bulkStatusUnchanged_other": null,
+        "bulkStatusPartial": null,
+        "bulkStatusFailed": null
+    },
+    "filtersPanel": {
+        "title": "عوامل التصفية",
+        "active": "{{count}} نشطة",
+        "close": "إغلاق عوامل التصفية",
+        "sections": {
+            "pipeline": "مسار المبيعات",
+            "owner": "المسؤول والمصدر",
+            "activity": "النشاط",
+            "campaign": "روابط الحملات",
+            "custom": "حقول مخصصة"
+        }
+    }
+}

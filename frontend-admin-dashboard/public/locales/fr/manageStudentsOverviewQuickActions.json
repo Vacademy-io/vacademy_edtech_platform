@@ -1,0 +1,16 @@
+{
+    "buttons": {
+        "email": "E-mail",
+        "whatsapp": "WhatsApp",
+        "copyCredentials": "Copier les identifiants"
+    },
+    "toasts": {
+        "noCredentials": "Aucun identifiant disponible pour cet apprenant",
+        "copySuccess": "Nom d'utilisateur et mot de passe copiés",
+        "copyFailure": "Impossible de copier dans le presse-papiers"
+    },
+    "credentialsText": {
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe"
+    }
+}

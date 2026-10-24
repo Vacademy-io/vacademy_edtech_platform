@@ -7,6 +7,7 @@ import {
     Clock,
     FilePdf,
     ArrowRight,
+    Hourglass,
 } from "@phosphor-icons/react";
 import { Reply } from "./reply";
 import { Doubt as DoubtType } from "../types/get-doubts-type";
@@ -50,23 +51,44 @@ export const Doubt = ({
     const isDocument = sourceType === "DOCUMENT";
     const hasPosition = !!positionLabel && (sourceType === "VIDEO" || isDocument);
 
+    // The institute can define its own statuses (In progress, Being looked into, …); the server
+    // sends a learner-safe label + kind for the current one. Internal remarks and assignment
+    // history never reach the learner. A CUSTOM status shows its learner label; the built-in
+    // Pending keeps the reply-aware "Answered / Awaiting reply" wording (and an older server
+    // that sends no learner_status behaves exactly as before).
+    const learnerStatus = doubt.learner_status;
+    const customOpenStatus =
+        learnerStatus && learnerStatus.key !== "PENDING" && learnerStatus.kind !== "RESOLVED"
+            ? learnerStatus
+            : null;
     const status = isResolved
         ? {
               tone: "success" as const,
-              label: t("doubts.statusResolved"),
+              label: learnerStatus?.kind === "RESOLVED" ? learnerStatus.label : t("doubts.statusResolved"),
               icon: <Check size={11} weight="bold" />,
           }
-        : replyCount > 0
+        : customOpenStatus
           ? {
-                tone: "info" as const,
-                label: t("doubts.statusAnswered"),
-                icon: <ChatText size={11} weight="fill" />,
+                tone: customOpenStatus.kind === "IN_PROGRESS" ? ("info" as const) : ("warning" as const),
+                label: customOpenStatus.label,
+                icon:
+                    customOpenStatus.kind === "IN_PROGRESS" ? (
+                        <Hourglass size={11} weight="fill" />
+                    ) : (
+                        <Clock size={11} weight="fill" />
+                    ),
             }
-          : {
-                tone: "warning" as const,
-                label: t("doubts.statusAwaiting"),
-                icon: <Clock size={11} weight="fill" />,
-            };
+          : replyCount > 0
+            ? {
+                  tone: "info" as const,
+                  label: t("doubts.statusAnswered"),
+                  icon: <ChatText size={11} weight="fill" />,
+              }
+            : {
+                  tone: "warning" as const,
+                  label: t("doubts.statusAwaiting"),
+                  icon: <Clock size={11} weight="fill" />,
+              };
 
     return (
         <div className="rounded-lg border border-neutral-200 bg-white p-3">
@@ -135,7 +157,7 @@ export const Doubt = ({
                         </span>
                     </button>
                     {showReplies && (
-                        <div className="mt-2 flex flex-col gap-3 border-s border-neutral-200 ps-3">
+                        <div className="mt-2 flex flex-col gap-stack border-s border-neutral-200 ps-3">
                             {doubt.replies.map((reply, key) => (
                                 <Reply
                                     key={reply.id || key}

@@ -1,0 +1,84 @@
+{
+    "hook": {
+        "previewFailedFallback": "فشلت المعاينة"
+    },
+    "avatarRow": {
+        "presetAvatar": "صورة رمزية جاهزة",
+        "customAvatar": "صورة رمزية مخصصة",
+        "labelWithName": "{{label}} — {{name}}",
+        "perShotIdentityImages": "صور الهوية لكل لقطة"
+    },
+    "inline": {
+        "expectedCredits_zero": "~{{value}} رصيد",
+        "expectedCredits_one": "~رصيد واحد ({{value}})",
+        "expectedCredits_two": "~رصيدان ({{value}})",
+        "expectedCredits_few": "~{{value}} أرصدة",
+        "expectedCredits_many": "~{{value}} رصيدًا",
+        "expectedCredits_other": "~{{value}} رصيد",
+        "range": "({{low}}–{{high}})",
+        "balanceAvailable": "{{value}} متاح"
+    },
+    "modal": {
+        "title": "تأكيد الإنشاء",
+        "estimating": "جارٍ تقدير التكلفة…",
+        "loadFailed": "تعذّر تحميل التقدير: {{error}}. يمكنك المتابعة رغم ذلك.",
+        "selections": {
+            "heading": "اختياراتك",
+            "quality": "الجودة",
+            "model": "النموذج",
+            "modelDefault": "افتراضي",
+            "duration": "المدة",
+            "orientation": "الاتجاه",
+            "orientationLandscape": "أفقي",
+            "orientationPortrait": "عمودي",
+            "audience": "الجمهور",
+            "language": "اللغة",
+            "voice": "الصوت",
+            "captions": "الترجمة النصية",
+            "backgroundMusic": "الموسيقى الخلفية",
+            "soundEffects": "المؤثرات الصوتية",
+            "reviewMode": "وضع المراجعة",
+            "reviewModeOn": "مفعّل (يتوقف عند النص)",
+            "attachments": "المرفقات",
+            "attachmentsValue_zero": "{{count}} ملف",
+            "attachmentsValue_one": "{{count}} ملف واحد",
+            "attachmentsValue_two": "{{count}} ملفان",
+            "attachmentsValue_few": "{{count}} ملفات",
+            "attachmentsValue_many": "{{count}} ملفًا",
+            "attachmentsValue_other": "{{count}} ملف"
+        },
+        "cost": {
+            "heading": "التكلفة المقدّرة",
+            "component": "المكوّن",
+            "credits": "الأرصدة",
+            "expectedTotal": "الإجمالي المتوقع",
+            "range": "النطاق: {{low}}–{{high}} رصيد"
+        },
+        "balance": {
+            "current": "الرصيد الحالي",
+            "currentValue": "{{value}} رصيد",
+            "afterExpected": "بعد الخصم المتوقع",
+            "afterHigh": "أسوأ الحالات (الأعلى)",
+            "insufficient": "الرصيد غير كافٍ لتغطية أسوأ تقدير."
+        },
+        "assumptions": {
+            "summary": "الافتراضات"
+        },
+        "footer": {
+            "cancel": "إلغاء",
+            "insufficientTopUp": "رصيد غير كافٍ — أعد الشحن",
+            "confirm": "تأكيد وإنشاء",
+            "confirmCredits_zero": " · {{value}} رصيد",
+            "confirmCredits_one": " · رصيد واحد ({{value}})",
+            "confirmCredits_two": " · رصيدان ({{value}})",
+            "confirmCredits_few": " · {{value}} أرصدة",
+            "confirmCredits_many": " · {{value}} رصيدًا",
+            "confirmCredits_other": " · {{value}} رصيد"
+        }
+    },
+    "common": {
+        "on": "مفعّل",
+        "off": "متوقف",
+        "emptyValue": "—"
+    }
+}

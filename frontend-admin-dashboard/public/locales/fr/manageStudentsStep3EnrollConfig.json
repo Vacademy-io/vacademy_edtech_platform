@@ -1,0 +1,62 @@
+{
+    "courseInviteSection": {
+        "heading": "Invitation d'inscription par {{term}}",
+        "description": "Choisissez un lien d'invitation pour chaque {{term}}. Laissez vide pour utiliser automatiquement l'invitation par défaut.",
+        "inviteLinkLabel": "Lien d'invitation",
+        "accessDaysLabel": "Remplacement des jours d'accès",
+        "accessDaysPlaceholder": "Depuis l'invitation",
+        "autoResolvedFromDefault": "(résolu automatiquement à partir de l'invitation par défaut)",
+        "payInInstallments": {
+            "label": "Payer en plusieurs fois",
+            "description": "Répartir ce prix en échéances pour ces apprenants. La remise du plan de frais remplace la remise ci-dessus."
+        },
+        "autoResolvedOnlyActive": "(le seul lien d’invitation actif du cours)",
+        "pickInvite": "Ce cours a {{count}} liens d’invitation actifs et aucun par défaut. Choisissez le lien d’invitation à utiliser.",
+        "noInvite": "Aucun lien d’invitation pour ce cours : les apprenants sont inscrits gratuitement."
+    },
+    "globalOptions": {
+        "heading": "Options globales",
+        "notifyLearnersLabel": "Notifier les {{term}}",
+        "notifyLearnersDescription": "Envoyer des e-mails de confirmation d'inscription aux {{term}} nouvellement inscrits",
+        "sendCredentialsLabel": "Envoyer les identifiants",
+        "sendCredentialsDescription": "Envoyer un e-mail d'inscription avec les identifiants de connexion aux nouveaux {{term}}",
+        "duplicateHandling": {
+            "label": "Si le/la {{term}} est déjà inscrit(e)",
+            "skipOption": "Ignorer silencieusement (recommandé)",
+            "errorOption": "Marquer comme erreur dans le rapport",
+            "skipDescription": "Les {{term}} ayant un accès actif ou une invitation en attente seront ignorés silencieusement.",
+            "errorDescription": "Les {{term}} ayant un accès actif ou une invitation en attente apparaîtront comme des échecs dans les résultats.",
+            "alwaysReenrolled": "Les {{term}} expirés ou résiliés sont toujours réinscrits."
+        },
+        "paymentDate": {
+            "label": "Date de paiement (facultatif)",
+            "placeholder": "Sélectionner la date de paiement",
+            "description": "Date à laquelle le paiement a été effectué. L'adhésion et l'accès au cours commencent à cette date."
+        },
+        "transactionId": {
+            "label": "ID de transaction (facultatif)",
+            "placeholder": "Saisir l'ID de transaction",
+            "description": "Référence de transaction de paiement externe"
+        },
+        "paymentDetailsInCourse": "Le mode de paiement est repris de la section frais de chaque cours ci-dessus."
+    },
+    "workflows": {
+        "heading": "Workflows qui se déclencheront lors de l'inscription",
+        "loading": "Chargement des workflows liés…",
+        "noneLinked": "Aucun workflow d'automatisation n'est lié aux {{term}} sélectionnés.",
+        "global": "Global",
+        "firesOnEveryEnrollment": "Se déclenche à chaque inscription groupée :",
+        "noCourseSpecific": "Aucun workflow spécifique à ce cours n'est lié.",
+        "verdict": {
+            "runs": "Global — sa condition correspond à ce {{term}}",
+            "unknown": "Global — se déclenche uniquement si l'apprenant remplit sa condition"
+        }
+    },
+    "package": {
+        "blockers": {
+            "multiFee": "{{course}} : son plan facture plusieurs frais (ou des frais d’avance), il ne peut donc pas suivre l’échéancier d’un forfait. Inscrivez-le séparément.",
+            "notPaid": "{{course}} : un cours gratuit ou par abonnement ne peut pas faire partie d’un forfait."
+        },
+        "inPackage": "Fait partie du forfait d’inscription (frais {{fee}}). Remise, échéances et paiement se règlent sur le forfait ci-dessous."
+    }
+}

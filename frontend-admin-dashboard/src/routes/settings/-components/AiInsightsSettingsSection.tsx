@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,7 @@ import {
  * the toggle next to the credit spend it drives.
  */
 export const AiInsightsSettingsSection = () => {
+    const { t } = useTranslation('settingsAiInsightsSection');
     const queryClient = useQueryClient();
     const [form, setForm] = useState<AiInsightsSettingsData>(DEFAULT_AI_INSIGHTS_SETTINGS);
     const [isSaving, setIsSaving] = useState(false);
@@ -41,9 +43,9 @@ export const AiInsightsSettingsSection = () => {
             // The activity-log dialog reads the same key — refresh it so the panel
             // appears or disappears without a reload.
             await queryClient.invalidateQueries({ queryKey: ['ai-insights-settings'] });
-            toast.success('AI insights settings saved');
+            toast.success(t('toasts.saveSuccess'));
         } catch {
-            toast.error('Could not save AI insights settings');
+            toast.error(t('toasts.saveError'));
         } finally {
             setIsSaving(false);
         }
@@ -54,26 +56,18 @@ export const AiInsightsSettingsSection = () => {
             <CardHeader className="border-b border-violet-50 bg-violet-50/30">
                 <div className="flex items-center gap-2">
                     <ChartBar size={18} className="text-violet-500" />
-                    <CardTitle className="text-base">Learner Insights</CardTitle>
+                    <CardTitle className="text-base">{t('title')}</CardTitle>
                 </div>
-                <CardDescription>
-                    Show the AI report generated for each learner attempt — performance
-                    summary, topic breakdown, misconceptions and next steps. Reports are
-                    produced hourly from activity that has already been recorded; this
-                    changes who can see them, not whether they are generated.
-                    Learners see their own under My Reports whenever the canViewReports
-                    permission lets them open that section — there is no separate switch.
-                </CardDescription>
+                <CardDescription>{t('description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
                 <div className="flex items-start justify-between gap-6 rounded-lg border border-neutral-200 p-4">
                     <div className="space-y-1">
                         <Label htmlFor="admin-activity-insights" className="text-sm font-medium">
-                            Show in admin activity log
+                            {t('adminActivityToggle.label')}
                         </Label>
                         <p className="text-xs text-neutral-500">
-                            Adds an AI Insights panel to the activity-log dialog when staff open a
-                            learner&apos;s quiz, question or assignment attempt.
+                            {t('adminActivityToggle.hint')}
                         </p>
                     </div>
                     <Switch
@@ -86,10 +80,7 @@ export const AiInsightsSettingsSection = () => {
                     />
                 </div>
 
-                <p className="text-xs text-neutral-500">
-                    These reports are written by AI from recorded activity. Review one before
-                    passing it on to a learner or guardian.
-                </p>
+                <p className="text-xs text-neutral-500">{t('reviewNotice')}</p>
 
                 <div className="flex justify-end">
                     <MyButton
@@ -99,7 +90,7 @@ export const AiInsightsSettingsSection = () => {
                         onClick={handleSave}
                     >
                         <FloppyDisk size={16} />
-                        {isSaving ? 'Saving…' : 'Save'}
+                        {isSaving ? t('saving') : t('save')}
                     </MyButton>
                 </div>
             </CardContent>

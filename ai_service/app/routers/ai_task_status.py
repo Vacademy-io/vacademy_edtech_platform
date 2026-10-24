@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..db import db_dependency
+from ..models.ai_task import AiTaskType
 from ..repositories.ai_task_repository import AiTaskRepository
 from ..schemas.ai_task import LecturePlanResponse
 from ..schemas.lecture_feedback import LectureFeedbackResponse
@@ -34,9 +35,15 @@ router = APIRouter(prefix="/task-status", tags=["AI Task Status"])
 _BLANK_RESULTS = {"", "{}", "[]"}
 
 
+# Rows written by the retired, logged-out /evaluator-ai tool (per-student
+# answers and scores). Nothing logged-in reads them, and these routes have no
+# auth yet, so they answer 404 here instead of handing out the stored result.
+_RETIRED_TASK_TYPES = {AiTaskType.EVALUATION.value}
+
+
 def _get_task_or_404(db: Session, task_id: str):
     task = AiTaskRepository(db).get(task_id)
-    if not task:
+    if not task or task.task_type in _RETIRED_TASK_TYPES:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task Not Found")
     return task
 

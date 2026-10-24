@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { FileDoc, UploadSimple, X } from '@phosphor-icons/react';
@@ -24,6 +25,7 @@ const QuizAddViaDocumentDialog = ({
     onOpenChange,
     onQuestionsReady,
 }: QuizAddViaDocumentDialogProps) => {
+    const { t } = useTranslation('studyLibraryQuizAddViaDocumentDialog');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -41,7 +43,7 @@ const QuizAddViaDocumentDialog = ({
 
     const handleUpload = async () => {
         if (!selectedFile) {
-            setError('Please select a file first.');
+            setError(t('errors.noFileSelected'));
             return;
         }
         setIsUploading(true);
@@ -60,9 +62,7 @@ const QuizAddViaDocumentDialog = ({
                 transformResponseDataToMyQuestionsSchema(rawData);
 
             if (!questions || questions.length === 0) {
-                setError(
-                    'No questions found. Make sure your document uses the required format shown above.'
-                );
+                setError(t('errors.noQuestionsFound'));
                 return;
             }
 
@@ -70,7 +70,7 @@ const QuizAddViaDocumentDialog = ({
             handleReset();
             onOpenChange(false);
         } catch (err: any) {
-            setError(err?.message || 'Failed to parse document. Please try again.');
+            setError(err?.message || t('errors.parseFailed'));
         } finally {
             setIsUploading(false);
         }
@@ -93,7 +93,7 @@ const QuizAddViaDocumentDialog = ({
             <DialogContent className="no-scrollbar !m-0 flex h-auto !w-full !max-w-lg flex-col !gap-0 overflow-y-auto !rounded-lg !p-0">
                 {/* Header */}
                 <div className="flex items-center justify-between bg-primary-50 px-5 py-4">
-                    <h1 className="font-semibold text-primary-500">Upload Document</h1>
+                    <h1 className="font-semibold text-primary-500">{t('title')}</h1>
                     <button
                         type="button"
                         className="text-neutral-500 hover:text-neutral-700"
@@ -107,26 +107,37 @@ const QuizAddViaDocumentDialog = ({
                     {/* Required format reference */}
                     <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
                         <p className="mb-2 text-xs font-semibold text-neutral-700">
-                            Required document format
+                            {t('requiredFormat.heading')}
                         </p>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-xs text-neutral-600">
+                            {/* Section markers below (Questions*, Options*, Ans:, Exp:) are
+                                literal identifiers the uploaded document must contain verbatim —
+                                not translated UI copy. */}
                             <div>
                                 <span className="font-semibold text-primary-600">Questions*</span>
-                                <span className="ml-2 text-neutral-400">section header</span>
+                                <span className="ml-2 text-neutral-400">
+                                    {t('requiredFormat.sectionHeader')}
+                                </span>
                             </div>
                             <div>
                                 <span className="font-semibold text-primary-600">Options*</span>
-                                <span className="ml-2 text-neutral-400">section header</span>
+                                <span className="ml-2 text-neutral-400">
+                                    {t('requiredFormat.sectionHeader')}
+                                </span>
                             </div>
-                            <div className="text-neutral-500">(1.) Question text…</div>
-                            <div className="text-neutral-500">(a.) Option text…</div>
+                            <div className="text-neutral-500">{t('requiredFormat.questionSample')}</div>
+                            <div className="text-neutral-500">{t('requiredFormat.optionSample')}</div>
                             <div>
                                 <span className="font-semibold text-primary-600">Ans:</span>
-                                <span className="ml-2 text-neutral-400">correct answer</span>
+                                <span className="ml-2 text-neutral-400">
+                                    {t('requiredFormat.correctAnswer')}
+                                </span>
                             </div>
                             <div>
                                 <span className="font-semibold text-primary-600">Exp:</span>
-                                <span className="ml-2 text-neutral-400">explanation</span>
+                                <span className="ml-2 text-neutral-400">
+                                    {t('requiredFormat.explanation')}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -149,10 +160,10 @@ const QuizAddViaDocumentDialog = ({
                         ) : (
                             <div className="text-center">
                                 <p className="text-sm font-medium text-neutral-700">
-                                    Click to select a file
+                                    {t('dropZone.clickToSelect')}
                                 </p>
                                 <p className="text-xs text-neutral-400">
-                                    Supports .docx and .html files
+                                    {t('dropZone.supportedFormats')}
                                 </p>
                             </div>
                         )}
@@ -170,7 +181,7 @@ const QuizAddViaDocumentDialog = ({
                         <div className="flex flex-col gap-2">
                             <Progress value={uploadProgress} className="h-2" />
                             <p className="text-center text-xs text-neutral-500">
-                                Parsing document… {uploadProgress}%
+                                {t('parsingProgress', { progress: uploadProgress })}
                             </p>
                         </div>
                     )}
@@ -193,7 +204,7 @@ const QuizAddViaDocumentDialog = ({
                         onClick={() => onOpenChange(false)}
                         disabled={isUploading}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -204,7 +215,7 @@ const QuizAddViaDocumentDialog = ({
                         disabled={!selectedFile || isUploading}
                     >
                         <UploadSimple size={16} />
-                        {isUploading ? 'Processing…' : 'Parse & Preview'}
+                        {isUploading ? t('processing') : t('parseAndPreview')}
                     </MyButton>
                 </div>
             </DialogContent>

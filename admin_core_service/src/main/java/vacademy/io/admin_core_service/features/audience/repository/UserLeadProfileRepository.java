@@ -16,6 +16,15 @@ public interface UserLeadProfileRepository extends JpaRepository<UserLeadProfile
 
     Optional<UserLeadProfile> findByUserId(String userId);
 
+    /**
+     * Any profile this person is the counsellor on, used only to read the
+     * denormalized {@code assigned_counselor_name}: admin_core cannot see
+     * auth_service's users table, so this is the one place inside its own
+     * database where a staff member's name is written down.
+     */
+    Optional<UserLeadProfile> findFirstByAssignedCounselorIdAndAssignedCounselorNameIsNotNull(
+            String assignedCounselorId);
+
     Optional<UserLeadProfile> findByUserIdAndInstituteId(String userId, String instituteId);
 
     List<UserLeadProfile> findByUserIdIn(List<String> userIds);

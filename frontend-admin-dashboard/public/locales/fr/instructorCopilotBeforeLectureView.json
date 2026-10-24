@@ -1,0 +1,19 @@
+{
+    "backButton": "Retour aux modes de cours",
+    "heading": "Avant le cours",
+    "subtitle": "Outils de préparation et de planification",
+    "cards": {
+        "planner": {
+            "title": "Planificateur de cours IA",
+            "description": "Générez des plans de cours complets avec l'aide de l'IA."
+        },
+        "attendance": {
+            "title": "Prendre les présences",
+            "description": "Gérez les sessions en direct et suivez la présence des élèves."
+        },
+        "presentation": {
+            "title": "Créer une présentation de cours",
+            "description": "Concevez des diapositives et présentations interactives avec Volt."
+        }
+    }
+}

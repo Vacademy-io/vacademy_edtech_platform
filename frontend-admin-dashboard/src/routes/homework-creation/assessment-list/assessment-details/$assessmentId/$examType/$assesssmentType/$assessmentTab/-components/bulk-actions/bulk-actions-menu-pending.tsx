@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStorePending } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStorePending';
+import { useTranslation } from 'react-i18next';
 
 interface BulkActionsMenuProps {
     selectedCount: number;
@@ -17,7 +18,15 @@ interface BulkActionsMenuProps {
     trigger: ReactNode;
 }
 
+// Internal action-type constants used for dispatch logic. These must never be
+// swapped for translated display text — see handleMenuOptionsChange below.
+const MENU_ACTION = {
+    SEND_REMINDER: 'SEND_REMINDER',
+    REMOVE_PARTICIPANTS: 'REMOVE_PARTICIPANTS',
+} as const;
+
 export const BulkActionsMenuPending = ({ selectedStudents, trigger }: BulkActionsMenuProps) => {
+    const { t } = useTranslation('homeworkCreationBulkActionsMenuPending');
     const { openBulkSendReminderDialog, openBulkRemoveParticipantsDialog } =
         useSubmissionsBulkActionsDialogStorePending();
 
@@ -32,14 +41,14 @@ export const BulkActionsMenuPending = ({ selectedStudents, trigger }: BulkAction
         const bulkActionInfo: AssessmentSubmissionsBulkActionInfo = {
             selectedStudentIds: validStudents.map((student) => student.user_id),
             selectedStudents: validStudents,
-            displayText: `${validStudents.length} students`,
+            displayText: t('actionInfo.selectedStudents', { count: validStudents.length }),
         };
 
         switch (value) {
-            case 'Send Reminder':
+            case MENU_ACTION.SEND_REMINDER:
                 openBulkSendReminderDialog(bulkActionInfo);
                 break;
-            case 'Remove Participants':
+            case MENU_ACTION.REMOVE_PARTICIPANTS:
                 openBulkRemoveParticipantsDialog(bulkActionInfo);
                 break;
         }
@@ -61,15 +70,15 @@ export const BulkActionsMenuPending = ({ selectedStudents, trigger }: BulkAction
                 <DropdownMenuContent>
                     <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => handleMenuOptionsChange('Send Reminder')}
+                        onClick={() => handleMenuOptionsChange(MENU_ACTION.SEND_REMINDER)}
                     >
-                        Send Reminder
+                        {t('menu.sendReminder')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer"
-                        onClick={() => handleMenuOptionsChange('Remove Participants')}
+                        onClick={() => handleMenuOptionsChange(MENU_ACTION.REMOVE_PARTICIPANTS)}
                     >
-                        Remove Participants
+                        {t('menu.removeParticipants')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

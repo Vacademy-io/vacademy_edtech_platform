@@ -1,0 +1,96 @@
+{
+    "navHeading": "المحرك",
+    "backToAll": "كل المحركات",
+    "loadError": "تعذّر تحميل هذا المحرك.",
+    "viewTaskInbox": "عرض صندوق المهام",
+    "detail": {
+        "activeMember_zero": "عضو نشط",
+        "activeMember_one": "عضو نشط",
+        "activeMember_two": "عضوان نشطان",
+        "activeMember_few": "أعضاء نشطون",
+        "activeMember_many": "عضوًا نشطًا",
+        "activeMember_other": "عضو نشط",
+        "resolveAudience": "تحديد الجمهور",
+        "resolving": "جارٍ التحديد…"
+    },
+    "statusActions": {
+        "DRY_RUN": "بدء تجربة وهمية",
+        "ACTIVE": "تفعيل",
+        "PAUSED": "إيقاف مؤقت",
+        "ARCHIVED": "أرشفة"
+    },
+    "templatesPendingBanner": "يُرسل هذا المحرك عبر واتساب — اعتمد قالبًا واحدًا على الأقل أدناه قبل تفعيله.",
+    "brief": {
+        "title": "الموجز",
+        "amend": "تعديل",
+        "empty": "لا يوجد موجز محدَّد.",
+        "version": "الإصدار {{version}}"
+    },
+    "config": {
+        "title": "الإعدادات",
+        "channels": "القنوات",
+        "noChannels": "لا شيء",
+        "language": "اللغة",
+        "cadenceLabel": "الوتيرة",
+        "cadence": "كل {{hours}} ساعة",
+        "quietHours": "Quiet hours",
+        "dataPoints": "Data points"
+    },
+    "amendDialog": {
+        "heading": "تعديل الموجز",
+        "description": "يكبر الموجز بالتعديلات — يُضاف إليه، ولا يُعاد كتابة النص الأصلي أبدًا. يُطبَّق التعديل عند نقطة التواصل الطبيعية التالية مع كل شخص.",
+        "placeholder": "مثال: اذكر أيضًا الدفعة الجديدة لعطلة نهاية الأسبوع التي تبدأ الشهر القادم.",
+        "cancel": "إلغاء",
+        "submit": "إضافة التعديل",
+        "saving": "جارٍ الحفظ…"
+    },
+    "autonomy": {
+        "title": "الاستقلالية",
+        "allowAutoSend": "السماح بالإرسال التلقائي",
+        "keepAsCopilot": "الإبقاء كمساعد فقط",
+        "autoSendChannels": "قنوات الإرسال التلقائي",
+        "noAutoSend": "لا توجد قنوات إرسال تلقائي — يقوم هذا المحرك فقط بصياغة مهام لترسلها بنفسك.",
+        "holdout": "المجموعة المستبعدة",
+        "holdoutValue": "{{pct}}% (مسجَّلون، لم تُرسل إليهم رسائل قط)",
+        "badge": {
+            "off": "الاستقلالية متوقفة (مساعد فقط)",
+            "ramping": "قيد الارتقاء · {{approved}}/{{target}} معتمدة",
+            "sendingAutonomously": "يرسل بشكل مستقل",
+            "dryRun": "تجربة وهمية (محاكاة)",
+            "onEngineStatus": "الاستقلالية مفعّلة · حالة المحرك {{status}}"
+        },
+        "statusFor": "حالة {{channel}}",
+        "rampingHintChannel_zero": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودة معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
+        "rampingHintChannel_one": "ما زال في وضع المساعد على {{channel}}. أرسل مسودة معتمدة واحدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
+        "rampingHintChannel_two": "ما زال في وضع المساعد على {{channel}}. أرسل مسودتين معتمدتين إضافيتين على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
+        "rampingHintChannel_few": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودات معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
+        "rampingHintChannel_many": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودة معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
+        "rampingHintChannel_other": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودة معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها."
+    },
+    "archiveDialog": {
+        "title": "أرشفة هذا المحرك؟",
+        "description": "سيتوقف نهائيًا عن اتخاذ القرارات والإرسال. تبقى المهام الموجودة في صندوق الوارد والرسائل السابقة.",
+        "cancel": "الإبقاء عليه",
+        "confirm": "أرشفة"
+    },
+    "kpi": {
+        "members": "Active members",
+        "holdout": "{{pct}}% held out (never messaged)",
+        "noHoldout": "No holdout",
+        "approved": "Approved sends",
+        "graduateAfter": "A channel auto-sends after {{n}} approved sends",
+        "cadence": "Check-in cadence",
+        "quiet": "Quiet hours {{window}}",
+        "nextRun": "Next check-in",
+        "notScheduled": "Not scheduled",
+        "lastRun": "Last run {{when}}"
+    },
+    "status": {
+        "title": "Status & audience",
+        "sources": "Sources",
+        "people": "people",
+        "change": "Change status",
+        "noTransitions": "Archived engines can’t change status.",
+        "footnote": "Pause stops the engine deciding and sending. “Keep as copilot” only stops auto-sending."
+    }
+}

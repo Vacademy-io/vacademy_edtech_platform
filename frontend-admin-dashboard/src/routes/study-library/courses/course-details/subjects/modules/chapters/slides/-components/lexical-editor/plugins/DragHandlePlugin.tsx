@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DraggableBlockPlugin_EXPERIMENTAL } from '@lexical/react/LexicalDraggableBlockPlugin';
 import { DotsSixVertical } from '@phosphor-icons/react';
 
@@ -25,6 +26,7 @@ function isOnHandle(element: HTMLElement): boolean {
 export function DragHandlePlugin({ anchorElem }: { anchorElem: HTMLElement }) {
     const menuRef = useRef<HTMLDivElement>(null);
     const targetLineRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation('studyLibraryDragHandlePlugin');
 
     return (
         <DraggableBlockPlugin_EXPERIMENTAL
@@ -36,8 +38,8 @@ export function DragHandlePlugin({ anchorElem }: { anchorElem: HTMLElement }) {
                     ref={menuRef}
                     className={`${DRAG_HANDLE_CLASS} lex-drag-handle-floating`}
                     role="button"
-                    aria-label="Drag to reorder block"
-                    title="Drag to reorder"
+                    aria-label={t('dragToReorderBlock')}
+                    title={t('dragToReorder')}
                 >
                     <DotsSixVertical size={16} weight="bold" />
                 </div>

@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Apply Discounts to Plan",
+        "subtitle": "Set discounts for each plan interval or price tier"
+    },
+    "table": {
+        "headers": {
+            "subscriptionInterval": "Subscription Interval",
+            "planType": "Plan Type",
+            "originalPrice": "Original Price",
+            "discountType": "Discount Type",
+            "discountAmount": "Discount Amount",
+            "finalPrice": "Final Price"
+        },
+        "intervalPlanFallback": "{{value}} {{unit}} Plan",
+        "oneTimePayment": "One-Time Payment",
+        "savePrefix": "Save"
+    },
+    "discountOptions": {
+        "none": "No Discount",
+        "percentage": "% Off",
+        "fixed": "Flat Off"
+    },
+    "placeholders": {
+        "percentage": "10",
+        "fixed": "50"
+    },
+    "emptyState": "No pricing information available for this plan type."
+}

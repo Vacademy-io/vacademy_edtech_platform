@@ -180,9 +180,9 @@ export function EnrollmentWorkflowStatus({
             )}
         >
             <span className="text-subtitle font-semibold text-neutral-700">{title}</span>
-            {runs.map((run, idx) => (
+            {runs.map((run) => (
                 <WorkflowRunCard
-                    key={run.execution_id ?? `${run.workflow_id}:${run.event_id}` ?? idx}
+                    key={run.execution_id ?? `${run.workflow_id}:${run.event_id}`}
                     run={run}
                 />
             ))}

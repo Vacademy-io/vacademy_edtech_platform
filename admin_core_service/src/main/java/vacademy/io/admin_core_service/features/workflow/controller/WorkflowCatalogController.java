@@ -88,9 +88,12 @@ public class WorkflowCatalogController {
             CatalogItemDTO.builder()
                 .key("fetchPackageLMSSetting")
                 .label("Fetch Package LMS Settings")
-                .description("Get LMS configuration for a specific package")
+                .description("Get LMS configuration for a specific package. Also returns courseDescription "
+                        + "(the course's rich-text description) so a shared welcome-email template can render "
+                        + "per-course copy; pass defaultCourseDescriptionHtml for courses that have none.")
                 .category("Settings")
                 .requiredParams(List.of("packageId", "settingKey"))
+                .optionalParams(List.of("defaultCourseDescriptionHtml"))
                 .build(),
             CatalogItemDTO.builder()
                 .key("upsertUserCustomField")
@@ -251,6 +254,7 @@ public class WorkflowCatalogController {
         eventMeta.put("ASSESSMENT_REMINDER_BEFORE_START", new String[]{"Assessment Starting Soon", "Fires for each registered learner shortly before an assessment opens", "Assessment", "ASSESSMENT"});
         eventMeta.put("ASSESSMENT_REATTEMPT_GRANTED", new String[]{"Assessment Reattempt Granted", "Fires for each learner an admin grants extra attempts to", "Assessment", "ASSESSMENT"});
         eventMeta.put("ASSESSMENT_REATTEMPT_REQUESTED", new String[]{"Assessment Reattempt Requested", "Fires when a learner asks for another attempt or more time — notify staff", "Assessment", "ASSESSMENT"});
+        eventMeta.put("ASSESSMENT_AI_EVALUATION_COMPLETED", new String[]{"AI Copy Check Completed", "Fires when a bulk AI check of uploaded answer copies finishes — notify the coordinator, with counts of checked / failed / copies needing review", "Assessment", "ASSESSMENT"});
 
         List<CatalogItemDTO> events = new ArrayList<>();
         for (WorkflowTriggerEvent event : WorkflowTriggerEvent.values()) {
@@ -320,8 +324,9 @@ public class WorkflowCatalogController {
                 ctxVar("leadName", "Lead name"),
                 ctxVar("leadEmail", "Lead email"),
                 ctxVar("leadMobile", "Lead mobile"),
-                ctxVar("tat", "Configured TAT (human-readable, e.g. '24 hours')"),
-                ctxVar("tatHours", "Configured TAT in hours (raw integer)"),
+                ctxVar("tat", "Configured TAT (human-readable, e.g. '1 hour 30 minutes')"),
+                ctxVar("tatMinutes", "Configured TAT in minutes (exact integer)"),
+                ctxVar("tatHours", "Configured TAT in whole hours, rounded up (integer)"),
                 // Same values as lead-* above, kept for backward compat with older templates.
                 ctxVar("parentName", "Parent name (alias of leadName)"),
                 ctxVar("parentEmail", "Parent email (alias of leadEmail)"),
@@ -342,6 +347,10 @@ public class WorkflowCatalogController {
                 ctxVar("changeType", "Change type (CONVERSION_STATUS / TIER / ENQUIRY_STATUS / LEAD_STATUS)"),
                 ctxVar("oldStatus", "Previous status"),
                 ctxVar("newStatus", "New status"),
+                // Only emitted by the per-lead LEAD_STATUS path (LeadStatusService); the
+                // profile-level conversion/tier emitters don't set them.
+                ctxVar("statusChangeSource", "Who changed it: MANUAL | MANUAL_DISPOSITION | AI_CALLING | AI_WORKFLOW"),
+                ctxVar("statusChangedByUserId", "User ID of whoever changed it (blank for system changes)"),
                 ctxVar("conversionStatus", "Conversion status")));
 
         // Assessment events. Emitted cross-service by assessment_service's
@@ -477,6 +486,16 @@ public class WorkflowCatalogController {
         out.put(WorkflowTriggerEvent.ASSESSMENT_REMINDER_BEFORE_START.name(), reminder);
         out.put(WorkflowTriggerEvent.ASSESSMENT_REATTEMPT_GRANTED.name(), reattemptGranted);
         out.put(WorkflowTriggerEvent.ASSESSMENT_REATTEMPT_REQUESTED.name(), reattemptRequested);
+        List<Map<String, String>> aiBatch = new ArrayList<>(assessment);
+        aiBatch.addAll(List.of(
+                ctxVar("batchId", "ID of the bulk upload, for the results link"),
+                ctxVar("totalCopies", "Copies in the upload"),
+                ctxVar("checkedCopies", "Copies the AI checked"),
+                ctxVar("failedCopies", "Copies that could not be checked"),
+                ctxVar("copiesNeedingReview", "Copies waiting for an admin to pick the student"),
+                ctxVar("batchStatus", "COMPLETED or NEEDS_REVIEW"),
+                ctxVar("startedBy", "User ID of the admin who uploaded the copies")));
+        out.put(WorkflowTriggerEvent.ASSESSMENT_AI_EVALUATION_COMPLETED.name(), aiBatch);
         return ResponseEntity.ok(out);
     }
 

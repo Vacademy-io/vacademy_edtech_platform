@@ -1,4 +1,5 @@
 import { ClipboardText, Phone } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { ProfileSectionCard, ProfileFieldRow } from '../profile-ui';
 import { StudentTable } from '@/types/student-table-types';
 
@@ -50,6 +51,8 @@ export const OverviewEnrolment = ({
     onCopy,
     copiedField,
 }: EnrolmentProps) => {
+    const { t } = useTranslation('manageStudentsOverviewBottomGrid');
+
     if (!student) return null;
 
     const enrollmentNo = student.institute_enrollment_number;
@@ -62,16 +65,16 @@ export const OverviewEnrolment = ({
     const planLine = plan || [course, level].filter(Boolean).join(' · ') || null;
 
     const rows: Array<{ label: string; value: string }> = [];
-    if (planLine) rows.push({ label: 'Plan', value: planLine });
-    if (enrollmentNo) rows.push({ label: 'Enrollment No', value: enrollmentNo });
-    if (session) rows.push({ label: 'Session', value: session });
-    if (gender) rows.push({ label: 'Gender', value: gender });
-    if (school) rows.push({ label: 'School', value: school });
+    if (planLine) rows.push({ label: t('enrolment.rows.plan'), value: planLine });
+    if (enrollmentNo) rows.push({ label: t('enrolment.rows.enrollmentNo'), value: enrollmentNo });
+    if (session) rows.push({ label: t('enrolment.rows.session'), value: session });
+    if (gender) rows.push({ label: t('enrolment.rows.gender'), value: gender });
+    if (school) rows.push({ label: t('enrolment.rows.school'), value: school });
 
     if (rows.length === 0) return null;
 
     return (
-        <ProfileSectionCard icon={ClipboardText} heading="Enrolment Details">
+        <ProfileSectionCard icon={ClipboardText} heading={t('enrolment.heading')}>
             <dl className="divide-y divide-border">
                 {rows.map((r) => (
                     <ProfileFieldRow
@@ -92,6 +95,8 @@ export const OverviewEnrolment = ({
  * Hides itself when neither phone nor email are set.
  */
 export const OverviewContact = ({ student, onCopy, copiedField }: ContactProps) => {
+    const { t } = useTranslation('manageStudentsOverviewBottomGrid');
+
     if (!student) return null;
 
     const mobile =
@@ -101,13 +106,13 @@ export const OverviewContact = ({ student, onCopy, copiedField }: ContactProps) 
     const email = student.email && student.email.trim() !== '' ? student.email : null;
 
     const rows: Array<{ label: string; value: string }> = [];
-    if (mobile) rows.push({ label: 'Mobile No.', value: mobile });
-    if (email) rows.push({ label: 'Email', value: email });
+    if (mobile) rows.push({ label: t('contact.rows.mobileNo'), value: mobile });
+    if (email) rows.push({ label: t('contact.rows.email'), value: email });
 
     if (rows.length === 0) return null;
 
     return (
-        <ProfileSectionCard icon={Phone} heading="Contact">
+        <ProfileSectionCard icon={Phone} heading={t('contact.heading')}>
             <dl className="divide-y divide-border">
                 {rows.map((r) => (
                     <ProfileFieldRow

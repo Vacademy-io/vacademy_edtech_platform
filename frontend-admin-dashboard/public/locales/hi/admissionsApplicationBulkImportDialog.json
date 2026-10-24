@@ -1,0 +1,62 @@
+{
+    "dialog": {
+        "title": "आवेदन थोक में आयात करें",
+        "description": "CSV अपलोड करें, कक्षा/बैच चुनें, पूर्वावलोकन करें और आयात की पुष्टि करें"
+    },
+    "steps": {
+        "label": "चरण {{number}}"
+    },
+    "upload": {
+        "templateHint": "CSV टेम्पलेट डाउनलोड करें और भरे हुए आवेदक विवरण अपलोड करें",
+        "dropzoneCta": "`.csv` फ़ाइल अपलोड करने के लिए क्लिक करें",
+        "validRowsLabel": "मान्य पंक्तियाँ",
+        "skippedRowsLabel": "छोड़ी गई पंक्तियाँ"
+    },
+    "classSelect": {
+        "helperText": "आवेदन जमा करने के लिए आवश्यक कक्षा/बैच चुनें।",
+        "placeholder": "कक्षा/बैच चुनें"
+    },
+    "sample": {
+        "studentName": "राहुल छात्र",
+        "fatherName": "राजेश पिता",
+        "motherName": "सुनीता माता"
+    },
+    "columns": {
+        "studentName": "छात्र का नाम",
+        "gender": "लिंग",
+        "dateOfBirth": "जन्म तिथि",
+        "fatherName": "पिता का नाम",
+        "fatherEmail": "पिता का ईमेल",
+        "fatherMobile": "पिता का मोबाइल",
+        "motherName": "माता का नाम",
+        "motherEmail": "माता का ईमेल",
+        "motherMobile": "माता का मोबाइल",
+        "status": "स्थिति",
+        "source": "स्रोत"
+    },
+    "preview": {
+        "summary_one": "{{count}} मान्य पंक्ति का पूर्वावलोकन",
+        "summary_other": "{{count}} मान्य पंक्तियों का पूर्वावलोकन"
+    },
+    "errors": {
+        "onlyCsvSupported": "केवल .csv फ़ाइलें समर्थित हैं",
+        "missingRequiredColumns": "आवश्यक कॉलम गायब हैं: {{columns}}",
+        "failedToParseCsv": "CSV पार्स करने में विफल"
+    },
+    "toasts": {
+        "importResult_one": "{{count}} आवेदन आयात किया गया ({{failedCount}} विफल)",
+        "importResult_other": "{{count}} आवेदन आयात किए गए ({{failedCount}} विफल)",
+        "importFailedFallback": "आवेदन आयात करने में विफल",
+        "instituteDetailsUnavailable": "संस्थान का विवरण उपलब्ध नहीं है",
+        "selectClassBatch": "कृपया कक्षा/बैच चुनें",
+        "invalidClassBatchSelection": "अमान्य कक्षा/बैच चयन"
+    },
+    "buttons": {
+        "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+        "back": "पीछे",
+        "cancel": "रद्द करें",
+        "next": "आगे",
+        "confirmImport": "आयात की पुष्टि करें",
+        "importing": "आयात हो रहा है..."
+    }
+}

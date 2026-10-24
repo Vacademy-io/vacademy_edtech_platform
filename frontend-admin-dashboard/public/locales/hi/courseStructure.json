@@ -1,0 +1,74 @@
+{
+    "chapterHeader": {
+        "updating": "अपडेट हो रहा है...",
+        "saveChanges": "बदलाव सहेजें"
+    },
+    "thumbnailAlt": "थंबनेल",
+    "importContent": {
+        "noBatchSelected": "कोई बैच चयनित नहीं है — पहले एक सेशन/स्तर चुनें।",
+        "sameBatch": "स्रोत और लक्ष्य बैच एक ही हैं — कोई अलग बैच चुनें।",
+        "targetHasContent": "इस बैच में पहले से ही अपनी सामग्री है। इसे लिंक करने से लिंक की गई और मौजूदा सामग्री मिल जाएगी। इसके बजाय \"अलग प्रति बनाएं\" चुनें।",
+        "summary": "{{subjects}} विषय, {{modules}} मॉड्यूल, {{chapters}} अध्याय, {{slides}} स्लाइड",
+        "modeLinked": "स्रोत से लिंक किया गया",
+        "modeCopied": "कॉपी किया गया",
+        "warningSuffix": "{{summary}}। {{count}} ड्रिप-शर्त चेतावनी(याँ)।",
+        "successMessage": "सामग्री {{mode}} ({{summary}})।",
+        "failed": "इस बैच में सामग्री आयात करने में विफल।",
+        "importing": "आयात हो रहा है…",
+        "importButton": "सामग्री आयात करें"
+    },
+    "dripConditions": {
+        "saveFailed": "ड्रिप शर्तें सहेजने में विफल। कृपया पुनः प्रयास करें।",
+        "reorderSubjectsFailed": "विषयों को पुनः क्रमबद्ध करने में विफल। बदलाव वापस कर दिए गए हैं।",
+        "reorderModulesFailed": "मॉड्यूल को पुनः क्रमबद्ध करने में विफल। बदलाव वापस कर दिए गए हैं।",
+        "reorderChaptersFailed": "अध्यायों को पुनः क्रमबद्ध करने में विफल। बदलाव वापस कर दिए गए हैं।"
+    },
+    "untitledSlide": "बिना शीर्षक वाली स्लाइड",
+    "courseStructureHeading": "कोर्स संरचना",
+    "scheduleUnlock": "अनलॉक शेड्यूल करें",
+    "collapseAll": "सभी को संक्षिप्त करें",
+    "expandAll": "सभी को विस्तृत करें",
+    "actions": {
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "unlockRule": "अनलॉक नियम",
+        "offlineAvailability": "ऑफ़लाइन उपलब्धता"
+    },
+    "add": "जोड़ें",
+    "noSlidesInChapter": "इस अध्याय में कोई {{term}} नहीं है।",
+    "manageTeachers": "{{teacher}} प्रबंधित करें",
+    "viewAndManageTeachers": "इस बैच को सौंपे गए {{teacher}} को देखें और प्रबंधित करें।",
+    "selectBatchFor": {
+        "liveSessions": "इसके लाइव सेशन देखने के लिए एक बैच चुनें।",
+        "reports": "इसकी रिपोर्ट देखने के लिए एक बैच चुनें।",
+        "offlineDownloads": "इसके ऑफ़लाइन डाउनलोड देखने के लिए एक बैच चुनें।",
+        "discussion": "इसकी चर्चा देखने के लिए एक बैच चुनें।"
+    },
+    "contentStructureHeading": "सामग्री संरचना",
+    "navigateFolders": "फ़ोल्डर के माध्यम से अपने कोर्स की सामग्री ब्राउज़ करें",
+    "numbering": {
+        "subject": "विषय {{number}}",
+        "module": "मॉड्यूल {{number}}",
+        "chapter": "अध्याय {{number}}",
+        "slide": "स्लाइड {{number}}"
+    },
+    "restriction": {
+        "banner": "संपादन प्रतिबंधित: यह कोर्स {{status}} है।",
+        "statusPublished": "प्रकाशित",
+        "statusUnderReview": "समीक्षा में",
+        "statusRestricted": "प्रतिबंधित",
+        "publishedHint": "संपादन योग्य प्रति बनाने के लिए मेरे कोर्स पर जाएँ।",
+        "reviewHint": "जब तक यह समीक्षा में है, तब तक आप सामग्री संपादित नहीं कर सकते।",
+        "restrictedHint": "आप इस सामग्री को संपादित नहीं कर सकते।"
+    },
+    "updatingStructure": "कोर्स संरचना अपडेट हो रही है...",
+    "editSubjectHeading": "विषय संपादित करें",
+    "editModuleHeading": "मॉड्यूल संपादित करें",
+    "editChapterHeading": "अध्याय संपादित करें",
+    "confirmDeletion": {
+        "title": "हटाने की पुष्टि करें",
+        "body": "क्या आप वाकई \"{{name}}\" को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+        "cancel": "रद्द करें"
+    },
+    "defaultNodeName": "यह सामग्री"
+}

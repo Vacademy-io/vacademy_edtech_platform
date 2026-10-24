@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Slide } from '../-hooks/use-slides';
 import { useMediaNavigationStore } from '../-stores/media-navigation-store';
 import { getPublicUrl } from '@/services/upload_file';
@@ -14,8 +15,16 @@ import { FileVideoPlayer } from './file-video-player';
 import { FileVideoQuestionsEditor } from './file-video-questions-editor';
 import { useSlideDownloadAccess } from '@/hooks/useSlideDownloadAccess';
 import { resolveVideoSourceType, extractVimeoId } from '@/utils/video-source-type';
+import { useLmsVideoStatus } from '../-hooks/use-lms-video-status';
+import {
+    AiVideoCheckingCard,
+    AiVideoEndedCard,
+    AiVideoProgressCard,
+} from './ai-video-generation-status';
+import { AiVideoRenderBar } from './ai-video-render-bar';
 
 const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedUrl?: string }) => {
+    const { t } = useTranslation('studyLibraryVideoSlidePreview');
     const { videoSeekTime, clearVideoSeekTime } = useMediaNavigationStore();
     // Per-role enforcement: keep native video download off unless this role is allowed.
     const { canDownload } = useSlideDownloadAccess();
@@ -55,6 +64,16 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
     } | null>(null);
     const [isLoadingHtmlVideo, setIsLoadingHtmlVideo] = useState(false);
 
+    // AI videos made from "Add Slide → AI Video" report live progress through
+    // /lms-video/v1/status. Anything that endpoint doesn't know (404 — e.g.
+    // course-builder videos) keeps the /video/urls path below unchanged.
+    const aiGenVideoId =
+        videoSourceType === 'HTML_VIDEO'
+            ? activeItem.html_video_slide?.ai_gen_video_id || undefined
+            : undefined;
+    const lmsVideo = useLmsVideoStatus(aiGenVideoId);
+    const lmsReadyForPlayer = lmsVideo.phase === 'legacy' || lmsVideo.phase === 'completed';
+
     // Reset state when switching to a different video slide
     useEffect(() => {
         setVideoUrl('');
@@ -69,6 +88,8 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
     useEffect(() => {
         const fetchHtmlVideoUrls = async () => {
             if (videoSourceType !== 'HTML_VIDEO') return;
+            // Wait until the LMS status says the video is done (or isn't an LMS one).
+            if (!lmsReadyForPlayer) return;
 
             const htmlVideoSlide = (activeItem as any).html_video_slide;
             if (!htmlVideoSlide?.ai_gen_video_id) {
@@ -113,7 +134,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
 
                     setError(null);
                 } else {
-                    setError('Failed to load video URLs');
+                    setError(t('errors.loadUrlsFailed'));
                 }
             } finally {
                 setIsLoadingHtmlVideo(false);
@@ -121,7 +142,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
         };
 
         fetchHtmlVideoUrls();
-    }, [activeItem.id, videoSourceType]);
+    }, [activeItem.id, videoSourceType, lmsReadyForPlayer]);
 
     const refreshS3Url = async () => {
         try {
@@ -133,7 +154,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
             }
         } catch (err) {
             console.error('Error refreshing video URL:', err);
-            if (isMountedRef.current) setError('Failed to refresh video URL');
+            if (isMountedRef.current) setError(t('errors.refreshFailed'));
         } finally {
             if (isMountedRef.current) setIsLoading(false);
         }
@@ -148,11 +169,11 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
                 video.currentTime = videoSeekTime;
                 clearVideoSeekTime();
                 toast.success(
-                    `Video jumped to ${Math.floor(videoSeekTime / 60)}:${Math.floor(
-                        videoSeekTime % 60
-                    )
-                        .toString()
-                        .padStart(2, '0')}`
+                    t('toast.jumpedTo', {
+                        time: `${Math.floor(videoSeekTime / 60)}:${Math.floor(videoSeekTime % 60)
+                            .toString()
+                            .padStart(2, '0')}`,
+                    })
                 );
             };
 
@@ -199,7 +220,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
                 }
             } catch (err) {
                 console.error('Error fetching video URL:', err);
-                if (isMountedRef.current) setError('Failed to load video');
+                if (isMountedRef.current) setError(t('errors.loadFailed'));
             } finally {
                 if (isMountedRef.current) setIsLoading(false);
             }
@@ -219,9 +240,13 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
             videoElement.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
         ) {
             setIsUrlExpired(true);
-            toast.error('Video URL has expired. Refreshing...');
+            toast.error(t('errors.urlExpiredRefreshing'));
         } else {
-            setError(`Video playback error: ${videoElement.error?.message || 'Unknown error'}`);
+            setError(
+                t('errors.playbackError', {
+                    message: videoElement.error?.message || t('errors.unknownError'),
+                })
+            );
         }
     };
 
@@ -233,6 +258,23 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
 
     // HTML_VIDEO rendering
     if (videoSourceType === 'HTML_VIDEO') {
+        if (lmsVideo.phase === 'checking') {
+            return <AiVideoCheckingCard />;
+        }
+        if (lmsVideo.phase === 'running' && lmsVideo.status) {
+            return <AiVideoProgressCard status={lmsVideo.status} onCancelled={lmsVideo.refresh} />;
+        }
+        if (lmsVideo.phase === 'ended' && lmsVideo.status) {
+            return <AiVideoEndedCard status={lmsVideo.status} />;
+        }
+
+        // "Render MP4" for a finished LMS video; it hides itself for videos
+        // the /lms-video API doesn't know (404).
+        const renderBar =
+            lmsVideo.phase === 'completed' && aiGenVideoId ? (
+                <AiVideoRenderBar videoId={aiGenVideoId} />
+            ) : null;
+
         // Check if code_editor_config is present
         const htmlVideoSlide = (activeItem as any).html_video_slide;
         let codeEditorConfig: any = null;
@@ -292,16 +334,22 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
             };
 
             return (
-                <div key={`html-video-split-${activeItem.id}-${htmlVideoData?.htmlUrl ? 'ready' : 'generating'}`} className="w-full h-full">
-                    <SplitScreenSlide
-                        splitScreenData={splitScreenData as any}
-                        slideType="SPLIT_CODE"
-                        isEditable={true}
-                        currentSlideId={activeItem.id}
-                        onDataChange={(updatedSplitData) => {
+                <div
+                    key={`html-video-split-${activeItem.id}-${htmlVideoData?.htmlUrl ? 'ready' : 'generating'}`}
+                    className="flex size-full flex-col gap-2"
+                >
+                    {renderBar}
+                    <div className="min-h-0 w-full flex-1">
+                        <SplitScreenSlide
+                            splitScreenData={splitScreenData as any}
+                            slideType="SPLIT_CODE"
+                            isEditable={true}
+                            currentSlideId={activeItem.id}
+                            onDataChange={(updatedSplitData) => {
 
-                        }}
-                    />
+                            }}
+                        />
+                    </div>
                 </div>
             );
         }
@@ -312,7 +360,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
                 <div className="flex h-64 items-center justify-center rounded-lg bg-gray-100">
                     <div className="flex flex-col items-center gap-3">
                         <div className="size-12 animate-spin rounded-full border-y-2 border-primary-500"></div>
-                        <p className="text-sm text-gray-600">Loading video...</p>
+                        <p className="text-sm text-gray-600">{t('loadingVideo')}</p>
                     </div>
                 </div>
             );
@@ -330,12 +378,18 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
         // Show video if data is available
         if (htmlVideoData?.htmlUrl) {
             return (
-                <div key={`html-video-${activeItem.id}`} className="w-full overflow-hidden rounded-lg flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-                    <AIContentPlayer
-                        timelineUrl={htmlVideoData.htmlUrl}
-                        audioUrl={htmlVideoData.audioUrl ?? undefined}
-                        className="w-full"
-                    />
+                <div key={`html-video-${activeItem.id}`} className="flex w-full flex-col gap-2">
+                    {renderBar}
+                    <div
+                        className="flex w-full flex-col overflow-hidden rounded-lg"
+                        style={{ maxHeight: 'calc(100vh - 200px)' }}
+                    >
+                        <AIContentPlayer
+                            timelineUrl={htmlVideoData.htmlUrl}
+                            audioUrl={htmlVideoData.audioUrl ?? undefined}
+                            className="w-full"
+                        />
+                    </div>
                 </div>
             );
         }
@@ -345,8 +399,8 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
             <div className="flex h-64 items-center justify-center rounded-lg bg-gray-100">
                 <div className="flex flex-col items-center gap-3">
                     <div className="size-12 animate-spin rounded-full border-y-2 border-primary-500"></div>
-                    <p className="text-sm text-gray-600">{error === 'work in progress' ? 'Work in progress' : 'Video is being generated...'}</p>
-                    <p className="text-xs text-gray-500">This may take a few minutes. Please check back later.</p>
+                    <p className="text-sm text-gray-600">{error === 'work in progress' ? t('workInProgress') : t('videoBeingGenerated')}</p>
+                    <p className="text-xs text-gray-500">{t('generatingHint')}</p>
                 </div>
             </div>
         );
@@ -370,7 +424,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
                     onClick={refreshS3Url}
                     className="rounded-md bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600"
                 >
-                    Retry
+                    {t('retry')}
                 </button>
             </div>
         );
@@ -382,7 +436,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
             <div key={`video-${activeItem.id}`} className="w-full">
                 {isUrlExpired ? (
                     <div className="flex h-64 flex-col items-center justify-center rounded-lg bg-yellow-50 p-4">
-                        <p className="mb-4 text-yellow-700">Video URL has expired. Refreshing...</p>
+                        <p className="mb-4 text-yellow-700">{t('errors.urlExpiredRefreshing')}</p>
                         <div className="size-8 animate-spin rounded-full border-y-2 border-primary-500"></div>
                     </div>
                 ) : (
@@ -418,7 +472,7 @@ const VideoSlidePreview = ({ activeItem, embedUrl }: { activeItem: Slide; embedU
                     className="aspect-video w-full rounded-lg"
                     allow="autoplay; fullscreen; picture-in-picture"
                     allowFullScreen
-                    title="Vimeo video player"
+                    title={t('vimeoPlayerTitle')}
                 />
             </div>
         );

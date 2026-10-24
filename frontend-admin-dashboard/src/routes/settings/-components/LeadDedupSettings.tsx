@@ -11,6 +11,11 @@
  *   5. Repeat lead handling (only when action = allow & reassign):
  *      - Counsellor: none / same as previous / a specific counsellor / round-robin
  *      - Status: keep their current status, or reset to New
+ *      - Match by phone only: join the existing person; stop counsellors adding a
+ *        lead another counsellor owns
+ *      - Reattempt: flag the repeat as a duplicate, a journey entry, a bell to the
+ *        lead's counsellor, a "Duplicate" badge in lead tables, a priority follow-up,
+ *        and the tier (Interest Level) to set (each its own setting)
  *
  * Persisted at LEAD_SETTING.data.dedup (snake_case-free, matches backend enum
  * casing directly). The save path READ-MODIFY-WRITES the whole LEAD_SETTING
@@ -19,6 +24,7 @@
  * clobbered.
  */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Fingerprint, X } from '@phosphor-icons/react';
@@ -40,6 +46,8 @@ import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useCampaignsList } from '@/routes/audience-manager/list/-hooks/useCampaignsList';
 import { useUserAutosuggestDebounced, USER_ROLES } from '@/services/user-autosuggest';
+import { useLeadTiers } from '@/hooks/use-lead-tiers';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 import {
     LEAD_DEDUP_SETTINGS_QUERY_KEY,
     fetchLeadDedupSettings,
@@ -51,11 +59,27 @@ import {
     type RepeatLeadCounsellorMode,
     type RepeatLeadSettings,
     type RepeatLeadStatusMode,
+    type ReattemptSettings,
     REPEAT_LEAD_SETTINGS_DEFAULTS,
 } from '@/hooks/use-lead-dedup-settings';
 import { fetchLeadSettingRawData } from '@/hooks/use-lead-report-settings';
 
 const SETTING_KEY = 'LEAD_SETTING';
+
+type ReattemptSwitchKey = Exclude<keyof ReattemptSettings, 'tier' | 'duplicateOpenOnly'>;
+
+/** Reattempt switches in display order; labels/hints live under repeatLead.reattempt.<key>. */
+const REATTEMPT_SWITCHES: ReattemptSwitchKey[] = [
+    'markDuplicate',
+    'journeyEntry',
+    'notifyOwner',
+    'followUp',
+    'showBadge',
+    'duplicatesTabOnly',
+];
+
+/** Select value for "leave the tier as it is" (Radix Select can't use an empty value). */
+const KEEP_TIER = '__keep__';
 // Mirrors LeadSettings.tsx — the institute-settings save endpoint.
 const SAVE_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting');
 
@@ -91,6 +115,7 @@ function CounsellorPicker({
     counsellorName: string | null;
     onChange: (id: string | null, name: string | null) => void;
 }) {
+    const { t } = useTranslation('settingsLeadDedup');
     const [query, setQuery] = useState('');
     const { data: suggestions, isLoading } = useUserAutosuggestDebounced(
         query,
@@ -106,7 +131,7 @@ function CounsellorPicker({
                     type="button"
                     onClick={() => onChange(null, null)}
                     className="text-neutral-400 hover:text-neutral-600"
-                    aria-label="Clear selected counsellor"
+                    aria-label={t('counsellorPicker.clearAriaLabel')}
                 >
                     <X size={14} />
                 </button>
@@ -119,9 +144,11 @@ function CounsellorPicker({
             <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Type to search counsellors…"
+                placeholder={t('counsellorPicker.searchPlaceholder')}
             />
-            {isLoading && <p className="mt-1 text-xs text-muted-foreground">Searching…</p>}
+            {isLoading && (
+                <p className="mt-1 text-xs text-muted-foreground">{t('counsellorPicker.searching')}</p>
+            )}
             {suggestions && suggestions.length > 0 && query && (
                 <div className="mt-1 max-h-48 overflow-y-auto rounded-md border">
                     {suggestions.map((user) => (
@@ -145,8 +172,11 @@ function CounsellorPicker({
 }
 
 export default function LeadDedupSettings() {
+    const { t } = useTranslation('settingsLeadDedup');
     const queryClient = useQueryClient();
     const instituteId = getCurrentInstituteId() ?? '';
+    const { tiers } = useLeadTiers();
+    const terminology = useLeadTerminology();
 
     const { data: saved, isLoading } = useQuery({
         queryKey: LEAD_DEDUP_SETTINGS_QUERY_KEY,
@@ -192,24 +222,24 @@ export default function LeadDedupSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveDedupSettings,
         onSuccess: () => {
-            toast.success('Deduplication settings saved');
+            toast.success(t('toasts.saved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: LEAD_DEDUP_SETTINGS_QUERY_KEY });
             queryClient.invalidateQueries({ queryKey: ['lead-settings-config'] });
             queryClient.invalidateQueries({ queryKey: ['lead-settings'] });
         },
         onError: () => {
-            toast.error('Failed to save deduplication settings');
+            toast.error(t('toasts.saveFailed'));
         },
     });
 
     const handleSave = () => {
         if (scope === 'SELECTED' && audienceIds.length === 0) {
-            toast.error('Pick at least one lead list, or choose a different scope');
+            toast.error(t('toasts.pickLeadList'));
             return;
         }
         if (action === 'ALLOW_REASSIGN' && repeatLead.counsellorMode === 'SPECIFIC' && !repeatLead.specificCounsellorId) {
-            toast.error('Pick a counsellor, or choose a different repeat-lead counsellor option');
+            toast.error(t('toasts.pickCounsellor'));
             return;
         }
         save({ enabled, field, scope, audienceIds, action, repeatLead });
@@ -233,24 +263,23 @@ export default function LeadDedupSettings() {
         setHasChanges(true);
     };
 
+    const updateReattempt = (patch: Partial<ReattemptSettings>) => {
+        setRepeatLead((prev) => ({ ...prev, reattempt: { ...prev.reattempt, ...patch } }));
+        setHasChanges(true);
+    };
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Fingerprint size={18} className="text-neutral-500" />
-                    Deduplication
+                    {t('header.title')}
                 </CardTitle>
-                <CardDescription>
-                    Control what happens when a new lead submission matches one that already
-                    exists. Off by default — turning this on does not affect leads already
-                    captured.
-                </CardDescription>
+                <CardDescription>{t('header.description')}</CardDescription>
             </CardHeader>
             <CardContent>
                 {isLoading ? (
-                    <div className="text-sm text-muted-foreground">
-                        Loading deduplication settings…
-                    </div>
+                    <div className="text-sm text-muted-foreground">{t('loading')}</div>
                 ) : (
                     <div className="flex flex-col gap-5">
                         <div className="flex items-center gap-3">
@@ -263,16 +292,16 @@ export default function LeadDedupSettings() {
                                 }}
                             />
                             <Label htmlFor="dedup-enabled" className="cursor-pointer">
-                                {enabled ? 'Enabled' : 'Disabled'}
+                                {enabled ? t('enabled.enabled') : t('enabled.disabled')}
                             </Label>
                         </div>
 
                         {enabled && (
                             <>
                                 <div className="flex flex-col gap-1.5">
-                                    <Label htmlFor="dedup-field">Match leads by</Label>
+                                    <Label htmlFor="dedup-field">{t('fields.matchBy.label')}</Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Which identifier counts as a duplicate.
+                                        {t('fields.matchBy.hint')}
                                     </p>
                                     <Select
                                         value={field}
@@ -282,20 +311,23 @@ export default function LeadDedupSettings() {
                                         }}
                                     >
                                         <SelectTrigger id="dedup-field" className="w-full max-w-sm">
-                                            <SelectValue placeholder="Select field" />
+                                            <SelectValue placeholder={t('fields.matchBy.placeholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="EMAIL">Email address</SelectItem>
-                                            <SelectItem value="PHONE">Phone number</SelectItem>
+                                            <SelectItem value="EMAIL">
+                                                {t('fields.matchBy.options.email')}
+                                            </SelectItem>
+                                            <SelectItem value="PHONE">
+                                                {t('fields.matchBy.options.phone')}
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
-                                    <Label htmlFor="dedup-scope">Applies to</Label>
+                                    <Label htmlFor="dedup-scope">{t('fields.scope.label')}</Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Check only the lead list being submitted to, a specific set
-                                        of lead lists, or every lead list in the institute.
+                                        {t('fields.scope.hint')}
                                     </p>
                                     <Select
                                         value={scope}
@@ -305,13 +337,17 @@ export default function LeadDedupSettings() {
                                         }}
                                     >
                                         <SelectTrigger id="dedup-scope" className="w-full max-w-sm">
-                                            <SelectValue placeholder="Select scope" />
+                                            <SelectValue placeholder={t('fields.scope.placeholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="CAMPAIGN">This lead list only</SelectItem>
-                                            <SelectItem value="SELECTED">Specific lead lists</SelectItem>
+                                            <SelectItem value="CAMPAIGN">
+                                                {t('fields.scope.options.campaign')}
+                                            </SelectItem>
+                                            <SelectItem value="SELECTED">
+                                                {t('fields.scope.options.selected')}
+                                            </SelectItem>
                                             <SelectItem value="INSTITUTE">
-                                                All lead lists in this institute
+                                                {t('fields.scope.options.institute')}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -319,11 +355,9 @@ export default function LeadDedupSettings() {
 
                                 {scope === 'SELECTED' && (
                                     <div className="flex flex-col gap-1.5">
-                                        <Label>Lead lists</Label>
+                                        <Label>{t('fields.audienceLists.label')}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Duplicates are checked across only the lead lists picked
-                                            here. Selecting all of them switches this to
-                                            institute-wide automatically.
+                                            {t('fields.audienceLists.hint')}
                                         </p>
                                         <MultiSelect
                                             options={audienceOptions}
@@ -331,8 +365,8 @@ export default function LeadDedupSettings() {
                                             onChange={handleAudienceSelectionChange}
                                             placeholder={
                                                 campaignsLoading
-                                                    ? 'Loading lead lists…'
-                                                    : 'Select lead lists'
+                                                    ? t('fields.audienceLists.placeholderLoading')
+                                                    : t('fields.audienceLists.placeholder')
                                             }
                                             disabled={campaignsLoading}
                                             className="max-w-sm"
@@ -341,10 +375,9 @@ export default function LeadDedupSettings() {
                                 )}
 
                                 <div className="flex flex-col gap-1.5">
-                                    <Label htmlFor="dedup-action">When a duplicate is found</Label>
+                                    <Label htmlFor="dedup-action">{t('fields.action.label')}</Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Block the submission, or let it through and apply the
-                                        repeat-lead rules below.
+                                        {t('fields.action.hint')}
                                     </p>
                                     <Select
                                         value={action}
@@ -354,12 +387,14 @@ export default function LeadDedupSettings() {
                                         }}
                                     >
                                         <SelectTrigger id="dedup-action" className="w-full max-w-sm">
-                                            <SelectValue placeholder="Select action" />
+                                            <SelectValue placeholder={t('fields.action.placeholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="REJECT">Reject the submission</SelectItem>
+                                            <SelectItem value="REJECT">
+                                                {t('fields.action.options.reject')}
+                                            </SelectItem>
                                             <SelectItem value="ALLOW_REASSIGN">
-                                                Allow it through and reassign
+                                                {t('fields.action.options.allowReassign')}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -367,11 +402,11 @@ export default function LeadDedupSettings() {
 
                                 {action === 'ALLOW_REASSIGN' && (
                                     <div className="flex flex-col gap-4 rounded-md border p-4">
-                                        <p className="text-sm font-medium">Repeat lead handling</p>
+                                        <p className="text-sm font-medium">{t('repeatLead.title')}</p>
 
                                         <div className="flex flex-col gap-1.5">
                                             <Label htmlFor="repeat-counsellor-mode">
-                                                Assign a counsellor?
+                                                {t('repeatLead.counsellorMode.label')}
                                             </Label>
                                             <Select
                                                 value={repeatLead.counsellorMode}
@@ -385,18 +420,22 @@ export default function LeadDedupSettings() {
                                                     id="repeat-counsellor-mode"
                                                     className="w-full max-w-sm"
                                                 >
-                                                    <SelectValue placeholder="Select" />
+                                                    <SelectValue
+                                                        placeholder={t('repeatLead.counsellorMode.placeholder')}
+                                                    />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="NONE">Don&apos;t assign one</SelectItem>
+                                                    <SelectItem value="NONE">
+                                                        {t('repeatLead.counsellorMode.options.none')}
+                                                    </SelectItem>
                                                     <SelectItem value="SAME_AS_PREVIOUS">
-                                                        Keep their previous counsellor
+                                                        {t('repeatLead.counsellorMode.options.sameAsPrevious')}
                                                     </SelectItem>
                                                     <SelectItem value="SPECIFIC">
-                                                        Always assign a specific counsellor
+                                                        {t('repeatLead.counsellorMode.options.specific')}
                                                     </SelectItem>
                                                     <SelectItem value="ROUND_ROBIN">
-                                                        Use round-robin, same as new leads
+                                                        {t('repeatLead.counsellorMode.options.roundRobin')}
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -404,7 +443,7 @@ export default function LeadDedupSettings() {
 
                                         {repeatLead.counsellorMode === 'SPECIFIC' && (
                                             <div className="flex flex-col gap-1.5">
-                                                <Label>Counsellor</Label>
+                                                <Label>{t('repeatLead.counsellorPicker.label')}</Label>
                                                 <CounsellorPicker
                                                     counsellorId={repeatLead.specificCounsellorId}
                                                     counsellorName={repeatLead.specificCounsellorName}
@@ -419,7 +458,9 @@ export default function LeadDedupSettings() {
                                         )}
 
                                         <div className="flex flex-col gap-1.5">
-                                            <Label htmlFor="repeat-status-mode">Lead status</Label>
+                                            <Label htmlFor="repeat-status-mode">
+                                                {t('repeatLead.statusMode.label')}
+                                            </Label>
                                             <Select
                                                 value={repeatLead.statusMode}
                                                 onValueChange={(v) =>
@@ -432,17 +473,225 @@ export default function LeadDedupSettings() {
                                                     id="repeat-status-mode"
                                                     className="w-full max-w-sm"
                                                 >
-                                                    <SelectValue placeholder="Select" />
+                                                    <SelectValue
+                                                        placeholder={t('repeatLead.statusMode.placeholder')}
+                                                    />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="KEEP_EXISTING">
-                                                        Keep their current status
+                                                        {t('repeatLead.statusMode.options.keepExisting')}
                                                     </SelectItem>
                                                     <SelectItem value="RESET_TO_NEW">
-                                                        Reset to New
+                                                        {t('repeatLead.statusMode.options.resetToNew')}
+                                                    </SelectItem>
+                                                    <SelectItem value="RESET_CLOSED_TO_NEW">
+                                                        {t(
+                                                            'repeatLead.statusMode.options.resetClosedToNew'
+                                                        )}
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
+                                        </div>
+
+                                        {field === 'PHONE' && (
+                                            <>
+                                                <div className="flex items-start gap-3">
+                                                    <Switch
+                                                        id="repeat-same-person"
+                                                        checked={repeatLead.samePersonByPhone}
+                                                        onCheckedChange={(v) =>
+                                                            updateRepeatLead({
+                                                                samePersonByPhone: v,
+                                                            })
+                                                        }
+                                                    />
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <Label
+                                                            htmlFor="repeat-same-person"
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {t(
+                                                                'repeatLead.samePersonByPhone.label'
+                                                            )}
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {t('repeatLead.samePersonByPhone.hint')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-start gap-3">
+                                                    <Switch
+                                                        id="repeat-also-email"
+                                                        checked={repeatLead.alsoMatchEmail}
+                                                        onCheckedChange={(v) =>
+                                                            updateRepeatLead({
+                                                                alsoMatchEmail: v,
+                                                            })
+                                                        }
+                                                    />
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <Label
+                                                            htmlFor="repeat-also-email"
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {t('repeatLead.alsoMatchEmail.label')}
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {t('repeatLead.alsoMatchEmail.hint')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-start gap-3">
+                                                    <Switch
+                                                        id="repeat-block-owned"
+                                                        checked={repeatLead.blockOwnedManualAdd}
+                                                        onCheckedChange={(v) =>
+                                                            updateRepeatLead({
+                                                                blockOwnedManualAdd: v,
+                                                            })
+                                                        }
+                                                    />
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <Label
+                                                            htmlFor="repeat-block-owned"
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {t(
+                                                                'repeatLead.blockOwnedManualAdd.label'
+                                                            )}
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {t(
+                                                                'repeatLead.blockOwnedManualAdd.hint'
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        <div className="flex items-start gap-3">
+                                            <Switch
+                                                id="repeat-block-open"
+                                                checked={repeatLead.blockOpenLeadManualAdd}
+                                                onCheckedChange={(v) =>
+                                                    updateRepeatLead({ blockOpenLeadManualAdd: v })
+                                                }
+                                            />
+                                            <div className="flex flex-col gap-0.5">
+                                                <Label htmlFor="repeat-block-open" className="cursor-pointer">
+                                                    {t('repeatLead.blockOpenLeadManualAdd.label')}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t('repeatLead.blockOpenLeadManualAdd.hint')}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 border-t pt-4">
+                                            <div className="flex flex-col gap-0.5">
+                                                <p className="text-sm font-medium">
+                                                    {t('repeatLead.reattempt.title')}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t('repeatLead.reattempt.hint')}
+                                                </p>
+                                            </div>
+                                            {REATTEMPT_SWITCHES.map((key) => (
+                                                <div key={key} className="flex items-start gap-3">
+                                                    <Switch
+                                                        id={`repeat-reattempt-${key}`}
+                                                        checked={repeatLead.reattempt[key]}
+                                                        onCheckedChange={(v) =>
+                                                            updateReattempt({ [key]: v })
+                                                        }
+                                                    />
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <Label
+                                                            htmlFor={`repeat-reattempt-${key}`}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {t(`repeatLead.reattempt.${key}.label`)}
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {t(`repeatLead.reattempt.${key}.hint`)}
+                                                        </p>
+                                                        {key === 'markDuplicate' &&
+                                                            repeatLead.reattempt.markDuplicate && (
+                                                                <div className="mt-2 flex items-start gap-2">
+                                                                    <Switch
+                                                                        id="repeat-reattempt-open-only"
+                                                                        checked={
+                                                                            repeatLead.reattempt
+                                                                                .duplicateOpenOnly
+                                                                        }
+                                                                        onCheckedChange={(v) =>
+                                                                            updateReattempt({
+                                                                                duplicateOpenOnly:
+                                                                                    v,
+                                                                            })
+                                                                        }
+                                                                    />
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <Label
+                                                                            htmlFor="repeat-reattempt-open-only"
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            {t(
+                                                                                'repeatLead.reattempt.duplicateOpenOnly.label'
+                                                                            )}
+                                                                        </Label>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {t(
+                                                                                'repeatLead.reattempt.duplicateOpenOnly.hint'
+                                                                            )}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <div className="flex flex-col gap-1.5">
+                                                <Label htmlFor="repeat-reattempt-tier">
+                                                    {t('repeatLead.reattempt.tier.label', {
+                                                        tier: terminology.tier,
+                                                    })}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t('repeatLead.reattempt.tier.hint')}
+                                                </p>
+                                                <Select
+                                                    value={repeatLead.reattempt.tier ?? KEEP_TIER}
+                                                    onValueChange={(v) =>
+                                                        updateReattempt({
+                                                            tier: v === KEEP_TIER ? null : v,
+                                                        })
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        id="repeat-reattempt-tier"
+                                                        className="w-full max-w-sm"
+                                                    >
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value={KEEP_TIER}>
+                                                            {t('repeatLead.reattempt.tier.keep')}
+                                                        </SelectItem>
+                                                        {tiers.map((tier) => (
+                                                            <SelectItem
+                                                                key={tier.tier_key}
+                                                                value={tier.tier_key}
+                                                            >
+                                                                {tier.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -456,7 +705,7 @@ export default function LeadDedupSettings() {
                                 onClick={handleSave}
                                 disable={saving || !hasChanges}
                             >
-                                {saving ? 'Saving…' : 'Save deduplication settings'}
+                                {saving ? t('footer.saving') : t('footer.save')}
                             </MyButton>
                         </div>
                     </div>

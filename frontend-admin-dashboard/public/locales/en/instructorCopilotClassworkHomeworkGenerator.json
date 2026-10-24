@@ -1,0 +1,15 @@
+{
+    "classwork": {
+        "title": "Classwork",
+        "subtitle": "In-class activities and tasks",
+        "taskNumber": "Task {{number}}",
+        "completed": "Completed"
+    },
+    "homework": {
+        "title": "Homework",
+        "subtitle": "Assignments to be completed after class",
+        "dueDate": "Due Date: ___________________",
+        "assignmentNumber": "Assignment {{number}}",
+        "completed": "Completed"
+    }
+}

@@ -5,6 +5,7 @@ import {
     GET_PUBLIC_URL_PUBLIC,
 } from '@/constants/urls';
 import { getMainDomain, getSubdomain } from '@/utils/subdomain';
+import { detectVisitorCountry } from '@/utils/geo-country';
 
 export type DomainResolveResponse = {
     instituteId: string | null;
@@ -39,6 +40,9 @@ export type DomainResolveResponse = {
     // Comma-separated ISO 3166-1 alpha-2 country codes (e.g. "in,us,gb,au").
     // Drives the default selection and ordering of country options in phone inputs.
     commaSeparatedPreferredCountry?: string | null;
+    // How phone inputs pick their country code on this portal — one of
+    // PHONE_COUNTRY_GEO_MODES. Absent/unrecognised behaves as INSTITUTE_FIRST.
+    phoneCountryGeoMode?: string | null;
     // When true, the institute name is hidden alongside the logo on the login
     // page and in the sidebar. Default (undefined/false): name is shown.
     hideInstituteName?: boolean | null;
@@ -71,25 +75,198 @@ export function getCachedPreferredCountries(): string[] {
 }
 
 /**
- * Fallback country picker order used when the institute hasn't configured any.
- * India ('in') is first so an empty/null `commaSeparatedPreferredCountry`
- * defaults phone inputs to India.
+ * Last-resort country picker order, used only when the institute has configured
+ * nothing AND the visitor's own country could not be detected. India ('in') is
+ * first because that is where the overwhelming majority of platform traffic is.
+ *
+ * This is the UNION of the per-form fallbacks that existed before these lists
+ * were unified — the catalogue checkout and enrolment-payment dialogs carried
+ * 'ae', which somebody added deliberately for Gulf buyers. Pinning a country
+ * only moves it to the top of a picker that still lists every country, so a
+ * wider default can never restrict anyone; dropping one silently makes a real
+ * buyer scroll. Keep this a superset when consolidating further lists.
  */
-export const DEFAULT_PREFERRED_COUNTRIES = ['in', 'us', 'gb', 'au'];
+export const DEFAULT_PREFERRED_COUNTRIES = ['in', 'us', 'gb', 'au', 'ae'];
 
 /**
- * Resolves the default selected country and the ordered country-picker list for
- * phone inputs from the institute's configured preferred countries, falling back
- * to {@link DEFAULT_PREFERRED_COUNTRIES} (India default) when nothing is
- * configured. The first entry is the default; the full list orders the picker.
+ * How a portal decides which country code a phone field starts on. Stored per
+ * white-label routing row (`institute_domain_routing.phone_country_geo_mode`)
+ * and surfaced through domain routing. Mirrors the backend `PhoneCountryGeoMode`.
  */
-export function getPreferredPhoneCountries(): {
+export const PHONE_COUNTRY_GEO_MODES = ['INSTITUTE_FIRST', 'GEO_FIRST', 'INSTITUTE_ONLY'] as const;
+
+export type PhoneCountryGeoMode = (typeof PHONE_COUNTRY_GEO_MODES)[number];
+
+export const DEFAULT_PHONE_COUNTRY_GEO_MODE: PhoneCountryGeoMode = 'INSTITUTE_FIRST';
+
+/**
+ * Reads the portal's configured mode from cached domain routing. Anything
+ * missing or unrecognised is {@link DEFAULT_PHONE_COUNTRY_GEO_MODE} — this
+ * setting is cosmetic and must never be able to break a form.
+ */
+export function getPhoneCountryGeoMode(): PhoneCountryGeoMode {
+    try {
+        const raw = getCachedInstituteBranding()?.phoneCountryGeoMode;
+        const upper = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+        return PHONE_COUNTRY_GEO_MODES.includes(upper as PhoneCountryGeoMode)
+            ? (upper as PhoneCountryGeoMode)
+            : DEFAULT_PHONE_COUNTRY_GEO_MODE;
+    } catch {
+        return DEFAULT_PHONE_COUNTRY_GEO_MODE;
+    }
+}
+
+/**
+ * Resolves what a phone field should start on: which country is selected, and
+ * how the picker is ordered.
+ *
+ * Two things have an opinion — the institute's configured preferred countries,
+ * and the country the visitor is physically in (see `utils/geo-country`, which
+ * reads the browser's timezone; no request, no IP, resolved synchronously so
+ * the flag never changes under someone who has started typing).
+ *
+ * The portal's `phone_country_geo_mode` decides which wins:
+ *
+ * - `INSTITUTE_FIRST` (default) — the configured list wins outright, exactly as
+ *   before this setting existed. The visitor's country is used only when the
+ *   institute has configured nothing, so a form opened in Moscow starts on +7
+ *   instead of hard-defaulting to +91.
+ * - `GEO_FIRST` — the visitor's country is pre-selected when known; the
+ *   configured list still orders the rest of the picker behind it. For
+ *   institutes taking enrolments from several countries.
+ * - `INSTITUTE_ONLY` — the visitor is never consulted.
+ *
+ * The first entry of `preferredCountries` is not assumed to be the default:
+ * `defaultCountry` is returned explicitly, because under `GEO_FIRST` the
+ * selected country is not necessarily one the institute listed.
+ */
+export type ResolvedPhoneCountries = {
     defaultCountry: string;
     preferredCountries: string[];
-} {
-    const cached = getCachedPreferredCountries();
-    const list = cached.length > 0 ? cached : DEFAULT_PREFERRED_COUNTRIES;
-    return { defaultCountry: list[0] ?? 'in', preferredCountries: list };
+    /** The mode that produced this result. */
+    mode: PhoneCountryGeoMode;
+    /** The visitor's detected country, or null. Always null under INSTITUTE_ONLY. */
+    detectedCountry: string | null;
+};
+
+/**
+ * The resolution chain itself, as a pure function of its three inputs.
+ *
+ * Kept separate from {@link getPreferredPhoneCountries} so White Label settings
+ * can preview the outcome of a mode the institute has selected but not yet
+ * saved — the preview and the real forms then cannot drift apart.
+ *
+ * @param mode       the portal's configured mode
+ * @param configured the institute's preferred countries, in their chosen order
+ * @param detected   the country the visitor is in, or null when unknown
+ */
+export function resolvePhoneCountries(
+    mode: PhoneCountryGeoMode,
+    configured: string[],
+    detected: string | null
+): ResolvedPhoneCountries {
+    // INSTITUTE_ONLY never looks at the visitor, whatever was passed in.
+    const visitor = mode === 'INSTITUTE_ONLY' ? null : detected;
+
+    // Institute list first, then the platform default, so GEO_FIRST still shows
+    // the institute's chosen countries immediately under the detected one.
+    const base = configured.length > 0 ? configured : DEFAULT_PREFERRED_COUNTRIES;
+
+    if (mode === 'GEO_FIRST' && visitor) {
+        return {
+            defaultCountry: visitor,
+            preferredCountries: [visitor, ...base.filter((code) => code !== visitor)],
+            mode,
+            detectedCountry: visitor,
+        };
+    }
+
+    // INSTITUTE_FIRST, and GEO_FIRST when the visitor could not be placed: the
+    // institute's own list is authoritative.
+    if (configured.length > 0) {
+        return {
+            defaultCountry: configured[0] ?? 'in',
+            preferredCountries: configured,
+            mode,
+            detectedCountry: visitor,
+        };
+    }
+
+    // Nothing configured. Follow the visitor rather than hard-defaulting to
+    // India — this is the case that makes a form opened in Moscow start on +7.
+    if (visitor) {
+        return {
+            defaultCountry: visitor,
+            preferredCountries: [
+                visitor,
+                ...DEFAULT_PREFERRED_COUNTRIES.filter((code) => code !== visitor),
+            ],
+            mode,
+            detectedCountry: visitor,
+        };
+    }
+
+    return {
+        defaultCountry: DEFAULT_PREFERRED_COUNTRIES[0] ?? 'in',
+        preferredCountries: DEFAULT_PREFERRED_COUNTRIES,
+        mode,
+        detectedCountry: null,
+    };
+}
+
+/**
+ * Resolves what a phone field should start on: which country is selected, and
+ * how the picker is ordered.
+ *
+ * Two things have an opinion — the institute's configured preferred countries,
+ * and the country the visitor is physically in (see `utils/geo-country`, which
+ * reads the browser's timezone; no request, no IP, resolved synchronously so
+ * the flag never changes under someone who has started typing).
+ *
+ * The portal's `phone_country_geo_mode` decides which wins:
+ *
+ * - `INSTITUTE_FIRST` (default) — the configured list wins outright, exactly as
+ *   before this setting existed. The visitor's country is used only when the
+ *   institute has configured nothing, so a form opened in Moscow starts on +7
+ *   instead of hard-defaulting to +91.
+ * - `GEO_FIRST` — the visitor's country is pre-selected when known; the
+ *   configured list still orders the rest of the picker behind it. For
+ *   institutes taking enrolments from several countries.
+ * - `INSTITUTE_ONLY` — the visitor is never consulted.
+ *
+ * The first entry of `preferredCountries` is not assumed to be the default:
+ * `defaultCountry` is returned explicitly, because under `GEO_FIRST` the
+ * selected country is not necessarily one the institute listed.
+ */
+/**
+ * Whether this device has ever resolved an institute's branding, and therefore
+ * knows what that institute wants a phone field to do.
+ *
+ * "The institute configured no countries" and "we have not yet asked the
+ * institute anything" both leave {@link getCachedPreferredCountries} empty, and
+ * they call for opposite behaviour. Letting geo-detection fill the second
+ * silence would override a preference — including an INSTITUTE_ONLY opt-out —
+ * that was never read.
+ */
+export function hasResolvedPhonePreferences(): boolean {
+    try {
+        return getCachedInstituteBranding() !== null;
+    } catch {
+        return false;
+    }
+}
+
+export function getPreferredPhoneCountries(): ResolvedPhoneCountries {
+    const mode = getPhoneCountryGeoMode();
+    return resolvePhoneCountries(
+        mode,
+        getCachedPreferredCountries(),
+        // Only consult the visitor once we actually know what this institute
+        // wants. Without branding, the mode reads as the INSTITUTE_FIRST default
+        // and the country list reads as empty — which would send the form to the
+        // geo branch and quietly ignore a portal that chose INSTITUTE_ONLY.
+        hasResolvedPhonePreferences() ? detectVisitorCountry() : null
+    );
 }
 
 export async function resolveInstituteForCurrentHost(): Promise<DomainResolveResponse | null> {

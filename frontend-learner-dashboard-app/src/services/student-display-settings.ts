@@ -1,5 +1,5 @@
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
-import { BASE_URL } from "@/constants/urls";
+import { BASE_URL, OPEN_STUDENT_DISPLAY_SETTINGS } from "@/constants/urls";
 import { getInstituteId } from "@/constants/helper";
 import {
   STUDENT_DISPLAY_SETTINGS_KEY,
@@ -7,8 +7,12 @@ import {
   type StudentSidebarTabConfig,
   type StudentDashboardWidgetConfig,
   type StudentDashboardWidgetId,
+  type StudentAllCoursesCustomTab,
+  type StudentAllCoursesCustomTabProductPage,
+  type StudentAllCoursesCustomTabType,
 } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
+import { resolveUiSkin } from "@/utils/institute-theme-roles";
 
 const LS_KEY = `${STUDENT_DISPLAY_SETTINGS_KEY}_CACHE_V1`;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -25,6 +29,44 @@ function mergeArrayById<T extends { id: string }>(
     byId.set(i.id, def ? ({ ...def, ...i } as T) : (i as T));
   });
   return Array.from(byId.values());
+}
+
+const CUSTOM_COURSE_TAB_TYPES: ReadonlyArray<StudentAllCoursesCustomTabType> = [
+  "TAG",
+  "COURSES",
+  "FREE_COURSES",
+  "LIVE_SESSIONS",
+  "PRODUCT_PAGES",
+];
+
+const stringList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string" && v.length > 0) : [];
+
+/** Drops custom Courses-page tabs without an id and fills missing fields. */
+function normalizeCustomCourseTabs(
+  incoming: Array<Partial<StudentAllCoursesCustomTab>> | undefined
+): StudentAllCoursesCustomTab[] {
+  if (!Array.isArray(incoming)) return [];
+  return incoming
+    .filter((t) => typeof t?.id === "string" && t.id.length > 0)
+    .map((t) => ({
+      id: t.id as string,
+      label: typeof t.label === "string" ? t.label : "",
+      // Tabs saved before types existed are tag tabs.
+      type: CUSTOM_COURSE_TAB_TYPES.includes(t.type as StudentAllCoursesCustomTabType)
+        ? (t.type as StudentAllCoursesCustomTabType)
+        : "TAG",
+      tags: stringList(t.tags),
+      courseIds: stringList(t.courseIds),
+      productPages: Array.isArray(t.productPages)
+        ? t.productPages.filter(
+            (p): p is StudentAllCoursesCustomTabProductPage =>
+              typeof p?.code === "string" && p.code.length > 0
+          ).map((p) => ({ code: p.code, name: typeof p.name === "string" ? p.name : p.code }))
+        : [],
+      order: typeof t.order === "number" ? t.order : 0,
+      visible: t.visible ?? true,
+    }));
 }
 
 /**
@@ -68,6 +110,9 @@ function mergeWithDefaults(
     },
     sidebar: {
       visible: incoming?.sidebar?.visible ?? d.sidebar.visible,
+      // Absent on every settings blob saved before the getApp widget shipped —
+      // those institutes must keep the sidebar links they already had.
+      appLinks: incoming?.sidebar?.appLinks ?? d.sidebar.appLinks,
       tabs: mergeArrayById<StudentSidebarTabConfig>(
         incoming?.sidebar?.tabs,
         d.sidebar.tabs
@@ -209,6 +254,7 @@ function mergeWithDefaults(
       showCourseConfiguration:
         incoming?.courseDetails?.showCourseConfiguration ??
         d.courseDetails.showCourseConfiguration,
+      hideTags: incoming?.courseDetails?.hideTags ?? d.courseDetails.hideTags,
       showCourseContentPrefixes:
         incoming?.courseDetails?.showCourseContentPrefixes ??
         d.courseDetails.showCourseContentPrefixes,
@@ -274,10 +320,15 @@ function mergeWithDefaults(
             true,
         })
       ),
+      customTabs: normalizeCustomCourseTabs(incoming?.allCourses?.customTabs),
       defaultTab: incoming?.allCourses?.defaultTab ?? d.allCourses.defaultTab,
       hideInstructorName:
         incoming?.allCourses?.hideInstructorName ??
         d.allCourses.hideInstructorName,
+      pageSize: incoming?.allCourses?.pageSize ?? d.allCourses.pageSize,
+      showAllEnrolledOnDashboard:
+        incoming?.allCourses?.showAllEnrolledOnDashboard ??
+        d.allCourses.showAllEnrolledOnDashboard,
     },
     notifications: {
       allowSystemAlerts:
@@ -308,6 +359,14 @@ function mergeWithDefaults(
         celebrateOnQuizComplete:
           incoming?.courseSettings?.quiz?.celebrateOnQuizComplete ??
           d.courseSettings.quiz.celebrateOnQuizComplete,
+      },
+      assignment: {
+        hideAttemptsAllowed:
+          incoming?.courseSettings?.assignment?.hideAttemptsAllowed ??
+          d.courseSettings.assignment.hideAttemptsAllowed,
+        hideRepeatedTitle:
+          incoming?.courseSettings?.assignment?.hideRepeatedTitle ??
+          d.courseSettings.assignment.hideRepeatedTitle,
       },
     },
     concentration: {
@@ -405,16 +464,24 @@ export function applyUiSkinFromSettings(
       override === "default" ||
       override === "vibrant" ||
       override === "play" ||
-      override === "cleanerPlay"
+      override === "cleanerPlay" ||
+      override === "corporate"
     ) {
       return; // QA override wins; __root's debug helpers manage it
     }
-    const t = settings?.ui?.type || "default";
+    // THEME_SETTING.roles.skin wins; ui.type is the pre-migration fallback.
+    const t = resolveUiSkin(settings?.ui?.type ?? null);
     const root = document.documentElement;
-    root.classList.remove("ui-vibrant", "ui-play", "ui-cleaner-play");
+    root.classList.remove(
+      "ui-vibrant",
+      "ui-play",
+      "ui-cleaner-play",
+      "ui-corporate"
+    );
     if (t === "vibrant") root.classList.add("ui-vibrant");
     else if (t === "play") root.classList.add("ui-play");
     else if (t === "cleanerPlay") root.classList.add("ui-cleaner-play");
+    else if (t === "corporate") root.classList.add("ui-corporate");
   } catch {
     // noop — never let skin application break a login flow
   }
@@ -460,6 +527,74 @@ export async function getStudentDisplaySettings(
     return request;
   }
   return fetchAndCacheStudentDisplaySettings(instituteId, forceRefresh);
+}
+
+// Session memo + in-flight dedupe for the unauthenticated read.
+const publicSettingsByInstitute = new Map<string, StudentDisplaySettingsData>();
+const inFlightPublicSettingsByInstitute = new Map<
+  string,
+  Promise<StudentDisplaySettingsData>
+>();
+
+/**
+ * Pre-login read of an institute's student display settings.
+ *
+ * `getStudentDisplaySettings()` resolves the institute through `getInstituteId()`,
+ * which needs an access token — so on public screens (course catalogue) it
+ * silently falls back to DEFAULTS and every toggle reads as its default value.
+ * This variant takes the institute explicitly and goes through the `/open/**`
+ * endpoint, so a gate like `signup.enabled: false` actually takes effect before
+ * anyone has logged in.
+ *
+ * Memoised per institute for the session, deduped while in flight, and the
+ * endpoint itself is `@ClientCacheable(300s, PUBLIC)`. Results are written to
+ * the shared per-institute cache so the authenticated reader benefits too.
+ * Any failure yields defaults — a public page must never break because a
+ * settings read did.
+ */
+export async function getPublicStudentDisplaySettings(
+  instituteId: string | null | undefined
+): Promise<StudentDisplaySettingsData> {
+  if (!instituteId) return DEFAULT_STUDENT_DISPLAY_SETTINGS;
+
+  const memo = publicSettingsByInstitute.get(instituteId);
+  if (memo) return memo;
+
+  const cached = readCacheForInstitute(instituteId);
+  if (cached) return mergeWithDefaults(cached);
+
+  const inFlight = inFlightPublicSettingsByInstitute.get(instituteId);
+  if (inFlight) return inFlight;
+
+  const request = (async () => {
+    try {
+      const res = await authenticatedAxiosInstance.get<
+        StudentDisplaySettingsData | null
+      >(OPEN_STUDENT_DISPLAY_SETTINGS, { params: { instituteId } });
+      // The open endpoint returns the setting's `data` object directly (null
+      // when the institute never configured it), not the `{ data }` envelope
+      // the authenticated endpoint uses.
+      const serverData = res.data;
+      const merged = mergeWithDefaults(
+        serverData && Object.keys(serverData).length
+          ? serverData
+          : DEFAULT_STUDENT_DISPLAY_SETTINGS
+      );
+      await writeCacheForInstitute(instituteId, merged);
+      publicSettingsByInstitute.set(instituteId, merged);
+      return merged;
+    } catch {
+      return DEFAULT_STUDENT_DISPLAY_SETTINGS;
+    }
+  })();
+
+  inFlightPublicSettingsByInstitute.set(instituteId, request);
+  request.finally(() => {
+    if (inFlightPublicSettingsByInstitute.get(instituteId) === request) {
+      inFlightPublicSettingsByInstitute.delete(instituteId);
+    }
+  });
+  return request;
 }
 
 async function fetchAndCacheStudentDisplaySettings(

@@ -1,0 +1,22 @@
+{
+    "totalEnrolled": {
+        "title": "Total inscrits",
+        "subtitle": "Apprenants dans ce groupe"
+    },
+    "certificatesGenerated": {
+        "title": "Certificats générés",
+        "subtitle": "Délivrés jusqu'à présent"
+    },
+    "certificatesPending": {
+        "title": "Certificats en attente",
+        "subtitle": "Pas encore délivrés"
+    },
+    "awaitingGeneration": {
+        "title": "En attente de génération",
+        "subtitle": "Au-delà de {{threshold}} %, aucun certificat"
+    },
+    "closeToThreshold": {
+        "title": "Proche du seuil",
+        "subtitle": "{{nearFloor}}–{{thresholdMinusOne}} % complété"
+    }
+}

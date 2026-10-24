@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "معاينة محاضرة VSmart"
+    },
+    "labels": {
+        "lectureTitle": "📘 عنوان المحاضرة: {{title}}",
+        "level": "المستوى:",
+        "modeOfTeaching": "أسلوب التدريس:",
+        "lectureLanguage": "لغة المحاضرة:",
+        "lectureDuration": "مدة المحاضرة:",
+        "topicCovered": "الموضوع المُغطّى:",
+        "content": "المحتوى:",
+        "inLectureQuestion": "سؤال أثناء المحاضرة:",
+        "activity": "النشاط:",
+        "assignment": "الواجب",
+        "notApplicable": "غير متاح",
+        "task": "المهمة:"
+    }
+}

@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { CaretLeft, CaretRight, MagnifyingGlass, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     fetchInstituteAdjustmentHistory,
@@ -44,6 +45,7 @@ export function AdjustmentHistoryList({
     eventTypes,
     resultingStatuses,
 }: AdjustmentHistoryListProps) {
+    const { t } = useTranslation('financialManagementAdjustmentHistoryList');
     const [page, setPage] = useState(0);
 
     const [studentSearchInput, setStudentSearchInput] = useState('');
@@ -122,7 +124,7 @@ export function AdjustmentHistoryList({
                         />
                         <input
                             type="text"
-                            placeholder="Search by student name or phone…"
+                            placeholder={t('searchPlaceholder')}
                             value={studentSearchInput}
                             onChange={(e) => setStudentSearchInput(e.target.value)}
                             className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -130,36 +132,40 @@ export function AdjustmentHistoryList({
                     </div>
 
                     <div className="flex items-center gap-1">
-                        {(['ALL', 'CONCESSION', 'PENALTY'] as AdjustmentTypeFilter[]).map((t) => (
+                        {(['ALL', 'CONCESSION', 'PENALTY'] as AdjustmentTypeFilter[]).map((typeOption) => (
                             <button
-                                key={t}
+                                key={typeOption}
                                 type="button"
-                                onClick={() => setAdjustmentTypeFilter(t)}
+                                onClick={() => setAdjustmentTypeFilter(typeOption)}
                                 className={cn(
                                     'rounded-full border px-3 py-1 text-xs font-semibold transition-colors',
-                                    adjustmentTypeFilter === t
-                                        ? t === 'CONCESSION'
+                                    adjustmentTypeFilter === typeOption
+                                        ? typeOption === 'CONCESSION'
                                             ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                                            : t === 'PENALTY'
+                                            : typeOption === 'PENALTY'
                                               ? 'bg-red-100 text-red-700 border-red-300'
                                               : 'bg-blue-100 text-blue-700 border-blue-300'
                                         : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
                                 )}
                             >
-                                {t === 'ALL' ? 'All Types' : t.charAt(0) + t.slice(1).toLowerCase()}
+                                {typeOption === 'ALL'
+                                    ? t('filters.allTypes')
+                                    : typeOption === 'CONCESSION'
+                                      ? t('adjustmentType.concession')
+                                      : t('adjustmentType.penalty')}
                             </button>
                         ))}
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <label className="text-xs font-medium text-gray-500">From:</label>
+                        <label className="text-xs font-medium text-gray-500">{t('filters.from')}</label>
                         <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
                             className="rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
-                        <label className="text-xs font-medium text-gray-500">To:</label>
+                        <label className="text-xs font-medium text-gray-500">{t('filters.to')}</label>
                         <input
                             type="date"
                             value={endDate}
@@ -175,7 +181,7 @@ export function AdjustmentHistoryList({
                             className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors"
                         >
                             <X size={14} />
-                            Clear
+                            {t('clear')}
                         </button>
                     )}
                 </div>
@@ -190,20 +196,20 @@ export function AdjustmentHistoryList({
 
             {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-                    <p className="font-semibold text-red-800">Unable to load history</p>
+                    <p className="font-semibold text-red-800">{t('errors.unableToLoad')}</p>
                     <p className="mt-2 text-sm text-red-600">
-                        {error instanceof Error ? error.message : 'Please try again.'}
+                        {error instanceof Error ? error.message : t('errors.tryAgain')}
                     </p>
                 </div>
             )}
 
             {data && data.content.length === 0 && (
                 <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
-                    <p className="text-lg font-semibold text-gray-600">No activity</p>
+                    <p className="text-lg font-semibold text-gray-600">{t('empty.noActivity')}</p>
                     <p className="mt-2 text-sm text-gray-400">
                         {hasActiveFilters
-                            ? 'Try clearing filters.'
-                            : 'No adjustment activity matches this view yet.'}
+                            ? t('empty.tryClearingFilters')
+                            : t('empty.noActivityYet')}
                     </p>
                 </div>
             )}
@@ -215,28 +221,28 @@ export function AdjustmentHistoryList({
                             <thead>
                                 <tr className="border-b-2 border-gray-200 bg-gray-50/95">
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Date
+                                        {t('table.date')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Student
+                                        {t('table.student')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Fee Type
+                                        {t('table.feeType')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Type
+                                        {t('table.type')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Amount
+                                        {t('table.amount')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Event
+                                        {t('table.event')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        By
+                                        {t('table.by')}
                                     </th>
                                     <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                                        Reason
+                                        {t('table.reason')}
                                     </th>
                                 </tr>
                             </thead>
@@ -278,7 +284,7 @@ export function AdjustmentHistoryList({
                                                             : 'bg-emerald-100 text-emerald-700'
                                                     )}
                                                 >
-                                                    {isPenalty ? 'Penalty' : 'Concession'}
+                                                    {isPenalty ? t('adjustmentType.penalty') : t('adjustmentType.concession')}
                                                 </span>
                                             </td>
                                             <td
@@ -321,12 +327,13 @@ export function AdjustmentHistoryList({
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
                             <div className="text-xs text-gray-500">
-                                Page {page + 1} of {totalPages}
+                                {t('pagination.pageOf', { page: page + 1, totalPages })}
                                 {' \u00b7 '}
                                 <span className="font-semibold text-gray-700">
                                     {totalElements}
                                 </span>{' '}
-                                total{isFetching && data ? ' \u00b7 updating…' : ''}
+                                {t('pagination.total')}
+                                {isFetching && data ? ` \u00b7 ${t('pagination.updating')}` : ''}
                             </div>
                             <div className="flex items-center gap-1">
                                 <button

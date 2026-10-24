@@ -1,0 +1,49 @@
+{
+    "formatGuide": {
+        "title": "Formatage de document attendu",
+        "description": "Chaque question est lue à partir de ces marqueurs, un par ligne. La réponse, l'explication et les tags sont facultatifs — vous pouvez taguer chaque question avec une matière/un sujet.",
+        "questionLabel": "Question :",
+        "optionsLabel": "Options :",
+        "answerLabel": "Réponse :",
+        "answerHint": "— la lettre de la bonne option (Ans : (A) fonctionne aussi)",
+        "explanationLabel": "Explication :",
+        "tagsLabel": "Tags :",
+        "tagsHint": "— facultatif, séparés par des virgules",
+        "variationsPart1": "De légères variations sont également acceptées — par ex.",
+        "variationsPart2": "comme options, et une ligne",
+        "variationsPart3": "singulière ne correspondant pas. Les lignes qui ne correspondent pas sont signalées après l'importation afin que vous puissiez les corriger ou les ignorer."
+    },
+    "docxHelp": {
+        "part1": "Si vous rencontrez un problème lors de l'importation d'un fichier docx, veuillez convertir votre fichier en html",
+        "linkText": "ici",
+        "part2": "puis réessayez l'importation.",
+        "step1": "Étape 1 - Accédez à ce site web",
+        "step2": "Étape 2 - Activez l'intégration des images",
+        "step3": "Étape 3 - Téléchargez votre fichier html une fois la conversion terminée",
+        "imageAlt": "logo"
+    },
+    "upload": {
+        "processing": "Traitement en cours…",
+        "processingHint": "Le serveur analyse votre document. Les fichiers volumineux peuvent prendre jusqu'à une minute."
+    },
+    "fields": {
+        "titleLabel": "Titre",
+        "titlePlaceholder": "Saisissez le titre"
+    },
+    "buttons": {
+        "loading": "Chargement...",
+        "preview": "Aperçu",
+        "addQuestions": "Ajouter des questions",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "questionPaperAdded": "Sujet d'examen ajouté avec succès",
+        "incompleteQuestions": "Certaines de vos questions sont incomplètes ou nécessitent votre attention !",
+        "addedAndSkipped_one": "{{count}} question ajoutée ; {{skipped}} ignorée en raison de problèmes.",
+        "addedAndSkipped_many": "{{count}} question ajoutée ; {{skipped}} ignorée en raison de problèmes.",
+        "addedAndSkipped_other": "{{count}} questions ajoutées ; {{skipped}} ignorées en raison de problèmes.",
+        "loadedAll_one": "{{count}} question chargée. {{flagged}} nécessite une modification avant de pouvoir enregistrer.",
+        "loadedAll_many": "{{count}} question chargée. {{flagged}} nécessite une modification avant de pouvoir enregistrer.",
+        "loadedAll_other": "Les {{count}} questions ont toutes été chargées. {{flagged}} nécessitent une modification avant de pouvoir enregistrer."
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "errorTitle": "Une erreur s'est produite",
+    "errorMessage": "Nous n'avons pas pu charger les données de collecte pour le moment.",
+    "retryLoading": "Réessayer",
+    "analyzingData": "Analyse des données financières..."
+}

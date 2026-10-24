@@ -11,7 +11,11 @@ import { Route } from '..';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { convertToLocalDateTime, getInstituteId } from '@/constants/helper';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    resolveSubjectName,
+    unresolvedSubjectIds,
+    useSubjectNamesByIds,
+} from '@/services/subject-names';
 import { AssessmentOverviewDataInterface } from '@/types/assessment-overview';
 import AssessmentStudentLeaderboard from './AssessmentStudentLeaderboard';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -26,49 +30,55 @@ import {
     Users,
     Gauge,
     Trophy,
-} from 'lucide-react';
+    Warning,
+} from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const chartConfig = {
-    ongoing: {
-        label: 'Ongoing',
-        color: 'hsl(var(--chart-2))',
-    },
-    pending: {
-        label: 'Pending',
-        color: 'hsl(var(--chart-3))',
-    },
-    attempted: {
-        label: 'Attempted',
-        color: 'hsl(var(--chart-4))',
-    },
-} satisfies ChartConfig;
+const buildChartConfig = (t: TFunction) =>
+    ({
+        ongoing: {
+            label: t('chart.ongoing'),
+            color: 'hsl(var(--chart-2))',
+        },
+        pending: {
+            label: t('chart.pending'),
+            color: 'hsl(var(--chart-3))',
+        },
+        attempted: {
+            label: t('chart.attempted'),
+            color: 'hsl(var(--chart-4))',
+        },
+    }) satisfies ChartConfig;
 
 export function AssessmentDetailsPieChart({
     assessmentOverviewData,
 }: {
     assessmentOverviewData: AssessmentOverviewDataInterface;
 }) {
+    const { t } = useTranslation('assessmentQuestionsPieChart');
+    const chartConfig = buildChartConfig(t);
     const chartData = [
         {
             browser: 'ongoing',
             visitors: assessmentOverviewData.total_ongoing,
-            fill: '#97D4B4',
+            fill: 'hsl(var(--success-300))',
         },
         {
             browser: 'pending',
             visitors:
                 assessmentOverviewData.total_participants -
                 (assessmentOverviewData.total_ongoing + assessmentOverviewData.total_attempted),
-            fill: '#FAD6AE',
+            fill: 'hsl(var(--warning-200))',
         },
         {
             browser: 'attempted',
             visitors: assessmentOverviewData.total_attempted,
-            fill: '#E5F5EC',
+            fill: 'hsl(var(--success-50))',
         },
     ];
     return (
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-64">
             <PieChart>
                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                 <Pie data={chartData} dataKey="visitors" nameKey="browser" />
@@ -78,6 +88,7 @@ export function AssessmentDetailsPieChart({
 }
 
 export function QuestionsPieChart() {
+    const { t } = useTranslation('assessmentQuestionsPieChart');
     const instituteId = getInstituteId();
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
@@ -85,40 +96,71 @@ export function QuestionsPieChart() {
         handleGetOverviewData({ assessmentId, instituteId })
     );
 
+    // Before the early return. The institute list keeps one subject per distinct name and
+    // drops subjects whose course was deleted, so most stored ids need the direct lookup.
+    const overviewSubjectId = data.assessment_overview_dto?.subject_id;
+    const subjectNamesById = useSubjectNamesByIds(
+        unresolvedSubjectIds(instituteDetails?.subjects, [overviewSubjectId])
+    );
     if (isLoading) return <DashboardLoader />;
 
     const overview = data.assessment_overview_dto;
+    // The backend answers with a null overview when the institute it was asked
+    // for has no mapping to this assessment. That happens in practice: the
+    // selected institute lives in localStorage shared by every tab, so a
+    // switch in another tab sends this page's queries out under the wrong
+    // institute. Say so instead of crashing the whole app on
+    // `null.total_participants`.
+    if (!overview) {
+        return (
+            <Card className="mt-6 border-warning-200 bg-warning-50 shadow-sm">
+                <CardContent className="flex items-start gap-3 p-5">
+                    <Warning className="mt-0.5 size-5 shrink-0 text-warning-600" />
+                    <div className="flex flex-col gap-1">
+                        <p className="text-sm font-semibold text-neutral-700">
+                            {t('unavailable.title')}
+                        </p>
+                        <p className="text-sm text-neutral-600">{t('unavailable.body')}</p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
     const subjectLabel = getTerminology(ContentTerms.Subjects, SystemTerms.Subjects);
     const subjectName =
-        getSubjectNameById(instituteDetails?.subjects || [], overview.subject_id || '') || 'N/A';
+        resolveSubjectName(instituteDetails?.subjects, subjectNamesById, overviewSubjectId) ||
+        t('info.subjectFallback');
     const pendingCount =
         overview.total_participants - (overview.total_ongoing + overview.total_attempted);
     const avgDurationMin = (Math.floor(overview.average_duration) / 60).toFixed(2);
+    const durationHours = Math.floor(overview.duration_in_min / 60);
+    const durationMinutesRemainder = overview.duration_in_min % 60;
     const durationLabel =
         overview.duration_in_min >= 60
-            ? `${Math.floor(overview.duration_in_min / 60)} hr${
-                  overview.duration_in_min % 60 > 0
-                      ? ` ${overview.duration_in_min % 60} min`
-                      : ''
-              }`
-            : `${overview.duration_in_min} min`;
+            ? durationMinutesRemainder > 0
+                ? t('durationLabel.hoursMinutes', {
+                      hours: durationHours,
+                      minutes: durationMinutesRemainder,
+                  })
+                : t('durationLabel.hoursOnly', { hours: durationHours })
+            : t('durationLabel.minutesOnly', { minutes: overview.duration_in_min });
 
     const infoItems = [
         {
             icon: CalendarPlus,
-            label: 'Created on',
+            label: t('info.createdOn'),
             value: convertToLocalDateTime(overview.created_on),
             show: true,
         },
         {
             icon: PlayCircle,
-            label: 'Start Date & Time',
+            label: t('info.startDateTime'),
             value: convertToLocalDateTime(overview.start_date_and_time),
             show: examType === 'EXAM' || examType === 'SURVEY',
         },
         {
             icon: StopCircle,
-            label: 'End Date & Time',
+            label: t('info.endDateTime'),
             value: convertToLocalDateTime(overview.end_date_and_time),
             show: examType === 'EXAM' || examType === 'SURVEY',
         },
@@ -130,13 +172,13 @@ export function QuestionsPieChart() {
         },
         {
             icon: Timer,
-            label: 'Duration',
+            label: t('info.duration'),
             value: durationLabel,
             show: examType === 'EXAM' || examType === 'MOCK',
         },
         {
             icon: Users,
-            label: 'Total Participants',
+            label: t('info.totalParticipants'),
             value: String(overview.total_participants),
             show: true,
         },
@@ -159,7 +201,7 @@ export function QuestionsPieChart() {
                                         <Icon className="h-4 w-4" />
                                     </div>
                                     <div className="flex min-w-0 flex-col">
-                                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                                        <p className="text-2xs font-medium uppercase tracking-wider text-slate-500">
                                             {item.label}
                                         </p>
                                         <p className="truncate text-sm font-semibold text-slate-900">
@@ -179,13 +221,13 @@ export function QuestionsPieChart() {
                             <div className="flex items-center gap-2 text-slate-500">
                                 <Gauge className="h-4 w-4" />
                                 <p className="text-xs font-medium uppercase tracking-wider">
-                                    Avg. Duration
+                                    {t('stats.avgDuration')}
                                 </p>
                             </div>
                             <p className="mt-2 text-3xl font-bold tabular-nums text-primary-600">
                                 {avgDurationMin}
                                 <span className="ml-1 text-base font-medium text-slate-500">
-                                    min
+                                    {t('stats.avgDurationUnit')}
                                 </span>
                             </p>
                         </CardContent>
@@ -195,7 +237,7 @@ export function QuestionsPieChart() {
                             <div className="flex items-center gap-2 text-slate-500">
                                 <Trophy className="h-4 w-4" />
                                 <p className="text-xs font-medium uppercase tracking-wider">
-                                    Avg. Marks
+                                    {t('stats.avgMarks')}
                                 </p>
                             </div>
                             <p className="mt-2 text-3xl font-bold tabular-nums text-amber-600">
@@ -210,28 +252,28 @@ export function QuestionsPieChart() {
                     <CardContent className="p-6">
                         <div className="mb-2 flex items-center justify-between">
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-700">
-                                Participation Breakdown
+                                {t('breakdown.title')}
                             </h3>
                             <span className="text-xs text-slate-500">
-                                {overview.total_participants} total
+                                {t('breakdown.total', { count: overview.total_participants })}
                             </span>
                         </div>
                         <div className="flex items-center gap-6">
                             <AssessmentDetailsPieChart assessmentOverviewData={overview} />
                             <div className="flex flex-col gap-3">
                                 <LegendItem
-                                    color="bg-[#97D4B4]"
-                                    label="Ongoing"
+                                    color="bg-success-300"
+                                    label={t('chart.ongoing')}
                                     count={overview.total_ongoing}
                                 />
                                 <LegendItem
-                                    color="bg-[#FAD6AE]"
-                                    label="Pending"
+                                    color="bg-warning-200"
+                                    label={t('chart.pending')}
                                     count={pendingCount}
                                 />
                                 <LegendItem
-                                    color="bg-[#E5F5EC]"
-                                    label="Attempted"
+                                    color="bg-success-50"
+                                    label={t('chart.attempted')}
                                     count={overview.total_attempted}
                                 />
                             </div>

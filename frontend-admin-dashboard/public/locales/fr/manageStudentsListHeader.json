@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "Gestion des {{term}}",
+        "counts": {
+            "total": "Total",
+            "active": "Actifs",
+            "inactive": "Inactifs",
+            "invited": "Invités"
+        },
+        "actions": {
+            "invite": "Inviter",
+            "enroll": "Inscrire",
+            "enrollType": "Inscrire des {{term}}",
+            "noCourseContent": "Vous devez créer un cours et y ajouter une matière avant de continuer"
+        }
+    },
+    "inviteLinksDialog": {
+        "invitePage": "Page d'invitation",
+        "unknownSession": "Session inconnue",
+        "dialogTitle": "📨 Liens d'invitation - {{sessionName}}",
+        "unknownLevel": "Niveau inconnu",
+        "courseLabel": "Cours :",
+        "levelLabel": "Niveau :",
+        "sessionLabel": "Session :",
+        "inviteLinkLabel": "Lien d'invitation :",
+        "noBatchesFound": "Aucun groupe trouvé pour cette session"
+    }
+}

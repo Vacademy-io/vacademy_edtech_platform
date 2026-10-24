@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.agent.dto.ConversationSession;
 import vacademy.io.admin_core_service.features.agent.service.LLMService;
+import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
+import vacademy.io.admin_core_service.features.credits.client.AuthorizeResult;
+import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.workflow.controller.WorkflowAiCatalogController;
 import vacademy.io.admin_core_service.features.workflow.dto.WorkflowAiDraftRequest;
 import vacademy.io.admin_core_service.features.workflow.dto.WorkflowAiDraftResponse;
@@ -43,11 +47,14 @@ public class WorkflowAiDraftService {
     private final WorkflowValidationService validationService;
     private final ObjectMapper objectMapper;
     private final vacademy.io.admin_core_service.features.institute.repository.TemplateRepository templateRepository;
+    private final CreditClient creditClient;
 
-    // NB: the OpenRouter account behind LLMService does NOT expose the legacy
-    // anthropic/claude-3.5-sonnet slug (404s). Default to a current, verified slug;
-    // override via property. Requires openrouter.api.key to be set for admin_core.
-    @Value("${workflow.ai.draft.model:anthropic/claude-sonnet-4.5}")
+    /** ai_use_case_catalog key (and ai_model_defaults row) of every LLM call here. */
+    static final String USE_CASE = "workflow_draft";
+
+    // Optional override. Blank (the default) lets the 'workflow_draft' row in
+    // ai_model_defaults decide (GLM by default, reasoning effort low).
+    @Value("${workflow.ai.draft.model:}")
     private String draftModel;
 
     // Multi-step drafts (e.g. a 14-day drip = ~15 nodes + rationale) do not fit in the
@@ -81,6 +88,16 @@ public class WorkflowAiDraftService {
         }
     }
 
+    /** The limit gate for one draft (up to MAX_ATTEMPTS completions). Never throws. */
+    AuthorizeResult authorizeDraft(String instituteId, String userId) {
+        try {
+            return creditClient.authorize(instituteId, USE_CASE, RequestType.AGENT.getValue(),
+                    MeteringFields.user(USE_CASE, MeteringFields.SURFACE_ADMIN_APP).build(), userId);
+        } catch (Exception e) {
+            return AuthorizeResult.ALLOW_NONE;
+        }
+    }
+
     public WorkflowAiDraftResponse draft(WorkflowAiDraftRequest request, String userId) {
         if (request == null || request.getInstituteId() == null || request.getInstituteId().isBlank()) {
             return WorkflowAiDraftResponse.builder().error("'instituteId' is required.").build();
@@ -93,6 +110,13 @@ public class WorkflowAiDraftService {
         }
         if (request.getGoal() == null || request.getGoal().isBlank()) {
             return WorkflowAiDraftResponse.builder().error("A non-empty 'goal' is required.").build();
+        }
+        // AI usage limits (institute policy in ENFORCE): checked before the hourly rate
+        // limit so a refused draft does not use up one of its slots. No limits on for the
+        // institute = no call at all; any gate failure = allowed.
+        AuthorizeResult limit = authorizeDraft(request.getInstituteId(), userId);
+        if (AuthorizeResult.blocks(limit)) {
+            return WorkflowAiDraftResponse.builder().error(limit.message()).build();
         }
         // Rate-limit the LLM-backed paths (PLAN + legacy single-shot).
         if (rateLimitExceeded(request.getInstituteId())) {
@@ -129,10 +153,11 @@ public class WorkflowAiDraftService {
                 ConversationSession session = ConversationSession.builder()
                         .userId(userId)
                         .instituteId(request.getInstituteId())
-                        .model(draftModel)
+                        .model(draftModel == null || draftModel.isBlank() ? null : draftModel.trim())
                         .maxTokens(draftMaxTokens)
                         .history(new ArrayList<>(history))
                         .build();
+                session.getContext().put(LLMService.CTX_USE_CASE, "workflow_draft");
                 LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
                 raw = resp != null ? resp.getContent() : null;
                 finishReason = resp != null ? resp.getFinishReason() : null;
@@ -263,10 +288,11 @@ public class WorkflowAiDraftService {
                 ConversationSession session = ConversationSession.builder()
                         .userId(userId)
                         .instituteId(request.getInstituteId())
-                        .model(draftModel)
+                        .model(draftModel == null || draftModel.isBlank() ? null : draftModel.trim())
                         .maxTokens(draftMaxTokens)
                         .history(new ArrayList<>(history))
                         .build();
+                session.getContext().put(LLMService.CTX_USE_CASE, "workflow_draft");
                 LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
                 raw = resp != null ? resp.getContent() : null;
                 finishReason = resp != null ? resp.getFinishReason() : null;

@@ -24,6 +24,9 @@ import java.util.stream.Collectors;
 public class FeeLedgerAllocationService {
 
     @Autowired
+    private vacademy.io.admin_core_service.features.offline_payment.service.OfflinePaymentDetailsService offlinePaymentDetailsService;
+
+    @Autowired
     private StudentFeePaymentRepository studentFeePaymentRepository;
 
     @Autowired
@@ -60,6 +63,24 @@ public class FeeLedgerAllocationService {
         return computeAmountDue(bill).compareTo(BigDecimal.ZERO) <= 0;
     }
 
+    /**
+     * Whether oldest-first allocation may put money on this bill: something is still owed on it
+     * and it has not been written off. Without this a waived installment was paid (and turned
+     * PAID), an installment a discount took to zero was stamped PAID by a ₹0 allocation, and one
+     * already paid beyond its amount got a negative allocation that took money off it and moved
+     * it to the next installment.
+     */
+    static boolean takesPayment(StudentFeePayment bill) {
+        String status = bill.getStatus();
+        if ("PAID".equalsIgnoreCase(status) || "WAIVED".equalsIgnoreCase(status)
+                || "CANCELLED".equalsIgnoreCase(status) || "DELETED".equalsIgnoreCase(status)) {
+            return false;
+        }
+        BigDecimal expected = bill.getAmountExpected() != null ? bill.getAmountExpected() : BigDecimal.ZERO;
+        BigDecimal paid = bill.getAmountPaid() != null ? bill.getAmountPaid() : BigDecimal.ZERO;
+        return expected.compareTo(paid) > 0;
+    }
+
     @Transactional
     public void allocatePayment(String paymentLogId, BigDecimal totalPaymentAmount, String userPlanId) {
         log.info("Starting ledger allocation for PaymentLog: {}, Amount: {}, UserPlan: {}", paymentLogId,
@@ -74,6 +95,9 @@ public class FeeLedgerAllocationService {
         for (StudentFeePayment bill : unpaidBills) {
             if (remainingAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 break; // No more money to allocate
+            }
+            if (!takesPayment(bill)) {
+                continue;
             }
 
             BigDecimal amountToPayOnThisBill = bill.getAmountExpected().subtract(bill.getAmountPaid());
@@ -185,6 +209,9 @@ public class FeeLedgerAllocationService {
             if (remainingAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 break;
             }
+            if (!takesPayment(bill)) {
+                continue;
+            }
 
             BigDecimal amountToPayOnThisBill = bill.getAmountExpected().subtract(bill.getAmountPaid());
             BigDecimal allocatedAmount;
@@ -230,6 +257,21 @@ public class FeeLedgerAllocationService {
     public String allocatePaymentForSelectedInstallments(String userId, String instituteId,
             List<String> studentFeePaymentIds,
             BigDecimal amount, String remarks) {
+        return allocatePaymentForSelectedInstallments(userId, instituteId, studentFeePaymentIds, amount, remarks,
+                null, null);
+    }
+
+    /**
+     * Records an offline payment against the chosen installments (admin "Pay installments").
+     * {@code paymentDetails} says how it was paid (mode, sub-option, reference), validated
+     * against the institute's offline payment modes before anything is written.
+     */
+    @Transactional
+    public String allocatePaymentForSelectedInstallments(String userId, String instituteId,
+            List<String> studentFeePaymentIds,
+            BigDecimal amount, String remarks,
+            vacademy.io.admin_core_service.features.offline_payment.dto.OfflinePaymentDetailsDTO paymentDetails,
+            String recordedByUserId) {
         if (studentFeePaymentIds == null || studentFeePaymentIds.isEmpty()) {
             throw new IllegalArgumentException("At least one installment must be selected");
         }
@@ -258,16 +300,26 @@ public class FeeLedgerAllocationService {
             }
         }
 
+        vacademy.io.admin_core_service.features.offline_payment.service.OfflinePaymentDetailsService.Resolved details =
+                offlinePaymentDetailsService.resolve(instituteId, paymentDetails, null);
+        // First payment of an enrolment: pin the numbering-series field picked in the dialog.
+        for (String planId : selectedBills.stream().map(StudentFeePayment::getUserPlanId)
+                .filter(id -> id != null && !id.isBlank()).distinct().toList()) {
+            offlinePaymentDetailsService.pinNumberingValue(instituteId, planId, userId, paymentDetails);
+        }
+
         // Create PaymentLog
         PaymentLog paymentLog = new PaymentLog();
         paymentLog.setStatus("ACTIVE");
         paymentLog.setPaymentStatus("PAID");
         paymentLog.setUserId(userId);
         paymentLog.setVendor("OFFLINE");
-        paymentLog.setDate(new Date());
+        paymentLog.setDate(details != null && details.paymentDate() != null
+                ? java.sql.Date.valueOf(details.paymentDate()) : new Date());
         paymentLog.setCurrency("INR");
         paymentLog.setPaymentAmount(amount.doubleValue());
         paymentLog = paymentLogRepository.save(paymentLog);
+        offlinePaymentDetailsService.apply(paymentLog.getId(), details, recordedByUserId);
 
         // Use FeeAllocationEngine to distribute across ONLY selected bills using
         // priority
@@ -316,8 +368,8 @@ public class FeeLedgerAllocationService {
                     paymentLog.getId(),
                     instituteId,
                     allocatedAmount,
-                    paymentLog.getId(),
-                    "Cash",
+                    details != null && details.reference() != null ? details.reference() : paymentLog.getId(),
+                    details != null && details.describe() != null ? details.describe() : "Cash",
                     paidInstallmentIds);
         }
         return null;

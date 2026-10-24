@@ -1,0 +1,28 @@
+{
+    "instituteLogoAlt": "institute logo",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "orContinueWith": "or continue with",
+    "usernamePlaceholder": "Enter your username",
+    "usernameLabel": "Username",
+    "passwordLabel": "Password",
+    "forgotPassword": "Forgot Password?",
+    "useEmailOtp": "Use Email OTP",
+    "usePhoneOtp": "Use Phone OTP",
+    "loggingIn": "Logging in...",
+    "login": "Login",
+    "noAccount": "Don't have an account?",
+    "createOne": "Create One",
+    "termsAndConditions": "Terms & Conditions",
+    "privacyPolicy": "Privacy Policy",
+    "errors": {
+        "accessDeniedTitle": "Access Denied",
+        "studentAccessDenied": "Students are not allowed to access the admin portal. Please contact your administrator.",
+        "adminRoleRequired": "This portal requires ADMIN privileges. Please contact your administrator.",
+        "notAllowedPortal": "You are not allowed to access this portal. Please contact your administrator.",
+        "loginFailedRetry": "Login failed. Please try again.",
+        "loginErrorTitle": "Login Error",
+        "invalidCredentials": "Invalid credentials",
+        "invalidUsernamePassword": "Invalid username or password"
+    }
+}

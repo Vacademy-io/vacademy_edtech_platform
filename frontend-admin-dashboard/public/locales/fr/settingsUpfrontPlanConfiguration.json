@@ -1,0 +1,18 @@
+{
+    "title": "Configuration du paiement unique",
+    "fullPrice": {
+        "label": "Prix total ({{currency}}) *",
+        "placeholder": "Entrez le prix",
+        "hint": "Le montant total que les étudiants paieront pour s'inscrire"
+    },
+    "courseAccess": {
+        "label": "Accès au cours *",
+        "lifetime": "Accès à vie",
+        "limited": "Accès limité"
+    },
+    "accessDuration": {
+        "label": "Durée d'accès (jours) *",
+        "placeholder": "Entrez le nombre de jours",
+        "hint": "L'accès se termine ce nombre de jours après l'inscription de l'apprenant. Les administrateurs peuvent le prolonger plus tard depuis le profil de l'apprenant."
+    }
+}

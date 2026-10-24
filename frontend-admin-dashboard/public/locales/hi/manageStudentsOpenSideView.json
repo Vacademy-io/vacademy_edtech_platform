@@ -1,0 +1,25 @@
+{
+    "header": {
+        "subtitle": "पंजीकरण विवरण",
+        "close": "बंद करें"
+    },
+    "states": {
+        "loadError": "पंजीकरण विवरण लोड करने में विफल रहे।",
+        "noParticipantSelected": "पंजीकरण विवरण देखने के लिए किसी प्रतिभागी का चयन करें।"
+    },
+    "contact": {
+        "sectionTitle": "संपर्क जानकारी",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "registeredOn": "पंजीकरण की तिथि"
+    },
+    "formResponses": {
+        "sectionTitle": "फॉर्म प्रतिक्रियाएं",
+        "fieldFallback": "फ़ील्ड",
+        "empty": "कोई अतिरिक्त फॉर्म फ़ील्ड सबमिट नहीं की गई।"
+    },
+    "common": {
+        "notProvided": "उपलब्ध नहीं",
+        "participantFallback": "प्रतिभागी"
+    }
+}

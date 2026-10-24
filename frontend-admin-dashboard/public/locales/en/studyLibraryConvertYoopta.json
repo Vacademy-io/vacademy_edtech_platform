@@ -1,0 +1,10 @@
+{
+    "conversionFailed": "(conversion failed — the document could not be parsed)",
+    "formatting": {
+        "textColour": "text colour",
+        "backgroundColour": "background / highlight colour",
+        "textAlignment": "text alignment",
+        "customFontSizes": "custom font sizes",
+        "highlightUnderlineStrikethrough": "highlight / underline / strikethrough"
+    }
+}

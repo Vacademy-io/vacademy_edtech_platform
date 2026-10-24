@@ -1,0 +1,21 @@
+{
+    "emptyState": {
+        "selectInstitute": "Select an institute to manage coupons."
+    },
+    "header": {
+        "title": "Coupon Settings",
+        "subtitle": "Create discount coupons your {{learner}} can apply at checkout. Scope them to the whole institute or to specific {{batch}} and invite links."
+    },
+    "toggle": {
+        "label": "Enable coupon redemption for {{learner}}",
+        "hint": "When off, coupon fields are hidden on all {{learner}} checkout flows. Existing coupons remain stored and resume working as soon as you turn this back on."
+    },
+    "banner": {
+        "disabled": "Coupons are currently disabled. {{learnerPlural}} won't see the coupon field at checkout until you enable the toggle above. You can still create and edit coupons in advance."
+    },
+    "toasts": {
+        "enabled": "Coupons enabled for learners",
+        "disabled": "Coupons hidden from learners",
+        "updateError": "Could not update coupon setting"
+    }
+}

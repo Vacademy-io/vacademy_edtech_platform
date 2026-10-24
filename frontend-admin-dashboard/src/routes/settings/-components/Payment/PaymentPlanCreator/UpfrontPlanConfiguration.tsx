@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,28 +27,30 @@ export const UpfrontPlanConfiguration: React.FC<UpfrontPlanConfigurationProps> =
     validityDays,
     onValidityDaysChange,
 }) => {
+    const { t } = useTranslation('settingsUpfrontPlanConfiguration');
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">One-Time Payment Configuration</CardTitle>
+                <CardTitle className="text-lg">{t('title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div>
-                    <Label>Full Price ({getCurrencySymbol(currency)}) *</Label>
+                    <Label>
+                        {t('fullPrice.label', { currency: getCurrencySymbol(currency) })}
+                    </Label>
                     <Input
                         type="number"
-                        placeholder="Enter price"
+                        placeholder={t('fullPrice.placeholder')}
                         value={fullPrice}
                         onChange={(e) => onFullPriceChange(e.target.value)}
                         className="mt-1"
                     />
-                    <p className="mt-1 text-xs text-gray-500">
-                        The total amount students will pay to enroll
-                    </p>
+                    <p className="mt-1 text-xs text-gray-500">{t('fullPrice.hint')}</p>
                 </div>
 
                 <div>
-                    <Label>Course Access *</Label>
+                    <Label>{t('courseAccess.label')}</Label>
                     <RadioGroup
                         value={accessType}
                         onValueChange={(value) => onAccessTypeChange(value as UpfrontAccessType)}
@@ -59,7 +62,7 @@ export const UpfrontPlanConfiguration: React.FC<UpfrontPlanConfigurationProps> =
                                 htmlFor="upfront-access-lifetime"
                                 className="cursor-pointer font-normal"
                             >
-                                Lifetime access
+                                {t('courseAccess.lifetime')}
                             </Label>
                         </div>
                         <div className="flex items-center gap-2">
@@ -68,17 +71,17 @@ export const UpfrontPlanConfiguration: React.FC<UpfrontPlanConfigurationProps> =
                                 htmlFor="upfront-access-limited"
                                 className="cursor-pointer font-normal"
                             >
-                                Limited access
+                                {t('courseAccess.limited')}
                             </Label>
                         </div>
                     </RadioGroup>
 
                     {accessType === 'limited' && (
                         <div className="mt-3">
-                            <Label>Access Duration (Days) *</Label>
+                            <Label>{t('accessDuration.label')}</Label>
                             <Input
                                 type="number"
-                                placeholder="Enter number of days"
+                                placeholder={t('accessDuration.placeholder')}
                                 value={validityDays ?? ''}
                                 onChange={(e) =>
                                     onValidityDaysChange(
@@ -89,8 +92,7 @@ export const UpfrontPlanConfiguration: React.FC<UpfrontPlanConfigurationProps> =
                                 min="1"
                             />
                             <p className="mt-1 text-xs text-gray-500">
-                                Access ends this many days after the learner enrolls. Admins can
-                                extend it later from the learner&apos;s profile.
+                                {t('accessDuration.hint')}
                             </p>
                         </div>
                     )}

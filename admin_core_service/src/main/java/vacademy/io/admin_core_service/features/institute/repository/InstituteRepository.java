@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.institute.repository;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -14,6 +16,14 @@ import java.util.Optional;
 
 @Repository
 public interface InstituteRepository extends CrudRepository<Institute, String> {
+
+    /**
+     * Row lock on the institute, for read-compare-write of setting_json (super-admin
+     * display-settings write with a version check, setting restore). Call inside a transaction.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Institute i WHERE i.id = :id")
+    Optional<Institute> findByIdForUpdate(@Param("id") String id);
 
     @Query(value = "SELECT DISTINCT i.* " +
             "FROM staff s " +
@@ -128,6 +138,15 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
                    OR LOWER(i.email) LIKE LOWER(CONCAT('%', :search, '%')))
             """, nativeQuery = true)
     Long countAllInstitutes(@Param("search") String search);
+
+    /**
+     * Bulk id -> display name, for screens that list institutes they do not otherwise
+     * need to load. Deliberately a two-column projection: {@code institutes} carries
+     * {@code setting_json}, which is large, and fetching whole entities to read a name
+     * pulls every institute's settings blob across with it.
+     */
+    @Query(value = "SELECT i.id, i.name FROM institutes i WHERE i.id IN (:ids)", nativeQuery = true)
+    List<Object[]> findIdAndNameByIds(@Param("ids") java.util.Collection<String> ids);
 
     @Query(value = "SELECT COUNT(*) FROM institutes", nativeQuery = true)
     Long countTotalInstitutes();
@@ -256,6 +275,12 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
     int updateLeadTag(@Param("instituteId") String instituteId, @Param("leadTag") String leadTag);
 
     // ==================== Filtered + Sorted Institute List ====================
+    //
+    // The three counts are computed once per table and joined, not as per-institute LATERALs.
+    // The LATERAL form re-scanned ssigm and package_session for each of the ~1,300 institutes
+    // before the ORDER BY and LIMIT, about 165 s per page on the read replica. Abandoned
+    // requests kept running and held the replica pool, so admin-core health checks timed out
+    // and every pod went unready (2026-10-23 12:53 UTC). Set-based: about 2.4 s, same rows.
 
     @Query(value = """
             SELECT i.id, i.name, i.email, i.city, i.state, i.type, i.logo_file_id, i.subdomain, i.created_at,
@@ -264,27 +289,29 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
                 COALESCE(bc.cnt, 0) AS batch_count,
                 i.lead_tag
             FROM institutes i
-            LEFT JOIN LATERAL (
-                SELECT COUNT(DISTINCT ssigm.user_id) AS cnt
+            LEFT JOIN (
+                SELECT ssigm.institute_id, COUNT(DISTINCT ssigm.user_id) AS cnt
                 FROM student_session_institute_group_mapping ssigm
                 JOIN package_session ps ON ssigm.package_session_id = ps.id
-                WHERE ssigm.institute_id = i.id
-                  AND ssigm.status NOT IN ('DELETED','INACTIVE','TERMINATED')
+                WHERE ssigm.status NOT IN ('DELETED','INACTIVE','TERMINATED')
                   AND ps.status IN ('ACTIVE','HIDDEN')
-            ) sc ON true
-            LEFT JOIN LATERAL (
-                SELECT COUNT(DISTINCT pi.package_id) AS cnt
+                GROUP BY ssigm.institute_id
+            ) sc ON sc.institute_id = i.id
+            LEFT JOIN (
+                SELECT pi.institute_id, COUNT(DISTINCT pi.package_id) AS cnt
                 FROM package_institute pi
                 JOIN package p ON pi.package_id = p.id
-                WHERE pi.institute_id = i.id AND p.status != 'DELETED'
-            ) cc ON true
-            LEFT JOIN LATERAL (
-                SELECT COUNT(ps.id) AS cnt
+                WHERE p.status != 'DELETED'
+                GROUP BY pi.institute_id
+            ) cc ON cc.institute_id = i.id
+            LEFT JOIN (
+                SELECT pi.institute_id, COUNT(ps.id) AS cnt
                 FROM package_session ps
                 JOIN package p ON ps.package_id = p.id
                 JOIN package_institute pi ON p.id = pi.package_id
-                WHERE pi.institute_id = i.id AND ps.status IN ('ACTIVE','HIDDEN')
-            ) bc ON true
+                WHERE ps.status IN ('ACTIVE','HIDDEN')
+                GROUP BY pi.institute_id
+            ) bc ON bc.institute_id = i.id
             WHERE (:search IS NULL OR :search = ''
                    OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))
                    OR LOWER(i.city) LIKE LOWER(CONCAT('%', :search, '%'))
@@ -315,4 +342,19 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
               AND (:leadTag IS NULL OR :leadTag = '' OR i.lead_tag = :leadTag)
             """, nativeQuery = true)
     Long countAllInstitutesFiltered(@Param("search") String search, @Param("leadTag") String leadTag);
+
+    /**
+     * Every custom live-class hostname currently configured, deduplicated.
+     *
+     * Consumed on each BBB pool-server start to rebuild that server's nginx
+     * server_name list and its certificate SAN set, so an institute added here
+     * becomes reachable on the next restore with no manual step.
+     */
+    @Query(value = """
+            SELECT DISTINCT i.live_session_base_url FROM institutes i
+            WHERE i.live_session_base_url IS NOT NULL
+              AND TRIM(i.live_session_base_url) <> ''
+            ORDER BY 1
+            """, nativeQuery = true)
+    List<String> findDistinctLiveSessionBaseUrls();
 }

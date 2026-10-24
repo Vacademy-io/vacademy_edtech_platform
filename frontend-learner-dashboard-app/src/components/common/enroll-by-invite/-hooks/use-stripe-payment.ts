@@ -1,4 +1,5 @@
 import { useElements, useStripe, CardElement } from "@stripe/react-stripe-js";
+import i18n from "@/i18n";
 
 /**
  * Stripe Payment Handler Hook
@@ -21,7 +22,7 @@ export const useStripePayment = () => {
     if (!stripe || !elements) {
       return {
         success: false,
-        error: "Stripe is not initialized. Please refresh the page.",
+        error: i18n.t("enrollmentB:useStripePayment.notInitialized"),
       };
     }
 
@@ -30,7 +31,7 @@ export const useStripePayment = () => {
     if (!cardElement) {
       return {
         success: false,
-        error: "Card element not found. Please refresh the page.",
+        error: i18n.t("enrollmentB:useStripePayment.cardElementNotFound"),
       };
     }
 
@@ -43,7 +44,7 @@ export const useStripePayment = () => {
       if (error) {
         return {
           success: false,
-          error: error.message || "Payment processing failed",
+          error: error.message || i18n.t("enrollmentB:useStripePayment.processingFailed"),
         };
       }
 
@@ -55,7 +56,7 @@ export const useStripePayment = () => {
       return {
         success: false,
         error:
-          err instanceof Error ? err.message : "An unexpected error occurred",
+          err instanceof Error ? err.message : i18n.t("enrollmentB:useStripePayment.unexpectedError"),
       };
     }
   };

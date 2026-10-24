@@ -1,0 +1,13 @@
+{
+    "selectBatchToSeeCertificateInfo": "Select a batch to see certificate information for this course.",
+    "certificates": "Certificates",
+    "issueAndManageCertificates": "Issue and manage completion certificates for this course.",
+    "certificatesTurnedOff": "Certificates are turned off for this course",
+    "courseOverridesInstituteDefault": "This course overrides the institute default. Learners will not receive certificates until it is switched on.",
+    "instituteDefaultIsOff": "The institute default is off. You can still enable certificates for this course alone from the settings icon above.",
+    "design": "Design:",
+    "uploadedForThisCourse": "uploaded for this course",
+    "instituteDefault": "institute default",
+    "chosenForThisCourse": "— chosen for this course.",
+    "inheritedFromInstitute": "— inherited from the institute."
+}

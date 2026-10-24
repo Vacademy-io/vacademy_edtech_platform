@@ -9,7 +9,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
+import vacademy.io.admin_core_service.features.credits.client.AuthorizeResult;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.learner_tracking.entity.ActivityLog;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogProcessingProjection;
 import vacademy.io.admin_core_service.features.learner_tracking.repository.ActivityLogRepository;
@@ -71,6 +73,18 @@ public class ActivityLogProcessorService {
          */
         private static final String STATUS_SKIPPED_NO_CREDITS = "skipped_no_credits";
 
+        /**
+         * Terminal-for-now status for logs an institute's AI usage limit (ai_service
+         * {@code institute_ai_limits_policy} in ENFORCE) refused. Not left 'raw' for the same
+         * queue-starvation reason as {@link #STATUS_SKIPPED_NO_CREDITS}. Re-queue with
+         * {@code UPDATE activity_log SET status='raw' WHERE status='skipped_usage_limit'}
+         * after the limit is raised or the window resets.
+         */
+        static final String STATUS_SKIPPED_USAGE_LIMIT = "skipped_usage_limit";
+
+        /** ai_use_case_catalog key the limit gate is asked about. */
+        static final String USE_CASE_LEARNER_ANALYTICS = "learner_analytics";
+
         /** Rough chars-per-token ratio, used only to size the pre-flight credit check. */
         private static final int CHARS_PER_TOKEN_ESTIMATE = 4;
 
@@ -82,6 +96,8 @@ public class ActivityLogProcessorService {
         private final AtomicReference<LocalDateTime> nextRunTime = new AtomicReference<>();
         private final AtomicInteger totalProcessedCount = new AtomicInteger(0);
         private final AtomicInteger totalFailedCount = new AtomicInteger(0);
+        /** Logs skipped because a usage limit refused them (logged per run when non-zero). */
+        private final AtomicInteger totalSkippedByLimitCount = new AtomicInteger(0);
 
         /**
          * Scheduled job that runs every hour to process raw activity logs
@@ -118,6 +134,7 @@ public class ActivityLogProcessorService {
 
                         int processedInRun = 0;
                         int failedInRun = 0;
+                        int skippedByLimitBefore = totalSkippedByLimitCount.get();
 
                         // Process in batches to avoid overwhelming the system
                         for (int i = 0; i < rawLogs.size(); i += BATCH_SIZE) {
@@ -134,6 +151,12 @@ public class ActivityLogProcessorService {
 
                         totalProcessedCount.addAndGet(processedInRun);
                         totalFailedCount.addAndGet(failedInRun);
+                        int skippedByLimitInRun = totalSkippedByLimitCount.get() - skippedByLimitBefore;
+                        if (skippedByLimitInRun > 0) {
+                                log.info("[LLM-Analytics-Scheduler] {} activity log(s) skipped by AI usage limits "
+                                                + "this run (status {})", skippedByLimitInRun,
+                                                STATUS_SKIPPED_USAGE_LIMIT);
+                        }
 
                         log.info("[LLM-Analytics-Scheduler] ===== SCHEDULER RUN COMPLETED ===== " +
                                         "Processed: {}, Failed: {}, Duration: {}s",
@@ -193,6 +216,15 @@ public class ActivityLogProcessorService {
                                         instituteId, activityLog.getId());
                         activityLogRepository.updateProcessedData(activityLog.getId(), null,
                                         STATUS_SKIPPED_NO_CREDITS);
+                        return;
+                } else if (blockedByUsageLimit(instituteId, activityLog)) {
+                        // The limit gate already recorded the refusal; nothing is charged.
+                        log.warn("[LLM-Analytics-Processing] AI usage limit reached for institute {} - "
+                                        + "skipping activity log {} without calling the LLM",
+                                        instituteId, activityLog.getId());
+                        totalSkippedByLimitCount.incrementAndGet();
+                        activityLogRepository.updateProcessedData(activityLog.getId(), null,
+                                        STATUS_SKIPPED_USAGE_LIMIT);
                         return;
                 }
 
@@ -285,7 +317,28 @@ public class ActivityLogProcessorService {
                                 instituteId,
                                 RequestType.ANALYTICS.getValue(),
                                 studentAnalyticsLLMService.getPrimaryAnalyticsModel(),
-                                estimatedTokens);
+                                estimatedTokens,
+                                MeteringFields.system("learner_analytics").build());
+        }
+
+        /**
+         * The AI usage-limit gate (after, and in addition to, the unchanged credit check).
+         * A SYSTEM job working for the learner: ai_service checks institute pools, SYSTEM
+         * role-class rows and platform rows. No limits on for the institute = no call at
+         * all; any failure = allowed.
+         */
+        private boolean blockedByUsageLimit(String instituteId, ActivityLogProcessingProjection activityLog) {
+                try {
+                        AuthorizeResult r = creditClient.authorize(instituteId, USE_CASE_LEARNER_ANALYTICS,
+                                        RequestType.ANALYTICS.getValue(),
+                                        MeteringFields.system(USE_CASE_LEARNER_ANALYTICS)
+                                                        .subjectUserId(activityLog.getUserId())
+                                                        .build(),
+                                        null);
+                        return AuthorizeResult.blocks(r);
+                } catch (Exception e) {
+                        return false;
+                }
         }
 
         private void validateInsights(JsonNode insights) {

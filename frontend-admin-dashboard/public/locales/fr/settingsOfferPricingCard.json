@@ -1,0 +1,19 @@
+{
+    "title": "Prix promotionnel",
+    "toggle": {
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+    },
+    "alert": {
+        "description": "Permettre aux administrateurs de définir un prix promotionnel inférieur au PVC sur chaque {{coursesTerm}}. Une fois activée, une action « Appliquer le prix promotionnel » apparaît sur la page de gestion des {{courseTerm}}."
+    },
+    "rounding": {
+        "label": "Arrondi du prix promotionnel",
+        "description": "Arrondir le prix réduit à une unité entière (₹1, $1, etc.). S'applique au prix enregistré lorsqu'une offre est appliquée — quelle que soit la devise.",
+        "options": {
+            "none": "Désactivé (conserver les décimales calculées)",
+            "ceil": "Arrondir au supérieur (ex. 479,20 → 480)",
+            "floor": "Arrondir à l'inférieur (ex. 479,80 → 479)"
+        }
+    }
+}

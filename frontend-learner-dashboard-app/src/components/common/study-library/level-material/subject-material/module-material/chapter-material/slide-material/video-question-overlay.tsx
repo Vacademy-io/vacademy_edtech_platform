@@ -1,5 +1,6 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Clock, CheckCircle, XCircle, CircleNotch } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
@@ -70,6 +71,7 @@ const VideoQuestionOverlay = ({
     // allQuestions = [],
     previousAnswer,
 }: VideoQuestionProps) => {
+    const { t } = useTranslation("libraryCommonB");
     const { activeItem } = useContentStore();
     // Real time the learner has had this in-video question open (mount → submit)
     // so the reported "Time Spent" reflects actual engagement, not a fake 1 minute.
@@ -245,7 +247,7 @@ const VideoQuestionOverlay = ({
         if (!question.auto_evaluation_json) {
             return {
                 isCorrect: true,
-                explanation: "Answer submitted successfully.",
+                explanation: t("videoQuestionOverlay.evaluation.submittedSuccessfully"),
             };
         }
 
@@ -260,8 +262,12 @@ const VideoQuestionOverlay = ({
             if (questionType === "MCQS" || isTrueFalse) {
                 isCorrect = correctOptionIds.includes(userAnswer);
                 explanation = isCorrect
-                    ? "Correct! Well done."
-                    : `Incorrect. The correct answer is: ${question.options.find((opt) => correctOptionIds.includes(opt.id))?.text.content || "Not found"}`;
+                    ? t("videoQuestionOverlay.evaluation.correctWellDone")
+                    : t("videoQuestionOverlay.evaluation.incorrectAnswerIs", {
+                          answer:
+                              question.options.find((opt) => correctOptionIds.includes(opt.id))
+                                  ?.text.content || t("videoQuestionOverlay.evaluation.notFound"),
+                      });
             } else if (isMultipleChoice) {
                 const userAnswerArray = Array.isArray(userAnswer)
                     ? userAnswer
@@ -273,13 +279,14 @@ const VideoQuestionOverlay = ({
                     );
 
                 if (isCorrect) {
-                    explanation =
-                        "Correct! You selected all the right answers.";
+                    explanation = t("videoQuestionOverlay.evaluation.correctAllSelected");
                 } else {
                     const correctTexts = question.options
                         .filter((opt) => correctOptionIds.includes(opt.id))
                         .map((opt) => opt.text.content);
-                    explanation = `Incorrect. The correct answers are: ${correctTexts.join(", ")}`;
+                    explanation = t("videoQuestionOverlay.evaluation.incorrectAnswersAre", {
+                        answers: correctTexts.join(", "),
+                    });
                 }
             } else if (isOneWord || isLongAnswer || isNumeric) {
                 if (correctAnswer) {
@@ -287,25 +294,31 @@ const VideoQuestionOverlay = ({
                         String(userAnswer).toLowerCase().trim() ===
                         String(correctAnswer).toLowerCase().trim();
                     explanation = isCorrect
-                        ? "Correct! Well done."
-                        : `Incorrect. The correct answer is: ${correctAnswer}`;
+                        ? t("videoQuestionOverlay.evaluation.correctWellDone")
+                        : t("videoQuestionOverlay.evaluation.incorrectAnswerIs", {
+                              answer: correctAnswer,
+                          });
                 } else {
                     isCorrect = true;
-                    explanation = "Answer submitted successfully.";
+                    explanation = t("videoQuestionOverlay.evaluation.submittedSuccessfully");
                 }
             }
 
             // Add general explanation if available
             if (question.explanation_text_data?.content) {
-                explanation += `\n\nExplanation: ${processHtmlString(
-                    question.explanation_text_data.content
-                )
-                    .map((item) =>
-                        item.type === "text"
-                            ? item.content
-                            : `[Image: ${item.content}]`
+                explanation += t("videoQuestionOverlay.evaluation.explanationSuffix", {
+                    explanation: processHtmlString(
+                        question.explanation_text_data.content
                     )
-                    .join(" ")}`;
+                        .map((item) =>
+                            item.type === "text"
+                                ? item.content
+                                : t("videoQuestionOverlay.evaluation.imagePlaceholder", {
+                                      content: item.content,
+                                  })
+                        )
+                        .join(" "),
+                });
             }
 
             return {
@@ -320,7 +333,7 @@ const VideoQuestionOverlay = ({
             console.error("Error evaluating answer:", error);
             return {
                 isCorrect: true,
-                explanation: "Answer submitted successfully.",
+                explanation: t("videoQuestionOverlay.evaluation.submittedSuccessfully"),
             };
         }
     };
@@ -455,8 +468,7 @@ const VideoQuestionOverlay = ({
             console.error("Error submitting answer:", error);
             setResponse({
                 isCorrect: false,
-                explanation:
-                    "There was an error processing your answer. Please try again.",
+                explanation: t("videoQuestionOverlay.submitError"),
             });
             setIsSubmitting(false);
         }
@@ -477,7 +489,7 @@ const VideoQuestionOverlay = ({
 
     //   return (
     //     <div className="w-full mb-4 px-1">
-    //       <div className="relative w-full h-1.5 bg-gradient-to-r from-red-400 via-orange-400 to-purple-400 rounded-full overflow-hidden">
+    //       <div className="relative w-full h-1.5 bg-gradient-to-r from-danger-400 via-primary-400 to-purple-400 rounded-full overflow-hidden">
     //         {/* Progress indicator */}
     //         <div
     //           className="absolute h-full bg-white/30 rounded-full transition-all duration-300"
@@ -644,7 +656,7 @@ const VideoQuestionOverlay = ({
                         type="text"
                         value={inputValue}
                         onChange={handleInputChange}
-                        placeholder="Enter your answer"
+                        placeholder={t("videoQuestionOverlay.placeholders.oneWord")}
                         className="w-full text-base py-3"
                         disabled={!!response}
                     />
@@ -658,7 +670,7 @@ const VideoQuestionOverlay = ({
                     <Textarea
                         value={inputValue}
                         onChange={handleInputChange}
-                        placeholder="Type your detailed answer here..."
+                        placeholder={t("videoQuestionOverlay.placeholders.longAnswer")}
                         className="w-full min-h-reg-120 text-base resize-none"
                         disabled={!!response}
                     />
@@ -676,8 +688,8 @@ const VideoQuestionOverlay = ({
                             onChange={handleNumericChange}
                             placeholder={
                                 isDecimal
-                                    ? "Enter decimal value"
-                                    : "Enter integer value"
+                                    ? t("videoQuestionOverlay.placeholders.decimal")
+                                    : t("videoQuestionOverlay.placeholders.integer")
                             }
                             className="w-full text-base py-3 text-center"
                             disabled={!!response}
@@ -740,7 +752,7 @@ const VideoQuestionOverlay = ({
                                         className="h-10 text-base"
                                         onClick={() => handleKeyPress("clear")}
                                     >
-                                        Clear
+                                        {t("videoQuestionOverlay.numericPad.clear")}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -756,19 +768,19 @@ const VideoQuestionOverlay = ({
     const getQuestionTypeLabel = () => {
         switch (questionType) {
             case "MCQS":
-                return "Select one answer:";
+                return t("videoQuestionOverlay.prompts.mcqs");
             case "TRUE_FALSE":
-                return "Select True or False:";
+                return t("videoQuestionOverlay.prompts.trueFalse");
             case "MCQM":
-                return "Select all that apply:";
+                return t("videoQuestionOverlay.prompts.mcqm");
             case "ONE_WORD":
-                return "Enter your answer:";
+                return t("videoQuestionOverlay.prompts.oneWord");
             case "LONG_ANSWER":
-                return "Provide a detailed answer:";
+                return t("videoQuestionOverlay.prompts.longAnswer");
             case "NUMERIC":
-                return "Enter the numeric value:";
+                return t("videoQuestionOverlay.prompts.numeric");
             default:
-                return "Answer the question:";
+                return t("videoQuestionOverlay.prompts.generic");
         }
     };
 
@@ -802,7 +814,7 @@ const VideoQuestionOverlay = ({
                                 <Clock className="w-4 h-4 text-orange-600" />
                             </div>
                             <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                                Video Question
+                                {t("videoQuestionOverlay.title")}
                             </h3>
                         </div>
 
@@ -814,12 +826,12 @@ const VideoQuestionOverlay = ({
                                     onClick={onClose}
                                     className="text-gray-600 hover:text-gray-800"
                                 >
-                                    Skip Question
+                                    {t("videoQuestionOverlay.skipQuestion")}
                                 </Button>
                             )}
                             {!question.can_skip && !response && (
                                 <span className="text-xs text-gray-500 hidden sm:block">
-                                    Answer required to continue
+                                    {t("videoQuestionOverlay.answerRequired")}
                                 </span>
                             )}
                             {response && (
@@ -849,7 +861,7 @@ const VideoQuestionOverlay = ({
 
                         {question.parent_rich_text?.content && (
                             <div className="flex">
-                                <p>Question : </p>
+                                <p>{t("videoQuestionOverlay.questionLabel")}</p>
                                 {processHtmlString(
                                     question.parent_rich_text.content
                                 ).map((item, index) =>
@@ -861,7 +873,7 @@ const VideoQuestionOverlay = ({
                                         <img
                                             key={index}
                                             src={item.content}
-                                            alt={`Question context ${index}`}
+                                            alt={t("videoQuestionOverlay.questionContextAlt", { index })}
                                             className="mx-auto rounded-lg mb-3 max-w-full h-auto"
                                         />
                                     )
@@ -899,8 +911,8 @@ const VideoQuestionOverlay = ({
                                     className={`font-medium ${response.isCorrect ? "text-green-800" : "text-red-800"}`}
                                 >
                                     {response.isCorrect
-                                        ? "Correct!"
-                                        : "Incorrect"}
+                                        ? t("videoQuestionOverlay.correct")
+                                        : t("videoQuestionOverlay.incorrect")}
                                 </p>
                             </div>
                             {response.explanation && (
@@ -914,7 +926,7 @@ const VideoQuestionOverlay = ({
 
                 {/* Footer - Action buttons */}
                 <div className="flex-shrink-0 bg-white border-t border-gray-100 p-4 sm:p-6 rounded-b-xl">
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <div className="flex flex-col sm:flex-row gap-stack justify-center">
                         {response ? (
                             <MyButton
                                 buttonType="primary"
@@ -924,7 +936,7 @@ const VideoQuestionOverlay = ({
                                 disable={false}
                                 className="min-w-reg-150 shadow-lg"
                             >
-                                Continue Video
+                                {t("videoQuestionOverlay.buttons.continueVideo")}
                             </MyButton>
                         ) : (
                             <MyButton
@@ -938,10 +950,10 @@ const VideoQuestionOverlay = ({
                                 {isSubmitting ? (
                                     <span className="flex items-center gap-2">
                                         <CircleNotch className="size-4 animate-spin" weight="bold" />
-                                        Submitting...
+                                        {t("videoQuestionOverlay.buttons.submitting")}
                                     </span>
                                 ) : (
-                                    "Submit Answer"
+                                    t("videoQuestionOverlay.buttons.submitAnswer")
                                 )}
                             </MyButton>
                         )}

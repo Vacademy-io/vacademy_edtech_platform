@@ -1,0 +1,9 @@
+{
+    "card": {
+        "title": "HTML personnalisé",
+        "helperText": "Ajouter du contenu HTML personnalisé à la page d'invitation"
+    },
+    "textarea": {
+        "placeholder": "Saisissez votre code HTML personnalisé ici..."
+    }
+}

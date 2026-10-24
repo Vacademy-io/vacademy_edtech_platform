@@ -1,0 +1,19 @@
+{
+    "heading": "Retirer de {{term}}",
+    "descriptionPrefix": "Retirer",
+    "descriptionSuffix": "de ce/cette {{term}}. Son compte reste intact ; l'accès aux autres {{termPlural}} (s'il y en a) n'est pas affecté.",
+    "removalMode": {
+        "label": "Mode de retrait",
+        "hardTitle": "Retirer maintenant",
+        "hardDescription": "— L'accès est révoqué immédiatement.",
+        "softTitle": "Conserver jusqu'à une date",
+        "softDescription": "— L'accès continue jusqu'à la date de dernier accès ci-dessous, puis se termine automatiquement."
+    },
+    "lastAccessDate": {
+        "label": "Date de dernier accès",
+        "missing": "Choisissez une date jusqu'à laquelle conserver l'accès."
+    },
+    "cancel": "Annuler",
+    "removing": "Retrait...",
+    "remove": "Retirer"
+}

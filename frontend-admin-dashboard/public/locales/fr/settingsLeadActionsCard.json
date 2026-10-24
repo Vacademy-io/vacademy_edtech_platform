@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Actions sur les prospects",
+        "description": "Contrôlez ce que ce rôle peut faire sur les pages des prospects."
+    },
+    "rows": {
+        "showAddLead": {
+            "label": "Afficher « Ajouter un prospect » dans Tous les prospects",
+            "hint": "Choisissez un type de campagne et une audience, puis remplissez son formulaire. Le prospect d’un conseiller lui est attribué ; un admin choisit le conseiller. Désactivé par défaut pour tous les rôles."
+        }
+    }
+}

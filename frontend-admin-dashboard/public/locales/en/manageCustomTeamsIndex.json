@@ -1,0 +1,8 @@
+{
+    "helmetTitle": "Manage {{termPlural}}",
+    "heading": "Manage {{termPlural}}",
+    "subtitle": "Manage and monitor all your {{termPlural}} portals in one place.",
+    "tabs": {
+        "registrationLinks": "Registration Links"
+    }
+}

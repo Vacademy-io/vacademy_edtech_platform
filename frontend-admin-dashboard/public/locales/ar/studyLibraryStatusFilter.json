@@ -1,0 +1,10 @@
+{
+    "label": {
+        "status": "الحالة"
+    },
+    "options": {
+        "all": "الكل",
+        "resolved": "تم الحل",
+        "unresolved": "لم يتم الحل"
+    }
+}

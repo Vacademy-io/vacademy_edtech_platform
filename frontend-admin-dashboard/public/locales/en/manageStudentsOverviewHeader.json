@@ -1,0 +1,42 @@
+{
+    "tiles": {
+        "courseProgress": {
+            "label": "Course Progress",
+            "hint": {
+                "onTrack": "On track",
+                "paceCheckNeeded": "Pace check needed",
+                "behindSchedule": "Behind schedule"
+            }
+        },
+        "attendance": {
+            "label": "Attendance",
+            "hint": {
+                "aboveTarget": "Above target",
+                "watchList": "Watch list",
+                "belowTarget": "Below target"
+            }
+        },
+        "tests": {
+            "label": "Tests",
+            "hint": {
+                "pending_one": "{{count}} pending",
+                "pending_other": "{{count}} pending"
+            }
+        },
+        "outstanding": {
+            "label": "Outstanding",
+            "hint": {
+                "actionRequired": "Action required",
+                "paidInFull": "Paid in full"
+            }
+        },
+        "leadScore": {
+            "label": "Lead Score",
+            "hint": {
+                "hotLead": "Hot lead",
+                "nurture": "Nurture",
+                "cold": "Cold"
+            }
+        }
+    }
+}

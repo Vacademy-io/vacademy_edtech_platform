@@ -1,0 +1,62 @@
+{
+    "dialog": {
+        "title": "Bulk Import Applications",
+        "description": "Upload CSV, select class/batch, preview and confirm import"
+    },
+    "steps": {
+        "label": "Step {{number}}"
+    },
+    "upload": {
+        "templateHint": "Download CSV template and upload filled applicant responses",
+        "dropzoneCta": "Click to upload `.csv` file",
+        "validRowsLabel": "Valid rows",
+        "skippedRowsLabel": "Skipped rows"
+    },
+    "classSelect": {
+        "helperText": "Select class/batch required for submitting applications.",
+        "placeholder": "Select a class/batch"
+    },
+    "sample": {
+        "studentName": "John Student",
+        "fatherName": "John Father",
+        "motherName": "Jane Mother"
+    },
+    "columns": {
+        "studentName": "Student Name",
+        "gender": "Gender",
+        "dateOfBirth": "Date of Birth",
+        "fatherName": "Father Name",
+        "fatherEmail": "Father Email",
+        "fatherMobile": "Father Mobile",
+        "motherName": "Mother Name",
+        "motherEmail": "Mother Email",
+        "motherMobile": "Mother Mobile",
+        "status": "Status",
+        "source": "Source"
+    },
+    "preview": {
+        "summary_one": "Previewing {{count}} valid row",
+        "summary_other": "Previewing {{count}} valid rows"
+    },
+    "errors": {
+        "onlyCsvSupported": "Only .csv files are supported",
+        "missingRequiredColumns": "Missing required column(s): {{columns}}",
+        "failedToParseCsv": "Failed to parse CSV"
+    },
+    "toasts": {
+        "importResult_one": "Imported {{count}} application ({{failedCount}} failed)",
+        "importResult_other": "Imported {{count}} applications ({{failedCount}} failed)",
+        "importFailedFallback": "Failed to import applications",
+        "instituteDetailsUnavailable": "Institute details not available",
+        "selectClassBatch": "Please select a class/batch",
+        "invalidClassBatchSelection": "Invalid class/batch selection"
+    },
+    "buttons": {
+        "downloadTemplate": "Download Template",
+        "back": "Back",
+        "cancel": "Cancel",
+        "next": "Next",
+        "confirmImport": "Confirm Import",
+        "importing": "Importing..."
+    }
+}

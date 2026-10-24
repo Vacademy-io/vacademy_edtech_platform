@@ -1,0 +1,35 @@
+{
+    "dialog": {
+        "titleAddPersonTo": "Add a person to {{teamName}}",
+        "descriptionPicked": "Give this position a label like \"Sales Head\" and pick who they report to. You can change both later by clicking the pencil on the card.",
+        "descriptionUnpicked": "Pick someone from your institute."
+    },
+    "search": {
+        "placeholder": "Search by name or email…",
+        "emptyAllInTeam": "Everyone in the institute is already in this team.",
+        "emptyNoMatch": "No one matches that search."
+    },
+    "common": {
+        "unnamed": "Unnamed",
+        "change": "Change",
+        "optionalSuffix": "(optional)",
+        "cancel": "Cancel",
+        "adding": "Adding…",
+        "addToTeam": "Add to team"
+    },
+    "form": {
+        "positionLabel": "Position label",
+        "positionLabelPlaceholder": "e.g. Sales Head, Counsellor Lead",
+        "positionLabelHelp": "Shown under their name in the chart. You can edit it anytime by clicking the pencil icon on the card.",
+        "reportsToLabel": "Reports to",
+        "noManagerOption": "No manager — top of team",
+        "reportsToHelp": "You can also draw an arrow between cards on the chart to set this later."
+    },
+    "toast": {
+        "addedUnder": "Added {{name}} under {{where}}",
+        "theirManager": "their manager",
+        "topOfTeam": "top of team",
+        "defaultMember": "member",
+        "addFailed": "Could not add this person"
+    }
+}

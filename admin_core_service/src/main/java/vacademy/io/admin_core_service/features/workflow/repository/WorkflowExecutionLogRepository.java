@@ -25,6 +25,14 @@ public interface WorkflowExecutionLogRepository extends JpaRepository<WorkflowEx
         List<WorkflowExecutionLog> findByWorkflowExecutionIdOrderByCreatedAtAsc(String workflowExecutionId);
 
         /**
+         * Same, for a whole page of executions at once. The learner Workflows tab renders every
+         * run's steps inline; fetching them one execution at a time would be an N+1 across the
+         * page. Served by {@code idx_workflow_execution_id}.
+         */
+        List<WorkflowExecutionLog> findByWorkflowExecutionIdInOrderByCreatedAtAsc(
+                        List<String> workflowExecutionIds);
+
+        /**
          * Find logs for a specific node in a workflow execution.
          */
         List<WorkflowExecutionLog> findByWorkflowExecutionIdAndNodeTemplateId(String workflowExecutionId,

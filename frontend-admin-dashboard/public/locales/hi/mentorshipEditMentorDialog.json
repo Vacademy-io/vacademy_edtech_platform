@@ -1,0 +1,22 @@
+{
+    "editMentorHeading": "{{name}} को संपादित करें",
+    "defaultMentorName": "मेंटर",
+    "description": "यह मेंटर शिक्षार्थियों को कैसा दिखाई देता है। उनका खाता और भूमिका अपरिवर्तित रहती है।",
+    "mentorAlt": "मेंटर",
+    "uploading": "अपलोड हो रहा है…",
+    "changePhoto": "फ़ोटो बदलें",
+    "uploadPhoto": "फ़ोटो अपलोड करें",
+    "photoHelp": "उनके डायरेक्टरी कार्ड और मेरे मेंटर्स में दिखाई देता है।",
+    "displayNameLabel": "प्रदर्शित नाम",
+    "displayNamePlaceholder": "प्रदर्शित नाम",
+    "titleLabel": "पदनाम",
+    "titlePlaceholder": "जैसे सीनियर करियर मेंटर",
+    "bioLabel": "बायो",
+    "bioPlaceholder": "शिक्षार्थियों को दिखाया जाने वाला संक्षिप्त बायो",
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है…",
+    "saveChanges": "बदलाव सहेजें",
+    "mentorUpdated": "मेंटर अपडेट किया गया",
+    "photoUploadFailed": "फ़ोटो अपलोड विफल रहा",
+    "updateFailed": "मेंटर अपडेट करने में विफल"
+}

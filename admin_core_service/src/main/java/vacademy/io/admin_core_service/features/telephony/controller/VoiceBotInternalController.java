@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.telephony.core.TelephonyConfigCac
 import vacademy.io.admin_core_service.features.telephony.core.UserMobileResolver;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.TelephonyCallLog;
+import vacademy.io.admin_core_service.features.telephony.publicapi.entity.AiCallApiCall;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.TelephonyCallLogRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -60,7 +61,49 @@ public class VoiceBotInternalController {
     @Autowired private vacademy.io.admin_core_service.features.telephony.core.AiCallActionService
             aiCallActionService;
 
+    @Autowired private vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository
+            audienceResponseRepo;
+
+    // A lead with at least IMPORT_MIN_ROWS campaign-mates stamped within IMPORT_WINDOW_MINUTES
+    // either side arrived in a bulk import, so its submitted_at is the import time. Real form
+    // traffic peaked at 11 a minute across all institutes (2026-10-10); imports at 100-470.
+    private static final int IMPORT_WINDOW_MINUTES = 5;
+    private static final int IMPORT_MIN_ROWS = 40;
+
+    @Autowired private vacademy.io.admin_core_service.features.telephony.publicapi.repository.AiCallApiCallRepository
+            apiCallRepo;
+
     private final ObjectMapper mapper = new ObjectMapper();
+
+    /** The public-API call behind this call-log row, or null for every other call. */
+    /**
+     * An API call's variables as the bot's lead fields. The bot fills {{institute_name}} from
+     * a field named "institute name" and {{booked_slot}} from "booked slot", so the client's
+     * snake_case names are mirrored under those spellings too.
+     */
+    static Map<String, String> apiVariablesForBot(Map<String, String> variables) {
+        if (variables == null || variables.isEmpty()) return Map.of();
+        Map<String, String> out = new LinkedHashMap<>(variables);
+        for (Map.Entry<String, String> e : variables.entrySet()) {
+            String k = e.getKey() == null ? "" : e.getKey().trim().toLowerCase(java.util.Locale.ROOT);
+            if ("institute_name".equals(k)) out.putIfAbsent("institute name", e.getValue());
+            if ("booked_slot".equals(k)) out.putIfAbsent("booked slot", e.getValue());
+        }
+        return out;
+    }
+
+    private AiCallApiCall apiCallFor(TelephonyCallLog row) {
+        if (row == null || !vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType
+                .API_CONTACT.name().equals(row.getSubjectType()) || row.getSubjectId() == null) {
+            return null;
+        }
+        try {
+            return apiCallRepo.findByIdAndInstituteId(row.getSubjectId(), row.getInstituteId()).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("call-context: API call lookup failed for {}: {}", row.getSubjectId(), e.getMessage());
+            return null;
+        }
+    }
 
     @GetMapping("/call-context")
     public ResponseEntity<Map<String, Object>> callContext(
@@ -73,13 +116,18 @@ public class VoiceBotInternalController {
 
         String instituteName = instituteRepository.findById(instituteId)
                 .map(i -> i.getInstituteName()).orElse("our institute");
-        String leadName = row.getUserId() == null || "UNKNOWN".equals(row.getUserId())
+        // A call placed through the public AI calling API: the client sent the contact's
+        // name and template variables with the request. Its user id is a pseudo id that
+        // exists nowhere, so the auth-service lookups below would only find nothing.
+        AiCallApiCall apiCall = apiCallFor(row);
+        String leadName = apiCall != null ? apiCall.getContactName()
+                : row.getUserId() == null || "UNKNOWN".equals(row.getUserId())
                 ? null
                 : userMobileResolver.findDisplayName(row.getUserId()).orElse(null);
         // Gender for how the bot addresses the lead (honorific + Hindi second-person):
         // the stored record gender wins; else a conservative name guess (null when
         // unknown, so the bot uses gender-neutral address instead of defaulting to "sir").
-        String leadGender = (row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
+        String leadGender = (apiCall != null || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
                 ? vacademy.io.admin_core_service.features.telephony.core.NameGender.of(leadName)
                 : userMobileResolver.findGender(row.getUserId())
                         .orElseGet(() -> vacademy.io.admin_core_service.features.telephony.core
@@ -96,6 +144,12 @@ public class VoiceBotInternalController {
         Map<String, Object> agent = registryAgent
                 .map(a -> registryAgentMap(a, instituteName, settings))
                 .orElseGet(() -> defaultAgent(agentId, instituteName, settings));
+        if (apiCall != null) {
+            // The contact belongs to the client's CRM, not ours: there is no lead to send a
+            // WhatsApp/email to or to book against, so the agent must not offer either.
+            agent.keySet().removeAll(List.of("sendArtefacts", "sendArtefactsMidCall", "sendOffers", "sendConditions",
+                    "bookingEnabled"));
+        }
 
         // Handoff targets: per-agent numbers win; else the institute's voicemail/
         // fallback number (already a "reach a human" concept on the telephony config).
@@ -125,9 +179,17 @@ public class VoiceBotInternalController {
         if (leadGender != null) out.put("leadGender", leadGender);
         // The lead's captured form/custom fields (company, role, …) so the agent can
         // reference what it already knows instead of re-asking. Empty for unknown callers.
-        Map<String, String> leadFields = row.getResponseId() == null
+        // For an API call, the client's variables play this part: they fill the agent's
+        // {{placeholders}} and are listed to the model as what it already knows.
+        Map<String, String> leadFields = apiCall != null
+                ? apiVariablesForBot(apiCall.getVariables())
+                : row.getResponseId() == null
                 ? Map.of() : audienceService.getLeadCustomFields(row.getResponseId());
         if (leadFields != null && !leadFields.isEmpty()) out.put("leadFields", leadFields);
+        // When and how the lead enquired, so the agent can answer "when did I fill a form?"
+        // with the real date instead of a stock line repeated three times (call 6313b454).
+        Map<String, Object> leadEnquiry = leadEnquiry(row.getResponseId());
+        if (leadEnquiry != null) out.put("leadEnquiry", leadEnquiry);
         out.put("responseId", row.getResponseId());
         out.put("userId", row.getUserId());
         out.put("agent", agent);
@@ -148,6 +210,39 @@ public class VoiceBotInternalController {
         // else global — or every report 401s on envs with a global secret set.
         out.put("webhookToken", aiCallingConfigService.getEffectiveWebhookSecret(instituteId));
         return ResponseEntity.ok(out);
+    }
+
+    /**
+     * The lead's enquiry: its source type and, when genuine, the instant it was submitted.
+     * dateKnown=false when the row came in a bulk import, because its submitted_at is then
+     * the import time and the agent would state a wrong date; recordedAt carries that stamp
+     * (the enquiry happened on or before it). Null when there is no lead row. Never fails
+     * the call context: an error only drops this block.
+     */
+    private Map<String, Object> leadEnquiry(String responseId) {
+        if (responseId == null || responseId.isBlank()) return null;
+        try {
+            var resp = audienceResponseRepo.findById(responseId).orElse(null);
+            if (resp == null) return null;
+            java.sql.Timestamp at = resp.getSubmittedAt() != null ? resp.getSubmittedAt() : resp.getCreatedAt();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("sourceType", resp.getSourceType());
+            if (at == null) {
+                m.put("dateKnown", false);
+                return m;
+            }
+            long windowMs = IMPORT_WINDOW_MINUTES * 60_000L;
+            boolean imported = resp.getAudienceId() != null
+                    && audienceResponseRepo.countByAudienceSubmittedBetween(resp.getAudienceId(),
+                            new java.sql.Timestamp(at.getTime() - windowMs),
+                            new java.sql.Timestamp(at.getTime() + windowMs)) >= IMPORT_MIN_ROWS;
+            m.put("dateKnown", !imported);
+            m.put(imported ? "recordedAt" : "submittedAt", at.toInstant().toString());
+            return m;
+        } catch (Exception e) {
+            log.warn("call-context: lead enquiry lookup failed for {}: {}", responseId, e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -187,6 +282,12 @@ public class VoiceBotInternalController {
             return ResponseEntity.ok(Map.of("ok", true, "created", 0));
         }
 
+        AiCallApiCall apiCall = apiCallFor(row);
+        if (apiCall != null) {
+            // No sends on API calls (see callContext): a marker the model emits anyway is ignored.
+            log.info("vacademy-ai: mid-call action {} for API call {} ignored", artefact, apiCall.getId());
+            return ResponseEntity.ok(Map.of("ok", true, "created", 0));
+        }
         String leadName = (row.getUserId() == null || "UNKNOWN".equals(row.getUserId())) ? null
                 : userMobileResolver.findDisplayName(row.getUserId()).orElse(null);
         String leadPhone = (row.getUserId() == null || "UNKNOWN".equals(row.getUserId())) ? null
@@ -274,7 +375,18 @@ public class VoiceBotInternalController {
             List<String> conditions = aiCallActionService.conditions(a);
             if (!conditions.isEmpty()) base.put("sendConditions", conditions);
         }
+        // A linked booking page means the platform books a meeting the caller agrees to
+        // (AiCallOutcomeProcessor auto-book), so the agent may offer one. The bot reads this
+        // only for a NON-education agent, whose prompt otherwise forbids offering any meeting
+        // its script does not offer (AAIBUZZ/IRPL calls c43e9ce7, e6cb5f47, 2026-10-16: a demo
+        // nobody offered, booked). Omitted when unset, so every other agent's map is unchanged.
+        if (a.getBookingPageId() != null && !a.getBookingPageId().isBlank()) {
+            base.put("bookingEnabled", true);
+        }
         if (a.getTemperature() != null) base.put("temperature", a.getTemperature());
+        // V504: consumed by the bot's ProsodyShaper (app/prosody.py). Absent = the
+        // bot's global PROSODY_EXPAND, which defaults to off.
+        if (a.getVoiceModulation() != null) base.put("voiceModulation", a.getVoiceModulation());
         // V421 — snake_case ON PURPOSE: the bot reads agent.get("tts_model"). The
         // neighbours here are camelCase, so this looks like a typo and is not.
         // Always emitted (never conditional on non-null) because the bot's own

@@ -43,6 +43,9 @@ export type StudentDashboardWidgetId =
   | "coursesStat"
   | "evaluationStat"
   | "continueLearning"
+  // The learner's enrolled courses with per-course progress and a way back
+  // in. Distinct from coursesStat, which is only the count tile.
+  | "enrolledCourses"
   | "learningAnalytics"
   | "liveClasses"
   | "thisWeekAttendance"
@@ -55,6 +58,15 @@ export type StudentDashboardWidgetId =
   // widget and the "go buy more" button can be controlled independently.
   | "exploreMemberships"
   | "exploreBooks"
+  // "Get the app" download card. Shows the store/download links configured on
+  // the institute's domain-routing row — the same source the sidebar footer
+  // uses, so an institute can carry them in the sidebar, the dashboard, both,
+  // or neither (see `sidebar.appLinks`). Self-hides when no link is set.
+  | "getApp"
+  // Today's teacher-scheduled tasks (the Daily Engagement module). Renders
+  // nothing for an institute with no plan running. Placed first in the rail
+  // at lg and up, else right under the hero; see the dashboard route.
+  | "todayTasks"
   | "custom";
 
 export interface StudentDashboardWidgetConfig {
@@ -197,10 +209,16 @@ export interface StudentCourseDetailsSettings {
   ratingsAndReviewsVisible: boolean;
   /** Hide the "Author" row in the course-details Course Overview panel. Default false (author shown). */
   hideAuthorName?: boolean;
-  /** Show the Teachers/Instructors section on the course-details page. Default false (hidden). */
+  /**
+   * List EVERY teacher of the batch on the course-details page. Default false:
+   * only the first author is shown (with photo, subtitle and bio). Learners
+   * never see email addresses either way.
+   */
   showInstructors?: boolean;
   // New flags
   showCourseConfiguration: boolean;
+  /** Hide the course's tag chips (ENGLISH, E-LEARNING…) above its title. Default false (shown). */
+  hideTags?: boolean;
   showCourseContentPrefixes: boolean;
   courseOverview: { visible: boolean; showSlidesData: boolean };
   slidesView: {
@@ -289,15 +307,63 @@ export interface StudentAllCoursesTabConfig {
   visible: boolean;
 }
 
+/**
+ * Admin-defined Courses-page tab listing every catalogue course that carries
+ * ANY of `tags`. Lives outside `tabs` so builds that predate it ignore it
+ * instead of mapping the unknown id to In Progress. `order` shares the
+ * built-in tabs' numbering.
+ */
+/**
+ * What a custom Courses-page tab shows. Absent on tabs saved before types
+ * existed — those are TAG tabs.
+ * - TAG: catalogue courses carrying ANY of `tags`
+ * - COURSES: the catalogue courses picked in `courseIds`
+ * - FREE_COURSES: catalogue courses whose cheapest plan costs 0
+ * - LIVE_SESSIONS: the learner's live/upcoming sessions (incl. public webinars)
+ * - PRODUCT_PAGES: cards opening the product pages in `productPages`
+ */
+export type StudentAllCoursesCustomTabType =
+  | "TAG"
+  | "COURSES"
+  | "FREE_COURSES"
+  | "LIVE_SESSIONS"
+  | "PRODUCT_PAGES";
+
+export interface StudentAllCoursesCustomTabProductPage {
+  code: string;
+  name: string;
+}
+
+export interface StudentAllCoursesCustomTab {
+  id: string;
+  label: string;
+  type?: StudentAllCoursesCustomTabType;
+  tags: string[];
+  courseIds?: string[];
+  productPages?: StudentAllCoursesCustomTabProductPage[];
+  order: number;
+  visible: boolean;
+}
+
 export interface StudentAllCoursesSettings {
   tabs: StudentAllCoursesTabConfig[];
+  customTabs?: StudentAllCoursesCustomTab[];
   defaultTab: StudentAllCoursesTabId;
   /** Hide the instructor/teacher name block on each course card in the All Courses list. Default false (shown). */
   hideInstructorName?: boolean;
+  /** Courses per page on the All Courses list. Default 10. */
+  pageSize?: number;
+  /** Dashboard "My courses": list every enrolled course instead of the first 4. Default false. */
+  showAllEnrolledOnDashboard?: boolean;
 }
 
 // UI
-export type StudentUIType = "default" | "vibrant" | "play" | "cleanerPlay";
+export type StudentUIType =
+  | "default"
+  | "vibrant"
+  | "play"
+  | "cleanerPlay"
+  | "corporate";
 
 export interface StudentUISettings {
   type: StudentUIType;
@@ -363,8 +429,17 @@ export interface StudentCourseSettingsQuiz {
   showReportAndCorrectAnswers: boolean;
 }
 
+/** Assignment slide. Both off by default (today's slide). */
+export interface StudentCourseSettingsAssignment {
+  /** Hide the "Attempts Allowed: …" line. */
+  hideAttemptsAllowed: boolean;
+  /** Hide the card title when it only repeats the slide name shown above it. */
+  hideRepeatedTitle: boolean;
+}
+
 export interface StudentCourseSettings {
   quiz: StudentCourseSettingsQuiz;
+  assignment: StudentCourseSettingsAssignment;
 }
 
 export interface ConcentrationSettings {
@@ -385,7 +460,16 @@ export interface ConcentrationSettings {
 
 // Root
 export interface StudentDisplaySettingsData {
-  sidebar: { visible: boolean; tabs: StudentSidebarTabConfig[] };
+  sidebar: {
+    visible: boolean;
+    tabs: StudentSidebarTabConfig[];
+    /**
+     * Whether the sidebar footer carries the "Apps & Portals" download row.
+     * Defaults to true (the historical behaviour). Turn it off to move those
+     * links to the dashboard's `getApp` widget instead of showing both.
+     */
+    appLinks?: boolean;
+  };
   dashboard: { widgets: StudentDashboardWidgetConfig[] };
   signup: StudentSignupSettings;
   permissions: StudentPermissions;

@@ -353,8 +353,8 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
             <DialogTitle>Loading Payment Options</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+            <div className="text-center space-y-4">
+              <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
               <p className="text-gray-600">Loading payment options...</p>
             </div>
           </div>
@@ -370,8 +370,8 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
           <DialogHeader>
             <DialogTitle>Payment Error</DialogTitle>
           </DialogHeader>
-          <div className="text-center py-6">
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="text-center py-6 space-y-4">
+            <p className="text-red-600">{error}</p>
             <Button onClick={fetchEnrollmentData} variant="outline">
               Try Again
             </Button>
@@ -399,7 +399,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
                 </DialogTitle>
                 {enrollmentData && (
                   <p className="text-gray-600 text-sm">
-                    Complete your one-time payment to access the course
+                    Complete your one-time payment to access the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}
                   </p>
                 )}
               </div>
@@ -414,11 +414,11 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
             {/* Course Info */}
             <Card className="shadow-sm border border-gray-200">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold text-gray-900">Course Information</CardTitle>
+                <CardTitle className="text-lg font-semibold text-gray-900">{getTerminology(ContentTerms.Course, SystemTerms.Course)} Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Course:</span>
+                  <span className="text-gray-600">{getTerminology(ContentTerms.Course, SystemTerms.Course)}:</span>
                   <span className="font-medium text-gray-900">{courseTitle}</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -480,7 +480,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
                               setSelectedPaymentPlan(plan);
                             }}
                           >
-                            <CardContent className="p-6">
+                            <CardContent className="p-card-lg">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2 mb-2">
@@ -602,7 +602,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
               )}
 
               <Card className="shadow-sm border border-gray-200">
-                <CardContent className="p-6">
+                <CardContent className="p-card-lg">
                   <div className={`border rounded-lg p-4 bg-white ${
                     cardElementError ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}>
@@ -622,7 +622,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-3 mt-6">
+                  <div className="flex flex-col gap-stack mt-6">
                     <MyButton
                       type="button"
                       scale="large"

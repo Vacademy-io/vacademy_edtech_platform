@@ -1,0 +1,22 @@
+{
+    "totalGross": {
+        "label": "Total gross",
+        "hint": "Earnings before any deduction"
+    },
+    "totalDeductions": {
+        "label": "Total deductions",
+        "hint": "TDS, PF, ESI, loans, held amounts"
+    },
+    "totalNetPay": {
+        "label": "Total net pay",
+        "hint": "What employees actually receive"
+    },
+    "totalEmployerCost": {
+        "label": "Total employer cost",
+        "hint": "Net pay plus employer contributions"
+    },
+    "employees": {
+        "label": "Employees",
+        "hint": "Lines computed in this run"
+    }
+}

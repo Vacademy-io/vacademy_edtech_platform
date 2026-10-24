@@ -1,0 +1,14 @@
+{
+    "chart": {
+        "markLabel": "अंक",
+        "rankAxis": "रैंक",
+        "marksObtainedAxis": "प्राप्त अंक"
+    },
+    "header": {
+        "title": "अंक-रैंक ग्राफ़"
+    },
+    "toasts": {
+        "pdfExportSuccess": "छात्र रैंक-अंक डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया",
+        "csvExportSuccess": "छात्र रैंक-अंक डेटा CSV के रूप में सफलतापूर्वक निर्यात किया गया"
+    }
+}

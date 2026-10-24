@@ -1,0 +1,23 @@
+{
+    "dialogs": {
+        "attentionLabel": "تنبيه",
+        "close": "إغلاق",
+        "closeSubmission": {
+            "title": "إغلاق المشاركة",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد إغلاق مشاركة الاختبار الخاصة بـ"
+        },
+        "increaseTime": {
+            "title": "زيادة وقت الاختبار",
+            "increaseByLabel": "الزيادة بمقدار",
+            "selectSectionPlaceholder": "اختر القسم",
+            "entireAssessment": "الاختبار بالكامل",
+            "section": "القسم {{number}}",
+            "question": "السؤال {{number}}"
+        }
+    },
+    "dropdown": {
+        "increaseSubmissionTime": "زيادة وقت المشاركة",
+        "closeSubmission": "إغلاق المشاركة",
+        "proctoring": "المراقبة"
+    }
+}

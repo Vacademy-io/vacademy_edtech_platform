@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { PaperPlaneTilt, WhatsappLogo, Copy } from '@phosphor-icons/react';
 import { toast } from 'sonner';
@@ -34,6 +35,7 @@ export const OverviewQuickActions = ({
     /** Optional callback fired after a report is initiated successfully. */
     onReportSuccess?: () => void;
 }) => {
+    const { t } = useTranslation('manageStudentsOverviewQuickActions');
     const { getCredentials } = useStudentCredentialsStore();
     const [active, setActive] = useState<ActiveDialog>('none');
 
@@ -48,15 +50,15 @@ export const OverviewQuickActions = ({
         if (!userId) return;
         const creds = getCredentials(userId);
         if (!creds?.username && !creds?.password) {
-            toast.error('No credentials available for this learner');
+            toast.error(t('toasts.noCredentials'));
             return;
         }
-        const text = `Username: ${creds.username || '—'}\nPassword: ${creds.password || '—'}`;
+        const text = `${t('credentialsText.username')}: ${creds.username || '—'}\n${t('credentialsText.password')}: ${creds.password || '—'}`;
         try {
             await navigator.clipboard.writeText(text);
-            toast.success('Username & password copied');
+            toast.success(t('toasts.copySuccess'));
         } catch {
-            toast.error('Could not copy to clipboard');
+            toast.error(t('toasts.copyFailure'));
         }
     };
 
@@ -71,7 +73,7 @@ export const OverviewQuickActions = ({
                         onClick={() => setActive('email')}
                     >
                         <PaperPlaneTilt className="size-3.5" />
-                        Email
+                        {t('buttons.email')}
                     </MyButton>
                 )}
                 {hasMobile && (
@@ -81,7 +83,7 @@ export const OverviewQuickActions = ({
                         onClick={() => setActive('whatsapp')}
                     >
                         <WhatsappLogo className="size-3.5" />
-                        WhatsApp
+                        {t('buttons.whatsapp')}
                     </MyButton>
                 )}
                 <InitiateReportDialog onSuccess={onReportSuccess ?? (() => {})} />
@@ -91,7 +93,7 @@ export const OverviewQuickActions = ({
                     onClick={handleCopyCredentials}
                 >
                     <Copy className="size-3.5" />
-                    Copy credentials
+                    {t('buttons.copyCredentials')}
                 </MyButton>
             </div>
 

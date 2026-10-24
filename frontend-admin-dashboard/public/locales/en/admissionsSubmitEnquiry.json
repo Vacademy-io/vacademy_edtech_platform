@@ -1,0 +1,6 @@
+{
+    "errors": {
+        "submitFailed": "Failed to submit enquiry",
+        "bulkSubmitFailed": "Failed to submit enquiry bulk import"
+    }
+}

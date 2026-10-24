@@ -1,0 +1,68 @@
+{
+    "courseEnrollment": {
+        "configuration": {
+            "title": "{{course}} कॉन्फ़िगरेशन",
+            "previewBadge": "{{course}} पूर्वावलोकन मोड",
+            "previewDescription": "{{course}} की संरचना ब्राउज़ करें। {{slides}} तक पहुँचने और सामग्री के लिए नामांकन करें।",
+            "selectSession": "{{session}} चुनें",
+            "selectLevel": "{{level}} चुनें",
+            "noSessionsTitleAll": "इस {{course}} के लिए कोई {{session}} उपलब्ध नहीं है",
+            "noSessionsTitleEnrolled": "आप इस {{course}} के लिए किसी भी {{session}} में नामांकित नहीं हैं",
+            "noSessionsDescriptionAll": "हो सकता है इस {{course}} में कोई सक्रिय {{session}} कॉन्फ़िगर न हो।",
+            "noSessionsDescriptionEnrolled": "नामांकन के लिए कृपया अपने {{teacher}} या {{admin}} से संपर्क करें।"
+        },
+        "certificate": {
+            "title": "प्रमाणपत्र उपलब्ध है",
+            "description": "अब आप अपना प्रमाणपत्र देख या डाउनलोड कर सकते हैं।",
+            "viewButton": "प्रमाणपत्र देखें"
+        },
+        "enrollButton": "नामांकन करें"
+    },
+    "courseSidebar": {
+        "overviewTitle": "{{course}} अवलोकन",
+        "errorLoadingCounts": "{{slides}} की गिनती लोड करने में त्रुटि"
+    },
+    "chapterPath": {
+        "emptyModule": "यहाँ अभी सीखने के लिए कुछ नहीं है। जल्द ही फिर से देखें!",
+        "slideState": {
+            "completed": "पूर्ण",
+            "current": "अगला",
+            "locked": "लॉक",
+            "upcoming": "शुरू नहीं हुआ"
+        },
+        "slideAriaLabel": "{{title}} — {{state}}",
+        "enrollToStart": "सीखना शुरू करने के लिए नामांकन करें",
+        "locked": "लॉक किया गया",
+        "start": "शुरू करें",
+        "chapterTitle": "{{chapter}}: {{name}}",
+        "moduleComplete": "{{module}} पूर्ण!",
+        "finishLine": "अंतिम रेखा",
+        "previousModule": "पिछला {{module}}",
+        "nextModule": "अगला {{module}}",
+        "moduleProgress": "{{total}} में से {{module}} {{current}}",
+        "noSlidesYet": "इस {{module}} में अभी तक कोई {{slides}} नहीं है।"
+    },
+    "courseContent": {
+        "whatYoullLearn": "आप क्या सीखेंगे",
+        "aboutThisCourse": "इस {{course}} के बारे में",
+        "whoShouldJoin": "किसे शामिल होना चाहिए",
+        "instructorsHeading": "{{teacher}}"
+    },
+    "videoPlayer": {
+        "vimeoTitle": "विमियो वीडियो प्लेयर",
+        "youtubeTitle": "यूट्यूब वीडियो प्लेयर",
+        "unsupported": "आपका ब्राउज़र वीडियो टैग का समर्थन नहीं करता है।"
+    },
+    "certificateGeneration": {
+        "toast": {
+            "successTitle": "प्रमाणपत्र सफलतापूर्वक बनाया गया!",
+            "successDescription": "अब आप अपना प्रमाणपत्र देख सकते हैं।",
+            "error": "प्रमाणपत्र बनाने में विफल। कृपया बाद में पुनः प्रयास करें।"
+        }
+    },
+    "enrollmentActions": {
+        "toast": {
+            "updateFailed": "नामांकन स्थिति अपडेट करने में विफल। कृपया पृष्ठ को रीफ़्रेश करें।"
+        }
+    }
+}

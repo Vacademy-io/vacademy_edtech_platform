@@ -12,6 +12,7 @@ import vacademy.io.notification_service.features.announcements.repository.Schedu
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
@@ -120,11 +121,13 @@ public class AnnouncementSchedulingService {
         scheduledMessage.setStartDate(scheduling.getStartDate());
         scheduledMessage.setEndDate(scheduling.getEndDate());
         
-        // Calculate next run time
+        // Calculate next run time. start_date/end_date stay in the schedule's timezone (what the
+        // user picked); next_run_time is stored in UTC because the poller compares it against
+        // LocalDateTime.now() on a TZ=UTC JVM.
         if (scheduling.getScheduleType() == ScheduleType.ONE_TIME) {
-            scheduledMessage.setNextRunTime(scheduling.getStartDate());
+            scheduledMessage.setNextRunTime(toUtc(scheduling.getStartDate(), scheduledMessage.getTimezone()));
         } else if (scheduling.getScheduleType() == ScheduleType.RECURRING && scheduling.getCronExpression() != null) {
-            LocalDateTime nextRun = calculateNextRunTime(scheduling.getCronExpression(), scheduling.getTimezone());
+            LocalDateTime nextRun = calculateNextRunTime(scheduling.getCronExpression(), scheduledMessage.getTimezone());
             scheduledMessage.setNextRunTime(nextRun);
         }
         
@@ -159,8 +162,8 @@ public class AnnouncementSchedulingService {
         TimeZone timeZone = TimeZone.getTimeZone(scheduledMessage.getTimezone());
         
         if (scheduledMessage.getScheduleType() == ScheduleType.ONE_TIME) {
-            // One-time trigger
-            Date startTime = convertToDate(scheduledMessage.getNextRunTime(), scheduledMessage.getTimezone());
+            // One-time trigger (next_run_time is UTC)
+            Date startTime = convertToDate(scheduledMessage.getNextRunTime(), "UTC");
             triggerBuilder.startAt(startTime);
             
         } else if (scheduledMessage.getScheduleType() == ScheduleType.RECURRING) {
@@ -205,7 +208,8 @@ public class AnnouncementSchedulingService {
                 scheduledMessage.setNextRunTime(nextRun);
                 
                 // Check if we've passed the end date
-                if (scheduledMessage.getEndDate() != null && nextRun.isAfter(scheduledMessage.getEndDate())) {
+                if (scheduledMessage.getEndDate() != null
+                        && nextRun.isAfter(toUtc(scheduledMessage.getEndDate(), scheduledMessage.getTimezone()))) {
                     scheduledMessage.setIsActive(false);
                     removeQuartzJob(scheduledMessage.getId());
                 }
@@ -239,10 +243,11 @@ public class AnnouncementSchedulingService {
             cron.setTimeZone(TimeZone.getTimeZone(timezone));
             
             Date nextRunDate = cron.getNextValidTimeAfter(new Date());
+            // Returned in UTC, same as next_run_time is stored
             return nextRunDate.toInstant()
-                    .atZone(ZoneId.of(timezone))
+                    .atZone(ZoneOffset.UTC)
                     .toLocalDateTime();
-                    
+
         } catch (Exception e) {
             log.error("Error calculating next run time for cron: {}", cronExpression, e);
             return LocalDateTime.now().plusHours(1); // Fallback
@@ -252,6 +257,30 @@ public class AnnouncementSchedulingService {
     private Date convertToDate(LocalDateTime localDateTime, String timezone) {
         ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of(timezone));
         return Date.from(zonedDateTime.toInstant());
+    }
+
+    /** Converts a wall-clock time in the schedule's timezone to a UTC wall-clock time. */
+    private LocalDateTime toUtc(LocalDateTime localDateTime, String timezone) {
+        if (localDateTime == null) return null;
+        return localDateTime.atZone(ZoneId.of(timezone))
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+    }
+
+    /**
+     * next_run_time is stored in UTC; API responses keep returning it in the schedule's
+     * timezone, alongside start_date/end_date.
+     */
+    public LocalDateTime nextRunTimeInScheduleZone(ScheduledMessage scheduledMessage) {
+        LocalDateTime nextRun = scheduledMessage.getNextRunTime();
+        if (nextRun == null) return null;
+        try {
+            return nextRun.atZone(ZoneOffset.UTC)
+                    .withZoneSameInstant(ZoneId.of(scheduledMessage.getTimezone()))
+                    .toLocalDateTime();
+        } catch (Exception e) {
+            return nextRun;
+        }
     }
 
     // Quartz Job class

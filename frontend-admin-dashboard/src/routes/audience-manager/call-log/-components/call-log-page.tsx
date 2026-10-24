@@ -9,6 +9,7 @@
  * disposition flow.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowsClockwise, User } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
     fetchCounsellors,
 } from '@/routes/counsellors/-services/counsellor-workbench-services';
 import CallLogTab from './CallLogTab';
+import { PlaceCallDialog } from './PlaceCallDialog';
 import { SettingsQuickAccessButton } from '@/components/settings/quick-access/SettingsQuickAccessButton';
 import { SettingsTabs } from '@/routes/settings/-constants/terms';
 import CallIntelligenceTab from '../../reports/-components/call-intelligence-tab';
@@ -51,20 +53,38 @@ const computeRange = (days: number) => {
 };
 
 const PRESETS = [
-    { key: '7', label: '7d', days: 7 },
-    { key: '30', label: '30d', days: 30 },
-    { key: '90', label: '90d', days: 90 },
+    { key: '7', days: 7 },
+    { key: '30', days: 30 },
+    { key: '90', days: 90 },
 ] as const;
+
+/** Wall-clock presets ("last 1 hour"): an instant window the server honours over dates. */
+const HOUR_PRESETS = [1, 3, 6, 24] as const;
+
+interface AppliedRange {
+    from: string;
+    to: string;
+    /** Set for hour presets; absent for day presets / manual dates. */
+    fromTs?: number;
+    toTs?: number;
+    hours?: number;
+}
+const hourRange = (hours: number): AppliedRange => {
+    const now = new Date();
+    const start = new Date(now.getTime() - hours * 3600 * 1000);
+    return { from: toDateInput(start), to: toDateInput(now), fromTs: start.getTime(), hours };
+};
 
 const ALL_COUNSELLORS_VALUE = '__ALL_COUNSELLORS__';
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export function CallLogPage() {
+    const { t } = useTranslation('audienceManagerCallLogPage');
     const setNavHeading = useNavHeadingStore((s) => s.setNavHeading);
     useEffect(() => {
-        setNavHeading(<h1 className="text-lg">Call Log</h1>);
-    }, [setNavHeading]);
+        setNavHeading(<h1 className="text-lg">{t('header.navTitle')}</h1>);
+    }, [setNavHeading, t]);
 
     const { instituteDetails } = useInstituteDetailsStore();
     const instituteId = instituteDetails?.id ?? '';
@@ -75,17 +95,28 @@ export function CallLogPage() {
     const defaults = useMemo(() => computeRange(DEFAULT_DAYS), []);
     const [fromDate, setFromDate] = useState(defaults.from);
     const [toDate, setToDate] = useState(defaults.to);
-    const [applied, setApplied] = useState(defaults);
+    const [applied, setApplied] = useState<AppliedRange>(defaults);
+    const [customHours, setCustomHours] = useState('');
     const [teamId, setTeamId] = useState<string | undefined>(undefined);
     const [counsellorUserId, setCounsellorUserId] = useState<string | undefined>(undefined);
 
-    const activePreset = PRESETS.find((p) => {
-        const r = computeRange(p.days);
-        return applied.from === r.from && applied.to === r.to;
-    })?.key;
+    const activePreset = applied.hours
+        ? undefined
+        : PRESETS.find((p) => {
+              const r = computeRange(p.days);
+              return applied.from === r.from && applied.to === r.to;
+          })?.key;
+    const activeHours = applied.hours;
 
     const applyPreset = (days: number) => {
         const r = computeRange(days);
+        setFromDate(r.from);
+        setToDate(r.to);
+        setApplied(r);
+    };
+    const applyHours = (hours: number) => {
+        if (!Number.isFinite(hours) || hours <= 0) return;
+        const r = hourRange(Math.min(hours, 24 * 90));
         setFromDate(r.from);
         setToDate(r.to);
         setApplied(r);
@@ -104,6 +135,9 @@ export function CallLogPage() {
     };
 
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const { t: tPages } = useTranslation('crmPages');
+    const [logTab, setLogTab] = useState<'calls' | 'intel'>('calls');
+    const tabbed = !!callIntelligenceEnabled;
     const refresh = async () => {
         setIsRefreshing(true);
         try {
@@ -127,16 +161,15 @@ export function CallLogPage() {
         <div className="flex min-h-full flex-col gap-6 bg-neutral-50 p-6">
             <header className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Call Log</h1>
-                    <p className="text-sm text-neutral-600">
-                        Every call across your team — AI &amp; human, inbound &amp; outbound, all
-                        providers. Filter, disposition and export.
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+                        {t('header.title')}
+                    </h1>
+                    <p className="text-sm text-neutral-600">{t('header.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <SettingsQuickAccessButton
                         settingsKey={SettingsTabs.Telephony}
-                        label="Calling settings"
+                        label={t('header.callingSettings')}
                     />
                     <Button
                         onClick={refresh}
@@ -146,14 +179,31 @@ export function CallLogPage() {
                         className="gap-2"
                     >
                         <ArrowsClockwise size={14} className={cn(isRefreshing && 'animate-spin')} />
-                        Refresh
+                        {t('header.refresh')}
                     </Button>
+                    <PlaceCallDialog />
                 </div>
             </header>
 
             {/* Shared filter bar */}
             <div className="flex flex-wrap items-end gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-1 self-end rounded-md border border-neutral-200 bg-white p-1">
+                    {HOUR_PRESETS.map((h) => (
+                        <button
+                            key={`h${h}`}
+                            type="button"
+                            onClick={() => applyHours(h)}
+                            className={cn(
+                                'rounded px-2.5 py-1 text-xs',
+                                activeHours === h
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-neutral-600 hover:bg-neutral-50'
+                            )}
+                        >
+                            {t('filters.presetHours', { hours: h })}
+                        </button>
+                    ))}
+                    <span className="mx-0.5 h-4 w-px bg-neutral-200" aria-hidden />
                     {PRESETS.map((p) => (
                         <button
                             key={p.key}
@@ -166,13 +216,33 @@ export function CallLogPage() {
                                     : 'text-neutral-600 hover:bg-neutral-50'
                             )}
                         >
-                            {p.label}
+                            {t('filters.presetLabel', { days: p.days })}
                         </button>
                     ))}
+                    <span className="mx-0.5 h-4 w-px bg-neutral-200" aria-hidden />
+                    <Input
+                        type="number"
+                        min={1}
+                        max={2160}
+                        value={customHours}
+                        onChange={(e) => setCustomHours(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') applyHours(Number(customHours));
+                        }}
+                        onBlur={() => customHours && applyHours(Number(customHours))}
+                        placeholder={t('filters.customHoursPlaceholder')}
+                        aria-label={t('filters.customHoursLabel')}
+                        className={cn(
+                            'h-7 w-24 text-xs',
+                            activeHours && !HOUR_PRESETS.includes(activeHours as 1 | 3 | 6 | 24)
+                                ? 'border-primary-500'
+                                : ''
+                        )}
+                    />
                 </div>
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="cl-from" className="text-xs text-neutral-600">
-                        From
+                        {t('filters.from')}
                     </Label>
                     <Input
                         id="cl-from"
@@ -184,7 +254,7 @@ export function CallLogPage() {
                 </div>
                 <div className="flex flex-col gap-1">
                     <Label htmlFor="cl-to" className="text-xs text-neutral-600">
-                        To
+                        {t('filters.to')}
                     </Label>
                     <Input
                         id="cl-to"
@@ -195,10 +265,10 @@ export function CallLogPage() {
                     />
                 </div>
                 <Button onClick={apply} size="sm" disabled={!instituteId}>
-                    Apply
+                    {t('filters.apply')}
                 </Button>
                 <Button onClick={reset} size="sm" variant="ghost">
-                    Reset
+                    {t('filters.reset')}
                 </Button>
                 <div className="ml-auto flex flex-wrap items-center gap-2">
                     <TeamPicker
@@ -214,15 +284,38 @@ export function CallLogPage() {
                 </div>
             </div>
 
+            {/* Calls and Call Intelligence as tabs instead of stacked. */}
+            {tabbed && (
+                <div className="flex w-fit rounded-lg border border-neutral-200 bg-white p-0.5">
+                    {(['calls', 'intel'] as const).map((k) => (
+                        <button
+                            key={k}
+                            type="button"
+                            onClick={() => setLogTab(k)}
+                            className={cn(
+                                'rounded-md px-4 py-1.5 font-medium transition-colors',
+                                logTab === k
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-neutral-600 hover:bg-neutral-100'
+                            )}
+                        >
+                            <span className="text-caption">{tPages(`callLog.tabs.${k}`)}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {!instituteId ? (
                 <div className="rounded-xl border border-warning-200 bg-warning-50 p-4 text-sm text-warning-700">
-                    Pick an institute to view the call log.
+                    {t('filters.noInstitute')}
                 </div>
-            ) : (
+            ) : tabbed && logTab === 'intel' ? null : (
                 <CallLogTab
                     instituteId={instituteId}
                     fromDate={applied.from}
                     toDate={applied.to}
+                    fromTs={applied.fromTs}
+                    toTs={applied.toTs}
                     teamId={teamId}
                     counsellorUserId={counsellorUserId}
                 />
@@ -230,9 +323,11 @@ export function CallLogPage() {
 
             {/* AI Call Intelligence analytics — team quality, outcome/sentiment mix,
                 per-counsellor leaderboard. Only when the institute has it enabled. */}
-            {instituteId && callIntelligenceEnabled && (
+            {instituteId && callIntelligenceEnabled && (!tabbed || logTab === 'intel') && (
                 <div className="flex flex-col gap-3">
-                    <h2 className="text-base font-semibold text-neutral-900">Call Intelligence</h2>
+                    <h2 className="text-base font-semibold text-neutral-900">
+                        {t('callIntelligence.heading')}
+                    </h2>
                     <CallIntelligenceTab
                         instituteId={instituteId}
                         fromDate={applied.from}
@@ -264,6 +359,7 @@ function CounsellorScopePicker({
     value: string | undefined;
     onChange: (userId: string | undefined) => void;
 }) {
+    const { t } = useTranslation('audienceManagerCallLogPage');
     // Role-based roster: every COUNSELLOR-role user the caller may see —
     // hierarchy scope for scoped callers, institute-wide for pure admins.
     const rosterQuery = useQuery({
@@ -289,12 +385,17 @@ function CounsellorScopePicker({
             value={value ?? ALL_COUNSELLORS_VALUE}
             onValueChange={(v) => onChange(v === ALL_COUNSELLORS_VALUE ? undefined : v)}
         >
-            <SelectTrigger className="h-9 w-52 bg-white" aria-label="Filter by counsellor">
+            <SelectTrigger
+                className="h-9 w-52 bg-white"
+                aria-label={t('counsellorPicker.ariaLabel')}
+            >
                 <User className="mr-1.5 size-4 shrink-0 text-neutral-400" />
-                <SelectValue placeholder="All counsellors" />
+                <SelectValue placeholder={t('counsellorPicker.allCounsellors')} />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value={ALL_COUNSELLORS_VALUE}>All counsellors</SelectItem>
+                <SelectItem value={ALL_COUNSELLORS_VALUE}>
+                    {t('counsellorPicker.allCounsellors')}
+                </SelectItem>
                 {options.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                         {o.name}

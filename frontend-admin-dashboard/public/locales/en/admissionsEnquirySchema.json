@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "campaignNameRequired": "Enquiry name is required",
+        "campaignNameMinLength": "Name must be at least 3 characters",
+        "campaignTypeRequired": "Enquiry type is required",
+        "sessionRequired": "Session is required",
+        "startDateRequired": "Start date is required",
+        "endDateRequired": "End date is required"
+    }
+}

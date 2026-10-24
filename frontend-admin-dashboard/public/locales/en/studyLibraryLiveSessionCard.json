@@ -1,0 +1,35 @@
+{
+    "meta": {
+        "meetingType": "Meeting Type",
+        "lastEntry": "Last Entry",
+        "date": "Date",
+        "time": "Start Time",
+        "teacherUnassigned": "Not assigned",
+        "teacherUnknown": "Unnamed teacher"
+    },
+    "batches": {
+        "more": "+{{count}} more",
+        "less": "Show less"
+    },
+    "actions": {
+        "openSession": "Open Session",
+        "copyJoinLink": "Copy Join Link",
+        "generateQrCode": "Generate QR Code",
+        "downloadQrCode": "Download QR Code",
+        "viewParticipants": "View Participant Details",
+        "viewDetails": "View Details",
+        "editSession": "Edit {{term}}",
+        "deleteSession": "Delete {{term}}",
+        "startAsHost": "Start as Host",
+        "openClassLink": "Open Class Link"
+    },
+    "qrHeading": "Join QR Code",
+    "earlyStart": {
+        "title": "Start this class early?",
+        "bodyWithTime": "This class starts in {{time}}. Starting now creates the meeting room — learners with the link could join before you are ready.",
+        "body": "This class has not started yet. Starting now creates the meeting room.",
+        "cancel": "Cancel",
+        "confirm": "Start anyway"
+    },
+    "privateLinkWarning": "This link only works for learners already enrolled in this batch. To share it more widely, edit the session and set its access to Public."
+}

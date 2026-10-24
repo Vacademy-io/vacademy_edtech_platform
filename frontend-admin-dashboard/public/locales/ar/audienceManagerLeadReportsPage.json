@@ -1,0 +1,43 @@
+{
+    "header": {
+        "navTitle": "مركز التقارير",
+        "title": "مركز التقارير",
+        "subtitle": "صحة قنوات المبيعات والمصادر ونشاط الاتصال وسرعة القمع ونظافة المتابعة — في مكان واحد.",
+        "refresh": "تحديث"
+    },
+    "filters": {
+        "presetLabel": "{{days}} يوم",
+        "from": "من",
+        "to": "إلى",
+        "apply": "تطبيق",
+        "reset": "إعادة تعيين",
+        "noInstitute": "اختر معهدًا لعرض التقارير."
+    },
+    "tabs": {
+        "overview": "نظرة عامة",
+        "sources": "المصادر",
+        "funnel": "قمع المبيعات",
+        "dispositions": "التصرفات",
+        "calling": "الاتصال",
+        "leadCalls": "مكالمات العملاء المحتملين",
+        "callIntelligence": "ذكاء إدارة علاقات العملاء",
+        "activity": "النشاط",
+        "followups": "المتابعات",
+        "counsellors": "المستشارون",
+        "manager": "المدير",
+        "revenue": "الإيرادات",
+        "cohort": "الفوج",
+        "forecast": "التوقعات",
+        "custom": "المُنشئ",
+        "utm": "الحملات (UTM)"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "تصفية حسب المستشار",
+        "allCounsellors": "جميع المستشارين"
+    },
+    "campaignPicker": {
+        "ariaLabel": "تصفية حسب الحملة",
+        "allCampaigns": "جميع الحملات",
+        "untitledCampaign": "حملة بدون عنوان"
+    }
+}

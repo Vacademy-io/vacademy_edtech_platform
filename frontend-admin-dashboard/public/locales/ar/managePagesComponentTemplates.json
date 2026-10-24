@@ -1,0 +1,295 @@
+{
+    "header": {
+        "title": "منصتي",
+        "navHome": "الرئيسية",
+        "navCourses": "الدورات",
+        "authLogin": "تسجيل الدخول"
+    },
+    "heroSection": {
+        "eyebrow": "التسجيل مفتوح الآن للدفعة الجديدة",
+        "title": "مرحبًا بكم في منصتنا",
+        "subheading": "طريقك إلى الإتقان يبدأ من هنا",
+        "description": "<p>ابدأ رحلتك التعليمية اليوم مع دورات يقودها خبراء مصممة لتحقيق النجاح في الواقع العملي.</p>",
+        "tagOnline": "عبر الإنترنت",
+        "tagSelfPaced": "بالوتيرة الخاصة بك",
+        "tagCertified": "معتمد",
+        "exploreCoursesButton": "استكشف الدورات",
+        "talkToUsButton": "تحدث إلينا",
+        "statLearnersLabel": "المتعلمون",
+        "statRatingLabel": "متوسط التقييم",
+        "heroImageAlt": "صورة رئيسية"
+    },
+    "courseCatalog": {
+        "title": "دوراتنا",
+        "filterLevelLabel": "المستوى"
+    },
+    "footer": {
+        "leftTitle": "منصتي",
+        "leftText": "مرحبًا بكم في منصتنا.",
+        "rightTitle": "روابط"
+    },
+    "mediaShowcase": {
+        "headerText": "قصص النجاح",
+        "description": "استمع مباشرة من متعلمينا."
+    },
+    "statsHighlights": {
+        "headerText": "إنجازاتنا",
+        "description": "أرقام تعبر عن نمونا.",
+        "statStudentsLabel": "الطلاب"
+    },
+    "testimonialSection": {
+        "headerText": "ماذا يقول طلابنا",
+        "description": "آراء حقيقية من متعلمينا."
+    },
+    "bookCatalogue": {
+        "title": "مجموعة الكتب"
+    },
+    "buyRentSection": {
+        "heading": "اختر مسارك",
+        "buyButtonLabel": "شراء",
+        "rentButtonLabel": "استئجار"
+    },
+    "policyRenderer": {
+        "shippingTitle": "السياسة",
+        "shippingContent": "<p>المحتوى هنا</p>"
+    },
+    "faqSection": {
+        "headerText": "الأسئلة الشائعة",
+        "subheading": "كل ما تحتاج لمعرفته.",
+        "faq1Question": "ما هي الدورات التي تقدمونها؟",
+        "faq1Answer": "نقدم مجموعة واسعة من الدورات في تخصصات متعددة.",
+        "faq2Question": "كيف يمكنني التسجيل؟",
+        "faq2Answer": "ببساطة قم بالتسجيل، وتصفح كتالوجنا، وانقر على تسجيل في أي دورة.",
+        "faq3Question": "هل هناك تجربة مجانية؟",
+        "faq3Answer": "نعم! العديد من دوراتنا تقدم معاينة مجانية."
+    },
+    "videoEmbed": {
+        "title": "شاهد قصتنا"
+    },
+    "ctaBanner": {
+        "heading": "هل أنت مستعد للبدء؟",
+        "subheading": "انضم إلى آلاف المتعلمين وابدأ رحلتك اليوم.",
+        "buttonText": "ابدأ التعلم"
+    },
+    "pricingTable": {
+        "headerText": "اختر خطتك",
+        "subheading": "أسعار بسيطة وشفافة للجميع.",
+        "basicName": "أساسي",
+        "basicPrice": "مجاني",
+        "basicDescription": "مثالي للبدء",
+        "basicFeature1": "5 دورات",
+        "basicFeature2": "الوصول إلى المجتمع",
+        "basicFeature3": "دعم عبر البريد الإلكتروني",
+        "basicButtonText": "ابدأ الآن",
+        "proName": "احترافي",
+        "proPeriod": "/شهريًا",
+        "proDescription": "للمتعلمين الجادين",
+        "proFeature1": "دورات غير محدودة",
+        "proFeature2": "دعم ذو أولوية",
+        "proFeature3": "شهادات",
+        "proFeature4": "جلسات مباشرة",
+        "proButtonText": "احصل على الاحترافي"
+    },
+    "leadForm": {
+        "title": "سجل اهتمامك",
+        "subtitle": "املأ بياناتك وسنتواصل معك.",
+        "submitLabel": "إرسال",
+        "successMessage": "شكرًا لك! لقد استلمنا بياناتك."
+    },
+    "contactForm": {
+        "heading": "تواصل معنا",
+        "subheading": "يسعدنا أن نسمع منك. أرسل لنا رسالة!",
+        "nameLabel": "الاسم الكامل",
+        "emailLabel": "البريد الإلكتروني",
+        "phoneLabel": "رقم الهاتف",
+        "messageLabel": "الرسالة",
+        "submitLabel": "إرسال الرسالة",
+        "successMessage": "شكرًا لك! سنتواصل معك قريبًا."
+    },
+    "teamSection": {
+        "headerText": "تعرف على فريقنا",
+        "subheading": "الأشخاص الشغوفون وراء منصتنا.",
+        "member1Name": "عضو الفريق",
+        "member1Role": "شريك مؤسس والرئيس التنفيذي",
+        "member1Bio": "شغوف بالتعليم والتكنولوجيا.",
+        "member2Name": "عضو الفريق",
+        "member2Role": "رئيس قسم التعلم",
+        "member2Bio": "ملتزم بخلق أفضل تجربة تعليمية."
+    },
+    "announcementFeed": {
+        "headerText": "أحدث التحديثات",
+        "subheading": "ابق على اطلاع بأحدث أخبارنا.",
+        "item1Title": "إطلاق دورة جديدة",
+        "item1Summary": "يسعدنا أن نعلن عن سلسلة دوراتنا المتقدمة الجديدة.",
+        "item1Tag": "أخبار",
+        "item2Title": "تحديث المنصة",
+        "item2Summary": "قمنا بتحسين منصتنا لتوفير تجربة تعليمية أفضل.",
+        "item2Tag": "تحديث"
+    },
+    "imageGallery": {
+        "headerText": "معرض الصور",
+        "image1Alt": "صورة المعرض 1",
+        "image2Alt": "صورة المعرض 2",
+        "image3Alt": "صورة المعرض 3"
+    },
+    "tabsAccordion": {
+        "tab1Title": "التبويب 1",
+        "tab1Content": "<p>محتوى التبويب 1</p>",
+        "tab2Title": "التبويب 2",
+        "tab2Content": "<p>محتوى التبويب 2</p>",
+        "tab3Title": "التبويب 3",
+        "tab3Content": "<p>محتوى التبويب 3</p>"
+    },
+    "logoCloud": {
+        "headerText": "موثوق به من قبل"
+    },
+    "trustChip": {
+        "text": "موثوق به من قبل أكثر من 10,000 متعلم"
+    },
+    "sectionHeading": {
+        "eyebrow": "لماذا تختارنا",
+        "title": "تعلّم يبقى أثره فعلاً",
+        "highlight": "يبقى أثره فعلاً",
+        "lead": "برامج مصممة حول النتائج — وليس مجرد المحتوى."
+    },
+    "mapEmbed": {
+        "title": "موقعنا"
+    },
+    "countdownTimer": {
+        "heading": "يبدأ الحدث خلال",
+        "expiredMessage": "لقد بدأ الحدث!"
+    },
+    "textBlock": {
+        "content": "<h2>عنوانك هنا</h2><p>اكتب محتواك هنا. هذه كتلة نص غني — يمكنك إضافة عناوين وفقرات وقوائم وروابط والمزيد.</p>"
+    },
+    "detailBlocks": {
+        "block1Tag": "البرنامج الرئيسي",
+        "block1Title": "البرنامج الرئيسي",
+        "block1Description": "جملة أو جملتان حول الفئة المستهدفة وما يغطيه هذا البرنامج.",
+        "block1Item1Title": "ما الذي يتم تغطيته",
+        "block1Item1Description": "تفصيل ملموس حول المنهج أو المواد أو طريقة التدريس.",
+        "block1Item2Title": "كيف يتم تدريسه",
+        "block1Item2Description": "دروس مباشرة، تسجيلات، جلسات لحل الاستفسارات — أيًا كان ما ينطبق هنا.",
+        "block1Item3Title": "التدريب والاختبار",
+        "block1Item3Description": "سلسلة اختبارات، أوراق سابقة، تحليلات.",
+        "block1Spec1Label": "الأهلية",
+        "block1Spec1Value": "من يمكنه الانضمام",
+        "block1Spec2Label": "النمط",
+        "block1Spec2Value": "حضوري + عبر الإنترنت",
+        "block1Spec3Label": "المدة",
+        "block1Spec3Value": "12 شهرًا",
+        "block1Spec4Label": "المستوى",
+        "block1Spec4Value": "من مبتدئ إلى متقدم",
+        "block1Note": "ملاحظة اختيارية — تنازلات أو أقساط أو أي شيء يستحق الإشارة إليه.",
+        "block2Tag": "الفئة",
+        "block2Title": "البرنامج الثاني",
+        "block2Description": "كرر هذه الكتلة لكل برنامج تقدمه.",
+        "block2Item1Title": "التفصيل الأول",
+        "block2Item1Description": "استبدل هذا بتفصيل حقيقي.",
+        "block2Item2Title": "التفصيل الثاني",
+        "block2Item2Description": "استبدل هذا بتفصيل حقيقي.",
+        "block2Spec1Label": "الأهلية",
+        "block2Spec1Value": "من يمكنه الانضمام",
+        "block2Spec2Label": "النمط",
+        "block2Spec2Value": "عبر الإنترنت"
+    },
+    "featureGrid": {
+        "headerText": "لماذا تختارنا",
+        "subheading": "كل ما تحتاجه للنجاح",
+        "feature1Title": "مدربون خبراء",
+        "feature1Description": "تعلم من محترفين في المجال يتمتعون بسنوات من الخبرة.",
+        "feature1Chip1": "أعضاء هيئة تدريس من IIT/NIT",
+        "feature2Title": "محتوى غني",
+        "feature2Description": "احصل على مواد وموارد تعليمية شاملة.",
+        "feature3Title": "دورات معتمدة",
+        "feature3Description": "احصل على شهادات معترف بها عند الإتمام.",
+        "feature4Badge": "قسم التدريب",
+        "feature4Title": "CGP Career Avenues",
+        "feature4Description": "تدريب شامل في جميع فروع الهندسة.",
+        "feature4Bullet1": "GATE — علوم الحاسوب (CS)، الإلكترونيات والاتصالات (ECE)، الكهرباء (EEE)، الميكانيكا (ME)، المدني (CE)، الكيميائي (CH)",
+        "feature4Bullet2": "دفعات ما بعد GATE لـ ISRO/BARC/DRDO",
+        "feature4Bullet3": "لجنة خدمة كيرالا العامة (Kerala PSC) والتوظيف الجامعي"
+    },
+    "imageBlock": {
+        "alt": "صورة"
+    },
+    "buttonBlock": {
+        "text": "ابدأ الآن"
+    },
+    "newsletterSignup": {
+        "heading": "ابق على اطلاع",
+        "subheading": "اشترك في نشرتنا الإخبارية للحصول على آخر التحديثات.",
+        "placeholder": "أدخل بريدك الإلكتروني",
+        "buttonText": "اشترك",
+        "successMessage": "شكرًا لاشتراكك!"
+    },
+    "stepsProcess": {
+        "headerText": "كيف يعمل",
+        "subheading": "ابدأ في خطوات قليلة فقط",
+        "step1Title": "سجل",
+        "step1Description": "أنشئ حسابك المجاني في ثوانٍ.",
+        "step2Title": "اختر دورة",
+        "step2Description": "تصفح كتالوجنا واختر ما يثير اهتمامك.",
+        "step3Title": "ابدأ التعلم",
+        "step3Description": "احصل على مواد دورتك وابدأ."
+    },
+    "marquee": {
+        "item1Text": "دورات ذات تقييم عالٍ",
+        "item2Text": "أكثر من 10,000 متعلم مسجل",
+        "item3Text": "منهج يقوده خبراء",
+        "item4Text": "تعلم بالوتيرة التي تناسبك",
+        "item5Text": "مهارات ذات صلة بسوق العمل"
+    },
+    "productPageOffer": {
+        "title": "برامجنا",
+        "subtitle": "اختر برنامجًا وسجل في دقائق.",
+        "viewAllLabel": "عرض الكل",
+        "ctaLabel": "سجل الآن",
+        "cartCtaLabel": "أضف إلى السلة",
+        "checkoutCtaLabel": "المتابعة إلى الدفع",
+        "viewCourseLabel": "عرض الدورة"
+    },
+    "documentViewer": {
+        "heading": "تصفّح الكتالوج",
+        "subheading": "تصفّح كل صفحة هنا مباشرة.",
+        "buttonText": "فتح الكتالوج"
+    },
+    "blog": {
+        "heading": "من المدونة",
+        "subheading": "نصائح للدراسة وتحديثات الامتحانات وقصص من فصولنا.",
+        "readMoreLabel": "اقرأ المزيد",
+        "backLabel": "كل المقالات",
+        "emptyMessage": "لا توجد مقالات بعد — عُد قريبًا."
+    },
+    "jobOpenings": {
+        "headerText": "الوظائف المتاحة",
+        "subheading": "انضم إلى فريقنا. افتح وظيفة لقراءة الوصف الكامل والتقديم.",
+        "viewButtonLabel": "عرض وصف الوظيفة",
+        "applyButtonLabel": "قدّم الآن",
+        "backLabel": "كل الوظائف",
+        "emptyMessage": "لا توجد وظائف شاغرة حاليًا — عُد قريبًا.",
+        "job1Title": "مدرّس",
+        "job1Summary": "درّس مادتك لمجموعات صغيرة في الصف وعبر الإنترنت.",
+        "job1Location": "مدينتك",
+        "job1JobType": "دوام كامل",
+        "job1Compensation": "حسب الخبرة",
+        "job1DetailLabel": "المادة",
+        "job1DetailValue": "مادتك",
+        "job1Description": "<h2>عن الوظيفة</h2><p>صف ما سيقوم به هذا الشخص يوميًا ومع من سيعمل.</p><h3>المسؤوليات</h3><ul><li>تخطيط الدروس وتدريسها</li><li>متابعة تقدّم الطلاب ودعمهم</li></ul><h3>المتطلبات</h3><ul><li>شهادة في المادة</li><li>يفضّل وجود خبرة في التدريس</li></ul>",
+        "job2Title": "مستشار أكاديمي",
+        "job2Summary": "أرشد الطلاب وأولياء الأمور إلى الدورة المناسبة.",
+        "job2Location": "مدينتك",
+        "job2JobType": "دوام كامل",
+        "job2Description": "<h2>عن الوظيفة</h2><p>صف الوظيفة والفريق وما المتوقع في الشهر الأول.</p><h3>المتطلبات</h3><ul><li>تواصل واضح</li><li>خبرة في التعليم أو الإرشاد</li></ul>"
+    },
+    "promoPopup": {
+        "badge": "لفترة محدودة",
+        "heading": "تخفيضات سريعة على جميع الدورات",
+        "highlight": "خصم 50٪",
+        "body": "سجّل اليوم ووفّر على كل دورة. العرض متاح لفترة قصيرة فقط.",
+        "couponCode": "SAVE50",
+        "buttonText": "احصل على العرض",
+        "dismissText": "لا شكرًا، لاحقًا",
+        "footnote": "*تطبق الشروط والأحكام"
+    }
+}

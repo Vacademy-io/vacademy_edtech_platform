@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useAssessmentStore } from "@/stores/assessment-store";
 import { MyButton } from "@/components/design-system/button";
 import { useRouter } from "@tanstack/react-router";
@@ -20,11 +21,13 @@ import { PluginListenerHandle } from "@capacitor/core";
 import { Clock } from "@phosphor-icons/react";
 import { QuestionHtmlContent } from "./question-html-content";
 import { useImmersiveMode } from "@/hooks/use-immersive-mode";
+import { useIOSSafeAreaInsets } from "@/hooks/use-ios-safe-area-insets";
 import { useExamExperienceSettings } from "@/hooks/use-exam-experience-settings";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { topSafeAreaInset, bottomSafeAreaInset } from "@/utils/safe-area";
 
 export function AssessmentPreview() {
+  const { t } = useTranslation("questionTest");
   const router = useRouter();
   const currentPath = router.state.location.pathname;
 
@@ -62,6 +65,7 @@ export function AssessmentPreview() {
   const examExperience = useExamExperienceSettings();
   // Same full-bleed safe zone as the brief and the live test.
   useImmersiveMode(examExperience.mobile.hideAppNavigation);
+  useIOSSafeAreaInsets();
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
   const [backButtonListener, setBackButtonListener] =
     useState<PluginListenerHandle | null>(null);
@@ -186,9 +190,11 @@ export function AssessmentPreview() {
       >
         <header className="flex h-14 flex-none items-center gap-3 border-b border-neutral-200 bg-white px-4 md:px-6">
           <div className="min-w-0 flex-1">
-            <p className="text-body font-semibold text-neutral-900">Preview</p>
+            <p className="text-body font-semibold text-neutral-900">
+              {t("preview.header.title")}
+            </p>
             <p className="text-2xs text-neutral-500">
-              Read-only — answering starts when this ends
+              {t("preview.header.subtitle")}
             </p>
           </div>
           <div className="flex flex-none items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5">
@@ -201,7 +207,7 @@ export function AssessmentPreview() {
 
         {assessment.section_dtos.length > 1 && (
           <nav
-            aria-label="Sections"
+            aria-label={t("preview.nav.sectionsAriaLabel")}
             className="flex flex-none gap-5 overflow-x-auto border-b border-neutral-200 bg-white px-4 [scrollbar-width:none] md:px-6 [&::-webkit-scrollbar]:hidden"
           >
             {assessment.section_dtos
@@ -240,7 +246,7 @@ export function AssessmentPreview() {
               >
                 <div className="mb-3 flex items-center gap-2">
                   <span className="text-body font-semibold text-neutral-900">
-                    Question {idx + 1}
+                    {t("common.questionNumber", { number: idx + 1 })}
                   </span>
                   <span className="flex-1" />
                   <span className="rounded-md bg-success-50 px-2 py-1 text-3xs font-semibold uppercase tracking-wide text-success-700">
@@ -287,7 +293,9 @@ export function AssessmentPreview() {
               layoutVariant="default"
               className="h-12 w-full"
             >
-              {starting ? "Starting..." : "Start Test"}
+              {starting
+                ? t("preview.actions.starting")
+                : t("preview.actions.startTest")}
             </MyButton>
           </div>
         </div>
@@ -296,9 +304,7 @@ export function AssessmentPreview() {
       <AlertDialog open={showWarningModal} onOpenChange={setShowWarningModal}>
         <AlertDialogContent>
           <AlertDialogDescription>
-            Warning: You are attempting to leave the test environment. This is
-            warning {tabSwitchCount} of 3. If you attempt to leave again, your
-            test will be automatically submitted.
+            {t("common.tabSwitchWarning", { count: tabSwitchCount })}
           </AlertDialogDescription>
           <AlertDialogAction
             onClick={() => {
@@ -308,7 +314,7 @@ export function AssessmentPreview() {
               }, 100);
             }}
           >
-            Return to Test
+            {t("common.returnToTest")}
           </AlertDialogAction>
         </AlertDialogContent>
       </AlertDialog>

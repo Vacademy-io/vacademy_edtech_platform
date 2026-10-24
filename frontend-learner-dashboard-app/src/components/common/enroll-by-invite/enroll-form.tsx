@@ -4,6 +4,7 @@ import {
   syncThemeRoleSettingsFromSettingJson,
   applyInstituteBackground,
   applyInstituteFont,
+  applyInstituteUiAxes,
 } from "@/utils/institute-theme-roles";
 import { Preferences } from "@capacitor/preferences";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
@@ -75,6 +76,10 @@ import {
 } from "./-components";
 import { getCurrencySymbol } from "./-components/payment-selection-step";
 import {
+  detectEnrollmentConflict,
+  hasEnrollmentPolicyContent,
+} from "./-utils/enrollment-conflict";
+import {
   enrollCpoWithoutPayment,
   enrollCpoLearnerForPaymentViaInvite,
   fetchCpoDues,
@@ -100,6 +105,11 @@ import {
 } from "./-utils/gtm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseStructureDetails as CatalogCourseStructureDetails } from "@/routes/$tagName/-components/CourseStructureDetails";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { trackUtmAttribution } from "@/lib/utm-attribution";
+import { resolveLearnerIdentity } from "@/lib/learner-identity";
 
 // SUBSCRIPTION, FREE, UPFRONT, DONATION
 
@@ -142,6 +152,8 @@ const EnrollByInvite = ({
 }: EnrollByInviteProps = {}) => {
   // Ensure domain resolution runs on this public route to fetch fontFamily/tab branding from /resolve
   const domainRouting = useDomainRouting();
+  const { t } = useTranslation("enrollmentB");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const [paymentType, setPaymentType] = useState<string>("");
   const [orderId, setOrderId] = useState<string>("");
   const [paymentCompletionResponse, setPaymentCompletionResponse] =
@@ -189,6 +201,8 @@ const EnrollByInvite = ({
     string | null
   >(null);
   const [submittedUserId, setSubmittedUserId] = useState<string | null>(null);
+  // Per-learner, from the form-submit response. True until the backend says otherwise.
+  const [trialAvailable, setTrialAvailable] = useState(true);
 
   // CPO-specific state
   const [cpoUserId, setCpoUserId] = useState<string | null>(null);
@@ -218,6 +232,11 @@ const EnrollByInvite = ({
     useState(false);
   const [enrollmentPolicyDialogType, setEnrollmentPolicyDialogType] =
     useState<EnrollmentPolicyDialogType>("success_with_actions");
+  // The message the backend returned for this failure. The re-enrollment dialog
+  // needs it because the institute's configured copy is a {{allowed_date}}
+  // template that only the backend has resolved.
+  const [enrollmentPolicyServerMessage, setEnrollmentPolicyServerMessage] =
+    useState<string | undefined>(undefined);
   const [enrollmentPolicyResponse, setEnrollmentPolicyResponse] =
     useState<EnrollmentPolicyResponse | null>(null);
 
@@ -293,6 +312,17 @@ const EnrollByInvite = ({
 
   const { getDetailsFromPackageSessionId, setInstituteDetails } =
     useInstituteDetailsStore();
+
+  // Login link for an already-registered learner: the institute's own learner
+  // portal (learner_portal_base_url is served host-only, so add the scheme),
+  // falling back to this app's own /login when the institute has none.
+  const learnerLoginUrl = useMemo(() => {
+    const host = (instituteData as { learner_portal_base_url?: string } | undefined)
+      ?.learner_portal_base_url?.trim();
+    if (!host) return "/login";
+    const origin = /^[a-z][a-z0-9+.-]*:\/\//i.test(host) ? host : `https://${host}`;
+    return `${origin.replace(/\/+$/, "")}/login`;
+  }, [instituteData]);
 
   const { data: inviteData, isLoading } = useSuspenseQuery(
     handleGetEnrollInviteData({ instituteId, inviteCode }),
@@ -755,7 +785,10 @@ const EnrollByInvite = ({
     }
 
     return (
-      courseName || levelName || sessionName || `Course ${fallbackIndex + 1}`
+      courseName ||
+      levelName ||
+      sessionName ||
+      t("bundledCourses.fallbackLabel", { course, index: fallbackIndex + 1 })
     );
   };
 
@@ -781,7 +814,7 @@ const EnrollByInvite = ({
         const paymentOptionId =
           inviteData?.package_session_to_payment_options[0]?.payment_option
             ?.id || "";
-        if (!paymentOptionId) throw new Error("No CPO payment option found.");
+        if (!paymentOptionId) throw new Error(t("errors.noCpoPaymentOptionFound"));
 
         const cpoDto = await fetchCpoSchedule(paymentOptionId);
         setCpoDues(mapCpoScheduleToDues(cpoDto));
@@ -791,7 +824,7 @@ const EnrollByInvite = ({
         const errorData = err?.response?.data;
         setError(
           errorData?.ex ||
-            "Failed to load installment schedule. Please try again.",
+            t("errors.failedToLoadInstallmentSchedule"),
         );
         setLoading(false);
         setCpoEnrolling(false);
@@ -815,8 +848,8 @@ const EnrollByInvite = ({
           const unit = metadata?.unit || "days";
           const duration =
             unit === "days"
-              ? `${onlyPlan.validity_in_days} days`
-              : `${Math.floor(onlyPlan.validity_in_days / 30)} months`;
+              ? t("planDuration.days", { count: onlyPlan.validity_in_days })
+              : t("planDuration.months", { count: Math.floor(onlyPlan.validity_in_days / 30) });
 
           // @ts-expect-error // TODO: strong type SelectedPayment mapping
           const preselected: SelectedPayment = {
@@ -865,9 +898,57 @@ const EnrollByInvite = ({
         if (response?.user_id) {
           setSubmittedUserId(response.user_id);
         }
+        // The invite's TRIAL_DAYS says the invite OFFERS a trial; it says nothing about
+        // whether THIS learner still has one. Someone who already used theirs is charged the
+        // full plan price at checkout, so promising "start your trial for Rs 1" here was the
+        // screen disagreeing with the money. Absent (older backend) = behave as before.
+        if (response?.trial_available === false) {
+          setTrialAvailable(false);
+        } else {
+          setTrialAvailable(true);
+        }
+        // Attribute HERE, not after payment: the next thing the browser does
+        // is leave for the gateway, so a report fired later would be lost on
+        // every abandoned cart — exactly the population a campaign report has
+        // to be able to see.
+        // Contact details ride along so a missing user_id degrades to a
+        // contact-matched row rather than dropping the touch: the server
+        // refuses a touch it cannot attach to anyone.
+        const paidDetails = getUserDetails();
+        trackUtmAttribution({
+          instituteId,
+          userId: response?.user_id,
+          email: paidDetails.email || undefined,
+          mobileNumber: paidDetails.contact || undefined,
+          sourceType: "ENROLL_INVITE",
+          sourceId: inviteData?.id,
+        });
       } catch (error) {
+        const errorData = (
+          error as {
+            response?: { data?: { ex?: string; responseCode?: string } };
+          }
+        )?.response?.data;
+
+        // A repeated phone-identifier submission is an enrollment conflict, not an
+        // abandoned-cart telemetry failure. Stop before the checkout step and
+        // show the same conflict UI used by the enrollment endpoint.
+        if (errorData?.responseCode?.includes("ENROLLMENT_CONFLICT:")) {
+          const dialogOpened = await fetchAndHandleEnrollmentPolicy(
+            "error_already_enrolled",
+            errorData?.ex,
+            errorData?.responseCode,
+          );
+          if (!dialogOpened) {
+            toast.error(errorData?.ex || t("errors.enrollmentFailed"));
+          }
+          setError(errorData?.ex || t("errors.enrollmentFailed"));
+          return;
+        }
+
         console.error("Form submission failed (non-blocking):", error);
-        // We do not block the user; they can proceed to payment step without this
+        // Tracking failures remain non-blocking; the authoritative enrollment
+        // endpoint repeats the invite-submission guard before it creates any payment.
       } finally {
         setLoading(false);
       }
@@ -980,7 +1061,7 @@ const EnrollByInvite = ({
           instituteId,
         );
 
-        toast.success("Enrollment successful! Redirecting to dashboard...");
+        toast.success(t("toast.enrollmentSuccessRedirecting"));
         setTimeout(() => {
           window.location.href =
             inviteConfig?.redirectPath ||
@@ -1010,7 +1091,7 @@ const EnrollByInvite = ({
         );
         await performFullAuthCycle(loginResponse, instituteId);
 
-        toast.success("Login successful! Redirecting to dashboard...");
+        toast.success(t("toast.loginSuccessRedirecting"));
         setTimeout(() => {
           window.location.href =
             inviteConfig?.redirectPath ||
@@ -1036,6 +1117,7 @@ const EnrollByInvite = ({
   const fetchAndHandleEnrollmentPolicy = async (
     scenario: "success" | "error_already_enrolled" = "success",
     enrollmentErrorMessage?: string,
+    enrollmentResponseCode?: string,
   ): Promise<boolean> => {
     try {
       const packageSessionId =
@@ -1049,12 +1131,41 @@ const EnrollByInvite = ({
       }
 
       const policyResponse = await getEnrollmentPolicy({ packageSessionId });
+
+      // A conflict the backend tagged explicitly (ENROLLMENT_CONFLICT:<TYPE>) is a
+      // conflict whether or not this package session has a policy configured.
+      // Gating it on policy content below meant an institute with no policy --
+      // the common case -- got the message as a toast with no way to sign in,
+      // while the dialog with "Login now" only appeared for institutes that had
+      // set one up.
+      if (
+        scenario === "error_already_enrolled" &&
+        enrollmentResponseCode?.includes("ENROLLMENT_CONFLICT:")
+      ) {
+        const dialogType = detectEnrollmentConflict({
+          policyResponse,
+          errorMessage: enrollmentErrorMessage,
+          responseCode: enrollmentResponseCode,
+        });
+        if (dialogType) {
+          setEnrollmentPolicyResponse(policyResponse ?? null);
+          setEnrollmentPolicyServerMessage(enrollmentErrorMessage);
+          setEnrollmentPolicyDialogType(dialogType);
+          setEnrollmentPolicyDialogOpen(true);
+          return true;
+        }
+      }
+
       console.log(
         "[EnrollByInvite] Enrollment policy response:",
         policyResponse,
       );
 
-      if (policyResponse && Object.keys(policyResponse).length > 0) {
+      // A package session with no enrollment policy configured does NOT come back
+      // as `{}` -- older backends serialize the empty DTO as five null keys, so the
+      // previous `Object.keys(...).length > 0` check read as "policy exists" and
+      // every enrollment failure reached the dialog below.
+      if (hasEnrollmentPolicyContent(policyResponse)) {
         setEnrollmentPolicyResponse(policyResponse);
 
         if (scenario === "success") {
@@ -1065,40 +1176,28 @@ const EnrollByInvite = ({
             Object.keys(policyResponse.workflow.frontendActions).length > 0;
 
           if (hasFrontendActions) {
+            setEnrollmentPolicyServerMessage(undefined);
             setEnrollmentPolicyDialogType("success_with_actions");
             setEnrollmentPolicyDialogOpen(true);
             return true;
           }
         } else if (scenario === "error_already_enrolled") {
-          // Determine strictness and type of blockage
-          let dialogType: EnrollmentPolicyDialogType = "already_enrolled";
+          // Only a real enrollment conflict gets a dialog. HTTP 510 is this
+          // backend's generic business-error status, so an unrelated failure
+          // (payment mandate rejected, seat limit reached, plan/invite mismatch)
+          // arrives here looking identical to a conflict. Returning null lets the
+          // caller surface the actual error instead of "Already Enrolled".
+          const dialogType = detectEnrollmentConflict({
+            policyResponse,
+            errorMessage: enrollmentErrorMessage,
+            responseCode: enrollmentResponseCode,
+          });
 
-          // Determine dialog type based on the actual enrollment error message
-          // If the error message matches the onEnrollment.blockMessage, it's a paid member block
-          // Otherwise, it's a re-enrollment case
-          if (
-            policyResponse?.onEnrollment?.blockIfActiveIn?.length &&
-            policyResponse?.onEnrollment?.blockMessage &&
-            enrollmentErrorMessage &&
-            enrollmentErrorMessage === policyResponse.onEnrollment.blockMessage
-          ) {
-            dialogType = "paid_member_blocked";
-          }
-          // If the error matches alreadyEnrolledMessage, keep already_enrolled dialog
-          else if (
-            policyResponse?.reenrollmentPolicy?.alreadyEnrolledMessage &&
-            enrollmentErrorMessage ===
-              policyResponse.reenrollmentPolicy.alreadyEnrolledMessage
-          ) {
-            dialogType = "already_enrolled";
-          }
-          // If there are upgrade options and error matches reenrollmentBlockedMessage, show upsell
-          else if (
-            policyResponse?.reenrollmentPolicy?.upgradeOptions?.paid_upgrade
-          ) {
-            dialogType = "reenrollment_blocked";
+          if (!dialogType) {
+            return false;
           }
 
+          setEnrollmentPolicyServerMessage(enrollmentErrorMessage);
           setEnrollmentPolicyDialogType(dialogType);
           setEnrollmentPolicyDialogOpen(true);
           return true;
@@ -1106,7 +1205,18 @@ const EnrollByInvite = ({
       }
     } catch (err) {
       console.error("[EnrollByInvite] Failed to fetch enrollment policy:", err);
-      // Non-blocking - we don't prevent the enrollment flow if policy fetch fails
+      // Non-blocking - we don't prevent the enrollment flow if policy fetch fails.
+      // A tagged conflict still deserves the dialog even when the policy read failed.
+      if (
+        scenario === "error_already_enrolled" &&
+        enrollmentResponseCode?.includes("ENROLLMENT_CONFLICT:")
+      ) {
+        setEnrollmentPolicyResponse(null);
+        setEnrollmentPolicyServerMessage(enrollmentErrorMessage);
+        setEnrollmentPolicyDialogType("already_enrolled");
+        setEnrollmentPolicyDialogOpen(true);
+        return true;
+      }
     }
     return false;
   };
@@ -1168,7 +1278,7 @@ const EnrollByInvite = ({
 
   const handleSubmitEnrollment = async () => {
     if (isAutopay && !autopayConsent) {
-      toast.error("Please agree to the auto-renewal terms to continue.");
+      toast.error(t("toast.autoRenewalConsentRequired"));
       return;
     }
     // ─── CPO payment flow ─────────────────────────────────────────────────────
@@ -1177,13 +1287,13 @@ const EnrollByInvite = ({
     // This avoids ComplexPaymentOptionOperation overriding the amount with duesNow.
     if (paymentType === "CPO") {
       if (!cpoCustomAmount && cpoSelectedSfpIds.length === 0) {
-        setError("Please select at least one installment to pay.");
+        setError(t("errors.selectAtLeastOneInstallment"));
         return;
       }
       const payAmount =
         cpoCustomAmount !== undefined ? cpoCustomAmount : cpoSelectedTotal;
       if (payAmount <= 0) {
-        setError("Payment amount must be greater than zero.");
+        setError(t("errors.paymentAmountMustBePositive"));
         return;
       }
 
@@ -1234,7 +1344,7 @@ const EnrollByInvite = ({
         const paymentOptionId =
           inviteData?.package_session_to_payment_options[0]?.payment_option
             ?.id || "";
-        if (!paymentOptionId) throw new Error("No CPO payment option found.");
+        if (!paymentOptionId) throw new Error(t("errors.noCpoPaymentOptionFound"));
 
         const result = await enrollCpoWithoutPayment({
           registrationData: form.getValues(),
@@ -1247,7 +1357,7 @@ const EnrollByInvite = ({
         });
         if (!result.userId || !result.userPlanId) {
           throw new Error(
-            "Enrollment succeeded but userPlanId was not returned. Please try again.",
+            t("errors.enrollmentSucceededNoUserPlanId"),
           );
         }
         // Write to state (triggers re-render later) AND ref (immediately readable in callbacks)
@@ -1264,7 +1374,7 @@ const EnrollByInvite = ({
           .map((d) => d.id);
         if (pendingIds.length === 0)
           throw new Error(
-            "No pending installments were generated. Please contact support.",
+            t("errors.noPendingInstallmentsGenerated"),
           );
         setCpoRealSfpIds(pendingIds);
 
@@ -1301,7 +1411,7 @@ const EnrollByInvite = ({
             paymentResponse?.payment_response?.response_data ||
             paymentResponse?.response_data;
           if (!orderDetails?.razorpayKeyId || !orderDetails?.razorpayOrderId)
-            throw new Error("Failed to create Razorpay order");
+            throw new Error(t("errors.failedToCreateRazorpayOrder"));
           setOrderId(
             paymentResponse?.payment_response?.order_id ||
               paymentResponse?.order_id,
@@ -1325,7 +1435,7 @@ const EnrollByInvite = ({
           const msg =
             errorData?.ex ||
             (err instanceof Error ? err.message : null) ||
-            "Failed to initiate payment";
+            t("errors.failedToInitiatePayment");
           setError(msg);
           if (inviteData?.gtm_container_id)
             pushPaymentFailed({
@@ -1345,7 +1455,7 @@ const EnrollByInvite = ({
           typeof stripePaymentProcessor !== "function"
         ) {
           setError(
-            "Stripe payment is not ready yet. Please wait and try again.",
+            t("errors.stripeNotReady"),
           );
           return;
         }
@@ -1353,7 +1463,7 @@ const EnrollByInvite = ({
         setError(null);
         const stripeResult = await stripePaymentProcessor();
         if (!stripeResult.success || !stripeResult.paymentMethodId) {
-          setError(stripeResult.error || "Payment processing failed");
+          setError(stripeResult.error || t("errors.paymentProcessingFailed"));
           setLoading(false);
           return;
         }
@@ -1389,7 +1499,7 @@ const EnrollByInvite = ({
           const msg =
             errorData?.ex ||
             (err instanceof Error ? err.message : null) ||
-            "Payment failed";
+            t("errors.paymentFailed");
           setError(msg);
           if (inviteData?.gtm_container_id)
             pushPaymentFailed({
@@ -1406,7 +1516,7 @@ const EnrollByInvite = ({
 
       if (vendor === "EWAY") {
         if (!ewayEncryptedData) {
-          setError("Please complete the payment form");
+          setError(t("errors.completePaymentForm"));
           return;
         }
         setLoading(true);
@@ -1443,7 +1553,7 @@ const EnrollByInvite = ({
           setError(
             errorData?.ex ||
               (err instanceof Error ? err.message : null) ||
-              "Payment failed",
+              t("errors.paymentFailed"),
           );
         } finally {
           setLoading(false);
@@ -1453,7 +1563,7 @@ const EnrollByInvite = ({
 
       // Default / unsupported vendor for CPO
       setError(
-        "Payment gateway not supported for CPO enrollment. Please contact support.",
+        t("errors.cpoVendorNotSupported"),
       );
       return;
     }
@@ -1503,6 +1613,24 @@ const EnrollByInvite = ({
           // userId: submittedUserId || undefined,
         });
         setPaymentCompletionResponse(paymentResponse);
+        // A FREE enrolment skips the abandoned-cart submit above, so this is
+        // the only place its campaign touch can be recorded. Before the
+        // redirect branch — a configured redirectPath leaves the page.
+        // Identity via getUserDetails(), NOT form.getValues().email: this form
+        // is custom-field driven, so its values are {value: ...} objects keyed
+        // by whatever the institute named the field. Reading `.email` off it
+        // yielded an object (or undefined), which the server rejected — so the
+        // FREE path recorded nothing at all.
+        const freeUser = paymentResponse?.user;
+        const freeDetails = getUserDetails();
+        trackUtmAttribution({
+          instituteId,
+          userId: freeUser?.id || submittedUserId || undefined,
+          email: freeUser?.email || freeDetails.email || undefined,
+          mobileNumber: freeDetails.contact || undefined,
+          sourceType: "ENROLL_INVITE",
+          sourceId: inviteData?.id,
+        });
         if (inviteConfig?.redirectPath) {
           window.location.href = inviteConfig.redirectPath;
           return;
@@ -1519,9 +1647,10 @@ const EnrollByInvite = ({
           const dialogOpened = await fetchAndHandleEnrollmentPolicy(
             "error_already_enrolled",
             errorData?.ex,
+            errorData?.responseCode,
           );
           if (!dialogOpened) {
-            toast.error(errorData?.ex || "Enrollment failed");
+            toast.error(errorData?.ex || t("errors.enrollmentFailed"));
           }
         }
         setError(errorData?.ex);
@@ -1544,7 +1673,7 @@ const EnrollByInvite = ({
     // For EWAY payments
     if (vendor === "EWAY") {
       if (!ewayEncryptedData) {
-        setError("Please complete the payment form");
+        setError(t("errors.completePaymentForm"));
         return;
       }
 
@@ -1597,9 +1726,10 @@ const EnrollByInvite = ({
           const dialogOpened = await fetchAndHandleEnrollmentPolicy(
             "error_already_enrolled",
             errorData?.ex,
+            errorData?.responseCode,
           );
           if (!dialogOpened) {
-            toast.error(errorData?.ex || "Payment failed");
+            toast.error(errorData?.ex || t("errors.paymentFailed"));
           }
         }
         setError(errorData?.ex);
@@ -1659,7 +1789,7 @@ const EnrollByInvite = ({
 
         if (!redirectUrl) {
           throw new Error(
-            "Could not start PhonePe checkout. Please try again or contact support.",
+            t("errors.phonepeCheckoutFailed"),
           );
         }
 
@@ -1708,15 +1838,16 @@ const EnrollByInvite = ({
           const dialogOpened = await fetchAndHandleEnrollmentPolicy(
             "error_already_enrolled",
             errorData?.ex,
+            errorData?.responseCode,
           );
           if (!dialogOpened) {
-            toast.error(errorData?.ex || "Payment failed");
+            toast.error(errorData?.ex || t("errors.paymentFailed"));
           }
         }
         const phonePeErrorMsg =
           errorData?.ex ||
           (err instanceof Error ? err.message : null) ||
-          "Failed to initiate PhonePe payment";
+          t("errors.failedToInitiatePhonepePayment");
         setError(phonePeErrorMsg);
         if (inviteData?.gtm_container_id) {
           pushPaymentFailed({
@@ -1770,18 +1901,18 @@ const EnrollByInvite = ({
 
         if (!userPlanId) {
           throw new Error(
-            "Enrollment created but user plan ID not received. Please contact support.",
+            t("errors.enrollmentCreatedNoUserPlanId"),
           );
         }
 
         const userEmail = getUserDetails().email;
         if (!userEmail) {
-          throw new Error("Email is required for payment.");
+          throw new Error(t("errors.emailRequiredForPayment"));
         }
 
         const token = await getTokenFromStorage(TokenKey.accessToken);
         if (!token) {
-          throw new Error("Please log in to complete payment.");
+          throw new Error(t("errors.loginRequiredForPayment"));
         }
 
         const returnUrl = getCashfreeReturnUrl();
@@ -1807,7 +1938,7 @@ const EnrollByInvite = ({
 
         if (!paymentSessionId) {
           throw new Error(
-            "Failed to initialize payment. Please try again or contact support.",
+            t("errors.failedToInitializePaymentContactSupport"),
           );
         }
 
@@ -1827,7 +1958,7 @@ const EnrollByInvite = ({
         const cashfree = await loadCashfree({ mode });
 
         if (!cashfree) {
-          throw new Error("Failed to load Cashfree payment gateway.");
+          throw new Error(t("errors.failedToLoadCashfree"));
         }
 
         const checkoutResult = await cashfree.checkout({
@@ -1837,7 +1968,7 @@ const EnrollByInvite = ({
 
         if (checkoutResult?.error) {
           throw new Error(
-            checkoutResult.error.message || "Payment initialization failed.",
+            checkoutResult.error.message || t("errors.paymentInitializationFailed"),
           );
         }
         // On success, checkout redirects to return_url - no further action needed
@@ -1851,15 +1982,16 @@ const EnrollByInvite = ({
           const dialogOpened = await fetchAndHandleEnrollmentPolicy(
             "error_already_enrolled",
             errorData?.ex,
+            errorData?.responseCode,
           );
           if (!dialogOpened) {
-            toast.error(errorData?.ex || "Payment failed");
+            toast.error(errorData?.ex || t("errors.paymentFailed"));
           }
         }
         const cashfreeErrorMsg =
           (err as Error)?.message ||
           errorData?.ex ||
-          "Failed to initiate Cashfree payment";
+          t("errors.failedToInitiateCashfreePayment");
         setError(cashfreeErrorMsg);
         if (inviteData?.gtm_container_id) {
           pushPaymentFailed({
@@ -1915,7 +2047,7 @@ const EnrollByInvite = ({
           !orderDetails.razorpayKeyId ||
           !orderDetails.razorpayOrderId
         ) {
-          throw new Error("Failed to create Razorpay order");
+          throw new Error(t("errors.failedToCreateRazorpayOrder"));
         }
 
         // Store order ID for later use
@@ -1937,7 +2069,7 @@ const EnrollByInvite = ({
             customerId: orderDetails.customerId,
           });
         } else {
-          throw new Error("Razorpay component not ready");
+          throw new Error(t("errors.razorpayComponentNotReady"));
         }
 
         setLoading(false);
@@ -1949,12 +2081,13 @@ const EnrollByInvite = ({
           const dialogOpened = await fetchAndHandleEnrollmentPolicy(
             "error_already_enrolled",
             errorData?.ex,
+            errorData?.responseCode,
           );
           if (!dialogOpened) {
-            toast.error(errorData?.ex || "Failed to initiate payment");
+            toast.error(errorData?.ex || t("errors.failedToInitiatePayment"));
           }
         }
-        setError(errorData?.ex || "Failed to initiate payment");
+        setError(errorData?.ex || t("errors.failedToInitiatePayment"));
         if (inviteData?.gtm_container_id) {
           pushPaymentFailed({
             courseName: courseData.course || "",
@@ -1973,7 +2106,7 @@ const EnrollByInvite = ({
       !stripePaymentProcessor ||
       typeof stripePaymentProcessor !== "function"
     ) {
-      setError("Stripe payment is not ready yet. Please wait and try again.");
+      setError(t("errors.stripeNotReady"));
       console.error("Stripe payment processor not ready:", {
         value: stripePaymentProcessor,
         type: typeof stripePaymentProcessor,
@@ -1988,7 +2121,7 @@ const EnrollByInvite = ({
     const stripeResult = await stripePaymentProcessor();
 
     if (!stripeResult.success || !stripeResult.paymentMethodId) {
-      setError(stripeResult.error || "Payment processing failed");
+      setError(stripeResult.error || t("errors.paymentProcessingFailed"));
       setLoading(false);
       return;
     }
@@ -2038,9 +2171,10 @@ const EnrollByInvite = ({
         const dialogOpened = await fetchAndHandleEnrollmentPolicy(
           "error_already_enrolled",
           errorData?.ex,
+          errorData?.responseCode,
         );
         if (!dialogOpened) {
-          toast.error(errorData?.ex || "Payment failed");
+          toast.error(errorData?.ex || t("errors.paymentFailed"));
         }
       }
       setError(errorData?.ex);
@@ -2154,12 +2288,13 @@ const EnrollByInvite = ({
             const dialogOpened = await fetchAndHandleEnrollmentPolicy(
               "error_already_enrolled",
               errorData?.ex,
+              errorData?.responseCode,
             );
             if (!dialogOpened) {
-              toast.error(errorData?.ex || "Failed to complete enrollment");
+              toast.error(errorData?.ex || t("errors.failedToCompleteEnrollment"));
             }
           }
-          setError(errorData?.ex || "Failed to complete enrollment");
+          setError(errorData?.ex || t("errors.failedToCompleteEnrollment"));
           if (inviteData?.gtm_container_id) {
             pushPaymentFailed({
               courseName: courseData.course || "",
@@ -2238,15 +2373,15 @@ const EnrollByInvite = ({
           responseData?.order_id;
 
         if (!paymentSessionId) {
-          if (!userPlanId) throw new Error("User plan ID not received.");
+          if (!userPlanId) throw new Error(t("errors.userPlanIdNotReceived"));
           const token = await getTokenFromStorage(TokenKey.accessToken);
           if (!token) {
             throw new Error(
-              "Payment session not in response. Please log in to complete payment.",
+              t("errors.paymentSessionMissingLoginRequired"),
             );
           }
           const userEmail = getUserDetails().email;
-          if (!userEmail) throw new Error("Email is required.");
+          if (!userEmail) throw new Error(t("errors.emailRequired"));
 
           const amount = getSelectedPaymentPrice(enrollmentData.selectedPayment);
           const cfResponse = await initiateCashfreePayment(
@@ -2271,7 +2406,7 @@ const EnrollByInvite = ({
               : cfEnvironment;
         }
 
-        if (!paymentSessionId) throw new Error("Failed to initialize payment.");
+        if (!paymentSessionId) throw new Error(t("errors.failedToInitializePayment"));
 
         const ordId =
           cfOrderId ??
@@ -2313,15 +2448,16 @@ const EnrollByInvite = ({
           const dialogOpened = await fetchAndHandleEnrollmentPolicy(
             "error_already_enrolled",
             errData?.ex,
+            errData?.responseCode,
           );
           if (!dialogOpened) {
-            toast.error(errData?.ex || "Payment failed");
+            toast.error(errData?.ex || t("errors.paymentFailed"));
           }
         }
         setError(
           (err as Error)?.message ||
             errData?.ex ||
-            "Failed to initialize payment",
+            t("errors.failedToInitializePaymentFallback"),
         );
       } finally {
         setCashfreeInitLoading(false);
@@ -2376,10 +2512,10 @@ const EnrollByInvite = ({
 
             const duration =
               unit === "days"
-                ? `${defaultPaymentPlan.validity_in_days} days`
-                : `${Math.floor(
-                    defaultPaymentPlan.validity_in_days / 30,
-                  )} months`;
+                ? t("planDuration.days", { count: defaultPaymentPlan.validity_in_days })
+                : t("planDuration.months", {
+                    count: Math.floor(defaultPaymentPlan.validity_in_days / 30),
+                  });
 
             // @ts-expect-error // TODO:fix this
             const preselectedPayment: SelectedPayment = {
@@ -2436,45 +2572,34 @@ const EnrollByInvite = ({
   }, [inviteData]);
 
   // Helper function to get user details from registration data
+  /**
+   * The learner's OWN email / phone / name out of a custom-field-driven form.
+   *
+   * Delegates to the shared resolver rather than substring-matching field keys
+   * here. The old local version asked only "does the key contain 'email'?",
+   * which silently returns nothing on an institute that names the field
+   * anything else — and a UTM touch with no identity is dropped by the server,
+   * so the campaign that produced the enrolment disappears with no error. The
+   * shared resolver matches the platform's storage KEY first, falls back to the
+   * label, prefers a field the visitor actually FILLED IN over an empty match,
+   * and knows that "School Name" is not the learner's name.
+   */
   const getUserDetails = () => {
     const registrationData = form.getValues();
+    const candidates = Object.entries(registrationData ?? {}).map(
+      ([key, field]) => {
+        const f = field as { value?: unknown; name?: string; type?: string } | undefined;
+        return {
+          key,
+          name: f?.name ?? key,
+          type: f?.type ?? "",
+          value: f?.value == null ? "" : String(f.value),
+        };
+      }
+    );
 
-    // Find email field
-    const emailEntry = Object.entries(registrationData).find(([key]) => {
-      const lowerKey = key.toLowerCase();
-      return (
-        lowerKey.includes("email") ||
-        lowerKey.includes("mail") ||
-        lowerKey.includes("mailid")
-      );
-    });
-
-    // Find phone/contact field
-    const phoneEntry = Object.entries(registrationData).find(([key]) => {
-      const lowerKey = key.toLowerCase();
-      return (
-        lowerKey.includes("phone") ||
-        lowerKey.includes("mobile") ||
-        lowerKey.includes("contact") ||
-        lowerKey.includes("tel")
-      );
-    });
-
-    // Find name field
-    const nameEntry = Object.entries(registrationData).find(([key]) => {
-      const lowerKey = key.toLowerCase();
-      return (
-        lowerKey.includes("name") ||
-        lowerKey.includes("full_name") ||
-        lowerKey.includes("fullname")
-      );
-    });
-
-    return {
-      email: emailEntry ? String(emailEntry[1]?.value || "") : "",
-      contact: phoneEntry ? String(phoneEntry[1]?.value || "") : "",
-      name: nameEntry ? String(nameEntry[1]?.value || "") : "",
-    };
+    const { email, phone, name } = resolveLearnerIdentity(candidates);
+    return { email, contact: phone, name };
   };
 
   // State to track if there is unapplied referral code text
@@ -2637,10 +2762,12 @@ const EnrollByInvite = ({
       case 2:
         return (
           <>
-          {isAutopay && autopayConfig?.TRIAL_DAYS ? (
+          {isAutopay && autopayConfig?.TRIAL_DAYS && trialAvailable ? (
             <div className="mb-4 rounded-xl border border-primary-200 bg-primary-50 p-4 text-center text-sm font-medium text-primary-600">
-              Activate your {autopayConfig.TRIAL_DAYS}-day free trial with ₹
-              {authAmount}, cancel anytime within {autopayConfig.TRIAL_DAYS} days.
+              {t("autopay.trialBanner", {
+                trialDays: autopayConfig.TRIAL_DAYS,
+                authAmount,
+              })}
             </div>
           ) : null}
           {/* For autopay invites the mandate-method choice and the consent come
@@ -2650,13 +2777,13 @@ const EnrollByInvite = ({
           {isAutopay && (propVendor || getPaymentVendor(inviteData)) === "RAZORPAY" && (
             <div className="rounded-xl border border-gray-200 p-4">
               <p className="text-sm font-medium text-gray-700">
-                How would you like to set up auto-renewal?
+                {t("autopay.setupHeading")}
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 {(
                   [
-                    { key: "upi", label: "UPI Autopay", hint: "GPay, PhonePe, Paytm" },
-                    { key: "card", label: "Card", hint: "Debit / credit card" },
+                    { key: "upi", label: t("autopay.upiLabel"), hint: t("autopay.upiHint") },
+                    { key: "card", label: t("autopay.cardLabel"), hint: t("autopay.cardHint") },
                   ] as const
                 ).map((option) => (
                   <label
@@ -2695,34 +2822,33 @@ const EnrollByInvite = ({
               <span>
                 {autopayConfig?.TRIAL_DAYS ? (
                   <>
-                    I agree:{" "}
-                    <span className="font-semibold">₹{authAmount}</span> is
-                    authorized today
-                    {autopayConfig?.AUTH_REFUNDABLE ? " (refunded)" : ""} to start my{" "}
+                    {t("autopay.consentTrial.agreePrefix")}{" "}
+                    <span className="font-semibold">₹{authAmount}</span>{" "}
+                    {t("autopay.consentTrial.authorizedToday")}
+                    {autopayConfig?.AUTH_REFUNDABLE ? ` ${t("autopay.consentTrial.refundedSuffix")}` : ""}{" "}
+                    {t("autopay.consentTrial.toStartMy")}{" "}
                     <span className="font-semibold">
-                      {autopayConfig.TRIAL_DAYS}-day free trial
+                      {t("autopay.consentTrial.trialDaysLabel", { days: autopayConfig.TRIAL_DAYS })}
                     </span>
-                    . From day{" "}
+                    {t("autopay.consentTrial.fromDay")}{" "}
                     <span className="font-semibold">
                       {Number(autopayConfig.TRIAL_DAYS) + 1}
                     </span>
-                    ,{" "}
+                    {t("autopay.consentTrial.listSeparator")}{" "}
                     <span className="font-semibold">
                       {enrollmentData.selectedPayment?.currency || "INR"}{" "}
                       {getSelectedPaymentPrice(enrollmentData.selectedPayment)}
                     </span>{" "}
-                    will be charged each billing cycle to my saved payment
-                    method, unless I cancel before that.
+                    {t("autopay.consentTrial.willBeChargedCycle")}
                   </>
                 ) : (
                   <>
-                    I agree to auto-renewal:{" "}
+                    {t("autopay.consentAutoRenew.agreePrefix")}{" "}
                     <span className="font-semibold">
                       {enrollmentData.selectedPayment?.currency || "INR"}{" "}
                       {getSelectedPaymentPrice(enrollmentData.selectedPayment)}
                     </span>{" "}
-                    will be charged to my saved payment method each billing
-                    period. I can cancel anytime from my profile.
+                    {t("autopay.consentAutoRenew.willBeChargedPeriod")}
                   </>
                 )}
               </span>
@@ -2772,7 +2898,7 @@ const EnrollByInvite = ({
             amount={
               paymentType === "CPO"
                 ? cpoPayAmount
-                : isAutopay && autopayConfig?.TRIAL_DAYS
+                : isAutopay && autopayConfig?.TRIAL_DAYS && trialAvailable
                   ? authAmount // free trial: only the mandate authorization is charged now
                   : Math.max(
                       0,
@@ -2799,7 +2925,7 @@ const EnrollByInvite = ({
             courseName={
               courseData.course ||
               enrollmentData.selectedPayment?.name ||
-              "Course Enrollment"
+              t("defaultCourseEnrollmentName", { course })
             }
             // Razorpay caps `description` at 255 chars, and courseData.description
             // is the invite's rich-text course description — routinely far longer,
@@ -2809,7 +2935,7 @@ const EnrollByInvite = ({
               inviteData?.name ||
               courseData.course ||
               enrollmentData.selectedPayment?.name ||
-              "Payment for course enrollment"
+              t("defaultCourseEnrollmentDescription", { course })
             }
             razorpayRef={razorpayRef}
             cashfreePaymentSessionId={cashfreeSessionData?.paymentSessionId}
@@ -2925,6 +3051,7 @@ const EnrollByInvite = ({
         syncThemeRoleSettingsFromSettingJson(instituteData?.setting);
         applyInstituteBackground();
         applyInstituteFont();
+        applyInstituteUiAxes();
 
         // Store learner branding subset used by applyTabBranding
         const learnerKey = `LEARNER_${instituteId}`;
@@ -3061,7 +3188,7 @@ const EnrollByInvite = ({
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-primary" />
                 <span className="font-medium text-sm text-gray-900 truncate max-w-reg-200">
-                  {inviteData?.name || courseData.course || "Course Enrollment"}
+                  {inviteData?.name || courseData.course || t("defaultCourseEnrollmentName", { course })}
                 </span>
               </div>
             )}
@@ -3069,8 +3196,8 @@ const EnrollByInvite = ({
             {/* Step count badge - minimal, right-aligned */}
             <div className="text-xs text-gray-400 sm:hidden">
               {paymentType !== "FREE"
-                ? `Step ${Math.min(currentStep + 1, 3)} of 3`
-                : `Step ${currentStep === 0 ? 1 : 2} of 2`}
+                ? t("stepBadge.ofThree", { step: Math.min(currentStep + 1, 3) })
+                : t("stepBadge.ofTwo", { step: currentStep === 0 ? 1 : 2 })}
             </div>
           </div>
         </div>
@@ -3127,7 +3254,7 @@ const EnrollByInvite = ({
               {paymentType === "CPO" && (
                 <div className="flex-shrink-0">
                   <span className="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
-                    Installment Plan
+                    {t("badges.installmentPlan")}
                   </span>
                 </div>
               )}
@@ -3149,7 +3276,7 @@ const EnrollByInvite = ({
               {paymentType === "FREE" && (
                 <div className="flex-shrink-0">
                   <span className="px-3 py-1 bg-green-50 text-green-700 text-sm font-medium rounded-full">
-                    Free
+                    {t("badges.free")}
                   </span>
                 </div>
               )}
@@ -3172,7 +3299,7 @@ const EnrollByInvite = ({
               const showPlanPill =
                 paymentType !== "FREE" &&
                 !(paymentType !== "DONATION" && hasSinglePlan);
-              const finalLabel = paymentType === "FREE" ? "Confirm" : "Pay";
+              const finalLabel = paymentType === "FREE" ? t("wizardPills.confirm") : t("wizardPills.pay");
 
               type Pill = {
                 label: string;
@@ -3183,11 +3310,11 @@ const EnrollByInvite = ({
                 doneFrom: number;
               };
               const pills: Pill[] = [
-                { label: "Details", activeFrom: 0, activeUntil: 0, doneFrom: 1 },
+                { label: t("wizardPills.details"), activeFrom: 0, activeUntil: 0, doneFrom: 1 },
               ];
               if (showPlanPill) {
                 pills.push({
-                  label: "Plan",
+                  label: t("wizardPills.plan"),
                   activeFrom: 1,
                   activeUntil: 1,
                   doneFrom: 2,
@@ -3268,7 +3395,7 @@ const EnrollByInvite = ({
               bundledPackageSessions.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <h3 className="text-base font-medium text-gray-900 mb-3">
-                    What's Included
+                    {t("bundledCourses.whatsIncluded")}
                   </h3>
 
                   {bundledPackageSessions.length > 1 ? (
@@ -3317,7 +3444,7 @@ const EnrollByInvite = ({
                                 if (!previewCourseId) {
                                   return (
                                     <p className="text-sm text-gray-500 py-4 text-center">
-                                      Course details loading...
+                                      {t("bundledCourses.detailsLoading", { course })}
                                     </p>
                                   );
                                 }
@@ -3460,7 +3587,7 @@ const EnrollByInvite = ({
             rel={privacyPolicyUrl ? "noopener noreferrer" : undefined}
             className="hover:text-gray-600"
           >
-            Privacy Policy
+            {t("footer.privacyPolicy")}
           </a>
           <span>•</span>
           <a
@@ -3469,7 +3596,7 @@ const EnrollByInvite = ({
             rel={termsAndConditionUrl ? "noopener noreferrer" : undefined}
             className="hover:text-gray-600"
           >
-            Terms & Conditions
+            {t("footer.termsAndConditions")}
           </a>
         </div>
       </main>
@@ -3480,7 +3607,9 @@ const EnrollByInvite = ({
         onOpenChange={setEnrollmentPolicyDialogOpen}
         dialogType={enrollmentPolicyDialogType}
         policyResponse={enrollmentPolicyResponse}
-        courseName={courseData.course || inviteData?.name || "this course"}
+        serverMessage={enrollmentPolicyServerMessage}
+        loginUrl={learnerLoginUrl}
+        courseName={courseData.course || inviteData?.name || t("defaultThisCourse", { course })}
         onContinue={() => {
           // Navigate to dashboard after dialog is closed
           window.location.href = `${BASE_URL_LEARNER_DASHBOARD}/study-library/courses`;

@@ -1,0 +1,35 @@
+{
+    "emptyState": {
+        "learnerUnavailable": "تفاصيل المتعلم غير متاحة",
+        "noCourseContent": "لا يوجد محتوى للمقرر بعد",
+        "noCourseContentHint": "لم يتم إنشاء أي مواد لهذه الدفعة بعد."
+    },
+    "errorState": {
+        "title": "تعذّر تحميل تقدّم التعلّم",
+        "hint": "حدث خطأ ما أثناء جلب تقدّم هذا المتعلم."
+    },
+    "batchPicker": {
+        "label": "عرض التقدّم لـ"
+    },
+    "hero": {
+        "courseFallback": "المقرر",
+        "percentComplete": "{{percent}}% مكتمل",
+        "behindOn_zero": "متأخر في {{count}} من {{term}}",
+        "behindOn_one": "متأخر في {{count}} {{term}}",
+        "behindOn_two": "متأخر في {{count}} {{term}}",
+        "behindOn_few": "متأخر في {{count}} {{term}}",
+        "behindOn_many": "متأخر في {{count}} {{term}}",
+        "behindOn_other": "متأخر في {{count}} {{term}}"
+    },
+    "actions": {
+        "learningTimeline": "الجدول الزمني للتعلّم",
+        "learningProgress": "تقدّم التعلّم"
+    },
+    "courseContent": {
+        "heading": "محتوى المقرر",
+        "selectSubject": "اختر {{term}}",
+        "noModules": "لا توجد {{moduleTerm}} لهذه {{subjectTerm}}.",
+        "noChapters": "لا توجد فصول في هذه {{moduleTerm}}.",
+        "moduleLabel": "{{moduleTerm}}: {{moduleName}}"
+    }
+}

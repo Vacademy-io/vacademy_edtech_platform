@@ -1,0 +1,17 @@
+{
+    "tabsAriaLabel": "Onglets",
+    "tabFatherDetails": "Informations du père",
+    "tabMotherDetails": "Informations de la mère",
+    "tabGuardianDetails": "Informations du tuteur",
+    "roleFather": "Père",
+    "roleMother": "Mère",
+    "roleGuardian": "Tuteur",
+    "selectPlaceholder": "Sélectionner",
+    "fullNameLabel": "Nom complet",
+    "fullNamePlaceholder": "Nom complet du {{title}}",
+    "mobileNumberLabel": "Numéro de mobile",
+    "mobileNumberPlaceholder": "Saisissez le numéro de mobile",
+    "emailAddressLabel": "Adresse e-mail",
+    "emailPlaceholderExample": "example@email.com",
+    "emailValidationError": "Saisissez une adresse e-mail valide"
+}

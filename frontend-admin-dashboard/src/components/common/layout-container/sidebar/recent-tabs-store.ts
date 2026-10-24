@@ -1,3 +1,4 @@
+import type { SidebarCategory } from '@/types/layout-container/layout-container-types';
 /**
  * Recent Tabs Store
  *
@@ -12,7 +13,7 @@ export interface RecentTabEntry {
     id: string;
     label: string;
     route: string;
-    category: 'CRM' | 'LMS' | 'AI';
+    category: SidebarCategory;
     /** ISO timestamp */
     visitedAt: string;
     /** Optional parent tab id (for sub-items) */

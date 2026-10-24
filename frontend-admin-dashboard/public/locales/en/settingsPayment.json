@@ -1,0 +1,36 @@
+{
+    "cardTitle": "Payment Configuration",
+    "addPaymentPlan": "Add Payment Plan",
+    "defaultCurrency": "Default Currency",
+    "selectCurrencyPlaceholder": "Select currency",
+    "sections": {
+        "freeOptions": "Free Options",
+        "paidOptions": "Paid Options"
+    },
+    "planCount_one": "{{count}} plan",
+    "planCount_other": "{{count}} plans",
+    "planPreviewTitle": "Plan Preview - {{name}}",
+    "intervalPlanFallback": "{{value}} {{unit}} Plan",
+    "discounts": {
+        "percentageOff": "{{amount}}% Off",
+        "fixedOff": "{{symbol}}{{amount}} Off",
+        "nameWithInterval": "{{discountLabel}} - {{intervalTitle}}"
+    },
+    "toasts": {
+        "noPaymentOptions": "No payment options found. Create your first payment plan!",
+        "loadFailed": "Failed to load payment options",
+        "defaultUpdated": "Default payment plan updated successfully",
+        "feePlanCreated": "Fee plan created successfully",
+        "planUpdated": "Payment plan updated successfully",
+        "planCreated": "Payment plan created successfully"
+    },
+    "errors": {
+        "generic": "Error in {{operation}}"
+    },
+    "operations": {
+        "setDefaultPlan": "set default plan",
+        "editPlan": "edit plan",
+        "savePaymentPlan": "save payment plan",
+        "previewPlan": "preview plan"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "column": {
+        "revenue": "Revenue",
+        "payingLeads": "Paying leads",
+        "payments": "Payments",
+        "avgDealValue": "Avg deal value",
+        "source": "Source",
+        "counsellor": "Counsellor"
+    },
+    "kpi": {
+        "revenueSub": "Collected from converted leads"
+    },
+    "dailyRevenue": {
+        "title": "Daily revenue",
+        "barTooltip_one": "{{date}}: {{amount}} ({{count}} payment)",
+        "barTooltip_other": "{{date}}: {{amount}} ({{count}} payments)",
+        "footnote": "Revenue is recognized on the payment date for leads whose profile is converted."
+    },
+    "bySource": {
+        "title": "Revenue by source"
+    },
+    "byCounsellor": {
+        "title": "Revenue by counsellor"
+    },
+    "empty": {
+        "noRevenue": "No revenue in this range.",
+        "noCounsellorRevenue": "No counsellor-attributed revenue in this range."
+    }
+}

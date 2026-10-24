@@ -1,18 +1,33 @@
 import { MyDropdown } from '@/components/design-system/dropdown';
+import { DropdownItem } from '@/components/design-system/utils/types/dropdown-types';
 import { MyButton } from '@/components/design-system/button';
 import { DotsThree } from '@phosphor-icons/react';
 import { useState, Suspense } from 'react';
 import { MyDialog } from '@/components/design-system/dialog';
-import { useUpdateInviteLinkStatus } from '../-services/update-invite-link-status';
+import { useDeleteEnrollInvites } from '../-services/delete-enroll-invites';
 import { toast } from 'sonner';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { InviteLinkDataInterface } from '@/schemas/study-library/invite-links-schema';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { handleGetEnrollSingleInviteDetails } from './create-invite/-services/enroll-invite';
 import { extractBatchesFromInviteDetails } from '../-utils/enrollInviteTransformers';
 import GenerateInviteLinkDialog from './create-invite/GenerateInviteLinkDialog';
 import { LoadingSpinner } from '@/components/ai-course-builder/LoadingSpinner';
 import { handleGetPaymentDetails } from './create-invite/-services/get-payments';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+
+// Internal action-type constants used for dispatch logic. These must never be
+// swapped for translated display text — see handleSelect below.
+const MENU_ACTION = {
+    EDIT: 'edit',
+    DELETE: 'delete',
+} as const;
+
+const buildInviteCardMenuDropdownList = (t: TFunction): DropdownItem[] => [
+    { label: t('menu.edit'), value: MENU_ACTION.EDIT },
+    { label: t('menu.delete'), value: MENU_ACTION.DELETE },
+];
 
 interface InviteCardMenuOptionsProps {
     invite: InviteLinkDataInterface;
@@ -70,31 +85,27 @@ const EditInviteDialogContent = ({ invite }: { invite: InviteLinkDataInterface }
 };
 
 export const InviteCardMenuOptions = ({ invite }: InviteCardMenuOptionsProps) => {
-    const queryClient = useQueryClient();
-    const dropdownList = ['edit', 'delete'];
+    const { t } = useTranslation('manageStudentsInviteCardMenuOptions');
+    const dropdownList = buildInviteCardMenuDropdownList(t);
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-    const updateInviteStatusMutation = useUpdateInviteLinkStatus();
+    // These cards are enroll invites, so the delete has to hit the enroll-invite
+    // endpoint. The earlier learner-invitation status call matched no rows and
+    // reported success — the invite never left the list.
+    const deleteInvitesMutation = useDeleteEnrollInvites();
 
     const onDeleteInvite = async (invite: InviteLinkDataInterface) => {
         try {
-            await updateInviteStatusMutation.mutateAsync({
-                requestBody: {
-                    learner_invitation_ids: [invite.id],
-                    status: 'DELETED',
-                },
-            });
-            queryClient.invalidateQueries({ queryKey: ['inviteList'] });
-            queryClient.invalidateQueries({ queryKey: ['GET_INVITE_LINKS'] });
-            toast.success('Invite deleted!');
+            await deleteInvitesMutation.mutateAsync([invite.id]);
+            toast.success(t('toast.deleteSuccess'));
             setOpenDeleteDialog(false);
         } catch {
-            toast.error('failed to delete the invite link!');
+            toast.error(t('toast.deleteError'));
         }
     };
 
     const handleSelect = async (value: string) => {
-        if (value == 'delete') {
+        if (value == MENU_ACTION.DELETE) {
             setOpenDeleteDialog(true);
         } else {
             setOpenEditDialog(true);
@@ -118,19 +129,19 @@ export const InviteCardMenuOptions = ({ invite }: InviteCardMenuOptionsProps) =>
             <MyDialog
                 open={openDeleteDialog}
                 onOpenChange={() => setOpenDeleteDialog(!openDeleteDialog)}
-                heading="Delete Dialog"
+                heading={t('deleteDialog.heading')}
                 footer={
                     <div className="flex w-full items-center justify-between py-2">
                         <MyButton buttonType="secondary" onClick={() => setOpenDeleteDialog(false)}>
-                            Cancel
+                            {t('deleteDialog.cancel')}
                         </MyButton>
                         <MyButton buttonType="primary" onClick={() => onDeleteInvite(invite)}>
-                            Yes, I am sure
+                            {t('deleteDialog.confirm')}
                         </MyButton>
                     </div>
                 }
             >
-                Are you sure you want to delete the {invite.name} invite?
+                {t('deleteDialog.confirmText', { name: invite.name })}
             </MyDialog>
         </>
     );

@@ -1,0 +1,47 @@
+{
+    "kpi": {
+        "totalLeads": {
+            "label": "إجمالي العملاء المحتملين",
+            "sub": "{{active}} نشط · {{lost}} مفقود"
+        },
+        "conversionRate": {
+            "label": "معدل التحويل",
+            "sub": "{{converted}} من أصل {{total}} تم تحويلهم"
+        },
+        "avgResponseTime": {
+            "label": "متوسط وقت الاستجابة",
+            "sub_zero": "لم يستجب {{count}} عميل محتمل",
+            "sub_one": "استجاب {{count}} عميل محتمل واحد",
+            "sub_two": "استجاب {{count}} عميلين محتملين",
+            "sub_few": "استجاب {{count}} عملاء محتملين",
+            "sub_many": "استجاب {{count}} عميلاً محتملاً",
+            "sub_other": "استجاب {{count}} عميل محتمل"
+        },
+        "tatMet": {
+            "label": "الالتزام بوقت الاستجابة المتفق عليه",
+            "subCount": "{{count}} ضمن الوقت المتفق عليه",
+            "subDisabled": "الوقت المتفق عليه غير مفعّل في الإعدادات"
+        }
+    },
+    "status": {
+        "title": "توزيع الحالات",
+        "donutAriaLabel": "مخطط دائري لتوزيع الحالات",
+        "totalUnit": "عميل محتمل"
+    },
+    "trend": {
+        "title": "الاتجاه اليومي",
+        "submittedLegend": "مُرسَل",
+        "convertedLegend": "محوَّل",
+        "noData": "لا توجد بيانات",
+        "ariaLabel": "العملاء المحتملون المُرسَلون والمحوَّلون يوميًا"
+    },
+    "breakdown": {
+        "bySource": "حسب المصدر",
+        "byTier": "حسب الفئة"
+    },
+    "tier": {
+        "hot": "ساخن",
+        "warm": "دافئ",
+        "cold": "بارد"
+    }
+}

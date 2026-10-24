@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { type Control } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 interface Options {
     _id: string | number;
@@ -36,7 +37,9 @@ const SelectField: React.FC<SelectFieldProps> = ({
     onSelect,
     disabled = false,
     className,
-}) => (
+}) => {
+    const { t } = useTranslation("uiAtomsA");
+    return (
     <FormField
         control={control as Control}
         name={name}
@@ -64,7 +67,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
                             value={field.value}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder={`Select ${label}`} />
+                                <SelectValue placeholder={t("selectField.selectLabel", { label })} />
                             </SelectTrigger>
                             <SelectContent className="w-full">
                                 {options.map((option) => (
@@ -84,6 +87,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
             );
         }}
     />
-);
+    );
+};
 
 export default SelectField;

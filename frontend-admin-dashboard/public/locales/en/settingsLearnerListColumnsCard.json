@@ -1,0 +1,49 @@
+{
+    "header": {
+        "title": "{{learnerLabel}} List Columns",
+        "description": "Turn off columns this role should not see in the {{learnerLabelLower}} list. Filter-driven columns (Batch, Invite, Plan, Amount) are not listed here — they only show when their filter is active. Hiding a column here also hides its filter chip."
+    },
+    "headerSection": {
+        "title": "Header",
+        "countBadges": "Count badges (Total / Active / Inactive)"
+    },
+    "systemColumns": {
+        "title": "System columns",
+        "fullName": "Full Name",
+        "username": "Username",
+        "enrollmentNumber": "Enrollment Number",
+        "collegeSchool": "College/School",
+        "gender": "Gender",
+        "mobileNumber": "Mobile Number",
+        "emailId": "Email ID",
+        "fathersName": "Father/Male Guardian's Name",
+        "mothersName": "Mother/Female Guardian's Name",
+        "fathersMobileNumber": "Father/Male Guardian's Mobile Number",
+        "fathersEmail": "Father/Male Guardian's Email",
+        "mothersMobileNumber": "Mother/Female Guardian's Mobile Number",
+        "mothersEmail": "Mother/Female Guardian's Email",
+        "city": "City",
+        "state": "State",
+        "attendance": "Attendance",
+        "country": "Country",
+        "sessionExpiry": "Session Expiry",
+        "status": "Status",
+        "referralsCount": "Referrals Count",
+        "counsellor": "Counsellor",
+        "billingContactName": "Billing Contact Name",
+        "billingContactEmail": "Billing Contact Email",
+        "billingContactRole": "Billing Contact Role"
+    },
+    "membershipColumns": {
+        "title": "Membership columns",
+        "description": "These columns are hidden by default and only visible when the institute has org-associated batches. Toggle on the ones this role should see.",
+        "membershipRole": "Membership Role",
+        "membershipType": "Membership Type"
+    },
+    "customFieldColumns": {
+        "title": "Custom field columns",
+        "description": "Custom field columns are hidden by default. Toggle on the ones this role should see in the learner list.",
+        "loading": "Loading custom fields…",
+        "empty": "No custom fields configured for this institute yet. Add them in the Custom Fields settings, then come back here to enable them per role."
+    }
+}

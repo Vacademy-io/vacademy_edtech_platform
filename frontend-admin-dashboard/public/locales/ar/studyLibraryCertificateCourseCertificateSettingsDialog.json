@@ -1,0 +1,27 @@
+{
+    "toast": {
+        "saveSuccess": "تم حفظ إعدادات شهادة الدورة",
+        "saveFailed": "تعذّر حفظ إعدادات شهادة الدورة"
+    },
+    "instituteState": {
+        "enabled": "مفعّلة",
+        "disabled": "معطّلة"
+    },
+    "heading": "إعدادات الشهادة لهذه الدورة",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ…",
+    "save": "حفظ",
+    "instituteDefaultSummary": "الإعداد الافتراضي للمعهد: الشهادات <strong>{{state}}</strong> عند إتمام <strong>{{pct}}%</strong>. أي شيء تحدده هنا ينطبق على هذه الدورة فقط.",
+    "certificatesForCourse": "الشهادات لهذه الدورة",
+    "choice": {
+        "inherit": "استخدام الإعداد الافتراضي للمعهد",
+        "enabled": "مفعّلة",
+        "disabled": "معطّلة"
+    },
+    "willReceiveCertificates": "سيحصل المتعلمون في هذه الدورة على شهادات بعد اجتيازهم الحد المطلوب.",
+    "noCertificates": "لن يتم إصدار أي شهادات لهذه الدورة.",
+    "instituteDefaultOffException": "الإعداد الافتراضي للمعهد معطّل — هذه الدورة استثناء.",
+    "overrideThresholdLabel": "استخدام حد إتمام مختلف لهذه الدورة",
+    "percentCompletion": "% إتمام",
+    "certificateDesign": "تصميم الشهادة"
+}

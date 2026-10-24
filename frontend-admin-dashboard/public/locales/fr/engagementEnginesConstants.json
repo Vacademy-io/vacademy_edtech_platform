@@ -1,0 +1,49 @@
+{
+    "engineStatus": {
+        "draft": "Brouillon",
+        "templatesPending": "Modèles en attente",
+        "dryRun": "Essai à blanc",
+        "active": "Actif",
+        "paused": "En pause",
+        "archived": "Archivé"
+    },
+    "actionStatus": {
+        "open": "Ouvert",
+        "acked": "Accusé réception",
+        "dispatching": "Envoi en cours…",
+        "sent": "Envoyé",
+        "failed": "Échoué",
+        "done": "Terminé",
+        "dismissed": "Rejeté",
+        "expired": "Expiré",
+        "simulated": "Simulé"
+    },
+    "proposalStatus": {
+        "aiProposed": "Proposé par l'IA",
+        "userReview": "En cours de révision",
+        "userApproved": "Approuvé (par vous)",
+        "submitted": "Envoi à Meta…",
+        "metaPending": "En attente de Meta",
+        "metaApproved": "En ligne",
+        "metaRejected": "Rejeté par Meta",
+        "metaRecategorised": "Recatégorisé",
+        "superseded": "Remplacé",
+        "withdrawn": "Retiré"
+    },
+    "language": {
+        "english": "Anglais",
+        "hindi": "Hindi",
+        "hinglish": "Hinglish (hindi en écriture latine)"
+    },
+    "channel": {
+        "whatsapp": "WhatsApp",
+        "email": "E-mail",
+        "inApp": "Dans l'application",
+        "aiCall": "Appel IA"
+    },
+    "templateCategory": {
+        "marketing": "Marketing",
+        "utility": "Utilitaire",
+        "authentication": "Authentification"
+    }
+}

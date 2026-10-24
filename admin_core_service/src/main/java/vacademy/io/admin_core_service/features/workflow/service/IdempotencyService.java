@@ -103,6 +103,65 @@ public class IdempotencyService {
         }
     }
 
+    /**
+     * Attach the subject (the learner this run is FOR) and a storable snapshot of the seed
+     * context to an execution that was just marked PROCESSING.
+     *
+     * <p>Split from {@code markAsProcessing*} because the seed context is only assembled
+     * afterwards — it has to carry the execution's own id. Best-effort by design: this is
+     * bookkeeping for the learner-profile Workflows tab and its Retry button, and a failure
+     * to record it must never stop the workflow from running. The cost of a failure is one
+     * run missing from one tab.</p>
+     */
+    @Transactional
+    public void recordSubjectAndContext(String executionId, String subjectUserId,
+            Map<String, Object> storableSeedContext) {
+        if (executionId == null || executionId.isBlank()) {
+            return;
+        }
+        try {
+            workflowExecutionRepository.findById(executionId).ifPresent(execution -> {
+                execution.setSubjectUserId(subjectUserId);
+                execution.setSeedContext(storableSeedContext);
+                workflowExecutionRepository.save(execution);
+            });
+        } catch (Exception e) {
+            log.warn("Could not record subject/context on execution {}: {}", executionId, e.getMessage());
+        }
+    }
+
+    /**
+     * Create the execution row for a manual retry of {@code original}. Carries the original's
+     * workflow, trigger, schedule, type, subject and seed context across so the retry appears
+     * on the same learner's tab and is itself retryable, while
+     * {@code retryOfExecutionId}/{@code retriedByUserId} record where it came from.
+     *
+     * <p>A fresh {@code idempotencyKey} is mandatory: the column is UNIQUE, and reusing the
+     * original's would be the dedup mechanism refusing the very thing the admin asked for.</p>
+     */
+    @Transactional
+    public WorkflowExecution createRetryExecution(WorkflowExecution original, String idempotencyKey,
+            String retriedByUserId) {
+        WorkflowExecution retry = WorkflowExecution.builder()
+                .idempotencyKey(idempotencyKey)
+                .workflow(original.getWorkflow())
+                .workflowSchedule(original.getWorkflowSchedule())
+                .workflowTrigger(original.getWorkflowTrigger())
+                .workflowType(original.getWorkflowType())
+                .status(WorkflowExecutionStatus.PROCESSING)
+                .startedAt(Instant.now())
+                .subjectUserId(original.getSubjectUserId())
+                .seedContext(original.getSeedContext())
+                .retryOfExecutionId(original.getId())
+                .retriedByUserId(retriedByUserId)
+                .build();
+
+        WorkflowExecution saved = workflowExecutionRepository.save(retry);
+        log.info("Created RETRY execution {} for original execution {} (by user {})",
+                saved.getId(), original.getId(), retriedByUserId);
+        return saved;
+    }
+
     @Transactional
     public WorkflowExecution markAsCompleted(String idempotencyKey, Map<String, Object> result) {
         // A run that hit a long DELAY returns normally with __workflow_paused — the execution

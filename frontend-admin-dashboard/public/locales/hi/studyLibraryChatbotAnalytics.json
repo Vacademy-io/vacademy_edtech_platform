@@ -1,0 +1,19 @@
+{
+    "sessionMode": {
+        "textChat": "टेक्स्ट चैट",
+        "mockInterview": "मॉक इंटरव्यू",
+        "voiceDoubt": "वॉइस डाउट",
+        "oralTest": "मौखिक परीक्षा"
+    },
+    "contextType": {
+        "studyMaterial": "अध्ययन सामग्री",
+        "coursePage": "कोर्स पेज",
+        "general": "सामान्य"
+    },
+    "dayRange": {
+        "last7": "पिछले 7 दिन",
+        "last30": "पिछले 30 दिन",
+        "last90": "पिछले 90 दिन",
+        "last365": "पिछले 365 दिन"
+    }
+}

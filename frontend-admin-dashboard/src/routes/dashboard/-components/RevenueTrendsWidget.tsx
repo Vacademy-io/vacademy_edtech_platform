@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -82,14 +84,31 @@ const currencyIcon = (currency: string | null): Icon =>
 
 const nfmt = (n: number) => n.toLocaleString('en-IN');
 
+const buildMonths = (t: TFunction): string[] => [
+    t('months.jan'),
+    t('months.feb'),
+    t('months.mar'),
+    t('months.apr'),
+    t('months.may'),
+    t('months.jun'),
+    t('months.jul'),
+    t('months.aug'),
+    t('months.sep'),
+    t('months.oct'),
+    t('months.nov'),
+    t('months.dec'),
+];
+
 /** Short axis label from a YYYY-MM-DD string, e.g. "12 Jul". */
-const shortDay = (d: string): string => {
-    const parts = d.split('-');
-    if (parts.length !== 3) return d;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const m = months[Number(parts[1]) - 1] ?? '';
-    return `${Number(parts[2])} ${m}`;
-};
+const buildShortDay =
+    (t: TFunction) =>
+    (d: string): string => {
+        const parts = d.split('-');
+        if (parts.length !== 3) return d;
+        const months = buildMonths(t);
+        const m = months[Number(parts[1]) - 1] ?? '';
+        return `${Number(parts[2])} ${m}`;
+    };
 
 /**
  * "Amount collected" panel with a 3d / 7d / 24d / All time filter. Sums PAID
@@ -100,6 +119,8 @@ const shortDay = (d: string): string => {
 export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWidgetProps) {
     const instituteId = getCurrentInstituteId();
     const [range, setRange] = useState<CollectionRangeKey>('7d');
+    const { t } = useTranslation('dashboardRevenueTrendsWidget');
+    const shortDay = useMemo(() => buildShortDay(t), [t]);
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['collection-summary', instituteId, subOrgId ?? null, range],
@@ -116,7 +137,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
 
     const chartData = useMemo(
         () => (data?.daily ?? []).map((p) => ({ ...p, label: shortDay(p.date) })),
-        [data]
+        [data, shortDay]
     );
 
     if (isError) return null;
@@ -124,7 +145,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
     const total = data?.total_amount ?? 0;
     const count = data?.total_count ?? 0;
     const currency = data?.currency ?? null;
-    const rangeLabel = COLLECTION_RANGES.find((r) => r.key === range)?.label ?? '';
+    const rangeLabel = t(`ranges.${range}`);
     const CurrencyIcon = currencyIcon(currency);
 
     return (
@@ -136,10 +157,10 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
                     </span>
                     <div className="min-w-0">
                         <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900">
-                            {title || 'Amount collected'}
+                            {title || t('heading')}
                         </h3>
                         <p className="line-clamp-1 text-xs text-neutral-500">
-                            Paid payments · last {rangeLabel.toLowerCase()}
+                            {t('subtitle', { range: rangeLabel.toLowerCase() })}
                         </p>
                     </div>
                 </div>
@@ -147,7 +168,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
                 {/* Time-range segmented control */}
                 <div
                     role="group"
-                    aria-label="Collection time range"
+                    aria-label={t('rangeGroup')}
                     className="flex shrink-0 items-center gap-0.5 rounded-lg border border-neutral-200 bg-neutral-50 p-0.5"
                 >
                     {COLLECTION_RANGES.map((r) => (
@@ -163,7 +184,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
                                     : 'text-neutral-600 hover:bg-neutral-100'
                             )}
                         >
-                            {r.label}
+                            {t(`ranges.${r.key}`)}
                         </button>
                     ))}
                 </div>
@@ -173,7 +194,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
             <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
                 <div>
                     <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                        Total collected
+                        {t('totalCollected')}
                     </div>
                     {isLoading ? (
                         <Skeleton className="mt-1 h-8 w-32" />
@@ -188,7 +209,9 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
                     {isLoading ? (
                         <Skeleton className="h-3 w-16" />
                     ) : (
-                        <span className="tabular-nums">{nfmt(count)} payments</span>
+                        <span className="tabular-nums">
+                            {t('payments', { count, formatted: nfmt(count) })}
+                        </span>
                     )}
                 </div>
             </div>
@@ -200,7 +223,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
                 ) : chartData.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-1 text-neutral-400">
                         <TrendUp size={22} weight="duotone" />
-                        <span className="text-xs">No collections in this period</span>
+                        <span className="text-xs">{t('emptyState')}</span>
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
@@ -236,7 +259,7 @@ export default function RevenueTrendsWidget({ subOrgId, title }: RevenueTrendsWi
                                     fontSize: 12,
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
                                 }}
-                                formatter={(v: number) => [money(v, currency), 'Collected']}
+                                formatter={(v: number) => [money(v, currency), t('tooltip.collected')]}
                             />
                             <Area
                                 type="monotone"

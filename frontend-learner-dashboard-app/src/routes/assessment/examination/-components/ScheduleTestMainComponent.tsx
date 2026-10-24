@@ -3,17 +3,38 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import ScheduleTestTabList from "./ScheduleTestTabList";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { assessmentTypes, Assessment } from "@/types/assessment";
-import { fetchAssessmentData } from "../-utils.ts/useFetchAssessment";
+import {
+  fetchAssessmentData,
+  fetchAssessmentFolderList,
+} from "../-utils.ts/useFetchAssessment";
 import { AssessmentCard } from "../-components/AssessmentCard";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { EmptyState } from "@/components/design-system/states";
 import { Exam } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  getAssessmentFoldersEnabled,
+  OTHERS_FOLDER_ID,
+  type LearnerFolderList,
+} from "@/services/assessment-folders";
+import {
+  AssessmentFolderGrid,
+  AssessmentFolderHeader,
+} from "./AssessmentFolderGrid";
 
-export const ScheduleTestMainComponent = ({
+const AssessmentListView = ({
   assessment_types,
+  folderId,
+  header,
 }: {
   assessment_types: "HOMEWORK" | "ASSESSMENT";
+  /** Only this folder's tests (or OTHERS_FOLDER_ID); undefined = all. */
+  folderId?: string;
+  /** Shown above the tabs, e.g. the open folder with a back button. */
+  header?: React.ReactNode;
 }) => {
+  const { t } = useTranslation("assessment");
   const setNavHeading = useNavHeadingStore((s) => s.setNavHeading);
   const [selectedTab, setSelectedTab] = useState<assessmentTypes>(
     assessmentTypes.LIVE
@@ -84,7 +105,8 @@ export const ScheduleTestMainComponent = ({
           pageNum,
           pageSize,
           tab,
-          assessment_types
+          assessment_types,
+          folderId
         );
 
         // Defense-in-depth: even with the upstream catch fixed, a missing
@@ -122,7 +144,7 @@ export const ScheduleTestMainComponent = ({
         setLoadingMore(false);
       }
     },
-    [assessment_types]
+    [assessment_types, folderId]
   );
 
   const fetchAllTabsData = useCallback(() => {
@@ -132,10 +154,13 @@ export const ScheduleTestMainComponent = ({
   }, [fetchMoreData]);
 
   useEffect(() => {
-    const nextHeading = assessment_types === "ASSESSMENT" ? "Assessment" : "Homework";
+    const nextHeading =
+      assessment_types === "ASSESSMENT"
+        ? t("scheduleTest.navHeading.assessment")
+        : t("scheduleTest.navHeading.homework");
     setNavHeading(nextHeading);
     fetchAllTabsData();
-  }, [assessment_types, fetchAllTabsData, setNavHeading]);
+  }, [assessment_types, fetchAllTabsData, setNavHeading, t]);
 
   const lastElementRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -157,6 +182,7 @@ export const ScheduleTestMainComponent = ({
 
   return (
     <div className="w-full space-y-6">
+      {header}
       <Tabs
         value={selectedTab}
         onValueChange={(tab) => {
@@ -201,22 +227,22 @@ export const ScheduleTestMainComponent = ({
               icon={Exam}
               title={
                 selectedTab === assessmentTypes.LIVE
-                  ? "Nothing live right now"
+                  ? t("scheduleTest.empty.live.title")
                   : selectedTab === assessmentTypes.UPCOMING
-                    ? "Nothing scheduled yet"
-                    : "No past attempts yet"
+                    ? t("scheduleTest.empty.upcoming.title")
+                    : t("scheduleTest.empty.past.title")
               }
               description={
                 selectedTab === assessmentTypes.LIVE
-                  ? "When a test opens for your batch, it appears here with a Join button."
+                  ? t("scheduleTest.empty.live.description")
                   : selectedTab === assessmentTypes.UPCOMING
-                    ? "Tests scheduled by your institute will show up here with their start time."
-                    : "Once a test you attempted closes, it appears here with its report."
+                    ? t("scheduleTest.empty.upcoming.description")
+                    : t("scheduleTest.empty.past.description")
               }
               action={
                 selectedTab === assessmentTypes.LIVE
                   ? {
-                      label: "See upcoming",
+                      label: t("scheduleTest.empty.live.action"),
                       onClick: () => setSelectedTab(assessmentTypes.UPCOMING),
                     }
                   : undefined
@@ -225,13 +251,13 @@ export const ScheduleTestMainComponent = ({
           )}
 
           {loading && (
-            <div className="text-center text-muted-foreground py-8">Loading assessments...</div>
+            <div className="text-center text-muted-foreground py-8">{t("scheduleTest.loading.assessments")}</div>
           )}
 
           {loadingMore && (
             <div className="py-4 flex flex-col items-center gap-2">
               <div className="text-sm text-muted-foreground">
-                Loading more...
+                {t("scheduleTest.loading.more")}
               </div>
               <DashboardLoader />
             </div>
@@ -240,4 +266,114 @@ export const ScheduleTestMainComponent = ({
       </Tabs>
     </div>
   );
+};
+
+type FolderView =
+  | { mode: "loading" }
+  | { mode: "flat" }
+  | { mode: "grid"; data: LearnerFolderList }
+  | { mode: "folder"; data: LearnerFolderList | null };
+
+/**
+ * The learner's assessments. With assessment folders turned on (and at least one
+ * folder holding a test for this learner) it opens on the folder cards; `folderId`
+ * (from `?folderId=`) shows one folder's tests with the usual tabs.
+ */
+export const ScheduleTestMainComponent = ({
+  assessment_types,
+  folderId,
+}: {
+  assessment_types: "HOMEWORK" | "ASSESSMENT";
+  folderId?: string;
+}) => {
+  const { t } = useTranslation("assessment");
+  const navigate = useNavigate();
+  const setNavHeading = useNavHeadingStore((s) => s.setNavHeading);
+  const foldersApply = assessment_types === "ASSESSMENT";
+  const [view, setView] = useState<FolderView>(
+    foldersApply ? { mode: "loading" } : { mode: "flat" }
+  );
+
+  useEffect(() => {
+    if (!foldersApply) return;
+    let cancelled = false;
+    (async () => {
+      const enabled = await getAssessmentFoldersEnabled();
+      if (!enabled) {
+        if (!cancelled) setView({ mode: "flat" });
+        return;
+      }
+      let data: LearnerFolderList | null = null;
+      try {
+        data = await fetchAssessmentFolderList(assessment_types);
+      } catch (error) {
+        console.error("Failed to load assessment folders", error);
+      }
+      if (cancelled) return;
+      if (folderId) setView({ mode: "folder", data });
+      else if (data && data.folders.length > 0) setView({ mode: "grid", data });
+      else setView({ mode: "flat" });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [foldersApply, assessment_types, folderId]);
+
+  useEffect(() => {
+    if (view.mode === "grid") setNavHeading(t("scheduleTest.navHeading.assessment"));
+  }, [view.mode, setNavHeading, t]);
+
+  const openFolder = (id: string | undefined) =>
+    navigate({
+      to: ".",
+      search: (prev: Record<string, unknown>) => ({ ...prev, folderId: id }),
+    });
+
+  if (view.mode === "loading") return <DashboardLoader />;
+
+  if (view.mode === "grid") {
+    // Folder cards first; tests that are in no folder follow in the usual tabs.
+    return (
+      <div className="flex flex-col gap-8">
+        <AssessmentFolderGrid data={view.data} onOpen={openFolder} />
+        {view.data.unfiled_count > 0 ? (
+          <AssessmentListView
+            assessment_types={assessment_types}
+            folderId={OTHERS_FOLDER_ID}
+            header={
+              <h2 className="text-h3 font-semibold text-foreground">
+                {t("scheduleTest.folders.otherTests")}
+              </h2>
+            }
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  if (view.mode === "folder" && folderId) {
+    const isOthers = folderId === OTHERS_FOLDER_ID;
+    const folder = view.data?.folders.find((f) => f.id === folderId);
+    return (
+      <AssessmentListView
+        assessment_types={assessment_types}
+        folderId={folderId}
+        header={
+          <AssessmentFolderHeader
+            name={
+              isOthers
+                ? t("scheduleTest.folders.others")
+                : (folder?.name ?? t("scheduleTest.folders.fallbackName"))
+            }
+            imageUrl={folder?.image_url}
+            count={isOthers ? view.data?.unfiled_count : folder?.assessment_count}
+            isOthers={isOthers}
+            onBack={() => openFolder(undefined)}
+          />
+        }
+      />
+    );
+  }
+
+  return <AssessmentListView assessment_types={assessment_types} />;
 };

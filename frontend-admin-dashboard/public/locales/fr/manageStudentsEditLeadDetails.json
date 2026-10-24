@@ -1,0 +1,60 @@
+{
+    "trigger": "Modifier les informations",
+    "dialogHeading": "Modifier le profil du prospect",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "saveChanges": "Enregistrer les modifications",
+    "toast": {
+        "updateSuccess": "Profil du prospect mis à jour",
+        "updateError": "Échec de la mise à jour du profil du prospect"
+    },
+    "validation": {
+        "required": "Ce champ est obligatoire",
+        "invalidEmail": "Adresse e-mail invalide",
+        "invalidEmailShort": "E-mail invalide"
+    },
+    "sections": {
+        "identity": {
+            "title": "Identité",
+            "helper": "Son nom et ses informations de base."
+        },
+        "contact": {
+            "title": "Contact",
+            "helper": "Principaux moyens de le/la joindre."
+        },
+        "guardian": {
+            "title": "Tuteur",
+            "helper": "Coordonnées du parent / tuteur (facultatif)."
+        },
+        "additional": {
+            "title": "Détails supplémentaires",
+            "helper": "Réponses saisies dans le formulaire du prospect."
+        }
+    },
+    "fields": {
+        "fullName": {
+            "label": "Nom complet",
+            "placeholder": "Nom complet"
+        },
+        "email": {
+            "label": "E-mail",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "Numéro de mobile",
+            "placeholder": "123 456 7890"
+        },
+        "guardianName": {
+            "label": "Nom du tuteur",
+            "placeholder": "Nom du tuteur"
+        },
+        "guardianMobile": {
+            "label": "Mobile du tuteur",
+            "placeholder": "123 456 7890"
+        },
+        "guardianEmail": {
+            "label": "E-mail du tuteur",
+            "placeholder": "guardian@example.com"
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "viewList": "View List"
+    },
+    "dialog": {
+        "title": "Participants List"
+    },
+    "filters": {
+        "genderLabel": "Gender"
+    },
+    "filterButtons": {
+        "filter": "Filter",
+        "reset": "Reset"
+    }
+}

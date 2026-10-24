@@ -1,0 +1,66 @@
+{
+    "formats": {
+        "csv": {
+            "label": "CSV",
+            "note": "Generic comma-separated file — for a spreadsheet, or any portal that accepts a custom upload."
+        },
+        "xlsx": {
+            "label": "Excel (XLSX)",
+            "note": "The same columns as CSV in a formatted workbook — easiest to eyeball before uploading."
+        },
+        "hdfc": {
+            "label": "HDFC NEFT",
+            "note": "First-version NEFT text template. Verify one file against the HDFC portal before a live upload."
+        },
+        "icici": {
+            "label": "ICICI NEFT",
+            "note": "First-version NEFT text template. Verify one file against the ICICI portal before a live upload."
+        },
+        "sbi": {
+            "label": "SBI NEFT",
+            "note": "First-version NEFT text template. Verify one file against the SBI portal before a live upload."
+        }
+    },
+    "toast": {
+        "readyWithExcluded": "Bank file ready: {{records}} paid, {{excluded}} excluded.",
+        "ready_one": "Bank file ready with {{count}} record.",
+        "ready_other": "Bank file ready with {{count}} records."
+    },
+    "columns": {
+        "employee": "Employee",
+        "whyExcluded": "Why they were excluded",
+        "file": "File",
+        "records": "Records",
+        "total": "Total",
+        "generated": "Generated"
+    },
+    "preparing": "Preparing…",
+    "download": "Download",
+    "downloadFile": "Download file",
+    "noBankFileYet": "No bank file for this run yet",
+    "bankFileInfo": "The bank file lists each employee's account number, IFSC and net pay for this run — it is what you upload to the bank to actually move the money. It contains plaintext account details, so only HR admins can generate or download it.",
+    "chooseFormat": "Choose a format",
+    "chooseFormatHint": "Pick what your bank's portal accepts. The figures are identical in every format — only the layout differs.",
+    "generating": "Generating…",
+    "generateBankFile": "Generate bank file",
+    "heldEmployeesNote": "Held employees are never included — their pay is on hold by design.",
+    "adminOnlyNote": "Generating and downloading bank files is limited to HR admins. You can see which files were produced below.",
+    "bankFileFallback": "Bank file",
+    "justNow": "just now",
+    "employeesPaid": "Employees paid",
+    "totalAmount": "Total amount",
+    "excluded": "Excluded",
+    "excludedCount_one": "{{count}} employee excluded — fix their bank details and regenerate",
+    "excludedCount_other": "{{count}} employees excluded — fix their bank details and regenerate",
+    "excludedHint": "They are not in this file, so uploading it as-is pays everyone else and leaves them unpaid. Add the missing account details under ERP → People, then generate the file again.",
+    "noneExcluded": "Everyone on this run is in the file — nobody was excluded for missing bank details.",
+    "filesGeneratedTitle": "Files generated for this run",
+    "filesGeneratedHint": "Every bank file built for {{scope}} is kept, so you can prove later exactly what was uploaded. The excluded list is only shown for the file you just generated — regenerate to see it again.",
+    "scopeMonth": "this month",
+    "scopeRun": "this run",
+    "errors": {
+        "loadHistory": "Could not load the bank files generated for this run."
+    },
+    "noBankFileGenerated": "No bank file generated yet",
+    "noBankFileGeneratedDescription": "Once you generate one it is listed here with its record count and total, and can be downloaded again."
+}

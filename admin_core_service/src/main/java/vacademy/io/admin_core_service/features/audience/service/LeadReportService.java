@@ -16,8 +16,8 @@ import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -46,6 +46,7 @@ public class LeadReportService {
     private final AuthService authService;
     private final ReportScopeResolver reportScopeResolver;
     private final vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService counsellorScopeService;
+    private final LeadReportSettingService settingService;
 
     private static final int DEFAULT_RANGE_DAYS = 30;
 
@@ -58,9 +59,11 @@ public class LeadReportService {
                                                String teamId, String counsellorUserId,
                                                String audienceId, String sourceType,
                                                String callerUserId) {
-        DateRange range = resolveRange(fromDate, toDate);
-        Integer tatHours = resolveTatHours(instituteId); // null when TAT disabled
-        Integer tatHoursParam = tatHours != null ? tatHours : 0;
+        DateRange range = resolveRange(fromDate, toDate, instituteId);
+        LeadSlaConfigDTO.TatReminder tat = resolveTat(instituteId); // null when TAT disabled
+        Integer tatMinutes = tat != null ? tat.getTatMinutes() : null;
+        Integer tatMinutesParam = tatMinutes != null ? tatMinutes : 0;
+        String tatRule = tat != null ? tat.getWorkingHoursRule() : null;
 
         String scopeCsv = reportScopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
@@ -71,7 +74,7 @@ public class LeadReportService {
                 audienceResponseRepository.findReportTotals(instituteId, range.from, range.to,
                         scopeCsv, audienceFilter, sourceFilter);
         LeadReportProjections.ResponseStatsProjection response =
-                audienceResponseRepository.findReportResponseStats(instituteId, range.from, range.to, tatHoursParam,
+                audienceResponseRepository.findReportResponseStats(instituteId, range.from, range.to, tatMinutesParam, tatRule,
                         scopeCsv, audienceFilter, sourceFilter);
         List<LeadReportProjections.StatusCountProjection> statusRows =
                 audienceResponseRepository.findReportStatusBreakdown(instituteId, range.from, range.to,
@@ -84,7 +87,7 @@ public class LeadReportService {
                         scopeCsv, audienceFilter, sourceFilter);
         List<LeadReportProjections.DailyTrendProjection> trendRows =
                 audienceResponseRepository.findReportDailyTrend(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter);
+                        range.zone, scopeCsv, audienceFilter, sourceFilter);
 
         long total = nz(totals != null ? totals.getTotalLeads() : null);
         long converted = nz(totals != null ? totals.getConvertedLeads() : null);
@@ -93,7 +96,7 @@ public class LeadReportService {
         long overdue = nz(totals != null ? totals.getOverdueLeads() : null);
         long responded = nz(response != null ? response.getRespondedLeads() : null);
         Double avgResponseMin = response != null ? response.getAvgResponseMinutes() : null;
-        Long tatMet = (tatHours == null || response == null) ? null : response.getTatMetCount();
+        Long tatMet = (tatMinutes == null || response == null) ? null : response.getTatMetCount();
 
         LeadReportSummaryDTO.Totals totalsDto = LeadReportSummaryDTO.Totals.builder()
                 .totalLeads(total)
@@ -149,8 +152,8 @@ public class LeadReportService {
                 .collect(Collectors.toList());
 
         return LeadReportSummaryDTO.builder()
-                .fromDate(range.from)
-                .toDate(range.to)
+                .fromDate(range.fromLocal)
+                .toDate(range.toLocal)
                 .totals(totalsDto)
                 .byStatus(statusBreakdown)
                 .bySource(sourceBreakdown)
@@ -168,15 +171,17 @@ public class LeadReportService {
                                                            String teamId, String counsellorUserId,
                                                            String audienceId, String sourceType,
                                                            String callerUserId) {
-        DateRange range = resolveRange(fromDate, toDate);
-        Integer tatHours = resolveTatHours(instituteId);
-        Integer tatHoursParam = tatHours != null ? tatHours : 0;
+        DateRange range = resolveRange(fromDate, toDate, instituteId);
+        LeadSlaConfigDTO.TatReminder tat = resolveTat(instituteId);
+        Integer tatMinutes = tat != null ? tat.getTatMinutes() : null;
+        Integer tatMinutesParam = tatMinutes != null ? tatMinutes : 0;
+        String tatRule = tat != null ? tat.getWorkingHoursRule() : null;
 
         String scopeCsv = reportScopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
 
         List<LeadReportProjections.CounselorRowProjection> raw = audienceResponseRepository
-                .findReportCounselorPerformance(instituteId, range.from, range.to, tatHoursParam,
+                .findReportCounselorPerformance(instituteId, range.from, range.to, tatMinutesParam, tatRule,
                         scopeCsv, trimToNull(audienceId), trimToNull(sourceType));
 
         // Every ACTIVE counsellor in the caller's scope must get a row — the
@@ -209,7 +214,7 @@ public class LeadReportService {
             long assigned = nz(r.getLeadsAssigned());
             long responded = nz(r.getLeadsResponded());
             long conversions = nz(r.getConversions());
-            Long tatMet = tatHours == null ? null : r.getTatMetCount();
+            Long tatMet = tatMinutes == null ? null : r.getTatMetCount();
             return CounselorPerformanceDTO.Row.builder()
                     .counselorId(r.getCounselorId())
                     .counselorName(Optional.ofNullable(nameByIdFinal.get(r.getCounselorId()))
@@ -244,7 +249,7 @@ public class LeadReportService {
                         .conversions(0)
                         .conversionRate(null)
                         .avgResponseMinutes(null)
-                        .tatMetCount(tatHours == null ? null : 0L)
+                        .tatMetCount(tatMinutes == null ? null : 0L)
                         .tatMetRate(null)
                         .openLeads(0)
                         .overdueLeads(0)
@@ -269,9 +274,10 @@ public class LeadReportService {
                 .build();
 
         return CounselorPerformanceDTO.builder()
-                .fromDate(range.from)
-                .toDate(range.to)
-                .tatHours(tatHours)
+                .fromDate(range.fromLocal)
+                .toDate(range.toLocal)
+                .tatMinutes(tatMinutes)
+                .tatHours(tatMinutes == null ? null : (tatMinutes + 59) / 60)
                 .rows(rows)
                 .summary(summary)
                 .build();
@@ -303,12 +309,12 @@ public class LeadReportService {
                 .collect(Collectors.toList());
     }
 
-    /** Read tat_hours when TAT is enabled; null otherwise (drives "is TAT shown?" downstream). */
-    private Integer resolveTatHours(String instituteId) {
+    /** The TAT config when TAT is enabled; null otherwise (drives "is TAT shown?" downstream). */
+    private LeadSlaConfigDTO.TatReminder resolveTat(String instituteId) {
         try {
             LeadSlaConfigDTO sla = leadSlaConfigService.getSchedulerConfig(instituteId);
             if (sla != null && sla.getTatReminder() != null && sla.getTatReminder().isEnabled()) {
-                return sla.getTatReminder().getTatHours();
+                return sla.getTatReminder();
             }
         } catch (Exception ex) {
             log.debug("[LeadReport] No SLA config for institute {}: {}", instituteId, ex.getMessage());
@@ -316,16 +322,32 @@ public class LeadReportService {
         return null;
     }
 
-    /** Parse [from, to] as ISO yyyy-MM-dd; default to last 30 days. Returns the server-TZ timestamp strings. */
-    private DateRange resolveRange(String fromDate, String toDate) {
-        ZoneId zone = ZoneId.systemDefault();
+    /**
+     * Parse [from, to] as ISO yyyy-MM-dd days in the INSTITUTE timezone (report settings); default to
+     * the last 30 days. Columns store UTC wall clock, so the query bounds are each day's local midnight
+     * converted to UTC; fromLocal/toLocal keep the local midnights for the response.
+     */
+    private DateRange resolveRange(String fromDate, String toDate, String instituteId) {
+        ZoneId zone;
+        try {
+            zone = ZoneId.of(settingService.get(instituteId).timezone());
+        } catch (Exception e) {
+            zone = ZoneId.of("Asia/Kolkata");
+        }
         LocalDate today = LocalDate.now(zone);
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         // Inclusive-of-day on both ends; query uses '<' on the upper bound so add a day.
         return new DateRange(
+                utcWallClock(from, zone),
+                utcWallClock(to.plusDays(1), zone),
                 from.atStartOfDay().toString(),
-                to.plusDays(1).atStartOfDay().toString());
+                to.plusDays(1).atStartOfDay().toString(),
+                zone.getId());
+    }
+
+    private static String utcWallClock(LocalDate day, ZoneId zone) {
+        return day.atStartOfDay(zone).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime().toString();
     }
 
     private static LocalDate parseOr(String iso, LocalDate fallback) {
@@ -354,13 +376,7 @@ public class LeadReportService {
         return den == 0 ? Double.NaN : (num / den);
     }
 
-    private record DateRange(String from, String to) {
-        // ISO LocalDateTime strings the native query CASTs to timestamp.
-    }
-
-    /** Local DateTime helper kept for future use if we want UTC casts. */
-    @SuppressWarnings("unused")
-    private static LocalDateTime startOfDay(LocalDate d) {
-        return d.atStartOfDay();
+    private record DateRange(String from, String to, String fromLocal, String toLocal, String zone) {
+        // from/to: ISO LocalDateTime strings (UTC wall clock) the native query CASTs to timestamp.
     }
 }

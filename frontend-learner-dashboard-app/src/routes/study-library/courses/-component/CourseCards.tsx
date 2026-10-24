@@ -21,6 +21,7 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatMinutesHuman } from "@/utils/courseTime";
+import { authorRole, sharedAuthorRole } from "@/lib/course-author-role";
 
 // Avatar gradient ramp passed to boring-avatars (illustration palette, not theme tokens).
 const INSTRUCTOR_AVATAR_RAMP = ["#FFE5CC", "#FFCDA8", "#FFA85C", "#E8751A", "#C45A00"]; // design-lint-ignore: illustration ramp
@@ -29,6 +30,10 @@ interface Instructor {
     id: string;
     full_name: string;
     image_url?: string;
+    author_subtitle?: string;
+    author_description?: string;
+    /** Display role in this course (Author / Instructor / Acharya …). */
+    role_label?: string | null;
 }
 
 interface CourseCardProps {
@@ -284,16 +289,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 )}
             </div>
 
-            <div className="flex flex-col flex-grow p-4 lg:p-5 gap-3">
-                {/* Header */}
-                <div className="flex justify-between items-start gap-3">
-                    <h3
-                        className="text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2"
-                        title={package_name}
-                    >
-                        {package_name}
-                    </h3>
-
+            <div className="flex flex-col flex-grow p-4 lg:p-5 gap-stack">
+                {/* Header: the level badge on its own line above the title, so a
+                    long level name never squeezes the course name into a narrow
+                    column and cuts it off. */}
+                <div className="flex flex-col items-start gap-2">
                     <Badge
                         variant={getLevelBadgeVariant()}
                         className={cn(
@@ -310,6 +310,13 @@ const CourseCard: React.FC<CourseCardProps> = ({
                         <LevelIcon size={12} className="text-current hidden [.ui-vibrant_&]:block" />
                         {!isDefaultLevel && toTitleCase(level_name)}
                     </Badge>
+
+                    <h3
+                        className="text-lg font-bold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-3 break-words"
+                        title={package_name}
+                    >
+                        {package_name}
+                    </h3>
                 </div>
 
                 {/* Description */}
@@ -345,9 +352,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
                                 </div>
                             )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-caption text-muted-foreground font-medium mb-0.5">
-                                {toTitleCase(getTerminology(RoleTerms.Teacher, SystemTerms.Teacher))}
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                            <p className="text-caption text-muted-foreground font-medium">
+                                {sharedAuthorRole(
+                                    instructors.map(authorRole),
+                                    toTitleCase(getTerminology(RoleTerms.Teacher, SystemTerms.Teacher))
+                                )}
                             </p>
                             <div className="text-sm font-medium truncate">
                                 {instructors.map((instructor, index) => (
@@ -357,6 +367,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
                                     </span>
                                 ))}
                             </div>
+                            {instructor?.author_subtitle && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                    {instructor.author_subtitle}
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}
@@ -464,7 +479,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 )}
             </div>
 
-            <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
+            <CardFooter className="p-card pt-0 mt-auto flex flex-col gap-2">
                 <Button
                     className={cn(
                         "w-full font-semibold shadow-sm group/btn",

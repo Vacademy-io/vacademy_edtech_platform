@@ -4,9 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_leave.dto.LeaveTypeDTO;
 import vacademy.io.admin_core_service.features.hr_leave.entity.LeaveType;
 import vacademy.io.admin_core_service.features.hr_leave.repository.LeaveTypeRepository;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.List;
@@ -18,8 +20,12 @@ public class LeaveTypeService {
     @Autowired
     private LeaveTypeRepository leaveTypeRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     @Transactional
-    public String createLeaveType(LeaveTypeDTO dto, String instituteId) {
+    public String createLeaveType(LeaveTypeDTO dto, String instituteId, CustomUserDetails user) {
+        hrAccessGuard.requireHrAdmin(user, instituteId);
         if (!StringUtils.hasText(dto.getName())) {
             throw new VacademyException("Leave type name is required");
         }
@@ -50,9 +56,12 @@ public class LeaveTypeService {
     }
 
     @Transactional
-    public String updateLeaveType(String id, LeaveTypeDTO dto) {
+    public String updateLeaveType(String id, LeaveTypeDTO dto, String instituteId, CustomUserDetails user) {
+        hrAccessGuard.requireHrAdmin(user, instituteId);
+
         LeaveType leaveType = leaveTypeRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Leave type not found"));
+        hrAccessGuard.requireInstituteMatch(leaveType.getInstituteId(), instituteId, "Leave type");
 
         if (StringUtils.hasText(dto.getName())) {
             leaveType.setName(dto.getName());
@@ -101,7 +110,8 @@ public class LeaveTypeService {
     }
 
     @Transactional(readOnly = true)
-    public List<LeaveTypeDTO> getLeaveTypes(String instituteId) {
+    public List<LeaveTypeDTO> getLeaveTypes(String instituteId, CustomUserDetails user) {
+        hrAccessGuard.validateMember(user, instituteId);
         List<LeaveType> leaveTypes = leaveTypeRepository.findByInstituteIdOrderByNameAsc(instituteId);
         return leaveTypes.stream()
                 .map(this::toDTO)

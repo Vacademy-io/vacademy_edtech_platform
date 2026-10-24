@@ -1,0 +1,51 @@
+{
+    "description": "वे दिन जब संस्थान बंद रहता है। उपस्थिति इन्हें स्वयं HOLIDAY अंकित करती है, इसलिए इस कैलेंडर से छूटा हुआ दिन एक कार्य दिवस के रूप में गिना जाता है जिसमें कोई नहीं आया।",
+    "actions": {
+        "addSeveral": "कई जोड़ें",
+        "addHoliday": "अवकाश जोड़ें",
+        "addYearsHolidays": "वर्ष के अवकाश जोड़ें",
+        "edit": "{{name}} संपादित करें",
+        "remove": "{{name}} हटाएं",
+        "editFallback": "अवकाश",
+        "keepIt": "रखें",
+        "removeConfirm": "हटाएं"
+    },
+    "count_one": "{{year}} में {{count}} अवकाश",
+    "count_other": "{{year}} में {{count}} अवकाश",
+    "errors": {
+        "loadFailed": "अवकाश कैलेंडर लोड नहीं किया जा सका।",
+        "removeFailed": "अवकाश हटाया नहीं जा सका।"
+    },
+    "empty": {
+        "title": "{{year}} के लिए कोई अवकाश निर्धारित नहीं",
+        "description": "वर्ष का कैलेंडर यहां प्रकाशित करें — उपस्थिति और पेरोल दोनों इसे पढ़ते हैं।"
+    },
+    "months": {
+        "unknown": "महीना {{month}}",
+        "january": "जनवरी",
+        "february": "फरवरी",
+        "march": "मार्च",
+        "april": "अप्रैल",
+        "may": "मई",
+        "june": "जून",
+        "july": "जुलाई",
+        "august": "अगस्त",
+        "september": "सितंबर",
+        "october": "अक्टूबर",
+        "november": "नवंबर",
+        "december": "दिसंबर"
+    },
+    "holiday": {
+        "defaultName": "अवकाश",
+        "optional": "वैकल्पिक"
+    },
+    "toast": {
+        "removed": "अवकाश हटाया गया"
+    },
+    "deleteDialog": {
+        "title": "क्या इस अवकाश को हटाएं?",
+        "description": "{{date}} को {{name}} एक सामान्य कार्य दिवस बन जाएगा। इसके लिए पहले से दर्ज उपस्थिति में कोई बदलाव नहीं होगा।",
+        "defaultName": "यह अवकाश",
+        "unknownDate": "एक अज्ञात तिथि"
+    }
+}

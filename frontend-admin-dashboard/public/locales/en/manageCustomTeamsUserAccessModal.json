@@ -1,0 +1,21 @@
+{
+    "title": "Access Details",
+    "description": "View access mappings and permissions assigned to {{userName}}.",
+    "noAccess": "No special access mapped for this user.",
+    "columns": {
+        "type": "Type",
+        "name": "Name",
+        "permissions": "Permissions",
+        "linkage": "Linkage"
+    },
+    "accessType": {
+        "course": "Course",
+        "session": "Session",
+        "invite": "Invite",
+        "global": "Global"
+    },
+    "linkageType": {
+        "direct": "DIRECT"
+    },
+    "notAvailable": "N/A"
+}

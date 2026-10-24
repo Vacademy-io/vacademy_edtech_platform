@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { getCurrencySymbol } from "./payment-selection-step";
 import { SelectedPayment } from "./types";
 import { ReferralCodeComponent, ReferralBenefit } from "./apply-referral";
@@ -10,6 +12,8 @@ import { CouponInput } from "@/components/common/coupon/CouponInput";
 import { useEffect, useState } from "react";
 import { safeJsonParse } from "../-utils/helper";
 import { ReferRequest } from "../-services/enroll-invite-services";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 interface ReviewStepProps {
   courseData: {
     course: string;
@@ -49,21 +53,23 @@ const ReviewStep = ({
   onCouponChange,
   initialCouponCode,
 }: ReviewStepProps) => {
+  const { t } = useTranslation("enrollmentA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   return (
     <div className="space-y-6">
       {/* Order Summary Card */}
       <Card className="shadow-lg">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex items-start gap-2 sm:gap-3 mb-4">
+        <CardContent className="p-5 sm:p-card-lg space-y-4">
+          <div className="flex items-start gap-2 sm:gap-3">
             <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg flex-shrink-0">
               <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             </div>
             <div>
               <h2 className="text-title-lg font-semibold text-gray-900 leading-tight">
-                Order Summary
+                {t("reviewStep.orderSummary")}
               </h2>
               <p className="text-caption text-muted-foreground mt-1">
-                Review your order before proceeding to payment
+                {t("reviewStep.reviewOrder")}
               </p>
             </div>
           </div>
@@ -75,7 +81,7 @@ const ReviewStep = ({
                 <div className="rounded-lg relative h-32 sm:h-56 lg:h-72 w-full overflow-hidden">
                   <img
                     src={courseData.courseBanner}
-                    alt="Course Banner"
+                    alt={t("reviewStep.courseBannerAlt", { course })}
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -151,20 +157,30 @@ const isPricingBenefit = (benefit: ReferralBenefit): boolean => {
   );
 };
 
-const formatNonPricingBenefits = (benefit: ReferralBenefit): string | null => {
+const formatNonPricingBenefits = (
+  benefit: ReferralBenefit,
+  t: TFunction,
+  course: string
+): string | null => {
   if (!benefit) return null;
 
   switch (benefit.benefitType) {
     case "FREE_MEMBERSHIP_DAYS":
-      return `${benefit.benefitValue.days} Free Membership Days 🎉`;
+      return t("reviewStep.benefits.freeMembershipDays", {
+        days: benefit.benefitValue.days,
+      });
     case "CONTENT": {
       const deliveryText = formatDeliveryMediums(
-        benefit.benefitValue.deliveryMediums
+        benefit.benefitValue.deliveryMediums,
+        t
       );
-      return `You will get bonus content ${deliveryText} after enrolling in the course. 🎉`;
+      return t("reviewStep.benefits.bonusContent", { deliveryText, course });
     }
     case "POINTS":
-      return `Earn ${benefit.benefitValue.points} reward points ⭐️ after enrolling in the course. 🎉` ;
+      return t("reviewStep.benefits.rewardPoints", {
+        points: benefit.benefitValue.points,
+        course,
+      });
     default:
       console.log("Unknown benefit type:", benefit.benefitType);
       return null;
@@ -172,24 +188,27 @@ const formatNonPricingBenefits = (benefit: ReferralBenefit): string | null => {
 };
 
 // Helper function to format delivery mediums
-const formatDeliveryMediums = (mediums: string[]) => {
+const formatDeliveryMediums = (mediums: string[], t: TFunction) => {
   if (!mediums || mediums.length === 0) return "";
 
   const formattedMediums = mediums.map((medium) => {
     switch (medium.toUpperCase()) {
       case "EMAIL":
-        return "Email";
+        return t("reviewStep.benefits.mediumEmail");
       case "WHATSAPP":
-        return "WhatsApp";
+        return t("reviewStep.benefits.mediumWhatsapp");
       default:
         return medium.toLowerCase();
     }
   });
 
   if (formattedMediums.length === 1) {
-    return ` on ${formattedMediums[0]}`;
+    return t("reviewStep.benefits.onOneMedium", { medium: formattedMediums[0] });
   } else if (formattedMediums.length === 2) {
-    return ` on ${formattedMediums[0]} and ${formattedMediums[1]}`;
+    return t("reviewStep.benefits.onTwoMediums", {
+      medium1: formattedMediums[0],
+      medium2: formattedMediums[1],
+    });
   }
 };
 
@@ -218,6 +237,8 @@ const PaidPlanReview = ({
   onCouponChange?: (appliedCode: string | null, discount: number) => void;
   initialCouponCode?: string | null;
 }) => {
+  const { t } = useTranslation("enrollmentA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const [couponVerified, setCouponVerified] = useState(false);
   const couponsEnabled = useCouponsEnabled();
   const couponCtx = useCheckoutCoupon({
@@ -292,12 +313,12 @@ const PaidPlanReview = ({
 
   const formatValidity = (validityInDays: number) => {
     if (validityInDays === 365) {
-      return "12 months";
+      return t("reviewStep.pricing.months", { count: 12 });
     } else if (validityInDays % 30 === 0 && validityInDays >= 30) {
       const months = validityInDays / 30;
-      return `${months} ${months === 1 ? "month" : "months"}`;
+      return t("reviewStep.pricing.months", { count: months });
     } else {
-      return `${validityInDays} days`;
+      return t("reviewStep.pricing.days", { count: validityInDays });
     }
   };
 
@@ -360,20 +381,20 @@ const PaidPlanReview = ({
   return (
     <div className="py-4 space-y-4">
       {/* Plan Details Section */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-subtitle font-semibold text-gray-900 mb-3">
-          Plan Details
+      <div className="bg-gray-50 rounded-lg p-4 space-y-stack">
+        <h3 className="text-subtitle font-semibold text-gray-900">
+          {t("reviewStep.planDetails")}
         </h3>
 
         <div className="flex flex-col gap-4">
           <div className="flex justify-between">
-            <span className="text-gray-600">Plan:</span>
+            <span className="text-gray-600">{t("reviewStep.plan")}</span>
             <div className="font-medium text-gray-900">{plan.name}</div>
           </div>
 
           {plan.validity_in_days != null && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Validity:</span>
+              <span className="text-gray-600">{t("reviewStep.validity")}</span>
               <div className="font-medium text-gray-900">
                 {formatValidity(plan.validity_in_days)}
               </div>
@@ -409,12 +430,12 @@ const PaidPlanReview = ({
 
       {/* Pricing Section */}
       <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-subtitle font-semibold text-gray-900 mb-3">Pricing</h3>
+        <h3 className="text-subtitle font-semibold text-gray-900 mb-3">{t("reviewStep.pricing.title")}</h3>
 
         <div className="space-y-2">
           {hasDiscount && (
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Price:</span>
+              <span className="text-gray-600">{t("reviewStep.pricing.price")}</span>
               <span className="line-through text-gray-500">
                 {getCurrencySymbol(plan.currency || "")}
                 {plan.elevated_price?.toFixed(2)}
@@ -424,7 +445,7 @@ const PaidPlanReview = ({
 
           {hasDiscount && (
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Discount:</span>
+              <span className="text-gray-600">{t("reviewStep.pricing.discount")}</span>
               <span className="text-green-600 font-medium">
                 -{getCurrencySymbol(plan.currency || "")}
                 {discountAmount.toFixed(2)}
@@ -437,7 +458,7 @@ const PaidPlanReview = ({
             refereeDiscount &&
             isPricingBenefit(refereeDiscount) && (
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Referral Discount:</span>
+                <span className="text-gray-600">{t("reviewStep.pricing.referralDiscount")}</span>
                 <span className="text-green-600 font-medium">
                   -{getCurrencySymbol(plan.currency || "")}
                   {getReferralDiscountAmount(
@@ -445,7 +466,9 @@ const PaidPlanReview = ({
                     plan.actual_price
                   ).toFixed(2)}
                   {refereeDiscount.benefitType === "PERCENTAGE_DISCOUNT" &&
-                    ` (${refereeDiscount.benefitValue.percentage}%)`}
+                    t("reviewStep.pricing.percentageSuffix", {
+                      percentage: refereeDiscount.benefitValue.percentage,
+                    })}
                 </span>
               </div>
             )}
@@ -456,7 +479,7 @@ const PaidPlanReview = ({
           {couponCtx.state.appliedCode && couponCtx.state.discount > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-gray-600">
-                Coupon ({couponCtx.state.appliedCode}):
+                {t("reviewStep.pricing.couponLabel", { code: couponCtx.state.appliedCode })}
               </span>
               <span className="text-green-600 font-medium">
                 -{getCurrencySymbol(plan.currency || "")}
@@ -466,7 +489,7 @@ const PaidPlanReview = ({
           )}
 
           <div className="flex justify-between items-center border-t pt-2">
-            <span className="text-gray-600">Total Price:</span>
+            <span className="text-gray-600">{t("reviewStep.pricing.totalPrice")}</span>
             <span className="font-bold text-subtitle text-primary-600">
               {getCurrencySymbol(plan.currency || "")}
               {(() => {
@@ -504,7 +527,7 @@ const PaidPlanReview = ({
         {/* Currency note */}
         {plan.currency && (
           <p className="text-xs text-gray-400 mt-3 text-end">
-            All prices in {plan.currency.toUpperCase()}
+            {t("reviewStep.pricing.allPricesIn", { currency: plan.currency.toUpperCase() })}
           </p>
         )}
       </div>
@@ -513,16 +536,16 @@ const PaidPlanReview = ({
       {couponVerified &&
         refereeDiscount &&
         !isPricingBenefit(refereeDiscount) && (
-          <div className="bg-green-50 rounded-lg p-4">
-            <h3 className="text-subtitle font-semibold text-gray-900 mb-3">
-              Referral Benefits
+          <div className="bg-green-50 rounded-lg p-4 space-y-stack">
+            <h3 className="text-subtitle font-semibold text-gray-900">
+              {t("reviewStep.referralBenefits")}
             </h3>
 
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <span className="text-gray-900 font-medium">
-                  {formatNonPricingBenefits(refereeDiscount)}
+                  {formatNonPricingBenefits(refereeDiscount, t, course)}
                 </span>
               </div>
             </div>
@@ -547,6 +570,8 @@ const FreePlanReview = ({
   onUnappliedCodeChange?: (hasUnappliedCode: boolean) => void;
   onReferralApplied?: () => void;
 }) => {
+  const { t } = useTranslation("enrollmentA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const [couponVerified, setCouponVerified] = useState(false);
   if (!plan) return null;
 
@@ -600,22 +625,22 @@ const FreePlanReview = ({
   return (
     <div className="py-4 space-y-4">
       {/* Plan Details Section */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-3 text-lg">
-          Plan Details
+      <div className="bg-gray-50 rounded-lg p-4 space-y-stack">
+        <h3 className="font-semibold text-gray-900 text-lg">
+          {t("reviewStep.planDetails")}
         </h3>
 
         <div className="flex flex-col gap-4">
           <div className="flex justify-between">
-            <span className="text-gray-600">Plan:</span>
+            <span className="text-gray-600">{t("reviewStep.plan")}</span>
             <div className="font-medium text-gray-900">{plan.name}</div>
           </div>
 
           {plan.validity_in_days != null && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Validity:</span>
+              <span className="text-gray-600">{t("reviewStep.validity")}</span>
               <div className="font-medium text-gray-900">
-                {plan.duration || `${plan.validity_in_days} days`}
+                {plan.duration || t("reviewStep.pricing.days", { count: plan.validity_in_days })}
               </div>
             </div>
           )}
@@ -636,13 +661,13 @@ const FreePlanReview = ({
       )}
 
       <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-3 text-lg">Pricing</h3>
+        <h3 className="font-semibold text-gray-900 mb-3 text-lg">{t("reviewStep.pricing.title")}</h3>
 
         <div className="space-y-2">
           <div className="flex justify-between items-center border-t pt-2">
-            <span className="text-gray-600">Total Price:</span>
+            <span className="text-gray-600">{t("reviewStep.pricing.totalPrice")}</span>
             {plan.amount === 0 ? (
-              <span className="font-bold text-lg text-primary-600">Free</span>
+              <span className="font-bold text-lg text-primary-600">{t("reviewStep.pricing.free")}</span>
             ) : (
               <span className="font-bold text-lg text-primary-600">
                 {getCurrencySymbol(plan.currency || "")}
@@ -655,7 +680,7 @@ const FreePlanReview = ({
         {/* Currency note */}
         {plan.currency && plan.amount !== 0 && (
           <p className="text-xs text-gray-400 mt-3 text-end">
-            All prices in {plan.currency.toUpperCase()}
+            {t("reviewStep.pricing.allPricesIn", { currency: plan.currency.toUpperCase() })}
           </p>
         )}
       </div>
@@ -664,16 +689,16 @@ const FreePlanReview = ({
       {couponVerified &&
         refereeDiscount &&
         !isPricingBenefit(refereeDiscount) && (
-          <div className="bg-green-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-3 text-lg">
-              Referral Benefits
+          <div className="bg-green-50 rounded-lg p-4 space-y-stack">
+            <h3 className="font-semibold text-gray-900 text-lg">
+              {t("reviewStep.referralBenefits")}
             </h3>
 
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <span className="text-gray-900 font-medium">
-                  {formatNonPricingBenefits(refereeDiscount)}
+                  {formatNonPricingBenefits(refereeDiscount, t, course)}
                 </span>
               </div>
             </div>

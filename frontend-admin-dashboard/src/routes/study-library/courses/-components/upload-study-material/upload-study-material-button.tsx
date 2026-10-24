@@ -2,11 +2,13 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { BookOpenText } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StudyMaterialDetailsForm } from './study-material-details-form';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useDialogStore } from '@/routes/study-library/courses/-stores/slide-add-dialogs-store';
 
 export const UploadStudyMaterialButton = () => {
+    const { t } = useTranslation('studyLibraryUploadStudyMaterialButton');
     const [openDialog, setOpenDialog] = useState(false);
     const navigate = useNavigate();
     const { openDocUploadDialog, openPdfDialog, openVideoDialog } = useDialogStore();
@@ -21,7 +23,7 @@ export const UploadStudyMaterialButton = () => {
         <MyButton buttonType="secondary" scale="large" layoutVariant="default">
             <div className="flex items-center gap-2">
                 <BookOpenText className="size-6" />
-                <div>Upload Study Material</div>
+                <div>{t('title')}</div>
             </div>
         </MyButton>
     );
@@ -55,7 +57,7 @@ export const UploadStudyMaterialButton = () => {
     return (
         <MyDialog
             trigger={triggerButton}
-            heading="Upload Study Material"
+            heading={t('title')}
             dialogWidth="min-w-[400px]"
             open={openDialog}
             onOpenChange={handleOpenChange}
@@ -63,7 +65,7 @@ export const UploadStudyMaterialButton = () => {
             <StudyMaterialDetailsForm
                 fields={['course', 'session', 'level', 'subject', 'module', 'chapter', 'file_type']}
                 onFormSubmit={handleSubmitForm}
-                submitButtonName="Submit"
+                submitButtonName={t('submit')}
             />
         </MyDialog>
     );

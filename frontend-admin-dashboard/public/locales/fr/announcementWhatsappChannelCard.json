@@ -1,0 +1,37 @@
+{
+    "empty": {
+        "title": "Aucun modèle WhatsApp approuvé pour l'instant",
+        "description": "WhatsApp ne délivre que des messages construits à partir d'un modèle approuvé par Meta. Synchronisez votre compte WhatsApp Business, ou créez un modèle et soumettez-le pour approbation."
+    },
+    "action": {
+        "syncing": "Synchronisation…",
+        "syncFromMeta": "Synchroniser depuis Meta",
+        "manageTemplates": "Gérer les modèles"
+    },
+    "template": {
+        "label": "Modèle approuvé",
+        "searchPlaceholder": "Recherchez parmi vos modèles approuvés",
+        "approvedOnlyHint": "Seuls les modèles approuvés par Meta peuvent être envoyés.",
+        "availableCount_one": "{{count}} disponible.",
+        "availableCount_many": "{{count}} disponibles.",
+        "availableCount_other": "{{count}} disponibles."
+    },
+    "headerKind": {
+        "badge": "En-tête {{kind}}",
+        "type": {
+            "image": "Image",
+            "video": "Vidéo",
+            "document": "Document"
+        }
+    },
+    "headerUrl": {
+        "label": "URL {{kind}}",
+        "placeholder": "https://…/your-{{kind}}",
+        "requiredHint": "Meta rejette l'intégralité de l'envoi si un modèle avec en-tête média arrive sans son média, ce champ est donc requis."
+    },
+    "variables": {
+        "label": "Variables du modèle",
+        "hint": "Chaque variable est renseignée par destinataire au moment de l'envoi.",
+        "customValuePlaceholder": "Texte à utiliser pour {{name}}"
+    }
+}

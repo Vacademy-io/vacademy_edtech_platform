@@ -69,6 +69,7 @@ public class LearnerAccessService {
     private final StudentSessionRepository studentSessionRepository;
     private final InstituteStudentRepository instituteStudentRepository;
     private final LearnerAccessLogRepository learnerAccessLogRepository;
+    private final vacademy.io.admin_core_service.features.user_subscription.repository.UserPlanRepository userPlanRepository;
 
     // ── Admin-initiated changes ───────────────────────────────────────────
 
@@ -119,7 +120,16 @@ public class LearnerAccessService {
                 Date previous = mapping.getExpiryDate();
                 Date next = resolveNewExpiry(request, mapping, now);
 
-                if (Objects.equals(previous, next)) {
+                Date previousJoin = mapping.getEnrolledDate();
+                // A join move is independent of the expiry operations: a request may carry
+                // either, both or neither.
+                boolean joinChanged = request.getNewJoinDate() != null
+                        && !Objects.equals(previousJoin, request.getNewJoinDate());
+                if (joinChanged) {
+                    item.previousJoinDate(previousJoin).newJoinDate(request.getNewJoinDate());
+                }
+
+                if (Objects.equals(previous, next) && !joinChanged) {
                     results.add(item.status("SKIPPED")
                             .newExpiryDate(previous)
                             .remainingDays(remainingDays(previous, now))
@@ -133,6 +143,13 @@ public class LearnerAccessService {
 
                 if (!request.isDryRun()) {
                     mapping.setExpiryDate(next);
+                    if (joinChanged) {
+                        mapping.setEnrolledDate(request.getNewJoinDate());
+                        Date newPlanEnd = shiftPlanWindow(mapping, request);
+                        if (newPlanEnd != null) {
+                            item.newPlanEndDate(newPlanEnd);
+                        }
+                    }
                     // Set.add both tests and claims the slot, so two INACTIVE rows for the
                     // same batch in one request cannot both be promoted either.
                     if (Boolean.TRUE.equals(request.getReactivateExpired())
@@ -194,6 +211,57 @@ public class LearnerAccessService {
      * requested change does not apply to this particular enrollment — that is a skip with
      * a reason, not a failure.
      */
+    /**
+     * Moves the plan's own window to follow a new join date, and returns the new end date.
+     *
+     * <p>Five fields describe one concept between them — ssigm.enrolled_date and expiry_date
+     * for course access, user_plan.start_date and end_date for the term, next_charge_at for
+     * the money — and they already drift apart in production: a trial mapping expires 30 days
+     * after enrolment while the plan runs 14. Moving the join date alone would widen exactly
+     * that gap, so the term moves with it and the charge follows the term.
+     *
+     * <p>The term length is preserved rather than recomputed from the invite: whatever the
+     * learner was given (a 14-day trial, a 30-day month) they keep, just starting later.
+     * Returns null when there is no plan to move or the caller opted out.
+     */
+    private Date shiftPlanWindow(StudentSessionInstituteGroupMapping mapping,
+            LearnerAccessChangeRequestDTO request) {
+        if (Boolean.FALSE.equals(request.getShiftPlanWindow()) || mapping.getUserPlanId() == null) {
+            return null;
+        }
+        try {
+            var plan = userPlanRepository.findById(mapping.getUserPlanId()).orElse(null);
+            if (plan == null) {
+                return null;
+            }
+            Date newStart = request.getNewJoinDate();
+            Date newEnd = null;
+            if (plan.getStartDate() != null && plan.getEndDate() != null) {
+                long termMillis = plan.getEndDate().getTime() - plan.getStartDate().getTime();
+                newEnd = new Date(newStart.getTime() + termMillis);
+            } else if (plan.getEndDate() != null) {
+                newEnd = plan.getEndDate();
+            }
+            plan.setStartDate(newStart);
+            if (newEnd != null) {
+                plan.setEndDate(newEnd);
+                // Only an armed plan is re-pointed. A learner with no mandate is billed by the
+                // pay-to-continue flow, and writing a charge date for them would arm a sweep
+                // that has nothing to charge against.
+                if (Boolean.TRUE.equals(plan.getAutoRenewalEnabled()) && plan.getNextChargeAt() != null) {
+                    plan.setNextChargeAt(newEnd);
+                }
+            }
+            userPlanRepository.save(plan);
+            log.info("Join date moved for plan {}: start={} end={} nextChargeAt={}",
+                    plan.getId(), newStart, newEnd, plan.getNextChargeAt());
+            return newEnd;
+        } catch (Exception e) {
+            log.error("Could not shift the plan window for mapping {}", mapping.getId(), e);
+            return null;
+        }
+    }
+
     private Date resolveNewExpiry(LearnerAccessChangeRequestDTO request,
                                   StudentSessionInstituteGroupMapping mapping,
                                   Date now) {

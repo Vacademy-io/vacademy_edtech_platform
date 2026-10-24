@@ -1,0 +1,81 @@
+{
+    "dialog": {
+        "editHeading": "تعديل نوع الإجازة",
+        "addHeading": "إضافة نوع إجازة"
+    },
+    "info": {
+        "paidType": "يُخصم النوع المدفوع من رصيد، لذا يحتاج إلى سياسة لمنح الموظفين حصة.",
+        "unpaidType": "يُعامل النوع غير المدفوع في كشوف المرتبات كخصم من الأجر: تُخصم الأيام من الراتب ولا حاجة لرصيد، لذا لا يحتاج إلى سياسة."
+    },
+    "fields": {
+        "name": {
+            "label": "الاسم",
+            "placeholder": "إجازة عارضة"
+        },
+        "code": {
+            "label": "الرمز",
+            "placeholder": "CASUAL",
+            "description": "المعرّف المستخدم من قبل السياسات والأرصدة وكشوف المرتبات."
+        },
+        "minDays": {
+            "label": "الحد الأدنى للأيام لكل طلب",
+            "placeholder": "0.5",
+            "description": "القيمة 0.5 تتيح للموظفين أخذ نصف يوم."
+        },
+        "maxConsecutiveDays": {
+            "label": "الحد الأقصى للأيام المتتالية",
+            "placeholder": "5",
+            "description": "اتركه فارغًا لعدم وجود حد."
+        },
+        "applicableGender": {
+            "label": "ينطبق على"
+        },
+        "status": {
+            "label": "الحالة"
+        },
+        "maxCarryForward": {
+            "label": "الحد الأقصى للأيام المرحّلة",
+            "placeholder": "10",
+            "description": "أقصى ما ستُرحّله عملية نهاية العام إلى العام التالي. ما يزيد عن ذلك يسقط، أو يُصرف نقدًا إذا كان النوع قابلاً للصرف."
+        },
+        "description": {
+            "label": "الوصف",
+            "placeholder": "متى ينبغي للموظفين استخدام هذه الإجازة، حتى لا يضطر المسؤول التالي للتخمين."
+        }
+    },
+    "checkboxes": {
+        "paidLeave": "إجازة مدفوعة",
+        "carriesForward": "قابلة للترحيل",
+        "encashable": "قابلة للصرف نقدًا",
+        "requiresDocument": "تتطلب مستندًا"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "saving": "جارٍ الحفظ…",
+        "saveChanges": "حفظ التغييرات",
+        "createLeaveType": "إنشاء نوع إجازة"
+    },
+    "toast": {
+        "updated": "تم تحديث نوع الإجازة",
+        "created": "تم إنشاء نوع الإجازة"
+    },
+    "errors": {
+        "saveFailed": "تعذّر حفظ نوع الإجازة."
+    },
+    "validation": {
+        "nameRequired": "أعطِ نوع الإجازة اسمًا",
+        "codeMinLength": "يجب ألا تقل الرموز عن حرفين",
+        "codeFormat": "أحرف كبيرة وأرقام وشرطات سفلية فقط — بلا مسافات (مثل CASUAL, SICK, COMP_OFF)",
+        "genderRequired": "اختر الفئة التي ينطبق عليها هذا",
+        "statusRequired": "اختر حالة",
+        "descriptionMaxLength": "اجعل الوصف أقل من 500 حرف",
+        "mustBePositiveDays": "يجب أن يكون {{label}} عددًا موجبًا من الأيام",
+        "mustBeWholeDays": "يجب أن يكون {{label}} عددًا صحيحًا من الأيام",
+        "codeClash": "نوع إجازة آخر يستخدم هذا الرمز بالفعل"
+    },
+    "labels": {
+        "carryForwardCap": "الحد الأقصى للترحيل",
+        "minimumDays": "الحد الأدنى للأيام",
+        "maximumConsecutiveDays": "الحد الأقصى للأيام المتتالية"
+    }
+}

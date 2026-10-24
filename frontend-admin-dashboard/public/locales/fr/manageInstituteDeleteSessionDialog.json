@@ -1,0 +1,11 @@
+{
+    "heading": "Supprimer {{session}}",
+    "attention": "Attention",
+    "confirmMessage": "Toutes les données de {{session}} seront supprimées. Êtes-vous sûr de vouloir supprimer {{session}}",
+    "no": "Non",
+    "yes": "Oui",
+    "toast": {
+        "deleted": " {{session}} supprimé avec succès !",
+        "deleteFailed": "Échec de la suppression de {{session}}"
+    }
+}

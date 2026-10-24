@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ArrowClockwise } from '@phosphor-icons/react';
 import { getInstituteId } from '@/constants/helper';
+import { cn } from '@/lib/utils';
+import { MyButton } from '@/components/design-system/button';
 import { StatsCards } from './stats-cards';
 import { RecentActivity } from './recent-activity';
 import { EmailEventsDialog } from './email-events-dialog';
@@ -12,15 +16,19 @@ import {
     type HubRecentItem,
 } from '../../-services/hub-api';
 
-const WINDOW_OPTIONS = [
-    { label: 'Last 24h', days: 1 },
-    { label: 'Last 7 days', days: 7 },
-    { label: 'Last 30 days', days: 30 },
-];
+function buildWindowOptions(t: TFunction): Array<{ label: string; days: number }> {
+    return [
+        { label: t('window.last24h'), days: 1 },
+        { label: t('window.last7Days'), days: 7 },
+        { label: t('window.last30Days'), days: 30 },
+    ];
+}
 
 const RECENT_PAGE_SIZE = 20;
 
 export function OverviewTab() {
+    const { t } = useTranslation('communicationOverviewTab');
+    const windowOptions = buildWindowOptions(t);
     const instituteId = getInstituteId() || '';
     const [windowDays, setWindowDays] = useState(7);
     const [overview, setOverview] = useState<HubOverview | null>(null);
@@ -83,54 +91,68 @@ export function OverviewTab() {
     }, [load]);
 
     return (
-        <div className="p-4 space-y-4">
+        <div className="mx-auto w-full max-w-7xl space-y-4 p-4 sm:p-6">
             {/* Controls */}
-            <div className="flex items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                    {WINDOW_OPTIONS.map((opt) => (
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="flex rounded-lg border border-neutral-200 bg-white p-0.5">
+                    {windowOptions.map((opt) => (
                         <button
                             key={opt.days}
+                            type="button"
                             onClick={() => setWindowDays(opt.days)}
-                            className={`px-3 py-1.5 text-xs rounded-md border transition ${
+                            aria-pressed={windowDays === opt.days}
+                            className={cn(
+                                'rounded-md px-3 py-1 font-medium transition-colors',
                                 windowDays === opt.days
-                                    ? 'bg-green-50 border-green-500 text-green-700'
-                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-neutral-600 hover:bg-neutral-100'
+                            )}
                         >
-                            {opt.label}
+                            <span className="text-caption">{opt.label}</span>
                         </button>
                     ))}
                 </div>
-                <button
+                <span className="text-caption text-neutral-500">{t('windowHint')}</span>
+                <MyButton
+                    buttonType="secondary"
+                    scale="medium"
                     onClick={load}
-                    className="p-2 rounded hover:bg-gray-100 text-gray-500"
-                    title="Refresh"
+                    disable={loadingOverview}
+                    className="ml-auto gap-1.5 sm:min-w-0"
+                    title={t('refresh')}
                 >
-                    <ArrowClockwise size={16} />
-                </button>
+                    <ArrowClockwise size={16} className={cn(loadingOverview && 'animate-spin')} />
+                    {t('refresh')}
+                </MyButton>
             </div>
 
-            {/* Stats */}
-            <StatsCards
-                overview={overview}
-                loading={loadingOverview}
-                onEmailStatClick={setDrilldownEvent}
-            />
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                {/* Stats */}
+                <div className="min-w-0 xl:col-span-2">
+                    <StatsCards
+                        overview={overview}
+                        loading={loadingOverview}
+                        onEmailStatClick={setDrilldownEvent}
+                    />
+                </div>
+
+                {/* Recent activity */}
+                <div className="min-w-0">
+                    <RecentActivity
+                        items={recent}
+                        loading={loadingRecent}
+                        hasMore={hasMoreRecent}
+                        loadingMore={loadingMoreRecent}
+                        onLoadMore={loadMoreRecent}
+                    />
+                </div>
+            </div>
 
             {/* Drill-down: emails behind a clicked stat card */}
             <EmailEventsDialog
                 eventType={drilldownEvent}
                 windowDays={windowDays}
                 onClose={() => setDrilldownEvent(null)}
-            />
-
-            {/* Recent activity */}
-            <RecentActivity
-                items={recent}
-                loading={loadingRecent}
-                hasMore={hasMoreRecent}
-                loadingMore={loadingMoreRecent}
-                onLoadMore={loadMoreRecent}
             />
         </div>
     );

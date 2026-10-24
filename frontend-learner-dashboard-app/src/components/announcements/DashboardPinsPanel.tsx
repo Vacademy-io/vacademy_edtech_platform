@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PushPin, Clock, User, X, SpinnerGap, WarningCircle, Trash } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,8 +32,9 @@ interface DashboardPinsPanelProps {
 
 export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({ 
   className = '',
-  maxPins = 3 
+  maxPins = 3
 }) => {
+  const { t } = useTranslation('courseComponentsExtra');
   const {
     pins,
     loading,
@@ -78,13 +80,13 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
   const getPriorityText = (priority?: string) => {
     switch (priority) {
       case 'HIGH':
-        return 'High';
+        return t('dashboardPinsPanel.priority.high');
       case 'MEDIUM':
-        return 'Medium';
+        return t('dashboardPinsPanel.priority.medium');
       case 'LOW':
-        return 'Low';
+        return t('dashboardPinsPanel.priority.low');
       default:
-        return 'Normal';
+        return t('dashboardPinsPanel.priority.normal');
     }
   };
 
@@ -119,11 +121,11 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     
     if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''} left`;
+      return t('dashboardPinsPanel.timeRemaining.days', { count: days });
     } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''} left`;
+      return t('dashboardPinsPanel.timeRemaining.hours', { count: hours });
     } else {
-      return 'Less than 1 hour left';
+      return t('dashboardPinsPanel.timeRemaining.lessThanHour');
     }
   };
 
@@ -169,7 +171,7 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
               ) : (
                 <PushPin className="h-5 w-5 text-blue-600" />
               )}
-              Important Updates
+              {t('dashboardPinsPanel.importantUpdates')}
             </CardTitle>
             <div className="flex items-center gap-2">
               {pins.length > 0 && (
@@ -182,24 +184,23 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
                       disabled={loading}
                     >
                       <Trash className="h-4 w-4 me-1" />
-                      Clear All
+                      {t('common.clearAll')}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Clear All Pins</AlertDialogTitle>
+                      <AlertDialogTitle>{t('dashboardPinsPanel.clearAllTitle')}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to dismiss all {pins.length} pin{pins.length === 1 ? '' : 's'}?
-                        This action cannot be undone.
+                        {t('dashboardPinsPanel.clearAllDescription', { count: pins.length })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={dismissAll}
                         className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                       >
-                        Clear All
+                        {t('common.clearAll')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -211,12 +212,12 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
                 onClick={refresh}
                 disabled={loading}
               >
-                {loading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : 'Refresh'}
+                {loading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : t('common.refresh')}
               </Button>
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="pt-0">
           {error && (
             <div className="flex items-center gap-2 text-sm text-red-600 mb-4 p-3 bg-red-50 rounded-md">
@@ -224,11 +225,11 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
               {error}
             </div>
           )}
-          
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <SpinnerGap className="h-6 w-6 animate-spin text-gray-400" />
-              <span className="ms-2 text-sm text-gray-500">Loading pins...</span>
+              <span className="ms-2 text-sm text-gray-500">{t('dashboardPinsPanel.loadingPins')}</span>
             </div>
           ) : (
             <div className="space-y-4">
@@ -297,7 +298,7 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
               {pins.length > maxPins && (
                 <div className="text-center pt-2">
                   <Button variant="outline" size="sm">
-                    View All ({pins.length} total)
+                    {t('dashboardPinsPanel.viewAll', { count: pins.length })}
                   </Button>
                 </div>
               )}
@@ -310,7 +311,7 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
       {selectedPin && showFullContent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl max-h-screen-80 overflow-hidden">
-            <CardContent className="p-6">
+            <CardContent className="p-card-lg">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   {selectedPin.title && (
@@ -324,7 +325,9 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
                         {getPriorityText(selectedPin.priority)}
                       </Badge>
                     )}
-                    {selectedPin.createdByName && <span>By {selectedPin.createdByName}</span>}
+                    {selectedPin.createdByName && (
+                      <span>{t('dashboardPinsPanel.byAuthor', { name: selectedPin.createdByName })}</span>
+                    )}
                     {selectedPin.createdAt && (
                       <span>{formatLocalDateTime(selectedPin.createdAt)}</span>
                     )}
@@ -349,7 +352,11 @@ export const DashboardPinsPanel: React.FC<DashboardPinsPanelProps> = ({
                 <div className="mt-4 p-3 bg-orange-50 rounded-md">
                   <div className="flex items-center gap-2 text-sm text-orange-700">
                     <Clock className="h-4 w-4" />
-                    <span>This pin expires {getTimeRemaining(selectedPin.pinEndTime)}</span>
+                    <span>
+                      {t('dashboardPinsPanel.pinExpires', {
+                        time: getTimeRemaining(selectedPin.pinEndTime),
+                      })}
+                    </span>
                   </div>
                 </div>
               )}

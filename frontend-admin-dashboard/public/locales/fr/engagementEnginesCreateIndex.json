@@ -1,0 +1,133 @@
+{
+    "pageTitle": "Nouveau moteur d'engagement",
+    "heading": "Nouveau moteur",
+    "steps": {
+        "basics": "Essentiel",
+        "dataPoints": "Données",
+        "channels": "Canaux",
+        "audience": "Audience",
+        "cadence": "Cadence",
+        "review": "Récapitulatif"
+    },
+    "basics": {
+        "name": "Nom du moteur",
+        "namePlaceholder": "Réengager les {{learners}} inactifs",
+        "objective": "Objectif (court)",
+        "objectivePlaceholder": "Faire revenir les {{learners}} devenus silencieux",
+        "brief": "Le brief",
+        "briefHint": "Décrivez l'objectif, le ton, ce qu'il faut dire et éviter, et les liens éventuels. Cela devient les instructions de l'IA : plus c'est précis, mieux c'est.",
+        "briefPlaceholder": "Vous réengagez des {{learners}} qui ne viennent plus. Soyez chaleureux et bref…",
+        "language": "Langue"
+    },
+    "dataPoints": {
+        "intro": "Choisissez les signaux que l'IA peut lire sur chaque personne. Plus de contexte donne des messages plus pertinents et mieux synchronisés.",
+        "sensitive": "sensible",
+        "alwaysOn": "toujours actif",
+        "consent": "Je confirme que cet établissement dispose du consentement pour utiliser les données sensibles ci-dessus dans ses messages.",
+        "sensitivity": {
+            "LOW": "low",
+            "MEDIUM": "medium",
+            "HIGH": "sensitive · high"
+        }
+    },
+    "channels": {
+        "intro": "Quels canaux ce moteur peut-il utiliser ? Tant qu'un canal n'est pas validé, vous relisez chaque message avant l'envoi. WhatsApp nécessite des modèles approuvés par Meta (à configurer après la création).",
+        "enableAria": "Activer {{channel}}",
+        "auto": "Envoi proactif automatique (une fois ce canal validé ; d'ici là, vous relisez et envoyez chaque message)",
+        "autoAria": "Envoi proactif automatique sur {{channel}}",
+        "autoReply": "Réponse automatique (l'IA répond sous 24 h ; l'argent, la colère, les demandes d'arrêt et les incertitudes vous sont toujours transmis)",
+        "autoReplyAria": "Réponse automatique pour {{channel}}",
+        "autoTitle": "Auto-send proactively",
+        "autoHint": "After this channel graduates; until then you review and send each one.",
+        "autoReplyTitle": "Auto-answer replies",
+        "autoReplyHint": "AI replies within 24h; money, anger, requests to stop and uncertainty always come to you.",
+        "callNote": "The engine proposes a call for your team. Calls are never placed from the task inbox.",
+        "whatsappNote": "Needs Meta-approved templates — the AI proposes them after you create the engine."
+    },
+    "audience": {
+        "intro": "Qui ce moteur doit-il engager ? Combinez {{batches}} et {{audiences}}. Les doublons sont supprimés automatiquement.",
+        "select": "Sélectionner des {{audiences}}",
+        "count_one": "{{count}} source sélectionnée.",
+        "count_many": "{{count}} sources sélectionnées.",
+        "count_other": "{{count}} sources sélectionnées.",
+        "audiencesHint": "CRM audience campaigns (first 100)."
+    },
+    "cadence": {
+        "recheck": "Réexaminer chaque personne toutes les (heures)",
+        "recheckHint": "Un plancher de sécurité. L'IA décide du moment réel ; ceci limite la fréquence à laquelle elle revient vers quelqu'un.",
+        "quietHours": "Heures silencieuses",
+        "quietHint": "Aucun message entre ces heures, dans le fuseau horaire ci-dessous. Le plancher d'heures silencieuses de l'établissement s'applique en plus.",
+        "from": "De",
+        "to": "À",
+        "timezone": "Fuseau horaire",
+        "legendQuiet": "Quiet (no messages)",
+        "legendOpen": "Can send"
+    },
+    "autonomy": {
+        "title": "Autonomie",
+        "hint": "Réglages qui ne s'appliquent qu'aux canaux en envoi automatique.",
+        "firstN": "Valider après N envois approuvés",
+        "firstNPlaceholder": "par défaut (5)",
+        "firstNHint": "Chaque canal en envoi automatique reste en mode copilote jusqu'à ce que vous ayez approuvé ce nombre de ses brouillons sur ce canal ; il envoie ensuite seul. Laissez vide pour la valeur par défaut.",
+        "holdout": "Groupe témoin %",
+        "holdoutHint": "Une part de l'audience (0–100 %) inscrite mais jamais contactée, pour mesurer l'effet réel du moteur par comparaison."
+    },
+    "review": {
+        "name": "Nom",
+        "objective": "Objectif",
+        "language": "Langue",
+        "dataPoints": "Données",
+        "dataPointsNone": "Seulement celles toujours actives",
+        "channels": "Canaux",
+        "audienceSources": "Sources d'audience",
+        "cadence": "Cadence",
+        "cadenceValue": "toutes les {{hours}} h",
+        "quietHours": "Heures silencieuses",
+        "autoSendChannels": "Canaux en envoi automatique",
+        "autoSendNone": "Aucun (copilote uniquement)",
+        "holdout": "Groupe témoin",
+        "draftNote": "Le moteur démarre en brouillon. Après sa création, inscrivez l'audience et (pour WhatsApp) configurez les modèles, puis activez-le.",
+        "consentGiven": "consent given",
+        "whatNext": "What happens next",
+        "next": {
+            "draft": {
+                "title": "Starts as a Draft",
+                "text": "Nothing is sent yet."
+            },
+            "enroll": {
+                "title": "Enroll the audience",
+                "text": "Use “Resolve audience” on the engine page to add the people from your sources."
+            },
+            "templates": {
+                "title": "Approve WhatsApp templates",
+                "text": "The AI proposes them; you approve and submit; Meta reviews."
+            },
+            "activate": {
+                "title": "Dry run, then activate",
+                "text": "See simulated drafts in the task inbox before anything goes out."
+            }
+        }
+    },
+    "actions": {
+        "back": "Retour",
+        "continue": "Continuer",
+        "create": "Créer le moteur",
+        "creating": "Création…",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "nameAndBrief": "Un moteur doit avoir un nom et un brief."
+    },
+    "subtitle": "Six short steps. You can review everything before it is created — nothing is sent until you activate it.",
+    "stepHints": {
+        "basics": "Name, brief, language",
+        "dataPoints": "What the AI may read",
+        "channels": "Where it can message",
+        "audience": "Who it engages",
+        "cadence": "Timing & autonomy",
+        "review": "Check and create"
+    },
+    "footer": {
+        "step": "Step {{n}} of {{total}} · {{label}}"
+    }
+}

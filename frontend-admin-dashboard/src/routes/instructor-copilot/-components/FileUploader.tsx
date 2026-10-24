@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDropzone, FileRejection, DropEvent } from 'react-dropzone';
 import { UploadSimple, File, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -32,8 +33,10 @@ export function FileUploader({
         'audio/mp4': ['.m4a'],
         'audio/ogg': ['.ogg'],
     },
-    acceptMsg = 'Supported formats: MP3, WAV, M4A, OGG',
+    acceptMsg,
 }: FileUploaderProps) {
+    const { t } = useTranslation('instructorCopilotFileUploader');
+    const resolvedAcceptMsg = acceptMsg ?? t('defaultAcceptMsg');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
@@ -45,11 +48,11 @@ export function FileUploader({
             if (fileRejections.length > 0) {
                 const rejection = fileRejections[0];
                 if (rejection?.errors[0]?.code === 'file-too-large') {
-                    setError(`File is too large. Maximum size is ${maxSize}MB.`);
+                    setError(t('errors.fileTooLarge', { maxSize }));
                 } else if (rejection?.errors[0]?.code === 'file-invalid-type') {
-                    setError(`Invalid file type. ${acceptMsg}`);
+                    setError(t('errors.invalidFileType', { formats: resolvedAcceptMsg }));
                 } else {
-                    setError('Failed to upload file. Please try again.');
+                    setError(t('errors.uploadFailed'));
                 }
                 return;
             }
@@ -62,7 +65,7 @@ export function FileUploader({
                 }
             }
         },
-        [maxSize, onFileSelected]
+        [maxSize, onFileSelected, resolvedAcceptMsg, t]
     );
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -79,9 +82,9 @@ export function FileUploader({
     };
 
     const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes';
+        if (bytes === 0) return `0 ${t('units.bytes')}`;
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const sizes = [t('units.bytes'), t('units.kb'), t('units.mb'), t('units.gb')];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
     };
@@ -101,11 +104,11 @@ export function FileUploader({
                     <input {...getInputProps()} />
                     <UploadSimple size={48} className="mx-auto mb-4 text-gray-400" />
                     <p className="mb-2 text-lg font-medium text-gray-700">
-                        {isDragActive ? 'Drop the file here' : 'Drag & drop a file here'}
+                        {isDragActive ? t('dropHere') : t('dragDrop')}
                     </p>
-                    <p className="mb-4 text-sm text-gray-500">or click to browse</p>
+                    <p className="mb-4 text-sm text-gray-500">{t('clickToBrowse')}</p>
                     <p className="text-xs text-gray-400">
-                        {acceptMsg} (Max {maxSize}MB)
+                        {t('formatsAndMaxSize', { formats: resolvedAcceptMsg, maxSize })}
                     </p>
                 </div>
             ) : (
@@ -133,7 +136,7 @@ export function FileUploader({
                         <div className="space-y-2">
                             <Progress value={uploadProgress} className="h-2" />
                             <p className="text-center text-xs text-gray-500">
-                                Uploading... {uploadProgress}%
+                                {t('uploading', { percent: uploadProgress })}
                             </p>
                         </div>
                     )}

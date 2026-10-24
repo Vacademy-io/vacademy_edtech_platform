@@ -32,9 +32,21 @@ public class EngagementReplyJob {
     private final EngagementMemberRepository memberRepository;
     private final EngagementReplyResponder replyResponder;
 
-    /** Lookback slightly exceeds the interval so a reply at the boundary is never skipped. */
+    /** Minimum lookback, and the overlap kept with the previous sweep's window. */
     private static final Duration LOOKBACK = Duration.ofMinutes(3);
+    private static final Duration OVERLAP = Duration.ofMinutes(1);
+    /** Upper bound after a restart or when another replica ran the recent sweeps. */
+    private static final Duration MAX_LOOKBACK = Duration.ofMinutes(30);
     private static final Duration REPLY_WINDOW = Duration.ofHours(24);
+
+    /**
+     * Start of the last completed sweep on this replica. Windows chain from it: a fixed 3-minute
+     * lookback with a fixed delay counted from the END of the previous sweep left a gap nobody read
+     * whenever a sweep ran over about a minute (each reply can wait on an LLM call). Re-reading the
+     * overlap is safe: handleReply dedups per wamid and promotion is idempotent.
+     */
+    private final java.util.concurrent.atomic.AtomicReference<Instant> lastSweepStart =
+            new java.util.concurrent.atomic.AtomicReference<>();
 
     @Scheduled(fixedDelayString = "${engagement.reply.delay-ms:120000}")
     @SchedulerLock(name = "EngagementReplySweep", lockAtMostFor = "PT5M", lockAtLeastFor = "PT10S")
@@ -43,8 +55,11 @@ public class EngagementReplyJob {
         if (institutes.isEmpty()) return;
 
         Instant now = Instant.now();
-        Instant windowUntil = now.plus(REPLY_WINDOW);
-        long sinceMillis = now.minus(LOOKBACK).toEpochMilli();
+        Instant since = now.minus(LOOKBACK);
+        Instant previous = lastSweepStart.get();
+        if (previous != null && previous.minus(OVERLAP).isBefore(since)) since = previous.minus(OVERLAP);
+        if (since.isBefore(now.minus(MAX_LOOKBACK))) since = now.minus(MAX_LOOKBACK);
+        long sinceMillis = since.toEpochMilli();
         int promoted = 0;
         int answered = 0;
 
@@ -61,6 +76,10 @@ public class EngagementReplyJob {
                     if (p != null) phones.add(p);
                 }
                 if (!phones.isEmpty()) {
+                    // Meta's window runs 24h from the learner's message, not from this sweep. With a
+                    // longer lookback "now + 24h" would overstate it, so take the earliest reply in the
+                    // batch: never later than any phone's real window (at worst a few minutes short).
+                    Instant windowUntil = earliestReceivedAt(replies, now).plus(REPLY_WINDOW);
                     promoted += memberRepository.promoteByPhones(
                             instituteId, new java.util.ArrayList<>(phones), now, windowUntil);
                 }
@@ -86,12 +105,30 @@ public class EngagementReplyJob {
                     promoted, answered, institutes.size());
         }
 
+        lastSweepStart.set(now);
+
         // Prune the handled-reply dedup set (rows older than 2× the reply window are dead weight).
         try {
             memberRepository.pruneHandledReplies(now.minus(Duration.ofHours(48)));
         } catch (Exception e) {
             log.warn("Handled-reply prune failed: {}", e.getMessage());
         }
+    }
+
+    private static Instant earliestReceivedAt(JsonNode replies, Instant fallback) {
+        Instant earliest = fallback;
+        for (JsonNode reply : replies) {
+            try {
+                String at = reply.path("receivedAt").asText(null);
+                if (at != null) {
+                    Instant t = Instant.parse(at);
+                    if (t.isBefore(earliest)) earliest = t;
+                }
+            } catch (Exception ignored) {
+                // unparseable timestamp: keep the fallback for this row
+            }
+        }
+        return earliest;
     }
 
     private static String last10(String phone) {

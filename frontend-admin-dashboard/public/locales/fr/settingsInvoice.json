@@ -1,0 +1,125 @@
+{
+    "page": {
+        "title": "Paramètres de facturation",
+        "description": "Configurez la taxe, la devise et le comportement des e-mails pour les factures générées, gérez les modèles de PDF et d'e-mail de facture, et définissez les informations fiscales du pays injectées dans ces modèles.",
+        "saveLabel": "Enregistrer les paramètres de facturation",
+        "loading": "Chargement des paramètres de facturation…"
+    },
+    "sections": {
+        "general": "Général",
+        "numbering": "Numérotation",
+        "tax": "Pays et taxes",
+        "templates": "Modèles"
+    },
+    "toasts": {
+        "saved": "Paramètres de facturation enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres de facturation"
+    },
+    "countryCombobox": {
+        "selectPlaceholder": "Sélectionner un pays…",
+        "searchPlaceholder": "Rechercher des pays…",
+        "noResults": "Aucun pays trouvé."
+    },
+    "adminSelect": {
+        "selectedCount_one": "{{count}} administrateur sélectionné",
+        "selectedCount_many": "{{count}} millions d'administrateurs sélectionnés",
+        "selectedCount_other": "{{count}} administrateurs sélectionnés",
+        "selectPlaceholder": "Sélectionner des administrateurs…",
+        "searchPlaceholder": "Rechercher des administrateurs…",
+        "loading": "Chargement des administrateurs…",
+        "noResults": "Aucun administrateur trouvé.",
+        "remove": "Retirer"
+    },
+    "taxComponentEditor": {
+        "emptyDefault": "Aucune composante de taxe configurée.",
+        "labelPlaceholder": "Libellé (ex. CGST)",
+        "ratePlaceholder": "Taux",
+        "removeTitle": "Retirer la composante",
+        "addButton": "Ajouter une composante de taxe"
+    },
+    "injectablePlaceholders": {
+        "sectionTitle": "Injectable dans les modèles de facture",
+        "country": "Nom du pays d'exploitation",
+        "countryCode": "Code pays ISO (ex. IN)",
+        "taxRegistrationNumber": "Numéro d'immatriculation fiscale (GSTIN / TVA)",
+        "hsnCode": "Code HSN / SAC",
+        "taxComponents": "Tableau des composantes de taxe (libellé, taux, montant)",
+        "taxLabel": "Libellé de la ligne de taxe",
+        "taxRate": "Taux de taxe par défaut %"
+    },
+    "general": {
+        "title": "Général",
+        "description": "Valeurs par défaut de taxe et de devise appliquées lors de la génération d'une facture.",
+        "currency": {
+            "label": "Devise"
+        },
+        "taxLabel": {
+            "label": "Libellé de la taxe",
+            "placeholder": "ex. TPS, TVA, Taxe"
+        },
+        "taxRate": {
+            "label": "Taux de taxe par défaut (%)",
+            "hint": "Appliqué aux totaux de facture lorsqu'aucune taxe par formule n'est définie."
+        },
+        "taxIncluded": {
+            "label": "Prix taxes comprises",
+            "hint": "Lorsque cette option est activée, les prix affichés sont considérés comme incluant la taxe."
+        },
+        "sendEmail": {
+            "label": "Envoyer automatiquement l'e-mail de facture",
+            "hint": "Envoie par e-mail le PDF de la facture générée à l'apprenant une fois le paiement effectué."
+        },
+        "pdfPlacement": {
+            "label": "Livraison du PDF de facture",
+            "hint": "Choisissez l'e-mail qui contient le PDF de la facture après un paiement réussi. « E-mail de confirmation de paiement » envoie un seul e-mail combiné au lieu d'un e-mail de facture distinct.",
+            "optionSeparate": "E-mail de facture distinct",
+            "optionAttach": "Joindre à l'e-mail de confirmation de paiement (e-mail unique)"
+        },
+        "adminCopy": {
+            "label": "Envoyer une copie aux administrateurs",
+            "hint": "À chaque paiement effectué, les administrateurs sélectionnés reçoivent également l'e-mail de facture / confirmation de paiement (incluant le PDF de la facture).",
+            "adminsToCopy": "Administrateurs à copier"
+        },
+        "proforma": {
+            "label": "Émettre les factures impayées en tant que proforma",
+            "hint": "Une facture émise avant le paiement est émise en tant que proforma, numérotée à partir d'une série distincte. Le numéro de facture réel n'est attribué qu'une fois le paiement effectué, de sorte qu'une proforma annulée ou jamais payée ne laisse aucun trou dans votre série de factures.",
+            "warningPrefix": "Les factures déjà émises conservent leur numéro actuel. Les proformas sont numérotées",
+            "usingProDocType": "en utilisant PRO comme type de document",
+            "warningSuffix": "et sont renumérotées dans votre série de factures lors du paiement."
+        },
+        "manualEnroll": {
+            "label": "Générer une facture lors d'une inscription manuelle / groupée",
+            "hint": "Lorsqu'un administrateur inscrit des apprenants manuellement ou en masse (sans passerelle de paiement), génère une facture pour eux."
+        }
+    },
+    "tax": {
+        "title": "Informations du pays et fiscales",
+        "description": "Le pays d'exploitation, votre numéro d'immatriculation fiscale et ses composantes de taxe. Ils peuvent être injectés dans les modèles de facture.",
+        "country": {
+            "label": "Pays"
+        },
+        "taxRegNumber": {
+            "label": "Numéro d'immatriculation fiscale",
+            "placeholder": "ex. 22AAAAA0000A1Z5"
+        },
+        "hsnSac": {
+            "label": "Code HSN / SAC",
+            "placeholder": "ex. 999293 (services d'éducation)",
+            "hint": "SAC pour les services (ex. cours) ; HSN pour les biens."
+        },
+        "components": {
+            "label": "Composantes de taxe",
+            "total": "Total : {{total}} %",
+            "empty": "Aucune composante de taxe configurée. Ajoutez-en une (ex. CGST 9 %, SGST 9 %) ou choisissez un pays ci-dessus pour charger les valeurs par défaut suggérées.",
+            "labelPlaceholder": "Libellé (ex. CGST)",
+            "ratePlaceholder": "Taux",
+            "removeTitle": "Retirer la composante",
+            "addButton": "Ajouter une composante de taxe"
+        },
+        "byPackageType": {
+            "label": "Composantes de taxe par type de formule",
+            "description": "Remplacez les composantes par défaut pour un type de formule spécifique. Lors de la facturation, chaque ligne utilise les composantes de son type de formule, avec repli sur l'ensemble par défaut ci-dessus.",
+            "emptyOverride": "Aucun remplacement pour {{packageType}} — les composantes par défaut ci-dessus s'appliqueront."
+        }
+    }
+}

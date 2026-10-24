@@ -1,0 +1,8 @@
+{
+    "tabs": {
+        "pending": "लंबित",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "allHistory": "पूरा इतिहास"
+    }
+}

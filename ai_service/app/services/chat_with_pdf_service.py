@@ -37,8 +37,8 @@ from .ai_prompts import chat_with_pdf as prompts
 logger = logging.getLogger(__name__)
 
 # Registry use case for chat model resolution. No ai_model_defaults row is
-# required — resolve_models falls back to google/gemini-2.5-flash (the correct
-# current id), which is the whole point of the migration: media_service
+# required — resolve_models falls back to the platform default (GLM, then the
+# non-GLM tail), which is the whole point of the migration: media_service
 # hardcoded the retired google/gemini-2.5-flash-preview-09-2025 here.
 CHAT_USE_CASE = "chat"
 

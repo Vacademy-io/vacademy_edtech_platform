@@ -1,10 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, Megaphone } from "@phosphor-icons/react";
-import { NotifcationCard } from "./NotificationCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Bell, Megaphone, Trash } from "@phosphor-icons/react";
+import { NotificationCard } from "./NotificationCard";
+import { NotificationDetailDialog } from "./NotificationDetailDialog";
 import {
   EmptyState,
   ErrorState,
@@ -12,49 +23,22 @@ import {
 } from "@/components/design-system/states";
 import { useSystemAlerts } from "@/hooks/useSystemAlerts";
 import { useAnnouncementStore } from "@/stores/announcement-store";
-import { format } from "date-fns";
-import { parseApiDate } from "@/helpers/formatISOTime";
+import { announcementApi } from "@/services/announcementApi";
+import {
+  formatNotificationDate,
+  groupNotifications,
+  type GroupedNotification,
+} from "@/lib/notifications";
 import type { UserMessage } from "@/types/announcement";
 
-/** One row per unique title+content pair; `alert` is the most recent occurrence. */
-interface GroupedNotification {
-  alert: UserMessage;
+type NotificationVariant = "general" | "announcement";
+
+/** What the detail dialog is currently showing. */
+interface SelectedNotification {
+  message: UserMessage;
   count: number;
-  isRead: boolean;
-}
-
-/** Single date format for notifications: "Jun 10, 4:14 PM" (year only when it differs). */
-function formatNotificationDate(isoString?: string | null): string {
-  const date = parseApiDate(isoString);
-  if (!date) return "";
-  const sameYear = date.getFullYear() === new Date().getFullYear();
-  return format(date, sameYear ? "MMM d, h:mm a" : "MMM d, yyyy, h:mm a");
-}
-
-const getCreatedAtMs = (alert: UserMessage): number =>
-  parseApiDate(alert.createdAt)?.getTime() ?? 0;
-
-/** Collapse identical notifications (same title + content) into one row with a count. */
-function groupNotifications(alerts: UserMessage[]): GroupedNotification[] {
-  const groups = new Map<string, GroupedNotification>();
-
-  for (const alert of alerts) {
-    const key = `${alert.title ?? ""}::${alert.content?.content ?? ""}`;
-    const existing = groups.get(key);
-    if (!existing) {
-      groups.set(key, { alert, count: 1, isRead: alert.isRead });
-    } else {
-      existing.count += 1;
-      existing.isRead = existing.isRead && alert.isRead;
-      if (getCreatedAtMs(alert) > getCreatedAtMs(existing.alert)) {
-        existing.alert = alert; // keep the latest occurrence (latest timestamp wins)
-      }
-    }
-  }
-
-  return [...groups.values()].sort(
-    (a, b) => getCreatedAtMs(b.alert) - getCreatedAtMs(a.alert)
-  );
+  isNew: boolean;
+  variant: NotificationVariant;
 }
 
 /** Plain-text preview of a message body (strips HTML when needed). */
@@ -69,30 +53,41 @@ function getMessagePreview(message: UserMessage): string {
 
 interface MessageGroupListProps {
   groups: GroupedNotification[];
+  variant: NotificationVariant;
+  onSelect: (selected: SelectedNotification) => void;
+  onClear: (group: GroupedNotification, variant: NotificationVariant) => void;
+  clearingIds: ReadonlySet<string>;
 }
 
-function MessageGroupList({ groups }: MessageGroupListProps) {
+function MessageGroupList({
+  groups,
+  variant,
+  onSelect,
+  onClear,
+  clearingIds,
+}: MessageGroupListProps) {
   const { t } = useTranslation("dashboard");
   return (
-    <div className="space-y-4">
-      {groups.map(({ alert, count, isRead }) => (
-        <div key={alert.messageId} className="relative">
-          {count > 1 && (
-            <Badge
-              variant="secondary"
-              className="absolute -top-2 -end-2 z-10 border border-border bg-background text-xs shadow-sm"
-            >
-              {t("notifications.occurrenceCount", { count })}
-            </Badge>
-          )}
-          <NotifcationCard
+    <div className="flex flex-col gap-stack">
+      {groups.map((group) => {
+        const { alert, count, isRead } = group;
+        return (
+          <NotificationCard
+            key={alert.messageId}
             title={alert.title || t("notifications.defaultTitle")}
             description={getMessagePreview(alert)}
             date={formatNotificationDate(alert.createdAt)}
             isNew={!isRead}
+            count={count}
+            variant={variant}
+            clearing={clearingIds.has(alert.messageId)}
+            onClick={() =>
+              onSelect({ message: alert, count, isNew: !isRead, variant })
+            }
+            onClear={() => onClear(group, variant)}
           />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -106,121 +101,270 @@ export function NotificationList() {
     hasMore,
     loadMore,
     refresh,
+    markAsRead,
   } = useSystemAlerts({
     enablePolling: true,
     autoMarkAsRead: false,
   });
 
-  const { dashboardPins, fetchDashboardPins } = useAnnouncementStore();
+  const {
+    dashboardPins,
+    fetchDashboardPins,
+    markPinAsRead,
+    dismissAlert,
+    dismissAllAlerts,
+    dismissDashboardPin,
+    dismissAllDashboardPins,
+    removeSystemAlert,
+    removeDashboardPin,
+  } = useAnnouncementStore();
+
+  const [selected, setSelected] = useState<SelectedNotification | null>(null);
+  // Tab is controlled so "Clear all" knows which list it is clearing.
+  const [activeTab, setActiveTab] = useState<NotificationVariant>("general");
+  const [clearingIds, setClearingIds] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
+  const [clearingAll, setClearingAll] = useState(false);
 
   useEffect(() => {
     fetchDashboardPins();
   }, [fetchDashboardPins]);
 
-  const generalGroups = groupNotifications(
-    alerts.filter((alert) => !alert.isDismissed)
+  const generalGroups = useMemo(
+    () => groupNotifications(alerts.filter((alert) => !alert.isDismissed)),
+    [alerts]
   );
-  const announcementGroups = groupNotifications(
-    dashboardPins.items.filter((pin) => !pin.isDismissed)
+  const announcementGroups = useMemo(
+    () => groupNotifications(dashboardPins.items.filter((pin) => !pin.isDismissed)),
+    [dashboardPins.items]
   );
+
+  const unreadCount =
+    generalGroups.filter((group) => !group.isRead).length +
+    announcementGroups.filter((group) => !group.isRead).length;
+
+  /* Opening the detail view is the read receipt: the list intentionally runs
+     with autoMarkAsRead off so unread state survives a passing scroll. */
+  const handleSelect = (next: SelectedNotification) => {
+    setSelected(next);
+    if (!next.isNew) return;
+    const markRead =
+      next.variant === "announcement" ? markPinAsRead : markAsRead;
+    void markRead(next.message.messageId).catch(() => undefined);
+  };
+
+  /**
+   * Clear one row. A grouped row (×3) stands for several messages, so every id
+   * it folded in has to be dismissed — dismissing only the newest would leave
+   * the row on screen with a smaller count.
+   */
+  const handleClear = async (
+    group: GroupedNotification,
+    variant: NotificationVariant
+  ) => {
+    const ids = group.messageIds;
+    setClearingIds((current) => new Set(current).add(group.alert.messageId));
+    try {
+      if (ids.length === 1) {
+        await (variant === "announcement"
+          ? dismissDashboardPin(ids[0])
+          : dismissAlert(ids[0]));
+      } else {
+        await announcementApi.batchDismissMessages(ids);
+        const remove =
+          variant === "announcement" ? removeDashboardPin : removeSystemAlert;
+        ids.forEach(remove);
+      }
+    } finally {
+      setClearingIds((current) => {
+        const next = new Set(current);
+        next.delete(group.alert.messageId);
+        return next;
+      });
+    }
+  };
+
+  const handleClearAll = async () => {
+    setClearingAll(true);
+    try {
+      await (activeTab === "announcement"
+        ? dismissAllDashboardPins()
+        : dismissAllAlerts());
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  const visibleGroups =
+    activeTab === "announcement" ? announcementGroups : generalGroups;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-50/20 p-3 sm:p-5 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 start-1/4 w-72 h-72 bg-gradient-to-br from-primary-100/30 to-transparent rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-1/4 end-1/4 w-96 h-96 bg-gradient-to-br from-muted/40 to-transparent rounded-full blur-3xl animate-pulse"></div>
+    <div className="flex flex-col gap-section">
+      <Tabs
+        value={activeTab === "announcement" ? "Announcement" : "General"}
+        onValueChange={(value) =>
+          setActiveTab(value === "Announcement" ? "announcement" : "general")
+        }
+        className="flex w-full flex-col gap-section"
+      >
+        <div className="flex flex-col gap-stack">
+          {/* No page-level <h1>: the navbar already renders "Notifications"
+              as the page heading, so a second one would duplicate the title
+              and give the route two h1s. */}
+          <p className="text-sm text-muted-foreground">
+            {unreadCount > 0
+              ? t("notifications.unreadSummary", { count: unreadCount })
+              : t("notifications.pageSubtitle")}
+          </p>
 
-      <div className="max-w-4xl mx-auto relative z-10">
-        <Tabs defaultValue="General" className="w-full">
-          <div className="mb-6 animate-fade-in-down">
-            <div className="text-center mb-4">
-              <h1 className="text-2xl font-bold text-foreground mb-2 tracking-tight">
-                {t("notifications.pageTitle")}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {t("notifications.pageSubtitle")}
-              </p>
-            </div>
-
-            <TabsList className="bg-muted p-1 w-fit mx-auto shadow-sm border border-border">
+          <div className="flex flex-wrap items-center justify-between gap-stack">
+            <TabsList className="h-auto w-fit gap-1 border border-border bg-muted p-1 shadow-sm">
               <TabsTrigger
-                className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/80"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:px-4 sm:py-2"
                 value="General"
               >
                 <span className="flex items-center gap-2">
-                  <Bell className="w-4 h-4" />
+                  <Bell className="size-4" />
                   {t("notifications.tabGeneral")}
                 </span>
               </TabsTrigger>
               <TabsTrigger
-                className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm hover:bg-muted/80"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm sm:px-4 sm:py-2"
                 value="Announcement"
               >
                 <span className="flex items-center gap-2">
-                  <Megaphone className="w-4 h-4" />
+                  <Megaphone className="size-4" />
                   {t("notifications.tabAnnouncements")}
                 </span>
               </TabsTrigger>
             </TabsList>
-          </div>
 
-          {/* General notifications (system alerts) */}
-          <TabsContent className="grid gap-4" value="General">
-            {alertsLoading && alerts.length === 0 ? (
-              <LoadingState variant="list" count={3} />
-            ) : alertsError ? (
-              <ErrorState
-                title={t("notifications.errorTitle")}
-                message={alertsError}
-                onRetry={refresh}
-              />
-            ) : generalGroups.length === 0 ? (
-              <EmptyState
-                icon={Bell}
-                title={t("notifications.emptyTitle")}
-                description={t("notifications.emptyDescription")}
-              />
-            ) : (
-              <>
-                <MessageGroupList groups={generalGroups} />
-                {hasMore && (
-                  <div className="flex justify-center pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadMore}
-                      disabled={alertsLoading}
+            {/* Confirmed, because dismissing is not reversible from the app. */}
+            {visibleGroups.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={clearingAll}
+                    className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash size={15} />
+                    {clearingAll
+                      ? t("notifications.clearing")
+                      : t("notifications.clearAll")}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {t("notifications.clearAllTitle")}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("notifications.clearAllDescription", {
+                        count: visibleGroups.length,
+                      })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {t("notifications.cancel")}
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => void handleClearAll()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      {alertsLoading ? t("notifications.loading") : t("notifications.loadMore")}
-                    </Button>
-                  </div>
-                )}
-              </>
+                      {t("notifications.clearAll")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
-          </TabsContent>
+          </div>
+        </div>
 
-          {/* Announcements (dashboard pins) */}
-          <TabsContent className="grid gap-4" value="Announcement">
-            {dashboardPins.loading && dashboardPins.items.length === 0 ? (
-              <LoadingState variant="list" count={3} />
-            ) : dashboardPins.error ? (
-              <ErrorState
-                title={t("notifications.announcementsErrorTitle")}
-                message={dashboardPins.error}
-                onRetry={fetchDashboardPins}
+        {/* General notifications (system alerts) */}
+        <TabsContent className="mt-0" value="General">
+          {alertsLoading && alerts.length === 0 ? (
+            <LoadingState variant="list" count={3} />
+          ) : alertsError ? (
+            <ErrorState
+              title={t("notifications.errorTitle")}
+              message={alertsError}
+              onRetry={refresh}
+            />
+          ) : generalGroups.length === 0 ? (
+            <EmptyState
+              icon={Bell}
+              title={t("notifications.emptyTitle")}
+              description={t("notifications.emptyDescription")}
+            />
+          ) : (
+            <div className="flex flex-col gap-stack">
+              <MessageGroupList
+                groups={generalGroups}
+                variant="general"
+                onSelect={handleSelect}
+                onClear={(group, variant) => void handleClear(group, variant)}
+                clearingIds={clearingIds}
               />
-            ) : announcementGroups.length === 0 ? (
-              <EmptyState
-                icon={Megaphone}
-                title={t("notifications.announcementsEmptyTitle")}
-                description={t("notifications.announcementsEmptyDescription")}
-              />
-            ) : (
-              <MessageGroupList groups={announcementGroups} />
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+              {hasMore && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadMore}
+                    disabled={alertsLoading}
+                  >
+                    {alertsLoading
+                      ? t("notifications.loading")
+                      : t("notifications.loadMore")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Announcements (dashboard pins) */}
+        <TabsContent className="mt-0" value="Announcement">
+          {dashboardPins.loading && dashboardPins.items.length === 0 ? (
+            <LoadingState variant="list" count={3} />
+          ) : dashboardPins.error ? (
+            <ErrorState
+              title={t("notifications.announcementsErrorTitle")}
+              message={dashboardPins.error}
+              onRetry={fetchDashboardPins}
+            />
+          ) : announcementGroups.length === 0 ? (
+            <EmptyState
+              icon={Megaphone}
+              title={t("notifications.announcementsEmptyTitle")}
+              description={t("notifications.announcementsEmptyDescription")}
+            />
+          ) : (
+            <MessageGroupList
+              groups={announcementGroups}
+              variant="announcement"
+              onSelect={handleSelect}
+              onClear={(group, variant) => void handleClear(group, variant)}
+              clearingIds={clearingIds}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <NotificationDetailDialog
+        notification={selected?.message ?? null}
+        count={selected?.count}
+        isNew={selected?.isNew}
+        variant={selected?.variant}
+        open={selected !== null}
+        onOpenChange={(next) => {
+          if (!next) setSelected(null);
+        }}
+      />
     </div>
   );
 }

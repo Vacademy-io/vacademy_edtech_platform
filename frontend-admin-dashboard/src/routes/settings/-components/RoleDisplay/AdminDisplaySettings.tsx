@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePlanRowFilter, visibleSectionGroups } from './plan-rows';
+import type { RoleDisplayPanelProps } from './panel-props';
+import { applyRoleConstraints } from '@/lib/display-settings/role-constraints';
+import { useTranslation } from 'react-i18next';
+import { useNamingSettingsVersion } from '@/hooks/useNamingSettingsVersion';
 import { UnsavedChangesBar } from '@/components/common/unsaved-changes-bar';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
+import { getSidebarItemsData } from '@/components/common/layout-container/sidebar/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +33,7 @@ import {
     type LearnerManagementSettings,
 } from '@/types/display-settings';
 import { getDisplaySettingsWithFallback, saveDisplaySettings } from '@/services/display-settings';
-import { DEFAULT_ADMIN_DISPLAY_SETTINGS } from '@/constants/display-settings/admin-defaults';
+import { getDefaultAdminDisplaySettings } from '@/constants/display-settings/admin-defaults';
 import {
     DEFAULT_HIDDEN_COURSE_DETAILS_TABS,
     OFFLINE_GATED_COURSE_DETAILS_TABS,
@@ -39,6 +44,8 @@ import { LearnerListColumnsCard } from './LearnerListColumnsCard';
 import { ListCustomFieldControlsCard } from './ListCustomFieldControlsCard';
 import { StudentManagementActionsCard } from './StudentManagementActionsCard';
 import { AssessmentActionsCard } from './AssessmentActionsCard';
+import { LiveClassActionsCard } from './LiveClassActionsCard';
+import { LeadActionsCard } from './LeadActionsCard';
 import { TeamRoleVisibilityCard } from './TeamRoleVisibilityCard';
 import { toast } from 'sonner';
 import {
@@ -59,17 +66,7 @@ import {
     type SettingsSectionGroup,
 } from '@/components/settings/shell';
 
-const ADMIN_DISPLAY_SECTIONS: SettingsSectionGroup[] = [
-    {
-        sections: [
-            { id: 'grp-courses', label: 'Courses & Permissions', icon: BookOpen },
-            { id: 'grp-layout', label: 'Layout & Navigation', icon: SquaresFour },
-            { id: 'grp-learners', label: 'Content & Learners', icon: UsersThree },
-            { id: 'grp-access', label: 'Dashboard & Access', icon: ShieldCheck },
-        ],
-    },
-];
-
+import type { SidebarCategory } from '@/types/layout-container/layout-container-types';
 const COURSE_CREATION_DEFAULTS: CourseCreationSettings = {
     // Admins can create courses by default → the toggle reads ON unless turned off.
     showCreateCourse: true,
@@ -85,6 +82,7 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     progressTab: true,
     coursesTab: true,
     notificationTab: false,
+    allowResendMessage: true,
     membershipTab: false,
     paymentHistoryTab: true,
     userTaggingTab: false,
@@ -97,103 +95,10 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     applicationTab: false,
     leadTab: false,
     fullHistoryTab: false,
+    workflowsTab: false,
     parentTab: false,
     onboardingTab: false,
 };
-
-const STUDENT_SIDE_VIEW_OPTIONS: Array<{
-    key: StudentSideViewVisibilityKey;
-    label: string;
-    defaultValue: boolean;
-}> = [
-    {
-        key: 'overviewTab',
-        label: 'Overview Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.overviewTab,
-    },
-    {
-        key: 'coursesTab',
-        label: 'Courses Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.coursesTab,
-    },
-    { key: 'testTab', label: 'Test Tab', defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.testTab },
-    {
-        key: 'progressTab',
-        label: 'Progress Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.progressTab,
-    },
-    {
-        key: 'notificationTab',
-        label: 'Notification Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.notificationTab,
-    },
-    {
-        key: 'membershipTab',
-        label: 'Membership Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.membershipTab,
-    },
-    {
-        key: 'paymentHistoryTab',
-        label: 'Payment History Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.paymentHistoryTab,
-    },
-    {
-        key: 'userTaggingTab',
-        label: 'User Tagging Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.userTaggingTab,
-    },
-    {
-        key: 'badgesTab',
-        label: 'Badges Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.badgesTab,
-    },
-    { key: 'fileTab', label: 'File Tab', defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.fileTab },
-    {
-        key: 'portalAccessTab',
-        label: 'Portal Access Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.portalAccessTab,
-    },
-    {
-        key: 'reportsTab',
-        label: 'Reports Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.reportsTab,
-    },
-    {
-        key: 'enrollDerollTab',
-        label: 'Enroll/Deroll Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.enrollDerollTab,
-    },
-    {
-        key: 'enquiryTab',
-        label: 'Enquiry Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.enquiryTab,
-    },
-    {
-        key: 'applicationTab',
-        label: 'Application Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.applicationTab,
-    },
-    {
-        key: 'leadTab',
-        label: 'Lead Profile Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.leadTab,
-    },
-    {
-        key: 'fullHistoryTab',
-        label: 'Full History Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.fullHistoryTab ?? false,
-    },
-    {
-        key: 'parentTab',
-        label: 'Guardian Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.parentTab ?? false,
-    },
-    {
-        key: 'onboardingTab',
-        label: 'Onboarding Tab',
-        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.onboardingTab ?? false,
-    },
-];
 
 const LEARNER_MANAGEMENT_DEFAULTS: LearnerManagementSettings = {
     allowPortalAccess: true,
@@ -202,45 +107,202 @@ const LEARNER_MANAGEMENT_DEFAULTS: LearnerManagementSettings = {
     showApprovalToggle: true,
     // Admins get this by default; teachers and custom roles do not.
     allowEditCredentials: true,
+    // Permanent delete of payments & invoices — OFF by default for every role.
+    allowDeletePayments: false,
+    // Admin discounts on enroll, bulk assign and invoices — ON for admins.
+    canApplyDiscounts: true,
 };
 
-const LEARNER_MANAGEMENT_OPTIONS: Array<{
-    key: keyof LearnerManagementSettings;
-    label: string;
-    defaultValue: boolean;
-}> = [
-    {
-        key: 'allowPortalAccess',
-        label: 'Allow Learner Portal Access',
-        defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowPortalAccess,
-    },
-    {
-        key: 'allowViewPassword',
-        label: 'Allow Viewing Learner Password',
-        defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowViewPassword,
-    },
-    {
-        key: 'allowEditCredentials',
-        label: 'Allow Editing Learner Username & Password',
-        defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowEditCredentials ?? false,
-    },
-    {
-        key: 'allowSendResetPasswordMail',
-        label: 'Allow Sending Reset Password Mail',
-        defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowSendResetPasswordMail,
-    },
-    {
-        key: 'showApprovalToggle',
-        label: 'Show Approval Requests toggle on Learners list',
-        defaultValue: LEARNER_MANAGEMENT_DEFAULTS.showApprovalToggle,
-    },
-];
+export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanelProps = {}) {
+    const { t } = useTranslation('settingsAdminDisplay');
+    // Built-in tab names come from getSidebarItemsData(), which resolves them
+    // through the i18next singleton and through the institute's naming settings.
+    // Neither is available while modules are being evaluated, so this has to be
+    // read during render — a value captured at module scope is simply blank, and
+    // that is what left every Tab Name / Label box in this editor empty.
+    //
+    // `ready` flips when the sidebar catalog lands and `namingVersion` bumps on a
+    // rename or a language switch; between them the memo can never hold on to
+    // stale labels, and the lookup stays off the per-keystroke render path (it
+    // re-reads localStorage once per built-in entry).
+    const { ready: sidebarCatalogReady } = useTranslation('sidebar');
+    const namingVersion = useNamingSettingsVersion();
+    const sidebarItems = useMemo(
+        () => getSidebarItemsData(),
+        [sidebarCatalogReady, namingVersion]
+    );
 
-export default function AdminDisplaySettings() {
+    const ADMIN_DISPLAY_SECTIONS: SettingsSectionGroup[] = [
+        {
+            sections: [
+                { id: 'grp-courses', label: t('sections.coursesPermissions'), icon: BookOpen },
+                { id: 'grp-layout', label: t('sections.layoutNavigation'), icon: SquaresFour },
+                { id: 'grp-learners', label: t('sections.contentLearners'), icon: UsersThree },
+                { id: 'grp-access', label: t('sections.dashboardAccess'), icon: ShieldCheck },
+            ],
+        },
+    ];
+
+    const STUDENT_SIDE_VIEW_OPTIONS: Array<{
+        key: StudentSideViewVisibilityKey;
+        label: string;
+        defaultValue: boolean;
+    }> = [
+        {
+            key: 'overviewTab',
+            label: t('studentSideView.overviewTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.overviewTab,
+        },
+        {
+            key: 'coursesTab',
+            label: t('studentSideView.coursesTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.coursesTab,
+        },
+        {
+            key: 'testTab',
+            label: t('studentSideView.testTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.testTab,
+        },
+        {
+            key: 'progressTab',
+            label: t('studentSideView.progressTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.progressTab,
+        },
+        {
+            key: 'notificationTab',
+            label: t('studentSideView.notificationTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.notificationTab,
+        },
+        {
+            key: 'membershipTab',
+            label: t('studentSideView.membershipTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.membershipTab,
+        },
+        {
+            key: 'paymentHistoryTab',
+            label: t('studentSideView.paymentHistoryTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.paymentHistoryTab,
+        },
+        {
+            key: 'userTaggingTab',
+            label: t('studentSideView.userTaggingTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.userTaggingTab,
+        },
+        {
+            key: 'badgesTab',
+            label: t('studentSideView.badgesTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.badgesTab,
+        },
+        {
+            key: 'fileTab',
+            label: t('studentSideView.fileTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.fileTab,
+        },
+        {
+            key: 'portalAccessTab',
+            label: t('studentSideView.portalAccessTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.portalAccessTab,
+        },
+        {
+            key: 'reportsTab',
+            label: t('studentSideView.reportsTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.reportsTab,
+        },
+        {
+            key: 'enrollDerollTab',
+            label: t('studentSideView.enrollDerollTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.enrollDerollTab,
+        },
+        {
+            key: 'enquiryTab',
+            label: t('studentSideView.enquiryTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.enquiryTab,
+        },
+        {
+            key: 'applicationTab',
+            label: t('studentSideView.applicationTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.applicationTab,
+        },
+        {
+            key: 'leadTab',
+            label: t('studentSideView.leadTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.leadTab,
+        },
+        {
+            key: 'fullHistoryTab',
+            label: t('studentSideView.fullHistoryTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.fullHistoryTab ?? false,
+        },
+        {
+            key: 'workflowsTab',
+            label: t('studentSideView.workflowsTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.workflowsTab ?? false,
+        },
+        {
+            key: 'parentTab',
+            label: t('studentSideView.parentTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.parentTab ?? false,
+        },
+        {
+            key: 'onboardingTab',
+            label: t('studentSideView.onboardingTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.onboardingTab ?? false,
+        },
+    ];
+
+    const LEARNER_MANAGEMENT_OPTIONS: Array<{
+        key: keyof LearnerManagementSettings;
+        label: string;
+        defaultValue: boolean;
+    }> = [
+        {
+            key: 'allowPortalAccess',
+            label: t('learnerManagement.allowPortalAccess'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowPortalAccess,
+        },
+        {
+            key: 'allowViewPassword',
+            label: t('learnerManagement.allowViewPassword'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowViewPassword,
+        },
+        {
+            key: 'allowEditCredentials',
+            label: t('learnerManagement.allowEditCredentials'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowEditCredentials ?? false,
+        },
+        {
+            key: 'allowSendResetPasswordMail',
+            label: t('learnerManagement.allowSendResetPasswordMail'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowSendResetPasswordMail,
+        },
+        {
+            key: 'showApprovalToggle',
+            label: t('learnerManagement.showApprovalToggle'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.showApprovalToggle,
+        },
+        {
+            key: 'allowDeletePayments',
+            label: t('learnerManagement.allowDeletePayments'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.allowDeletePayments ?? false,
+        },
+        {
+            key: 'canApplyDiscounts',
+            label: t('learnerManagement.canApplyDiscounts'),
+            defaultValue: LEARNER_MANAGEMENT_DEFAULTS.canApplyDiscounts ?? true,
+        },
+    ];
+
     const [settings, setSettings] = useState<DisplaySettingsData | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
-    const [activeCategory, setActiveCategory] = useState<'CRM' | 'LMS' | 'AI'>('CRM');
+
+    // Surface unsaved state to the page header so "Copy to other roles" can block
+    // on it — copying while dirty would send the last saved settings, not what the
+    // admin is looking at.
+    useEffect(() => {
+        onDirtyChange?.(hasChanges);
+    }, [hasChanges, onDirtyChange]);
+    const [activeCategory, setActiveCategory] = useState<SidebarCategory>('CRM');
 
     // Master switch behind the Downloads course-details tab: off locks that row
     // to hidden here, matching what the course page renders.
@@ -259,6 +321,9 @@ export default function AdminDisplaySettings() {
         run();
     }, []);
 
+    // Institute plan: rows outside it are not rendered (stored values untouched).
+    const planRows = usePlanRowFilter();
+
     const updateSettings = (updater: (prev: DisplaySettingsData) => DisplaySettingsData) => {
         setSettings((prev) => {
             if (!prev) return prev;
@@ -273,7 +338,7 @@ export default function AdminDisplaySettings() {
         const maxOrder = Math.max(0, ...settings.sidebar.map((t) => t.order));
         const newTab: SidebarTabConfig = {
             id: `custom-${Date.now()}`,
-            label: 'Custom Tab',
+            label: t('sidebarTabs.customTabDefault'),
             route: '/',
             order: maxOrder + 1,
             visible: true,
@@ -288,17 +353,17 @@ export default function AdminDisplaySettings() {
         if (!settings) return;
         updateSettings((prev) => ({
             ...prev,
-            sidebar: prev.sidebar.map((t) => {
-                if (t.id !== parentId) return t;
-                const nextOrder = ((t.subTabs?.length || 0) + 1) as number;
+            sidebar: prev.sidebar.map((tab) => {
+                if (tab.id !== parentId) return tab;
+                const nextOrder = ((tab.subTabs?.length || 0) + 1) as number;
                 const sub = {
                     id: `custom-sub-${Date.now()}`,
-                    label: 'Custom Sub Tab',
+                    label: t('sidebarTabs.customSubTabDefault'),
                     route: '/',
                     order: nextOrder,
                     visible: true,
                 };
-                return { ...t, subTabs: [...(t.subTabs || []), sub] };
+                return { ...tab, subTabs: [...(tab.subTabs || []), sub] };
             }),
         }));
     };
@@ -333,9 +398,11 @@ export default function AdminDisplaySettings() {
         items: T[],
         getId: (item: T) => string,
         targetId: string,
-        direction: 'up' | 'down'
+        direction: 'up' | 'down',
+        // Rows not rendered (outside the plan) are skipped so they keep their order.
+        isMovable: (item: T) => boolean = () => true
     ): T[] => {
-        const sorted = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const sorted = [...items].filter(isMovable).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
         const idx = sorted.findIndex((item) => getId(item) === targetId);
         if (idx < 0) return items;
         const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
@@ -380,7 +447,9 @@ export default function AdminDisplaySettings() {
             ];
             return {
                 ...prev,
-                sidebarCategories: swapOrder(currentCats, (c) => c.id, id, direction),
+                sidebarCategories: swapOrder(currentCats, (c) => c.id, id, direction, (c) =>
+                    planRows.category(c.id, prev.sidebar)
+                ),
             };
         });
     };
@@ -389,7 +458,9 @@ export default function AdminDisplaySettings() {
         updateSettings((prev) => ({
             ...prev,
             dashboard: {
-                widgets: swapOrder(prev.dashboard.widgets, (w) => w.id, id, direction),
+                widgets: swapOrder(prev.dashboard.widgets, (w) => w.id, id, direction, (w) =>
+                    planRows.widget(w.id)
+                ),
             },
         }));
     };
@@ -399,9 +470,9 @@ export default function AdminDisplaySettings() {
             // Get tabs in the active category, sorted by order
             const categoryTabs = prev.sidebar
                 .filter((t) => {
-                    const baseItem = SidebarItemsData.find((i) => i.id === t.id);
+                    const baseItem = sidebarItems.find((i) => i.id === t.id);
                     const cat = baseItem?.category || t.category || 'CRM';
-                    return cat === activeCategory;
+                    return cat === activeCategory && planRows.tab(t.id);
                 })
                 .sort((a, b) => a.order - b.order);
 
@@ -431,7 +502,9 @@ export default function AdminDisplaySettings() {
             ...prev,
             sidebar: prev.sidebar.map((t) => {
                 if (t.id !== parentId) return t;
-                const sorted = [...(t.subTabs || [])].sort((a, b) => a.order - b.order);
+                const sorted = [...(t.subTabs || [])]
+                    .filter((s) => planRows.subTab(t.id, s.id))
+                    .sort((a, b) => a.order - b.order);
                 const idx = sorted.findIndex((s) => s.id === subId);
                 if (idx < 0) return t;
                 const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
@@ -456,22 +529,18 @@ export default function AdminDisplaySettings() {
         if (!settings) return;
         setIsSaving(true);
         try {
-            // Admin constraint: Settings tab cannot be hidden
-            const fixed = {
-                ...settings,
-                sidebar: settings.sidebar.map((t) =>
-                    t.id === 'settings' ? { ...t, visible: true } : t
-                ),
-            };
+            // Shared with the "copy to other roles" action, so a rule added here
+            // applies however these settings are written.
+            const fixed = applyRoleConstraints(settings, 'admin');
             await saveDisplaySettings(ADMIN_DISPLAY_SETTINGS_KEY, fixed);
             // Update the local state to the constrained version we actually
             // persisted so future discards return to the same baseline.
             setSettings(fixed);
             pristineSettingsRef.current = fixed;
             setHasChanges(false);
-            toast.success('Admin display settings saved');
+            toast.success(t('saveSuccess'));
         } catch (e) {
-            toast.error('Failed to save');
+            toast.error(t('saveFailed'));
         } finally {
             setIsSaving(false);
         }
@@ -483,62 +552,65 @@ export default function AdminDisplaySettings() {
         setHasChanges(false);
     };
 
-    if (!settings) return <div className="p-2">Loading...</div>;
+    if (!settings) return <div className="p-2">{t('loading')}</div>;
 
     return (
         <>
             <SettingsSectionsLayout
-                groups={ADMIN_DISPLAY_SECTIONS}
+                groups={visibleSectionGroups(ADMIN_DISPLAY_SECTIONS, planRows)}
                 toolbar={
                     <MyButton
                         buttonType="secondary"
                         scale="small"
                         onClick={() => {
-                            setSettings(DEFAULT_ADMIN_DISPLAY_SETTINGS);
+                            setSettings(getDefaultAdminDisplaySettings());
                             setHasChanges(true);
                         }}
                     >
-                        Reset to Defaults
+                        {t('resetToDefaults')}
                     </MyButton>
                 }
             >
             <section id="grp-courses" className="space-y-6">
+            {/* LMS course cards: hidden with lms.courses off (plan-rows.ts). */}
+            {planRows.card('courseCards') && (
+            <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Course Page Settings</CardTitle>
-                    <CardDescription>Control visibility of course page elements.</CardDescription>
+                    <CardTitle>{t('coursePage.title')}</CardTitle>
+                    <CardDescription>{t('coursePage.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {(
                         [
-                            ['viewInviteLinks', 'View invite links'],
-                            ['viewShortInviteLinks', 'View short invite links'],
-                            ['viewCourseConfiguration', 'View course configuration'],
-                            ['viewCourseOverviewItem', 'View course overview item'],
-                            ['viewContentNumbering', 'View content numbering'],
+                            ['viewInviteLinks', t('coursePage.viewInviteLinks')],
+                            ['viewShortInviteLinks', t('coursePage.viewShortInviteLinks')],
+                            ['viewCourseConfiguration', t('coursePage.viewCourseConfiguration')],
+                            ['viewCourseOverviewItem', t('coursePage.viewCourseOverviewItem')],
+                            ['viewContentNumbering', t('coursePage.viewContentNumbering')],
                             [
                                 'allowViewSlidesInReadOnly',
-                                'Allow viewing slides on published / in-review courses (read-only)',
+                                t('coursePage.allowViewSlidesInReadOnly'),
                             ],
                             [
                                 'showAddSubject',
-                                'Show "Add Subject" button (Outline & Content Structure)',
+                                t('coursePage.showAddSubject'),
                             ],
                             [
                                 'showAddModule',
-                                'Show "Add Module" button (Outline & Content Structure)',
+                                t('coursePage.showAddModule'),
                             ],
                             [
                                 'showAddChapter',
-                                'Show "Add Chapter" button (Outline & Content Structure)',
+                                t('coursePage.showAddChapter'),
                             ],
                             [
                                 'showAddSlide',
-                                'Show "Add Slide" button (Outline & Content Structure)',
+                                t('coursePage.showAddSlide'),
                             ],
                             [
                                 'showLearnerProgressReport',
-                                'Show "Student Progress" tab in Reports (per-learner course progress)',
+                                t('coursePage.showLearnerProgressReport'),
                             ],
                         ] as const
                     ).map(([key, label]) => (
@@ -593,8 +665,7 @@ export default function AdminDisplaySettings() {
                     ))}
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                         <div className="text-sm font-medium text-neutral-800">
-                            Show advanced IDs menu on Course Details (course / package session /
-                            session / level)
+                            {t('coursePage.showAdvancedCourseIds')}
                         </div>
                         <Switch
                             checked={settings.coursePage?.showAdvancedCourseIds === true}
@@ -637,15 +708,15 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Course Permission</CardTitle>
+                    <CardTitle>{t('coursePermission.title')}</CardTitle>
                     <CardDescription>
-                        Control what this role can do on a course and its slides.
+                        {t('coursePermission.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                         <div className="text-sm font-medium text-neutral-800">
-                            Can directly edit (without Copy-to-Edit / approval)
+                            {t('coursePermission.directEditPublishedCourse')}
                         </div>
                         <Switch
                             checked={settings.coursePage?.directEditPublishedCourse !== false}
@@ -685,9 +756,9 @@ export default function AdminDisplaySettings() {
                     </div>
                     {(
                         [
-                            ['showCopyTo', 'Can copy slide'],
-                            ['showMoveTo', 'Can move slide'],
-                            ['showDelete', 'Can delete slide'],
+                            ['showCopyTo', t('coursePermission.showCopyTo')],
+                            ['showMoveTo', t('coursePermission.showMoveTo')],
+                            ['showDelete', t('coursePermission.showDelete')],
                         ] as const
                     ).map(([key, label]) => (
                         <div
@@ -716,7 +787,7 @@ export default function AdminDisplaySettings() {
                         </div>
                     ))}
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Can edit subject / module / chapter</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('coursePermission.canEditCourseStructure')}</div>
                         <Switch
                             checked={settings.coursePage?.canEditCourseStructure !== false}
                             onCheckedChange={(checked) =>
@@ -754,7 +825,7 @@ export default function AdminDisplaySettings() {
                         />
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Can delete subject / module / chapter</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('coursePermission.canDeleteCourseStructure')}</div>
                         <Switch
                             checked={settings.coursePage?.canDeleteCourseStructure !== false}
                             onCheckedChange={(checked) =>
@@ -793,7 +864,7 @@ export default function AdminDisplaySettings() {
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                         <div className="text-sm font-medium text-neutral-800">
-                            Show Bulk Upload (ZIP) button
+                            {t('coursePermission.showBulkUpload')}
                         </div>
                         <Switch
                             checked={settings.coursePage?.showBulkUpload === true}
@@ -832,7 +903,7 @@ export default function AdminDisplaySettings() {
                         />
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Can delete course</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('coursePermission.canDeleteCourse')}</div>
                         <Switch
                             checked={settings.authoredCoursesCard?.showDelete !== false}
                             onCheckedChange={(checked) =>
@@ -852,15 +923,14 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Authored Courses Card</CardTitle>
+                    <CardTitle>{t('authoredCoursesCard.title')}</CardTitle>
                     <CardDescription>
-                        Control which actions appear on the course card under Explore Courses →
-                        Authored Courses.
+                        {t('authoredCoursesCard.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Show &quot;Copy to Edit&quot; button</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('authoredCoursesCard.showCopyToEdit')}</div>
                         <Switch
                             checked={settings.authoredCoursesCard?.showCopyToEdit !== false}
                             onCheckedChange={(checked) =>
@@ -880,14 +950,14 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Course List Card</CardTitle>
+                    <CardTitle>{t('courseListCard.title')}</CardTitle>
                     <CardDescription>
-                        Control which details appear on each course card under Explore Courses.
+                        {t('courseListCard.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Show enrolled student count</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('courseListCard.showEnrolledStudentCount')}</div>
                         <Switch
                             checked={
                                 settings.courseListCard?.showEnrolledStudentCount === true
@@ -907,16 +977,15 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Course Creation</CardTitle>
+                    <CardTitle>{t('courseCreation.title')}</CardTitle>
                     <CardDescription>
-                        Control who can create courses, AI entry points, and chapter setup
-                        defaults.
+                        {t('courseCreation.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                         <div className="text-sm font-medium text-neutral-800">
-                            Allow creating courses (show &quot;Add Course&quot; button)
+                            {t('courseCreation.showCreateCourse')}
                         </div>
                         <Switch
                             checked={settings.courseCreation?.showCreateCourse ?? true}
@@ -944,7 +1013,7 @@ export default function AdminDisplaySettings() {
                         />
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Show &quot;Create Course with AI&quot;</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('courseCreation.showCreateCourseWithAI')}</div>
                         <Switch
                             checked={
                                 settings.courseCreation?.showCreateCourseWithAI ??
@@ -973,7 +1042,7 @@ export default function AdminDisplaySettings() {
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                         <div className="text-sm font-medium text-neutral-800">
-                            Require package session selection when adding a new chapter
+                            {t('courseCreation.requirePackageSelectionForNewChapter')}
                         </div>
                         <Switch
                             checked={
@@ -1001,7 +1070,7 @@ export default function AdminDisplaySettings() {
                         />
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Show Advanced Settings</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('courseCreation.showAdvancedSettings')}</div>
                         <Switch
                             checked={
                                 settings.courseCreation?.showAdvancedSettings ??
@@ -1029,7 +1098,7 @@ export default function AdminDisplaySettings() {
                         />
                     </div>
                     <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                        <div className="text-sm font-medium text-neutral-800">Limit Course To Single Level</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('courseCreation.limitToSingleLevel')}</div>
                         <Switch
                             checked={
                                 settings.courseCreation?.limitToSingleLevel ??
@@ -1061,10 +1130,9 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Course List Tabs</CardTitle>
+                    <CardTitle>{t('courseListTabs.title')}</CardTitle>
                     <CardDescription>
-                        Configure visible tabs, their order, and the default tab. Note: Course
-                        Approval is always visible for Admins; Course In Review is hidden.
+                        {t('courseListTabs.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1087,14 +1155,13 @@ export default function AdminDisplaySettings() {
                             .sort((a, b) => a.order - b.order);
 
                         return sorted.map((cfg, idx) => {
-                            const isForcedVisible = cfg.id === 'CourseApproval';
+                            // The tab that belongs to the OTHER role stays hidden; the
+                            // review/approval tab for this role is a normal toggle so an
+                            // institute that does not use the approval flow can hide it
+                            // (Neeraj, 2026-09-19).
                             const isForcedHidden = cfg.id === 'CourseInReview';
-                            const disabledToggle = isForcedVisible || isForcedHidden;
-                            const enforcedVisible = isForcedVisible
-                                ? true
-                                : isForcedHidden
-                                  ? false
-                                  : cfg.visible;
+                            const disabledToggle = isForcedHidden;
+                            const enforcedVisible = isForcedHidden ? false : cfg.visible;
                             return (
                                 <div
                                     key={cfg.id}
@@ -1145,7 +1212,7 @@ export default function AdminDisplaySettings() {
                                                 }))
                                             }
                                         />
-                                        <span className="text-sm">Visible</span>
+                                        <span className="text-sm">{t('common.visible')}</span>
                                     </div>
                                     <div>
                                         <label className="flex items-center gap-2 text-sm">
@@ -1166,7 +1233,7 @@ export default function AdminDisplaySettings() {
                                                 }
                                                 disabled={isForcedHidden}
                                             />
-                                            Default
+                                            {t('common.default')}
                                         </label>
                                     </div>
                                 </div>
@@ -1178,9 +1245,9 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Course Details Tabs</CardTitle>
+                    <CardTitle>{t('courseDetailsTabs.title')}</CardTitle>
                     <CardDescription>
-                        Choose which tabs are visible and set the default tab.
+                        {t('courseDetailsTabs.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1191,6 +1258,7 @@ export default function AdminDisplaySettings() {
                             'LEARNER',
                             'TEACHER',
                             'ASSESSMENT',
+                            'QUIZ_RESULTS',
                             'LIVE_SESSION',
                             'PLANNING',
                             'ACTIVITY',
@@ -1199,6 +1267,8 @@ export default function AdminDisplaySettings() {
                             'CERTIFICATES',
                             'DOWNLOADS',
                             'SETTINGS',
+                            'TUTOR_MODE',
+                            'AI_KNOWLEDGE',
                         ];
                         const orderForId: Record<string, number> = {
                             OUTLINE: 1,
@@ -1206,6 +1276,9 @@ export default function AdminDisplaySettings() {
                             LEARNER: 3,
                             TEACHER: 4,
                             ASSESSMENT: 5,
+                            // 5.5 slots it after Assessment without renumbering tabs that
+                            // institutes have already saved orders for — see admin-defaults.ts.
+                            QUIZ_RESULTS: 5.5,
                             LIVE_SESSION: 6,
                             PLANNING: 7,
                             ACTIVITY: 8,
@@ -1214,6 +1287,8 @@ export default function AdminDisplaySettings() {
                             CERTIFICATES: 11,
                             DOWNLOADS: 12,
                             SETTINGS: 13,
+                            TUTOR_MODE: 13.5,
+                            AI_KNOWLEDGE: 13.6,
                         };
                         // Tabs that stay OFF unless explicitly enabled per role.
                         const hiddenByDefault = DEFAULT_HIDDEN_COURSE_DETAILS_TABS;
@@ -1269,8 +1344,7 @@ export default function AdminDisplaySettings() {
                                     </div>
                                     {offlineLocked && (
                                         <div className="text-caption text-neutral-500">
-                                            Turned off because offline downloads are disabled for
-                                            the institute (Settings → Offline Access).
+                                            {t('courseDetailsTabs.offlineLockedNote')}
                                         </div>
                                     )}
                                 </div>
@@ -1310,7 +1384,7 @@ export default function AdminDisplaySettings() {
                                             })
                                         }
                                     />
-                                    <span className="text-sm">Visible</span>
+                                    <span className="text-sm">{t('common.visible')}</span>
                                 </div>
                                 <div>
                                     <label className="flex items-center gap-2 text-sm">
@@ -1331,7 +1405,7 @@ export default function AdminDisplaySettings() {
                                                 }))
                                             }
                                         />
-                                        Default
+                                        {t('common.default')}
                                     </label>
                                 </div>
                             </div>
@@ -1340,22 +1414,45 @@ export default function AdminDisplaySettings() {
                     })()}
                 </CardContent>
             </Card>
-            <AssessmentActionsCard
-                settings={settings.assessmentPage}
-                onChange={(next) => updateSettings((prev) => ({ ...prev, assessmentPage: next }))}
-            />
+            </>
+            )}
+            {planRows.card('assessmentActions') && (
+                <AssessmentActionsCard
+                    settings={settings.assessmentPage}
+                    onChange={(next) =>
+                        updateSettings((prev) => ({ ...prev, assessmentPage: next }))
+                    }
+                />
+            )}
+            {planRows.card('liveClassActions') && (
+                <LiveClassActionsCard
+                    settings={settings.liveClassActions}
+                    onChange={(next) =>
+                        updateSettings((prev) => ({ ...prev, liveClassActions: next }))
+                    }
+                    defaultAllowDeletePastSessions={true}
+                />
+            )}
+            {planRows.card('leadActions') && (
+                <LeadActionsCard
+                    settings={settings.leadActions}
+                    onChange={(next) =>
+                        updateSettings((prev) => ({ ...prev, leadActions: next }))
+                    }
+                />
+            )}
             </section>
 
             <section id="grp-layout" className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>UI Options</CardTitle>
-                    <CardDescription>Global UI preferences</CardDescription>
+                    <CardTitle>{t('uiOptions.title')}</CardTitle>
+                    <CardDescription>{t('uiOptions.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                            <div className="text-sm font-medium text-neutral-800">Show Support Button</div>
+                            <div className="text-sm font-medium text-neutral-800">{t('uiOptions.showSupportButton')}</div>
                             <Switch
                                 checked={settings.ui?.showSupportButton !== false}
                                 onCheckedChange={(checked) =>
@@ -1367,7 +1464,7 @@ export default function AdminDisplaySettings() {
                             />
                         </div>
                         <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                            <div className="text-sm font-medium text-neutral-800">Show Sidebar</div>
+                            <div className="text-sm font-medium text-neutral-800">{t('uiOptions.showSidebar')}</div>
                             <Switch
                                 checked={settings.ui?.showSidebar !== false}
                                 onCheckedChange={(checked) =>
@@ -1383,7 +1480,7 @@ export default function AdminDisplaySettings() {
                             />
                         </div>
                         <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                            <div className="text-sm font-medium text-neutral-800">Show AI Credits</div>
+                            <div className="text-sm font-medium text-neutral-800">{t('uiOptions.showAiCredits')}</div>
                             <Switch
                                 checked={settings.ui?.showAiCredits !== false}
                                 onCheckedChange={(checked) =>
@@ -1399,7 +1496,7 @@ export default function AdminDisplaySettings() {
                             />
                         </div>
                         <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
-                            <div className="text-sm font-medium text-neutral-800">Show Status</div>
+                            <div className="text-sm font-medium text-neutral-800">{t('uiOptions.showStatus')}</div>
                             <Switch
                                 checked={settings.ui?.showStatus !== false}
                                 onCheckedChange={(checked) =>
@@ -1417,11 +1514,10 @@ export default function AdminDisplaySettings() {
                         <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                             <div>
                                 <div className="text-sm font-medium text-neutral-800">
-                                    Show Settings
+                                    {t('uiOptions.showSettingsTitle')}
                                 </div>
                                 <div className="text-xs text-neutral-500">
-                                    Hides the Settings gear in the sidebar rail. You can still open
-                                    Settings directly at /settings.
+                                    {t('uiOptions.showSettingsDescription')}
                                 </div>
                             </div>
                             <Switch
@@ -1441,10 +1537,10 @@ export default function AdminDisplaySettings() {
                         <div className="flex items-center justify-between gap-4 border-b border-border py-3.5 last:border-b-0">
                             <div>
                                 <div className="text-sm font-medium text-neutral-800">
-                                    Show Right Side Rail
+                                    {t('uiOptions.showRightRailTitle')}
                                 </div>
                                 <div className="text-xs text-neutral-500">
-                                    Guides, Assist, Issues, What&apos;s new, Explore &amp; Admin App
+                                    {t('uiOptions.showRightRailDescription')}
                                 </div>
                             </div>
                             <Switch
@@ -1466,9 +1562,9 @@ export default function AdminDisplaySettings() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Sidebar Categories</CardTitle>
+                    <CardTitle>{t('sidebarCategories.title')}</CardTitle>
                     <CardDescription>
-                        Configure visibility, order, and default category for the sidebar.
+                        {t('sidebarCategories.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1480,7 +1576,7 @@ export default function AdminDisplaySettings() {
                                 { id: 'AI' as const, visible: true, default: false, order: 2 },
                             ]
                         )
-                            .slice()
+                            .filter((c) => planRows.category(c.id, settings.sidebar))
                             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
                         return categories.map((cfg, idx) => (
@@ -1512,7 +1608,7 @@ export default function AdminDisplaySettings() {
                                     </Button>
                                 </div>
                                 <div className="flex-1 text-sm font-medium">
-                                    {cfg.id === 'AI' ? 'AI Tools' : cfg.id}
+                                    {cfg.id === 'AI' ? t('sidebarCategories.aiTools') : cfg.id}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Select
@@ -1561,9 +1657,9 @@ export default function AdminDisplaySettings() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="visible">Visible</SelectItem>
-                                            <SelectItem value="hidden">Hidden</SelectItem>
-                                            <SelectItem value="locked">Locked</SelectItem>
+                                            <SelectItem value="visible">{t('common.visible')}</SelectItem>
+                                            <SelectItem value="hidden">{t('common.hidden')}</SelectItem>
+                                            <SelectItem value="locked">{t('common.locked')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1601,7 +1697,7 @@ export default function AdminDisplaySettings() {
                                                 });
                                             }}
                                         />
-                                        Default
+                                        {t('common.default')}
                                     </label>
                                 </div>
                             </div>
@@ -1611,33 +1707,36 @@ export default function AdminDisplaySettings() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Sidebar Tabs</CardTitle>
+                    <CardTitle>{t('sidebarTabs.title')}</CardTitle>
                     <CardDescription>
-                        Order and toggle visibility. Add custom tabs with name, order, and route.
+                        {t('sidebarTabs.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <Tabs
                         value={activeCategory}
-                        onValueChange={(v) => setActiveCategory(v as 'CRM' | 'LMS' | 'AI')}
+                        onValueChange={(v) => setActiveCategory(v as SidebarCategory)}
                         className="w-full"
                     >
-                        <TabsList className="mb-4 grid w-full grid-cols-3">
-                            <TabsTrigger value="LMS">LMS</TabsTrigger>
-                            <TabsTrigger value="CRM">CRM</TabsTrigger>
-                            <TabsTrigger value="AI">AI Tools</TabsTrigger>
+                        <TabsList className="mb-4 grid w-full grid-cols-4">
+                            <TabsTrigger value="LMS">{t('sidebarCategories.lms')}</TabsTrigger>
+                            <TabsTrigger value="CRM">{t('sidebarCategories.crm')}</TabsTrigger>
+                            <TabsTrigger value="AI">{t('sidebarCategories.aiTools')}</TabsTrigger>
+                            <TabsTrigger value="ERP">ERP</TabsTrigger>
                         </TabsList>
 
                         {(() => {
                             const categoryTabs = settings.sidebar
                                 .filter((tab) => {
-                                    const baseItem = SidebarItemsData.find((i) => i.id === tab.id);
+                                    const baseItem = sidebarItems.find((i) => i.id === tab.id);
                                     const cat = baseItem?.category || tab.category || 'CRM';
-                                    return cat === activeCategory;
+                                    return cat === activeCategory && planRows.tab(tab.id);
                                 })
                                 .sort((a, b) => a.order - b.order);
 
-                            return categoryTabs.map((tab, tabIdx) => (
+                            return categoryTabs.map((tab, tabIdx) => {
+                                const baseItem = sidebarItems.find((i) => i.id === tab.id);
+                                return (
                                 <div key={tab.id} className="mb-3 rounded border p-3">
                                     <div className="flex items-start gap-3">
                                         {/* Move up/down buttons */}
@@ -1670,9 +1769,9 @@ export default function AdminDisplaySettings() {
                                         <div className="flex-1">
                                             <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:items-center">
                                                 <div className="col-span-2">
-                                                    <Label>Tab Name</Label>
+                                                    <Label>{t('sidebarTabs.tabName')}</Label>
                                                     <Input
-                                                        value={tab.label || ''}
+                                                        value={tab.label || baseItem?.title || ''}
                                                         onChange={(e) =>
                                                             updateSettings((prev) => ({
                                                                 ...prev,
@@ -1686,7 +1785,7 @@ export default function AdminDisplaySettings() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label>Route</Label>
+                                                    <Label>{t('common.route')}</Label>
                                                     <Input
                                                         value={tab.route || ''}
                                                         onChange={(e) =>
@@ -1743,9 +1842,9 @@ export default function AdminDisplaySettings() {
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="visible">Visible</SelectItem>
-                                                            <SelectItem value="hidden">Hidden</SelectItem>
-                                                            <SelectItem value="locked">Locked</SelectItem>
+                                                            <SelectItem value="visible">{t('common.visible')}</SelectItem>
+                                                            <SelectItem value="hidden">{t('common.hidden')}</SelectItem>
+                                                            <SelectItem value="locked">{t('common.locked')}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                     {tab.isCustom && (
@@ -1754,28 +1853,33 @@ export default function AdminDisplaySettings() {
                                                             size="sm"
                                                             onClick={() => removeCustomTab(tab.id)}
                                                         >
-                                                            Remove
+                                                            {t('common.remove')}
                                                         </Button>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="mt-3 space-y-2">
                                                 <div className="flex items-center justify-between">
-                                                    <Label>Sub Tabs</Label>
+                                                    <Label>{t('sidebarTabs.subTabsLabel')}</Label>
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => addSubTab(tab.id)}
                                                     >
-                                                        Add Sub Tab
+                                                        {t('sidebarTabs.addSubTab')}
                                                     </Button>
                                                 </div>
                                                 {(() => {
                                                     const sortedSubs = (tab.subTabs || [])
-                                                        .slice()
+                                                        .filter((s) => planRows.subTab(tab.id, s.id))
                                                         .sort((a, b) => a.order - b.order);
 
-                                                    return sortedSubs.map((sub, subIdx) => (
+                                                    return sortedSubs.map((sub, subIdx) => {
+                                                    const baseSub = baseItem?.subItems?.find(
+                                                        (i) =>
+                                                            (i.subItemId || i.subItem) === sub.id
+                                                    );
+                                                    return (
                                                         <div
                                                             key={sub.id}
                                                             className="flex items-center gap-3 rounded border p-2"
@@ -1813,8 +1917,12 @@ export default function AdminDisplaySettings() {
                                                             <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-4 md:items-center">
                                                                 <div className="col-span-2">
                                                                     <Input
-                                                                        value={sub.label || ''}
-                                                                        placeholder="Label"
+                                                                        value={
+                                                                            sub.label ||
+                                                                            baseSub?.subItem ||
+                                                                            ''
+                                                                        }
+                                                                        placeholder={t('common.label')}
                                                                         onChange={(e) =>
                                                                             updateSettings((prev) => ({
                                                                                 ...prev,
@@ -1847,7 +1955,7 @@ export default function AdminDisplaySettings() {
                                                                 <div>
                                                                     <Input
                                                                         value={sub.route}
-                                                                        placeholder="Route"
+                                                                        placeholder={t('common.route')}
                                                                         onChange={(e) =>
                                                                             updateSettings((prev) => ({
                                                                                 ...prev,
@@ -1943,13 +2051,13 @@ export default function AdminDisplaySettings() {
                                                                         </SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="visible">
-                                                                                Visible
+                                                                                {t('common.visible')}
                                                                             </SelectItem>
                                                                             <SelectItem value="hidden">
-                                                                                Hidden
+                                                                                {t('common.hidden')}
                                                                             </SelectItem>
                                                                             <SelectItem value="locked">
-                                                                                Locked
+                                                                                {t('common.locked')}
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
@@ -1964,24 +2072,26 @@ export default function AdminDisplaySettings() {
                                                                                 )
                                                                             }
                                                                         >
-                                                                            Remove
+                                                                            {t('common.remove')}
                                                                         </Button>
                                                                     )}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ));
+                                                    );
+                                                    });
                                                 })()}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ));
+                            );
+                            });
                         })()}
                     </Tabs>
                     <div className="pt-2">
                         <Button variant="outline" onClick={addCustomTab}>
-                            Add Custom Tab
+                            {t('sidebarTabs.addCustomTab')}
                         </Button>
                     </div>
                 </CardContent>
@@ -1989,29 +2099,31 @@ export default function AdminDisplaySettings() {
             </section>
 
             <section id="grp-learners" className="space-y-6">
+            {/* Slide content types: LMS only (plan-rows.ts). */}
+            {planRows.card('courseContentTypes') && (
+            <>
             <Card>
                 <CardHeader>
-                    <CardTitle>Course Content Types</CardTitle>
+                    <CardTitle>{t('courseContentTypes.title')}</CardTitle>
                     <CardDescription>
-                        Enable or disable slide content types. Video has an extra in-video question
-                        option.
+                        {t('courseContentTypes.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {(
                         [
-                            ['pdf', 'PDF'],
-                            ['ppt', 'PPT Presentation'],
-                            ['codeEditor', 'Code Editor'],
-                            ['document', 'Document'],
-                            ['question', 'Question'],
-                            ['quiz', 'Quiz'],
-                            ['assignment', 'Assignment'],
-                            ['jupyterNotebook', 'Jupyter Notebook'],
-                            ['scratch', 'Scratch'],
-                            ['audio', 'Audio'],
-                            ['scorm', 'SCORM Package'],
-                            ['assessment', 'Assessment'],
+                            ['pdf', t('courseContentTypes.pdf')],
+                            ['ppt', t('courseContentTypes.pptPresentation')],
+                            ['codeEditor', t('courseContentTypes.codeEditor')],
+                            ['document', t('courseContentTypes.document')],
+                            ['question', t('courseContentTypes.question')],
+                            ['quiz', t('courseContentTypes.quiz')],
+                            ['assignment', t('courseContentTypes.assignment')],
+                            ['jupyterNotebook', t('courseContentTypes.jupyterNotebook')],
+                            ['scratch', t('courseContentTypes.scratch')],
+                            ['audio', t('courseContentTypes.audio')],
+                            ['scorm', t('courseContentTypes.scormPackage')],
+                            ['assessment', t('courseContentTypes.assessment')],
                         ] as const satisfies ReadonlyArray<
                             readonly [keyof Omit<CourseContentTypeSettings, 'video'>, string]
                         >
@@ -2060,7 +2172,7 @@ export default function AdminDisplaySettings() {
                     ))}
                     <div className="space-y-2 rounded border p-3">
                         <div className="flex items-center justify-between">
-                            <div className="text-sm font-medium text-neutral-800">Video</div>
+                            <div className="text-sm font-medium text-neutral-800">{t('courseContentTypes.video')}</div>
                             <Switch
                                 checked={settings.contentTypes?.video?.enabled !== false}
                                 onCheckedChange={(checked) =>
@@ -2102,7 +2214,7 @@ export default function AdminDisplaySettings() {
                             />
                         </div>
                         <div className="flex items-center justify-between">
-                            <div className="text-sm font-medium text-neutral-800">In-video Question Visible</div>
+                            <div className="text-sm font-medium text-neutral-800">{t('courseContentTypes.inVideoQuestionVisible')}</div>
                             <Switch
                                 checked={
                                     settings.contentTypes?.video?.showInVideoQuestion !== false
@@ -2148,7 +2260,7 @@ export default function AdminDisplaySettings() {
                             <>
                                 <div className="flex items-center justify-between">
                                     <div className="text-sm font-medium text-neutral-800">
-                                        Can add questions to video slides
+                                        {t('courseContentTypes.canAddVideoQuestion')}
                                     </div>
                                     <Switch
                                         checked={settings.slideView?.showAddVideoQuestion !== false}
@@ -2170,7 +2282,7 @@ export default function AdminDisplaySettings() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="text-sm font-medium text-neutral-800">
-                                        Can convert video to split screen
+                                        {t('courseContentTypes.canConvertSplitScreen')}
                                     </div>
                                     <Switch
                                         checked={
@@ -2196,9 +2308,12 @@ export default function AdminDisplaySettings() {
                     </div>
                 </CardContent>
             </Card>
+            </>
+            )}
 
             <StudentSideViewSettingsCard
                 options={STUDENT_SIDE_VIEW_OPTIONS}
+                isShown={planRows.sideViewTab}
                 settings={{
                     ...STUDENT_SIDE_VIEW_DEFAULTS,
                     ...settings.studentSideView,
@@ -2212,15 +2327,17 @@ export default function AdminDisplaySettings() {
                 }
             />
 
-            <LearnerListColumnsCard
-                settings={settings.learnerListColumns}
-                onChange={(next) =>
-                    updateSettings((prev) => ({
-                        ...prev,
-                        learnerListColumns: next,
-                    }))
-                }
-            />
+            {planRows.card('learnerListColumns') && (
+                <LearnerListColumnsCard
+                    settings={settings.learnerListColumns}
+                    onChange={(next) =>
+                        updateSettings((prev) => ({
+                            ...prev,
+                            learnerListColumns: next,
+                        }))
+                    }
+                />
+            )}
 
             {/* Institute-wide (applies to all roles): which custom fields are
                 filter/sort controls on the Leads, All Contacts and Students list
@@ -2237,14 +2354,28 @@ export default function AdminDisplaySettings() {
                             listCustomFieldControls: next,
                         }))
                     }
+                    utmValue={settings.listUtmFilterControls}
+                    onUtmChange={(next) =>
+                        updateSettings((prev) => ({
+                            ...prev,
+                            listUtmFilterControls: next,
+                        }))
+                    }
+                    builtInValue={settings.listBuiltInFilterControls}
+                    onBuiltInChange={(next) =>
+                        updateSettings((prev) => ({
+                            ...prev,
+                            listBuiltInFilterControls: next,
+                        }))
+                    }
                 />
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Learner Management</CardTitle>
+                    <CardTitle>{t('learnerManagement.title')}</CardTitle>
                     <CardDescription>
-                        Configure learner management permissions and access controls.
+                        {t('learnerManagement.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -2275,29 +2406,31 @@ export default function AdminDisplaySettings() {
                 </CardContent>
             </Card>
 
-            <StudentManagementActionsCard
-                settings={settings.studentManagementActions}
-                onChange={(next) =>
-                    updateSettings((prev) => ({
-                        ...prev,
-                        studentManagementActions: next,
-                    }))
-                }
-            />
+            {planRows.card('studentManagementActions') && (
+                <StudentManagementActionsCard
+                    settings={settings.studentManagementActions}
+                    onChange={(next) =>
+                        updateSettings((prev) => ({
+                            ...prev,
+                            studentManagementActions: next,
+                        }))
+                    }
+                />
+            )}
             </section>
 
             <section id="grp-access" className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Dashboard Widgets</CardTitle>
+                    <CardTitle>{t('dashboardWidgets.title')}</CardTitle>
                     <CardDescription>
-                        Order and toggle which widgets admins can see.
+                        {t('dashboardWidgets.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {(() => {
                         const sorted = settings.dashboard.widgets
-                            .slice()
+                            .filter((w) => planRows.widget(w.id))
                             .sort((a, b) => a.order - b.order);
 
                         return sorted.map((w, idx) => (
@@ -2345,7 +2478,7 @@ export default function AdminDisplaySettings() {
                                             }))
                                         }
                                     />
-                                    <span className="text-sm">Visible</span>
+                                    <span className="text-sm">{t('common.visible')}</span>
                                 </div>
                             </div>
                         ));
@@ -2355,18 +2488,18 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Permissions</CardTitle>
+                    <CardTitle>{t('permissions.title')}</CardTitle>
                     <CardDescription>
-                        Configure institute and profile visibility and edit access.
+                        {t('permissions.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {(
                         [
-                            ['canViewInstituteDetails', 'Can View Institute Details'],
-                            ['canEditInstituteDetails', 'Can Edit Institute Details'],
-                            ['canViewProfileDetails', 'Can View Profile Details'],
-                            ['canEditProfileDetails', 'Can Edit Profile Details'],
+                            ['canViewInstituteDetails', t('permissions.canViewInstituteDetails')],
+                            ['canEditInstituteDetails', t('permissions.canEditInstituteDetails')],
+                            ['canViewProfileDetails', t('permissions.canViewProfileDetails')],
+                            ['canEditProfileDetails', t('permissions.canEditProfileDetails')],
                         ] as const
                     ).map(([key, label]) => (
                         <div
@@ -2412,21 +2545,19 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Org Chart tab</CardTitle>
+                    <CardTitle>{t('orgChart.title')}</CardTitle>
                     <CardDescription>
-                        Show the hierarchical Org Chart tab inside Manage Institute → Teams.
-                        Off by default while this feature is being rolled out.
+                        {t('orgChart.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 p-3">
                         <div>
                             <div className="text-body font-medium text-neutral-900">
-                                Enable Org Chart tab
+                                {t('orgChart.enableTitle')}
                             </div>
                             <div className="text-caption text-neutral-500">
-                                Lets admins build a hierarchical team structure with team heads,
-                                sub-teams, and per-member role labels.
+                                {t('orgChart.enableDescription')}
                             </div>
                         </div>
                         <Switch
@@ -2447,23 +2578,19 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Team member passwords</CardTitle>
+                    <CardTitle>{t('teamPasswords.title')}</CardTitle>
                     <CardDescription>
-                        Show a Password column (and a &quot;View Password&quot; row action) for team
-                        members in Manage Institute → Teams. On by default — turn this off to hide
-                        sign-in credentials from everyone with Teams access.
+                        {t('teamPasswords.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 p-3">
                         <div>
                             <div className="text-body font-medium text-neutral-900">
-                                Show passwords
+                                {t('teamPasswords.showTitle')}
                             </div>
                             <div className="text-caption text-neutral-500">
-                                Adds a masked Password column (with reveal + copy) and a &quot;View
-                                Password&quot; option per member. Passwords are sensitive — anyone
-                                with Teams access will be able to see them.
+                                {t('teamPasswords.showDescription')}
                             </div>
                         </div>
                         <Switch
@@ -2489,12 +2616,12 @@ export default function AdminDisplaySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Post-login Redirect</CardTitle>
-                    <CardDescription>Choose where to redirect admins after login.</CardDescription>
+                    <CardTitle>{t('postLoginRedirect.title')}</CardTitle>
+                    <CardDescription>{t('postLoginRedirect.description')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="max-w-md">
-                        <Label>Route</Label>
+                        <Label>{t('common.route')}</Label>
                         <Input
                             value={settings.postLoginRedirectRoute}
                             onChange={(e) =>

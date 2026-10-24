@@ -1,0 +1,20 @@
+{
+    "recipe": {
+        "setUpButton": "Set up",
+        "modeScheduled": "Runs on a schedule",
+        "modeTriggered": "Runs automatically when triggered"
+    },
+    "turnOffDialog": {
+        "title": "Turn off automation?",
+        "descriptionPart1": "This stops ",
+        "descriptionPart2": ". Any scheduled or event-based emails set up by this automation will no longer be sent. You can turn it back on any time.",
+        "cancel": "Cancel",
+        "turningOff": "Turning off…",
+        "turnOff": "Turn off"
+    },
+    "toasts": {
+        "turnedOff": "Automation turned off.",
+        "turnOffFailed": "Could not turn it off: {{message}}",
+        "unknownError": "Unknown error"
+    }
+}

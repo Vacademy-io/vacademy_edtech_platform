@@ -1,0 +1,251 @@
+{
+    "hero": {
+        "title": "Let the student AI answer from this course",
+        "body": "The student AI reads your lessons and answers learners with links to the exact page or minute. Locked lessons stay locked: the AI only tells learners when they unlock.",
+        "turnOn": "Turn on course knowledge",
+        "turningOn": "Turning on…",
+        "askAdmin": "Ask an admin to turn this on.",
+        "turnedOn": "Course knowledge is on",
+        "turnOnFailed": "Could not turn on course knowledge. Try again."
+    },
+    "states": {
+        "READY": "AI-ready",
+        "NEEDS_PROCESSING": "Needs processing",
+        "PROCESSING": "Processing",
+        "NOT_SCANNED": "Not scanned",
+        "CANT_READ": "Can't read",
+        "FAILED": "Failed",
+        "EXCLUDED": "Assessment (never used)"
+    },
+    "summary": {
+        "title": "AI knowledge",
+        "subtitle": "What the student AI can read in this course.",
+        "ready_one": "AI can answer from {{ready}} of {{count}} lesson.",
+        "ready_other": "AI can answer from {{ready}} of {{count}} lessons.",
+        "needProcessing_one": "{{count}} needs processing (≈ {{credits}} credits).",
+        "needProcessing_other": "{{count}} need processing (≈ {{credits}} credits).",
+        "cantRead_one": "{{count}} can't be read.",
+        "cantRead_other": "{{count}} can't be read.",
+        "failed_one": "{{count}} failed: retry it below.",
+        "failed_other": "{{count}} failed: retry them below.",
+        "makeReady": "Make course AI-ready",
+        "allSet": "All set",
+        "refresh": "Refresh"
+    },
+    "run": {
+        "scanning": "Reading lessons: {{done}} of {{total}}",
+        "processing": "Processing scans and videos: {{done}} of {{total}}",
+        "credits": "{{charged}} of {{quoted}} credits used",
+        "progressAria": "Progress of this run",
+        "stop": "Stop",
+        "stopped": "Stopped. Credits not spent are released.",
+        "stopFailed": "Could not stop. Try again.",
+        "scanFinished": "Finished reading the lessons in this course.",
+        "processFinished": "Finished processing. The AI knowledge for this course is up to date."
+    },
+    "empty": {
+        "title": "No published lessons yet.",
+        "body": "Publish lessons in this course and they show up here."
+    },
+    "errors": {
+        "load": "Could not load AI knowledge for this course.",
+        "retry": "Try again",
+        "generic": "Something went wrong. Try again.",
+        "limit": "You have reached an AI usage limit. Try again later.",
+        "notEnabled": "Course knowledge is off for your institute."
+    },
+    "dialog": {
+        "title": "Make course AI-ready",
+        "close": "Close",
+        "step1": {
+            "title": "Step 1 · Read your lessons",
+            "body": "Reading the text in your lessons. This is free.",
+            "progress": "{{done}} of {{total}} lessons",
+            "starting": "Starting…",
+            "start": "Start reading",
+            "done": "Your lessons have been read.",
+            "nothing": "No lessons in this course can be read yet.",
+            "rateLimited": "Lessons were read a few minutes ago. Try again shortly."
+        },
+        "step2": {
+            "title": "Step 2 · Process scans and videos",
+            "waiting": "The cost shows here once reading finishes.",
+            "nothing": "Nothing needs paid processing. The AI can use all the free text in this course.",
+            "items": {
+                "ocr_pages": "Scanned PDFs: {{units}} pages · {{credits}} credits",
+                "transcribe_minutes": "Videos and audio: {{duration}} · {{credits}} credits",
+                "deck_images": "Slide images: {{units}} slides · {{credits}} credits"
+            },
+            "lessons_one": "{{count}} lesson",
+            "lessons_other": "{{count}} lessons",
+            "approx": "Some video lengths are estimates until the files are read.",
+            "total": "Total",
+            "totalCredits": "{{credits}} credits",
+            "balance": "Balance {{before}} → {{after}} after",
+            "promise": "You will never be charged more than {{credits}} credits. Files already processed elsewhere are free.",
+            "paidUnavailable": "Paid processing is not available for your institute yet.",
+            "askAdmin": "Ask an admin to approve.",
+            "quoteChanged": "The amount changed to {{credits}} credits.",
+            "insufficientTitle": "Not enough credits",
+            "insufficient": "This needs {{credits}} credits. Top up to continue.",
+            "process": "Process for {{credits}} credits",
+            "starting": "Starting…",
+            "keepFree": "Keep free content only",
+            "started": "Processing started. You can close this window.",
+            "running": "Processing: {{done}} of {{total}} lessons"
+        },
+        "duration": {
+            "minutes": "{{minutes}} min",
+            "hours": "{{hours}} h",
+            "hoursMinutes": "{{hours}} h {{minutes}} min"
+        }
+    },
+    "table": {
+        "title": "Lessons",
+        "filterAria": "Filter lessons by state",
+        "all": "All ({{count}})",
+        "stateWithCount": "{{label}} ({{count}})",
+        "columns": {
+            "lesson": "Lesson",
+            "chapter": "Chapter",
+            "type": "Type",
+            "state": "State",
+            "reason": "Reason",
+            "credits": "Credits",
+            "action": "Action"
+        },
+        "untitled": "Untitled lesson",
+        "creditsUsed": "{{credits}} used",
+        "creditsQuoted": "≈ {{credits}}",
+        "retry": "Retry",
+        "retryQueued": "Queued to read again",
+        "retryFailed": "Could not retry. Try again.",
+        "noneInState": "No lessons in this state.",
+        "types": {
+            "pdf": "PDF",
+            "word": "Word file",
+            "slides": "Slides",
+            "text": "Text",
+            "code": "Code",
+            "document": "Document",
+            "video": "Video",
+            "audio": "Audio",
+            "quiz": "Quiz",
+            "question": "Question",
+            "assignment": "Assignment",
+            "scorm": "Interactive package",
+            "aiVideo": "AI video",
+            "assessment": "Assessment",
+            "other": "Other"
+        }
+    },
+    "search": {
+        "title": "Test what the AI finds",
+        "label": "Test what the AI finds",
+        "placeholder": "Ask something a learner might ask",
+        "submit": "Search",
+        "searching": "Searching…",
+        "note": "Preview searches every published lesson and ignores drip locks.",
+        "empty": "Nothing in this course matches yet. Lessons that are not AI-ready can't be found.",
+        "error": "Could not search. Try again.",
+        "required": "Type a question to search.",
+        "tooLong": "Keep the question under {{max}} characters.",
+        "untitled": "Untitled lesson",
+        "page": "p. {{page}}",
+        "results_one": "{{count}} passage found",
+        "results_other": "{{count}} passages found"
+    },
+    "links": {
+        "title": "Linked knowledge",
+        "subtitle": "Knowledge bases the tutor and the student AI use with this course.",
+        "add": "Link a knowledge base",
+        "edit": "Edit",
+        "remove": "Remove",
+        "removing": "Removing…",
+        "removeTitle": "Remove this link?",
+        "removeBody": "The tutor and the student AI stop using {{name}} for this course. The knowledge base itself is not changed.",
+        "removed": "Link removed",
+        "added": "Knowledge base linked",
+        "updated": "Link updated",
+        "keep": "Keep as link",
+        "keeping": "Saving…",
+        "kept": "Saved as a link",
+        "legacyNote": "Set in this course's Tutor Mode settings. Keep it as a link so the student AI can use it too.",
+        "empty": "No knowledge base is linked to this course yet.",
+        "unnamed": "Knowledge base not available",
+        "topics_one": "{{count}} topic",
+        "topics_other": "{{count}} topics",
+        "allTopics": "All topics",
+        "chapters_one": "{{count}} chapter mapped",
+        "chapters_other": "{{count}} chapters mapped",
+        "usedBy": "Used by: {{list}}",
+        "useIn": {
+            "tutor": "Live tutor",
+            "chatbot": "Student AI"
+        },
+        "provenance": {
+            "AI_COURSE_CREATOR": "Added by AI course creator",
+            "ADMIN": "Added by admin",
+            "LEGACY_TUTOR_SETTING": "From Tutor Mode setting"
+        },
+        "roles": {
+            "GROUNDING": {
+                "label": "Grounding",
+                "help": "The course was built from this material. The tutor teaches from it."
+            },
+            "REFERENCE": {
+                "label": "Reference",
+                "help": "Extra reading the student AI may quote alongside the lessons."
+            }
+        },
+        "modes": {
+            "STRICT": {
+                "label": "Strict",
+                "help": "Answers stay within this material."
+            },
+            "BLENDED": {
+                "label": "Blended",
+                "help": "This material comes first, general knowledge fills the gaps."
+            }
+        },
+        "form": {
+            "addTitle": "Link a knowledge base",
+            "editTitle": "Edit link",
+            "kb": "Knowledge base",
+            "kbPlaceholder": "Choose a knowledge base",
+            "kbRequired": "Choose a knowledge base.",
+            "noKbs": "Every knowledge base is already linked, or none exists yet. Create one in Knowledge base.",
+            "role": "Role",
+            "mode": "How strictly to follow it",
+            "useIn": "Use in",
+            "useInRequired": "Choose at least one place to use it.",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving…"
+        },
+        "errors": {
+            "load": "Could not load the linked knowledge bases.",
+            "save": "Could not save the link. Try again.",
+            "locked": "This knowledge base is locked for your institute. Unlock it before linking.",
+            "kbNotFound": "This knowledge base no longer exists.",
+            "linkNotFound": "This link was already removed.",
+            "conflict": "This knowledge base is already linked to the course.",
+            "notEnabled": "Knowledge base links are not available yet."
+        }
+    },
+    "kept": {
+        "action": "Use transcript",
+        "title": "Use the transcript anyway?",
+        "body": "We transcribed “{{title}}” but it looked like music or silence, so the AI isn't using it and nothing was charged. If the recording does have speech (chanting, a talk over music), read the start below and use it.",
+        "loading": "Loading the transcript…",
+        "failed": "Could not use the transcript. Try again.",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "words_one": "{{count}} word",
+        "words_other": "{{count}} words",
+        "price": "You pay the usual transcription price once. The lesson is not transcribed again.",
+        "use": "Use it · {{credits}} credits",
+        "using": "Using…",
+        "queued": "The AI will read this lesson in a minute"
+    }
+}

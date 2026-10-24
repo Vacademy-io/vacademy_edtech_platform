@@ -1,0 +1,9 @@
+{
+  "labels": {
+    "aiGenerated": "AI द्वारा तैयार",
+    "manual": "मैन्युअल",
+    "template": "टेम्पलेट",
+    "notAdded": "जोड़ा नहीं गया"
+  },
+  "previewTooltip": "मानदंड पूर्वावलोकन करें"
+}

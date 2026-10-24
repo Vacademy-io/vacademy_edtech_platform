@@ -20,6 +20,10 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 _stop_flags: Dict[str, threading.Event] = {}
+# Why the flag was raised: "user" (cancel endpoint / cross-pod cancel seen by
+# the heartbeat) or "fenced" (another pod took the run over — the leg must
+# exit silently: no CANCELLED status, no refund).
+_reasons: Dict[str, str] = {}
 _lock = threading.Lock()
 
 
@@ -41,15 +45,25 @@ def get(video_id: str) -> Optional[threading.Event]:
         return _stop_flags.get(video_id)
 
 
-def signal_stop(video_id: str) -> bool:
+def signal_stop(video_id: str, reason: str = "user") -> bool:
     """Set the stop flag for ``video_id``. Returns True if a flag was
-    found and set, False if no in-flight generation matched."""
+    found and set, False if no in-flight generation matched. The first
+    reason wins (a user cancel is not re-labelled by a later fence)."""
     flag = get(video_id)
     if flag is None:
         return False
+    with _lock:
+        _reasons.setdefault(video_id, reason or "user")
     flag.set()
-    logger.info(f"[Cancel] Stop signal raised for {video_id}")
+    logger.info(f"[Cancel] Stop signal raised for {video_id} (reason={reason})")
     return True
+
+
+def reason(video_id: str) -> Optional[str]:
+    """Why the stop flag was raised (None when it was not, or before any
+    reason was recorded)."""
+    with _lock:
+        return _reasons.get(video_id)
 
 
 def clear(video_id: str) -> None:
@@ -57,6 +71,7 @@ def clear(video_id: str) -> None:
     the thread has unwound. Safe to call when no flag exists."""
     with _lock:
         _stop_flags.pop(video_id, None)
+        _reasons.pop(video_id, None)
 
 
 class PipelineCancelled(Exception):

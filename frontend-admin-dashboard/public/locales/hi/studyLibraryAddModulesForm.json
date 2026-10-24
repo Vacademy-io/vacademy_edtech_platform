@@ -1,0 +1,20 @@
+{
+    "validation": {
+        "moduleNameRequired": "मॉड्यूल नाम आवश्यक है",
+        "descriptionMaxLength": "विवरण अधिकतम {{max}} अक्षरों का होना चाहिए"
+    },
+    "moduleNameLabel": "{{term}} नाम",
+    "moduleNamePlaceholder": "{{term}} नाम दर्ज करें",
+    "descriptionLabel": "विवरण (वैकल्पिक)",
+    "descriptionPlaceholder": "मॉड्यूल विवरण दर्ज करें",
+    "descriptionHint": "{{term}} कार्ड पर दिखाया गया — {{count}}/{{max}} अक्षर",
+    "thumbnailImage": "थंबनेल छवि",
+    "loadingThumbnail": "थंबनेल लोड हो रहा है...",
+    "thumbnailPreviewAlt": "मॉड्यूल थंबनेल पूर्वावलोकन",
+    "uploadThumbnail": "थंबनेल अपलोड करें",
+    "uploadThumbnailHint": "PNG, JPG · 16:9 अनुशंसित",
+    "uploading": "अपलोड हो रहा है...",
+    "saveChanges": "परिवर्तन सहेजें",
+    "add": "जोड़ें",
+    "cropModuleThumbnail": "मॉड्यूल थंबनेल क्रॉप करें"
+}

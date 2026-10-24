@@ -1,0 +1,295 @@
+{
+    "header": {
+        "title": "मेरा प्लेटफ़ॉर्म",
+        "navHome": "होम",
+        "navCourses": "कोर्स",
+        "authLogin": "लॉगिन"
+    },
+    "heroSection": {
+        "eyebrow": "नई बैच के लिए अभी नामांकन खुला है",
+        "title": "हमारे प्लेटफ़ॉर्म में आपका स्वागत है",
+        "subheading": "महारत की ओर आपकी यात्रा यहीं से शुरू होती है",
+        "description": "<p>आज ही अपनी सीखने की यात्रा शुरू करें, विशेषज्ञों द्वारा संचालित उन पाठ्यक्रमों के साथ जो वास्तविक दुनिया की सफलता के लिए तैयार किए गए हैं।</p>",
+        "tagOnline": "ऑनलाइन",
+        "tagSelfPaced": "स्व-गति",
+        "tagCertified": "प्रमाणित",
+        "exploreCoursesButton": "कोर्स देखें",
+        "talkToUsButton": "हमसे बात करें",
+        "statLearnersLabel": "शिक्षार्थी",
+        "statRatingLabel": "औसत रेटिंग",
+        "heroImageAlt": "मुख्य छवि"
+    },
+    "courseCatalog": {
+        "title": "हमारे कोर्स",
+        "filterLevelLabel": "स्तर"
+    },
+    "footer": {
+        "leftTitle": "मेरा प्लेटफ़ॉर्म",
+        "leftText": "हमारे प्लेटफ़ॉर्म में आपका स्वागत है।",
+        "rightTitle": "लिंक"
+    },
+    "mediaShowcase": {
+        "headerText": "सफलता की कहानियां",
+        "description": "सीधे हमारे शिक्षार्थियों से सुनें।"
+    },
+    "statsHighlights": {
+        "headerText": "हमारी उपलब्धियां",
+        "description": "आंकड़े जो हमारी वृद्धि की कहानी कहते हैं।",
+        "statStudentsLabel": "छात्र"
+    },
+    "testimonialSection": {
+        "headerText": "हमारे छात्र क्या कहते हैं",
+        "description": "हमारे शिक्षार्थियों की वास्तविक प्रतिक्रिया।"
+    },
+    "bookCatalogue": {
+        "title": "पुस्तक संग्रह"
+    },
+    "buyRentSection": {
+        "heading": "अपना रास्ता चुनें",
+        "buyButtonLabel": "खरीदें",
+        "rentButtonLabel": "किराए पर लें"
+    },
+    "policyRenderer": {
+        "shippingTitle": "नीति",
+        "shippingContent": "<p>यहां सामग्री जोड़ें</p>"
+    },
+    "faqSection": {
+        "headerText": "अक्सर पूछे जाने वाले प्रश्न",
+        "subheading": "वह सब कुछ जो आपको जानना चाहिए।",
+        "faq1Question": "आप कौन से कोर्स प्रदान करते हैं?",
+        "faq1Answer": "हम कई विषयों में पाठ्यक्रमों की एक विस्तृत श्रृंखला प्रदान करते हैं।",
+        "faq2Question": "मैं नामांकन कैसे करूं?",
+        "faq2Answer": "बस साइन अप करें, हमारे कैटलॉग को ब्राउज़ करें, और किसी भी कोर्स पर नामांकन पर क्लिक करें।",
+        "faq3Question": "क्या कोई मुफ्त ट्रायल है?",
+        "faq3Answer": "हां! हमारे कई कोर्स मुफ्त पूर्वावलोकन प्रदान करते हैं।"
+    },
+    "videoEmbed": {
+        "title": "हमारी कहानी देखें"
+    },
+    "ctaBanner": {
+        "heading": "शुरू करने के लिए तैयार हैं?",
+        "subheading": "हजारों शिक्षार्थियों के साथ जुड़ें और आज ही अपनी यात्रा शुरू करें।",
+        "buttonText": "सीखना शुरू करें"
+    },
+    "pricingTable": {
+        "headerText": "अपनी योजना चुनें",
+        "subheading": "सभी के लिए सरल, पारदर्शी मूल्य निर्धारण।",
+        "basicName": "बेसिक",
+        "basicPrice": "मुफ़्त",
+        "basicDescription": "शुरुआत के लिए बिल्कुल सही",
+        "basicFeature1": "5 कोर्स",
+        "basicFeature2": "सामुदायिक पहुंच",
+        "basicFeature3": "ईमेल सहायता",
+        "basicButtonText": "शुरू करें",
+        "proName": "प्रो",
+        "proPeriod": "/माह",
+        "proDescription": "गंभीर शिक्षार्थियों के लिए",
+        "proFeature1": "असीमित कोर्स",
+        "proFeature2": "प्राथमिकता सहायता",
+        "proFeature3": "प्रमाणपत्र",
+        "proFeature4": "लाइव सत्र",
+        "proButtonText": "प्रो प्राप्त करें"
+    },
+    "leadForm": {
+        "title": "अपनी रुचि दर्ज करें",
+        "subtitle": "अपनी जानकारी भरें और हम आपसे संपर्क करेंगे।",
+        "submitLabel": "जमा करें",
+        "successMessage": "धन्यवाद! हमें आपकी जानकारी मिल गई है।"
+    },
+    "contactForm": {
+        "heading": "संपर्क करें",
+        "subheading": "हमें आपसे सुनना अच्छा लगेगा। हमें एक संदेश भेजें!",
+        "nameLabel": "पूरा नाम",
+        "emailLabel": "ईमेल पता",
+        "phoneLabel": "फ़ोन नंबर",
+        "messageLabel": "संदेश",
+        "submitLabel": "संदेश भेजें",
+        "successMessage": "धन्यवाद! हम जल्द ही संपर्क करेंगे।"
+    },
+    "teamSection": {
+        "headerText": "हमारी टीम से मिलें",
+        "subheading": "हमारे प्लेटफ़ॉर्म के पीछे के जुनूनी लोग।",
+        "member1Name": "टीम सदस्य",
+        "member1Role": "सह-संस्थापक और सीईओ",
+        "member1Bio": "शिक्षा और प्रौद्योगिकी के प्रति जुनूनी।",
+        "member2Name": "टीम सदस्य",
+        "member2Role": "लर्निंग प्रमुख",
+        "member2Bio": "सर्वश्रेष्ठ सीखने का अनुभव बनाने के लिए समर्पित।"
+    },
+    "announcementFeed": {
+        "headerText": "नवीनतम अपडेट",
+        "subheading": "हमारी नवीनतम खबरों से अपडेट रहें।",
+        "item1Title": "नया कोर्स लॉन्च",
+        "item1Summary": "हमें अपनी नई एडवांस्ड कोर्स सीरीज़ की घोषणा करते हुए खुशी हो रही है।",
+        "item1Tag": "समाचार",
+        "item2Title": "प्लेटफ़ॉर्म अपडेट",
+        "item2Summary": "हमने बेहतर सीखने के अनुभव के लिए अपने प्लेटफ़ॉर्म में सुधार किया है।",
+        "item2Tag": "अपडेट"
+    },
+    "imageGallery": {
+        "headerText": "गैलरी",
+        "image1Alt": "गैलरी छवि 1",
+        "image2Alt": "गैलरी छवि 2",
+        "image3Alt": "गैलरी छवि 3"
+    },
+    "tabsAccordion": {
+        "tab1Title": "टैब 1",
+        "tab1Content": "<p>टैब 1 की सामग्री</p>",
+        "tab2Title": "टैब 2",
+        "tab2Content": "<p>टैब 2 की सामग्री</p>",
+        "tab3Title": "टैब 3",
+        "tab3Content": "<p>टैब 3 की सामग्री</p>"
+    },
+    "logoCloud": {
+        "headerText": "इनके द्वारा भरोसेमंद"
+    },
+    "trustChip": {
+        "text": "10,000+ शिक्षार्थियों द्वारा भरोसेमंद"
+    },
+    "sectionHeading": {
+        "eyebrow": "हमें क्यों चुनें",
+        "title": "ऐसी सीख जो सच में टिकती है",
+        "highlight": "सच में टिकती है",
+        "lead": "परिणामों के इर्द-गिर्द डिज़ाइन किए गए कार्यक्रम — केवल सामग्री नहीं।"
+    },
+    "mapEmbed": {
+        "title": "हमारा स्थान"
+    },
+    "countdownTimer": {
+        "heading": "इवेंट शुरू होने में",
+        "expiredMessage": "इवेंट शुरू हो गया है!"
+    },
+    "textBlock": {
+        "content": "<h2>यहां अपना शीर्षक लिखें</h2><p>यहां अपनी सामग्री लिखें। यह एक रिच टेक्स्ट ब्लॉक है — आप हेडिंग, पैराग्राफ, सूचियां, लिंक और बहुत कुछ जोड़ सकते हैं।</p>"
+    },
+    "detailBlocks": {
+        "block1Tag": "प्रमुख कार्यक्रम",
+        "block1Title": "प्रमुख कार्यक्रम",
+        "block1Description": "एक या दो वाक्य जिसमें बताया गया हो कि यह किसके लिए है और इसमें क्या शामिल है।",
+        "block1Item1Title": "क्या शामिल है",
+        "block1Item1Description": "पाठ्यक्रम, सामग्री या शिक्षण के बारे में एक ठोस विवरण।",
+        "block1Item2Title": "इसे कैसे पढ़ाया जाता है",
+        "block1Item2Description": "लाइव क्लासेस, रिकॉर्डिंग, डाउट सेशन — जो भी यहां सही हो।",
+        "block1Item3Title": "अभ्यास और परीक्षण",
+        "block1Item3Description": "टेस्ट सीरीज़, पिछले प्रश्नपत्र, विश्लेषण।",
+        "block1Spec1Label": "पात्रता",
+        "block1Spec1Value": "कौन शामिल हो सकता है",
+        "block1Spec2Label": "मोड",
+        "block1Spec2Value": "क्लासरूम + ऑनलाइन",
+        "block1Spec3Label": "अवधि",
+        "block1Spec3Value": "12 महीने",
+        "block1Spec4Label": "स्तर",
+        "block1Spec4Value": "शुरुआती से उन्नत तक",
+        "block1Note": "वैकल्पिक नोट — रियायतें, किस्तें, या कुछ भी जिसे उजागर करना ज़रूरी हो।",
+        "block2Tag": "श्रेणी",
+        "block2Title": "दूसरा कार्यक्रम",
+        "block2Description": "आप जो भी कार्यक्रम प्रदान करते हैं, उसके लिए इस ब्लॉक को डुप्लिकेट करें।",
+        "block2Item1Title": "विवरण एक",
+        "block2Item1Description": "इसे वास्तविक विवरण से बदलें।",
+        "block2Item2Title": "विवरण दो",
+        "block2Item2Description": "इसे वास्तविक विवरण से बदलें।",
+        "block2Spec1Label": "पात्रता",
+        "block2Spec1Value": "कौन शामिल हो सकता है",
+        "block2Spec2Label": "मोड",
+        "block2Spec2Value": "ऑनलाइन"
+    },
+    "featureGrid": {
+        "headerText": "हमें क्यों चुनें",
+        "subheading": "सफलता के लिए आपको जो कुछ भी चाहिए",
+        "feature1Title": "विशेषज्ञ प्रशिक्षक",
+        "feature1Description": "वर्षों के अनुभव वाले उद्योग विशेषज्ञों से सीखें।",
+        "feature1Chip1": "IIT/NIT संकाय",
+        "feature2Title": "समृद्ध सामग्री",
+        "feature2Description": "व्यापक कोर्स सामग्री और संसाधनों तक पहुंच प्राप्त करें।",
+        "feature3Title": "प्रमाणित कोर्स",
+        "feature3Description": "पूरा करने पर मान्यता प्राप्त प्रमाणपत्र अर्जित करें।",
+        "feature4Badge": "प्रशिक्षण प्रभाग",
+        "feature4Title": "CGP करियर एवेन्यूज़",
+        "feature4Description": "इंजीनियरिंग की हर शाखा में व्यापक कोचिंग।",
+        "feature4Bullet1": "GATE — CS, ECE, EEE, ME, CE, CH",
+        "feature4Bullet2": "पोस्ट-GATE ISRO/BARC/DRDO बैच",
+        "feature4Bullet3": "केरल PSC और कैंपस प्लेसमेंट"
+    },
+    "imageBlock": {
+        "alt": "छवि"
+    },
+    "buttonBlock": {
+        "text": "शुरू करें"
+    },
+    "newsletterSignup": {
+        "heading": "अपडेट रहें",
+        "subheading": "नवीनतम अपडेट के लिए हमारे न्यूज़लेटर की सदस्यता लें।",
+        "placeholder": "अपना ईमेल दर्ज करें",
+        "buttonText": "सदस्यता लें",
+        "successMessage": "सदस्यता लेने के लिए धन्यवाद!"
+    },
+    "stepsProcess": {
+        "headerText": "यह कैसे काम करता है",
+        "subheading": "बस कुछ चरणों में शुरू करें",
+        "step1Title": "साइन अप करें",
+        "step1Description": "सेकंडों में अपना मुफ़्त खाता बनाएं।",
+        "step2Title": "एक कोर्स चुनें",
+        "step2Description": "हमारे कैटलॉग को ब्राउज़ करें और जो आपको दिलचस्प लगे उसे चुनें।",
+        "step3Title": "सीखना शुरू करें",
+        "step3Description": "अपनी कोर्स सामग्री तक पहुंचें और शुरू करें।"
+    },
+    "marquee": {
+        "item1Text": "टॉप-रेटेड कोर्स",
+        "item2Text": "10,000+ शिक्षार्थी नामांकित",
+        "item3Text": "विशेषज्ञों द्वारा तैयार पाठ्यक्रम",
+        "item4Text": "अपनी गति से सीखें",
+        "item5Text": "उद्योग-प्रासंगिक कौशल"
+    },
+    "productPageOffer": {
+        "title": "हमारे कार्यक्रम",
+        "subtitle": "एक कार्यक्रम चुनें और मिनटों में नामांकन करें।",
+        "viewAllLabel": "सभी देखें",
+        "ctaLabel": "अभी नामांकन करें",
+        "cartCtaLabel": "कार्ट में जोड़ें",
+        "checkoutCtaLabel": "चेकआउट पर जाएँ",
+        "viewCourseLabel": "कोर्स देखें"
+    },
+    "documentViewer": {
+        "heading": "हमारा कैटलॉग देखें",
+        "subheading": "हर पृष्ठ यहीं पलटें।",
+        "buttonText": "कैटलॉग खोलें"
+    },
+    "blog": {
+        "heading": "ब्लॉग से",
+        "subheading": "पढ़ाई के टिप्स, परीक्षा अपडेट और हमारी कक्षाओं की कहानियाँ।",
+        "readMoreLabel": "और पढ़ें",
+        "backLabel": "सभी पोस्ट",
+        "emptyMessage": "अभी कोई पोस्ट नहीं — जल्द ही देखें।"
+    },
+    "jobOpenings": {
+        "headerText": "वर्तमान रिक्तियाँ",
+        "subheading": "हमारी टीम से जुड़ें। पूरा विवरण पढ़ने और आवेदन करने के लिए कोई पद खोलें।",
+        "viewButtonLabel": "नौकरी का विवरण देखें",
+        "applyButtonLabel": "अभी आवेदन करें",
+        "backLabel": "सभी रिक्तियाँ",
+        "emptyMessage": "अभी कोई रिक्ति नहीं है — जल्द ही फिर देखें।",
+        "job1Title": "शिक्षक",
+        "job1Summary": "छोटे बैचों को कक्षा और ऑनलाइन में अपना विषय पढ़ाएँ।",
+        "job1Location": "आपका शहर",
+        "job1JobType": "पूर्णकालिक",
+        "job1Compensation": "अनुभव के अनुसार",
+        "job1DetailLabel": "विषय",
+        "job1DetailValue": "आपका विषय",
+        "job1Description": "<h2>भूमिका के बारे में</h2><p>बताएँ कि यह व्यक्ति रोज़ क्या करेगा और किसके साथ काम करेगा।</p><h3>ज़िम्मेदारियाँ</h3><ul><li>पाठ की योजना बनाना और पढ़ाना</li><li>छात्रों की प्रगति पर नज़र रखना और मदद करना</li></ul><h3>आवश्यकताएँ</h3><ul><li>विषय में डिग्री</li><li>पढ़ाने का अनुभव हो तो बेहतर</li></ul>",
+        "job2Title": "शैक्षणिक परामर्शदाता",
+        "job2Summary": "छात्रों और अभिभावकों को सही कोर्स चुनने में मदद करें।",
+        "job2Location": "आपका शहर",
+        "job2JobType": "पूर्णकालिक",
+        "job2Description": "<h2>भूमिका के बारे में</h2><p>भूमिका, टीम और पहले महीने में क्या अपेक्षित है, यह बताएँ।</p><h3>आवश्यकताएँ</h3><ul><li>स्पष्ट संवाद</li><li>शिक्षा या परामर्श में अनुभव</li></ul>"
+    },
+    "promoPopup": {
+        "badge": "सीमित समय",
+        "heading": "सभी कोर्स पर फ़्लैश सेल",
+        "highlight": "50% छूट",
+        "body": "आज ही एनरोल करें और हर कोर्स पर बचत करें। यह ऑफ़र कुछ ही समय के लिए है।",
+        "couponCode": "SAVE50",
+        "buttonText": "ऑफ़र पाएं",
+        "dismissText": "नहीं, बाद में",
+        "footnote": "*नियम और शर्तें लागू"
+    }
+}

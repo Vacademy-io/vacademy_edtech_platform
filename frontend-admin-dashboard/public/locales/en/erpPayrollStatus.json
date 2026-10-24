@@ -1,0 +1,16 @@
+{
+    "runStatus": {
+        "draft": "Draft",
+        "processing": "Processing",
+        "processed": "Processed",
+        "approved": "Approved",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+    },
+    "runType": {
+        "regular": "Regular",
+        "offCycle": "Off-cycle",
+        "fnf": "Full & final",
+        "bonus": "Bonus"
+    }
+}

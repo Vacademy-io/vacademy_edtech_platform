@@ -35,5 +35,51 @@ export interface ThemeRoleSettings {
         // e.g. 'Lexend'). Applied as --app-font-family across both apps +
         // public pages. Absent = each app keeps its bundled default.
         fontFamily?: string;
+
+        // ---- Learner presentation axes ------------------------------------
+        // Applied in the learner app as data-ui-* attributes on <html>; the
+        // token flips live in that app's styles/ui-axes.css. Like
+        // secondary/tertiary above, this dialog only *saves* them — the admin
+        // dashboard's own chrome deliberately does not ride these axes, since
+        // an operator's tooling shouldn't reshape itself because a tenant
+        // picked "pill".
+        //
+        // Each axis's default reproduces the learner app's current look, so an
+        // absent value is a no-op rather than a regression. Keep the unions in
+        // step with frontend-learner-dashboard-app/src/types/theme-role-settings.ts.
+
+        /** Card padding, stack/section rhythm, control height. Default 'default'. */
+        density?: UiDensity;
+        /** Corner radius seed (--radius). rounded-full is exempt. Default 'rounded'. */
+        corners?: UiCorners;
+        /** Strength of brand surface gradients. Default 'full'. */
+        gradient?: UiGradient;
+
+        // ---- Learner UI skin ----------------------------------------------
+        // Migrated here from STUDENT_DISPLAY_SETTINGS.ui.type so that every
+        // "how the learner app looks" control lives in one settings blob.
+        // The learner app reads THEME_SETTING first and falls back to the old
+        // location, so institutes saved before this move keep their skin.
+        skin?: StudentUiType;
     };
 }
+
+export type UiDensity = 'compact' | 'default' | 'comfortable';
+export type UiCorners = 'sharp' | 'rounded' | 'pill';
+export type UiGradient = 'flat' | 'subtle' | 'full';
+
+/** Mirrors StudentUiType in types/student-display-settings.ts. */
+export type StudentUiType = 'default' | 'vibrant' | 'play' | 'cleanerPlay' | 'corporate';
+
+/** What each axis falls back to when the institute has saved nothing. */
+export const UI_AXIS_DEFAULTS = {
+    density: 'default',
+    corners: 'rounded',
+    gradient: 'full',
+    skin: 'default',
+} as const satisfies {
+    density: UiDensity;
+    corners: UiCorners;
+    gradient: UiGradient;
+    skin: StudentUiType;
+};

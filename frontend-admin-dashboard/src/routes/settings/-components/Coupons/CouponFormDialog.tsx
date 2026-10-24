@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Percent, Receipt, Sparkle } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,49 +51,63 @@ import {
 // Schema
 // =============================================================================
 
-const couponSchema = z
-    .object({
-        code: z
-            .string()
-            .min(3, 'Code must be at least 3 characters')
-            .max(32, 'Code must be at most 32 characters')
-            .regex(/^[A-Z0-9_-]+$/, 'Use uppercase letters, digits, _ or -'),
-        discountType: z.enum(['PERCENTAGE', 'FLAT']),
-        discountValue: z
-            .number({ invalid_type_error: 'Discount value is required' })
-            .positive('Discount value must be greater than 0'),
-        maxDiscountValue: z.number().positive().nullable().optional(),
-        redeemStartDate: z.string().optional(),
-        redeemEndDate: z.string().min(1, 'End date is required'),
-        usageLimit: z
-            .number({ invalid_type_error: 'Enter a number or leave blank' })
-            .int()
-            .positive()
-            .nullable()
-            .optional(),
-        isEmailRestricted: z.boolean(),
-        allowedEmailsRaw: z.string().optional(),
-        scope: z.object({
-            mode: z.enum(['all', 'sessions', 'invites']),
-            packageSessionIds: z.array(z.string()),
-            enrollInviteIds: z.array(z.string()),
-        }),
-        status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
-    })
-    .refine((v) => v.discountType !== 'PERCENTAGE' || v.discountValue <= 100, {
-        message: 'Percentage cannot exceed 100',
-        path: ['discountValue'],
-    })
-    .refine((v) => v.discountType !== 'PERCENTAGE' || (v.maxDiscountValue ?? 0) > 0, {
-        message: 'Max cap is required for percentage discounts',
-        path: ['maxDiscountValue'],
-    })
-    .refine((v) => !v.redeemStartDate || new Date(v.redeemEndDate) > new Date(v.redeemStartDate), {
-        message: 'End date must be after start date',
-        path: ['redeemEndDate'],
-    });
+const buildCouponSchema = (t: TFunction) =>
+    z
+        .object({
+            code: z
+                .string()
+                .min(3, t('schema.codeMinLength'))
+                .max(32, t('schema.codeMaxLength'))
+                .regex(/^[A-Z0-9_-]+$/, t('schema.codeFormat')),
+            discountType: z.enum(['PERCENTAGE', 'FLAT']),
+            // null while the field is blank, so clearing it never snaps back to 0.
+            discountValue: z
+                .number({ invalid_type_error: t('schema.discountValueRequired') })
+                .nullable()
+                // superRefine (not refine) so the form type keeps null for the blank state.
+                .superRefine((v, ctx) => {
+                    if (v === null) {
+                        ctx.addIssue({ code: 'custom', message: t('schema.discountValueRequired') });
+                    } else if (v <= 0) {
+                        ctx.addIssue({ code: 'custom', message: t('schema.discountValuePositive') });
+                    }
+                }),
+            // Blank or 0 = no cap.
+            maxDiscountValue: z.number().min(0).nullable().optional(),
+            redeemStartDate: z.string().optional(),
+            // Blank = never expires.
+            redeemEndDate: z.string().optional(),
+            usageLimit: z
+                .number({ invalid_type_error: t('schema.usageLimitInvalid') })
+                .int()
+                .positive()
+                .nullable()
+                .optional(),
+            isEmailRestricted: z.boolean(),
+            allowedEmailsRaw: z.string().optional(),
+            scope: z.object({
+                mode: z.enum(['all', 'sessions', 'invites']),
+                packageSessionIds: z.array(z.string()),
+                enrollInviteIds: z.array(z.string()),
+            }),
+            status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+        })
+        .refine((v) => v.discountType !== 'PERCENTAGE' || (v.discountValue ?? 0) <= 100, {
+            message: t('schema.percentageMax'),
+            path: ['discountValue'],
+        })
+        .refine(
+            (v) =>
+                !v.redeemStartDate ||
+                !v.redeemEndDate ||
+                new Date(v.redeemEndDate) > new Date(v.redeemStartDate),
+            {
+                message: t('schema.endDateAfterStart'),
+                path: ['redeemEndDate'],
+            }
+        );
 
-type CouponFormValues = z.infer<typeof couponSchema>;
+type CouponFormValues = z.infer<ReturnType<typeof buildCouponSchema>>;
 
 // =============================================================================
 // Helpers
@@ -136,11 +152,23 @@ const scopeFromDetail = (editing?: CouponDetail | null): CouponScopeValue => {
     return { mode: 'all', packageSessionIds: [], enrollInviteIds: [] };
 };
 
-const formatPreview = (v: CouponFormValues, currencySymbol = '₹'): string => {
+const formatPreview = (
+    t: TFunction,
+    v: CouponFormValues,
+    locale: string,
+    currencySymbol = '₹'
+): string => {
     const discountStr =
         v.discountType === 'PERCENTAGE'
-            ? `${v.discountValue}% off${v.maxDiscountValue ? `, max ${currencySymbol}${v.maxDiscountValue.toLocaleString()}` : ''}`
-            : `${currencySymbol}${v.discountValue.toLocaleString()} off`;
+            ? v.maxDiscountValue
+                ? t('priceLine.percentOffWithMax', {
+                      value: v.discountValue ?? 0,
+                      max: `${currencySymbol}${v.maxDiscountValue.toLocaleString(locale)}`,
+                  })
+                : t('priceLine.percentOff', { value: v.discountValue ?? 0 })
+            : t('priceLine.flatOff', {
+                  amount: `${currencySymbol}${(v.discountValue ?? 0).toLocaleString(locale)}`,
+              });
     const expiry = v.redeemEndDate
         ? new Date(v.redeemEndDate).toLocaleDateString(undefined, {
               day: 'numeric',
@@ -148,7 +176,7 @@ const formatPreview = (v: CouponFormValues, currencySymbol = '₹'): string => {
               year: 'numeric',
           })
         : '';
-    return `${discountStr}${expiry ? ` · valid until ${expiry}` : ''}`;
+    return expiry ? t('priceLine.withExpiry', { discount: discountStr, date: expiry }) : discountStr;
 };
 
 // =============================================================================
@@ -174,6 +202,8 @@ export const CouponFormDialog = ({
     prefillScope,
     onSaved,
 }: CouponFormDialogProps) => {
+    const { t, i18n } = useTranslation('settingsCouponForm');
+    const couponSchema = useMemo(() => buildCouponSchema(t), [t]);
     const createMutation = useCreateCoupon();
     const updateMutation = useUpdateCoupon();
     const isEdit = !!editing;
@@ -194,7 +224,7 @@ export const CouponFormDialog = ({
             return {
                 code: editing.code,
                 discountType: (discount?.discount_type ?? 'PERCENTAGE') as 'PERCENTAGE' | 'FLAT',
-                discountValue: discount?.discount_point ?? 0,
+                discountValue: discount?.discount_point ?? null,
                 maxDiscountValue: discount?.max_discount_point ?? null,
                 redeemStartDate: formatDateForInput(editing.redeem_start_date),
                 redeemEndDate: formatDateForInput(editing.redeem_end_date),
@@ -218,7 +248,7 @@ export const CouponFormDialog = ({
         return {
             code: '',
             discountType: 'PERCENTAGE',
-            discountValue: 0,
+            discountValue: null,
             maxDiscountValue: null,
             redeemStartDate: '',
             redeemEndDate: '',
@@ -251,9 +281,12 @@ export const CouponFormDialog = ({
     const onSubmit = async (values: CouponFormValues) => {
         const appliedDiscount: AppliedDiscountInput = {
             discount_type: values.discountType,
-            discount_point: values.discountValue,
+            // The schema rejects a blank value, so it is always set here.
+            discount_point: values.discountValue ?? 0,
             max_discount_point:
-                values.discountType === 'PERCENTAGE' ? values.maxDiscountValue ?? null : null,
+                values.discountType === 'PERCENTAGE' && values.maxDiscountValue
+                    ? values.maxDiscountValue
+                    : null,
         };
 
         const emails = values.isEmailRestricted ? parseEmails(values.allowedEmailsRaw) : [];
@@ -271,7 +304,11 @@ export const CouponFormDialog = ({
                     redeem_start_date: values.redeemStartDate
                         ? new Date(values.redeemStartDate).toISOString()
                         : null,
-                    redeem_end_date: new Date(values.redeemEndDate).toISOString(),
+                    redeem_end_date: values.redeemEndDate
+                        ? new Date(values.redeemEndDate).toISOString()
+                        : null,
+                    // A null end date means "unchanged" to the API, so blanking it must be explicit.
+                    clear_redeem_end_date: !values.redeemEndDate,
                     usage_limit: values.usageLimit ?? null,
                     is_email_restricted: values.isEmailRestricted,
                     allowed_email_ids: allowedEmailIdsJson,
@@ -284,7 +321,7 @@ export const CouponFormDialog = ({
                     couponId: editing.id,
                     payload: updatePayload,
                 });
-                toast.success('Coupon updated');
+                toast.success(t('toasts.updated'));
             } else {
                 const createPayload: CouponCreateRequest = {
                     code: values.code,
@@ -292,7 +329,9 @@ export const CouponFormDialog = ({
                     redeem_start_date: values.redeemStartDate
                         ? new Date(values.redeemStartDate).toISOString()
                         : null,
-                    redeem_end_date: new Date(values.redeemEndDate).toISOString(),
+                    redeem_end_date: values.redeemEndDate
+                        ? new Date(values.redeemEndDate).toISOString()
+                        : null,
                     usage_limit: values.usageLimit ?? null,
                     is_email_restricted: values.isEmailRestricted,
                     allowed_email_ids: allowedEmailIdsJson,
@@ -301,7 +340,7 @@ export const CouponFormDialog = ({
                     applied_discount: appliedDiscount,
                 };
                 saved = await createMutation.mutateAsync(createPayload);
-                toast.success(`Coupon "${saved.code}" created`);
+                toast.success(t('toasts.created', { code: saved.code }));
             }
             onSaved?.(saved);
             onOpenChange(false);
@@ -309,7 +348,7 @@ export const CouponFormDialog = ({
             const message =
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
                 (err as Error)?.message ??
-                'Could not save coupon';
+                t('toasts.saveFailed');
             toast.error(message);
         }
     };
@@ -324,7 +363,7 @@ export const CouponFormDialog = ({
                 onClick={() => onOpenChange(false)}
                 type="button"
             >
-                Cancel
+                {t('footer.cancel')}
             </MyButton>
             <MyButton
                 buttonType="primary"
@@ -333,14 +372,18 @@ export const CouponFormDialog = ({
                 disable={isPending}
                 type="button"
             >
-                {isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Create coupon'}
+                {isPending
+                    ? t('footer.saving')
+                    : isEdit
+                      ? t('footer.saveChanges')
+                      : t('footer.createCoupon')}
             </MyButton>
         </>
     );
 
     return (
         <MyDialog
-            heading={isEdit ? `Edit coupon ${editing?.code}` : 'New coupon'}
+            heading={isEdit ? t('dialog.editHeading', { code: editing?.code }) : t('dialog.newHeading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-3xl"
@@ -355,18 +398,20 @@ export const CouponFormDialog = ({
                     <div className="space-y-6">
                         {/* Basics */}
                         <section className="space-y-3">
-                            <h3 className="text-subtitle font-semibold text-neutral-800">Basics</h3>
+                            <h3 className="text-subtitle font-semibold text-neutral-800">
+                                {t('basics.title')}
+                            </h3>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
                                     name="code"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Coupon code</FormLabel>
+                                            <FormLabel>{t('basics.code.label')}</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     {...field}
-                                                    placeholder="SAVE20"
+                                                    placeholder={t('basics.code.placeholder')}
                                                     disabled={isEdit}
                                                     className="font-mono uppercase"
                                                     onChange={(e) =>
@@ -383,7 +428,7 @@ export const CouponFormDialog = ({
                                     name="discountType"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Discount type</FormLabel>
+                                            <FormLabel>{t('basics.discountType.label')}</FormLabel>
                                             <Select
                                                 value={field.value}
                                                 onValueChange={field.onChange}
@@ -396,10 +441,10 @@ export const CouponFormDialog = ({
                                                 </FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="PERCENTAGE">
-                                                        Percentage (%)
+                                                        {t('basics.discountType.percentage')}
                                                     </SelectItem>
                                                     <SelectItem value="FLAT">
-                                                        Flat amount
+                                                        {t('basics.discountType.flat')}
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -415,7 +460,9 @@ export const CouponFormDialog = ({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Value {isPercentage ? '(%)' : '(₹)'}
+                                                {isPercentage
+                                                    ? t('basics.value.labelPercentage')
+                                                    : t('basics.value.labelFlat')}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input
@@ -424,13 +471,17 @@ export const CouponFormDialog = ({
                                                     step="0.01"
                                                     min={0}
                                                     max={isPercentage ? 100 : undefined}
-                                                    placeholder={isPercentage ? '20' : '500'}
+                                                    placeholder={
+                                                        isPercentage
+                                                            ? t('basics.value.placeholderPercentage')
+                                                            : t('basics.value.placeholderFlat')
+                                                    }
                                                     disabled={isFrozen}
                                                     value={field.value ?? ''}
                                                     onChange={(e) =>
                                                         field.onChange(
                                                             e.target.value === ''
-                                                                ? 0
+                                                                ? null
                                                                 : Number(e.target.value)
                                                         )
                                                     }
@@ -446,13 +497,18 @@ export const CouponFormDialog = ({
                                         name="maxDiscountValue"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Max cap (₹)</FormLabel>
+                                                <FormLabel>
+                                                    {t('basics.maxCap.label')}{' '}
+                                                    <span className="text-caption text-neutral-400">
+                                                        {t('basics.maxCap.noCapHint')}
+                                                    </span>
+                                                </FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="number"
                                                         step="0.01"
                                                         min={0}
-                                                        placeholder="1000"
+                                                        placeholder={t('basics.maxCap.placeholder')}
                                                         disabled={isFrozen}
                                                         value={field.value ?? ''}
                                                         onChange={(e) =>
@@ -475,7 +531,7 @@ export const CouponFormDialog = ({
                         {/* Validity */}
                         <section className="space-y-3">
                             <h3 className="text-subtitle font-semibold text-neutral-800">
-                                Validity
+                                {t('validity.title')}
                             </h3>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <FormField
@@ -484,9 +540,9 @@ export const CouponFormDialog = ({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                Start date{' '}
+                                                {t('validity.startDate.label')}{' '}
                                                 <span className="text-caption text-neutral-400">
-                                                    (optional)
+                                                    {t('validity.startDate.optional')}
                                                 </span>
                                             </FormLabel>
                                             <FormControl>
@@ -505,7 +561,12 @@ export const CouponFormDialog = ({
                                     name="redeemEndDate"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>End date</FormLabel>
+                                            <FormLabel>
+                                                {t('validity.endDate.label')}{' '}
+                                                <span className="text-caption text-neutral-400">
+                                                    {t('validity.endDate.noExpiryHint')}
+                                                </span>
+                                            </FormLabel>
                                             <FormControl>
                                                 <Input {...field} type="date" />
                                             </FormControl>
@@ -520,9 +581,9 @@ export const CouponFormDialog = ({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>
-                                            Usage limit{' '}
+                                            {t('validity.usageLimit.label')}{' '}
                                             <span className="text-caption text-neutral-400">
-                                                (blank = unlimited)
+                                                {t('validity.usageLimit.unlimitedHint')}
                                             </span>
                                         </FormLabel>
                                         <FormControl>
@@ -530,7 +591,7 @@ export const CouponFormDialog = ({
                                                 type="number"
                                                 min={1}
                                                 step={1}
-                                                placeholder="Unlimited"
+                                                placeholder={t('validity.usageLimit.placeholder')}
                                                 value={field.value ?? ''}
                                                 onChange={(e) =>
                                                     field.onChange(
@@ -556,11 +617,12 @@ export const CouponFormDialog = ({
                                     <FormItem className="flex items-center justify-between rounded-md border border-neutral-200 bg-white p-3">
                                         <div>
                                             <FormLabel className="cursor-pointer">
-                                                Restrict to specific emails
+                                                {t('emailRestriction.restrictLabel')}
                                             </FormLabel>
                                             <p className="text-caption text-neutral-500">
-                                                Only listed {learnerSingular.toLowerCase()} emails
-                                                can apply this coupon
+                                                {t('emailRestriction.restrictHint', {
+                                                    term: learnerSingular.toLowerCase(),
+                                                })}
                                             </p>
                                         </div>
                                         <FormControl>
@@ -578,21 +640,23 @@ export const CouponFormDialog = ({
                                     name="allowedEmailsRaw"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Allowed emails</FormLabel>
+                                            <FormLabel>
+                                                {t('emailRestriction.allowedEmailsLabel')}
+                                            </FormLabel>
                                             <FormControl>
                                                 <Textarea
                                                     {...field}
                                                     rows={3}
-                                                    placeholder="alice@example.com, bob@example.com"
+                                                    placeholder={t(
+                                                        'emailRestriction.allowedEmailsPlaceholder'
+                                                    )}
                                                     className="font-mono text-caption"
                                                 />
                                             </FormControl>
                                             <p className="mt-1 text-caption text-neutral-400">
-                                                {parseEmails(field.value).length} email
-                                                {parseEmails(field.value).length === 1
-                                                    ? ''
-                                                    : 's'}{' '}
-                                                captured
+                                                {t('emailRestriction.emailsCaptured', {
+                                                    count: parseEmails(field.value).length,
+                                                })}
                                             </p>
                                         </FormItem>
                                     )}
@@ -603,10 +667,10 @@ export const CouponFormDialog = ({
                         {/* Scope */}
                         <section className="space-y-3">
                             <h3 className="text-subtitle font-semibold text-neutral-800">
-                                Where it applies
+                                {t('scope.title')}
                                 {isFrozen && (
                                     <span className="ml-2 text-caption font-normal text-neutral-400">
-                                        (locked — coupon has been redeemed)
+                                        {t('scope.locked')}
                                     </span>
                                 )}
                             </h3>
@@ -633,56 +697,68 @@ export const CouponFormDialog = ({
                         <div className="flex items-center gap-2 text-primary-700">
                             <Sparkle size={18} weight="fill" />
                             <h4 className="text-subtitle font-semibold">
-                                {learnerSingular} preview
+                                {t('livePreview.heading', { term: learnerSingular })}
                             </h4>
                         </div>
                         <div className="rounded-md border border-success-200 bg-success-50 px-3 py-2">
                             <div className="flex items-center gap-2 text-success-700">
                                 {isPercentage ? <Percent size={14} /> : <Receipt size={14} />}
                                 <span className="font-mono text-caption font-semibold">
-                                    {watchedValues.code || 'YOURCODE'}
+                                    {watchedValues.code || t('livePreview.codePlaceholder')}
                                 </span>
                             </div>
                             <p className="mt-1 text-caption text-success-700">
-                                {formatPreview(watchedValues)}
+                                {formatPreview(t, watchedValues, i18n.language)}
                             </p>
                         </div>
                         <dl className="space-y-2 text-caption">
                             <div className="flex justify-between">
-                                <dt className="text-neutral-500">Status</dt>
+                                <dt className="text-neutral-500">{t('livePreview.status')}</dt>
                                 <dd className="font-medium text-neutral-700">
                                     {watchedValues.status}
                                 </dd>
                             </div>
                             <div className="flex justify-between">
-                                <dt className="text-neutral-500">Usage</dt>
+                                <dt className="text-neutral-500">{t('livePreview.usage')}</dt>
                                 <dd className="font-medium text-neutral-700">
                                     {editing?.usage_count ?? 0} / {watchedValues.usageLimit ?? '∞'}
                                 </dd>
                             </div>
                             <div className="flex justify-between">
-                                <dt className="text-neutral-500">Scope</dt>
+                                <dt className="text-neutral-500">{t('livePreview.scope')}</dt>
                                 <dd className="text-right font-medium text-neutral-700">
                                     {watchedValues.scope.mode === 'all'
-                                        ? 'Institute-wide'
+                                        ? t('livePreview.instituteWide')
                                         : watchedValues.scope.mode === 'sessions'
-                                          ? `${watchedValues.scope.packageSessionIds.length} ${
-                                                watchedValues.scope.packageSessionIds.length === 1
-                                                    ? batchSingular.toLowerCase()
-                                                    : batchPlural.toLowerCase()
-                                            }`
-                                          : `${watchedValues.scope.enrollInviteIds.length} ${
-                                                watchedValues.scope.enrollInviteIds.length === 1
-                                                    ? inviteSingular.toLowerCase()
-                                                    : invitePlural.toLowerCase()
-                                            }`}
+                                          ? t('livePreview.scopeCount', {
+                                                count: watchedValues.scope.packageSessionIds
+                                                    .length,
+                                                unit:
+                                                    watchedValues.scope.packageSessionIds
+                                                        .length === 1
+                                                        ? batchSingular.toLowerCase()
+                                                        : batchPlural.toLowerCase(),
+                                            })
+                                          : t('livePreview.scopeCount', {
+                                                count: watchedValues.scope.enrollInviteIds.length,
+                                                unit:
+                                                    watchedValues.scope.enrollInviteIds.length ===
+                                                    1
+                                                        ? inviteSingular.toLowerCase()
+                                                        : invitePlural.toLowerCase(),
+                                            })}
                                 </dd>
                             </div>
                             {watchedValues.isEmailRestricted && (
                                 <div className="flex justify-between">
-                                    <dt className="text-neutral-500">Email-restricted</dt>
+                                    <dt className="text-neutral-500">
+                                        {t('livePreview.emailRestricted')}
+                                    </dt>
                                     <dd className="font-medium text-neutral-700">
-                                        {parseEmails(watchedValues.allowedEmailsRaw).length} allowed
+                                        {t('livePreview.allowedCount', {
+                                            count: parseEmails(watchedValues.allowedEmailsRaw)
+                                                .length,
+                                        })}
                                     </dd>
                                 </div>
                             )}
@@ -694,9 +770,7 @@ export const CouponFormDialog = ({
                                     'text-caption text-warning-600'
                                 )}
                             >
-                                This coupon has been redeemed. Discount and scope are locked; you
-                                can still extend the end date, raise the usage limit, or change
-                                status.
+                                {t('frozenNotice')}
                             </p>
                         )}
                     </aside>

@@ -53,11 +53,13 @@ public class NotificationHubService {
 
         if (!emailFromAddresses.isEmpty()) {
             emailStats.setSent(notificationLogRepository.countEmailSent(emailFromAddresses, since));
-            emailStats.setDelivered(notificationLogRepository.countEmailEvent(emailFromAddresses, "DELIVERY", since));
-            emailStats.setOpened(notificationLogRepository.countEmailEvent(emailFromAddresses, "OPEN", since));
-            emailStats.setClicked(notificationLogRepository.countEmailEvent(emailFromAddresses, "CLICK", since));
-            emailStats.setBounced(notificationLogRepository.countEmailEvent(emailFromAddresses, "BOUNCE", since));
-            emailStats.setComplained(notificationLogRepository.countEmailEvent(emailFromAddresses, "COMPLAINT", since));
+            NotificationLogRepository.EmailEventCounts events =
+                    notificationLogRepository.countEmailEventsByType(emailFromAddresses, since);
+            emailStats.setDelivered(orZero(events.getDelivered()));
+            emailStats.setOpened(orZero(events.getOpened()));
+            emailStats.setClicked(orZero(events.getClicked()));
+            emailStats.setBounced(orZero(events.getBounced()));
+            emailStats.setComplained(orZero(events.getComplained()));
             emailStats.setInbound(notificationLogRepository.countInboundEmail(emailFromAddresses, since));
         }
 
@@ -199,6 +201,10 @@ public class NotificationHubService {
      * and would miss institutes that only send outbound. The platform default fallback is also
      * excluded so per-institute stat queries don't bleed across institutes.
      */
+    private static long orZero(Long value) {
+        return value == null ? 0L : value;
+    }
+
     private List<String> getInstituteEmailAddresses(String instituteId) {
         return emailConfigurationService.getInstituteConfiguredFromAddresses(instituteId);
     }

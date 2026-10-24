@@ -1,0 +1,12 @@
+{
+    "readyToSubmitHeading": "सबमिट करने के लिए तैयार",
+    "reachedEndPrefix": "आप",
+    "admissionFormLabel": "प्रवेश फॉर्म",
+    "reachedEndSuffix": "के अंत तक पहुँच गए हैं। कृपया अंतिम सबमिशन से पहले सभी विवरणों की समीक्षा करें।",
+    "admissionSummaryHeading": "प्रवेश सारांश",
+    "studentNameLabel": "छात्र का नाम:",
+    "classLabel": "कक्षा:",
+    "clickPrefix": "इस रिकॉर्ड को अंतिम रूप देने के लिए नीचे",
+    "submitAdmissionLabel": "प्रवेश सबमिट करें",
+    "clickSuffix": "पर क्लिक करें।"
+}

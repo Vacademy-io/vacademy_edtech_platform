@@ -1,4 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Controller,
     useForm,
@@ -34,10 +36,14 @@ import {
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
 import { MyDialog } from '@/components/design-system/dialog';
 import { AddCustomFieldDialog as SharedAddCustomFieldDialog } from '@/components/common/custom-fields/AddCustomFieldDialog';
+import {
+    isBuiltInRegistrationField,
+    withBuiltInRegistrationFields,
+} from '@/components/common/custom-fields/builtin-registration-fields';
 import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
 import { fetchInstituteDefaultFields } from '@/services/custom-field-mappings';
 import { getInstituteId as getInstId } from '@/constants/helper';
-import { WAITING_ROOM_OPTIONS, WAITING_ROOM_TYPE_OPTIONS } from '../-constants/options';
+import { buildWaitingRoomOptions, buildWaitingRoomTypeOptions } from '../-constants/options';
 import { UploadFileInS3 } from '@/services/upload_file';
 import { UploadSimple, X as XIcon, MusicNote, MagnifyingGlass, CircleNotch, DownloadSimple, CheckCircle, VideoCamera } from '@phosphor-icons/react';
 import {
@@ -82,7 +88,7 @@ import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtili
 import { TokenKey } from '@/constants/auth/tokens';
 
 import { bulkSessionFormSchema, type BulkSessionForm, type BulkSessionRow } from '../-schema/bulkSchema';
-import { TIMEZONE_OPTIONS, STREAMING_OPTIONS } from '../-constants/options';
+import { buildTimezoneOptions, buildStreamingOptions } from '../-constants/options';
 import { useLiveSessionSettings } from '@/hooks/useLiveSessionSettings';
 import { getBrowserTimezone, normalizeTimezone } from '@/utils/timezone';
 import type { PlatformKey } from '@/services/live-session-settings';
@@ -95,7 +101,20 @@ import { useLiveSessionStore } from '../-store/sessionIdstore';
 import { SectionCard } from './SectionCard';
 import { LiveSessionPreviewDialog } from './LiveSessionPreviewDialog';
 import { BulkCsvImportDialog } from './BulkCsvImportDialog';
-import { downloadScheduleTemplate, downloadBatchReference, downloadResultsCsv } from '../-utils/bulkCsv';
+import {
+    downloadScheduleTemplate,
+    downloadBatchReference,
+    downloadResultsCsv,
+    downloadTeacherReference,
+} from '../-utils/bulkCsv';
+import {
+    STAFF_DIRECTORY_PAGE_SIZE,
+    buildTeacherIndex,
+    problemTeacherEntries,
+    splitTeacherEntries,
+} from '../-utils/teacherDirectory';
+import { fetchEligibleOrgUsers } from '@/routes/manage-institute/teams/-services/institute-users-service';
+import { RowTeacherPicker, type TeacherDirectory } from './RowTeacherPicker';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { useFilterDataForAssesment } from '@/routes/assessment/assessment-list/-utils.ts/useFiltersData';
@@ -113,11 +132,11 @@ import { LockKey, BellRinging, UsersThree as UsersThreeIcon } from '@phosphor-ic
 import { AccessType, InputType } from '../../-constants/enums';
 import { z } from 'zod';
 
-const TimeOptions = [
-    { label: '5 minutes before', value: '5m' },
-    { label: '10 minutes before', value: '10m' },
-    { label: '30 minutes before', value: '30m' },
-    { label: '1 hour before', value: '1h' },
+const buildTimeOptions = (t: TFunction) => [
+    { label: t('timeOptions.5m'), value: '5m' },
+    { label: t('timeOptions.10m'), value: '10m' },
+    { label: t('timeOptions.30m'), value: '30m' },
+    { label: t('timeOptions.1h'), value: '1h' },
 ];
 
 /**
@@ -150,6 +169,15 @@ const getDefaultRowDateTime = (timeZone: string) => {
     return { startDate, startTime };
 };
 
+// Only BBB (host iframes the meeting) and YouTube can play inside the app.
+// Every other link — Google Meet, Zoom, Zoho, any "other" URL — must
+// redirect: the grid has no embed/redirect control, so defaulting those to
+// embed left learners on an iframe the provider refuses to load.
+const streamingTypeForPlatform = (platform?: string) =>
+    platform === 'bbb' || platform === 'youtube'
+        ? SessionPlatform.EMBED_IN_APP
+        : SessionPlatform.REDIRECT_TO_OTHER_PLATFORM;
+
 const blankRow = (
     defaultPlatform: string = 'other',
     timeZone: string = 'Asia/Kolkata'
@@ -176,11 +204,11 @@ const blankRow = (
 // Same list the single-class form ships with — keeps the bulk experience in
 // lock-step so admins don't get a different feedback form depending on how
 // they created the class.
-const BULK_DEFAULT_FEEDBACK_QUESTIONS = [
+const buildDefaultFeedbackQuestions = (t: TFunction) => [
     {
         id: 'rating',
         type: 'star_rating',
-        label: 'How was the session?',
+        label: t('defaultFeedbackQuestions.rating'),
         enabled: true,
         mandatory: true,
         max_stars: 5,
@@ -189,21 +217,21 @@ const BULK_DEFAULT_FEEDBACK_QUESTIONS = [
     {
         id: 'learnings',
         type: 'free_text',
-        label: 'What did you learn in the session?',
+        label: t('defaultFeedbackQuestions.learnings'),
         enabled: true,
         mandatory: false,
     },
     {
         id: 'doubts',
         type: 'free_text',
-        label: 'Any doubts or questions you have?',
+        label: t('defaultFeedbackQuestions.doubts'),
         enabled: true,
         mandatory: false,
     },
     {
         id: 'feedback',
         type: 'free_text',
-        label: 'Feedback for the session',
+        label: t('defaultFeedbackQuestions.feedback'),
         enabled: true,
         mandatory: false,
     },
@@ -240,6 +268,16 @@ const EMPTY_COURSES: RowBatchPickerProps['courses'] = [];
 
 
 export function BulkScheduleGrid() {
+    const { t } = useTranslation(['studyLibraryBulkScheduleGrid', 'studyLibraryOptions']);
+    const TimeOptions = useMemo(() => buildTimeOptions(t), [t]);
+    const BULK_DEFAULT_FEEDBACK_QUESTIONS = useMemo(
+        () => buildDefaultFeedbackQuestions(t),
+        [t]
+    );
+    const TIMEZONE_OPTIONS = useMemo(() => buildTimezoneOptions(t), [t]);
+    const STREAMING_OPTIONS = useMemo(() => buildStreamingOptions(t), [t]);
+    const WAITING_ROOM_OPTIONS = useMemo(() => buildWaitingRoomOptions(t), [t]);
+    const WAITING_ROOM_TYPE_OPTIONS = useMemo(() => buildWaitingRoomTypeOptions(t), [t]);
     const navigate = useNavigate();
     const { setBulkSessionIds, setStep1Data } = useLiveSessionStore();
     const { settings: liveSessionSettings } = useLiveSessionSettings();
@@ -249,7 +287,7 @@ export function BulkScheduleGrid() {
                 (opt) =>
                     liveSessionSettings.allowedPlatforms[opt.value as PlatformKey] !== false
             ),
-        [liveSessionSettings.allowedPlatforms]
+        [liveSessionSettings.allowedPlatforms, STREAMING_OPTIONS]
     );
 
     // Same subject source the single-class form uses, so the bulk grid offers
@@ -322,6 +360,7 @@ export function BulkScheduleGrid() {
                 waitingRoomMusicFileId: undefined,
                 allowRewind: true,
                 allowPause: true,
+                showToLearners: false,
                 // Feedback defaults to ON, but never when the institute has
                 // hidden the whole feedback feature (feedbackEnabled = false).
                 enableFeedback:
@@ -560,18 +599,24 @@ export function BulkScheduleGrid() {
             const instId = getInstId();
             if (!instId) return;
             const defaults = await fetchInstituteDefaultFields(instId);
-            if (cancelled || !defaults || defaults.length === 0) return;
-            const allFields = defaults.map((entry) => {
+            if (cancelled) return;
+            const allFields = (defaults ?? []).map((entry) => {
                 const cf = entry.custom_field;
                 const nameLC = cf.fieldName.toLowerCase();
                 const rawType = (cf.fieldType || 'text').toLowerCase();
                 const resolvedType = (rawType === 'textfield' ? 'text' : rawType) as InputType;
                 const hasOptions =
                     resolvedType === InputType.DROPDOWN || resolvedType === InputType.RADIO;
+                // Built-in by ROLE, not by label — see scheduleStep2.
+                const builtIn = isBuiltInRegistrationField({
+                    key: cf.fieldKey,
+                    label: cf.fieldName,
+                    type: resolvedType,
+                });
                 return {
                     label: cf.fieldName,
-                    required: cf.isMandatory || SEEDED.includes(nameLC),
-                    isDefault: SEEDED.includes(nameLC),
+                    required: builtIn || !!cf.isMandatory,
+                    isDefault: builtIn || SEEDED.includes(nameLC),
                     type: resolvedType,
                     ...(hasOptions && cf.config
                         ? (() => {
@@ -608,7 +653,22 @@ export function BulkScheduleGrid() {
                         : {}),
                 };
             });
-            form.setValue('fields', allFields);
+            // Every institute gets Full Name / Email / Phone Number, required to start with — an
+            // institute with no DEFAULT set (or one missing a field) would otherwise open a
+            // registration form that collects nothing.
+            form.setValue(
+                'fields',
+                withBuiltInRegistrationFields(
+                    allFields,
+                    (field) => ({ label: field.label, type: field.type }),
+                    (builtIn) => ({
+                        label: builtIn.label,
+                        required: true,
+                        isDefault: true,
+                        type: builtIn.type as InputType,
+                    })
+                )
+            );
         };
         loadFields();
         return () => {
@@ -646,7 +706,7 @@ export function BulkScheduleGrid() {
             });
         } catch (err) {
             console.error('Thumbnail upload failed', err);
-            toast.error('Failed to upload thumbnail. Please try again.');
+            toast.error(t('toast.thumbnailUploadFailed'));
             setThumbnailFile(null);
         } finally {
             setThumbnailUploading(false);
@@ -669,7 +729,7 @@ export function BulkScheduleGrid() {
             });
         } catch (err) {
             console.error('Music upload failed', err);
-            toast.error('Failed to upload background music. Please try again.');
+            toast.error(t('toast.musicUploadFailed'));
             setMusicFile(null);
         } finally {
             setMusicUploading(false);
@@ -873,6 +933,49 @@ export function BulkScheduleGrid() {
     const INSTITUTE_ID =
         (tokenData?.authorities && Object.keys(tokenData.authorities)[0]) || '';
 
+    // Staff directory behind the Teacher column, fetched once for the whole
+    // grid rather than per row. Non-students only, the same people the
+    // single-class instructor picker offers. It is also what the CSV's
+    // teacher emails / usernames are matched against: the backend's own
+    // lookup reads every active user, students included, so it is only the
+    // fallback for when this fetch fails.
+    const teacherDirectoryQuery = useQuery({
+        queryKey: ['live-session-bulk-teacher-directory', INSTITUTE_ID],
+        queryFn: () => fetchEligibleOrgUsers(INSTITUTE_ID),
+        enabled: !!INSTITUTE_ID,
+        staleTime: 5 * 60_000,
+    });
+    const teacherDirectory = useMemo<TeacherDirectory>(() => {
+        const users = teacherDirectoryQuery.data;
+        if (users) {
+            return {
+                status: 'ready',
+                users,
+                index: buildTeacherIndex(users),
+                truncated: users.length >= STAFF_DIRECTORY_PAGE_SIZE,
+            };
+        }
+        return {
+            status: teacherDirectoryQuery.isError ? 'error' : 'loading',
+            users: [],
+            index: null,
+            truncated: false,
+        };
+    }, [teacherDirectoryQuery.data, teacherDirectoryQuery.isError]);
+
+    const applyTeachersToAllRows = useCallback(
+        (entries: string[]) => {
+            const count = form.getValues('rows')?.length ?? 0;
+            for (let i = 0; i < count; i++) {
+                form.setValue(`rows.${i}.instructorIdentifiers` as const, [...entries], {
+                    shouldDirty: true,
+                });
+            }
+            toast.success(t('toast.teachersApplied', { count }));
+        },
+        [form, t]
+    );
+
     const addRow = () =>
         append(
             blankRow(
@@ -922,7 +1025,7 @@ export function BulkScheduleGrid() {
         } else {
             for (const row of parsed) append(row as never);
         }
-        toast.success(`Pasted ${parsed.length} row${parsed.length === 1 ? '' : 's'}`);
+        toast.success(t('toast.pastedRows', { count: parsed.length }));
     };
 
     // Imported CSV rows replace a lone empty starter row, otherwise append —
@@ -938,12 +1041,22 @@ export function BulkScheduleGrid() {
         } else {
             for (const row of rows) append(row as never);
         }
-        toast.success(`Imported ${rows.length} row${rows.length === 1 ? '' : 's'}`);
+        toast.success(t('toast.importedRows', { count: rows.length }));
+        // Teacher emails / usernames that matched nobody stay on their rows,
+        // flagged in the Teacher column; say so now rather than at submit.
+        const index = teacherDirectory.index;
+        if (index) {
+            const unmatched = rows.reduce(
+                (n, r) => n + problemTeacherEntries(index, r.instructorIdentifiers ?? []).length,
+                0
+            );
+            if (unmatched > 0) toast.warning(t('toast.teachersNotMatched', { count: unmatched }));
+        }
     };
 
     const onSubmit = async (data: BulkSessionForm) => {
         if (!INSTITUTE_ID) {
-            toast.error('Could not resolve institute. Please re-login.');
+            toast.error(t('toast.instituteNotResolved'));
             return;
         }
         setSubmitting(true);
@@ -956,13 +1069,7 @@ export function BulkScheduleGrid() {
             const sessions = data.rows.map((row) => {
                 const startTimeISO = `${row.startDate}T${row.startTime}`;
                 const isBbb = row.platform === 'bbb';
-                const isMeet = row.platform === 'google meet';
-                // Mirror the single-class auto-set rules: BBB rows must use
-                // embed-in-app (the host iframes the meeting); Google Meet
-                // rows redirect; everything else defaults to embed.
-                const computedStreamingType = isMeet
-                    ? SessionPlatform.REDIRECT_TO_OTHER_PLATFORM
-                    : SessionPlatform.EMBED_IN_APP;
+                const computedStreamingType = streamingTypeForPlatform(row.platform);
                 // Compose a sessionFormSchema-shaped object so we can reuse the
                 // mature transformer without duplicating ISO/duration logic.
                 // NOTE: in the form schema, `sessionPlatform` is the streaming
@@ -999,6 +1106,10 @@ export function BulkScheduleGrid() {
                     streamingType: computedStreamingType,
                     allowRewind: shared.allowRewind,
                     allowPause: shared.allowPause,
+                    // Sent only by attendance-only institutes; omitted otherwise.
+                    showToLearners: liveSessionSettings.attendanceOnlyMode
+                        ? shared.showToLearners
+                        : undefined,
                     startTime: startTimeISO,
                     timeZone: data.timeZone,
                     events: '0',
@@ -1122,7 +1233,14 @@ export function BulkScheduleGrid() {
                     ? (data.recordingAutoLink.destinations ?? []).filter((d) => d.chapter_id)
                     : [];
 
-            const step2PerRow = data.rows.map((row) => {
+            // Teacher entries that were left out of a row, reported on that
+            // row's result (and in the downloadable results CSV).
+            const skippedTeachersByRow = new Map<
+                number,
+                { notFound: string[]; ambiguous: string[] }
+            >();
+
+            const step2PerRow = data.rows.map((row, rowIndex) => {
                 const joinLinkForRow =
                     data.accessType === AccessType.PUBLIC
                         ? `${learnerBaseUrl}/register/live-class?sessionId={{SESSION_ID}}`
@@ -1165,18 +1283,79 @@ export function BulkScheduleGrid() {
 
                 // Pass an empty session_id; backend's BulkLiveSessionService
                 // overwrites it with the real id from each created session.
-                return transformFormToDTOStep2(syntheticStep2Form, '', rowPackageSessionIds);
+                const rowStep2 = transformFormToDTOStep2(
+                    syntheticStep2Form,
+                    '',
+                    rowPackageSessionIds
+                );
+
+                // Teachers: user ids picked in the grid, or the CSV's emails /
+                // usernames. With the staff directory loaded they are resolved
+                // here; entries that match nobody (or two people) are left out
+                // and reported on the row's result. Without the directory the
+                // raw entries go to the backend, which resolves them itself and
+                // reports what it couldn't match. The same goes for misses
+                // against a directory that came back cut off at its page size.
+                //
+                // Only sent when the row names someone: an empty list would mean
+                // "remove all instructors" and would wipe the creator the backend
+                // seeds for rows that named nobody.
+                const teacherEntries = row.instructorIdentifiers ?? [];
+                if (teacherEntries.length > 0) {
+                    const index = teacherDirectory.index;
+                    if (index) {
+                        const { userIds, unmatched, ambiguous } = splitTeacherEntries(
+                            index,
+                            teacherEntries
+                        );
+                        if (userIds.length > 0) rowStep2.instructor_user_ids = userIds;
+                        const notFound = teacherDirectory.truncated ? [] : unmatched;
+                        if (teacherDirectory.truncated && unmatched.length > 0) {
+                            rowStep2.instructor_identifiers = unmatched;
+                        }
+                        if (notFound.length > 0 || ambiguous.length > 0) {
+                            skippedTeachersByRow.set(rowIndex, { notFound, ambiguous });
+                        }
+                    } else {
+                        rowStep2.instructor_identifiers = teacherEntries;
+                    }
+                }
+
+                return rowStep2;
             });
 
             // Throttled creation: send rows in small chunks with a short pause
             // between each so the server isn't hit with everything at once.
-            const response = await createLiveSessionsChunked(sessions, step2PerRow, {
+            const chunkedResponse = await createLiveSessionsChunked(sessions, step2PerRow, {
                 // One session per request so the UI can count progress per class
                 // ("Scheduling 1/200…"). Total time is backend-bound, so this
                 // doesn't slow things down meaningfully vs larger chunks.
                 chunkSize: 1,
                 onProgress: (done, total) => setCreateProgress({ done, total }),
             });
+            const response = {
+                ...chunkedResponse,
+                results: chunkedResponse.results.map((r) => {
+                    const skipped = skippedTeachersByRow.get(r.index);
+                    if (!r.success || !skipped) return r;
+                    const warnings = [...(r.warnings ?? [])];
+                    if (skipped.notFound.length > 0) {
+                        warnings.push(
+                            t('resultDialog.teachersSkipped', {
+                                list: skipped.notFound.join(', '),
+                            })
+                        );
+                    }
+                    if (skipped.ambiguous.length > 0) {
+                        warnings.push(
+                            t('resultDialog.teachersAmbiguous', {
+                                list: skipped.ambiguous.join(', '),
+                            })
+                        );
+                    }
+                    return { ...r, warnings };
+                }),
+            };
 
             const successfulResults = response.results.filter(
                 (r) => r.success && r.session_id
@@ -1206,10 +1385,7 @@ export function BulkScheduleGrid() {
                     sessionType: SessionType.LIVE,
                     sessionPlatform: data.rows[0]?.platform || 'other',
                     enableWaitingRoom: false,
-                    streamingType:
-                        data.rows[0]?.platform === 'google meet'
-                            ? SessionPlatform.REDIRECT_TO_OTHER_PLATFORM
-                            : SessionPlatform.EMBED_IN_APP,
+                    streamingType: streamingTypeForPlatform(data.rows[0]?.platform),
                     allowRewind: true,
                     allowPause: true,
                     startTime: `${data.rows[0]?.startDate}T${data.rows[0]?.startTime}`,
@@ -1235,11 +1411,7 @@ export function BulkScheduleGrid() {
                 results: response.results,
             });
             if (failures.length === 0) {
-                toast.success(
-                    `${createdIds.length} ${
-                        createdIds.length === 1 ? 'session' : 'sessions'
-                    } created`
-                );
+                toast.success(t('toast.sessionsCreated', { count: createdIds.length }));
             }
         } catch (err) {
             // Capture to Sentry (feature-tagged) + show a toast in one call so
@@ -1286,13 +1458,13 @@ export function BulkScheduleGrid() {
         <div className="flex flex-col gap-5 pb-20">
             <SectionCard
                 icon={<Globe size={18} />}
-                title="Configuration"
-                description="Shared settings applied to every row in the grid below."
+                title={t('config.title')}
+                description={t('config.description')}
             >
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-medium text-neutral-700">
-                            Timezone <span className="text-danger-600">*</span>
+                            {t('config.timezoneLabel')} <span className="text-danger-600">*</span>
                         </label>
                         <Select
                             value={watchedTimeZone}
@@ -1301,7 +1473,7 @@ export function BulkScheduleGrid() {
                             }
                         >
                             <SelectTrigger className="h-9 w-full">
-                                <SelectValue placeholder="Select timezone" />
+                                <SelectValue placeholder={t('config.selectTimezone')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {TIMEZONE_OPTIONS.map((opt) => (
@@ -1318,7 +1490,7 @@ export function BulkScheduleGrid() {
                         render={({ field }) => (
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm font-medium text-neutral-700">
-                                    Default platform
+                                    {t('config.defaultPlatformLabel')}
                                 </label>
                                 <Select
                                     value={field.value ?? 'other'}
@@ -1354,8 +1526,7 @@ export function BulkScheduleGrid() {
                                     </SelectContent>
                                 </Select>
                                 <span className="text-[11px] text-neutral-500">
-                                    Used for newly added rows. Picking it now also fills any
-                                    existing rows still set to “Other.”
+                                    {t('config.defaultPlatformHint')}
                                 </span>
                             </div>
                         )}
@@ -1365,23 +1536,44 @@ export function BulkScheduleGrid() {
 
             <SectionCard
                 icon={<UsersThree size={18} />}
-                title="Shared session settings"
-                description="Applied to every row created from this grid. You can edit any individual class after creation."
+                title={t('sharedSettings.title')}
+                description={t('sharedSettings.description')}
             >
                 <div className="grid gap-3 sm:grid-cols-2">
+                    {/* Learner visibility (attendance-only institutes) */}
+                    {liveSessionSettings.attendanceOnlyMode && (
+                        <Controller
+                            control={form.control}
+                            name="sharedOptions.showToLearners"
+                            render={({ field }) => (
+                                <label className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 p-3 sm:col-span-2">
+                                    <div>
+                                        <div className="text-sm font-medium text-neutral-800">
+                                            {t('sharedSettings.showToLearnersLabel')}
+                                        </div>
+                                        <div className="mt-0.5 text-xs text-neutral-500">
+                                            {field.value
+                                                ? t('sharedSettings.showToLearnersOnHint')
+                                                : t('sharedSettings.showToLearnersOffHint')}
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </label>
+                            )}
+                        />
+                    )}
                     {/* Waiting room */}
                     <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <div className="text-sm font-medium text-neutral-800">
-                                    Enable Waiting Room or Pre-Joining
+                                    {t('sharedSettings.waitingRoomTitle')}
                                 </div>
                                 <div className="mt-0.5 text-xs text-neutral-500">
-                                    Turn this on to give learners early access before each
-                                    class starts — they either wait in a waiting room (with
-                                    an optional thumbnail and background music) or join the
-                                    live class directly (Pre-Joining), depending on the
-                                    Waiting Room Type you choose.
+                                    {t('sharedSettings.waitingRoomDescription')}
                                 </div>
                             </div>
                             <Controller
@@ -1399,7 +1591,7 @@ export function BulkScheduleGrid() {
                             <div className="mt-3 space-y-3">
                                 <div>
                                     <label className="text-xs font-medium text-neutral-600">
-                                        Waiting Room Type
+                                        {t('sharedSettings.waitingRoomTypeLabel')}
                                     </label>
                                     <Controller
                                         control={form.control}
@@ -1428,7 +1620,7 @@ export function BulkScheduleGrid() {
                                 </div>
                                 <div>
                                     <label className="text-xs font-medium text-neutral-600">
-                                        Open waiting room before
+                                        {t('sharedSettings.openWaitingRoomBeforeLabel')}
                                     </label>
                                     <Controller
                                         control={form.control}
@@ -1460,7 +1652,7 @@ export function BulkScheduleGrid() {
                                     <>
                                 <div>
                                     <label className="text-xs font-medium text-neutral-600">
-                                        Thumbnail
+                                        {t('sharedSettings.thumbnailLabel')}
                                     </label>
                                     <input
                                         ref={(el) => {
@@ -1482,11 +1674,13 @@ export function BulkScheduleGrid() {
                                             disabled={thumbnailUploading}
                                         >
                                             <UploadSimple size={14} className="mr-1" />
-                                            {thumbnailFile ? 'Replace' : 'Upload'}
+                                            {thumbnailFile
+                                                ? t('sharedSettings.replace')
+                                                : t('sharedSettings.upload')}
                                         </Button>
                                         {thumbnailUploading && (
                                             <span className="text-xs text-neutral-500">
-                                                Uploading…
+                                                {t('sharedSettings.uploading')}
                                             </span>
                                         )}
                                         {thumbnailFile && !thumbnailUploading && (
@@ -1498,7 +1692,7 @@ export function BulkScheduleGrid() {
                                                     type="button"
                                                     onClick={() => handleSharedThumbnail(null)}
                                                     className="text-danger-500"
-                                                    aria-label="Remove thumbnail"
+                                                    aria-label={t('sharedSettings.removeThumbnail')}
                                                 >
                                                     <XIcon size={12} />
                                                 </button>
@@ -1508,7 +1702,7 @@ export function BulkScheduleGrid() {
                                 </div>
                                 <div>
                                     <label className="text-xs font-medium text-neutral-600">
-                                        Background score
+                                        {t('sharedSettings.backgroundScoreLabel')}
                                     </label>
                                     <input
                                         ref={(el) => {
@@ -1530,11 +1724,13 @@ export function BulkScheduleGrid() {
                                             disabled={musicUploading}
                                         >
                                             <UploadSimple size={14} className="mr-1" />
-                                            {musicFile ? 'Replace' : 'Upload'}
+                                            {musicFile
+                                                ? t('sharedSettings.replace')
+                                                : t('sharedSettings.upload')}
                                         </Button>
                                         {musicUploading && (
                                             <span className="text-xs text-neutral-500">
-                                                Uploading…
+                                                {t('sharedSettings.uploading')}
                                             </span>
                                         )}
                                         {musicFile && !musicUploading && (
@@ -1545,7 +1741,7 @@ export function BulkScheduleGrid() {
                                                     type="button"
                                                     onClick={() => handleSharedMusic(null)}
                                                     className="text-danger-500"
-                                                    aria-label="Remove music"
+                                                    aria-label={t('sharedSettings.removeMusic')}
                                                 >
                                                     <XIcon size={12} />
                                                 </button>
@@ -1562,10 +1758,10 @@ export function BulkScheduleGrid() {
                     {/* Lock playback */}
                     <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div className="text-sm font-medium text-neutral-800">
-                            Lock playback controls
+                            {t('sharedSettings.lockPlaybackTitle')}
                         </div>
                         <div className="mt-0.5 text-xs text-neutral-500">
-                            Applies when the class is embedded in-app.
+                            {t('sharedSettings.lockPlaybackDescription')}
                         </div>
                         <div className="mt-3 flex flex-col gap-2">
                             <Controller
@@ -1573,7 +1769,7 @@ export function BulkScheduleGrid() {
                                 name="sharedOptions.allowRewind"
                                 render={({ field }) => (
                                     <label className="flex items-center justify-between text-sm">
-                                        <span>Allow rewind</span>
+                                        <span>{t('sharedSettings.allowRewind')}</span>
                                         <Switch
                                             checked={field.value}
                                             onCheckedChange={field.onChange}
@@ -1586,7 +1782,7 @@ export function BulkScheduleGrid() {
                                 name="sharedOptions.allowPause"
                                 render={({ field }) => (
                                     <label className="flex items-center justify-between text-sm">
-                                        <span>Allow play / pause</span>
+                                        <span>{t('sharedSettings.allowPlayPause')}</span>
                                         <Switch
                                             checked={field.value}
                                             onCheckedChange={field.onChange}
@@ -1608,11 +1804,10 @@ export function BulkScheduleGrid() {
                                     />
                                     <div>
                                         <div className="text-sm font-medium text-neutral-800">
-                                            Collect learner feedback
+                                            {t('sharedSettings.feedbackTitle')}
                                         </div>
                                         <div className="mt-0.5 text-xs text-neutral-500">
-                                            Shows the feedback form to learners after each
-                                            bulk-created session ends.
+                                            {t('sharedSettings.feedbackDescription')}
                                         </div>
                                     </div>
                                 </div>
@@ -1633,11 +1828,10 @@ export function BulkScheduleGrid() {
                                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-white px-3 py-2">
                                         <div>
                                             <div className="text-xs font-medium text-neutral-700">
-                                                Make feedback compulsory
+                                                {t('sharedSettings.feedbackCompulsoryLabel')}
                                             </div>
                                             <div className="mt-0.5 text-[11px] text-neutral-500">
-                                                Learners cannot skip the form — all required
-                                                questions must be answered.
+                                                {t('sharedSettings.feedbackCompulsoryDescription')}
                                             </div>
                                         </div>
                                         <Controller
@@ -1652,7 +1846,7 @@ export function BulkScheduleGrid() {
                                         />
                                     </div>
                                     <div className="text-xs font-medium text-neutral-600">
-                                        Questions
+                                        {t('sharedSettings.questionsLabel')}
                                     </div>
                                     {(
                                         form.watch('sharedOptions.feedbackQuestions') ??
@@ -1686,8 +1880,8 @@ export function BulkScheduleGrid() {
                                                     <span className="ml-1 text-xs text-neutral-400">
                                                         (
                                                         {q.type === 'star_rating'
-                                                            ? '⭐ rating'
-                                                            : 'text'}
+                                                            ? t('sharedSettings.ratingSuffix')
+                                                            : t('sharedSettings.textSuffix')}
                                                         )
                                                     </span>
                                                 </span>
@@ -1710,7 +1904,9 @@ export function BulkScheduleGrid() {
                                                                 : 'bg-neutral-100 text-neutral-500'
                                                         )}
                                                     >
-                                                        {field.value ? 'Required' : 'Optional'}
+                                                        {field.value
+                                                            ? t('sharedSettings.required')
+                                                            : t('sharedSettings.optional')}
                                                     </button>
                                                 )}
                                             />
@@ -1728,11 +1924,10 @@ export function BulkScheduleGrid() {
                                 <Record size={18} className="mt-0.5 text-primary-500" />
                                 <div>
                                     <div className="text-sm font-medium text-neutral-800">
-                                        Vacademy Meet recording &amp; controls
+                                        {t('sharedSettings.recordingTitle')}
                                     </div>
                                     <div className="mt-0.5 text-xs text-neutral-500">
-                                        These options apply to rows whose platform is Vacademy
-                                        Meet. Other platforms ignore them.
+                                        {t('sharedSettings.recordingDescription')}
                                     </div>
                                 </div>
                             </div>
@@ -1754,7 +1949,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.autoStartRecording"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Auto-start recording</span>
+                                            <span>{t('sharedSettings.autoStartRecording')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1767,7 +1962,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.muteOnStart"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Mute participants when they join</span>
+                                            <span>{t('sharedSettings.muteOnStart')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1780,7 +1975,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.webcamsOnlyForModerator"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Only host can share webcam</span>
+                                            <span>{t('sharedSettings.webcamOnlyModerator')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1789,7 +1984,7 @@ export function BulkScheduleGrid() {
                                     )}
                                 />
                                 <div className="flex flex-col gap-1 text-sm">
-                                    <span>Guest admission policy</span>
+                                    <span>{t('sharedSettings.guestPolicyLabel')}</span>
                                     <Controller
                                         control={form.control}
                                         name="sharedOptions.guestPolicy"
@@ -1803,13 +1998,13 @@ export function BulkScheduleGrid() {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="ALWAYS_ACCEPT">
-                                                        Always accept
+                                                        {t('sharedSettings.guestAlwaysAccept')}
                                                     </SelectItem>
                                                     <SelectItem value="ASK_MODERATOR">
-                                                        Ask host to approve
+                                                        {t('sharedSettings.guestAskModerator')}
                                                     </SelectItem>
                                                     <SelectItem value="ALWAYS_DENY">
-                                                        Always deny guests
+                                                        {t('sharedSettings.guestAlwaysDeny')}
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -1822,7 +2017,7 @@ export function BulkScheduleGrid() {
                             outside the recordSession conditional above. */}
                         <div className="mt-3 border-t border-neutral-200 pt-3">
                             <div className="text-xs font-medium text-neutral-600">
-                                Participant restrictions — the host always keeps full access
+                                {t('sharedSettings.restrictionsTitle')}
                             </div>
                             <div className="mt-2 grid gap-2 sm:grid-cols-2">
                                 <Controller
@@ -1830,7 +2025,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.disableMic"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Participants join in listen-only mode</span>
+                                            <span>{t('sharedSettings.disableMic')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1843,7 +2038,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.disableCam"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Participants can&apos;t turn on their camera</span>
+                                            <span>{t('sharedSettings.disableCam')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1856,7 +2051,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.disablePrivateChat"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Participants can&apos;t private message each other</span>
+                                            <span>{t('sharedSettings.disablePrivateChat')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1869,7 +2064,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.disablePublicChat"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Participants can&apos;t send messages in class chat</span>
+                                            <span>{t('sharedSettings.disablePublicChat')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1882,7 +2077,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.disableSharedNotes"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Participants can&apos;t edit shared notes</span>
+                                            <span>{t('sharedSettings.disableSharedNotes')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1895,7 +2090,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.hideUserList"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>Participants can&apos;t see who else is in the class</span>
+                                            <span>{t('sharedSettings.hideUserList')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1908,7 +2103,7 @@ export function BulkScheduleGrid() {
                                     name="sharedOptions.endWhenNoModerator"
                                     render={({ field }) => (
                                         <label className="flex items-center justify-between text-sm">
-                                            <span>End class after the host leaves</span>
+                                            <span>{t('sharedSettings.endWhenNoModerator')}</span>
                                             <Switch
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
@@ -1925,8 +2120,8 @@ export function BulkScheduleGrid() {
             {liveSessionSettings.descriptionEnabled && (
             <SectionCard
                 icon={<Article size={18} />}
-                title="Description"
-                description="Provide a brief overview shared across the live classes you create below. You can include text, emojis, images, or posters to give participants a quick idea of what the sessions are about."
+                title={t('descriptionSection.title')}
+                description={t('descriptionSection.description')}
             >
                 <div className="flex flex-col gap-3">
                     <Controller
@@ -1951,7 +2146,7 @@ export function BulkScheduleGrid() {
                                 // Strip HTML to detect "really empty" rich-text (e.g., "<p></p>").
                                 const plain = raw.replace(/<[^>]*>/g, '').trim();
                                 if (!plain) {
-                                    toast.error('Add a description first.');
+                                    toast.error(t('toast.descriptionRequired'));
                                     return;
                                 }
                                 const rows = form.getValues('rows');
@@ -1966,18 +2161,18 @@ export function BulkScheduleGrid() {
                                     }
                                 });
                                 if (applied === 0) {
-                                    toast('All rows already have descriptions — nothing to fill.');
+                                    toast(t('toast.noRowsToFill'));
                                 } else {
                                     toast.success(
-                                        `Default description applied to ${applied} row${applied === 1 ? '' : 's'}.`
+                                        t('toast.descriptionApplied', { count: applied })
                                     );
                                 }
                             }}
                         >
-                            Apply to empty rows
+                            {t('descriptionSection.applyToEmptyRows')}
                         </Button>
                         <span className="ml-2 text-xs text-neutral-500">
-                            Per-row descriptions remain editable below.
+                            {t('descriptionSection.hint')}
                         </span>
                     </div>
                 </div>
@@ -1986,8 +2181,8 @@ export function BulkScheduleGrid() {
 
             <SectionCard
                 icon={<TableIcon size={18} />}
-                title="Sessions"
-                description="One row per class. Paste tab-separated rows from a spreadsheet to bulk-fill."
+                title={t('sessionsSection.title')}
+                description={t('sessionsSection.description')}
                 headerRight={
                     <div className="flex items-center gap-2">
                         <ReadyCountBadge
@@ -2007,50 +2202,53 @@ export function BulkScheduleGrid() {
                             <TableHeader className="sticky top-0 z-10 bg-neutral-50">
                                 <TableRow className="border-neutral-200">
                                     <TableHead className="w-10 text-center text-[11px] uppercase tracking-wide text-neutral-500">
-                                        #
+                                        {t('sessionsSection.columns.number')}
                                     </TableHead>
                                     <TableHead className="min-w-[180px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Title *
+                                        {t('sessionsSection.columns.title')}
                                     </TableHead>
                                     <TableHead className="min-w-[130px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Subject
+                                        {t('sessionsSection.columns.subject')}
                                     </TableHead>
                                     <TableHead className="min-w-[150px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Date *
+                                        {t('sessionsSection.columns.date')}
                                     </TableHead>
                                     <TableHead className="min-w-[110px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Start *
+                                        {t('sessionsSection.columns.start')}
                                     </TableHead>
                                     <TableHead className="min-w-[80px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Hrs
+                                        {t('sessionsSection.columns.hrs')}
                                     </TableHead>
                                     <TableHead className="min-w-[80px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Mins
+                                        {t('sessionsSection.columns.mins')}
                                     </TableHead>
                                     <TableHead className="min-w-[140px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Platform
+                                        {t('sessionsSection.columns.platform')}
                                     </TableHead>
                                     <TableHead className="min-w-[220px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Link
+                                        {t('sessionsSection.columns.link')}
                                     </TableHead>
                                     <TableHead className="min-w-[160px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Batches
+                                        {t('sessionsSection.columns.batches')}
+                                    </TableHead>
+                                    <TableHead className="min-w-44 text-2xs uppercase tracking-wide text-neutral-500">
+                                        {t('sessionsSection.columns.teacher')}
                                     </TableHead>
                                     {autoUploadConfigurable && (
                                         <TableHead className="min-w-28 text-2xs uppercase tracking-wide text-neutral-500">
-                                            Recording
+                                            {t('sessionsSection.columns.recording')}
                                         </TableHead>
                                     )}
                                     <TableHead className="min-w-[160px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Waiting room
+                                        {t('sessionsSection.columns.waitingRoom')}
                                     </TableHead>
                                     {liveSessionSettings.descriptionEnabled && (
                                         <TableHead className="min-w-[140px] text-[11px] uppercase tracking-wide text-neutral-500">
-                                            Description
+                                            {t('sessionsSection.columns.description')}
                                         </TableHead>
                                     )}
                                     <TableHead className="w-20 text-right text-[11px] uppercase tracking-wide text-neutral-500">
-                                        Actions
+                                        {t('sessionsSection.columns.actions')}
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -2068,6 +2266,8 @@ export function BulkScheduleGrid() {
                                     showRecordingDest={autoUploadConfigurable}
                                     onOpenRecordingDest={setRecordingDestRowIndex}
                                     resolveRowBatches={resolveRowBatches}
+                                    teacherDirectory={teacherDirectory}
+                                    onApplyTeachersToAll={applyTeachersToAllRows}
                                     disableRemove={fields.length === 1}
                                     onDuplicate={duplicateRow}
                                     onRemove={remove}
@@ -2085,7 +2285,7 @@ export function BulkScheduleGrid() {
                                 onClick={addRow}
                                 className="h-8 gap-1.5"
                             >
-                                <Plus size={14} /> Add row
+                                <Plus size={14} /> {t('sessionsSection.addRow')}
                             </Button>
                             <Button
                                 type="button"
@@ -2094,7 +2294,7 @@ export function BulkScheduleGrid() {
                                 onClick={() => setCsvImportOpen(true)}
                                 className="h-8 gap-1.5"
                             >
-                                <UploadSimple size={14} /> Import CSV
+                                <UploadSimple size={14} /> {t('sessionsSection.importCsv')}
                             </Button>
                             <Button
                                 type="button"
@@ -2107,7 +2307,7 @@ export function BulkScheduleGrid() {
                                 }
                                 className="h-8 gap-1.5"
                             >
-                                <DownloadSimple size={14} /> Template
+                                <DownloadSimple size={14} /> {t('sessionsSection.template')}
                             </Button>
                             <Button
                                 type="button"
@@ -2120,11 +2320,21 @@ export function BulkScheduleGrid() {
                                 }
                                 className="h-8 gap-1.5"
                             >
-                                <DownloadSimple size={14} /> Batch reference
+                                <DownloadSimple size={14} /> {t('sessionsSection.batchReference')}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={teacherDirectory.status !== 'ready'}
+                                onClick={() => downloadTeacherReference(teacherDirectory.users)}
+                                className="h-8 gap-1.5"
+                            >
+                                <DownloadSimple size={14} /> {t('sessionsSection.teacherReference')}
                             </Button>
                         </div>
                         <span className="hidden text-xs text-neutral-500 sm:inline">
-                            Tip: paste tab-separated rows, or import a CSV.
+                            {t('sessionsSection.pasteHint')}
                         </span>
                     </div>
                 </div>
@@ -2132,8 +2342,8 @@ export function BulkScheduleGrid() {
 
             <SectionCard
                 icon={<LockKey size={18} />}
-                title="Participant Access"
-                description="Applies to every session created from the grid above."
+                title={t('access.title')}
+                description={t('access.description')}
             >
                 <Controller
                     control={form.control}
@@ -2147,8 +2357,8 @@ export function BulkScheduleGrid() {
                                 {
                                     label: (
                                         <div className="flex flex-row gap-1">
-                                            <div className="font-bold">Private:</div>
-                                            Restrict to selected institute batches or learners.
+                                            <div className="font-bold">{t('access.privateLabel')}</div>
+                                            {t('access.privateDescription')}
                                         </div>
                                     ),
                                     value: AccessType.PRIVATE,
@@ -2156,8 +2366,8 @@ export function BulkScheduleGrid() {
                                 {
                                     label: (
                                         <div className="flex flex-row gap-1">
-                                            <div className="font-bold">Public:</div>
-                                            Anyone with the join link can attend.
+                                            <div className="font-bold">{t('access.publicLabel')}</div>
+                                            {t('access.publicDescription')}
                                         </div>
                                     ),
                                     value: AccessType.PUBLIC,
@@ -2172,8 +2382,8 @@ export function BulkScheduleGrid() {
             {accessType === AccessType.PUBLIC && (
                 <SectionCard
                     icon={<Article size={18} />}
-                    title="Registration Form"
-                    description="Fields shown to learners on the public registration form, shared across every session created above. Drag to reorder."
+                    title={t('registration.title')}
+                    description={t('registration.description')}
                 >
                     <div className="flex flex-col gap-3">
                         <FormFieldRowHeader />
@@ -2193,7 +2403,6 @@ export function BulkScheduleGrid() {
                                             isRequired={
                                                 form.watch(`fields.${index}.required`) ?? false
                                             }
-                                            locked={regField.isDefault}
                                             isEditing={editingRegFieldIndex === index}
                                             onToggleRequired={() =>
                                                 form.setValue(
@@ -2215,6 +2424,14 @@ export function BulkScheduleGrid() {
                             ))}
                         </Sortable>
 
+                        {/* "Keep one identity field required" spans the whole array, so it has
+                            no row of its own to render in. */}
+                        {form.formState.errors.fields?.message && (
+                            <p className="px-3 text-caption text-danger-600">
+                                {form.formState.errors.fields.message}
+                            </p>
+                        )}
+
                         <div className="flex flex-col gap-4 p-3 sm:flex-row">
                             <SharedAddCustomFieldDialog
                                 trigger={
@@ -2223,7 +2440,7 @@ export function BulkScheduleGrid() {
                                         type="button"
                                         className="w-full sm:w-auto"
                                     >
-                                        <Plus /> Add Custom Field
+                                        <Plus /> {t('registration.addCustomField')}
                                     </MyButton>
                                 }
                                 onAddField={(type, name, _oldKey, options) => {
@@ -2320,7 +2537,7 @@ export function BulkScheduleGrid() {
                                 onClick={() => setRegPreviewOpen(true)}
                                 className="w-full sm:w-auto"
                             >
-                                Preview Registration Form
+                                {t('registration.preview')}
                             </MyButton>
                         </div>
                     </div>
@@ -2329,26 +2546,26 @@ export function BulkScheduleGrid() {
 
             <SectionCard
                 icon={<BellRinging size={18} />}
-                title="Notifications"
-                description="Channels and triggers applied to every bulk-created session."
+                title={t('notifications.title')}
+                description={t('notifications.description')}
             >
                 <div className="flex flex-col gap-5">
                     <div>
                         <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                            Channels
+                            {t('notifications.channels')}
                         </div>
                         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                             {(
                                 [
-                                    ['notifyBy.mail', 'Notify Via Email'],
-                                    ['notifyBy.whatsapp', 'Notify Via WhatsApp'],
+                                    ['notifyBy.mail', t('notifications.notifyViaEmail')],
+                                    ['notifyBy.whatsapp', t('notifications.notifyViaWhatsapp')],
                                     [
                                         'notifyBy.push_notification',
-                                        'Notify Via Push Notification',
+                                        t('notifications.notifyViaPush'),
                                     ],
                                     [
                                         'notifyBy.system_notification',
-                                        'Notify Via System Notification',
+                                        t('notifications.notifyViaSystem'),
                                     ],
                                 ] as const
                             ).map(([name, label]) => (
@@ -2378,10 +2595,10 @@ export function BulkScheduleGrid() {
 
                     <div>
                         <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                            Triggers
+                            {t('notifications.triggers')}
                         </div>
                         <p className="mt-0.5 text-xs text-neutral-500">
-                            Pick when notifications should fire on the channels above.
+                            {t('notifications.triggersHint')}
                         </p>
                         <div className="mt-3 flex flex-col gap-2">
                             <Controller
@@ -2399,14 +2616,14 @@ export function BulkScheduleGrid() {
                                                     : ''
                                             )}
                                         />
-                                        When the live class is created
+                                        {t('notifications.onCreate')}
                                     </label>
                                 )}
                             />
 
                             <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                                 <div className="text-sm font-medium text-neutral-800">
-                                    Notify before
+                                    {t('notifications.notifyBefore')}
                                 </div>
                                 <div className="mt-2 flex flex-col gap-2">
                                     {beforeLiveFields.map((bf, index) => (
@@ -2423,7 +2640,7 @@ export function BulkScheduleGrid() {
                                                         onValueChange={field.onChange}
                                                     >
                                                         <SelectTrigger className="h-9 w-56">
-                                                            <SelectValue placeholder="Select reminder time" />
+                                                            <SelectValue placeholder={t('notifications.selectReminderTime')} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {TimeOptions.map((opt) => (
@@ -2445,7 +2662,7 @@ export function BulkScheduleGrid() {
                                                 className="text-danger-500"
                                                 onClick={() => beforeLiveRemove(index)}
                                             >
-                                                Remove
+                                                {t('notifications.remove')}
                                             </Button>
                                         </div>
                                     ))}
@@ -2456,7 +2673,7 @@ export function BulkScheduleGrid() {
                                         onClick={() => beforeLiveAppend({ time: '5m' })}
                                         className="w-fit gap-1"
                                     >
-                                        <Plus size={14} /> Add reminder
+                                        <Plus size={14} /> {t('notifications.addReminder')}
                                     </Button>
                                 </div>
                             </div>
@@ -2476,7 +2693,7 @@ export function BulkScheduleGrid() {
                                                     : ''
                                             )}
                                         />
-                                        When class goes live
+                                        {t('notifications.onLive')}
                                     </label>
                                 )}
                             />
@@ -2495,7 +2712,7 @@ export function BulkScheduleGrid() {
                                                     : ''
                                             )}
                                         />
-                                        When attendance is marked (present/absent)
+                                        {t('notifications.onAttendance')}
                                     </label>
                                 )}
                             />
@@ -2511,17 +2728,18 @@ export function BulkScheduleGrid() {
                     onClick={form.handleSubmit(
                         () => setPreviewOpen(true),
                         () =>
-                            toast.error(
-                                'Some rows have errors. Please fix them before previewing.'
-                            )
+                            toast.error(t('toast.rowsHaveErrorsBeforePreview'))
                     )}
                     disable={submitting}
                 >
                     {submitting
                         ? createProgress
-                            ? `Scheduling ${createProgress.done}/${createProgress.total}…`
-                            : 'Scheduling…'
-                        : 'Preview & create'}
+                            ? t('footer.schedulingProgress', {
+                                  done: createProgress.done,
+                                  total: createProgress.total,
+                              })
+                            : t('footer.scheduling')
+                        : t('footer.previewAndCreate')}
                 </MyButton>
             </div>
 
@@ -2539,12 +2757,15 @@ export function BulkScheduleGrid() {
                 submitting={submitting}
                 submittingLabel={
                     createProgress
-                        ? `Scheduling ${createProgress.done}/${createProgress.total}…`
-                        : 'Scheduling…'
+                        ? t('footer.schedulingProgress', {
+                              done: createProgress.done,
+                              total: createProgress.total,
+                          })
+                        : t('footer.scheduling')
                 }
                 onConfirm={async () => {
                     await form.handleSubmit(onSubmit, () =>
-                        toast.error('Some rows have errors. Please fix them.')
+                        toast.error(t('toast.rowsHaveErrors'))
                     )();
                     setPreviewOpen(false);
                 }}
@@ -2576,10 +2797,14 @@ export function BulkScheduleGrid() {
                 validCount={previewValidCount}
                 courses={courses ?? []}
                 sessionList={sessionList}
+                attendanceOnly={
+                    liveSessionSettings.attendanceOnlyMode &&
+                    !form.watch('sharedOptions.showToLearners')
+                }
             />
 
             <MyDialog
-                heading="Preview Registration Form"
+                heading={t('registrationPreviewDialog.heading')}
                 onOpenChange={setRegPreviewOpen}
                 open={regPreviewOpen}
             >
@@ -2611,14 +2836,14 @@ export function BulkScheduleGrid() {
                         className="mt-4 w-fit"
                         disable
                     >
-                        Register Now
+                        {t('registration.registerNow')}
                     </MyButton>
                 </div>
             </MyDialog>
 
             {recordingDestRowIndex !== null && (
                 <MyDialog
-                    heading="Recording destinations"
+                    heading={t('recordingDestDialog.heading')}
                     onOpenChange={(o) => {
                         if (!o) setRecordingDestRowIndex(null);
                     }}
@@ -2627,15 +2852,11 @@ export function BulkScheduleGrid() {
                 >
                     <div className="flex flex-col gap-4 p-6">
                         <p className="text-caption text-neutral-500">
-                            Recordings of this class are auto-added to the chosen chapter as
-                            Published video slides. Your choice applies to every other row
-                            using the same batch; unconfigured batches use the
-                            institute&apos;s default destination.
+                            {t('recordingDestDialog.description')}
                         </p>
                         {recordingDestRowBatches.length === 0 ? (
                             <p className="rounded-md border border-warning-200 bg-warning-50 p-3 text-caption text-warning-700">
-                                Assign batches to this row first — each batch gets its own
-                                chapter picker here.
+                                {t('recordingDestDialog.assignBatchesFirst')}
                             </p>
                         ) : (
                             <SessionContentDestinationPicker
@@ -2683,20 +2904,20 @@ export function BulkScheduleGrid() {
                             <div className="min-w-0 flex-1">
                                 <DialogTitle>
                                     {resultDialog && resultDialog.failed > 0
-                                        ? 'Bulk creation finished with errors'
-                                        : 'Bulk scheduling complete'}
+                                        ? t('resultDialog.errorsTitle')
+                                        : t('resultDialog.successTitle')}
                                 </DialogTitle>
                                 <DialogDescription className="mt-1">
                                     {resultDialog && resultDialog.failed > 0
-                                        ? 'Successful sessions already have participants & notifications applied. Download the report for a row-wise status, then fix the failed rows and retry.'
-                                        : 'All sessions were scheduled successfully. Download the report for a row-wise record.'}
+                                        ? t('resultDialog.errorsDescription')
+                                        : t('resultDialog.successDescription')}
                                 </DialogDescription>
                             </div>
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-success-50 px-2.5 py-1 text-sm font-medium text-success-700">
                                 <CheckCircle size={14} weight="fill" />
-                                {resultDialog?.created ?? 0} created
+                                {resultDialog?.created ?? 0} {t('resultDialog.created')}
                             </span>
                             <span
                                 className={cn(
@@ -2707,14 +2928,14 @@ export function BulkScheduleGrid() {
                                 )}
                             >
                                 <Warning size={14} />
-                                {resultDialog?.failed ?? 0} failed
+                                {resultDialog?.failed ?? 0} {t('resultDialog.failed')}
                             </span>
                         </div>
                     </DialogHeader>
                     {resultDialog && resultDialog.failed > 0 && (
                         <div className="flex flex-col gap-1.5">
                             <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                                Failed rows ({resultDialog.failed})
+                                {t('resultDialog.failedRowsHeading', { count: resultDialog.failed })}
                             </p>
                             <ScrollArea className="max-h-60 w-full overflow-x-hidden rounded-md border border-neutral-200 sm:max-h-72">
                                 <ul className="divide-y divide-neutral-100 text-sm">
@@ -2731,11 +2952,11 @@ export function BulkScheduleGrid() {
                                                 />
                                                 <div className="min-w-0 flex-1">
                                                     <div className="break-words font-medium text-neutral-800">
-                                                        Row {f.index + 1}
+                                                        {t('resultDialog.rowLabel', { number: f.index + 1 })}
                                                         {f.title ? `: ${f.title}` : ''}
                                                     </div>
                                                     <div className="whitespace-pre-wrap break-words text-xs text-danger-600">
-                                                        {f.error || 'Unknown error'}
+                                                        {f.error || t('resultDialog.unknownError')}
                                                     </div>
                                                 </div>
                                             </li>
@@ -2749,11 +2970,11 @@ export function BulkScheduleGrid() {
                             variant="outline"
                             className="w-full sm:w-auto"
                             onClick={() =>
-                                resultDialog && downloadResultsCsv(resultDialog.results)
+                                resultDialog && downloadResultsCsv(resultDialog.results, t)
                             }
                         >
                             <DownloadSimple size={16} className="mr-1.5" />
-                            Download results (CSV)
+                            {t('resultDialog.downloadResults')}
                         </Button>
                         {resultDialog && resultDialog.failed > 0 && (
                             <Button
@@ -2761,7 +2982,7 @@ export function BulkScheduleGrid() {
                                 className="w-full sm:w-auto"
                                 onClick={() => setResultDialog(null)}
                             >
-                                Stay & retry
+                                {t('resultDialog.stayAndRetry')}
                             </Button>
                         )}
                         <Button
@@ -2771,7 +2992,7 @@ export function BulkScheduleGrid() {
                             disabled={!resultDialog || resultDialog.created === 0}
                             className="w-full bg-primary-500 hover:bg-primary-600 sm:w-auto"
                         >
-                            Done — view sessions
+                            {t('resultDialog.doneViewSessions')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -2795,6 +3016,7 @@ interface RowBatchPickerProps {
 }
 
 const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPickerProps) => {
+    const { t } = useTranslation('studyLibraryBulkScheduleGrid');
     const [activeSessionId, setActiveSessionId] = useState<string | undefined>(
         () => sessionList[0]?.id
     );
@@ -2874,8 +3096,8 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                 >
                     <UsersThreeIcon size={14} />
                     {value.length === 0
-                        ? 'Assign batches'
-                        : `${value.length} batch${value.length === 1 ? '' : 'es'}`}
+                        ? t('rowBatchPicker.assignBatches')
+                        : t('rowBatchPicker.batchCount', { count: value.length })}
                 </Button>
             </PopoverTrigger>
             <PopoverContent
@@ -2886,14 +3108,14 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                 <div className="space-y-2 border-b border-neutral-200 p-3">
                     <div>
                         <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                            Session
+                            {t('rowBatchPicker.session')}
                         </div>
                         <Select
                             value={activeSessionId ?? ''}
                             onValueChange={(v) => setActiveSessionId(v)}
                         >
                             <SelectTrigger className="mt-1 h-8 w-full">
-                                <SelectValue placeholder="Select session" />
+                                <SelectValue placeholder={t('rowBatchPicker.selectSession')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {sessionList.map((s) => (
@@ -2912,7 +3134,7 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                         <Input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search courses or batches…"
+                            placeholder={t('rowBatchPicker.searchPlaceholder')}
                             className="h-8 pl-7 pr-7 text-xs"
                         />
                         {search && (
@@ -2920,7 +3142,7 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                                 type="button"
                                 onClick={() => setSearch('')}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-neutral-400 hover:text-neutral-600"
-                                aria-label="Clear search"
+                                aria-label={t('rowBatchPicker.clearSearch')}
                             >
                                 <XIcon size={12} />
                             </button>
@@ -2932,8 +3154,8 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                         {visibleCourses.length === 0 && (
                             <div className="py-6 text-center text-xs text-neutral-500">
                                 {search.trim()
-                                    ? 'No courses or batches match your search.'
-                                    : 'No courses available for this session.'}
+                                    ? t('rowBatchPicker.noMatch')
+                                    : t('rowBatchPicker.noCourses')}
                             </div>
                         )}
                         <div className="flex flex-col gap-3">
@@ -3017,7 +3239,7 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                 {value.length > 0 && (
                     <div className="flex items-center justify-between border-t border-neutral-200 px-3 py-2">
                         <span className="text-xs text-neutral-500">
-                            {value.length} batch{value.length === 1 ? '' : 'es'} selected
+                            {t('rowBatchPicker.batchesSelected', { count: value.length })}
                         </span>
                         <Button
                             type="button"
@@ -3026,7 +3248,7 @@ const RowBatchPicker = ({ value, onChange, courses, sessionList }: RowBatchPicke
                             className="h-7 text-xs text-danger-600"
                             onClick={() => onChange([])}
                         >
-                            Clear
+                            {t('rowBatchPicker.clear')}
                         </Button>
                     </div>
                 )}
@@ -3066,6 +3288,9 @@ interface RowWaitingRoomPickerProps {
 }
 
 const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerProps) => {
+    const { t } = useTranslation(['studyLibraryBulkScheduleGrid', 'studyLibraryOptions']);
+    const WAITING_ROOM_OPTIONS = useMemo(() => buildWaitingRoomOptions(t), [t]);
+    const WAITING_ROOM_TYPE_OPTIONS = useMemo(() => buildWaitingRoomTypeOptions(t), [t]);
     // Resolved (effective) values shown in the cell summary and pre-filled in
     // the popover. If the row hasn't customised a field, fall back to shared.
     const effectiveEnabled = row?.waitingRoomEnabled ?? shared.enableWaitingRoom;
@@ -3106,7 +3331,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
             onChange({ thumbnailFileId: fileId });
         } catch (err) {
             console.error('Per-row thumbnail upload failed', err);
-            toast.error('Failed to upload thumbnail. Please try again.');
+            toast.error(t('toast.thumbnailUploadFailed'));
         } finally {
             setUploading(false);
         }
@@ -3123,7 +3348,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
             onChange({ musicFileId: fileId });
         } catch (err) {
             console.error('Per-row background music upload failed', err);
-            toast.error('Failed to upload background score. Please try again.');
+            toast.error(t('toast.backgroundScoreUploadFailed'));
         } finally {
             setMusicUploading(false);
         }
@@ -3145,19 +3370,19 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                 >
                     <UsersThreeIcon size={14} />
                     {!effectiveEnabled ? (
-                        <span>Off</span>
+                        <span>{t('waitingRoomPicker.off')}</span>
                     ) : (
                         <span className="flex items-center gap-1">
                             {effectiveMinutes}m
                             {effectiveThumb && (
-                                <span title="Thumbnail attached">·🖼</span>
+                                <span title={t('waitingRoomPicker.thumbnailAttached')}>·🖼</span>
                             )}
                             {isOverridden && (
                                 <span
                                     className="ml-1 rounded-full bg-primary-100 px-1.5 text-[9px] font-semibold text-primary-700"
-                                    title="This row overrides the shared default"
+                                    title={t('waitingRoomPicker.overrideTooltip')}
                                 >
-                                    OVR
+                                    {t('waitingRoomPicker.overrideBadge')}
                                 </span>
                             )}
                         </span>
@@ -3173,10 +3398,10 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <div className="text-sm font-medium text-neutral-800">
-                                Waiting room
+                                {t('waitingRoomPicker.title')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-500">
-                                Override the shared default for this row.
+                                {t('waitingRoomPicker.description')}
                             </div>
                         </div>
                         <Switch
@@ -3189,7 +3414,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                     <div className="space-y-3 p-3">
                         <div>
                             <label className="text-xs font-medium text-neutral-600">
-                                Waiting room type
+                                {t('waitingRoomPicker.typeLabel')}
                             </label>
                             <Select
                                 value={effectiveWaitingRoomType}
@@ -3209,7 +3434,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                         </div>
                         <div>
                             <label className="text-xs font-medium text-neutral-600">
-                                Open before start
+                                {t('waitingRoomPicker.openBeforeLabel')}
                             </label>
                             <Select
                                 value={effectiveMinutes}
@@ -3231,7 +3456,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                             <>
                         <div>
                             <label className="text-xs font-medium text-neutral-600">
-                                Thumbnail
+                                {t('waitingRoomPicker.thumbnailLabel')}
                             </label>
                             <input
                                 ref={(el) => {
@@ -3254,11 +3479,13 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                                     className="h-8"
                                 >
                                     <UploadSimple size={14} className="mr-1" />
-                                    {effectiveThumb ? 'Replace' : 'Upload'}
+                                    {effectiveThumb
+                                        ? t('waitingRoomPicker.replace')
+                                        : t('waitingRoomPicker.upload')}
                                 </Button>
                                 {uploading && (
                                     <span className="text-xs text-neutral-500">
-                                        Uploading…
+                                        {t('waitingRoomPicker.uploading')}
                                     </span>
                                 )}
                                 {effectiveThumb && !uploading && (
@@ -3269,21 +3496,20 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                                         }
                                         className="text-xs text-danger-600"
                                     >
-                                        Remove
+                                        {t('waitingRoomPicker.remove')}
                                     </button>
                                 )}
                             </div>
                             {!row?.waitingRoomThumbnailFileId &&
                                 shared.waitingRoomThumbnailFileId && (
                                     <p className="mt-1 text-[11px] text-neutral-400">
-                                        Using shared thumbnail. Upload here to override
-                                        for this row only.
+                                        {t('waitingRoomPicker.usingSharedThumbnail')}
                                     </p>
                                 )}
                         </div>
                         <div>
                             <label className="text-xs font-medium text-neutral-600">
-                                Background score
+                                {t('waitingRoomPicker.backgroundScoreLabel')}
                             </label>
                             <input
                                 ref={(el) => {
@@ -3306,17 +3532,19 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                                     className="h-8"
                                 >
                                     <UploadSimple size={14} className="mr-1" />
-                                    {effectiveMusic ? 'Replace' : 'Upload'}
+                                    {effectiveMusic
+                                        ? t('waitingRoomPicker.replace')
+                                        : t('waitingRoomPicker.upload')}
                                 </Button>
                                 {musicUploading && (
                                     <span className="text-xs text-neutral-500">
-                                        Uploading…
+                                        {t('waitingRoomPicker.uploading')}
                                     </span>
                                 )}
                                 {effectiveMusic && !musicUploading && (
                                     <span className="flex items-center gap-1 text-xs text-neutral-700">
                                         <MusicNote size={12} />
-                                        attached
+                                        {t('waitingRoomPicker.attached')}
                                     </span>
                                 )}
                                 {effectiveMusic && !musicUploading && (
@@ -3327,15 +3555,14 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                                         }
                                         className="text-xs text-danger-600"
                                     >
-                                        Remove
+                                        {t('waitingRoomPicker.remove')}
                                     </button>
                                 )}
                             </div>
                             {!row?.waitingRoomMusicFileId &&
                                 shared.waitingRoomMusicFileId && (
                                     <p className="mt-1 text-[11px] text-neutral-400">
-                                        Using shared background score. Upload here to
-                                        override for this row only.
+                                        {t('waitingRoomPicker.usingSharedMusic')}
                                     </p>
                                 )}
                         </div>
@@ -3346,7 +3573,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                 {isOverridden && (
                     <div className="flex items-center justify-between border-t border-neutral-200 px-3 py-2">
                         <span className="text-[11px] text-neutral-500">
-                            Row overrides shared default
+                            {t('waitingRoomPicker.overriddenHint')}
                         </span>
                         <Button
                             type="button"
@@ -3355,7 +3582,7 @@ const RowWaitingRoomPicker = ({ row, shared, onChange }: RowWaitingRoomPickerPro
                             className="h-7 text-xs text-neutral-600"
                             onClick={() => onChange({ reset: true })}
                         >
-                            Reset to default
+                            {t('waitingRoomPicker.resetToDefault')}
                         </Button>
                     </div>
                 )}
@@ -3381,6 +3608,7 @@ function RowRecordingDestCell({
     resolveRowBatches: RowEditorProps['resolveRowBatches'];
     onOpen: (index: number) => void;
 }) {
+    const { t } = useTranslation('studyLibraryBulkScheduleGrid');
     const selectedLevels = useWatch({
         control,
         name: `rows.${index}.selectedLevels` as const,
@@ -3417,13 +3645,18 @@ function RowRecordingDestCell({
                         )}
                     >
                         <VideoCamera className="size-3.5" />
-                        {configured > 0 ? `${configured}/${batches.length} set` : 'Set chapter'}
+                        {configured > 0
+                            ? t('recordingDestCell.setCount', {
+                                  configured,
+                                  total: batches.length,
+                              })
+                            : t('recordingDestCell.setChapter')}
                     </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">
                     {disabled
-                        ? 'Assign batches to this row first'
-                        : 'Pick the chapter this class recording is auto-added to'}
+                        ? t('recordingDestCell.assignBatchesFirstTooltip')
+                        : t('recordingDestCell.pickChapterTooltip')}
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
@@ -3434,7 +3667,7 @@ type RowEditorProps = {
     index: number;
     form: UseFormReturn<BulkSessionForm>;
     subjectOptions: Array<{ value: string; label: string }>;
-    filteredStreamingOptions: typeof STREAMING_OPTIONS;
+    filteredStreamingOptions: ReturnType<typeof buildStreamingOptions>;
     courses: RowBatchPickerProps['courses'];
     sessionList: DropdownItemType[];
     descriptionEnabled: boolean;
@@ -3445,6 +3678,9 @@ type RowEditorProps = {
     resolveRowBatches: (
         selectedLevels: Array<{ courseId: string; sessionId: string; levelId: string }>
     ) => DestinationBatch[];
+    /** Staff directory for the Teacher cell — owned by the parent so it is fetched once. */
+    teacherDirectory: TeacherDirectory;
+    onApplyTeachersToAll: (entries: string[]) => void;
     disableRemove: boolean;
     onDuplicate: (index: number) => void;
     onRemove: (index: number) => void;
@@ -3471,10 +3707,13 @@ const RowEditor = memo(function RowEditor({
     showRecordingDest,
     onOpenRecordingDest,
     resolveRowBatches,
+    teacherDirectory,
+    onApplyTeachersToAll,
     disableRemove,
     onDuplicate,
     onRemove,
 }: RowEditorProps) {
+    const { t } = useTranslation('studyLibraryBulkScheduleGrid');
     const { control } = form;
     const { errors } = useFormState({ control, name: `rows.${index}` as const });
     const rowErrors = errors.rows?.[index];
@@ -3514,7 +3753,7 @@ const RowEditor = memo(function RowEditor({
                                     className="ml-1 inline text-danger-600"
                                 />
                             </TooltipTrigger>
-                            <TooltipContent>Row has validation errors</TooltipContent>
+                            <TooltipContent>{t('rowEditor.rowHasErrors')}</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
                 )}
@@ -3522,7 +3761,7 @@ const RowEditor = memo(function RowEditor({
             <TableCell>
                 <Input
                     {...form.register(`rows.${index}.title` as const)}
-                    placeholder="e.g. Algebra Recap"
+                    placeholder={t('rowEditor.titlePlaceholder')}
                     className="h-8"
                 />
                 {rowErrors?.title && (
@@ -3543,10 +3782,10 @@ const RowEditor = memo(function RowEditor({
                             }
                         >
                             <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Select" />
+                                <SelectValue placeholder={t('rowEditor.selectPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="__none__">None</SelectItem>
+                                <SelectItem value="__none__">{t('rowEditor.none')}</SelectItem>
                                 {subjectOptions.map((opt) => (
                                     <SelectItem key={opt.value} value={opt.value}>
                                         {opt.label}
@@ -3628,7 +3867,11 @@ const RowEditor = memo(function RowEditor({
             <TableCell>
                 <Input
                     {...form.register(`rows.${index}.link` as const)}
-                    placeholder={linkRequired ? 'https://…' : 'Auto-generated'}
+                    placeholder={
+                        linkRequired
+                            ? t('rowEditor.linkPlaceholderUrl')
+                            : t('rowEditor.linkPlaceholderAuto')
+                    }
                     disabled={!linkRequired}
                     className="h-8"
                 />
@@ -3656,6 +3899,20 @@ const RowEditor = memo(function RowEditor({
                         {rowErrors.selectedLevels.message as string}
                     </p>
                 )}
+            </TableCell>
+            <TableCell>
+                <Controller
+                    control={control}
+                    name={`rows.${index}.instructorIdentifiers` as const}
+                    render={({ field }) => (
+                        <RowTeacherPicker
+                            value={field.value ?? []}
+                            onChange={field.onChange}
+                            directory={teacherDirectory}
+                            onApplyToAll={onApplyTeachersToAll}
+                        />
+                    )}
+                />
             </TableCell>
             {showRecordingDest && (
                 <TableCell>
@@ -3771,7 +4028,7 @@ const RowEditor = memo(function RowEditor({
                                                 {plain
                                                     ? plain.slice(0, 28) +
                                                       (plain.length > 28 ? '…' : '')
-                                                    : 'Add description'}
+                                                    : t('rowEditor.addDescription')}
                                             </span>
                                         </Button>
                                     </PopoverTrigger>
@@ -3781,7 +4038,7 @@ const RowEditor = memo(function RowEditor({
                                         onOpenAutoFocus={(e) => e.preventDefault()}
                                     >
                                         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                                            Description for row {index + 1}
+                                            {t('rowEditor.descriptionForRow', { number: index + 1 })}
                                         </div>
                                         <RichTextEditor
                                             value={field.value || ''}
@@ -3798,7 +4055,7 @@ const RowEditor = memo(function RowEditor({
                                                     className="text-xs text-neutral-500"
                                                     onClick={() => field.onChange('')}
                                                 >
-                                                    Clear
+                                                    {t('rowEditor.clear')}
                                                 </Button>
                                             </div>
                                         )}
@@ -3824,7 +4081,7 @@ const RowEditor = memo(function RowEditor({
                                     <Copy size={14} />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Duplicate row</TooltipContent>
+                            <TooltipContent>{t('rowEditor.duplicateRow')}</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
                     <TooltipProvider>
@@ -3841,7 +4098,7 @@ const RowEditor = memo(function RowEditor({
                                     <Trash size={14} />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Remove row</TooltipContent>
+                            <TooltipContent>{t('rowEditor.removeRow')}</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
                 </div>
@@ -3857,6 +4114,7 @@ function ReadyCountBadge({
     control: UseFormReturn<BulkSessionForm>['control'];
     totalRows: number;
 }) {
+    const { t } = useTranslation('studyLibraryBulkScheduleGrid');
     const rows = useWatch({ control, name: 'rows' });
     const accessType = useWatch({ control, name: 'accessType' });
     const validRowCount = (rows ?? []).filter((r) => isRowReady(r, accessType)).length;
@@ -3870,7 +4128,7 @@ function ReadyCountBadge({
                     : ''
             )}
         >
-            {validRowCount}/{totalRows} ready
+            {t('readyCountBadge.ready', { ready: validRowCount, total: totalRows })}
         </Badge>
     );
 }

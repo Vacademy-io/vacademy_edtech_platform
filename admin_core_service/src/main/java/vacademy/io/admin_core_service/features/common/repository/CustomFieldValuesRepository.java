@@ -16,6 +16,46 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
 
     List<CustomFieldValues> findBySourceTypeAndSourceId(String sourceType, String sourceId);
 
+    /**
+     * Latest non-empty value of one custom field for a user, from their own profile row or
+     * from any lead response that belongs to them. Used to pick an invoice numbering series.
+     */
+    @Query(value = "SELECT v.value FROM custom_field_values v "
+            + "WHERE v.custom_field_id = :fieldId AND v.value <> '' "
+            + "AND ((v.source_type = :userSourceType AND v.source_id = :userId) "
+            + "OR (v.source_type = :leadSourceType AND v.source_id IN "
+            + "(SELECT ar.id FROM audience_response ar WHERE ar.user_id = :userId))) "
+            + "ORDER BY COALESCE(v.updated_at, v.created_at) DESC LIMIT 1", nativeQuery = true)
+    List<String> findLatestValuesForUser(@Param("fieldId") String fieldId,
+                                         @Param("userId") String userId,
+                                         @Param("userSourceType") String userSourceType,
+                                         @Param("leadSourceType") String leadSourceType);
+
+    /**
+     * Latest non-empty value of one custom field on an enrolment: the rows on the
+     * student-session mappings of a user plan. Used to pin an invoice numbering series.
+     */
+    @Query(value = "SELECT v.value FROM custom_field_values v "
+            + "JOIN student_session_institute_group_mapping m ON m.id = v.source_id "
+            + "WHERE v.custom_field_id = :fieldId AND v.source_type = :sourceType "
+            + "AND m.user_plan_id = :userPlanId AND v.value <> '' "
+            + "ORDER BY COALESCE(v.updated_at, v.created_at) DESC LIMIT 1", nativeQuery = true)
+    List<String> findLatestValuesForUserPlan(@Param("fieldId") String fieldId,
+                                             @Param("userPlanId") String userPlanId,
+                                             @Param("sourceType") String sourceType);
+
+    /** {@link #findLatestValuesForUserPlan} for enrolment rows; null when there is none. */
+    default String findLatestValueForEnrollment(String fieldId, String userPlanId) {
+        List<String> values = findLatestValuesForUserPlan(fieldId, userPlanId, "STUDENT_SESSION_INSTITUTE_GROUP_MAPPING");
+        return values == null || values.isEmpty() ? null : values.get(0);
+    }
+
+    /** {@link #findLatestValuesForUser} for the profile and lead sources; null when there is none. */
+    default String findLatestValueForUser(String fieldId, String userId) {
+        List<String> values = findLatestValuesForUser(fieldId, userId, "USER", "AUDIENCE_RESPONSE");
+        return values == null || values.isEmpty() ? null : values.get(0);
+    }
+
     @Query("SELECT cfv FROM CustomFieldValues cfv " +
             "JOIN CustomFields cf ON cf.id = cfv.customFieldId " +
             "WHERE cfv.sourceId = :sourceId " +
@@ -158,29 +198,40 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
      * custom_field_values(source_type='USER') → student_session_institute_group_mapping
      * on user_id, mirroring how InstituteStudentRepositoryImpl's per-row custom-field
      * EXISTS filter resolves USER-scoped values. `:search` is a case-insensitive
-     * substring (blank = all values).
+     * substring (blank = all values). JSON-array answers (MULTI_SELECT) are
+     * split into one value per option, as in findDistinctLeadCustomFieldValues.
      */
     @Query(value = """
-                SELECT DISTINCT cfv.value
+                SELECT DISTINCT opt.v
                 FROM custom_field_values cfv
                 JOIN student_session_institute_group_mapping ssigm ON ssigm.user_id = cfv.source_id
+                CROSS JOIN LATERAL jsonb_array_elements_text(
+                    CASE WHEN cfv.value LIKE '[%' AND pg_input_is_valid(cfv.value, 'jsonb')
+                         THEN CAST(cfv.value AS jsonb)
+                         ELSE jsonb_build_array(cfv.value) END) AS opt(v)
                 WHERE cfv.source_type = 'USER'
                   AND ssigm.institute_id = :instituteId
                   AND cfv.custom_field_id = :customFieldId
                   AND cfv.value IS NOT NULL
                   AND cfv.value <> ''
-                  AND (COALESCE(:search, '') = '' OR cfv.value ILIKE CONCAT('%', :search, '%'))
-                ORDER BY cfv.value ASC
+                  AND opt.v <> ''
+                  AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                ORDER BY opt.v ASC
             """, countQuery = """
-                SELECT COUNT(DISTINCT cfv.value)
+                SELECT COUNT(DISTINCT opt.v)
                 FROM custom_field_values cfv
                 JOIN student_session_institute_group_mapping ssigm ON ssigm.user_id = cfv.source_id
+                CROSS JOIN LATERAL jsonb_array_elements_text(
+                    CASE WHEN cfv.value LIKE '[%' AND pg_input_is_valid(cfv.value, 'jsonb')
+                         THEN CAST(cfv.value AS jsonb)
+                         ELSE jsonb_build_array(cfv.value) END) AS opt(v)
                 WHERE cfv.source_type = 'USER'
                   AND ssigm.institute_id = :instituteId
                   AND cfv.custom_field_id = :customFieldId
                   AND cfv.value IS NOT NULL
                   AND cfv.value <> ''
-                  AND (COALESCE(:search, '') = '' OR cfv.value ILIKE CONCAT('%', :search, '%'))
+                  AND opt.v <> ''
+                  AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
             """, nativeQuery = true)
     Page<String> findDistinctStudentCustomFieldValues(
             @Param("instituteId") String instituteId,
@@ -195,54 +246,75 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
      * answers (leads, scoped via audience_response → audience). Powers the
      * searchable multi-select custom-field dropdowns on the All Contacts page,
      * mirroring findDistinctStudentCustomFieldValues /
-     * findDistinctLeadCustomFieldValues for their surfaces.
+     * findDistinctLeadCustomFieldValues for their surfaces, including splitting
+     * JSON-array answers into one value per option.
      */
     @Query(value = """
                 SELECT value FROM (
-                    SELECT DISTINCT cfv.value
+                    SELECT DISTINCT opt.v AS value
                     FROM custom_field_values cfv
                     JOIN student_session_institute_group_mapping ssigm ON ssigm.user_id = cfv.source_id
+                    CROSS JOIN LATERAL jsonb_array_elements_text(
+                        CASE WHEN cfv.value LIKE '[%' AND pg_input_is_valid(cfv.value, 'jsonb')
+                             THEN CAST(cfv.value AS jsonb)
+                             ELSE jsonb_build_array(cfv.value) END) AS opt(v)
                     WHERE cfv.source_type = 'USER'
                       AND ssigm.institute_id = :instituteId
                       AND cfv.custom_field_id = :customFieldId
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
-                      AND (COALESCE(:search, '') = '' OR cfv.value ILIKE CONCAT('%', :search, '%'))
+                      AND opt.v <> ''
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
                     UNION
-                    SELECT DISTINCT cfv.value
+                    SELECT DISTINCT opt.v AS value
                     FROM custom_field_values cfv
                     JOIN audience_response ar ON ar.id = cfv.source_id
                     JOIN audience a ON a.id = ar.audience_id
+                    CROSS JOIN LATERAL jsonb_array_elements_text(
+                        CASE WHEN cfv.value LIKE '[%' AND pg_input_is_valid(cfv.value, 'jsonb')
+                             THEN CAST(cfv.value AS jsonb)
+                             ELSE jsonb_build_array(cfv.value) END) AS opt(v)
                     WHERE cfv.source_type = 'AUDIENCE_RESPONSE'
                       AND a.institute_id = :instituteId
                       AND cfv.custom_field_id = :customFieldId
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
-                      AND (COALESCE(:search, '') = '' OR cfv.value ILIKE CONCAT('%', :search, '%'))
+                      AND opt.v <> ''
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
                 ) combined
                 ORDER BY value ASC
             """, countQuery = """
                 SELECT COUNT(*) FROM (
-                    SELECT DISTINCT cfv.value
+                    SELECT DISTINCT opt.v AS value
                     FROM custom_field_values cfv
                     JOIN student_session_institute_group_mapping ssigm ON ssigm.user_id = cfv.source_id
+                    CROSS JOIN LATERAL jsonb_array_elements_text(
+                        CASE WHEN cfv.value LIKE '[%' AND pg_input_is_valid(cfv.value, 'jsonb')
+                             THEN CAST(cfv.value AS jsonb)
+                             ELSE jsonb_build_array(cfv.value) END) AS opt(v)
                     WHERE cfv.source_type = 'USER'
                       AND ssigm.institute_id = :instituteId
                       AND cfv.custom_field_id = :customFieldId
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
-                      AND (COALESCE(:search, '') = '' OR cfv.value ILIKE CONCAT('%', :search, '%'))
+                      AND opt.v <> ''
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
                     UNION
-                    SELECT DISTINCT cfv.value
+                    SELECT DISTINCT opt.v AS value
                     FROM custom_field_values cfv
                     JOIN audience_response ar ON ar.id = cfv.source_id
                     JOIN audience a ON a.id = ar.audience_id
+                    CROSS JOIN LATERAL jsonb_array_elements_text(
+                        CASE WHEN cfv.value LIKE '[%' AND pg_input_is_valid(cfv.value, 'jsonb')
+                             THEN CAST(cfv.value AS jsonb)
+                             ELSE jsonb_build_array(cfv.value) END) AS opt(v)
                     WHERE cfv.source_type = 'AUDIENCE_RESPONSE'
                       AND a.institute_id = :instituteId
                       AND cfv.custom_field_id = :customFieldId
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
-                      AND (COALESCE(:search, '') = '' OR cfv.value ILIKE CONCAT('%', :search, '%'))
+                      AND opt.v <> ''
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
                 ) combined
             """, nativeQuery = true)
     Page<String> findDistinctContactCustomFieldValues(

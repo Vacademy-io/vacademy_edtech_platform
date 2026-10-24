@@ -1,0 +1,161 @@
+{
+    "dialog": {
+        "heading": "Saisie de données hors ligne en masse"
+    },
+    "footer": {
+        "close": "Fermer",
+        "cancel": "Annuler",
+        "chooseAnotherFile": "Choisir un autre fichier",
+        "retryingText": "Nouvelle tentative...",
+        "importingText": "Importation...",
+        "retryImport": "Réessayer l'import",
+        "importStudents_one": "Importer {{count}} élève",
+        "importStudents_other": "Importer {{count}} élèves",
+        "importStudents_many": "Importer {{count}} élèves"
+    },
+    "pick": {
+        "errors": {
+            "studentsLoadFailed": {
+                "title": "Impossible de charger la liste des élèves",
+                "detail": "Les noms d'utilisateur ne peuvent pas être associés tant qu'elle n'est pas chargée. Fermez puis rouvrez cette boîte de dialogue pour réessayer."
+            },
+            "noBatchLearners": {
+                "title": "Aucun apprenant de lot dans cette évaluation",
+                "detail": "L'import en masse associe les élèves par nom d'utilisateur à partir des lots de l'évaluation. Ajoutez des lots à l'évaluation, ou saisissez ces élèves un par un."
+            },
+            "zipInvalid": {
+                "title": "Ce fichier zip n'a pas pu être utilisé"
+            }
+        },
+        "template": {
+            "title": "1. Partir d'un modèle",
+            "loadingStudents": "Chargement de la liste des élèves…",
+            "description_one": "Les deux téléchargements sont préremplis avec {{count}} élève de cette évaluation, il vous suffit donc de renseigner les notes et les noms de fichiers.",
+            "description_other": "Les deux téléchargements sont préremplis avec les {{count}} élèves de cette évaluation, il vous suffit donc de renseigner les notes et les noms de fichiers.",
+            "downloadCsv": "Télécharger le CSV",
+            "building": "Génération...",
+            "downloadSampleZip": "Télécharger l'exemple de zip",
+            "description_many": "Les deux téléchargements sont préremplis avec les {{count}} élèves de cette évaluation, il vous suffit donc de renseigner les notes et les noms de fichiers."
+        },
+        "upload": {
+            "title": "2. Importer le zip rempli",
+            "description": "Le zip doit contenir <manifest>manifest.csv</manifest> ainsi que vos PDF scannés. Les PDF placés dans <answers>answers/</answers>, <checked>checked/</checked> ou <reports>reports/</reports> et nommés d'après un nom d'utilisateur sont détectés automatiquement. Aucune colonne n'est requise — un fichier nommé d'après l'élève l'identifie de lui-même. Rien n'est enregistré tant que vous n'avez pas vérifié l'aperçu.",
+            "readingZip": "Lecture du zip...",
+            "clickOrDrag": "Cliquez pour importer ou glissez-déposez",
+            "zipOnly": ".zip uniquement"
+        }
+    },
+    "preview": {
+        "readyCount": "{{count}} prêt",
+        "pdfsToUpload_one": "{{count}} PDF à importer",
+        "pdfsToUpload_other": "{{count}} PDF à importer",
+        "problemsCount": "{{count}} avec des problèmes",
+        "downloadProblemsCsv": "Télécharger le CSV des problèmes",
+        "errors": {
+            "manifestInvalid": {
+                "title": "Ce manifeste ne peut pas être importé"
+            },
+            "importFailed": {
+                "title": "Échec de l'import",
+                "retryNote": "Vos fichiers sont déjà importés — « Réessayer l'import » les renvoie sans les recharger."
+            },
+            "noRowsReady": {
+                "title": "Aucune ligne n'est prête à être importée",
+                "detail": "Chaque ligne de manifest.csv comporte un problème. Corrigez les problèmes listés ci-dessous (ou téléchargez le CSV des problèmes) et importez à nouveau le zip."
+            }
+        },
+        "uploadFailures": {
+            "header_one": "{{count}} ligne a été ignorée car son fichier n'a pas pu être importé",
+            "header_other": "{{count}} lignes ont été ignorées car leurs fichiers n'ont pas pu être importés",
+            "lineDetail": "Ligne {{line}} ({{username}}) : {{errors}}",
+            "andMore_one": "…et {{count}} de plus — voir le CSV des problèmes.",
+            "andMore_other": "…et {{count}} de plus — voir le CSV des problèmes.",
+            "header_many": "{{count}} lignes ont été ignorées car leurs fichiers n'ont pas pu être importés",
+            "andMore_many": "…et {{count}} de plus — voir le CSV des problèmes."
+        },
+        "warnings": {
+            "marksReleased": "Les lignes comportant une valeur total_marks verront leur résultat communiqué à l'élève.",
+            "newAttempt": "Chaque import ajoute une nouvelle tentative par élève. Pour corriger des échecs, réimportez uniquement les lignes concernées — pas le fichier entier."
+        },
+        "ignoredColumns": {
+            "header": "Colonne(s) ignorée(s) : {{columns}}",
+            "hint": "Vérifiez une faute de frappe si vous attendiez que ces colonnes soient lues. Colonnes connues : {{columns}}."
+        },
+        "unreferencedFiles": {
+            "header_one": "{{count}} fichier du zip sera ignoré",
+            "header_other": "{{count}} fichiers du zip seront ignorés",
+            "noFileAttachedSuffix": " — aucune ligne n'a de fichier joint, seules les notes seraient donc importées",
+            "hint": "Nommez-les dans manifest.csv, ou placez-les dans <answers>answers/</answers>, <checked>checked/</checked> ou <reports>reports/</reports> nommés d'après le nom d'utilisateur de l'élève.",
+            "header_many": "{{count}} fichiers du zip seront ignorés"
+        },
+        "progress": {
+            "uploading": "Import de {{done}} fichier(s) sur {{total}}…"
+        },
+        "pdfsToUpload_many": "{{count}} PDF à importer"
+    },
+    "table": {
+        "headers": {
+            "line": "Ligne",
+            "student": "Élève",
+            "marks": "Notes",
+            "answer": "Réponse",
+            "checked": "Corrigé",
+            "report": "Rapport",
+            "status": "Statut"
+        },
+        "status": {
+            "ready": "Prêt"
+        },
+        "footerNote_one": "Affichage de {{visible}} lignes sur {{total}} — {{hidden}} de plus sera importée sans problème.",
+        "footerNote_other": "Affichage de {{visible}} lignes sur {{total}} — {{hidden}} de plus seront importées sans problème.",
+        "footerNote_many": "Affichage de {{visible}} lignes sur {{total}} — {{hidden}} de plus seront importées sans problème."
+    },
+    "done": {
+        "errors": {
+            "somethingWrong": {
+                "title": "Un problème est survenu"
+            }
+        },
+        "importedCount": "{{count}} importé(s)",
+        "notImportedCount": "{{count}} non importé(s)",
+        "resultLine": "{{rowLabel}} ({{username}}) : {{message}}"
+    },
+    "slotCell": {
+        "auto": "auto"
+    },
+    "common": {
+        "emptyValue": "—"
+    },
+    "toasts": {
+        "importedWithFailures_one": "{{success}} élève importé sur {{count}} — {{failed}} en échec.",
+        "importedWithFailures_other": "{{success}} élèves importés sur {{count}} — {{failed}} en échec.",
+        "importedSuccess_one": "{{count}} élève importé.",
+        "importedSuccess_other": "{{count}} élèves importés.",
+        "noProblemsToDownload": "Il n'y a aucun problème à télécharger.",
+        "importedWithFailures_many": "{{success}} élèves importés sur {{count}} — {{failed}} en échec.",
+        "importedSuccess_many": "{{count}} élèves importés."
+    },
+    "errors": {
+        "couldNotBuildCsvTemplate": "Impossible de générer le modèle CSV.",
+        "couldNotBuildSampleZip": "Impossible de générer l'exemple de zip.",
+        "couldNotReadZip": "Impossible de lire ce fichier zip.",
+        "noRowsUploaded": "Aucune ligne n'a pu être importée, rien n'a donc été importé. Consultez les problèmes ci-dessous.",
+        "bulkImportFailed": "L'import en masse a échoué. Veuillez réessayer.",
+        "couldNotBuildProblemsCsv": "Impossible de générer le CSV des problèmes.",
+        "uploadNoFileId": "l'import de « {{name}} » n'a renvoyé aucun identifiant de fichier",
+        "fileUploadFailed": "échec de l'import du fichier",
+        "importFailedGeneric": "Échec de l'import"
+    },
+    "validation": {
+        "notZip": "« {{fileName}} » n'est pas un fichier .zip. Placez manifest.csv et vos PDF dans une archive zip et importez-la.",
+        "emptyZip": "« {{fileName}} » est vide (0 octet). Recréez le zip et réessayez.",
+        "studentsNotLoaded": "La liste des élèves n'a pas pu être chargée, les noms d'utilisateur ne peuvent donc pas être associés. Fermez puis rouvrez cette boîte de dialogue pour réessayer.",
+        "noBatchLearners": "Cette évaluation n'a aucun apprenant de lot à associer. L'import en masse associe les élèves par nom d'utilisateur à partir des lots de l'évaluation.",
+        "noManifestFound": "Aucun manifest.csv trouvé dans ce zip. Téléchargez l'exemple de zip ci-dessus pour voir la mise en page attendue.",
+        "manifestEmpty": "{{manifestPath}} est vide. Renseignez au moins une ligne et recréez le zip.",
+        "manifestNoDataRows": "{{manifestPath}} contient un en-tête mais aucune ligne de données. Ajoutez une ligne par élève et recréez le zip."
+    },
+    "network": {
+        "unreachable": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+    }
+}

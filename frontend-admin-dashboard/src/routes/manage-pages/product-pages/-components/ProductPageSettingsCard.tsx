@@ -3,22 +3,44 @@ import {
     BookOpen,
     ShoppingCart,
     CreditCard,
-    ChevronRight,
-    CheckCircle2,
+    CaretRight as ChevronRight,
+    CheckCircle as CheckCircle2,
     FileText,
-    Mail,
-    MessageCircle,
+    Envelope as Mail,
+    ChatCircle as MessageCircle,
     Receipt,
-    Sparkles,
-    ArrowLeftRight,
+    Sparkle as Sparkles,
+    ArrowsLeftRight as ArrowLeftRight,
     Tag,
-    ExternalLink,
-} from 'lucide-react';
-import type { ProductPageSettings } from '../-types/product-page-types';
+    Percent,
+    Plus,
+    Trash as Trash2,
+    ArrowSquareOut as ExternalLink,
+    MagicWand,
+    Warning,
+} from '@phosphor-icons/react';
+import type { MappingRow, ProductPageSettings } from '../-types/product-page-types';
+import {
+    MAX_REDIRECT_DELAY_SECONDS,
+    REDIRECT_DELAY_PRESETS,
+    clampRedirectDelay,
+    redirectDelayLabel,
+    resolveRedirectTarget,
+} from '../-utils/redirect-settings';
+import { BasketPricingEditor } from './BasketPricingEditor';
+import { CourseFinderEditor } from './CourseFinderEditor';
+import { OffersEditor } from './OffersEditor';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface ProductPageSettingsCardProps {
     settings: ProductPageSettings;
     onChange: (updated: ProductPageSettings) => void;
+    /** The page's courses — the source of real level / course names to pick from. */
+    courses?: MappingRow[];
 }
 
 const Toggle = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
@@ -113,7 +135,11 @@ const STEPS = [
         id: 'CATALOG' as const,
         label: 'Catalog',
         icon: BookOpen,
-        description: 'Browse & select courses',
+        // Getter, not a string: STEPS is module-scope, so the institute's term
+        // must be read at render time, not frozen at import.
+        get description() {
+            return `Browse & select ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`;
+        },
         illustration: CatalogIllustration,
         color: 'blue',
     },
@@ -121,7 +147,9 @@ const STEPS = [
         id: 'CART' as const,
         label: 'Cart',
         icon: ShoppingCart,
-        description: 'Review selected courses',
+        get description() {
+            return `Review selected ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`;
+        },
         illustration: CartIllustration,
         color: 'violet',
     },
@@ -137,9 +165,23 @@ const STEPS = [
 
 // ─── Settings card ────────────────────────────────────────────────────────────
 
-export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSettingsCardProps) => {
+export const ProductPageSettingsCard = ({
+    settings,
+    onChange,
+    courses = [],
+}: ProductPageSettingsCardProps) => {
     const update = (patch: Partial<ProductPageSettings>) => onChange({ ...settings, ...patch });
     const selectedStepIndex = STEPS.findIndex((s) => s.id === settings.defaultStep);
+
+    // Post-enrollment redirect, resolved exactly as the checkout resolves it.
+    const redirectRaw = settings.afterPaymentRedirectUrl ?? '';
+    const redirectTarget = resolveRedirectTarget(redirectRaw);
+    const isAbsoluteRedirect = redirectTarget !== null && !redirectTarget.startsWith('/');
+    const delaySeconds = clampRedirectDelay(settings.afterPaymentRedirectDelaySeconds);
+    const redirectSummaryPrefix =
+        delaySeconds > 0
+            ? `Learners see the success screen for ${redirectDelayLabel(delaySeconds)}, then go to `
+            : 'Learners go straight to ';
 
     return (
         <div className="space-y-5">
@@ -214,6 +256,23 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
                         })}
                     </div>
 
+                    {/* A finder lives on the catalogue step. Landing anywhere
+                        else skips the question and drops the visitor on an
+                        empty basket, so the learner app now forces the
+                        catalogue — say so rather than letting the picker
+                        silently disagree with what is selected here. */}
+                    {settings.courseFinder?.enabled && settings.defaultStep !== 'CATALOG' && (
+                        <div className="mt-3 rounded-lg border border-warning-300 bg-warning-50 px-3 py-2">
+                            <p className="text-xs text-warning-700">
+                                {getTerminology(ContentTerms.Course, SystemTerms.Course)} Finder is
+                                on, so learners still land on <strong>Catalog</strong> — the class
+                                question has to be asked before there is anything in the cart. Turn
+                                the {getTerminology(ContentTerms.Course, SystemTerms.Course)} Finder
+                                off to use this landing step.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Flow label */}
                     <div className="mt-3 flex items-center gap-1 rounded-lg bg-neutral-50 px-3 py-2">
                         <span className="text-[10px] text-neutral-400">Learner flow:</span>
@@ -236,8 +295,8 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
                     {
                         icon: ShoppingCart,
                         color: 'text-primary-500 bg-primary-50',
-                        label: 'Course Deselection',
-                        description: 'Learners can remove pre-selected courses',
+                        label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Deselection`,
+                        description: `Learners can remove pre-selected ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`,
                         checked: settings.allowCourseDeselection,
                         onChange: () => update({ allowCourseDeselection: !settings.allowCourseDeselection }),
                     },
@@ -260,7 +319,7 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
                     {
                         icon: Sparkles,
                         color: 'text-violet-500 bg-violet-50',
-                        label: 'Suggested Courses',
+                        label: `Suggested ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`,
                         description: 'Show "people also buy" upsell in the cart',
                         checked: settings.suggestedCourses.enabled,
                         onChange: () => update({ suggestedCourses: { ...settings.suggestedCourses, enabled: !settings.suggestedCourses.enabled } }),
@@ -274,6 +333,94 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
                         onChange: () => update({ coupon: { enabled: !(settings.coupon?.enabled ?? false) } }),
                     },
                     {
+                        icon: Tag,
+                        color: 'text-rose-500 bg-rose-50',
+                        label: 'Offers',
+                        description: '“₹99 off above ₹500” — no code, applied automatically',
+                        checked: settings.offers?.enabled ?? false,
+                        panel: settings.offers ? (
+                            <OffersEditor
+                                value={settings.offers}
+                                onChange={(offers) => update({ offers })}
+                            />
+                        ) : null,
+                        onChange: () =>
+                            update({
+                                offers: {
+                                    rules: settings.offers?.rules?.length
+                                        ? settings.offers.rules
+                                        : [
+                                              {
+                                                  id: 'offer-default-1',
+                                                  label: '',
+                                                  minAmount: 500,
+                                                  discountType: 'FIXED',
+                                                  discountValue: 99,
+                                              },
+                                          ],
+                                    enabled: !(settings.offers?.enabled ?? false),
+                                },
+                            }),
+                    },
+                    {
+                        icon: MagicWand,
+                        color: 'text-sky-500 bg-sky-50',
+                        label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Finder`,
+                        description: `Ask “which class?” first, then show only those ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`,
+                        checked: settings.courseFinder?.enabled ?? false,
+                        panel: settings.courseFinder ? (
+                            <CourseFinderEditor
+                                value={settings.courseFinder}
+                                courses={courses ?? []}
+                                onChange={(courseFinder) => update({ courseFinder })}
+                            />
+                        ) : null,
+                        onChange: () =>
+                            update({
+                                courseFinder: {
+                                    // Buttons are kept across an off/on cycle —
+                                    // turning the screen off to preview the page
+                                    // must not throw away the grouping work.
+                                    heading: settings.courseFinder?.heading ?? '',
+                                    subheading: settings.courseFinder?.subheading ?? '',
+                                    changeLabel: settings.courseFinder?.changeLabel ?? '',
+                                    allowSkip: settings.courseFinder?.allowSkip ?? false,
+                                    skipLabel: settings.courseFinder?.skipLabel ?? '',
+                                    groups: settings.courseFinder?.groups ?? [],
+                                    enabled: !(settings.courseFinder?.enabled ?? false),
+                                },
+                            }),
+                    },
+                    {
+                        icon: Percent,
+                        color: 'text-pink-500 bg-pink-50',
+                        label: 'Basket Pricing',
+                        description: `Price by how many ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} they pick, not per ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`,
+                        checked: settings.basketPricing?.enabled ?? false,
+                        panel: settings.basketPricing ? (
+                            <BasketPricingEditor
+                                value={settings.basketPricing}
+                                courses={courses}
+                                onChange={(basketPricing) => update({ basketPricing })}
+                            />
+                        ) : null,
+                        onChange: () =>
+                            update({
+                                basketPricing: {
+                                    // Seeded so the panel has something real to edit
+                                    // the first time it is opened.
+                                    ladder: settings.basketPricing?.ladder ?? {
+                                        prices: [349, 599, 799],
+                                        perExtra: 150,
+                                    },
+                                    groups: settings.basketPricing?.groups ?? [],
+                                    wholeGroupPrices: settings.basketPricing?.wholeGroupPrices ?? {},
+                                    combos: settings.basketPricing?.combos ?? [],
+                                    enabled: !(settings.basketPricing?.enabled ?? false),
+                                },
+                            }),
+                    },
+                    {
                         icon: Receipt,
                         color: 'text-emerald-500 bg-emerald-50',
                         label: 'Invoice / Receipt',
@@ -281,16 +428,19 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
                         checked: settings.invoice.enabled,
                         onChange: () => update({ invoice: { ...settings.invoice, enabled: !settings.invoice.enabled } }),
                     },
-                ].map(({ icon: Icon, color, label, description, checked, onChange }) => (
-                    <div key={label} className="flex items-center gap-4 px-5 py-4">
-                        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${checked ? color : 'bg-neutral-100 text-neutral-400'}`}>
-                            <Icon className="size-4" />
+                ].map(({ icon: Icon, color, label, description, checked, onChange, panel }) => (
+                    <div key={label}>
+                        <div className="flex items-center gap-4 px-5 py-4">
+                            <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${checked ? color : 'bg-neutral-100 text-neutral-400'}`}>
+                                <Icon className="size-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-neutral-800">{label}</p>
+                                <p className="text-xs text-neutral-400">{description}</p>
+                            </div>
+                            <Toggle checked={checked} onChange={onChange} />
                         </div>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-neutral-800">{label}</p>
-                            <p className="text-xs text-neutral-400">{description}</p>
-                        </div>
-                        <Toggle checked={checked} onChange={onChange} />
+                        {checked && panel}
                     </div>
                 ))}
 
@@ -354,7 +504,12 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
             {settings.suggestedCourses.enabled && (
                 <div className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm space-y-3">
                     <p className="text-xs text-neutral-500">
-                        Configure how "people also buy" upsell courses appear to learners during checkout.
+                        Configure how "people also buy" upsell{' '}
+                        {getTerminologyPlural(
+                            ContentTerms.Course,
+                            SystemTerms.Course
+                        ).toLocaleLowerCase()}{' '}
+                        appear to learners during checkout.
                     </p>
                     <div>
                         <p className="mb-2 text-xs font-semibold text-violet-700 uppercase tracking-wide">Section Heading</p>
@@ -395,27 +550,149 @@ export const ProductPageSettingsCard = ({ settings, onChange }: ProductPageSetti
                     <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Post Enrollment Configuration</p>
                 </div>
 
-                {/* Redirect Path */}
-                <div className="px-5 py-4 space-y-2">
-                    <p className="text-sm font-semibold text-neutral-800">Redirect Path <span className="font-normal text-neutral-400">(Optional)</span></p>
+                {/* Redirect after enrollment */}
+                <div className="space-y-3 px-5 py-4">
+                    <div>
+                        <p className="text-sm font-semibold text-neutral-800">
+                            Redirect After Enrollment{' '}
+                            <span className="font-normal text-neutral-400">(Optional)</span>
+                        </p>
+                        <p className="mt-0.5 text-caption text-neutral-400">
+                            Hand the learner over to your own thank-you page once the enrollment is
+                            through. Leave empty to keep the built-in success page.
+                        </p>
+                    </div>
+
                     <Input
-                        placeholder="/dashboard or https://example.com"
-                        value={settings.afterPaymentRedirectUrl ?? ''}
+                        placeholder="https://example.com/thank-you or /dashboard"
+                        value={redirectRaw}
                         onChange={(e) => update({ afterPaymentRedirectUrl: e.target.value })}
-                        className="text-sm border-neutral-200 bg-neutral-50 focus:border-blue-400 focus:ring-blue-300"
+                        className="border-neutral-200 bg-neutral-50 text-sm focus:border-blue-400 focus:ring-blue-300"
                     />
-                    <p className="text-[11px] text-neutral-400">If set, the user will be instantly redirected to this path after successful enrollment, skipping the success page.</p>
+
+                    {/* What will actually happen, spelled out. A redirect can only
+                        be checked by enrolling, so the settings screen has to say
+                        where the learner lands and after how long — a typo that
+                        silently keeps the success page is otherwise invisible. */}
+                    {redirectRaw.trim() === '' ? (
+                        <p className="text-caption text-neutral-400">
+                            No redirect — learners stay on the success page.
+                        </p>
+                    ) : redirectTarget ? (
+                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-success-200 bg-success-50 px-3 py-2">
+                            <CheckCircle2 className="size-4 shrink-0 text-success-600" />
+                            <p className="min-w-0 flex-1 text-caption text-success-700">
+                                {redirectSummaryPrefix}
+                                <span className="break-all font-semibold">{redirectTarget}</span>
+                            </p>
+                            {isAbsoluteRedirect && (
+                                <a
+                                    href={redirectTarget}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex shrink-0 items-center gap-1 text-caption font-semibold text-success-700 underline underline-offset-2"
+                                >
+                                    Test <ExternalLink className="size-3" />
+                                </a>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-start gap-2 rounded-lg border border-warning-200 bg-warning-50 px-3 py-2">
+                            <Warning className="mt-0.5 size-4 shrink-0 text-warning-600" />
+                            <p className="text-caption text-warning-700">
+                                This isn&apos;t a destination a browser can open, so it will be
+                                ignored and learners will stay on the success page. Use a full
+                                address starting with{' '}
+                                <span className="font-semibold">https://</span> or a path on this
+                                site starting with <span className="font-semibold">/</span>.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Delay — only meaningful once there is somewhere to go. */}
+                    {redirectTarget && (
+                        <div className="space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                            <div>
+                                <p className="text-sm font-semibold text-neutral-800">
+                                    Wait Before Redirecting
+                                </p>
+                                <p className="mt-0.5 text-caption text-neutral-400">
+                                    How long the &quot;You&apos;re enrolled!&quot; screen stays up
+                                    first. Keep a moment so the learner sees the enrollment went
+                                    through — and so any conversion tag on this page has time to
+                                    fire before the browser leaves.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {REDIRECT_DELAY_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset}
+                                        type="button"
+                                        onClick={() =>
+                                            update({ afterPaymentRedirectDelaySeconds: preset })
+                                        }
+                                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                                            delaySeconds === preset
+                                                ? 'border-primary-300 bg-primary-50 text-primary-500'
+                                                : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300'
+                                        }`}
+                                    >
+                                        {preset === 0 ? 'Instant' : `${preset}s`}
+                                    </button>
+                                ))}
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        max={MAX_REDIRECT_DELAY_SECONDS}
+                                        step={1}
+                                        value={delaySeconds}
+                                        onChange={(e) =>
+                                            update({
+                                                afterPaymentRedirectDelaySeconds:
+                                                    clampRedirectDelay(Number(e.target.value)),
+                                            })
+                                        }
+                                        className="w-20 border-neutral-200 bg-white text-sm focus:border-blue-400 focus:ring-blue-300"
+                                    />
+                                    <span className="text-caption text-neutral-500">
+                                        seconds (max {MAX_REDIRECT_DELAY_SECONDS})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Show Login Button toggle */}
                 <div className="flex items-center gap-4 border-t border-neutral-100 px-5 py-4">
                     <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-neutral-800">Show Login Button</p>
-                        <p className="text-xs text-neutral-400">Display the login button on the success page if not redirecting immediately.</p>
+                        <p className="text-xs text-neutral-400">
+                            Display the login button on the success page. Ignored while a redirect
+                            is set — the learner is on their way out.
+                        </p>
                     </div>
                     <Toggle
                         checked={settings.showLoginButton ?? true}
                         onChange={() => update({ showLoginButton: !(settings.showLoginButton ?? true) })}
+                    />
+                </div>
+
+                {/* Auto-login after purchase toggle */}
+                <div className="flex items-center gap-4 border-t border-neutral-100 px-5 py-4">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-neutral-800">Log In Automatically After Purchase</p>
+                        <p className="text-xs text-neutral-400">
+                            Once the payment goes through, take a new buyer straight to their
+                            dashboard, already logged in. Buyers who had an account before still
+                            see the success page and log in themselves. Takes priority over the
+                            redirect path.
+                        </p>
+                    </div>
+                    <Toggle
+                        checked={settings.autoLoginAfterPayment ?? false}
+                        onChange={() => update({ autoLoginAfterPayment: !(settings.autoLoginAfterPayment ?? false) })}
                     />
                 </div>
 

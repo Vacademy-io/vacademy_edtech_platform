@@ -1,0 +1,37 @@
+{
+    "searchPlaceholder": "ابحث باسم الطالب أو رقم الهاتف…",
+    "clear": "مسح",
+    "filters": {
+        "allTypes": "جميع الأنواع",
+        "from": "من:",
+        "to": "إلى:"
+    },
+    "adjustmentType": {
+        "concession": "تنازل",
+        "penalty": "غرامة"
+    },
+    "errors": {
+        "unableToLoad": "تعذر تحميل السجل",
+        "tryAgain": "يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "noActivity": "لا يوجد نشاط",
+        "tryClearingFilters": "جرّب مسح عوامل التصفية.",
+        "noActivityYet": "لا يوجد نشاط تسوية يطابق هذا العرض حتى الآن."
+    },
+    "table": {
+        "date": "التاريخ",
+        "student": "الطالب",
+        "feeType": "نوع الرسوم",
+        "type": "النوع",
+        "amount": "المبلغ",
+        "event": "الحدث",
+        "by": "بواسطة",
+        "reason": "السبب"
+    },
+    "pagination": {
+        "pageOf": "صفحة {{page}} من {{totalPages}}",
+        "total": "الإجمالي",
+        "updating": "جارٍ التحديث…"
+    }
+}

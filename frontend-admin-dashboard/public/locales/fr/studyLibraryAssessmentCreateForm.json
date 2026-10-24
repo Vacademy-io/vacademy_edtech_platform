@@ -1,0 +1,59 @@
+{
+    "errors": {
+        "failedToLinkAssessment": "Échec de la liaison de l'évaluation",
+        "enterBothDates": "Saisissez une date de début et de fin, ou désactivez la période.",
+        "endDateAfterStart": "La date de fin doit être postérieure à la date de début.",
+        "failedToCreate": "Échec de la création de l'évaluation"
+    },
+    "toasts": {
+        "createdAndPublished": "Évaluation créée et publiée."
+    },
+    "createLogic": {
+        "noteHtml_one": "<p>Téléchargez le sujet ci-dessus, et lorsque vos réponses sont prêtes, cliquez sur <strong>Démarrer l'évaluation</strong>.</p><p><strong>Remarque :</strong> ne cliquez pas sur Démarrer l'évaluation avant d'avoir préparé vos réponses. Après avoir cliqué sur Démarrer l'évaluation, vous aurez <strong>{{count}} minute</strong> pour envoyer votre fichier de réponses.</p>",
+        "noteHtml_many": "<p>Téléchargez le sujet ci-dessus, et lorsque vos réponses sont prêtes, cliquez sur <strong>Démarrer l'évaluation</strong>.</p><p><strong>Remarque :</strong> ne cliquez pas sur Démarrer l'évaluation avant d'avoir préparé vos réponses. Après avoir cliqué sur Démarrer l'évaluation, vous aurez <strong>{{count}} minutes</strong> pour envoyer votre fichier de réponses.</p>",
+        "noteHtml_other": "<p>Téléchargez le sujet ci-dessus, et lorsque vos réponses sont prêtes, cliquez sur <strong>Démarrer l'évaluation</strong>.</p><p><strong>Remarque :</strong> ne cliquez pas sur Démarrer l'évaluation avant d'avoir préparé vos réponses. Après avoir cliqué sur Démarrer l'évaluation, vous aurez <strong>{{count}} minutes</strong> pour envoyer votre fichier de réponses.</p>"
+    },
+    "header": {
+        "heading": "Créer une évaluation",
+        "description": "Les apprenants téléchargent le sujet, puis envoient une copie de réponses en PDF que vous évaluez. Disponible pour chaque groupe partageant ce chapitre — publiez-la lorsqu'elle est prête."
+    },
+    "form": {
+        "nameLabel": "Nom de l'évaluation",
+        "namePlaceholder": "ex. Test du chapitre 1",
+        "subjectPlaceholder": "Sélectionner {{subject}}",
+        "subjectDefaultHint": "Par défaut, la {{subject}} sous laquelle se trouve cette diapositive. Modifiez-la pour associer l'évaluation ailleurs.",
+        "taskDescriptionLabel": "Description de la tâche",
+        "taskDescriptionPlaceholder": "Écrivez ici la description de la tâche — téléversez le sujet en PDF à télécharger par les apprenants.",
+        "taskDescriptionHint_one": "Téléversez le sujet ici. Une remarque standard (télécharger le sujet, puis démarrer ; {{count}} minute pour envoyer les réponses) est ajoutée automatiquement.",
+        "taskDescriptionHint_many": "Téléversez le sujet ici. Une remarque standard (télécharger le sujet, puis démarrer ; {{count}} minutes pour envoyer les réponses) est ajoutée automatiquement.",
+        "taskDescriptionHint_other": "Téléversez le sujet ici. Une remarque standard (télécharger le sujet, puis démarrer ; {{count}} minutes pour envoyer les réponses) est ajoutée automatiquement.",
+        "totalMarksLabel": "Note totale",
+        "durationLabel": "Durée (minutes)",
+        "durationHintBefore": "C'est le temps dont disposent les apprenants pour",
+        "durationHintBold": "envoyer leur fichier de réponses",
+        "durationHintAfter": "après avoir cliqué sur Démarrer l'évaluation — pas le temps pour rédiger leurs réponses (ils les préparent au préalable à partir du sujet).",
+        "liveDateRangeHeading": "Période de disponibilité",
+        "startDateLabel": "Date et heure de début",
+        "endDateLabel": "Date et heure de fin",
+        "dateRangeLockedHint": "La diapositive reste verrouillée dans le cours en dehors de cette période — les apprenants ne peuvent ouvrir l'évaluation que pendant qu'elle est active.",
+        "alwaysAvailableHint": "Toujours disponible — aucune date de début ou de fin.",
+        "attemptsLabel": "Tentatives autorisées",
+        "cancel": "Annuler",
+        "creating": "Création…",
+        "createAssessment": "Créer l'évaluation"
+    },
+    "review": {
+        "ai": {
+            "title": "Réglages de la correction IA",
+            "hint": "Matière, classe, votre barème et le signalement des fautes, pour chaque copie de ce test."
+        },
+        "criteria": {
+            "none": "Pas encore de critères : l'IA les rédige à la première correction",
+            "edited": "Modifié",
+            "edit": "Modifier les critères"
+        }
+    },
+    "retrofit": {
+        "criteriaNotSaved": "La correction IA est activée, mais les critères ou réglages n'ont pas pu être enregistrés. Définissez-les depuis l'onglet Submissions → Check submitted copies."
+    }
+}

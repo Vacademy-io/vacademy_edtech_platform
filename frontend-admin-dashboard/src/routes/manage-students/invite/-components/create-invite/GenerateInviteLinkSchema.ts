@@ -1,32 +1,80 @@
 // Dummy related courses data
+import i18next from 'i18next';
+import type { TFunction } from 'i18next';
 import { UseFormReturn } from 'react-hook-form';
 import { z, z as zod } from 'zod';
 import { z as zodDiscount } from 'zod';
 import { CreateInviteFormValues } from './CreateInviteSchema';
 
-export const relatedCourses = [
-    {
-        id: 'c1',
-        name: 'Advanced Mathematics',
-        description: 'Deep dive into calculus and algebra.',
-        image: '/public/related-math.png',
-        tags: ['Math', 'Advanced', 'STEM'],
-    },
-    {
-        id: 'c2',
-        name: 'Physics for Engineers',
-        description: 'Mechanics, thermodynamics, and more.',
-        image: '/public/related-physics.png',
-        tags: ['Physics', 'Engineering'],
-    },
-    {
-        id: 'c3',
-        name: 'Creative Writing',
-        description: 'Unlock your storytelling potential.',
-        image: '/public/related-writing.png',
-        tags: ['Writing', 'Creativity', 'Arts'],
-    },
-];
+// This module builds several module-level `const`s (relatedCourses, the billing-contact
+// label defaults, the addPlanSchema/addDiscountSchema/addReferralSchema validation
+// messages below) directly from i18next.t() calls evaluated once at import time. Nothing
+// else in the codebase calls useTranslation('manageStudentsGenerateInviteLinkSchema'), so
+// without this the namespace would never be loaded into i18next's resource store and every
+// t() call in this file would freeze on the raw key. This eager load is a first line of
+// defense for anything in this file that still reads i18next.t() lazily (inside function
+// bodies); the frozen-at-import cases below (relatedCourses, addDiscountSchema, the
+// billing-contact defaults) are additionally converted to compute their translated values
+// fresh at call/parse time rather than once at import.
+void i18next.loadNamespaces('manageStudentsGenerateInviteLinkSchema');
+
+// Preview/example data shown on the "Show Related Courses" card. Was previously a frozen
+// module-level constant built from i18next.t() at import time (before the namespace could
+// possibly be loaded), so it always rendered raw translation keys. Converted to a function so
+// the real consumer (ShowRelatedCoursesCard.tsx) can recompute it fresh — ideally inside a
+// useMemo keyed on the current language.
+export function getRelatedCourses() {
+    return [
+        {
+            id: 'c1',
+            name: i18next.t('manageStudentsGenerateInviteLinkSchema:relatedCourses.course1.name'),
+            description: i18next.t(
+                'manageStudentsGenerateInviteLinkSchema:relatedCourses.course1.description'
+            ),
+            image: '/public/related-math.png',
+            tags: [
+                i18next.t('manageStudentsGenerateInviteLinkSchema:relatedCourses.course1.tags.math'),
+                i18next.t(
+                    'manageStudentsGenerateInviteLinkSchema:relatedCourses.course1.tags.advanced'
+                ),
+                i18next.t('manageStudentsGenerateInviteLinkSchema:relatedCourses.course1.tags.stem'),
+            ],
+        },
+        {
+            id: 'c2',
+            name: i18next.t('manageStudentsGenerateInviteLinkSchema:relatedCourses.course2.name'),
+            description: i18next.t(
+                'manageStudentsGenerateInviteLinkSchema:relatedCourses.course2.description'
+            ),
+            image: '/public/related-physics.png',
+            tags: [
+                i18next.t(
+                    'manageStudentsGenerateInviteLinkSchema:relatedCourses.course2.tags.physics'
+                ),
+                i18next.t(
+                    'manageStudentsGenerateInviteLinkSchema:relatedCourses.course2.tags.engineering'
+                ),
+            ],
+        },
+        {
+            id: 'c3',
+            name: i18next.t('manageStudentsGenerateInviteLinkSchema:relatedCourses.course3.name'),
+            description: i18next.t(
+                'manageStudentsGenerateInviteLinkSchema:relatedCourses.course3.description'
+            ),
+            image: '/public/related-writing.png',
+            tags: [
+                i18next.t(
+                    'manageStudentsGenerateInviteLinkSchema:relatedCourses.course3.tags.writing'
+                ),
+                i18next.t(
+                    'manageStudentsGenerateInviteLinkSchema:relatedCourses.course3.tags.creativity'
+                ),
+                i18next.t('manageStudentsGenerateInviteLinkSchema:relatedCourses.course3.tags.arts'),
+            ],
+        },
+    ];
+}
 
 export interface Course {
     id: string;
@@ -54,6 +102,22 @@ export interface GenerateInviteLinkDialogProps {
     setDialogOpen?: (open: boolean) => void;
     selectCourseForm?: UseFormReturn<CreateInviteFormValues>;
 }
+
+// These used to be plain `const`s assigned from i18next.t() — evaluated once at import time,
+// so they froze on the raw key (or English fallback) forever, and never updated on a locale
+// switch. They only ever feed `.default()` on the zod schema below, which itself is built
+// once as a module-level singleton (`inviteLinkSchema` is imported/used by many other files,
+// so it isn't safe to turn into a factory here). zod's `.default()` accepts a thunk instead of
+// a static value and calls it fresh every time the default is actually applied during parsing
+// — so converting these to getter functions and passing the functions themselves (not their
+// invoked result) to `.default()` keeps the schema's shape/type identical while making the
+// label text compute live instead of freezing at import.
+const getBillingContactNameLabel = () =>
+    i18next.t('manageStudentsGenerateInviteLinkSchema:billingContactFields.nameLabel');
+const getBillingContactEmailLabel = () =>
+    i18next.t('manageStudentsGenerateInviteLinkSchema:billingContactFields.emailLabel');
+const getBillingContactRoleLabel = () =>
+    i18next.t('manageStudentsGenerateInviteLinkSchema:billingContactFields.roleLabel');
 
 const testInputFieldSchema = z.object({
     id: z.string(),
@@ -155,6 +219,10 @@ export const inviteLinkSchema = z.object({
                 minAmount: z.number().optional(),
                 currency: z.string().optional(),
                 type: z.string().optional(),
+                // Server-stamped; the picker sorts on createdAt and shows the creator.
+                createdAt: z.string().nullable().optional(),
+                createdByUserId: z.string().nullable().optional(),
+                createdByName: z.string().nullable().optional(),
             })
         )
         .default([]),
@@ -183,6 +251,9 @@ export const inviteLinkSchema = z.object({
                     )
                     .optional(),
                 type: z.string().optional(),
+                createdAt: z.string().nullable().optional(),
+                createdByUserId: z.string().nullable().optional(),
+                createdByName: z.string().nullable().optional(),
             })
         )
         .default([]),
@@ -302,6 +373,11 @@ export const inviteLinkSchema = z.object({
         .transform((val) => val ?? ''),
     inviteeEmail: z.string().default(''),
     inviteeEmails: z.array(z.string()).default([]),
+    // Team members mailed whenever a learner fills this invite's enrollment form.
+    // Mirrors the audience campaign's Team Notifications (audience.to_notify);
+    // serialized to setting_json.setting.NOTIFICATION_SETTING.TO_NOTIFY as a
+    // comma-separated string.
+    teamNotificationEmails: z.array(z.string()).default([]),
     customHtml: z.string().default(''),
     showRelatedCourses: z.boolean().default(false),
     selectedOptionValue: z.string().default('textfield'),
@@ -328,32 +404,32 @@ export const inviteLinkSchema = z.object({
         // when present the learner sees a dropdown, when empty a free-text input.
         billingContactFields: z.object({
             name: z.object({
-                label: z.string().default('Billing Contact Full Name'),
+                label: z.string().default(getBillingContactNameLabel),
                 required: z.boolean().default(true),
-            }).default({ label: 'Billing Contact Full Name', required: true }),
+            }).default(() => ({ label: getBillingContactNameLabel(), required: true })),
             email: z.object({
-                label: z.string().default('Billing Contact Email'),
+                label: z.string().default(getBillingContactEmailLabel),
                 required: z.boolean().default(true),
-            }).default({ label: 'Billing Contact Email', required: true }),
+            }).default(() => ({ label: getBillingContactEmailLabel(), required: true })),
             role: z.object({
-                label: z.string().default('Role'),
+                label: z.string().default(getBillingContactRoleLabel),
                 required: z.boolean().default(false),
                 options: z.string().default(''),
-            }).default({ label: 'Role', required: false, options: '' }),
-        }).default({
-            name:  { label: 'Billing Contact Full Name', required: true },
-            email: { label: 'Billing Contact Email',     required: true },
-            role:  { label: 'Role', required: false, options: '' },
-        }),
-    }).default({
+            }).default(() => ({ label: getBillingContactRoleLabel(), required: false, options: '' })),
+        }).default(() => ({
+            name:  { label: getBillingContactNameLabel(), required: true },
+            email: { label: getBillingContactEmailLabel(), required: true },
+            role:  { label: getBillingContactRoleLabel(), required: false, options: '' },
+        })),
+    }).default(() => ({
         showLoginButton: true,
         collectBillingContactDetails: false,
         billingContactFields: {
-            name:  { label: 'Billing Contact Full Name', required: true },
-            email: { label: 'Billing Contact Email',     required: true },
-            role:  { label: 'Role', required: false, options: '' },
+            name:  { label: getBillingContactNameLabel(), required: true },
+            email: { label: getBillingContactEmailLabel(), required: true },
+            role:  { label: getBillingContactRoleLabel(), required: false, options: '' },
         },
-    }),
+    })),
     // Sub-org settings for this invite link. When `enabled`, enrolling via this
     // invite into a sub-org-associated batch provisions a sub-org and these
     // values drive the new sub-org admin's roles/permissions/seat cap. Mirrors
@@ -416,37 +492,83 @@ export const inviteLinkSchema = z.object({
 
 export type InviteLinkFormValues = z.infer<typeof inviteLinkSchema>;
 
-// Add new plan form schema
+// Add new plan form schema.
+// NOTE: not imported anywhere else in the codebase (verified via repo-wide grep for
+// `addPlanSchema` / `AddPlanFormValues`) — dead code. Its `i18next.t()` validation messages
+// below are frozen at module-load time same as the exports fixed above, but since nothing
+// actually builds a form against this schema the freeze has no observable effect. Left as-is
+// rather than reworked into a factory (per the surgical, minimal-blast-radius scope of this
+// fix) — it already benefits from the eager `loadNamespaces` call above if it's ever wired up.
 export const addPlanSchema = zod.object({
     planType: zod.enum(['free', 'paid']),
-    name: zod.string().min(1, 'Plan name is required'),
-    description: zod.string().min(1, 'Description is required'),
+    name: zod
+        .string()
+        .min(1, i18next.t('manageStudentsGenerateInviteLinkSchema:validation.planNameRequired')),
+    description: zod
+        .string()
+        .min(1, i18next.t('manageStudentsGenerateInviteLinkSchema:validation.descriptionRequired')),
     price: zod.string().optional(),
 });
 
 export type AddPlanFormValues = zod.infer<typeof addPlanSchema>;
 
-export const addDiscountSchema = zodDiscount.object({
-    title: zodDiscount.string().min(1, 'Title is required'),
-    code: zodDiscount.string().min(1, 'Code is required'),
-    type: zodDiscount.enum(['percent', 'rupees']),
-    value: zodDiscount.number().min(1, 'Value is required'),
-    expires: zodDiscount.string().min(1, 'Expiry date is required'),
-});
-export type AddDiscountFormValues = zodDiscount.infer<typeof addDiscountSchema>;
+// Builds the Add Discount validation schema. This used to be a module-level `const` built
+// once at import time from i18next.t() calls, which froze the .min() error messages on the
+// raw key (or English fallback) forever — zod's `.min(len, message)` only accepts a static
+// string/object for `message`, unlike `.default()`, so there is no lazy-thunk escape hatch
+// here. Converted to a factory so the sole real consumer (the addDiscountForm in
+// GenerateInviteLinkDialog.tsx) can rebuild it fresh from a component-scoped `t`, recomputed
+// whenever the active locale changes.
+export const buildAddDiscountSchema = (t: TFunction) =>
+    zodDiscount.object({
+        title: zodDiscount
+            .string()
+            .min(1, t('manageStudentsGenerateInviteLinkSchema:validation.titleRequired')),
+        code: zodDiscount
+            .string()
+            .min(1, t('manageStudentsGenerateInviteLinkSchema:validation.codeRequired')),
+        type: zodDiscount.enum(['percent', 'rupees']),
+        value: zodDiscount
+            .number()
+            .min(1, t('manageStudentsGenerateInviteLinkSchema:validation.valueRequired')),
+        expires: zodDiscount
+            .string()
+            .min(1, t('manageStudentsGenerateInviteLinkSchema:validation.expiryDateRequired')),
+    });
+export type AddDiscountFormValues = zodDiscount.infer<ReturnType<typeof buildAddDiscountSchema>>;
 
-// Add Referral Program form schema
+// Add Referral Program form schema.
+// NOTE: not imported anywhere else in the codebase (verified via repo-wide grep for
+// `addReferralSchema` / `AddReferralFormValues`) — dead code. Same frozen-at-import caveat
+// and same rationale for leaving it untouched as addPlanSchema above.
 export const addReferralSchema = zod.object({
-    name: zod.string().min(1, 'Program name is required'),
-    refereeBenefit: zod.string().min(1, 'Referee benefit is required'),
+    name: zod
+        .string()
+        .min(1, i18next.t('manageStudentsGenerateInviteLinkSchema:validation.programNameRequired')),
+    refereeBenefit: zod
+        .string()
+        .min(
+            1,
+            i18next.t('manageStudentsGenerateInviteLinkSchema:validation.refereeBenefitRequired')
+        ),
     referrerTiers: zod
         .array(
             zod.object({
-                tier: zod.string().min(1, 'Tier is required'),
-                reward: zod.string().min(1, 'Reward is required'),
+                tier: zod
+                    .string()
+                    .min(1, i18next.t('manageStudentsGenerateInviteLinkSchema:validation.tierRequired')),
+                reward: zod
+                    .string()
+                    .min(
+                        1,
+                        i18next.t('manageStudentsGenerateInviteLinkSchema:validation.rewardRequired')
+                    ),
             })
         )
-        .min(1, 'At least one tier is required'),
+        .min(
+            1,
+            i18next.t('manageStudentsGenerateInviteLinkSchema:validation.atLeastOneTierRequired')
+        ),
     vestingPeriod: zod.number(),
     combineOffers: zod.boolean(),
 });

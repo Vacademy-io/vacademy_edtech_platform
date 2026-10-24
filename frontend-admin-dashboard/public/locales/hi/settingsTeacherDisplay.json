@@ -1,0 +1,192 @@
+{
+    "loading": "लोड हो रहा है...",
+    "resetToDefaults": "डिफ़ॉल्ट पर रीसेट करें",
+    "sections": {
+        "coursesAndPermissions": "कोर्स और अनुमतियाँ",
+        "layoutAndNavigation": "लेआउट और नेविगेशन",
+        "contentAndLearners": "सामग्री और शिक्षार्थी",
+        "dashboardAndAccess": "डैशबोर्ड और एक्सेस"
+    },
+    "common": {
+        "visible": "दृश्य",
+        "hidden": "छिपा हुआ",
+        "locked": "लॉक किया गया",
+        "default": "डिफ़ॉल्ट",
+        "remove": "हटाएं",
+        "aiTools": "AI टूल्स"
+    },
+    "toast": {
+        "saveSuccess": "शिक्षक डिस्प्ले सेटिंग्स सहेजी गईं",
+        "saveFailed": "सहेजने में विफल"
+    },
+    "sidebarTabs": {
+        "newCustomTabLabel": "कस्टम टैब",
+        "newCustomSubTabLabel": "कस्टम सब टैब"
+    },
+    "cards": {
+        "coursePage": {
+            "title": "कोर्स पेज सेटिंग्स",
+            "description": "कोर्स पेज तत्वों की दृश्यता नियंत्रित करें।",
+            "options": {
+                "viewInviteLinks": "आमंत्रण लिंक देखें",
+                "viewShortInviteLinks": "शॉर्ट आमंत्रण लिंक देखें",
+                "viewCourseConfiguration": "कोर्स कॉन्फ़िगरेशन देखें",
+                "viewCourseOverviewItem": "कोर्स अवलोकन आइटम देखें",
+                "viewContentNumbering": "सामग्री क्रमांकन देखें",
+                "allowViewSlidesInReadOnly": "प्रकाशित / समीक्षाधीन कोर्स पर स्लाइड देखने की अनुमति दें (केवल पढ़ने योग्य)",
+                "showAddSubject": "\"विषय जोड़ें\" बटन दिखाएं (आउटलाइन और सामग्री संरचना)",
+                "showAddModule": "\"मॉड्यूल जोड़ें\" बटन दिखाएं (आउटलाइन और सामग्री संरचना)",
+                "showAddChapter": "\"अध्याय जोड़ें\" बटन दिखाएं (आउटलाइन और सामग्री संरचना)",
+                "showAddSlide": "\"स्लाइड जोड़ें\" बटन दिखाएं (आउटलाइन और सामग्री संरचना)",
+                "showLearnerProgressReport": "रिपोर्ट्स में \"छात्र प्रगति\" टैब दिखाएं (प्रति-शिक्षार्थी कोर्स प्रगति)"
+            },
+            "showAdvancedCourseIds": "कोर्स विवरण पर उन्नत IDs मेनू दिखाएं (कोर्स / पैकेज सेशन / सेशन / स्तर)"
+        },
+        "coursePermission": {
+            "title": "कोर्स अनुमति",
+            "description": "नियंत्रित करें कि यह भूमिका कोर्स और उसकी स्लाइड्स पर क्या कर सकती है।",
+            "directEdit": "सीधे संपादित कर सकते हैं (Copy-to-Edit / अनुमोदन के बिना)",
+            "options": {
+                "showCopyTo": "स्लाइड कॉपी कर सकते हैं",
+                "showMoveTo": "स्लाइड मूव कर सकते हैं",
+                "showDelete": "स्लाइड हटा सकते हैं"
+            },
+            "editStructure": "विषय / मॉड्यूल / अध्याय संपादित कर सकते हैं",
+            "deleteStructure": "विषय / मॉड्यूल / अध्याय हटा सकते हैं",
+            "showBulkUpload": "बल्क अपलोड (ZIP) बटन दिखाएं",
+            "deleteCourse": "कोर्स हटा सकते हैं",
+            "requireCourseApproval": "नए कोर्स प्रकाशित करने से पहले एडमिन अनुमोदन आवश्यक (समीक्षा के लिए सबमिट करें)"
+        },
+        "authoredCoursesCard": {
+            "title": "लेखित कोर्स कार्ड",
+            "description": "एक्सप्लोर कोर्सेस → लेखित कोर्स के अंतर्गत कोर्स कार्ड पर दिखाई देने वाली कार्रवाइयों को नियंत्रित करें।",
+            "showCopyToEdit": "\"Copy to Edit\" बटन दिखाएं"
+        },
+        "courseListCard": {
+            "title": "कोर्स लिस्ट कार्ड",
+            "description": "एक्सप्लोर कोर्सेस के अंतर्गत प्रत्येक कोर्स कार्ड पर दिखाई देने वाले विवरण को नियंत्रित करें।",
+            "showEnrolledStudentCount": "नामांकित छात्रों की संख्या दिखाएं"
+        },
+        "courseCreation": {
+            "title": "कोर्स निर्माण",
+            "description": "नियंत्रित करें कि कौन कोर्स बना सकता है, AI एंट्री पॉइंट्स, और अध्याय सेटअप डिफ़ॉल्ट।",
+            "showCreateCourse": "कोर्स बनाने की अनुमति दें (\"कोर्स जोड़ें\" बटन दिखाएं)",
+            "showCreateCourseWithAI": "\"AI के साथ कोर्स बनाएं\" दिखाएं",
+            "requirePackageSelectionForNewChapter": "नया अध्याय जोड़ते समय पैकेज सेशन चयन आवश्यक बनाएं",
+            "showAdvancedSettings": "उन्नत सेटिंग्स दिखाएं",
+            "limitToSingleLevel": "कोर्स को एक ही स्तर तक सीमित करें"
+        },
+        "courseListTabs": {
+            "title": "कोर्स लिस्ट टैब्स",
+            "description": "दिखने वाले टैब, उनका क्रम और डिफ़ॉल्ट टैब सेट करें। Course Approval केवल एडमिन के लिए है और इस रोल के लिए छिपा रहता है।"
+        },
+        "courseDetailsTabs": {
+            "title": "कोर्स विवरण टैब्स",
+            "description": "चुनें कि कौन से टैब दृश्य हैं और डिफ़ॉल्ट टैब सेट करें।",
+            "offlineLockedHint": "इंस्टिट्यूट के लिए ऑफ़लाइन डाउनलोड अक्षम होने के कारण बंद (सेटिंग्स → ऑफ़लाइन एक्सेस)।"
+        },
+        "uiOptions": {
+            "title": "UI विकल्प",
+            "description": "वैश्विक UI प्राथमिकताएं",
+            "showSupportButton": "सपोर्ट बटन दिखाएं",
+            "showSidebar": "साइडबार दिखाएं",
+            "showAiCredits": "AI क्रेडिट दिखाएं",
+            "showStatus": "स्थिति दिखाएं",
+            "showSettings": "सेटिंग्स दिखाएं",
+            "showSettingsHint": "साइडबार रेल में सेटिंग्स गियर छुपाता है। आप अभी भी /settings पर सीधे सेटिंग्स खोल सकते हैं।",
+            "showAssistDock": "दायां साइड रेल दिखाएं",
+            "showAssistDockHint": "गाइड्स, ट्रेनिंग, असिस्ट, इश्यूज़, नया क्या है, एक्सप्लोर और एडमिन ऐप। इस भूमिका के लिए डिफ़ॉल्ट रूप से छिपा हुआ।"
+        },
+        "sidebarCategories": {
+            "title": "साइडबार श्रेणियाँ",
+            "description": "साइडबार के लिए दृश्यता, क्रम और डिफ़ॉल्ट श्रेणी कॉन्फ़िगर करें।"
+        },
+        "sidebarTabs": {
+            "title": "साइडबार टैब्स",
+            "description": "क्रम तय करें और दृश्यता टॉगल करें। शिक्षकों के लिए सेटिंग्स टैब हमेशा छिपा रहता है।",
+            "tabName": "टैब नाम",
+            "route": "रूट",
+            "subTabs": "सब टैब्स",
+            "addSubTab": "सब टैब जोड़ें",
+            "labelPlaceholder": "लेबल",
+            "routePlaceholder": "रूट",
+            "addCustomTab": "कस्टम टैब जोड़ें"
+        },
+        "courseContentTypes": {
+            "title": "कोर्स सामग्री प्रकार",
+            "description": "स्लाइड सामग्री प्रकार सक्षम या अक्षम करें। वीडियो में एक अतिरिक्त इन-वीडियो प्रश्न विकल्प है।",
+            "options": {
+                "pdf": "PDF",
+                "ppt": "PPT प्रस्तुति",
+                "codeEditor": "कोड एडिटर",
+                "document": "दस्तावेज़",
+                "question": "प्रश्न",
+                "quiz": "क्विज़",
+                "assignment": "असाइनमेंट",
+                "jupyterNotebook": "Jupyter नोटबुक",
+                "scratch": "Scratch",
+                "audio": "ऑडियो",
+                "scorm": "SCORM पैकेज",
+                "assessment": "मूल्यांकन"
+            },
+            "video": "वीडियो",
+            "inVideoQuestionVisible": "इन-वीडियो प्रश्न दृश्य",
+            "canAddVideoQuestion": "वीडियो स्लाइड्स में प्रश्न जोड़ सकते हैं",
+            "canConvertToSplitScreen": "वीडियो को स्प्लिट स्क्रीन में बदल सकते हैं"
+        },
+        "learnerManagement": {
+            "title": "शिक्षार्थी प्रबंधन",
+            "description": "शिक्षार्थी प्रबंधन अनुमतियाँ और एक्सेस नियंत्रण कॉन्फ़िगर करें।"
+        },
+        "dashboardWidgets": {
+            "title": "डैशबोर्ड विजेट्स",
+            "description": "क्रम तय करें और टॉगल करें कि शिक्षक कौन-से विजेट्स देख सकते हैं।"
+        },
+        "permissions": {
+            "title": "अनुमतियाँ",
+            "description": "इंस्टिट्यूट और प्रोफ़ाइल की दृश्यता और संपादन एक्सेस कॉन्फ़िगर करें।",
+            "options": {
+                "canViewInstituteDetails": "इंस्टिट्यूट विवरण देख सकते हैं",
+                "canEditInstituteDetails": "इंस्टिट्यूट विवरण संपादित कर सकते हैं",
+                "canViewProfileDetails": "प्रोफ़ाइल विवरण देख सकते हैं",
+                "canEditProfileDetails": "प्रोफ़ाइल विवरण संपादित कर सकते हैं"
+            }
+        },
+        "postLoginRedirect": {
+            "title": "लॉगिन के बाद रीडायरेक्ट",
+            "description": "चुनें कि लॉगिन के बाद शिक्षकों को कहां रीडायरेक्ट किया जाए।",
+            "route": "रूट"
+        }
+    },
+    "studentSideViewOptions": {
+        "overviewTab": "अवलोकन टैब",
+        "coursesTab": "कोर्सेस टैब",
+        "testTab": "टेस्ट टैब",
+        "progressTab": "प्रगति टैब",
+        "notificationTab": "सूचना टैब",
+        "membershipTab": "सदस्यता टैब",
+        "paymentHistoryTab": "भुगतान इतिहास टैब",
+        "userTaggingTab": "उपयोगकर्ता टैगिंग टैब",
+        "badgesTab": "बैज टैब",
+        "fileTab": "फ़ाइल टैब",
+        "portalAccessTab": "पोर्टल एक्सेस टैब",
+        "reportsTab": "रिपोर्ट्स टैब",
+        "enrollDerollTab": "नामांकन/निष्कासन टैब",
+        "enquiryTab": "पूछताछ टैब",
+        "applicationTab": "आवेदन टैब",
+        "leadTab": "लीड प्रोफ़ाइल टैब",
+        "fullHistoryTab": "पूर्ण इतिहास टैब",
+        "workflowsTab": "वर्कफ़्लो टैब",
+        "parentTab": "अभिभावक टैब",
+        "onboardingTab": "ऑनबोर्डिंग टैब"
+    },
+    "learnerManagementOptions": {
+        "allowPortalAccess": "शिक्षार्थी पोर्टल एक्सेस की अनुमति दें",
+        "allowViewPassword": "शिक्षार्थी पासवर्ड देखने की अनुमति दें",
+        "allowEditCredentials": "शिक्षार्थी यूज़रनेम और पासवर्ड संपादित करने की अनुमति दें",
+        "allowSendResetPasswordMail": "पासवर्ड रीसेट मेल भेजने की अनुमति दें",
+        "showApprovalToggle": "शिक्षार्थी सूची पर \"अनुमोदन अनुरोध\" टॉगल दिखाएं",
+        "allowDeletePayments": "भुगतान और इनवॉइस को स्थायी रूप से हटाने की अनुमति दें (वापस नहीं किया जा सकता)",
+        "canApplyDiscounts": "शिक्षार्थियों को नामांकित करते समय, बल्क असाइन करते समय या इनवॉइस बनाते समय छूट देने की अनुमति दें"
+    }
+}

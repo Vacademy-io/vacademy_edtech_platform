@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   CheckCircle,
   ClipboardText,
@@ -13,10 +14,15 @@ import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore
 import { ModernCard } from "@/components/design-system/modern-card";
 import { getInstituteId } from "@/constants/helper";
 import {
+  getTerminology,
+} from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
+import {
   ONBOARDING_INSTANCES_QUERY_KEY,
   OnboardingStepForm,
 } from "./-components/onboarding-step-form";
 import { OnboardingProgressList } from "./-components/onboarding-progress-list";
+import { OnboardingDetailsCard } from "./-components/onboarding-details-card";
 import {
   getCurrentStepInfo,
   getMyOnboardingInstances,
@@ -32,13 +38,14 @@ export const Route = createFileRoute("/profile/onboarding/")({
 });
 
 function OnboardingPage() {
+  const { t } = useTranslation("userProfileExtra");
   const { setNavHeading } = useNavHeadingStore();
   const [instituteId, setInstituteId] = useState<string | null>(null);
   const [isResolvingInstitute, setIsResolvingInstitute] = useState(true);
 
   useEffect(() => {
-    setNavHeading("Onboarding");
-  }, [setNavHeading]);
+    setNavHeading(t("onboarding.title"));
+  }, [setNavHeading, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,36 +76,36 @@ function OnboardingPage() {
   const isLoadingAny = isResolvingInstitute || (Boolean(instituteId) && isLoading);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-1 py-4">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-section px-1 py-4">
       <div>
-        <h1 className="text-h3 font-semibold text-neutral-700">Onboarding</h1>
+        <h1 className="text-h3 font-semibold text-neutral-700">{t("onboarding.title")}</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Complete the steps below to finish your onboarding.
+          {t("onboarding.subtitle")}
         </p>
       </div>
 
       {isLoadingAny ? (
         <div className="flex items-center justify-center gap-2 py-16 text-sm text-neutral-500">
           <SpinnerGap className="size-5 animate-spin" />
-          Loading your onboarding status...
+          {t("onboarding.loadingStatus")}
         </div>
       ) : isError ? (
         <ModernCard
           variant="outlined"
           padding="lg"
           rounded="lg"
-          className="flex flex-col items-center gap-3 text-center"
+          className="flex flex-col items-center gap-stack text-center"
         >
           <Warning className="size-8 text-danger-500" />
           <p className="text-sm text-neutral-600">
-            We couldn&apos;t load your onboarding status. Please try again.
+            {t("onboarding.loadError")}
           </p>
           <button
             type="button"
             onClick={() => refetch()}
             className="text-sm font-medium text-primary-500 hover:underline"
           >
-            Retry
+            {t("onboarding.retry")}
           </button>
         </ModernCard>
       ) : !instances || instances.length === 0 ? (
@@ -106,11 +113,11 @@ function OnboardingPage() {
           variant="subtle"
           padding="lg"
           rounded="lg"
-          className="flex flex-col items-center gap-3 py-10 text-center"
+          className="flex flex-col items-center gap-stack py-10 text-center"
         >
           <ClipboardText className="size-8 text-neutral-400" />
           <p className="text-sm text-neutral-600">
-            Nothing to complete right now.
+            {t("onboarding.empty")}
           </p>
         </ModernCard>
       ) : (
@@ -127,6 +134,7 @@ interface OnboardingInstanceCardProps {
 }
 
 function OnboardingInstanceCard({ instance }: OnboardingInstanceCardProps) {
+  const { t } = useTranslation("userProfileExtra");
   const current = getCurrentStepInfo(instance);
 
   return (
@@ -135,7 +143,7 @@ function OnboardingInstanceCard({ instance }: OnboardingInstanceCardProps) {
           lets a parent with multiple children tell their cards apart. */}
       {instance.subject_full_name && (
         <p className="text-sm font-medium text-neutral-600">
-          Onboarding for {instance.subject_full_name}
+          {t("onboarding.onboardingFor", { name: instance.subject_full_name })}
         </p>
       )}
       {current?.isActionable ? (
@@ -156,7 +164,7 @@ function OnboardingInstanceCard({ instance }: OnboardingInstanceCardProps) {
         >
           <CheckCircle className="size-6 shrink-0 text-success-600" weight="fill" />
           <p className="text-sm text-neutral-600">
-            This onboarding flow is complete. Nothing else to do here.
+            {t("onboarding.flowComplete")}
           </p>
         </ModernCard>
       ) : current ? (
@@ -169,10 +177,13 @@ function OnboardingInstanceCard({ instance }: OnboardingInstanceCardProps) {
           <Hourglass className="size-6 shrink-0 text-warning-600" weight="fill" />
           <div>
             <p className="text-sm font-medium text-neutral-700">
-              &ldquo;{current.step.step_name}&rdquo; is being handled by your school admin
+              {t("onboarding.handledByAdmin", {
+                stepName: current.step.step_name,
+                admin: getTerminology(RoleTerms.Admin, SystemTerms.Admin).toLocaleLowerCase(),
+              })}
             </p>
             <p className="mt-0.5 text-xs text-neutral-500">
-              You don&apos;t need to do anything here — you&apos;ll be notified once it&apos;s done.
+              {t("onboarding.handledByAdminHint")}
             </p>
           </div>
         </ModernCard>
@@ -185,17 +196,23 @@ function OnboardingInstanceCard({ instance }: OnboardingInstanceCardProps) {
         >
           <CheckCircle className="size-6 shrink-0 text-neutral-400" />
           <p className="text-sm text-neutral-600">
-            No action needed from you right now for this step.
+            {t("onboarding.noActionNeeded")}
           </p>
         </ModernCard>
       )}
 
-      <ModernCard variant="outlined" padding="md" rounded="lg">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
-          Progress
+      <ModernCard className="space-y-2" variant="outlined" padding="md" rounded="lg">
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+          {t("onboarding.progress")}
         </p>
         <OnboardingProgressList stepInstances={instance.step_instances} />
       </ModernCard>
+
+      {/* Everything already submitted, laid out in full. Rendered whatever the instance's
+          status: mid-flow it shows the steps done so far, and once the flow is COMPLETED it
+          becomes the reason to keep this page reachable at all. Renders nothing when there is
+          nothing this learner may see. */}
+      <OnboardingDetailsCard instanceId={instance.id} />
     </div>
   );
 }

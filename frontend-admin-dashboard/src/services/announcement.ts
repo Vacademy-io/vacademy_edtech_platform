@@ -1,4 +1,4 @@
-import axios from 'axios';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getInstituteId } from '@/constants/helper';
 import { NOTIFICATION_SERVICE_BASE } from '@/constants/urls';
 
@@ -94,12 +94,14 @@ export const AnnouncementService = {
             ...payload,
             instituteId,
         } as CreateAnnouncementRequest;
-        const { data } = await axios.post(`${BASE}/announcements`, body);
+        const { data } = await authenticatedAxiosInstance.post(`${BASE}/announcements`, body);
         return data;
     },
 
     getById: async (announcementId: string) => {
-        const { data } = await axios.get(`${BASE}/announcements/${announcementId}`);
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/announcements/${announcementId}`
+        );
         return data;
     },
 
@@ -113,7 +115,10 @@ export const AnnouncementService = {
             ...payload,
             instituteId,
         } as CreateAnnouncementRequest;
-        const { data } = await axios.put(`${BASE}/announcements/${announcementId}`, body);
+        const { data } = await authenticatedAxiosInstance.put(
+            `${BASE}/announcements/${announcementId}`,
+            body
+        );
         return data;
     },
 
@@ -124,7 +129,7 @@ export const AnnouncementService = {
         if (params?.page !== undefined) search.set('page', String(params.page));
         if (params?.size !== undefined) search.set('size', String(params.size));
         if (params?.status) search.set('status', params.status);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/institute/${instituteId}?${search.toString()}`
         );
         return data;
@@ -138,7 +143,7 @@ export const AnnouncementService = {
         if (params?.size !== undefined) search.set('size', String(params.size));
         if (params?.from) search.set('from', params.from);
         if (params?.to) search.set('to', params.to);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/institute/${instituteId}/planned?${search.toString()}`
         );
         return data;
@@ -152,31 +157,40 @@ export const AnnouncementService = {
         if (params?.size !== undefined) search.set('size', String(params.size));
         if (params?.from) search.set('from', params.from);
         if (params?.to) search.set('to', params.to);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/institute/${instituteId}/past?${search.toString()}`
         );
         return data;
     },
 
     updateStatus: async (announcementId: string, status: string) => {
-        const { data } = await axios.put(`${BASE}/announcements/${announcementId}/status`, {
-            status,
-        });
+        const { data } = await authenticatedAxiosInstance.put(
+            `${BASE}/announcements/${announcementId}/status`,
+            {
+                status,
+            }
+        );
         return data;
     },
 
     remove: async (announcementId: string) => {
-        const { data } = await axios.delete(`${BASE}/announcements/${announcementId}`);
+        const { data } = await authenticatedAxiosInstance.delete(
+            `${BASE}/announcements/${announcementId}`
+        );
         return data;
     },
 
     deliver: async (announcementId: string) => {
-        const { data } = await axios.post(`${BASE}/announcements/${announcementId}/deliver`);
+        const { data } = await authenticatedAxiosInstance.post(
+            `${BASE}/announcements/${announcementId}/deliver`
+        );
         return data;
     },
 
     stats: async (announcementId: string) => {
-        const { data } = await axios.get(`${BASE}/announcements/${announcementId}/stats`);
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/announcements/${announcementId}/stats`
+        );
         return data;
     },
 
@@ -188,14 +202,14 @@ export const AnnouncementService = {
         if (params.modeType) search.set('modeType', params.modeType);
         if (params.page !== undefined) search.set('page', String(params.page));
         if (params.size !== undefined) search.set('size', String(params.size));
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/${announcementId}/recipients?${search.toString()}`
         );
         return data;
     },
 
     submitForApproval: async (announcementId: string, submittedByRole: string) => {
-        const { data } = await axios.post(
+        const { data } = await authenticatedAxiosInstance.post(
             `${BASE}/announcements/${announcementId}/submit-approval?submittedByRole=${encodeURIComponent(
                 submittedByRole
             )}`
@@ -204,7 +218,7 @@ export const AnnouncementService = {
     },
 
     approve: async (announcementId: string, approvedByRole: string) => {
-        const { data } = await axios.post(
+        const { data } = await authenticatedAxiosInstance.post(
             `${BASE}/announcements/${announcementId}/approve?approvedByRole=${encodeURIComponent(
                 approvedByRole
             )}`
@@ -213,7 +227,7 @@ export const AnnouncementService = {
     },
 
     reject: async (announcementId: string, rejectedByRole: string, reason: string) => {
-        const { data } = await axios.post(
+        const { data } = await authenticatedAxiosInstance.post(
             `${BASE}/announcements/${announcementId}/reject?rejectedByRole=${encodeURIComponent(
                 rejectedByRole
             )}&reason=${encodeURIComponent(reason)}`
@@ -226,7 +240,9 @@ export const InstituteAnnouncementSettingsService = {
     get: async () => {
         const instituteId = getInstituteId();
         if (!instituteId) throw new Error('Missing instituteId');
-        const { data } = await axios.get(`${BASE}/institute-settings/institute/${instituteId}`);
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/institute-settings/institute/${instituteId}`
+        );
         return data;
     },
     checkPermissions: async (params: { userRole: string; action: string; modeType: ModeType }) => {
@@ -236,7 +252,7 @@ export const InstituteAnnouncementSettingsService = {
         search.set('userRole', params.userRole);
         search.set('action', params.action);
         search.set('modeType', params.modeType);
-        const { data } = await axios.get(
+        const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/institute-settings/institute/${instituteId}/permissions?${search.toString()}`
         );
         return data;

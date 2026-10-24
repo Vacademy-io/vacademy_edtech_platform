@@ -569,6 +569,7 @@ def write_narration(
     wpm_override: Optional[float] = None,
     regen_note: Optional[str] = None,
     source_request: Optional[str] = None,
+    teaching_voice: bool = False,
     temperature: float = 0.7,
     max_tokens: int = 6000,
 ) -> Dict[str, Any]:
@@ -659,8 +660,12 @@ def write_narration(
         or _cc_reg.get("tonal_register")
         or ""
     ).strip().lower()
-    if register in ("ad", "hype"):
+    if register in ("ad", "hype") and not teaching_voice:
         narration_system = narration_system + AD_NARRATION_EXTENSION
+    if teaching_voice:
+        # Lesson mode: a teacher at a board, not a narrator (lesson_mode.py).
+        from lesson_mode import TEACHER_VOICE_BLOCK
+        narration_system = narration_system + TEACHER_VOICE_BLOCK
     # Brand direction (kit system_prompt or per-video override) — shapes the
     # narration voice/tone too, not just the visuals. Subordinated to the JSON
     # output contract by the block wrapper.
@@ -763,6 +768,15 @@ def write_narration(
             print(f"   ⚠️ Corrective rewrite failed ({_corr_err}) — keeping first draft")
             _apply(narration_by_idx)
 
+    # total_tokens is always prompt + completion (the billing contract): a
+    # provider that omits it must not hide these tokens from billing.
+    try:
+        total_usage["total_tokens"] = (
+            int(total_usage.get("prompt_tokens", 0) or 0)
+            + int(total_usage.get("completion_tokens", 0) or 0)
+        )
+    except (TypeError, ValueError):
+        pass
     return {"shots": shots, "usage": total_usage, "raw": text or ""}
 
 

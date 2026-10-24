@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { WarningCircle, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { getPublicMediaDetails } from "../../-services/media-service";
 import { YouTubeEmbedPlayer } from "../../-components/YouTubeEmbedPlayer";
 import { GenericMediaViewer } from "../../-components/GenericMediaViewer";
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/m/$mediaId/$phoneNumber/")({
 });
 
 function PublicMediaPage() {
+    const { t } = useTranslation("miscRoutesA");
     const params = Route.useParams();
     
     // Sometimes during SPA navigation, params might be undefined momentarily
@@ -65,18 +67,16 @@ function PublicMediaPage() {
                 >
                     <WarningCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
                     <h1 className="text-xl font-semibold text-white mb-2">
-                        Media Not Found
+                        {t("media.notFound")}
                     </h1>
                     <p className="text-white/50 text-sm mb-4">
-                        {error instanceof Error
-                            ? error.message
-                            : "The requested media could not be loaded."}
+                        {error instanceof Error ? error.message : t("media.loadFailed")}
                     </p>
                     <button
                         onClick={() => window.location.reload()}
                         className="px-4 py-2 bg-white/10 text-white text-sm font-medium rounded-lg hover:bg-white/20 transition-colors"
                     >
-                        Try Again
+                        {t("myMentors.common.tryAgain")}
                     </button>
                 </motion.div>
             </div>
@@ -98,7 +98,7 @@ function PublicMediaPage() {
                     {isYouTube ? (
                         <YouTubeEmbedPlayer
                             url={mediaDetails.source_id}
-                            title={mediaDetails.file_name || "Video"}
+                            title={mediaDetails.file_name || t("media.video")}
                             className="w-full"
                         />
                     ) : (

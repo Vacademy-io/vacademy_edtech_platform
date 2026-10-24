@@ -22,6 +22,8 @@ export interface TestContent {
     created_at: string;
     updated_at: string;
     is_homework?: boolean;
+    /** 'API' for exams created through the AI Evaluation API; NULL/other = dashboard. */
+    source?: string | null;
 }
 
 export interface ScheduleTestTab {
@@ -43,4 +45,6 @@ export interface ScheduleTestListsProps {
     handlePageChange: (page: number) => void;
     selectedTab: string;
     handleRefetchData: () => void;
+    /** Source filter values ('DASHBOARD' | 'API'), applied to the loaded page. Empty = all. */
+    sourceFilter?: string[];
 }

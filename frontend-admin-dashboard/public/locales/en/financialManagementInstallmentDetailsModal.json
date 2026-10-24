@@ -1,0 +1,19 @@
+{
+    "installmentDetails": "Installment Details",
+    "errors": {
+        "unableToLoad": "Unable to load installment details. Please try again."
+    },
+    "empty": {
+        "noInstallmentsFound": "No installments found for this payment group."
+    },
+    "table": {
+        "feeType": "Fee Type",
+        "instNumber": "Inst #",
+        "expected": "Expected",
+        "discount": "Discount",
+        "paid": "Paid",
+        "due": "Due",
+        "dueDate": "Due Date",
+        "status": "Status"
+    }
+}

@@ -1,0 +1,42 @@
+{
+    "uploadQuestions": "Importer des questions",
+    "downloadTemplate": "Télécharger le modèle",
+    "supportedQuestionTypes": "Prend en charge les types de questions MCQS, MCQM et TRUE_FALSE",
+    "csv": "CSV",
+    "excel": "Excel",
+    "columnsLabel": "Colonnes :",
+    "columnsHelp": "Ajoutez d'autres options si nécessaire (option_e, option_f, ...) — correct_answer doit correspondre à la lettre d'une option (A, B, C, ...). Pour TRUE_FALSE, utilisez A (Vrai) ou B (Faux).",
+    "multipleCorrectAnswersLabel": "Réponses correctes multiples :",
+    "multipleCorrectAnswersHelpBefore": "listez chaque lettre correcte dans correct_answer, par exemple",
+    "multipleCorrectAnswersHelpAfter": "— la question est importée comme QCM (à réponses multiples). Dans un CSV, mettez-la entre guillemets pour que la virgule ne soit pas lue comme une nouvelle colonne. question_type peut être laissé vide et sera détecté automatiquement.",
+    "clickToSelectFile": "Cliquez pour sélectionner un fichier",
+    "supportedFileTypes": "Les fichiers .csv, .xlsx ou .xls sont pris en charge",
+    "parseSummary": {
+        "added_one": "{{count}} question ajoutée avec succès,",
+        "added_many": "{{count}} questions ajoutées avec succès,",
+        "added_other": "{{count}} questions ajoutées avec succès,",
+        "skipped_one": "{{count}} ligne ignorée.",
+        "skipped_many": "{{count}} lignes ignorées.",
+        "skipped_other": "{{count}} lignes ignorées."
+    },
+    "parseErrorsHeading_one": "Erreur d'analyse ({{count}}) :",
+    "parseErrorsHeading_many": "Erreurs d'analyse ({{count}}) :",
+    "parseErrorsHeading_other": "Erreurs d'analyse ({{count}}) :",
+    "rowError": "Ligne {{row}} : {{message}}",
+    "noValidQuestionsFound": "Aucune question valide trouvée. Corrigez les erreurs et réessayez.",
+    "cancel": "Annuler",
+    "parseAndPreview": "Analyser et prévisualiser",
+    "errors": {
+        "fileEmpty": "Le fichier est vide.",
+        "missingColumns": "Colonne(s) requise(s) manquante(s) : {{columns}}.",
+        "noOptionColumns": "Aucune colonne d'option trouvée. Ajoutez au minimum option_a, option_b, ...",
+        "questionTextEmpty": "question_text est vide.",
+        "unsupportedQuestionType": "question_type non pris en charge \"{{type}}\". Seuls MCQS, MCQM et TRUE_FALSE sont autorisés.",
+        "invalidCorrectAnswer": "correct_answer invalide \"{{value}}\". Utilisez {{letters}} (séparez par des virgules pour plusieurs bonnes réponses).",
+        "referencedOptionsEmpty_one": "correct_answer fait référence à {{letters}} mais {{columns}} est vide.",
+        "referencedOptionsEmpty_many": "correct_answer fait référence à {{letters}} mais {{columns}} sont vides.",
+        "referencedOptionsEmpty_other": "correct_answer fait référence à {{letters}} mais {{columns}} sont vides.",
+        "needsAtLeastTwoOptions": "{{questionType}} nécessite au moins 2 options (option_a et option_b).",
+        "invalidTrueFalseAnswer": "correct_answer invalide \"{{value}}\" pour TRUE_FALSE. Utilisez A (Vrai) ou B (Faux)."
+    }
+}

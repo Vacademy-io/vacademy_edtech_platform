@@ -1,0 +1,61 @@
+{
+    "header": {
+        "title": "प्रतिभागी जोड़ें",
+        "update": "अपडेट करें",
+        "next": "आगे"
+    },
+    "participantAccess": {
+        "heading": "प्रतिभागी पहुँच सेटिंग्स",
+        "closedTest": {
+            "label": "बंद परीक्षा:",
+            "description": "इस मूल्यांकन को संस्थान के बैचों को असाइन करके या व्यक्तिगत {{term}} का चयन करके विशिष्ट प्रतिभागियों तक सीमित रखें।"
+        },
+        "openTest": {
+            "label": "खुली परीक्षा:",
+            "description": "साझा लिंक के माध्यम से किसी को भी इस मूल्यांकन के लिए पंजीकरण करने दें। संस्थान के {{term}} को बैच या व्यक्तिगत रूप से चुनकर पहले से भी पंजीकृत किया जा सकता है।"
+        }
+    },
+    "registration": {
+        "heading": "मूल्यांकन पंजीकरण",
+        "startDateLabel": "प्रारंभ तिथि और समय",
+        "endDateLabel": "समाप्ति तिथि और समय",
+        "aboutHeading": "मूल्यांकन पंजीकरण के बारे में",
+        "instructionsPlaceholder": "पंजीकरण निर्देश",
+        "fields": {
+            "heading": "पंजीकरण फ़ॉर्म फ़ील्ड्स",
+            "helperText": "किसी फ़ील्ड का नाम बदलने या उसके विकल्प संपादित करने के लिए पेंसिल आइकन पर क्लिक करें",
+            "addGenderButton": "लिंग जोड़ें",
+            "addStateButton": "राज्य जोड़ें",
+            "addCityButton": "शहर जोड़ें",
+            "addSchoolCollegeButton": "स्कूल/कॉलेज जोड़ें",
+            "addCustomFieldButton": "कस्टम फ़ील्ड जोड़ें"
+        },
+        "preview": {
+            "triggerButton": "पंजीकरण फ़ॉर्म पूर्वावलोकन",
+            "heading": "पंजीकरण फ़ॉर्म पूर्वावलोकन",
+            "registerNowButton": "अभी पंजीकरण करें"
+        }
+    },
+    "joinLink": {
+        "heading": "जॉइन लिंक",
+        "placeholder": "जॉइन लिंक"
+    },
+    "qrCode": {
+        "heading": "क्यूआर कोड"
+    },
+    "notifyParticipants": {
+        "heading": "ईमेल द्वारा प्रतिभागियों को सूचित करें:",
+        "whenAssessmentCreated": "जब मूल्यांकन बनाया जाए",
+        "beforeAssessmentGoesLive": "मूल्यांकन लाइव होने से पहले",
+        "notifyBeforeLabel": "इतने समय पहले सूचित करें",
+        "whenAssessmentLive": "जब मूल्यांकन लाइव हो जाए",
+        "whenReportGenerated": "जब मूल्यांकन रिपोर्ट तैयार हो जाए"
+    },
+    "toasts": {
+        "updateSuccess": "स्टेप 3 का डेटा सफलतापूर्वक अपडेट कर दिया गया है!",
+        "saveSuccess": "स्टेप 3 का डेटा सफलतापूर्वक सहेज लिया गया है!"
+    },
+    "errors": {
+        "saveFailed": "प्रतिभागियों को सहेजने में विफल।"
+    }
+}

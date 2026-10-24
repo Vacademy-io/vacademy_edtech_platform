@@ -1,0 +1,34 @@
+{
+    "urlInputPlaceholder": "Enter live class URL",
+    "defaultDayName": "this day",
+    "actions": {
+        "apply": "Apply",
+        "cancel": "Cancel",
+        "confirmAndApply": "Confirm & Apply"
+    },
+    "dialog": {
+        "heading": "Where do you want to apply this new link?"
+    },
+    "options": {
+        "onlyThis": {
+            "title": "Only This Session",
+            "description": "Apply the new link only for this particular session",
+            "example": "Example: Only this {{dayName}} session will have the new link"
+        },
+        "currentDayAllSessions": {
+            "title": "Current {{dayName}} All Sessions",
+            "description": "Apply the new link for all sessions on this {{dayName}}",
+            "example": "Example: All sessions on this {{dayName}} will have the new link"
+        },
+        "allFuture": {
+            "title": "All Upcoming Sessions",
+            "description": "Apply the new link for today and all future sessions at this time slot",
+            "example": "Example: All upcoming {{dayName}}s at this session time will have the new link"
+        },
+        "allFutureAllSessions": {
+            "title": "Upcoming {{dayName}}s All Sessions",
+            "description": "Apply the new link for all sessions on all upcoming {{dayName}}s",
+            "example": "Example: All sessions on every future {{dayName}} will have the new link"
+        }
+    }
+}

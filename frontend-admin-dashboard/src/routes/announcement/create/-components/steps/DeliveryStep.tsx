@@ -1,4 +1,5 @@
 import { CalendarBlank, Check, Clock, Globe, PaperPlaneTilt } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +11,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { TIMEZONE_OPTIONS } from '@/routes/study-library/live-session/schedule/-constants/options';
+import { buildTimezoneOptions } from '@/routes/study-library/live-session/schedule/-constants/options';
 import type { MediumType } from '@/services/announcement';
 import type { MessageTemplate } from '@/types/message-template-types';
 import type { EmailConfiguration } from '@/services/email-configuration-service';
 import type { WhatsAppTemplateDTO } from '@/routes/communication/whatsapp-templates/-services/template-api';
-import { CRON_PRESETS, MEDIUM_META } from '../../-utils/constants';
+import { buildCronPresets, buildMediumMeta, MEDIUM_META } from '../../-utils/constants';
 import { EmailChannelCard } from '../channels/EmailChannelCard';
 import { PushChannelCard } from '../channels/PushChannelCard';
 import { WhatsAppChannelCard } from '../channels/WhatsAppChannelCard';
@@ -79,8 +80,16 @@ const toLocalInput = (date: Date) =>
     new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
 export function DeliveryStep(props: DeliveryStepProps) {
+    const { t } = useTranslation('announcementDeliveryStep');
+    const { t: tConstants } = useTranslation('announcementCreateConstants');
+    // Option labels are translated, so the list is built from this screen's own
+    // `t` bound to the shared options namespace.
+    const { t: tOptions } = useTranslation('studyLibraryOptions');
+    const TIMEZONE_OPTIONS = buildTimezoneOptions(tOptions);
     const { errors, showErrors } = props;
     const err = (key: string) => (showErrors ? errors[key] : undefined);
+    const mediumMeta = buildMediumMeta(tConstants);
+    const cronPresets = buildCronPresets(tConstants);
 
     const quickSchedule = (pick: 'TODAY_5PM' | 'TOMORROW_9AM' | 'NEXT_MON_9AM') => {
         const now = new Date();
@@ -103,12 +112,12 @@ export function DeliveryStep(props: DeliveryStepProps) {
     return (
         <div className="space-y-6">
             <SectionCard
-                title="Delivery channels"
-                description="How this reaches people outside the product. Pick as many as you need."
+                title={t('channels.title')}
+                description={t('channels.description')}
                 Icon={PaperPlaneTilt}
             >
                 <div className="grid gap-3 sm:grid-cols-3">
-                    {MEDIUM_META.map((meta) => {
+                    {mediumMeta.map((meta) => {
                         const selected = props.mediums.includes(meta.type);
                         return (
                             <button
@@ -156,16 +165,14 @@ export function DeliveryStep(props: DeliveryStepProps) {
                     })}
                 </div>
                 {props.mediums.length === 0 && (
-                    <FieldHint>
-                        Nothing is selected — the announcement will only appear inside the product.
-                    </FieldHint>
+                    <FieldHint>{t('channels.noneSelectedHint')}</FieldHint>
                 )}
             </SectionCard>
 
             {props.mediums.includes('PUSH_NOTIFICATION') && (
                 <SectionCard
-                    title="Push notification"
-                    description="Short, glanceable copy. Delivered to installed apps and web push."
+                    title={t('push.title')}
+                    description={t('push.description')}
                     Icon={MEDIUM_META[0]!.Icon}
                     invalid={Boolean(err('push.title') || err('push.body'))}
                 >
@@ -182,8 +189,8 @@ export function DeliveryStep(props: DeliveryStepProps) {
 
             {props.mediums.includes('EMAIL') && (
                 <SectionCard
-                    title="Email"
-                    description="Pick a saved template or send the content you wrote on step 1."
+                    title={t('email.title')}
+                    description={t('email.description')}
                     Icon={MEDIUM_META[1]!.Icon}
                     invalid={Boolean(err('email.from'))}
                 >
@@ -209,8 +216,8 @@ export function DeliveryStep(props: DeliveryStepProps) {
 
             {props.mediums.includes('WHATSAPP') && (
                 <SectionCard
-                    title="WhatsApp"
-                    description="Meta only delivers approved templates, so pick one and map its variables."
+                    title={t('whatsapp.title')}
+                    description={t('whatsapp.description')}
                     Icon={MEDIUM_META[2]!.Icon}
                     invalid={Object.keys(errors).some(
                         (key) => showErrors && key.startsWith('whatsapp.')
@@ -234,7 +241,9 @@ export function DeliveryStep(props: DeliveryStepProps) {
             )}
 
             <SectionCard
-                title="When should it go out?"
+                id="announcement-schedule"
+                className="scroll-mt-24"
+                title={t('schedule.title')}
                 Icon={CalendarBlank}
                 invalid={Boolean(err('schedule.startDate') || err('schedule.cronExpression'))}
             >
@@ -243,14 +252,18 @@ export function DeliveryStep(props: DeliveryStepProps) {
                         [
                             {
                                 value: 'IMMEDIATE',
-                                label: 'Send now',
-                                hint: 'As soon as you confirm',
+                                label: t('schedule.type.immediate.label'),
+                                hint: t('schedule.type.immediate.hint'),
                             },
-                            { value: 'ONE_TIME', label: 'Schedule', hint: 'Once, at a set time' },
+                            {
+                                value: 'ONE_TIME',
+                                label: t('schedule.type.oneTime.label'),
+                                hint: t('schedule.type.oneTime.hint'),
+                            },
                             {
                                 value: 'RECURRING',
-                                label: 'Repeat',
-                                hint: 'On a recurring schedule',
+                                label: t('schedule.type.recurring.label'),
+                                hint: t('schedule.type.recurring.hint'),
                             },
                         ] as const
                     ).map((option) => {
@@ -284,11 +297,11 @@ export function DeliveryStep(props: DeliveryStepProps) {
                 <div className="space-y-1">
                     <Label className="flex items-center gap-1.5 text-caption font-semibold">
                         <Globe className="size-4" />
-                        Timezone
+                        {t('schedule.timezone.label')}
                     </Label>
                     <Select value={props.timezone} onValueChange={props.onTimezoneChange}>
                         <SelectTrigger className="sm:max-w-sm">
-                            <SelectValue placeholder="Timezone" />
+                            <SelectValue placeholder={t('schedule.timezone.label')} />
                         </SelectTrigger>
                         <SelectContent>
                             {TIMEZONE_OPTIONS.map((tz) => (
@@ -298,9 +311,7 @@ export function DeliveryStep(props: DeliveryStepProps) {
                             ))}
                         </SelectContent>
                     </Select>
-                    <FieldHint>
-                        Scheduled times are read in this timezone, not your browser&apos;s.
-                    </FieldHint>
+                    <FieldHint>{t('schedule.timezone.hint')}</FieldHint>
                 </div>
 
                 {props.scheduleType === 'ONE_TIME' && (
@@ -308,7 +319,7 @@ export function DeliveryStep(props: DeliveryStepProps) {
                         <div className="space-y-1">
                             <Label className="flex items-center gap-1.5 text-caption font-semibold">
                                 <Clock className="size-4" />
-                                Send at
+                                {t('schedule.oneTime.sendAt')}
                             </Label>
                             <Input
                                 type="datetime-local"
@@ -327,21 +338,21 @@ export function DeliveryStep(props: DeliveryStepProps) {
                                 scale="small"
                                 onClick={() => quickSchedule('TODAY_5PM')}
                             >
-                                Today, 5 PM
+                                {t('schedule.quickPick.today5pm')}
                             </MyButton>
                             <MyButton
                                 buttonType="secondary"
                                 scale="small"
                                 onClick={() => quickSchedule('TOMORROW_9AM')}
                             >
-                                Tomorrow, 9 AM
+                                {t('schedule.quickPick.tomorrow9am')}
                             </MyButton>
                             <MyButton
                                 buttonType="secondary"
                                 scale="small"
                                 onClick={() => quickSchedule('NEXT_MON_9AM')}
                             >
-                                Next Monday, 9 AM
+                                {t('schedule.quickPick.nextMonday9am')}
                             </MyButton>
                         </div>
                     </div>
@@ -350,7 +361,9 @@ export function DeliveryStep(props: DeliveryStepProps) {
                 {props.scheduleType === 'RECURRING' && (
                     <div className="space-y-2">
                         <div className="space-y-1">
-                            <Label className="text-caption font-semibold">Cron expression</Label>
+                            <Label className="text-caption font-semibold">
+                                {t('schedule.recurring.cronExpression')}
+                            </Label>
                             <Input
                                 value={props.cronExpression}
                                 onChange={(e) => props.onCronExpressionChange(e.target.value)}
@@ -363,7 +376,7 @@ export function DeliveryStep(props: DeliveryStepProps) {
                             <FieldError message={err('schedule.cronExpression')} />
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {CRON_PRESETS.map((preset) => (
+                            {cronPresets.map((preset) => (
                                 <MyButton
                                     key={preset.id}
                                     buttonType="secondary"

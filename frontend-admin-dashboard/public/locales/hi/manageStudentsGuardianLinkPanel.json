@@ -1,0 +1,26 @@
+{
+    "validation": {
+        "nameRequired": "नाम आवश्यक है",
+        "invalidEmail": "एक मान्य ईमेल दर्ज करें"
+    },
+    "tabs": {
+        "addPerson": "{{person}} जोड़ें",
+        "linkExistingPerson": "मौजूदा {{person}} लिंक करें"
+    },
+    "form": {
+        "fullNameLabel": "पूरा नाम",
+        "fullNamePlaceholder": "{{person}} का पूरा नाम",
+        "emailLabel": "ईमेल",
+        "emailPlaceholder": "name@example.com",
+        "mobileLabel": "मोबाइल (वैकल्पिक)",
+        "mobilePlaceholder": "9876543210"
+    },
+    "existing": {
+        "changeTitle": "बदलें",
+        "searchPlaceholder": "नाम, ईमेल से {{person}} खोजें…",
+        "searching": "खोजा जा रहा है…",
+        "select": "+ चुनें",
+        "noResults": "\"{{query}}\" से मेल खाता कोई {{person}} नहीं मिला",
+        "minChars": "खोजने के लिए कम से कम 2 अक्षर टाइप करें"
+    }
+}

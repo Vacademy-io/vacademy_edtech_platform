@@ -1,0 +1,166 @@
+{
+  "leaderboard": {
+    "trigger": {
+      "compactAriaLabel": "{{course}} लीडरबोर्ड",
+      "compactTitle": "लीडरबोर्ड",
+      "cardTitle": "लीडरबोर्ड",
+      "cardSubtitleRanked_one": "आप {{rank}} पर हैं · {{count}} बैज",
+      "cardSubtitleRanked_other": "आप {{rank}} पर हैं · {{count}} बैज",
+      "cardSubtitleDefault": "देखें कि आप इस {{course}} में कहाँ खड़े हैं",
+      "unranked": "अरैंक्ड"
+    },
+    "dialog": {
+      "title": "{{course}} लीडरबोर्ड",
+      "copyLinkTitle": "सार्वजनिक लिंक कॉपी करें",
+      "shareTitle": "साझा करें",
+      "shareAriaLabel": "लीडरबोर्ड साझा करें",
+      "loading": "लीडरबोर्ड लोड हो रहा है…",
+      "emptyText": "अभी तक लीडरबोर्ड में कोई गतिविधि नहीं है — रैंक में ऊपर आने के लिए सीखना शुरू करें!",
+      "rankingLabel": "रैंकिंग",
+      "learnersCount": "{{count}} {{learners}}",
+      "footer": "सीखने की गतिविधि के आधार पर रैंकिंग • सीखते रहने पर ऊपर बढ़ती है"
+    },
+    "standing": {
+      "label": "आपकी स्थिति",
+      "unranked": "अरैंक्ड",
+      "badgesEarned_one": "बैज अर्जित किया",
+      "badgesEarned_other": "बैज अर्जित किए",
+      "viewYourBadgesTitle": "अपने बैज देखें"
+    },
+    "row": {
+      "viewBadgesTitle": "बैज देखें"
+    },
+    "badgesDialog": {
+      "yourBadges": "आपके बैज",
+      "othersBadges": "{{name}} के बैज",
+      "defaultName": "शिक्षार्थी",
+      "empty": "अभी तक कोई बैज अर्जित नहीं हुआ।"
+    },
+    "toast": {
+      "linkCopied": "लीडरबोर्ड लिंक कॉपी हो गया"
+    }
+  },
+  "subscriptionCancel": {
+    "autoRenewing": "ऑटो-रिन्यू होने वाली सदस्यता",
+    "renewsOn": "{{date}} को नवीनीकृत होगी",
+    "recurringActive": "आवर्ती सदस्यता सक्रिय है",
+    "cancelButton": "सदस्यता रद्द करें",
+    "cancelling": "रद्द किया जा रहा है...",
+    "confirmTitle": "क्या आप यह सदस्यता रद्द करना चाहते हैं?",
+    "confirmDescription": "ऑटो-रिन्यूअल बंद हो जाएगा। आपकी पहुँच {{endDate}} तक बनी रहेगी, और उसके बाद कोई शुल्क नहीं लिया जाएगा।",
+    "endOfCurrentPeriod": "आपकी मौजूदा अवधि के अंत तक",
+    "keepButton": "सदस्यता जारी रखें",
+    "toast": {
+      "successTitle": "ऑटोपे रद्द किया गया",
+      "successDescription": "आपकी पहुँच मौजूदा अवधि के अंत तक बनी रहेगी।",
+      "errorTitle": "ऑटोपे रद्द नहीं हो सका",
+      "errorDescription": "कृपया थोड़ी देर बाद फिर से प्रयास करें।"
+    }
+  },
+  "certificate": {
+    "completedTitle": "{{course}} की समाप्ति!",
+    "congratsMessage": "बधाई हो! आपने एक प्रमाणपत्र अर्जित किया है।",
+    "viewCertificate": "प्रमाणपत्र देखें",
+    "downloadCertificate": "प्रमाणपत्र डाउनलोड करें",
+    "previewAriaLabel": "प्रमाणपत्र पूर्वावलोकन",
+    "previewTitle": "प्रमाणपत्र पूर्वावलोकन",
+    "previewHeading": "{{courseTitle}} — प्रमाणपत्र पूर्वावलोकन",
+    "refreshAriaLabel": "प्रमाणपत्र रीफ़्रेश करें",
+    "refreshTitle": "नवीनतम टेम्पलेट के साथ फिर से जारी करें",
+    "refreshing": "रीफ़्रेश हो रहा है",
+    "refresh": "रीफ़्रेश करें",
+    "closePreviewAriaLabel": "पूर्वावलोकन बंद करें",
+    "close": "बंद करें",
+    "courseFieldLabel": "{{course}}:",
+    "sessionFieldLabel": "सत्र:",
+    "levelFieldLabel": "स्तर:"
+  },
+  "contentSections": {
+    "aboutThisCourse": "इस {{course}} के बारे में",
+    "whatYoullLearn": "आप क्या सीखेंगे",
+    "whoShouldJoin": "इसे किसे जोड़ना चाहिए"
+  },
+  "detailsCollapsible": {
+    "highlights": "इस {{course}} की मुख्य विशेषताएँ"
+  },
+  "detailsPage": {
+    "heading": "{{course}} का विवरण"
+  },
+  "ratings": {
+    "heading": "रेटिंग और समीक्षाएं",
+    "subheading": "समुदाय की राय और रेटिंग",
+    "form": {
+      "feedbackLabel": "आपकी प्रतिक्रिया",
+      "feedbackPlaceholder": "अपनी प्रतिक्रिया लिखें...",
+      "ratingLabel": "रेटिंग",
+      "starCount_one": "{{count}} सितारा",
+      "starCount_other": "{{count}} सितारे",
+      "submitting": "भेजा जा रहा है...",
+      "submit": "प्रतिक्रिया भेजें"
+    },
+    "reviewsCount": "{{count}} समीक्षाएं",
+    "empty": {
+      "title": "अभी तक कोई समीक्षा नहीं",
+      "description": "इस {{course}} के साथ अपना अनुभव साझा करने वाले पहले व्यक्ति बनें"
+    },
+    "toast": {
+      "submitFailed": "रेटिंग सबमिट करने में विफल",
+      "unexpectedError": "एक अप्रत्याशित त्रुटि हुई",
+      "thankYou": "आपकी प्रतिक्रिया के लिए धन्यवाद!",
+      "selectRatingFirst": "कृपया सबमिट करने से पहले एक रेटिंग चुनें"
+    }
+  },
+  "detailsSkeleton": {
+    "loadingAriaLabel": "{{course}} सामग्री लोड हो रही है"
+  },
+  "enrollment": {
+    "configurationTitle": "{{course}} कॉन्फ़िगरेशन",
+    "previewMode": "{{course}} पूर्वावलोकन मोड",
+    "previewNotice": "संरचना देखें। {{slides}} और सामग्री तक पहुँचने के लिए नामांकन करें।",
+    "classSection": "कक्षा / सेक्शन",
+    "classSectionPlaceholder": "कक्षा या सेक्शन चुनें",
+    "noActiveSessions": "कोई सक्रिय {{sessions}} नहीं",
+    "notEnrolled": "नामांकित नहीं",
+    "requiresConfiguration": "इस {{course}} के लिए कॉन्फ़िगरेशन आवश्यक है।",
+    "contactTeacherToEnroll": "नामांकन के लिए कृपया {{teacher}} से संपर्क करें।",
+    "enrollNow": "अभी नामांकन करें"
+  },
+  "header": {
+    "viewLess": "कम देखें",
+    "viewMore": "अधिक देखें",
+    "courseMediaAlt": "{{course}} मीडिया",
+    "courseBannerAlt": "{{course}} बैनर"
+  },
+  "sidebar": {
+    "overview": "{{course}} का अवलोकन",
+    "author": "लेखक",
+    "courseTime": "{{course}} की अवधि",
+    "enrollNow": "अभी नामांकन करें",
+    "courseProgress": "{{course}} की प्रगति",
+    "completion": "पूर्णता",
+    "certificateOnCompletion": "पूरा होने पर प्रमाणपत्र जनरेट किया जाएगा",
+    "unknownInstructor": "अज्ञात {{teacher}}"
+  },
+  "statsSidebar": {
+    "overview": "{{course}} का अवलोकन",
+    "author": "लेखक",
+    "courseTime": "{{course}} की अवधि"
+  },
+  "schema": {
+    "invalidEmail": "अमान्य ईमेल पता।",
+    "instructorNameRequired": "प्रशिक्षक का नाम आवश्यक है।",
+    "levelNameRequired": "स्तर का नाम आवश्यक है।",
+    "durationNonNegative": "अवधि एक गैर-ऋणात्मक पूर्णांक होनी चाहिए।",
+    "sessionNameRequired": "सत्र का नाम आवश्यक है।",
+    "statusNameRequired": "स्थिति का नाम आवश्यक है।",
+    "startDateFormat": "प्रारंभ तिथि YYYY-MM-DD प्रारूप में होनी चाहिए।",
+    "levelDetailRequired": "प्रत्येक सत्र के लिए कम से कम एक स्तर विवरण आवश्यक है।",
+    "titleRequired": "शीर्षक आवश्यक है।",
+    "descriptionMinLength": "विवरण कम से कम 10 अक्षरों का होना चाहिए।",
+    "tagRequired": "कम से कम एक टैग आवश्यक है।",
+    "invalidImageUrl": "छवि के लिए एक मान्य URL होना चाहिए।",
+    "instructorRequired": "कम से कम एक प्रशिक्षक आवश्यक है।",
+    "sessionRequired": "कम से कम एक सत्र आवश्यक है।",
+    "mockCourseTitleRequired": "मॉक {{course}} का शीर्षक आवश्यक है।"
+  }
+}

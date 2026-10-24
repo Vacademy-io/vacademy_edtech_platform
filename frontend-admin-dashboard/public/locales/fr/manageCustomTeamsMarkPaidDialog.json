@@ -1,0 +1,19 @@
+{
+    "title": "Marquer la facture comme payée",
+    "descriptionPrefix": "Enregistre un paiement manuel / hors ligne pour",
+    "descriptionSuffix": "et fait passer son statut à PAYÉE. Les deux champs ci-dessous sont facultatifs.",
+    "thisInvoice": "cette facture",
+    "fields": {
+        "transactionReference": "Référence de transaction",
+        "transactionReferencePlaceholder": "n° de chèque, référence UPI, n° de reçu.",
+        "notes": "Notes",
+        "notesPlaceholder": "Note facultative (affichée sur l'e-mail + la vue latérale)"
+    },
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "markAsPaid": "Marquer comme payée",
+    "toasts": {
+        "markedPaid": "Facture {{invoice}} marquée comme payée",
+        "failed": "Échec du marquage de la facture comme payée"
+    }
+}

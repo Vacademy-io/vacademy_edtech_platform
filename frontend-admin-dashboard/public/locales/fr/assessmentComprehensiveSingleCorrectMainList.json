@@ -1,0 +1,20 @@
+{
+    "emptyState": "Veuillez ajouter une question pour afficher ses détails",
+    "header": {
+        "questionsSettings": "Paramètres des questions",
+        "questionTypeLabel": "Type de question"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "question": {
+        "label": "Question"
+    },
+    "answer": {
+        "label": "Réponse :"
+    },
+    "explanation": {
+        "label": "Explication :"
+    },
+    "optionLabelFormat": "({{letter}}.)",
+    "addOption": "Ajouter une option",
+    "removeOption": "Supprimer l'option"
+}

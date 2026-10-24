@@ -3,6 +3,7 @@ import { sideBarStateType } from "../../../../types/layout-container-types";
 import { Preferences } from "@capacitor/preferences";
 import { getPublicUrl } from "@/services/upload_file";
 import { getCachedInstituteBranding } from "@/services/domain-routing";
+import { isAppleStoreBuild } from "@/utils/ios-iap-compliance";
 
 interface StoreState {
   sideBarState: sideBarStateType;
@@ -39,6 +40,17 @@ interface StoreState {
     stackNameBelowLogo?: boolean | null;
   }) => void;
   setHasCustomSidebar: (value: boolean) => void;
+  /**
+   * Push the app/portal links straight from a domain-routing response.
+   *
+   * setInstituteDetails reads them out of the InstituteDetails cache, but it is
+   * driven by the navbar's institute-details query — a separate request that can
+   * land BEFORE use-domain-routing has written the cache, and whose effect does
+   * not re-run afterwards. Without this the footer would appear or not depending
+   * on which request won the race. Accepts the resolve response as-is; the keys
+   * are the same camelCase ones the cache holds.
+   */
+  setAppLinks: (details: Record<string, unknown> | null) => void;
 }
 
 const readBrandingOverridesFromCache = () => {
@@ -64,6 +76,61 @@ const readBrandingOverridesFromCache = () => {
   }
 };
 
+/**
+ * Make a configured link safe to put in an `href`.
+ *
+ * `institutes.learner_portal_base_url` is stored bare ("learner.example.com"),
+ * and an admin filling in the store links on the domain-routing row can paste
+ * one the same way. Without a scheme the browser reads the href as a *relative*
+ * path, so the link lands on a 404 inside the app instead of the store listing.
+ */
+const toExternalUrl = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
+
+/** True when the URL points at the page the learner is already on. */
+const isCurrentHost = (url: string | null): boolean => {
+  if (!url || typeof window === "undefined") return false;
+  try {
+    return (
+      new URL(url).host.toLowerCase() === window.location.host.toLowerCase()
+    );
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * App-store and portal links come from the institute's DOMAIN ROUTING row, not
+ * from the institute-details API — `use-domain-routing` merge-writes them into
+ * the InstituteDetails cache. So the sidebar has to read them back from that
+ * cache: they are not among setInstituteDetails' arguments, and its only caller
+ * (the learner navbar) always passes a name, which means the explicit branch
+ * below is the ONLY one that ever runs. Populating them there is what makes the
+ * "Apps & Portals" footer appear at all.
+ */
+const readAppLinksFromDetails = (details: Record<string, unknown> | null) => {
+  const learnerPortalUrl = toExternalUrl(details?.learnerPortalUrl);
+  // Apple Guideline 2.3.10: an app on Apple's stores may not show other
+  // platforms, so the iOS app and the Mac App Store build drop the Google Play
+  // and Windows links. Both "Apps & Portals" and the dashboard's getApp widget
+  // read from here, so this one place covers both.
+  const appleStore = isAppleStoreBuild();
+  return {
+    playStoreAppLink: appleStore ? null : toExternalUrl(details?.playStoreAppLink),
+    appStoreAppLink: toExternalUrl(details?.appStoreAppLink),
+    windowsAppLink: appleStore ? null : toExternalUrl(details?.windowsAppLink),
+    macAppLink: toExternalUrl(details?.macAppLink),
+    // On the web portal this would just link back to the current page; it earns
+    // its place only in the native/desktop shells.
+    learnerPortalUrl: isCurrentHost(learnerPortalUrl) ? null : learnerPortalUrl,
+    instructorPortalUrl: toExternalUrl(details?.instructorPortalUrl),
+  };
+};
+
 const useStore = create<StoreState>((set) => ({
   sideBarState: sideBarStateType.DEFAULT,
   sideBarOpen: false,
@@ -85,6 +152,7 @@ const useStore = create<StoreState>((set) => ({
   setSidebarOpen: () => set((state) => ({ sideBarOpen: !state.sideBarOpen })),
   setSideBarState: (sidebarstate) => set({ sideBarState: sidebarstate }),
   setHasCustomSidebar: (value: boolean) => set({ hasCustomSidebar: value }),
+  setAppLinks: (details) => set(readAppLinksFromDetails(details)),
   setBrandingDisplayOverrides: ({
     hideInstituteName,
     logoWidthPx,
@@ -118,11 +186,13 @@ const useStore = create<StoreState>((set) => ({
           ...overrides,
         });
 
-        // Also resolve sub-org branding from stored authenticated details
+        // Also resolve the app/portal links and sub-org branding from stored
+        // authenticated details.
         try {
           const stored = await Preferences.get({ key: "InstituteDetails" });
           if (stored.value) {
             const details = JSON.parse(stored.value);
+            set(readAppLinksFromDetails(details));
             const subOrgs = details?.sub_orgs;
             if (Array.isArray(subOrgs) && subOrgs.length > 0) {
               const activeSubOrg = subOrgs.find((s: any) => s.status === "ACTIVE") || subOrgs[0];
@@ -174,12 +244,7 @@ const useStore = create<StoreState>((set) => ({
             InstituteDetails.home_icon_click_route ??
             InstituteDetails.homeIconClickRoute ??
             null,
-          playStoreAppLink: InstituteDetails.playStoreAppLink ?? null,
-          appStoreAppLink: InstituteDetails.appStoreAppLink ?? null,
-          windowsAppLink: InstituteDetails.windowsAppLink ?? null,
-          macAppLink: InstituteDetails.macAppLink ?? null,
-          learnerPortalUrl: InstituteDetails.learnerPortalUrl ?? null,
-          instructorPortalUrl: InstituteDetails.instructorPortalUrl ?? null,
+          ...readAppLinksFromDetails(InstituteDetails),
           subOrgName,
           subOrgLogoUrl,
           ...overrides,

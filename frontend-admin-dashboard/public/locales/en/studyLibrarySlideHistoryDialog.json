@@ -1,0 +1,45 @@
+{
+    "dialogHeading": "Version history",
+    "description": "Each version is a snapshot of this slide's content taken just before it was overwritten. Restoring copies a snapshot into the current draft — published content is not changed until you publish again.",
+    "retry": "Retry",
+    "trigger": {
+        "title": "View and restore previous versions",
+        "label": "History"
+    },
+    "history": {
+        "loadError": "Could not load version history.",
+        "empty": "No previous versions yet. A version is recorded each time this slide's content changes."
+    },
+    "entry": {
+        "draftSize": "Draft: {{size}}",
+        "publishedSize": "Published: {{size}}"
+    },
+    "size": {
+        "empty": "empty",
+        "chars_one": "{{count}} char",
+        "chars_other": "{{count}} chars",
+        "kChars": "{{value}}k chars"
+    },
+    "preview": {
+        "selectPrompt": "Select a version to preview it",
+        "loadError": "Could not load this version.",
+        "iframeTitle": "Version preview",
+        "noContent": {
+            "draft": "This snapshot has no draft content",
+            "published": "This snapshot has no published content"
+        }
+    },
+    "source": {
+        "draft": "Draft",
+        "published": "Published"
+    },
+    "restore": {
+        "restoring": "Restoring…",
+        "confirm": "Confirm restore to draft?",
+        "action": "Restore this version"
+    },
+    "toast": {
+        "restoreSuccess": "Version restored as the current draft. Review it, then publish.",
+        "restoreFailed": "Failed to restore this version"
+    }
+}

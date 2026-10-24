@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { isNavRouteActive } from "./sidebar/active-route";
 import { Link, useRouter } from "@tanstack/react-router";
 import { DotsThree, type IconProps } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { cn } from "@/lib/utils";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import type { SidebarItemsType } from "@/types/layout-container-types";
@@ -34,26 +37,33 @@ const ICON_MAP: Record<string, React.FC<IconProps>> = {
   attendance: NavCalendarCheckIcon,
 };
 
-const LABEL_MAP: Record<string, string> = {
-  dashboard: "Home",
-  "learning-center": "Learn",
-  homework: "Tasks",
-  "assessment-center": "Tests",
-  referral: "Refer",
-  attendance: "Attend",
-  planning: "Plan",
+// Translation keys for the tab-id fallback label (used when the display
+// settings supply no admin-typed label at all). "dashboard" resolves via
+// the shared `common.home` key since it means the same "go home" concept
+// the navbar's Home tooltip uses.
+const LABEL_KEYS: Record<string, string> = {
+  "learning-center": "playBottomNav.labels.learningCenter",
+  homework: "playBottomNav.labels.homework",
+  "assessment-center": "playBottomNav.labels.assessmentCenter",
+  referral: "playBottomNav.labels.referral",
+  attendance: "playBottomNav.labels.attendance",
+  planning: "playBottomNav.labels.planning",
 };
 
-// Short labels for bottom nav (max ~6 chars)
-const SHORT_LABEL: Record<string, string> = {
-  "Dashboard": "Home",
-  "Learning Center": "Learn",
-  "Homework": "Tasks",
-  "Assessment Centre": "Tests",
-  "Referral": "Refer",
-  "Attendance": "Attend",
-  "Planning": "Plan",
-  "Sub-Org Learners": "Orgs",
+// Short labels for bottom nav (max ~6 chars). Keyed by the FULL English
+// title text that display settings / the main sidebar config hand us
+// (e.g. "Learning Center") — that config text itself is not localized, so
+// the keys stay the untranslated English strings; only the shortened
+// VALUE returned is translated.
+const SHORT_LABEL_KEYS: Record<string, string> = {
+  "Dashboard": "common.home",
+  "Learning Center": "playBottomNav.labels.learningCenter",
+  "Homework": "playBottomNav.labels.homework",
+  "Assessment Centre": "playBottomNav.labels.assessmentCenter",
+  "Referral": "playBottomNav.labels.referral",
+  "Attendance": "playBottomNav.labels.attendance",
+  "Planning": "playBottomNav.labels.planning",
+  "Sub-Org Learners": "playBottomNav.labels.subOrgLearners",
 };
 
 const ROUTE_MAP: Record<string, string> = {
@@ -75,19 +85,23 @@ function createLetterIcon(letter: string) {
   };
 }
 
-function transformTabs(tabs: StudentSidebarTabConfig[]): SidebarItemsType[] {
+function transformTabs(
+  tabs: StudentSidebarTabConfig[],
+  t: TFunction
+): SidebarItemsType[] {
   return tabs
-    .filter((t) => t.visible !== false)
-    .map((t) => {
+    .filter((tab) => tab.visible !== false)
+    .map((tab) => {
       const firstRoute =
-        t.route ||
-        ROUTE_MAP[t.id] ||
-        (t.subTabs || []).find((s) => s.visible !== false)?.route ||
+        tab.route ||
+        ROUTE_MAP[tab.id] ||
+        (tab.subTabs || []).find((s) => s.visible !== false)?.route ||
         "/";
+      const labelKey = tab.id === "dashboard" ? "common.home" : LABEL_KEYS[tab.id];
 
       return {
-        icon: ICON_MAP[t.id] || createLetterIcon((t.label || t.id || "?").charAt(0).toUpperCase()),
-        title: t.label || LABEL_MAP[t.id] || t.id || "",
+        icon: ICON_MAP[tab.id] || createLetterIcon((tab.label || tab.id || "?").charAt(0).toUpperCase()),
+        title: tab.label || (labelKey ? t(labelKey) : tab.id) || "",
         to: firstRoute,
       };
     });
@@ -97,30 +111,32 @@ const MAX_VISIBLE = 4;
 
 /** Shared item source for the mobile bottom bar and the desktop rail. */
 function usePlayNavItems(): SidebarItemsType[] {
+  const { t } = useTranslation("layoutCommonA");
   const [items, setItems] = useState<SidebarItemsType[]>([]);
 
   useEffect(() => {
     getStudentDisplaySettings(false).then((settings) => {
       const tabs = settings?.sidebar?.tabs || [];
-      setItems(transformTabs(tabs));
+      setItems(transformTabs(tabs, t));
     });
-  }, []);
+  }, [t]);
 
   return items;
 }
 
-function shortLabelFor(title: string): string {
-  return (
-    SHORT_LABEL[title] ||
-    (title.length > 6 ? title.slice(0, 5) + "…" : title)
-  );
+function shortLabelFor(title: string, t: TFunction): string {
+  const key = SHORT_LABEL_KEYS[title];
+  return key ? t(key) : title.length > 6 ? title.slice(0, 5) + "…" : title;
 }
 
 export const PlayBottomNav: React.FC = () => {
+  const { t } = useTranslation("layoutCommonA");
   const items = usePlayNavItems();
   const router = useRouter();
   const isCleanerPlay = useCleanerPlayTheme();
   const currentRoute = router.state.location.pathname;
+  // Every entry is a direct link here (no sub-item rows), so all compete.
+  const navRoutes = items.map((item) => item.to);
 
   if (items.length === 0) return null;
 
@@ -138,9 +154,9 @@ export const PlayBottomNav: React.FC = () => {
     >
       <div className="flex items-stretch justify-around px-1 pt-1">
         {visibleItems.map((item, i) => {
-          const isActive = item.to ? currentRoute.includes(item.to) : false;
+          const isActive = isNavRouteActive(currentRoute, item.to, navRoutes);
           const Icon = item.icon;
-          const shortLabel = shortLabelFor(item.title);
+          const shortLabel = shortLabelFor(item.title, t);
 
           return (
             <Link
@@ -189,20 +205,18 @@ export const PlayBottomNav: React.FC = () => {
                   <DotsThree size={24} weight="bold" />
                 </div>
                 <span className="text-2xs font-bold leading-none text-muted-foreground">
-                  More
+                  {t("playBottomNav.more")}
                 </span>
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="rounded-t-3xl pb-safe">
               <SheetHeader>
-                <SheetTitle className="text-sm font-bold">More</SheetTitle>
+                <SheetTitle className="text-sm font-bold">{t("playBottomNav.more")}</SheetTitle>
               </SheetHeader>
               <div className="grid grid-cols-3 gap-3 py-4">
                 {overflowItems.map((item, i) => {
                   const Icon = item.icon;
-                  const isActive = item.to
-                    ? currentRoute.includes(item.to)
-                    : false;
+                  const isActive = isNavRouteActive(currentRoute, item.to, navRoutes);
                   return (
                     <Link
                       key={i}
@@ -265,20 +279,23 @@ export const PlayBottomNav: React.FC = () => {
  * Mirrors the bottom bar's items and press grammar for one play nav language.
  */
 export const PlayNavRail: React.FC = () => {
+  const { t } = useTranslation("layoutCommonA");
   const items = usePlayNavItems();
   const router = useRouter();
   const isCleanerPlay = useCleanerPlayTheme();
   const currentRoute = router.state.location.pathname;
+  // Every entry is a direct link here (no sub-item rows), so all compete.
+  const navRoutes = items.map((item) => item.to);
 
   if (items.length === 0) return null;
 
   return (
     <nav
-      aria-label="Main navigation"
+      aria-label={t("playBottomNav.mainNavigation")}
       className="sticky top-0 z-30 hidden h-svh w-20 shrink-0 flex-col items-center gap-1 overflow-y-auto border-e border-border bg-white px-2 py-4 lg:flex"
     >
       {items.map((item, i) => {
-        const isActive = item.to ? currentRoute.includes(item.to) : false;
+        const isActive = isNavRouteActive(currentRoute, item.to, navRoutes);
         const Icon = item.icon;
 
         return (
@@ -313,7 +330,7 @@ export const PlayNavRail: React.FC = () => {
                   : "text-muted-foreground"
               )}
             >
-              {shortLabelFor(item.title)}
+              {shortLabelFor(item.title, t)}
             </span>
           </Link>
         );

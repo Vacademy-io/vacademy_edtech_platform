@@ -1,0 +1,48 @@
+{
+    "trigger": {
+        "title": "Ajouter un clip vidéo source",
+        "ariaLabel": "Ajouter une vidéo source"
+    },
+    "heading": {
+        "title": "Vidéos source",
+        "description": "Séquences de démo ou audio de podcast utilisés dans la vidéo générée."
+    },
+    "processing": {
+        "label": "En cours de traitement"
+    },
+    "available": {
+        "label": "Disponibles",
+        "allSelected": "Toutes les vidéos disponibles sont sélectionnées.",
+        "durationSeconds": "{{seconds}} s"
+    },
+    "limit": {
+        "message_one": "Maximum {{count}} source.",
+        "message_many": "Maximum {{count}} sources.",
+        "message_other": "Maximum {{count}} sources."
+    },
+    "modes": {
+        "demo": "Démo",
+        "podcast": "Podcast",
+        "photo": "Photo",
+        "screenshot": "Capture d'écran",
+        "diagram": "Diagramme"
+    },
+    "upload": {
+        "namePlaceholder": "Nom de la vidéo",
+        "typeLabel": "Type :",
+        "confirm": "Envoyer et indexer",
+        "uploading": "Envoi en cours…",
+        "cancel": "Annuler",
+        "dropCta": "Envoyer une vidéo (≤500 Mo) ou une image (≤10 Mo)"
+    },
+    "errors": {
+        "videoTooLarge": "Vidéo trop volumineuse. Maximum 500 Mo.",
+        "imageTooLarge": "Image trop volumineuse. Maximum 10 Mo.",
+        "unsupportedFormat": "Format non pris en charge. Utilisez MP4/WebM/MOV ou PNG/JPEG/WebP.",
+        "uploadFailed": "Échec de l'envoi",
+        "urlFailed": "Échec de la récupération de l'URL"
+    },
+    "success": {
+        "uploaded": "« {{name}} » envoyé — indexation démarrée"
+    }
+}

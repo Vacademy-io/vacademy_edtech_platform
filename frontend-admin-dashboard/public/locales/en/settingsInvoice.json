@@ -1,0 +1,124 @@
+{
+    "page": {
+        "title": "Invoice Settings",
+        "description": "Configure tax, currency and email behaviour for generated invoices, manage the invoice PDF & email templates, and set the country tax details injected into those templates.",
+        "saveLabel": "Save Invoice Settings",
+        "loading": "Loading invoice settings…"
+    },
+    "sections": {
+        "general": "General",
+        "numbering": "Numbering",
+        "tax": "Country & Tax",
+        "templates": "Templates"
+    },
+    "toasts": {
+        "saved": "Invoice settings saved",
+        "saveFailed": "Failed to save invoice settings"
+    },
+    "countryCombobox": {
+        "selectPlaceholder": "Select country…",
+        "searchPlaceholder": "Search countries…",
+        "noResults": "No country found."
+    },
+    "adminSelect": {
+        "selectedCount_one": "{{count}} admin selected",
+        "selectedCount_other": "{{count}} admins selected",
+        "selectPlaceholder": "Select admins…",
+        "searchPlaceholder": "Search admins…",
+        "loading": "Loading admins…",
+        "noResults": "No admins found.",
+        "remove": "Remove"
+    },
+    "taxComponentEditor": {
+        "emptyDefault": "No tax components configured.",
+        "labelPlaceholder": "Label (e.g. CGST)",
+        "ratePlaceholder": "Rate",
+        "removeTitle": "Remove component",
+        "addButton": "Add tax component"
+    },
+    "injectablePlaceholders": {
+        "sectionTitle": "Injectable in invoice templates",
+        "country": "Operating country name",
+        "countryCode": "ISO country code (e.g. IN)",
+        "taxRegistrationNumber": "GSTIN / VAT number",
+        "hsnCode": "HSN / SAC code",
+        "taxComponents": "Tax components table (label, rate, amount)",
+        "taxLabel": "Tax line label",
+        "taxRate": "Default tax rate %"
+    },
+    "general": {
+        "title": "General",
+        "description": "Tax and currency defaults applied when an invoice is generated.",
+        "currency": {
+            "label": "Currency"
+        },
+        "taxLabel": {
+            "label": "Tax label",
+            "placeholder": "e.g. GST, VAT, Tax"
+        },
+        "taxRate": {
+            "label": "Default tax rate (%)",
+            "hint": "Applied to invoice totals when no per-plan tax is set."
+        },
+        "taxIncluded": {
+            "label": "Prices include tax",
+            "hint": "When on, listed prices are treated as tax-inclusive."
+        },
+        "sendEmail": {
+            "label": "Send invoice email automatically",
+            "hint": "Email the generated invoice PDF to the learner when a payment is completed."
+        },
+        "pdfPlacement": {
+            "label": "Invoice PDF delivery",
+            "hint": "Choose which email carries the invoice PDF after a successful payment. \"Payment confirmation email\" sends a single combined mail instead of a separate invoice email.",
+            "optionSeparate": "Separate invoice email",
+            "optionAttach": "Attach to payment confirmation email (single email)"
+        },
+        "adminCopy": {
+            "label": "Send copy to admins",
+            "hint": "Whenever a payment completes, the selected admins also receive the invoice / payment confirmation email (including the invoice PDF).",
+            "adminsToCopy": "Admins to copy"
+        },
+        "proforma": {
+            "label": "Issue unpaid invoices as proforma",
+            "hint": "An invoice raised before payment is issued as a proforma, numbered from a separate series. The real invoice number is allocated only when it is paid, so a proforma that is cancelled or never paid leaves no gap in your invoice series.",
+            "warningPrefix": "Invoices already issued keep their current numbers. Proformas are numbered",
+            "usingProDocType": "using PRO as the document type",
+            "warningSuffix": "and are renumbered into your invoice series on payment."
+        },
+        "manualEnroll": {
+            "label": "Generate invoice on manual / bulk enrollment",
+            "hint": "When an admin enrolls learners manually or in bulk (no payment gateway), generate an invoice for them."
+        }
+    },
+    "tax": {
+        "title": "Country & Tax Details",
+        "description": "The operating country, your tax registration number and its tax components. These are injectable into invoice templates.",
+        "country": {
+            "label": "Country"
+        },
+        "taxRegNumber": {
+            "label": "Tax registration number",
+            "placeholder": "e.g. 22AAAAA0000A1Z5"
+        },
+        "hsnSac": {
+            "label": "HSN / SAC code",
+            "placeholder": "e.g. 999293 (education services)",
+            "hint": "SAC for services (e.g. courses); HSN for goods."
+        },
+        "components": {
+            "label": "Tax components",
+            "total": "Total: {{total}}%",
+            "empty": "No tax components configured. Add one (e.g. CGST 9%, SGST 9%) or pick a country above to load suggested defaults.",
+            "labelPlaceholder": "Label (e.g. CGST)",
+            "ratePlaceholder": "Rate",
+            "removeTitle": "Remove component",
+            "addButton": "Add tax component"
+        },
+        "byPackageType": {
+            "label": "Tax components by package type",
+            "description": "Override the default components for a specific package type. At invoice time, each line item uses its package type's components, falling back to the default set above.",
+            "emptyOverride": "No override for {{packageType}} — the default components above will apply."
+        }
+    }
+}

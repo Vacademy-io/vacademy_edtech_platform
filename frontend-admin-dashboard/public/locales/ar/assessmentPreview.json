@@ -1,0 +1,26 @@
+{
+    "toasts": {
+        "updateSuccess": "تم تحديث ورقة الأسئلة لهذا التقييم بنجاح!",
+        "incompleteQuestions": "بعض أسئلتك غير مكتملة أو تحتاج إلى انتباه!"
+    },
+    "header": {
+        "joinLinkLabel": "رابط الانضمام:"
+    },
+    "announcementDialog": {
+        "title": "إعلان التقييم المباشر",
+        "empty": "لا توجد إعلانات",
+        "timestampPlaceholder": "اليوم، 11:28 صباحًا"
+    },
+    "actions": {
+        "save": "حفظ",
+        "exit": "خروج",
+        "addQuestion": "إضافة سؤال"
+    },
+    "questionTypes": {
+        "mcqSingleCorrect": "اختيار من متعدد (إجابة واحدة صحيحة)",
+        "mcqMultipleCorrect": "اختيار من متعدد (إجابات متعددة صحيحة)"
+    },
+    "emptyStates": {
+        "noQuestions": "لا يوجد أي سؤال."
+    }
+}

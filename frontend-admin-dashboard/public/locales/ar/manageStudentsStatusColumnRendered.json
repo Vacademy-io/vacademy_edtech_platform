@@ -1,0 +1,10 @@
+{
+    "apiStatus": {
+        "uploadFailed": "فشل الرفع",
+        "errorResolution": "يرجى مراجعة تفاصيل الخطأ لمزيد من المعلومات",
+        "unknownError": "خطأ غير معروف"
+    },
+    "validationErrors": {
+        "errorsButton": "الأخطاء ({{count}})"
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "cardTitle": "إعدادات الدفع",
+    "addPaymentPlan": "إضافة خطة دفع",
+    "defaultCurrency": "العملة الافتراضية",
+    "selectCurrencyPlaceholder": "اختر العملة",
+    "sections": {
+        "freeOptions": "الخيارات المجانية",
+        "paidOptions": "الخيارات المدفوعة"
+    },
+    "planCount_zero": "{{count}} خطة",
+    "planCount_one": "{{count}} خطة",
+    "planCount_two": "{{count}} خطتان",
+    "planCount_few": "{{count}} خطط",
+    "planCount_many": "{{count}} خطة",
+    "planCount_other": "{{count}} خطة",
+    "planPreviewTitle": "معاينة الخطة - {{name}}",
+    "intervalPlanFallback": "خطة {{value}} {{unit}}",
+    "discounts": {
+        "percentageOff": "خصم {{amount}}%",
+        "fixedOff": "خصم {{symbol}}{{amount}}",
+        "nameWithInterval": "{{discountLabel}} - {{intervalTitle}}"
+    },
+    "toasts": {
+        "noPaymentOptions": "لم يتم العثور على خيارات دفع. أنشئ أول خطة دفع خاصة بك!",
+        "loadFailed": "فشل تحميل خيارات الدفع",
+        "defaultUpdated": "تم تحديث خطة الدفع الافتراضية بنجاح",
+        "feePlanCreated": "تم إنشاء خطة الرسوم بنجاح",
+        "planUpdated": "تم تحديث خطة الدفع بنجاح",
+        "planCreated": "تم إنشاء خطة الدفع بنجاح"
+    },
+    "errors": {
+        "generic": "خطأ أثناء {{operation}}"
+    },
+    "operations": {
+        "setDefaultPlan": "تعيين الخطة الافتراضية",
+        "editPlan": "تعديل الخطة",
+        "savePaymentPlan": "حفظ خطة الدفع",
+        "previewPlan": "معاينة الخطة"
+    }
+}

@@ -1,0 +1,59 @@
+{
+    "header": {
+        "title": "Paramètres WhatsApp",
+        "subtitle": "Configurez et changez de fournisseur WhatsApp pour votre établissement"
+    },
+    "loading": "Chargement des paramètres WhatsApp...",
+    "errors": {
+        "loadStatus": "Échec du chargement des paramètres du fournisseur WhatsApp",
+        "switchProvider": "Échec du changement de fournisseur",
+        "saveCredentials": "Échec de l'enregistrement des identifiants",
+        "fillAllFields": "Veuillez remplir tous les champs"
+    },
+    "toasts": {
+        "switchedProvider": "Fournisseur actif changé pour {{provider}}",
+        "credentialsSaved": "Identifiants {{provider}} enregistrés"
+    },
+    "banner": {
+        "activeProviderLabel": "Fournisseur actif :",
+        "activeProviderDescription": "Tous les messages WhatsApp sortants sont acheminés via ce fournisseur"
+    },
+    "providers": {
+        "COMBOT": {
+            "name": "Combot",
+            "description": "Fournisseur Com.bot WhatsApp Business API"
+        },
+        "WATI": {
+            "name": "WATI",
+            "description": "Fournisseur WATI WhatsApp Business API"
+        },
+        "META": {
+            "name": "Meta",
+            "description": "API WhatsApp Cloud Meta directe"
+        }
+    },
+    "card": {
+        "radio": {
+            "configureFirst": "Configurez d'abord les identifiants",
+            "currentlyActive": "Actuellement actif",
+            "switchTo": "Passer à {{provider}}"
+        },
+        "badge": {
+            "active": "Actif",
+            "configured": "Configuré",
+            "notConfigured": "Non configuré"
+        },
+        "configure": "Configurer",
+        "credentialsTitle": "Identifiants du fournisseur",
+        "edit": "Modifier"
+    },
+    "editMode": {
+        "updateDescription": "Mettez à jour les identifiants de votre fournisseur ci-dessous.",
+        "enterDescription": "Saisissez les identifiants de votre fournisseur pour le configurer.",
+        "cancel": "Annuler",
+        "saveCredentials": "Enregistrer les identifiants"
+    },
+    "info": {
+        "note": "<0>Remarque :</0> Changer de fournisseur actif achemine instantanément tous les messages WhatsApp sortants via le fournisseur sélectionné. Assurez-vous que les mêmes modèles de message existent chez le nouveau fournisseur avant de basculer. Les messages entrants (réponses des utilisateurs) sont gérés automatiquement via le système de repli intelligent."
+    }
+}

@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DownloadSimple, SpinnerGap } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { FilePreview } from "@/components/common/file-preview";
 import { downloadFileWithName } from "@/services/upload_file";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
@@ -40,6 +41,7 @@ export function EvaluatedReportDialog({
   remark,
   title,
 }: EvaluatedReportDialogProps) {
+  const { t } = useTranslation("testRecords");
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
@@ -52,7 +54,7 @@ export function EvaluatedReportDialog({
         fileType
       );
     } catch {
-      toast.error("Could not download the file.");
+      toast.error(t("evaluatedReportDialog.downloadError"));
     } finally {
       setDownloading(false);
     }
@@ -66,7 +68,7 @@ export function EvaluatedReportDialog({
       >
         <DialogHeader className="shrink-0 flex-row items-center justify-between gap-3 space-y-0 border-b border-neutral-200 px-4 py-3 pe-12">
           <DialogTitle className="truncate text-base font-semibold">
-            {title || "Evaluated answer"}
+            {title || t("evaluatedReportDialog.defaultTitle")}
           </DialogTitle>
           {fileUrl && (
             <Button
@@ -82,7 +84,7 @@ export function EvaluatedReportDialog({
                 <DownloadSimple className="size-4" />
               )}
               <span className="hidden sm:inline">
-                {downloading ? "Downloading…" : "Download"}
+                {downloading ? t("common.downloadingEllipsis") : t("common.download")}
               </span>
             </Button>
           )}
@@ -91,7 +93,7 @@ export function EvaluatedReportDialog({
         {remark && remark.trim().length > 0 && (
           <div className="shrink-0 border-b border-primary-100 bg-primary-50 px-4 py-3">
             <p className="text-2xs font-semibold uppercase tracking-wide text-primary-500">
-              Evaluator remark
+              {t("evaluatedReportDialog.evaluatorRemark")}
             </p>
             <p className="mt-1 whitespace-pre-line text-sm text-neutral-700">
               {remark}

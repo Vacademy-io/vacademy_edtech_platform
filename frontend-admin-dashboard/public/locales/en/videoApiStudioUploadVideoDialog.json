@@ -1,0 +1,35 @@
+{
+    "title": "Upload Video for Indexing",
+    "fileSize": "{{size}} MB",
+    "filePicker": {
+        "selectPrompt": "Click to select a video file",
+        "sizeHint": "MP4, WebM, MOV up to {{maxSize}}MB"
+    },
+    "name": {
+        "label": "Name",
+        "placeholder": "e.g. Product Demo Recording"
+    },
+    "videoType": {
+        "label": "Video Type",
+        "podcast": "Podcast",
+        "demo": "Software Demo"
+    },
+    "progress": {
+        "uploading": "Uploading video...",
+        "indexing": "Starting indexing..."
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "processing": "Processing...",
+        "upload": "Upload & Index"
+    },
+    "errors": {
+        "unsupportedFormat": "Unsupported format. Use MP4, WebM, or MOV.",
+        "fileTooLarge": "File too large. Max {{maxSize}}MB.",
+        "uploadFailed": "Upload failed",
+        "publicUrlFailed": "Failed to get public URL"
+    },
+    "success": {
+        "uploadStarted": "Video uploaded and indexing started"
+    }
+}

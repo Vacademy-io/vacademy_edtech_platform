@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,8 +71,8 @@ class MentorAssignmentCapacityTest {
     void manualAssignStopsAtCapacity() {
         mentor("m1", 3);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(1L);
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                anyString(), anyString(), anyString(), anyString())).thenReturn(Optional.empty());
+        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                anyString(), anyString(), any(), anyString())).thenReturn(List.of());
 
         AssignmentResultDTO result = service.assignManual(AssignMentorRequest.builder()
                 .instituteId(INSTITUTE).mentorId("m1")
@@ -89,8 +90,8 @@ class MentorAssignmentCapacityTest {
     void uncappedMentorTakesEveryone() {
         mentor("m1", null);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(500L);
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                anyString(), anyString(), anyString(), anyString())).thenReturn(Optional.empty());
+        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                anyString(), anyString(), any(), anyString())).thenReturn(List.of());
 
         AssignmentResultDTO result = service.assignManual(AssignMentorRequest.builder()
                 .instituteId(INSTITUTE).mentorId("m1")
@@ -105,11 +106,10 @@ class MentorAssignmentCapacityTest {
     void duplicatesAreSkippedNotCapacityBlocked() {
         mentor("m1", 10);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(0L);
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("m1"), eq("s1"), anyString()))
-                .thenReturn(Optional.of(new MentorStudentAssignment()));
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("m1"), eq("s2"), anyString())).thenReturn(Optional.empty());
+        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                eq(INSTITUTE), eq("m1"), any(), anyString()))
+                .thenReturn(List.of(MentorStudentAssignment.builder()
+                        .mentorId("m1").studentUserId("s1").build()));
 
         AssignmentResultDTO result = service.assignManual(AssignMentorRequest.builder()
                 .instituteId(INSTITUTE).mentorId("m1")
@@ -127,7 +127,7 @@ class MentorAssignmentCapacityTest {
         mentor("open", null);
         when(assignmentRepository.countByMentorIdAndStatus(eq("full"), anyString())).thenReturn(1L);
         when(assignmentRepository.countByMentorIdAndStatus(eq("open"), anyString())).thenReturn(0L);
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(anyString(), anyString(), anyString()))
+        when(assignmentRepository.findByInstituteIdAndStudentUserIdInAndStatus(anyString(), any(), anyString()))
                 .thenReturn(List.of());
 
         AssignmentResultDTO result = service.bulkRoundRobin(BulkRoundRobinRequest.builder()
@@ -148,7 +148,7 @@ class MentorAssignmentCapacityTest {
         mentor("m2", 1);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(2L);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m2"), anyString())).thenReturn(1L);
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(anyString(), anyString(), anyString()))
+        when(assignmentRepository.findByInstituteIdAndStudentUserIdInAndStatus(anyString(), any(), anyString()))
                 .thenReturn(List.of());
 
         AssignmentResultDTO result = service.bulkRoundRobin(BulkRoundRobinRequest.builder()
@@ -172,16 +172,10 @@ class MentorAssignmentCapacityTest {
         when(assignmentRepository.countByMentorIdAndStatus(eq("full"), anyString())).thenReturn(1L);
         when(assignmentRepository.countByMentorIdAndStatus(eq("open"), anyString())).thenReturn(0L);
         // s1 is already paired with the only mentor that has room.
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("s1"), anyString()))
+        when(assignmentRepository.findByInstituteIdAndStudentUserIdInAndStatus(
+                eq(INSTITUTE), any(), anyString()))
                 .thenReturn(List.of(MentorStudentAssignment.builder()
                         .mentorId("open").studentUserId("s1").build()));
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("s2"), anyString())).thenReturn(List.of());
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("s3"), anyString())).thenReturn(List.of());
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("s4"), anyString())).thenReturn(List.of());
 
         List<String> students = List.of("s1", "s2", "s3", "s4");
         AssignmentResultDTO result = service.bulkRoundRobin(BulkRoundRobinRequest.builder()
@@ -199,13 +193,10 @@ class MentorAssignmentCapacityTest {
     void manualAssignAccountsForEveryStudent() {
         mentor("m1", 2);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(1L);
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("m1"), eq("s1"), anyString()))
-                .thenReturn(Optional.of(new MentorStudentAssignment()));
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("m1"), eq("s2"), anyString())).thenReturn(Optional.empty());
-        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
-                eq(INSTITUTE), eq("m1"), eq("s3"), anyString())).thenReturn(Optional.empty());
+        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                eq(INSTITUTE), eq("m1"), any(), anyString()))
+                .thenReturn(List.of(MentorStudentAssignment.builder()
+                        .mentorId("m1").studentUserId("s1").build()));
 
         List<String> students = List.of("s1", "s2", "s3");
         AssignmentResultDTO result = service.assignManual(AssignMentorRequest.builder()
@@ -226,7 +217,7 @@ class MentorAssignmentCapacityTest {
         mentor("m2", 2);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(0L);
         when(assignmentRepository.countByMentorIdAndStatus(eq("m2"), anyString())).thenReturn(0L);
-        when(assignmentRepository.findByInstituteIdAndStudentUserIdAndStatus(anyString(), anyString(), anyString()))
+        when(assignmentRepository.findByInstituteIdAndStudentUserIdInAndStatus(anyString(), any(), anyString()))
                 .thenReturn(List.of());
 
         AssignmentResultDTO result = service.bulkRoundRobin(BulkRoundRobinRequest.builder()
@@ -239,5 +230,23 @@ class MentorAssignmentCapacityTest {
         List<MentorStudentAssignment> saved = captureSaved();
         assertEquals(2, saved.stream().filter(a -> "m1".equals(a.getMentorId())).count());
         assertEquals(2, saved.stream().filter(a -> "m2".equals(a.getMentorId())).count());
+    }
+
+    @Test
+    @DisplayName("existing assignments are read in one batched query, not one per student")
+    void existingAssignmentsAreReadInOneQuery() {
+        // The picker can hand over a whole batch at once. Asking per student put a
+        // round trip per student inside the assignment transaction.
+        mentor("m1", null);
+        when(assignmentRepository.countByMentorIdAndStatus(eq("m1"), anyString())).thenReturn(0L);
+        when(assignmentRepository.findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                anyString(), anyString(), any(), anyString())).thenReturn(List.of());
+
+        service.assignManual(AssignMentorRequest.builder()
+                .instituteId(INSTITUTE).mentorId("m1")
+                .studentUserIds(List.of("s1", "s2", "s3", "s4", "s5")).build(), null);
+
+        verify(assignmentRepository, times(1)).findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+                eq(INSTITUTE), eq("m1"), any(), anyString());
     }
 }

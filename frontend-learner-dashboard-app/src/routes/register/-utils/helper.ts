@@ -60,6 +60,25 @@ export const calculateTimeDifference = (
   return difference > 0 ? true : false;
 };
 
+/**
+ * Assessments created without an explicit end are stored as 9999-12-31, and the
+ * registration window is backfilled from that bound — so the countdown rendered
+ * "REGISTRATION CLOSES IN 2912177 DAYS". Past this horizon the deadline carries
+ * no information, so the countdown is dropped and the page just says
+ * registration is open.
+ */
+const UNBOUNDED_DEADLINE_DAYS = 366;
+
+export const isEffectivelyUnbounded = (
+  serverTime: number,
+  endDate: string | null | undefined
+): boolean => {
+  if (!endDate) return true;
+  const endTime = parseBackendDate(endDate);
+  if (isNaN(endTime)) return true;
+  return endTime - serverTime > UNBOUNDED_DEADLINE_DAYS * 24 * 60 * 60 * 1000;
+};
+
 export const calculateTimeLeft = (serverTime: number, startDate: string) => {
   if (!startDate) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
   const startTime = parseBackendDate(startDate);
@@ -114,10 +133,16 @@ export const getDynamicSchema = (
 };
 
 export const getOpenRegistrationUserDetailsByEmail = (
-  users: UserDetailsOpenTest[],
+  users: unknown,
   email: string | undefined
 ): UserDetailsOpenTest | null => {
-  return users.find((user) => user.email === email) || null;
+  // The learner-details call can answer with an error envelope instead of a
+  // list (expired token, wrong institute); `.find` on that would throw.
+  if (!Array.isArray(users)) return null;
+  return (
+    (users as UserDetailsOpenTest[]).find((user) => user.email === email) ||
+    null
+  );
 };
 
 export function transformIntoCustomFieldRequestListData(
@@ -159,3 +184,47 @@ export function mergeDataToGetUserId(
 
   return result;
 }
+
+/**
+ * A PUBLIC assessment may carry no registration window at all — the backend
+ * treats each missing bound as "no limit on that side", so the page must too.
+ *
+ * These three used to do a bare `Date.parse(null)`, which is NaN, and every
+ * comparison against NaN is false — so case1/case2/case3 were ALL false and the
+ * registration form simply never rendered. The page came up blank, with no
+ * error: verified against the live bundle by serving it a payload with
+ * can_register:true and both dates null.
+ */
+type WindowBound = string | null | undefined;
+
+const boundOrNaN = (date: WindowBound): number =>
+  date ? Date.parse(date) : NaN;
+
+/** Before registration opens. An absent open date never gates. */
+export const case1 = (serverTime: number, startDate: WindowBound) => {
+  const registrationStartDate = boundOrNaN(startDate);
+  if (isNaN(registrationStartDate)) return false;
+  return serverTime < registrationStartDate;
+};
+
+/** Inside the registration window. An absent bound means that side is open. */
+export const case2 = (
+  serverTime: number,
+  startDate: WindowBound,
+  endDate: WindowBound,
+) => {
+  const registrationStartDate = boundOrNaN(startDate);
+  const registrationEndDate = boundOrNaN(endDate);
+  const hasOpened =
+    isNaN(registrationStartDate) || registrationStartDate <= serverTime;
+  const notYetClosed =
+    isNaN(registrationEndDate) || serverTime <= registrationEndDate;
+  return hasOpened && notYetClosed;
+};
+
+/** After registration closed. An absent close date never closes. */
+export const case3 = (serverTime: number, endDate: WindowBound) => {
+  const registrationEndDate = boundOrNaN(endDate);
+  if (isNaN(registrationEndDate)) return false;
+  return serverTime > registrationEndDate;
+};

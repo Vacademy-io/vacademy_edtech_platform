@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { Download, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 // Lazy-load heavy libraries when exporting
 import { MyButton } from '@/components/design-system/button';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { CircleNotch } from '@phosphor-icons/react';
+import { CircleNotch, DownloadSimple, X } from '@phosphor-icons/react';
 import { PaperSetQuestions } from './PaperSetQuestions';
 import { ExportSettings } from '@/components/common/export-offline/contexts/export-settings-context';
 
@@ -12,17 +12,21 @@ interface ExportHandlerProps {
     questionPaperId: string;
     settings: ExportSettings;
     setNumber?: number;
+    title?: string;
 }
 
 export function ExportHandlerQuestionPaper({
     questionPaperId,
     settings,
     setNumber,
+    title,
 }: ExportHandlerProps) {
+    const { t } = useTranslation('assessmentExportHandlerQuestionPaper');
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(34);
     const pagesRef = useRef<HTMLDivElement>(null);
     const cancelTokenRef = useRef<{ cancel: boolean }>({ cancel: false });
+    const setLetter = setNumber !== undefined ? String.fromCharCode(65 + setNumber) : undefined;
 
     const optimizeImage = (canvas: HTMLCanvasElement): string => {
         // Create a new canvas with optimal dimensions
@@ -110,7 +114,7 @@ export function ExportHandlerQuestionPaper({
                     allowTaint: true,
                     useCORS: true,
                     logging: true,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: '#ffffff', // design-lint-ignore: html2canvas capture option requires a literal CSS color string, not a Tailwind class
                     width: pageElement.offsetWidth,
                     height: pageElement.offsetHeight,
                     windowWidth: pageElement.offsetWidth,
@@ -161,9 +165,11 @@ export function ExportHandlerQuestionPaper({
             const url = URL.createObjectURL(optimizedPdfBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `Paper${
-                setNumber ? ` ${String.fromCharCode(65 + setNumber)}` : ''
-            }.pdf`;
+            link.download = `${
+                setNumber !== undefined
+                    ? t('fileName.withSet', { letter: setLetter })
+                    : t('fileName.base')
+            }${settings.exportSolutionKey ? ` ${t('fileName.answerKeySuffix')}` : ''}.pdf`;
             link.click();
             URL.revokeObjectURL(url);
         } catch (error) {
@@ -189,11 +195,11 @@ export function ExportHandlerQuestionPaper({
             <div className="flex flex-col">
                 <div className="flex w-full items-center gap-4">
                     <MyButton onClick={handleExport} disabled={isExporting} className="gap-2">
-                        <Download className="size-4" />
+                        <DownloadSimple className="size-4" />
                         {isExporting
-                            ? 'Exporting...'
-                            : `Export ${settings.exportFormat.toUpperCase()}`}
-                        {setNumber !== undefined && ` (Set ${String.fromCharCode(65 + setNumber)})`}
+                            ? t('export.exporting')
+                            : t('export.button', { format: settings.exportFormat.toUpperCase() })}
+                        {setNumber !== undefined && t('setLabel', { letter: setLetter })}
                     </MyButton>
                 </div>
 
@@ -208,27 +214,30 @@ export function ExportHandlerQuestionPaper({
                         width: '210mm',
                     }}
                 >
-                    <PaperSetQuestions questionPaperId={questionPaperId} settings={settings} />
+                    <PaperSetQuestions
+                        questionPaperId={questionPaperId}
+                        settings={settings}
+                        title={title}
+                    />
                 </div>
             </div>
             {isExporting && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-lg bg-white p-4 shadow-xl">
                         <div className="flex w-full items-start justify-between">
                             <p>
                                 <h3 className="flex items-center gap-x-2 text-base font-semibold text-gray-800">
-                                    Generating PDF{' '}
+                                    {t('progress.title')}{' '}
                                     <CircleNotch className="size-4 animate-spin text-primary-300" />
-                                    {setNumber !== undefined &&
-                                        ` (Set ${String.fromCharCode(65 + setNumber)})`}
+                                    {setNumber !== undefined && t('setLabel', { letter: setLetter })}
                                 </h3>
-                                <h6 className="text-xs text-gray-500">This might take a while</h6>
+                                <h6 className="text-xs text-gray-500">{t('progress.subtitle')}</h6>
                             </p>
                             <Button
                                 onClick={handleCancelExport}
                                 variant="ghost"
                                 size="icon"
-                                aria-label="Cancel PDF Generation"
+                                aria-label={t('progress.cancelAriaLabel')}
                             >
                                 <X />
                             </Button>
@@ -239,7 +248,9 @@ export function ExportHandlerQuestionPaper({
                                 className="h-1.5 w-full bg-slate-600"
                             />
                         </div>
-                        <span className="text-sm text-gray-600">{exportProgress}% Complete</span>
+                        <span className="text-sm text-gray-600">
+                            {t('progress.percentComplete', { progress: exportProgress })}
+                        </span>
                     </div>
                 </div>
             )}

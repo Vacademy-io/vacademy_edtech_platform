@@ -15,10 +15,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import vacademy.io.common.exceptions.AccessRevokedException;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.auth.service.UserActivityTrackingService;
 import vacademy.io.common.auth.service.UserService;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
+import vacademy.io.common.core.utils.TextSanitizer;
 import vacademy.io.common.exceptions.ExpiredTokenException;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -28,6 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    /**
+     * Request attribute carrying why authentication did not stick, so the
+     * entry point can put a real message in the response body instead of
+     * returning a bodyless 403.
+     */
+    public static final String AUTH_FAILURE_REASON = "vacademy.authFailureReason";
 
     // ── Session-limit enforcement caches (no external dependency) ──
     private record CacheEntry(boolean value, long expiresAt) {
@@ -87,8 +97,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             request.setAttribute("serviceName", serviceName);
             request.setAttribute("sessionToken", sessionToken);
 
-            // Extract user email from the JWT using JwtService
-            final String usernameWithInstituteId = instituteId + "@" + jwtService.extractUsername(jwt);
+            // Extract user email from the JWT using JwtService.
+            //
+            // Sanitize it before it becomes a lookup key: an email pasted with an
+            // invisible character (ZWSP, BOM, NBSP) is stored verbatim at signup,
+            // minted into the token subject, and then matches nothing on lookup —
+            // which surfaces as a bodyless 403 on every authenticated endpoint. The
+            // DB side is normalised too (User#normalizeIdentifiers), so cleaning
+            // here lets already-issued tokens keep working instead of forcing a
+            // re-login. See TextSanitizer.
+            final String rawUsername = jwtService.extractUsername(jwt);
+            final String username = TextSanitizer.cleanIdentifier(rawUsername);
+            if (TextSanitizer.hasInvisibleChars(rawUsername)) {
+                log.warn("JWT subject carried invisible characters and was normalised (institute={})", instituteId);
+            }
+            final String usernameWithInstituteId = instituteId + "@" + username;
 
             // Get current authentication object from SecurityContextHolder
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -103,12 +126,48 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // Track authentication attempt
                 long startTime = System.currentTimeMillis();
 
-                // Load user details using user email
-                CustomUserDetails userDetails = (CustomUserDetails) userDetailsService
-                        .loadUserByUsername(usernameWithInstituteId);
+                // Load user details using user email.
+                //
+                // A failure here means the token is ours and unexpired but the subject
+                // resolves to no user. Letting it fall into the catch-all below leaves
+                // the SecurityContext empty, and Spring Security then answers with an
+                // empty 403 that reads like a permissions problem — the single most
+                // misleading failure this filter can produce. Record the real reason so
+                // it reaches the response body (see JsonAuthEntryPoint) and the logs.
+                CustomUserDetails userDetails;
+                try {
+                    userDetails = (CustomUserDetails) userDetailsService
+                            .loadUserByUsername(usernameWithInstituteId);
+                } catch (Exception lookupFailure) {
+                    log.warn("User resolution failed for subject '{}' (institute={}): {}",
+                            username, instituteId, lookupFailure.getMessage());
+                    // A switched-off team member gets a distinct reason so the client can end
+                    // the session; any other failure (including auth-service being briefly
+                    // unreachable) keeps the old reason and must not log people out.
+                    request.setAttribute(AUTH_FAILURE_REASON, AccessRevokedException.isCause(lookupFailure)
+                            ? AccessRevokedException.CODE
+                            : "Token subject could not be matched to a user in this institute. Please log in again.");
+                    // Rethrow rather than calling the chain here: the catch-all below
+                    // falls through to the single doFilter at the end of this method.
+                    // Calling it from inside the try would run the chain twice whenever
+                    // a downstream handler throws. permitAll endpoints still serve the
+                    // request exactly as they did before — only the reason is recorded.
+                    throw new IllegalStateException("user resolution failed", lookupFailure);
+                }
 
                 // Pass User ID with request
                 request.setAttribute("user", userDetails);
+
+                // The token's signed "user" claim (users.id at mint time). userDetails came from a
+                // username lookup; SuperAdminAuthUtil requires the two to agree. Best-effort only.
+                try {
+                    Object tokenUserId = jwtService.extractClaim(jwt, claims -> claims.get("user"));
+                    if (tokenUserId instanceof String) {
+                        request.setAttribute(SuperAdminAuthUtil.JWT_USER_ID_ATTRIBUTE, tokenUserId);
+                    }
+                } catch (Exception ignored) {
+                    // No usable claim: the allowlist alone decides.
+                }
 
                 // Validate the JWT token using user details and JwtService
                 if (jwtService.isTokenValid(jwt, userDetails)) {

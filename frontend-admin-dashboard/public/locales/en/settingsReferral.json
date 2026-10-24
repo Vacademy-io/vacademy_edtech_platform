@@ -1,0 +1,16 @@
+{
+    "loading": "Loading referral programs...",
+    "toasts": {
+        "programUpdated": "Referral program updated successfully!",
+        "programCreated": "Referral program created successfully!"
+    },
+    "errors": {
+        "loadPrograms": "Failed to load referral programs. Please try again.",
+        "saveProgram": "Failed to save referral program. Please try again.",
+        "deleteProgram": "Failed to delete referral program. Please try again.",
+        "duplicateProgram": "Failed to duplicate referral program. Please try again."
+    },
+    "program": {
+        "duplicateLabel": "{{label}} (Copy)"
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "title": "Flux de chatbot",
+    "subtitle": "Créez des flux de conversation WhatsApp automatisés",
+    "newFlow": "Nouveau flux",
+    "aiPaused": {
+        "title": "Les étapes de réponse IA sont en pause — cet établissement n'a plus de crédits IA.",
+        "body": "Le reste de chaque flux continue de fonctionner. Les étapes de réponse IA cessent d'appeler le modèle et transfèrent la conversation à une personne dans la boîte de réception WhatsApp jusqu'à ce que vous rechargiez des crédits.",
+        "seeUsage": "Voir l'utilisation de l'IA"
+    },
+    "tabs": {
+        "flows": "Flux",
+        "usage": "Utilisation IA"
+    },
+    "loading": "Chargement...",
+    "empty": {
+        "message": "Aucun flux pour le moment. Créez votre premier flux de chatbot !",
+        "cta": "Créer un flux"
+    },
+    "toast": {
+        "loadFailed": "Échec du chargement des flux",
+        "duplicated": "Flux dupliqué",
+        "duplicateFailed": "Échec de la duplication",
+        "archived": "Flux archivé",
+        "archiveFailed": "Échec de l'archivage",
+        "deactivated": "Flux désactivé",
+        "activated": "Flux activé",
+        "toggleFailed": "Échec"
+    },
+    "confirmArchive": "Archiver ce flux ?",
+    "updated": "Mis à jour : {{date}}",
+    "notAvailable": "N/A",
+    "actions": {
+        "deactivate": "Désactiver",
+        "activate": "Activer",
+        "sessionsAndAnalytics": "Sessions et analyses",
+        "duplicate": "Dupliquer",
+        "archive": "Archiver"
+    }
+}

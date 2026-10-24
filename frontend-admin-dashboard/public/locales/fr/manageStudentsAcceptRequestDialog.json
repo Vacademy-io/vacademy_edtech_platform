@@ -1,0 +1,20 @@
+{
+    "dialog": {
+        "title": "Accepter la demande",
+        "confirmText": "Êtes-vous sûr de vouloir accepter la demande pour {{name}} ?",
+        "paymentPendingBulk_one": "*Remarque : Le paiement est encore en attente pour {{count}} étudiant",
+        "paymentPendingBulk_many": "*Remarque : Le paiement est encore en attente pour {{count}} étudiants",
+        "paymentPendingBulk_other": "*Remarque : Le paiement est encore en attente pour {{count}} étudiants",
+        "paymentPendingSingle": "*Remarque : Le paiement est encore en attente pour cet étudiant",
+        "emailNotice": "Cela acceptera la demande pour les étudiants sélectionnés par e-mail."
+    },
+    "buttons": {
+        "cancel": "Annuler",
+        "accept": "Accepter la demande"
+    },
+    "toasts": {
+        "acceptSuccess": "Demande acceptée avec succès",
+        "acceptFailed": "Échec de l'acceptation de la demande",
+        "unexpectedError": "Une erreur inattendue s'est produite"
+    }
+}

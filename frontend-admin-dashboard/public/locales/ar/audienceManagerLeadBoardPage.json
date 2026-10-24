@@ -1,0 +1,89 @@
+{
+    "heading": {
+        "title": "لوحة العملاء المحتملين",
+        "subtitle": "اسحب عميلاً محتملاً إلى عمود آخر لتغيير حالته."
+    },
+    "slaOptions": {
+        "anyOverdue": "فات موعد نهائي",
+        "firstContactMissed": "فات موعد أول تواصل",
+        "firstContactComingUp": "أول تواصل قادم",
+        "followUpComingUp": "متابعة قادمة",
+        "followUpMissed": "فاتت المتابعة"
+    },
+    "dateRangeOptions": {
+        "last24Hours": "آخر 24 ساعة",
+        "last7Days": "آخر 7 أيام",
+        "last15Days": "آخر 15 يومًا",
+        "last30Days": "آخر 30 يومًا",
+        "allTime": "كل الأوقات",
+        "customRange": "نطاق مخصص"
+    },
+    "filters": {
+        "tier": {
+            "label": "جميع الفئات",
+            "hot": "ساخن",
+            "warm": "دافئ",
+            "cold": "بارد"
+        },
+        "sla": {
+            "label": "جميع حالات اتفاقية مستوى الخدمة"
+        },
+        "audience": {
+            "label": "كل {{term}}",
+            "untitled": "جمهور بلا عنوان"
+        },
+        "callHistory": {
+            "any": "سجل المكالمات",
+            "notCalled": "لم يتم الاتصال",
+            "calledAny": "تم الاتصال (أي عدد)",
+            "calledOnce": "تم الاتصال مرة واحدة",
+            "calledTwicePlus": "تم الاتصال مرتين أو أكثر",
+            "aiCalled": "تم الاتصال بواسطة الذكاء الاصطناعي",
+            "manualCalled": "تم الاتصال يدويًا"
+        },
+        "customDate": {
+            "setDates": "تحديد التواريخ",
+            "rangeDisplay": "{{from}} → {{to}}",
+            "done": "تم",
+            "from": "من",
+            "to": "إلى"
+        }
+    },
+    "toolbar": {
+        "leadSettings": "إعدادات العملاء المحتملين"
+    },
+    "chips": {
+        "search": "بحث: {{query}}",
+        "audience": "الجمهور: {{names}}",
+        "tier": "الفئة: {{tiers}}",
+        "sla": "اتفاقية مستوى الخدمة: {{states}}",
+        "counsellor": "المستشار: {{names}}",
+        "source": "المصدر: {{source}}",
+        "customField": "{{field}}: {{value}}",
+        "dateRangeCustomWithDates": "التاريخ: {{from}} → {{to}}",
+        "dateRangeCustomFallback": "التاريخ: نطاق مخصص",
+        "dateRangeFallback": "نطاق التاريخ",
+        "fallbackSelected": "محدد",
+        "fallbackField": "حقل",
+        "unassigned": "غير مُسند",
+        "removeAriaLabel": "إزالة {{label}}",
+        "clearAll": "مسح الكل"
+    },
+    "search": {
+        "placeholder": "ابحث عن العملاء المحتملين في جميع الأعمدة",
+        "ariaLabel": "بحث عن العملاء المحتملين"
+    },
+    "board": {
+        "loading": "جارٍ تحميل اللوحة…",
+        "noStatusColumnLabel": "بدون حالة",
+        "noStatusesTitle": "لم يتم تكوين حالات العملاء المحتملين",
+        "noStatusesDescription": "قم بإعداد حالات مسار العمل في إعدادات العملاء المحتملين لاستخدام اللوحة.",
+        "allHiddenTitle": "جميع الأعمدة مخفية",
+        "allHiddenDescription": "كل عمود حالة مخفي — استخدم \"إدارة الأعمدة\" لإظهار البعض منها."
+    },
+    "callReasons": {
+        "noSubmissionId": "لا يوجد معرّف تقديم لهذا العميل المحتمل",
+        "noPhone": "لا يوجد رقم هاتف مسجل لهذا العميل المحتمل",
+        "callInProgress": "هناك مكالمة أخرى قيد البدء…"
+    }
+}

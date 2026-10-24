@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BookOpenText, CaretDown, CaretUp, Sparkle } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import {
     Select,
@@ -42,42 +44,48 @@ interface KbGroundingCardProps {
     onStructureSuggested?: (chapters: number, slidesPerChapter: number) => void;
 }
 
-const MODES: Array<{ value: KbGroundingMode; label: string; help: string }> = [
+const buildModes = (
+    t: TFunction
+): Array<{ value: KbGroundingMode; label: string; help: string }> => [
     {
         value: 'STRICT',
-        label: 'Only this material',
-        help: 'Slides the material does not cover are flagged instead of being written from general knowledge.',
+        label: t('modes.strict.label'),
+        help: t('modes.strict.help'),
     },
     {
         value: 'BLENDED',
-        label: 'Fill the gaps',
-        help: 'Where the material is thin, the AI adds its own explanation to keep the course complete.',
+        label: t('modes.blended.label'),
+        help: t('modes.blended.help'),
     },
 ];
 
-const FIDELITIES: Array<{ value: KbFidelity; label: string; help: string }> = [
+const buildFidelities = (
+    t: TFunction
+): Array<{ value: KbFidelity; label: string; help: string }> => [
     {
         value: 'REPLICATE',
-        label: 'Follow the book',
-        help: "Keeps the material's own section headings, numbering and order, and preserves stated chapter identity (number, title, authors, objectives).",
+        label: t('fidelities.replicate.label'),
+        help: t('fidelities.replicate.help'),
     },
     {
         value: 'ADAPT',
-        label: 'Adapt for teaching',
-        help: 'The AI may re-title and re-order sections to make the course flow better.',
+        label: t('fidelities.adapt.label'),
+        help: t('fidelities.adapt.help'),
     },
 ];
 
-const COVERAGES: Array<{ value: KbCoverage; label: string; help: string }> = [
+const buildCoverages = (
+    t: TFunction
+): Array<{ value: KbCoverage; label: string; help: string }> => [
     {
         value: 'FULL',
-        label: 'Every section',
-        help: 'Every selected section becomes at least one slide, so nothing in the material is skipped. Makes longer courses.',
+        label: t('coverages.full.label'),
+        help: t('coverages.full.help'),
     },
     {
         value: 'HIGHLIGHTS',
-        label: 'Highlights',
-        help: 'Closely-related sections may be condensed into fewer slides.',
+        label: t('coverages.highlights.label'),
+        help: t('coverages.highlights.help'),
     },
 ];
 
@@ -95,10 +103,15 @@ export const KbGroundingCard = ({
     onChange,
     onStructureSuggested,
 }: KbGroundingCardProps) => {
+    const { t } = useTranslation('studyLibraryKbGroundingCard');
     const { data: bases, isLoading } = useKnowledgeBases();
     const [topics, setTopics] = useState<KbTopic[] | null>(null);
     const [selectedLeafIds, setSelectedLeafIds] = useState<Set<string>>(new Set());
     const [showTopics, setShowTopics] = useState(false);
+
+    const modes = useMemo(() => buildModes(t), [t]);
+    const fidelities = useMemo(() => buildFidelities(t), [t]);
+    const coverages = useMemo(() => buildCoverages(t), [t]);
 
     const kbId = value?.knowledge_base_id ?? '';
     const mode = value?.mode ?? 'STRICT';
@@ -176,7 +189,9 @@ export const KbGroundingCard = ({
         <div className="mb-3 flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3">
             <div className="flex flex-wrap items-center gap-2">
                 <BookOpenText className="size-4 shrink-0 text-primary-500" />
-                <span className="text-caption font-medium text-neutral-700">Build from</span>
+                <span className="text-caption font-medium text-neutral-700">
+                    {t('buildFrom')}
+                </span>
 
                 <Select
                     value={kbId || 'none'}
@@ -187,10 +202,10 @@ export const KbGroundingCard = ({
                     }
                 >
                     <SelectTrigger className="h-8 w-auto min-w-48 rounded-full border-neutral-200 bg-white px-3 text-caption">
-                        <SelectValue placeholder="My own material" />
+                        <SelectValue placeholder={t('myOwnMaterial')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="none">Don&apos;t use my material</SelectItem>
+                        <SelectItem value="none">{t('dontUseMyMaterial')}</SelectItem>
                         {bases.map((kb) => (
                             <SelectItem key={kb.id} value={kb.id}>
                                 {kb.name}
@@ -205,11 +220,14 @@ export const KbGroundingCard = ({
                         scale="small"
                         onClick={() => setShowTopics((s) => !s)}
                     >
-                        {selectedCount} of {topics.length} topics
+                        {t('topicsSelected', {
+                            selected: selectedCount,
+                            count: topics.length,
+                        })}
                         {showTopics ? (
-                            <CaretUp className="ml-1 size-3.5" />
+                            <CaretUp className="ms-1 size-3.5" />
                         ) : (
-                            <CaretDown className="ml-1 size-3.5" />
+                            <CaretDown className="ms-1 size-3.5" />
                         )}
                     </MyButton>
                 )}
@@ -218,7 +236,7 @@ export const KbGroundingCard = ({
             {kbId && (
                 <>
                     <div className="flex flex-wrap gap-2">
-                        {MODES.map((m) => (
+                        {modes.map((m) => (
                             <button
                                 key={m.value}
                                 type="button"
@@ -245,7 +263,7 @@ export const KbGroundingCard = ({
                         ))}
                     </div>
                     <p className="text-caption text-neutral-500">
-                        {MODES.find((m) => m.value === mode)?.help}
+                        {modes.find((m) => m.value === mode)?.help}
                     </p>
 
                     {/* How closely to follow the source, and whether every
@@ -254,9 +272,9 @@ export const KbGroundingCard = ({
                     <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-2.5">
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="w-20 shrink-0 text-caption text-neutral-500">
-                                Structure
+                                {t('structure')}
                             </span>
-                            {FIDELITIES.map((f) => (
+                            {fidelities.map((f) => (
                                 <button
                                     key={f.value}
                                     type="button"
@@ -284,9 +302,9 @@ export const KbGroundingCard = ({
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="w-20 shrink-0 text-caption text-neutral-500">
-                                Coverage
+                                {t('coverage')}
                             </span>
-                            {COVERAGES.map((c) => (
+                            {coverages.map((c) => (
                                 <button
                                     key={c.value}
                                     type="button"
@@ -313,17 +331,15 @@ export const KbGroundingCard = ({
                             ))}
                         </div>
                         <p className="text-caption text-neutral-500">
-                            {FIDELITIES.find((f) => f.value === fidelity)?.help}{' '}
-                            {COVERAGES.find((c) => c.value === coverage)?.help}
+                            {fidelities.find((f) => f.value === fidelity)?.help}{' '}
+                            {coverages.find((c) => c.value === coverage)?.help}
                         </p>
                     </div>
 
                     {topics === null && <Skeleton className="h-24 w-full rounded-lg" />}
 
                     {topics !== null && topics.length === 0 && (
-                        <p className="text-caption text-neutral-400">
-                            This knowledge base has no topics yet, so the whole of it will be used.
-                        </p>
+                        <p className="text-caption text-neutral-400">{t('noTopicsYet')}</p>
                     )}
 
                     {showTopics && topics !== null && topics.length > 0 && (
@@ -336,8 +352,7 @@ export const KbGroundingCard = ({
 
                     <p className="flex items-start gap-1.5 text-caption text-neutral-400">
                         <Sparkle className="mt-0.5 size-3.5 shrink-0" />
-                        Every slide will be written from the pages about its own topic, and will
-                        show which page it came from.
+                        {t('everySlideFromPages')}
                     </p>
                 </>
             )}

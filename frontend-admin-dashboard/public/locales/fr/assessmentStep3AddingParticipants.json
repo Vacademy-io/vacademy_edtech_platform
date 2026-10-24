@@ -1,0 +1,82 @@
+{
+    "toasts": {
+        "updateSuccess": "Les données de l'étape 3 ont été mises à jour avec succès !",
+        "createSuccess": "Les données de l'étape 3 ont été enregistrées avec succès !",
+        "saveFailed": "Échec de l'enregistrement des participants."
+    },
+    "header": {
+        "title": "Ajouter des participants",
+        "description": "Définissez qui peut participer à cette évaluation. Ajoutez des étudiants depuis des groupes, individuellement, ou via une inscription ouverte.",
+        "updateButton": "Mettre à jour",
+        "nextButton": "Suivant"
+    },
+    "accessSettings": {
+        "cardTitle": "Paramètres d'accès des participants",
+        "cardDescription": "Choisissez comment les apprenants accèdent à cette évaluation.",
+        "closedTest": {
+            "label": "Test fermé",
+            "descriptionSurvey": "Limitez le sondage à des participants spécifiques en l'assignant à des groupes de l'établissement ou en sélectionnant des {{term}} individuellement.",
+            "descriptionAssessment": "Limitez l'évaluation à des participants spécifiques en l'assignant à des groupes de l'établissement ou en sélectionnant des {{term}} individuellement."
+        },
+        "openTest": {
+            "label": "Test ouvert",
+            "descriptionSurvey": "Permettez à quiconque de s'inscrire à ce sondage via un lien partagé. Les {{term}} de l'établissement peuvent aussi être préinscrits.",
+            "descriptionAssessment": "Permettez à quiconque de s'inscrire à cette évaluation via un lien partagé. Les {{term}} de l'établissement peuvent aussi être préinscrits."
+        }
+    },
+    "registration": {
+        "titleSurvey": "Inscription au sondage",
+        "titleAssessment": "Inscription à l'évaluation",
+        "aboutTitleSurvey": "À propos de l'inscription au sondage",
+        "aboutTitleAssessment": "À propos de l'inscription à l'évaluation",
+        "instructionsPlaceholder": "Instructions d'inscription",
+        "startDateLabel": "Date et heure de début",
+        "endDateLabel": "Date et heure de fin",
+        "formFieldsTitle": "Champs du formulaire d'inscription",
+        "formFieldsSubtitle": "Faites glisser pour réorganiser les champs et les personnaliser",
+        "addFieldHint": "Utilisez les boutons ci-dessous pour ajouter un champ",
+        "addGender": "Ajouter le genre",
+        "addState": "Ajouter l'État/la région",
+        "addCity": "Ajouter la ville",
+        "addSchoolCollege": "Ajouter école/établissement",
+        "addCustomField": "Ajouter un champ personnalisé",
+        "previewButton": "Aperçu du formulaire d'inscription",
+        "previewDialogTitle": "Aperçu du formulaire d'inscription",
+        "registerNowButton": "S'inscrire maintenant"
+    },
+    "shareAccess": {
+        "cardTitle": "Partager l'accès",
+        "cardDescription": "Partagez un lien d'accès ou un code QR avec les participants.",
+        "joinLinkLabel": "Lien d'accès",
+        "joinLinkPlaceholder": "Lien d'accès",
+        "copyJoinLinkAriaLabel": "Copier le lien d'accès",
+        "qrCodeLabel": "Code QR",
+        "downloadQrAriaLabel": "Télécharger le code QR"
+    },
+    "notifications": {
+        "cardTitle": "Notifications par e-mail",
+        "cardDescription": "Choisissez les événements qui déclenchent des alertes e-mail automatiques.",
+        "notifyBeforeLabel": "Notifier avant",
+        "items": {
+            "whenCreatedSurvey": "Quand le sondage est créé",
+            "whenCreatedAssessment": "Quand l'évaluation est créée",
+            "beforeLiveSurvey": "Avant que le sondage ne soit en ligne",
+            "beforeLiveAssessment": "Avant que l'évaluation ne soit en ligne",
+            "whenLiveSurvey": "Quand le sondage est en ligne",
+            "whenLiveAssessment": "Quand l'évaluation est en ligne",
+            "reportGeneratedSurvey": "Quand les rapports du sondage sont générés",
+            "reportGeneratedAssessment": "Quand les rapports de l'évaluation sont générés"
+        },
+        "participants": {
+            "sectionTitle": "Notifier les participants"
+        },
+        "parents": {
+            "sectionTitleSurvey": "Notifier les participants",
+            "sectionTitleAssessment": "Notifier les parents",
+            "whenStudentAppearsSurvey": "Quand les étudiants se présentent au sondage",
+            "whenStudentAppearsAssessment": "Quand les étudiants se présentent à l'évaluation",
+            "whenStudentFinishesSurvey": "Quand les étudiants terminent le sondage",
+            "whenStudentFinishesAssessment": "Quand les étudiants terminent l'évaluation"
+        }
+    }
+}

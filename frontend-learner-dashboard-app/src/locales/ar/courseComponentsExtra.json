@@ -1,0 +1,287 @@
+{
+    "common": {
+        "somethingWentWrong": "حدث خطأ ما",
+        "recommendedSteps": "الخطوات الموصى بها",
+        "errorDetailsDevOnly": "تفاصيل الخطأ (للتطوير فقط)",
+        "returnHome": "العودة إلى الصفحة الرئيسية",
+        "goBack": "رجوع",
+        "reportIssue": "الإبلاغ عن مشكلة",
+        "signOut": "تسجيل الخروج",
+        "tryAgain": "المحاولة مرة أخرى",
+        "cancel": "إلغاء",
+        "refresh": "تحديث",
+        "loading": "جارٍ التحميل...",
+        "loadMore": "تحميل المزيد",
+        "clearAll": "مسح الكل"
+    },
+    "errorTitle": "خطأ",
+    "loading": "جارٍ تحميل {{type}}...",
+    "noFrameContent": "لا يوجد محتوى متاح لهذا الإطار",
+    "interactHint": "تفاعل مع المحتوى أعلاه",
+    "progressOfTotal": "{{label}} {{current}} من {{total}}",
+    "frameLayerTitle": "طبقة فيديو الذكاء الاصطناعي {{id}}",
+    "contentType": {
+        "VIDEO": "فيديو",
+        "QUIZ": "اختبار قصير",
+        "STORYBOOK": "كتاب قصص",
+        "INTERACTIVE_GAME": "لعبة",
+        "PUZZLE_BOOK": "ألغاز",
+        "SIMULATION": "محاكاة",
+        "FLASHCARDS": "بطاقات تعليمية",
+        "MAP_EXPLORATION": "خريطة",
+        "WORKSHEET": "ورقة عمل",
+        "CODE_PLAYGROUND": "كود برمجي",
+        "TIMELINE": "الخط الزمني",
+        "CONVERSATION": "محادثة"
+    },
+    "entryLabel": {
+        "VIDEO": "مقطع",
+        "QUIZ": "سؤال",
+        "STORYBOOK": "صفحة",
+        "INTERACTIVE_GAME": "لعبة",
+        "PUZZLE_BOOK": "لغز",
+        "SIMULATION": "محاكاة",
+        "FLASHCARDS": "بطاقة",
+        "MAP_EXPLORATION": "موقع",
+        "WORKSHEET": "تمرين",
+        "CODE_PLAYGROUND": "تمرين",
+        "TIMELINE": "حدث",
+        "CONVERSATION": "تبادل"
+    },
+    "mcq": {
+        "quickCheck": "تحقق سريع",
+        "skip": "تخطي",
+        "explanationLabel": "التوضيح: ",
+        "continue": "متابعة"
+    },
+    "controls": {
+        "printWorksheetTitle": "طباعة ورقة العمل",
+        "print": "طباعة",
+        "rewind10": "الرجوع 10 ثوانٍ",
+        "forward10": "التقدم 10 ثوانٍ",
+        "play": "تشغيل",
+        "pause": "إيقاف مؤقت",
+        "resetToBeginning": "إعادة الضبط إلى البداية",
+        "reset": "إعادة الضبط",
+        "mute": "كتم الصوت",
+        "unmute": "إلغاء كتم الصوت",
+        "playbackSpeed": "سرعة التشغيل",
+        "disableQuiz": "تعطيل أسئلة الاختبار",
+        "enableQuiz": "تفعيل أسئلة الاختبار",
+        "quizOn": "الاختبار مُفعّل",
+        "quizOff": "الاختبار مُعطّل",
+        "exitFullscreen": "الخروج من وضع ملء الشاشة",
+        "enterFullscreen": "الدخول في وضع ملء الشاشة",
+        "previous": "السابق",
+        "next": "التالي",
+        "sourceVideoAudio": "صوت الفيديو المصدر"
+    },
+    "errors": {
+        "failedToLoadTimeline": "تعذّر تحميل الخط الزمني",
+        "failedToLoadAudio": "تعذّر تحميل الصوت",
+        "audioLoadingAborted": "تم إلغاء تحميل الصوت",
+        "audioNetworkError": "حدث خطأ في الشبكة أثناء تحميل الصوت. تحقق من إعدادات CORS.",
+        "audioDecodeError": "خطأ في فك ترميز الصوت",
+        "audioFormatNotSupported": "صيغة الصوت غير مدعومة",
+        "failedToPlayAudio": "تعذّر تشغيل الصوت"
+    },
+    "dripConditions": {
+        "common": {
+            "locked": "مُقفَل"
+        },
+        "unlockRequirements": {
+            "title": "متطلبات إلغاء القفل"
+        },
+        "counts": {
+            "accessible": "{{count}} {{term}}",
+            "locked": "{{count}} مُقفَل",
+            "hidden": "{{count}} مخفي"
+        }
+    },
+    "systemAlertsBar": {
+        "priority": {
+            "high": "أولوية عالية",
+            "medium": "أولوية متوسطة",
+            "low": "أولوية منخفضة",
+            "normal": "أولوية عادية"
+        },
+        "byAuthor": "بواسطة {{name}}",
+        "title": "تنبيهات النظام",
+        "clearAllTitle": "مسح كل الإشعارات",
+        "clearAllDescription_zero": "هل تريد بالتأكيد تجاهل الإشعارات ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_one": "هل تريد بالتأكيد تجاهل الإشعار ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_two": "هل تريد بالتأكيد تجاهل الإشعارين ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_few": "هل تريد بالتأكيد تجاهل الإشعارات الـ{{count}}؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_many": "هل تريد بالتأكيد تجاهل الإشعارات الـ{{count}}؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_other": "هل تريد بالتأكيد تجاهل جميع الإشعارات ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "loadingAlerts": "جارٍ تحميل التنبيهات...",
+        "noAlerts": "لا توجد تنبيهات نظام"
+    },
+    "appOverlayHost": {
+        "announcement": "إعلان",
+        "from": "من {{name}}",
+        "gotIt": "فهمت",
+        "progressOfTotal": "{{current}} من {{total}}"
+    },
+    "packageSessionMessages": {
+        "discussion": "نقاش",
+        "close": "إغلاق",
+        "writeReplyPlaceholder": "اكتب ردًا...",
+        "replyVisibilityNotice": "سيكون ردك مرئيًا لجميع المشاركين",
+        "posting": "جارٍ النشر...",
+        "postReply": "نشر الرد",
+        "repliesWillAppearHere": "ستظهر الردود هنا",
+        "courseDiscussion": "نقاش {{course}}",
+        "loadingStreamMessages": "جارٍ تحميل رسائل البث...",
+        "noStreamMessages": "لا توجد رسائل بث",
+        "repliesCount_zero": "{{count}} رد",
+        "repliesCount_one": "رد واحد ({{count}})",
+        "repliesCount_two": "ردّان ({{count}})",
+        "repliesCount_few": "{{count}} ردود",
+        "repliesCount_many": "{{count}} ردًا",
+        "repliesCount_other": "{{count}} رد"
+    },
+    "dashboardPinsPanel": {
+        "priority": {
+            "high": "عالية",
+            "medium": "متوسطة",
+            "low": "منخفضة",
+            "normal": "عادية"
+        },
+        "timeRemaining": {
+            "days_zero": "{{count}} يوم متبقٍ",
+            "days_one": "يوم واحد ({{count}}) متبقٍ",
+            "days_two": "يومان ({{count}}) متبقيان",
+            "days_few": "{{count}} أيام متبقية",
+            "days_many": "{{count}} يومًا متبقيًا",
+            "days_other": "{{count}} يوم متبقٍ",
+            "hours_zero": "{{count}} ساعة متبقية",
+            "hours_one": "ساعة واحدة ({{count}}) متبقية",
+            "hours_two": "ساعتان ({{count}}) متبقيتان",
+            "hours_few": "{{count}} ساعات متبقية",
+            "hours_many": "{{count}} ساعة متبقية",
+            "hours_other": "{{count}} ساعة متبقية",
+            "lessThanHour": "أقل من ساعة متبقية"
+        },
+        "importantUpdates": "تحديثات مهمة",
+        "clearAllTitle": "مسح كل التثبيتات",
+        "clearAllDescription_zero": "هل تريد بالتأكيد تجاهل التثبيتات ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_one": "هل تريد بالتأكيد تجاهل التثبيت ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_two": "هل تريد بالتأكيد تجاهل التثبيتين ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_few": "هل تريد بالتأكيد تجاهل التثبيتات الـ{{count}}؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_many": "هل تريد بالتأكيد تجاهل التثبيتات الـ{{count}}؟ لا يمكن التراجع عن هذا الإجراء.",
+        "clearAllDescription_other": "هل تريد بالتأكيد تجاهل جميع التثبيتات ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.",
+        "loadingPins": "جارٍ تحميل التثبيتات...",
+        "viewAll": "عرض الكل ({{count}} إجمالًا)",
+        "byAuthor": "بواسطة {{name}}",
+        "pinExpires": "ستنتهي صلاحية هذا التثبيت {{time}}"
+    },
+    "genericErrorPage": {
+        "title": "حدث خطأ ما",
+        "description": "حدث خطأ غير متوقع. لقد سجّلنا المشكلة بأمان وفريقنا يعمل على معالجتها.",
+        "step1": "حاول تحديث الصفحة أو العودة إلى لوحة التحكم الرئيسية.",
+        "step2Prefix": "إذا استمر الخطأ، يرجى",
+        "step2Emphasis": "تسجيل الخروج ثم تسجيل الدخول مجددًا",
+        "step2Suffix": "لإعادة ضبط جلستك."
+    },
+    "runtimeErrorPage": {
+        "applicationError": "خطأ في التطبيق",
+        "systemCrashed": "تعطّل النظام",
+        "description": "حدث خطأ غير متوقع في التطبيق. تم إبلاغ فريق الهندسة لدينا وهو يعمل على إصلاحه.",
+        "step1": "حاول إعادة تحميل الصفحة أو العودة إلى لوحة التحكم الرئيسية.",
+        "reloadPage": "إعادة تحميل الصفحة"
+    },
+    "networkErrorPage": {
+        "underMaintenance": "قيد الصيانة",
+        "title": "سنعود قريبًا",
+        "description": "يعمل فريقنا حاليًا على تحديث المنصة لنقدّم لك تجربة أفضل. نعتذر عن هذا الانقطاع."
+    },
+    "offlineErrorPage": {
+        "noConnection": "لا يوجد اتصال",
+        "youAreOffline": "أنت غير متصل بالإنترنت",
+        "description": "يبدو أنك فقدت الاتصال بالإنترنت. يرجى التحقق من إعدادات شبكتك ومحاولة إعادة الاتصال."
+    },
+    "smartErrorPage": {
+        "updatingApplication": "جارٍ تحديث التطبيق..."
+    },
+    "defaultNotFound": {
+        "pageTitle": "الصفحة غير موجودة (404)",
+        "metaDescription": "الصفحة غير موجودة. لم نتمكن من العثور على الصفحة التي كنت تبحث عنها. يرجى التحقق من الرابط أو المحاولة بالبحث.",
+        "heading": "عذرًا! الصفحة غير موجودة",
+        "descriptionLine1": "لم نتمكن من العثور على الصفحة التي كنت تحاول الوصول إليها.",
+        "descriptionLine2": "قد يكون ذلك بسبب خطأ في الكتابة، أو مشكلة مؤقتة، أو ربما تمت إزالة الصفحة."
+    },
+    "defaultPending": {
+        "pageTitle": "جارٍ تحميل الصفحة...",
+        "metaDescription": "يرجى الانتظار قليلاً بينما نجهّز الصفحة. تجربتك على وشك أن تبدأ!"
+    },
+    "inlineErrorBoundary": {
+        "defaultTitle": "تعذّر عرض هذا القسم",
+        "defaultDescription": "حدث خطأ ما أثناء تحميله. إجاباتك والمؤقّت لم يتأثرا."
+    },
+    "errorFeedbackDialog": {
+        "description": "ساعدنا على التحسين بتقديم التفاصيل. يتم تضمين السياق تلقائيًا.",
+        "nameLabel": "الاسم (اختياري)",
+        "namePlaceholder": "اسمك",
+        "emailLabel": "البريد الإلكتروني (اختياري)",
+        "emailPlaceholder": "بريدك الإلكتروني للمتابعة",
+        "whatWentWrongLabel": "ما الذي حدث بالضبط؟",
+        "descriptionPlaceholder": "يرجى وصف ما كنت تفعله عند حدوث الخطأ...",
+        "attachments": "المرفقات",
+        "filesSelected_zero": "تم اختيار {{count}} ملف",
+        "filesSelected_one": "تم اختيار ملف واحد ({{count}})",
+        "filesSelected_two": "تم اختيار ملفين ({{count}})",
+        "filesSelected_few": "تم اختيار {{count}} ملفات",
+        "filesSelected_many": "تم اختيار {{count}} ملفًا",
+        "filesSelected_other": "تم اختيار {{count}} ملف",
+        "sending": "جارٍ الإرسال...",
+        "sendReport": "إرسال التقرير",
+        "submitSuccess": "شكرًا لك! تم إرسال تقريرك.",
+        "submitFailure": "تعذّر إرسال التقرير. يرجى المحاولة مرة أخرى."
+    },
+    "dashboardLoader": {
+        "errorBoundaryDescription": "حدث خطأ غير متوقع أثناء تحميل هذا المحتوى. قد يكون السبب مشكلة مؤقتة أو صلاحيات غير كافية.",
+        "errorDetailsDev": "تفاصيل الخطأ (للتطوير)",
+        "loading": "جارٍ التحميل",
+        "logoAlt": "الشعار"
+    },
+    "submitModal": {
+        "title": "تسليم التقييم",
+        "description": "لن تتمكن من العودة إلى الورقة بعد التسليم. تأكد من أنك قدمت أفضل إجاباتك.",
+        "descriptionWithUnanswered": "لا تزال {{unanswered}} من أصل {{total}} أسئلة بلا إجابة. لن تتمكن من العودة إلى الورقة بعد التسليم.",
+        "answered": "تمت الإجابة",
+        "unanswered": "بلا إجابة",
+        "markedForReview": "مُعلَّم للمراجعة",
+        "notVisited": "لم تتم زيارته",
+        "totalQuestions": "إجمالي الأسئلة",
+        "submitting": "جارٍ التسليم...",
+        "submit": "تسليم"
+    },
+    "timesUpModal": {
+        "title": "انتهى الوقت!",
+        "description": "انتهى الوقت المخصص للتقييم. اضغط لتسليم إجاباتك.",
+        "finish": "إنهاء"
+    },
+    "helpModal": {
+        "titles": {
+            "instructions": "تعليمات التقييم",
+            "alerts": "تنبيهات التقييم",
+            "reattempt": "طلب إعادة المحاولة",
+            "time": "طلب وقت إضافي"
+        },
+        "noActiveAlerts": "لا توجد تنبيهات نشطة في الوقت الحالي.",
+        "reasonPromptPrefix": "يرجى ذكر سبب طلب",
+        "reattemptWord": "إعادة المحاولة",
+        "timeExtensionWord": "الوقت الإضافي",
+        "reasonPromptSuffix": "لهذا التقييم، ليتم إرساله إلى المسؤول.",
+        "requestAlreadySent": "تم إرسال الطلب مسبقًا",
+        "requestUnderReview": "استلمه معهدك وهو قيد المراجعة. سيتم إشعارك فور الرد عليه.",
+        "quotedReason": "«{{reason}}»",
+        "reasonPlaceholder": "اكتب سببك هنا",
+        "sending": "جارٍ الإرسال...",
+        "submit": "تسليم",
+        "requestSentConfirmation": "تم إرسال طلبك إلى معهدك. تم إشعاره وستحصل على رد فور مراجعته.",
+        "couldNotIdentifyAssessment": "تعذّر التعرّف على هذا التقييم.",
+        "sendRequestFailed": "تعذّر إرسال طلبك. يرجى المحاولة مرة أخرى."
+    }
+}

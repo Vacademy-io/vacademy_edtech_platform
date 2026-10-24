@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface Supporter {
   name: string;
@@ -40,10 +41,11 @@ const supporters: Supporter[] = [
 ];
 
 const SupportersSection: React.FC = () => {
+  const { t } = useTranslation("study");
   return (
     <section className="py-12 bg-white text-center">
       <h2 className="text-3xl font-bold text-gray-800 mb-4"> {/* Increased size and margin */}
-        Our <span className="text-blue-600">Supporters</span> {/* Adjusted blue color for consistency */}
+        {t("supportersSection.headingPrefix")} <span className="text-blue-600">{t("supportersSection.headingHighlight")}</span> {/* Adjusted blue color for consistency */}
       </h2>
 
       <div className="mt-10 flex flex-wrap justify-center items-center gap-x-10 gap-y-6 md:gap-x-16"> {/* Increased gaps and top margin */}

@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import PhoneInput from 'react-phone-input-2';
@@ -12,6 +14,7 @@ import {
     CustomField,
 } from '@/services/custom-field-settings';
 import { useUserIdentifierSetting } from '@/services/user-identifier-setting';
+import { useLearnerUsernamePolicy } from '@/services/student-display-settings';
 import { getPreferredPhoneCountries } from '@/services/domain-routing';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -133,45 +136,73 @@ const editableRowToNewUser = (r: EditableRow): NewUserRow => {
     };
 };
 
-// Map system field key → EditableRow field key + input type
-const SYSTEM_FIELD_MAP: Record<
-    string,
-    { rowKey: keyof EditableRow; inputType: string; placeholder: string }
-> = {
-    GENDER: { rowKey: 'gender', inputType: 'text', placeholder: 'MALE / FEMALE / OTHER' },
-    DATE_OF_BIRTH: { rowKey: 'date_of_birth', inputType: 'date', placeholder: 'YYYY-MM-DD' },
-    ADDRESS_LINE: { rowKey: 'address_line', inputType: 'text', placeholder: 'Address line' },
-    CITY: { rowKey: 'city', inputType: 'text', placeholder: 'City' },
-    REGION: { rowKey: 'region', inputType: 'text', placeholder: 'State / Region' },
-    PIN_CODE: { rowKey: 'pin_code', inputType: 'text', placeholder: 'PIN code' },
+// Map system field key → EditableRow field key + input type. Built from `t` so
+// placeholders re-localize when the active language changes.
+const buildSystemFieldMap = (
+    t: TFunction
+): Record<string, { rowKey: keyof EditableRow; inputType: string; placeholder: string }> => ({
+    GENDER: {
+        rowKey: 'gender',
+        inputType: 'text',
+        placeholder: t('fields.gender.placeholder'),
+    },
+    DATE_OF_BIRTH: {
+        rowKey: 'date_of_birth',
+        inputType: 'date',
+        placeholder: t('fields.dateOfBirth.placeholder'),
+    },
+    ADDRESS_LINE: {
+        rowKey: 'address_line',
+        inputType: 'text',
+        placeholder: t('fields.addressLine.placeholder'),
+    },
+    CITY: { rowKey: 'city', inputType: 'text', placeholder: t('fields.city.placeholder') },
+    REGION: {
+        rowKey: 'region',
+        inputType: 'text',
+        placeholder: t('fields.region.placeholder'),
+    },
+    PIN_CODE: {
+        rowKey: 'pin_code',
+        inputType: 'text',
+        placeholder: t('fields.pinCode.placeholder'),
+    },
     LINKED_INSTITUTE_NAME: {
         rowKey: 'linked_institute_name',
         inputType: 'text',
-        placeholder: 'College / School',
+        placeholder: t('fields.linkedInstituteName.placeholder'),
     },
-    FATHER_NAME: { rowKey: 'fathers_name', inputType: 'text', placeholder: "Father's name" },
-    MOTHER_NAME: { rowKey: 'mothers_name', inputType: 'text', placeholder: "Mother's name" },
+    FATHER_NAME: {
+        rowKey: 'fathers_name',
+        inputType: 'text',
+        placeholder: t('fields.fathersName.placeholder'),
+    },
+    MOTHER_NAME: {
+        rowKey: 'mothers_name',
+        inputType: 'text',
+        placeholder: t('fields.mothersName.placeholder'),
+    },
     PARENTS_MOBILE_NUMBER: {
         rowKey: 'parents_mobile_number',
         inputType: 'tel',
-        placeholder: "Father's mobile",
+        placeholder: t('fields.parentsMobileNumber.placeholder'),
     },
     PARENTS_EMAIL: {
         rowKey: 'parents_email',
         inputType: 'email',
-        placeholder: "Father's email",
+        placeholder: t('fields.parentsEmail.placeholder'),
     },
     PARENTS_TO_MOTHER_MOBILE_NUMBER: {
         rowKey: 'parents_to_mother_mobile_number',
         inputType: 'tel',
-        placeholder: "Mother's mobile",
+        placeholder: t('fields.parentsToMotherMobileNumber.placeholder'),
     },
     PARENTS_TO_MOTHER_EMAIL: {
         rowKey: 'parents_to_mother_email',
         inputType: 'email',
-        placeholder: "Mother's email",
+        placeholder: t('fields.parentsToMotherEmail.placeholder'),
     },
-};
+});
 
 // System fields that are excluded from the form (handled in other steps)
 const EXCLUDED_SYSTEM_KEYS = new Set([
@@ -199,10 +230,15 @@ interface VisibleSystemField {
 }
 
 export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }: Props) => {
+    const { t } = useTranslation('manageStudentsManualUserEntry');
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const isEditMode = !!editingRow;
     const { data: userIdentifier } = useUserIdentifierSetting();
     const phoneRequired = userIdentifier === 'PHONE';
+    // Settings → Login & Signup can make the username rule replace a typed one;
+    // then the box is locked (showing the email when the rule is Email).
+    const usernamePolicy = useLearnerUsernamePolicy();
+    const usernameLocked = usernamePolicy.overridesTyped;
 
     const [rows, setRows] = useState<EditableRow[]>(() =>
         editingRow ? [rowFromNewUser(editingRow)] : [emptyRow()],
@@ -225,6 +261,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
     // ─── Compute dynamic fields from institute settings ────
     const { visibleSystemFields, enrollmentCustomFields } = useMemo(() => {
         const settings = getCustomFieldSettingsFromCache();
+        const systemFieldMap = buildSystemFieldMap(t);
 
         // System fields
         const sysFields: VisibleSystemField[] = [];
@@ -232,7 +269,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
             for (const sf of settings.systemFields) {
                 if (!sf.visibility) continue;
                 if (EXCLUDED_SYSTEM_KEYS.has(sf.key)) continue;
-                const mapping = SYSTEM_FIELD_MAP[sf.key];
+                const mapping = systemFieldMap[sf.key];
                 if (!mapping) continue;
                 sysFields.push({
                     key: sf.key,
@@ -246,10 +283,10 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
             // Fallback: show gender only if no settings
             sysFields.push({
                 key: 'GENDER',
-                label: 'Gender',
+                label: t('fields.gender.label'),
                 rowKey: 'gender',
                 inputType: 'text',
-                placeholder: 'MALE / FEMALE / OTHER',
+                placeholder: t('fields.gender.placeholder'),
             });
         }
 
@@ -259,7 +296,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         );
 
         return { visibleSystemFields: sysFields, enrollmentCustomFields: cfFields };
-    }, []);
+    }, [t]);
 
     const hasExtraFields = visibleSystemFields.length > 0 || enrollmentCustomFields.length > 0;
 
@@ -314,8 +351,8 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         onEditSave?.(editableRowToNewUser(row));
     };
 
-    const emailLabel = phoneRequired ? 'Email (optional)' : 'Email';
-    const mobileLabel = phoneRequired ? 'Mobile' : 'Mobile (optional)';
+    const emailLabel = phoneRequired ? t('core.emailLabelOptional') : t('core.emailLabel');
+    const mobileLabel = phoneRequired ? t('core.mobileLabel') : t('core.mobileLabelOptional');
 
     return (
         <div className="flex flex-col gap-4">
@@ -331,7 +368,9 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                     >
                         <div className="mb-2 flex items-center justify-between">
                             <span className="text-xs font-semibold text-neutral-500">
-                                {isEditMode ? `Edit ${learnerTerm}` : `${learnerTerm} #${idx + 1}`}
+                                {isEditMode
+                                    ? t('row.editTitle', { term: learnerTerm })
+                                    : t('row.title', { term: learnerTerm, number: idx + 1 })}
                             </span>
                             <div className="flex items-center gap-2">
                                 {hasExtraFields && (
@@ -341,11 +380,11 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                     >
                                         {row.expanded ? (
                                             <>
-                                                <CaretUp size={12} /> Less fields
+                                                <CaretUp size={12} /> {t('row.lessFields')}
                                             </>
                                         ) : (
                                             <>
-                                                <CaretDown size={12} /> More fields
+                                                <CaretDown size={12} /> {t('row.moreFields')}
                                             </>
                                         )}
                                     </button>
@@ -370,7 +409,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                 </Label>
                                 <Input
                                     type="email"
-                                    placeholder="student@example.com"
+                                    placeholder={t('core.emailPlaceholder')}
                                     value={row.email}
                                     onChange={(e) => update(idx, 'email', e.target.value)}
                                     className={
@@ -382,10 +421,10 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
-                                    Full Name <span className="text-danger-500">*</span>
+                                    {t('core.fullNameLabel')} <span className="text-danger-500">*</span>
                                 </Label>
                                 <Input
-                                    placeholder="John Doe"
+                                    placeholder={t('core.fullNamePlaceholder')}
                                     value={row.full_name}
                                     onChange={(e) => update(idx, 'full_name', e.target.value)}
                                     className={
@@ -404,7 +443,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                     country={defaultCountry}
                                     preferredCountries={preferredCountries}
                                     enableSearch={true}
-                                    placeholder="123 456 7890"
+                                    placeholder={t('core.mobilePlaceholder')}
                                     value={row.mobile_number}
                                     onChange={(value) =>
                                         update(idx, 'mobile_number', value)
@@ -422,12 +461,23 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
-                                    Username (optional)
+                                    {t('core.usernameLabel')}
                                 </Label>
                                 <Input
                                     name={`learner_username_${idx}`}
-                                    placeholder="auto-generated if blank"
-                                    value={row.username}
+                                    placeholder={
+                                        usernameLocked
+                                            ? t('core.usernameFromSettingPlaceholder')
+                                            : t('core.autoGeneratedPlaceholder')
+                                    }
+                                    value={
+                                        !usernameLocked
+                                            ? row.username
+                                            : usernamePolicy.strategy === 'email'
+                                              ? row.email.trim().toLowerCase()
+                                              : ''
+                                    }
+                                    disabled={usernameLocked}
                                     // Usernames cannot contain spaces — strip whitespace as it's typed/pasted
                                     onChange={(e) =>
                                         update(idx, 'username', e.target.value.replace(/\s/g, ''))
@@ -437,12 +487,12 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                             </div>
                             <div>
                                 <Label className="mb-1 text-xs text-neutral-500">
-                                    Password (optional)
+                                    {t('core.passwordLabel')}
                                 </Label>
                                 <Input
                                     type="password"
                                     name={`learner_password_${idx}`}
-                                    placeholder="auto-generated if blank"
+                                    placeholder={t('core.autoGeneratedPlaceholder')}
                                     value={row.password}
                                     onChange={(e) => update(idx, 'password', e.target.value)}
                                     {...noAutofillProps('password')}
@@ -454,7 +504,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         {row.expanded && hasExtraFields && (
                             <div className="mt-3 border-t border-neutral-100 pt-3">
                                 <p className="mb-2 text-xs font-semibold text-neutral-400 uppercase tracking-wide">
-                                    Additional Details
+                                    {t('extra.sectionTitle')}
                                 </p>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     {/* Dynamic system fields */}
@@ -498,7 +548,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                                     }
                                                 >
                                                     <option value="">
-                                                        Select {cf.name}
+                                                        {t('extra.selectOption', { name: cf.name })}
                                                     </option>
                                                     {cf.options.map((opt) => (
                                                         <option key={opt} value={opt}>
@@ -513,7 +563,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                                             ? 'number'
                                                             : 'text'
                                                     }
-                                                    placeholder={`Enter ${cf.name}`}
+                                                    placeholder={t('extra.enterPlaceholder', { name: cf.name })}
                                                     value={row.custom_fields[cf.id] || ''}
                                                     onChange={(e) =>
                                                         updateCustomField(
@@ -541,7 +591,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         layoutVariant="default"
                         onClick={onEditCancel}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton
                         buttonType="primary"
@@ -549,7 +599,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         layoutVariant="default"
                         onClick={handleEditSave}
                     >
-                        Save changes
+                        {t('actions.saveChanges')}
                     </MyButton>
                 </div>
             ) : (
@@ -559,7 +609,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         className="flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors"
                     >
                         <Plus size={14} />
-                        Add another learner
+                        {t('actions.addAnotherLearner')}
                     </button>
                     <div className="flex-1" />
                     <MyButton
@@ -568,8 +618,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                         layoutVariant="default"
                         onClick={handleAdd}
                     >
-                        Add {rows.filter(validate).length} learner
-                        {rows.filter(validate).length !== 1 ? 's' : ''}
+                        {t('actions.addLearners', { count: rows.filter(validate).length })}
                     </MyButton>
                 </div>
             )}

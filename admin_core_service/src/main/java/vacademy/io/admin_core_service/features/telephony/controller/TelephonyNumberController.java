@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.telephony.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.telephony.controller.dto.TelephonyProviderNumberDTO;
 import vacademy.io.admin_core_service.features.telephony.core.InboundFlowAttacher;
 import vacademy.io.admin_core_service.features.telephony.core.TelephonyNumberTxOps;
@@ -30,6 +31,11 @@ public class TelephonyNumberController {
     }
 
     @PostMapping
+    @Auditable(
+            entityType = "TELEPHONY_NUMBER",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'added calling number ' + (#body?.phoneNumber ?: '')")
     public ResponseEntity<TelephonyProviderNumberDTO> create(
             @RequestBody TelephonyProviderNumberDTO body) {
         if (body.getInstituteId() == null || body.getInstituteId().isBlank()) {
@@ -51,6 +57,11 @@ public class TelephonyNumberController {
     }
 
     @PutMapping("/{id}")
+    @Auditable(
+            entityType = "TELEPHONY_NUMBER",
+            action = "UPDATE",
+            entityIdExpr = "#id",
+            descriptionExpr = "'updated calling number ' + (#body?.phoneNumber ?: #id)")
     public ResponseEntity<TelephonyProviderNumberDTO> update(
             @PathVariable String id,
             @RequestBody TelephonyProviderNumberDTO body) {
@@ -67,6 +78,11 @@ public class TelephonyNumberController {
 
     /** Re-run the attach for a number whose last attempt was PENDING / FAILED. */
     @PostMapping("/{id}/attach")
+    @Auditable(
+            entityType = "TELEPHONY_NUMBER",
+            action = "ATTACH",
+            entityIdExpr = "#id",
+            descriptionExpr = "'re-attached calling number ' + (#result?.body?.phoneNumber ?: #id) + ' to its flow'")
     public ResponseEntity<TelephonyProviderNumberDTO> retryAttach(@PathVariable String id) {
         flowAttacher.retry(id);
         return numberRepo.findById(id)
@@ -75,6 +91,11 @@ public class TelephonyNumberController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditable(
+            entityType = "TELEPHONY_NUMBER",
+            action = "DELETE",
+            entityIdExpr = "#id",
+            descriptionExpr = "'removed a calling number'")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         TelephonyProviderNumber existing = numberRepo.findById(id).orElse(null);
         if (existing != null) flowAttacher.detachQuietly(existing);

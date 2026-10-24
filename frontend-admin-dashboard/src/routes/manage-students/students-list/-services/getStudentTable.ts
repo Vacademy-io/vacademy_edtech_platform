@@ -40,6 +40,9 @@ export const useStudentList = (
             gender: filters.gender?.sort() || [],
             statuses: filters.statuses?.sort() || [],
             payment_statuses: filters.payment_statuses?.sort() || [],
+            membership_types: filters.membership_types?.sort() || [],
+            start_date: filters.start_date || '',
+            end_date: filters.end_date || '',
             sort_columns: filters.sort_columns || {},
             session_expiry_days: filters.session_expiry_days?.sort((a, b) => a - b) || [],
             sub_org_user_types: filters.sub_org_user_types?.sort() || [],
@@ -70,6 +73,15 @@ export const useStudentList = (
                         `${b.field_id}:${b.operator ?? 'IN'}`
                     )
                 ),
+            // Campaign (UTM) filters — sorted per dimension so selection order
+            // never splits the cache.
+            utm_filters: filters.utm_filters
+                ? Object.fromEntries(
+                      Object.entries(filters.utm_filters)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([k, v]) => [k, Array.isArray(v) ? [...v].sort() : v])
+                  )
+                : undefined,
         });
     }, [filters]);
 

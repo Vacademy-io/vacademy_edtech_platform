@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.user_subscription.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.fee_management.entity.AftInstallment;
 import vacademy.io.admin_core_service.features.fee_management.entity.AssignedFeeValue;
@@ -11,6 +12,7 @@ import vacademy.io.admin_core_service.features.fee_management.entity.FeeType;
 import vacademy.io.admin_core_service.features.fee_management.repository.AftInstallmentRepository;
 import vacademy.io.admin_core_service.features.fee_management.repository.AssignedFeeValueRepository;
 import vacademy.io.admin_core_service.features.fee_management.repository.FeeTypeRepository;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceService;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentOptionDTO;
 import vacademy.io.admin_core_service.features.user_subscription.dto.PaymentOptionFilterDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption;
@@ -19,6 +21,7 @@ import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOp
 import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentOptionRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentPlanRepository;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -26,7 +29,10 @@ import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -58,8 +64,37 @@ public class PaymentOptionService {
     @Autowired
     private AftInstallmentRepository aftInstallmentRepository;
 
-    public boolean savePaymentOption(PaymentOptionDTO paymentOptionDTO) {
+    @Autowired
+    private AuthService authService;
+
+    @Autowired
+    private RegionalPriceService regionalPriceService;
+
+    /**
+     * Creates a payment option, or — when the DTO carries the id of an existing row —
+     * edits it in place (the Settings page edits through this same POST). Returns the
+     * saved option so the caller and the audit log get the server-generated id.
+     *
+     * <p>An edit is routed through {@link #editPaymentOption} rather than merged as a
+     * rebuilt entity. The merge kept every stored plan ACTIVE next to the resent copies
+     * (a FREE/DONATION plan is resent without an id, so it was inserted anew on every
+     * save — prod had ~2,000 options carrying duplicate live plans), and it nulled the
+     * DEFAULT tag because the edit payload never carries one.
+     */
+    public PaymentOptionDTO savePaymentOption(PaymentOptionDTO paymentOptionDTO, CustomUserDetails userDetails) {
+        if (paymentOptionDTO.getId() != null && !paymentOptionDTO.getId().isBlank()
+                && paymentOptionRepository.existsById(paymentOptionDTO.getId())) {
+            return editPaymentOption(paymentOptionDTO, true);
+        }
+
         PaymentOption paymentOption = new PaymentOption(paymentOptionDTO);
+        // Any id that reached here is a client placeholder (the invite flow sends
+        // "plan_<timestamp>"). Clear it so the generator mints the real one and the
+        // repository takes the persist path instead of merging a phantom row.
+        paymentOption.setId(null);
+        paymentOption.getPaymentPlans().forEach(plan -> plan.setId(null));
+        // Creator is stamped from the JWT, never trusted from the client.
+        paymentOption.setCreatedByUserId(userDetails != null ? userDetails.getUserId() : null);
 
         if (PaymentOptionType.FREE.name().equalsIgnoreCase(paymentOption.getType()) && paymentOption.getPaymentPlans().isEmpty()) {
             PaymentPlan freePlan = new PaymentPlan();
@@ -72,8 +107,57 @@ public class PaymentOptionService {
             paymentOption.getPaymentPlans().add(freePlan);
         }
 
-        paymentOptionRepository.save(paymentOption);
-        return true;
+        PaymentOption saved = paymentOptionRepository.save(paymentOption);
+        syncRegionalPrices(saved);
+        return saved.mapToPaymentOptionDTO();
+    }
+
+    // -------------------------------------------------------------------------
+    // Audit helpers — called from @Auditable SpEL on PaymentOptionController.
+    // Every method is total: audit must never break the mutation it describes.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Pre-mutation snapshot for {@code captureBefore}. Null when there is no id
+     * (a create) or no such row, which is how the controller tells CREATE from
+     * UPDATE on the shared POST.
+     */
+    public PaymentOptionDTO auditSnapshot(String paymentOptionId) {
+        if (paymentOptionId == null || paymentOptionId.isBlank()) return null;
+        try {
+            return paymentOptionRepository.findById(paymentOptionId)
+                    .map(PaymentOption::mapToPaymentOptionDTO)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("auditSnapshot failed for payment option {}: {}", paymentOptionId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** Name of one option for the audit sentence, falling back to its id. */
+    public String auditName(String paymentOptionId) {
+        if (paymentOptionId == null || paymentOptionId.isBlank()) return null;
+        try {
+            return paymentOptionRepository.findById(paymentOptionId)
+                    .map(PaymentOption::getName)
+                    .filter(n -> n != null && !n.isBlank())
+                    .orElse(paymentOptionId);
+        } catch (Exception e) {
+            return paymentOptionId;
+        }
+    }
+
+    /**
+     * "payment plan Annual Membership" for one id, "3 payment plan(s)" for several —
+     * a bulk delete naming every plan would not fit the log row.
+     */
+    public String auditLabel(List<String> paymentOptionIds) {
+        List<String> ids = paymentOptionIds == null
+                ? List.of()
+                : paymentOptionIds.stream().filter(Objects::nonNull).filter(id -> !id.isBlank()).distinct().toList();
+        if (ids.isEmpty()) return null;
+        if (ids.size() > 1) return ids.size() + " payment plan(s)";
+        return "payment plan " + auditName(ids.get(0));
     }
 
     /**
@@ -105,9 +189,64 @@ public class PaymentOptionService {
                 true,
                 activeStatuses,
                 paymentOptionFilterDTO.isRequireApproval(),
-                paymentOptionFilterDTO.isNotRequireApproval()
+                paymentOptionFilterDTO.isNotRequireApproval(),
+                blankToNull(paymentOptionFilterDTO.getSearch()),
+                paymentOptionFilterDTO.getLimit()
         );
-        return paymentOptions.stream().map(PaymentOption::mapToPaymentOptionDTO).toList();
+        List<PaymentOptionDTO> dtos = paymentOptions.stream().map(PaymentOption::mapToPaymentOptionDTO).toList();
+        // The learner app hits this same endpoint for admission payments; a learner has no
+        // use for who configured the plan, so the auth_service round-trip is admin-only.
+        if (!isLearnerOnly(userDetails)) {
+            attachCreatorNames(dtos);
+        }
+        return dtos;
+    }
+
+    /** A blank search box means "no filter", not "match the empty string". */
+    private static String blankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim();
+    }
+
+    private static final List<String> LEARNER_ROLES = List.of("STUDENT", "PARENT", "GUARDIAN");
+
+    private boolean isLearnerOnly(CustomUserDetails user) {
+        if (user == null || user.getAuthorities() == null || user.getAuthorities().isEmpty()) return false;
+        return user.getAuthorities().stream()
+                .allMatch(a -> a.getAuthority() != null
+                        && LEARNER_ROLES.stream().anyMatch(r -> r.equalsIgnoreCase(a.getAuthority())));
+    }
+
+    /**
+     * Resolves {@code createdByUserId} to a display name in one batched auth_service
+     * call. Best-effort: the list must still come back when auth_service is slow or
+     * down, so a failure leaves {@code createdByName} null and the UI shows the id.
+     */
+    private void attachCreatorNames(List<PaymentOptionDTO> dtos) {
+        List<String> creatorIds = dtos.stream()
+                .map(PaymentOptionDTO::getCreatedByUserId)
+                .filter(Objects::nonNull)
+                .filter(id -> !id.isBlank())
+                .distinct()
+                .toList();
+        if (creatorIds.isEmpty()) return;
+        Map<String, String> names = new HashMap<>();
+        try {
+            for (UserDTO user : authService.getUsersFromAuthServiceByUserIds(creatorIds)) {
+                if (user == null || user.getId() == null) continue;
+                String name = user.getFullName() != null && !user.getFullName().isBlank()
+                        ? user.getFullName().trim()
+                        : user.getEmail() != null && !user.getEmail().isBlank()
+                                ? user.getEmail()
+                                : user.getUsername();
+                if (name != null) names.put(user.getId(), name);
+            }
+        } catch (Exception e) {
+            log.warn("Could not resolve payment option creator names ({} ids): {}", creatorIds.size(), e.getMessage());
+            return;
+        }
+        for (PaymentOptionDTO dto : dtos) {
+            dto.setCreatedByName(names.get(dto.getCreatedByUserId()));
+        }
     }
 
     public Optional<PaymentOption> getPaymentOption(String source, String sourceId, String tag, List<String> statuses) {
@@ -163,17 +302,58 @@ public class PaymentOptionService {
         return "success";
     }
 
+    /** PUT edit: a partial payload, so null plan fields are left alone. */
     public PaymentOptionDTO editPaymentOption(PaymentOptionDTO paymentOptionDTO) {
+        return editPaymentOption(paymentOptionDTO, false);
+    }
+
+    /**
+     * @param fullPayload the caller resends every plan field (Settings save via POST), so a
+     *                    null validity is the admin choosing "no expiry" and must be written.
+     */
+    private PaymentOptionDTO editPaymentOption(PaymentOptionDTO paymentOptionDTO, boolean fullPayload) {
         PaymentOption paymentOption = findById(paymentOptionDTO.getId());
         paymentOption.setName(paymentOptionDTO.getName());
         paymentOption.setType(paymentOptionDTO.getType());
         paymentOption.setPaymentOptionMetadataJson(paymentOptionDTO.getPaymentOptionMetadataJson());
         paymentOption.setRequireApproval(paymentOptionDTO.isRequireApproval());
         paymentOption.setUnit(paymentOptionDTO.getUnit());
-        List<PaymentPlan> paymentPlans = paymentPlanService.editPaymentPlans(paymentOption.getPaymentPlans(), paymentOptionDTO.getPaymentPlans(), paymentOption);
+        // Null-guarded: an edit payload that predates the plan-change feature must not
+        // silently turn the master switch off for an option that already has it on.
+        if (paymentOptionDTO.getPlanChangeAllowed() != null) {
+            paymentOption.setPlanChangeAllowed(paymentOptionDTO.getPlanChangeAllowed());
+        }
+        // Same null-guard: editors that predate regional pricing must not switch it off.
+        if (paymentOptionDTO.getRegionalPricingEnabled() != null) {
+            paymentOption.setRegionalPricingEnabled(paymentOptionDTO.getRegionalPricingEnabled());
+        }
+        if (paymentOptionDTO.getRegionalPricingCurrencies() != null) {
+            paymentOption.setRegionalPricingCurrencies(
+                    PaymentOption.joinCurrencies(paymentOptionDTO.getRegionalPricingCurrencies()));
+        }
+        List<PaymentPlan> paymentPlans = paymentPlanService.editPaymentPlans(paymentOption.getPaymentPlans(), paymentOptionDTO.getPaymentPlans(), paymentOption, fullPayload);
         paymentOption.setPaymentPlans(paymentPlans);
         paymentOptionRepository.save(paymentOption);
+        syncRegionalPrices(paymentOption);
         return paymentOption.mapToPaymentOptionDTO();
+    }
+
+    /**
+     * Keeps regional prices in step with a just-saved option: AUTO rows follow a base-price
+     * edit, MANUAL rows are flagged for review, new plans and currencies get AUTO rows. Never
+     * fails the save it follows — a missing exchange rate only leaves those rows unpriced
+     * until the daily job or the panel's "Refresh rates" fills them in.
+     */
+    private void syncRegionalPrices(PaymentOption option) {
+        // Flag off (the default): do nothing at all, so saving an option is exactly as before.
+        if (option == null || !Boolean.TRUE.equals(option.getRegionalPricingEnabled())) {
+            return;
+        }
+        try {
+            regionalPriceService.sync(option, false);
+        } catch (Exception e) {
+            log.warn("Regional price sync failed for payment option {}: {}", option.getId(), e.getMessage());
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -203,6 +383,8 @@ public class PaymentOptionService {
         mirror.setType(PaymentOptionType.CPO.name());
         mirror.setRequireApproval(false);
         mirror.setComplexPaymentOptionId(cpo.getId());
+        // The CPO row already knows its creator; the mirror is what the plan picker lists.
+        mirror.setCreatedByUserId(cpo.getCreatedBy());
 
         PaymentOption saved = paymentOptionRepository.save(mirror);
         upsertSyntheticPaymentPlan(cpo, saved);
@@ -282,6 +464,18 @@ public class PaymentOptionService {
         plan.setActualPrice(total != null ? total.doubleValue() : 0.0);
         plan.setElevatedPrice(0.0);
         plan.setValidityInDays(validityDays);
+        // A system-built installment plan behind a one-time course price (V575) has no
+        // installment dates to derive validity from; it takes the course plan's validity and
+        // currency so the learner's membership dates and amounts match the course.
+        if (cpo.getSourcePaymentPlanId() != null) {
+            PaymentPlan source = paymentPlanRepository.findById(cpo.getSourcePaymentPlanId()).orElse(null);
+            if (source != null) {
+                plan.setValidityInDays(source.getValidityInDays());
+                if (source.getCurrency() != null) {
+                    plan.setCurrency(source.getCurrency());
+                }
+            }
+        }
         paymentPlanRepository.save(plan);
     }
 

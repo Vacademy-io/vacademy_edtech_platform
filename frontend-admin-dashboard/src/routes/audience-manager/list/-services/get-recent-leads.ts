@@ -11,6 +11,11 @@ export interface RecentLeadDetail {
     response_id?: string;
     audience_id?: string;
     campaign_name?: string;
+    /** The audience's campaign type — the channel the lead came in through. */
+    campaign_type?: string;
+    /** Latest UTM tagging on this lead. */
+    utm_source?: string;
+    utm_campaign?: string;
     user_id?: string;
     source_type?: string;
     source_id?: string;
@@ -34,6 +39,14 @@ export interface RecentLeadDetail {
     >;
     // ── TAT / Follow-up SLA (deadlines + badge; visual only) ──
     tat_due_at?: string | null;
+    /** True when an admin set tat_due_at by hand. */
+    tat_due_overridden?: boolean | null;
+    /** This enquiry repeats an existing lead (flagged by repeat-lead handling). */
+    is_duplicate?: boolean | null;
+    /** Live duplicate enquiries that repeat this lead; absent when there are none. */
+    duplicate_count?: number | null;
+    /** Open priority follow-up (opened for a reattempt). */
+    follow_up_priority?: boolean | null;
     /** First time the assigned counselor acted — drives "Responded in N" in the Reach-out-by cell. */
     first_response_at?: string | null;
     /** Follow-up deadline = last counselor action + followUpSlaHours (null until acted). */
@@ -42,8 +55,23 @@ export interface RecentLeadDetail {
     tat_overdue?: boolean | null;
     tat_due_soon?: boolean | null;
     follow_up_overdue?: boolean | null;
+    /** Lead is Lost / Converted: off the SLA clock, so no Pending / Overdue. */
+    sla_closed?: boolean | null;
     /** Custom pipeline status (enquiry_status), e.g. NEW / INTERESTED. */
     lead_status?: string | null;
+    /** Interest level. The tier stored on the lead profile, falling back to the one
+     *  derived from the score — the same precedence the lead tables render. */
+    lead_tier?: string | null;
+    /** Lead owner. Resolved from the linked enquiry, else from the lead profile. */
+    assigned_counselor_id?: string | null;
+    assigned_counselor_name?: string | null;
+    // ── The next scheduled follow-up's own fields (what the counsellor wrote) ──
+    follow_up_content?: string | null;
+    follow_up_student_response?: string | null;
+    follow_up_mode?: string | null;
+    follow_up_next_action?: string | null;
+    /** Interest level on that same open follow-up. */
+    follow_up_interest_level?: string | null;
 }
 
 export interface RecentLeadsResponse {
@@ -75,10 +103,22 @@ export interface RecentLeadsRequest {
     submitted_to_local?: string;
     // Substring match against parent_name / parent_email / parent_mobile.
     search_query?: string;
-    // Lead temperature bucket — 'HOT' | 'WARM' | 'COLD'. Omitted = all tiers.
+    // Lead tier key(s) from the institute's lead_tier catalog (HOT/WARM/COLD by default), comma-separated. Omitted = all tiers.
     lead_tier?: string;
     // Custom pipeline status filter — lead_status.id. Omitted = all statuses.
     lead_status_id?: string;
+    /** Status keys to EXCLUDE, comma separated. Mutually exclusive with lead_status_id. */
+    lead_status_exclude_id?: string;
+    /** EXCLUDE = hide enquiries flagged as duplicates; ONLY = just those. Omitted = no filter. */
+    duplicate_filter?: 'EXCLUDE' | 'ONLY';
+    /** Follow-ups page: only leads carrying an OPEN, scheduled follow-up… */
+    follow_up_pending?: boolean;
+    /** …and, optionally, only those whose follow-up falls in this window. The caller sends
+     *  it because "today" is the user's day, not the server's. */
+    follow_up_from?: string;
+    follow_up_to?: string;
+    /** Follow-ups page: only leads whose OPEN follow-up has one of these interest levels. */
+    follow_up_interest_levels?: string[];
     // Conversion-state filter — defaults to EXCLUDE_CONVERTED on the backend so
     // leads that have been enrolled into a course don't pollute the active list.
     conversion_status_filter?: 'EXCLUDE_CONVERTED' | 'ONLY_CONVERTED' | 'ALL';
@@ -87,6 +127,21 @@ export interface RecentLeadsRequest {
     /** Attempt count N — only read when call_history_filter is CALLED_N_TIMES
      *  ("exactly N") or CALLED_N_PLUS_TIMES ("N or more"). Omitted otherwise. */
     call_count_value?: number;
+    /**
+     * "Worked in the last N" windows — ISO-8601 instants, open-ended at the top.
+     *
+     * Deliberately separate from submitted_from/to_local, which bound when the lead
+     * ARRIVED. These bound when the COUNSELLOR last touched it, which is the question
+     * "how many did I call / work in the last 24h" actually asks:
+     *   called_from_local   -> last telephony_call_log entry for the lead
+     *   activity_from_local -> last timeline_event (note, call log, status change,
+     *                          follow-up) — the same feed the Activity column shows
+     * A lead never called / never touched is excluded once the matching bound is set.
+     */
+    called_from_local?: string;
+    called_to_local?: string;
+    activity_from_local?: string;
+    activity_to_local?: string;
     /**
      * Soft-delete visibility — defaults to EXCLUDE_DELETED on the backend, so deleted leads stay
      * hidden unless explicitly asked for. ONLY_DELETED backs the "Deleted leads" view that restore
@@ -115,6 +170,9 @@ export interface RecentLeadsRequest {
      *  custom_field_values row for {field_id} matches one of {values} (OR within
      *  the entry); across entries the backend AND-combines them. Omitted = none. */
     custom_field_filters?: LeadCustomFieldFilter[];
+    /** Campaign (UTM) attribution filter — same wire shape on every list
+     *  surface; see services/utm-list-filters. Omitted = none. */
+    utm_filters?: import('@/services/utm-list-filters').UtmListFiltersPayload;
     /** Column to sort by — SUBMITTED_AT (default) | LEAD_SCORE | LEAD_TIER | STATUS. */
     sort_by?: string;
     sort_direction?: 'ASC' | 'DESC';

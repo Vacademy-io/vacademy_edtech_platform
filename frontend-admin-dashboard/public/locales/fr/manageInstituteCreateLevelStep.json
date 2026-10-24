@@ -1,0 +1,22 @@
+{
+    "form": {
+        "levelSelectionLabel": "Sélection de {{term}}",
+        "selectExisting": "Sélectionner un {{term}} existant",
+        "createNew": "Créer un nouveau {{term}}",
+        "selectALevelPlaceholder": "Sélectionner un {{term}}",
+        "durationDays_one": "{{count}} jour",
+        "durationDays_many": "Durée : {{count}} jours",
+        "durationDays_other": "{{count}} jours",
+        "duplicateFromPreExisting": "Dupliquer le matériel d'étude à partir d'un {{term}} préexistant",
+        "duplicateFrom": "Dupliquer à partir de {{term}}",
+        "selectForDuplication": "Sélectionner {{term}} pour la duplication",
+        "searchLevel": "Rechercher {{term}}…",
+        "noLevelsYet": "Aucun {{term}} à réutiliser — ajoutez-en un ci-dessous.",
+        "searchSession": "Rechercher {{term}}…",
+        "noOtherSessions": "Aucun autre {{term}} d’où copier le contenu."
+    },
+    "validation": {
+        "pleaseSelectLevel": "Veuillez sélectionner un niveau",
+        "pleaseSelectSessionToDuplicate": "Veuillez sélectionner une session à dupliquer"
+    }
+}

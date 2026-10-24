@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Learning Center",
+        "description": "Manage {{courseTerm}}s, {{sessionTerm}}s, and study materials"
+    },
+    "features": {
+        "studyLibrary": {
+            "title": "Study Library",
+            "description": "Access course materials and resources"
+        },
+        "liveSessions": {
+            "description": "Manage live teaching sessions"
+        },
+        "batchManagement": {
+            "titleTemplate": "{{term}} Management",
+            "description": "Organize students into batches"
+        }
+    }
+}

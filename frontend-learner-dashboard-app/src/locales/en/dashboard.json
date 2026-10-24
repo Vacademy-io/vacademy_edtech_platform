@@ -16,7 +16,21 @@
         "loadMore": "Load more",
         "announcementsErrorTitle": "Could not load announcements",
         "announcementsEmptyTitle": "No announcements yet",
-        "announcementsEmptyDescription": "Announcements from your institute will show up here."
+        "announcementsEmptyDescription": "Announcements from your institute will show up here.",
+        "receivedTimes": "Received {{count}} times",
+        "noContent": "This notification has no additional details.",
+        "close": "Close",
+        "openLink": "Open link",
+        "unreadSummary_one": "You have {{count}} unread notification",
+        "unreadSummary_other": "You have {{count}} unread notifications",
+        "clear": "Clear",
+        "clearOne": "Clear notification: {{title}}",
+        "clearAll": "Clear all",
+        "clearing": "Clearing...",
+        "clearAllTitle": "Clear all notifications?",
+        "cancel": "Cancel",
+        "clearAllDescription_one": "This removes {{count}} notification from your inbox. It cannot be undone.",
+        "clearAllDescription_other": "This removes all {{count}} notifications from your inbox. It cannot be undone."
     },
     "hero": {
         "greeting": {
@@ -25,7 +39,8 @@
             "evening": "Good evening",
             "morningWithName": "Good morning, {{name}}",
             "afternoonWithName": "Good afternoon, {{name}}",
-            "eveningWithName": "Good evening, {{name}}"
+            "eveningWithName": "Good evening, {{name}}",
+            "welcomeBackFallback": "Welcome back"
         },
         "pickUpWhereLeftOff": "Pick up where you left off",
         "yourFirstSlide": "your first {{slide}}",
@@ -73,6 +88,13 @@
         "renewPromptNoDate": "Pay once and your membership carries on.",
         "reactivatePrompt": "Reactivate this membership — same plan, same courses, no re-enrollment needed.",
         "alsoEnableAutopay": "Also turn auto-pay back on — one approval pays now and sets up future renewals.",
+        "mandateMethod": {
+            "heading": "How should auto-pay be set up?",
+            "upiLabel": "UPI Autopay",
+            "upiHint": "GPay, PhonePe, Paytm",
+            "cardLabel": "Card",
+            "cardHint": "Debit / credit card"
+        },
         "payToContinue": "Pay {{amount}} to continue",
         "startingPayment": "Starting payment...",
         "unavailable": "Membership details are unavailable right now.",
@@ -88,7 +110,37 @@
         "tryAgain": "Please try again in a moment.",
         "paymentReceivedToast": "Payment received!",
         "paymentReceivedToastBody": "Your membership is being reactivated — this takes a few seconds.",
-        "paymentNotCompletedToast": "Payment not completed"
+        "paymentNotCompletedToast": "Payment not completed",
+        "changePlan": "Change plan",
+        "completeEnrollmentPrompt": "This membership was never activated — your sign-up was not completed. Finish enrolling to start attending.",
+        "completeEnrollmentCta": "Complete your enrollment",
+        "changePlanTitle": "Change your plan",
+        "changePlanSubtitle": "You're on {{plan}}. Pick what you'd like to move to.",
+        "changePlanSubtitleNoPlan": "Pick the plan you'd like to move to.",
+        "changePlanLoadFailed": "We couldn't load the available plans. Please try again in a moment.",
+        "changePlanNoOptions": "There aren't any other plans you can switch to right now.",
+        "planChangeUpgrade": "Upgrade",
+        "planChangeDowngrade": "Downgrade",
+        "planChangeCadence": "{{price}} every {{days}} days",
+        "planChangePayNow": "Pay {{amount}} now — starts immediately",
+        "planChangeFreeOn": "Free — starts {{date}}",
+        "planChangeFreeAtCycleEnd": "Free — starts at the end of your current period",
+        "planChangeCredit": "Includes {{amount}} credit for your current plan — adds {{days}} days",
+        "planChangeFullPrice": "Full price for the new plan — {{days}} days of access",
+        "planChangeMandateReauth": "You'll be asked to re-approve auto-pay for the new amount.",
+        "planChangeAutopayRequired": "Re-approve auto-pay so future renewals keep working",
+        "planChangeCancel": "Cancel",
+        "planChangeConfirmPay": "Pay {{amount}}",
+        "planChangeConfirmSchedule": "Schedule this change",
+        "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+        "planChangeScheduledNoDate": "Moving to {{plan}} at the end of your current period.",
+        "planChangeCancelScheduled": "Cancel this change",
+        "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+        "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+        "planChangeCompletePayment": "Complete payment",
+        "planChangeDiscard": "Discard this change",
+        "planChangeScheduledToast": "Plan change scheduled",
+        "planChangeScheduledToastBody": "You'll move to {{plan}} on {{date}}. Nothing changes until then."
     },
     "books": {
         "title": "BOOKS",
@@ -204,6 +256,197 @@
         "awardedTooltip": "{{name}} — Awarded by your institute",
         "awardedTooltipWithReason": "{{name}} — Awarded by your institute: {{reason}}",
         "unlockedCount": "{{unlocked}}/{{total}} unlocked",
-        "emptyPrompt": "Complete your first {{slide}} to unlock a badge"
+        "emptyPrompt": "Complete your first {{slide}} to unlock a badge",
+        "manualLockedHint": "Awarded by your institute — not unlocked automatically",
+        "manualLockedTooltip": "{{name}} — Awarded by your institute, not unlocked automatically",
+        "celebrateTitle": "New badge unlocked!",
+        "celebrateAwardedTitle": "Your institute awarded you a badge"
+    },
+    "tnc": {
+        "title": "Accept Terms & Conditions",
+        "description": "You must read and accept the institute's Terms & Conditions before accessing your dashboard.",
+        "scrollToRead": "Scroll to read",
+        "readAgree": "I have read and agree to the Terms & Conditions",
+        "digitalSignature": "Digital Signature",
+        "namePlaceholder": "Enter your full legal name",
+        "signaturePrefilled": "Your registered name is shown above. By clicking Accept, you are digitally signing this document.",
+        "signatureManual": "By entering your name and clicking Accept, you are digitally signing this document.",
+        "accepting": "Accepting...",
+        "acceptButton": "I Accept & Continue",
+        "toast": {
+            "needConfirmRead": "Please confirm you have read and agree to the Terms & Conditions",
+            "needName": "Please enter your full name to accept",
+            "success": "Terms & Conditions accepted successfully",
+            "failure": "Failed to accept Terms & Conditions. Please try again."
+        }
+    },
+    "achievements": {
+        "title": "Your achievements",
+        "xpToNextLevel": "{{xp}} XP to level {{level}}",
+        "badgesUnlocked": "Badges · {{unlocked}}/{{total}} unlocked"
+    },
+    "attendance": {
+        "title": "Attendance",
+        "period7d": "7 Days",
+        "period30d": "30 Days",
+        "period90d": "3 Months",
+        "dayStatus": {
+            "present": "Present",
+            "absent": "Absent",
+            "noClass": "No class",
+            "notMarked": "Not marked yet"
+        },
+        "emptyTitleWithStreak": "Attend today's {{liveClass}} to start your streak",
+        "emptyTitleNoStreak": "Attend today's {{liveClass}} to start tracking attendance",
+        "emptyBodyWithStreak": "Your attendance stats and weekly streak will appear here.",
+        "emptyBodyNoStreak": "Your attendance stats for the week will appear here.",
+        "viewDetailsAria": "View attendance details",
+        "coverageNote_one": "{{count}} {{liveClass}} day since {{date}}",
+        "coverageNote_other": "{{count}} {{liveClass}} days since {{date}}",
+        "overall": "Overall",
+        "streak": "Streak",
+        "daysPresent": "Days Present",
+        "thisWeek": "This week"
+    },
+    "continueLearning": {
+        "startLearningTitle": "Start Learning",
+        "allCaughtUpTitle": "All Caught Up!",
+        "browsePrompt": "Browse your {{courses}} and start your first {{slide}}.",
+        "allCompletePrompt": "You've completed all available {{slides}}. Great work, keep the momentum going.",
+        "startFirstSlideButton": "Start your first {{slide}}",
+        "exploreContentButton": "Explore Content",
+        "title": "Continue Learning",
+        "slidesInProgress": "{{count}} {{slide}} in progress",
+        "continueFromWhereLeftOff": "Continue from where you left off",
+        "resumeLearningButton": "Resume Learning"
+    },
+    "enrolledCourses": {
+        "viewAll": "View all {{courses}}",
+        "emptyTitle": "You are not enrolled in any {{courses}} yet",
+        "browse": "Browse {{courses}}",
+        "cta": {
+            "continue": "Continue",
+            "start": "Start",
+            "review": "Review"
+        },
+        "cardAria": "{{course}}, {{percent}}% complete. {{action}}"
+    },
+    "dashboardHero": {
+        "loadingAria": "Loading",
+        "liveNow": "Live now",
+        "startsInMinutes": "Starts in {{minutes}}m",
+        "joinAria": "Join {{title}}",
+        "welcomeWithName": "Welcome, {{name}}",
+        "welcome": "Welcome",
+        "getStartedTitle": "Let's get you started",
+        "getStartedSubtitle": "A few quick steps to make the most of your learning.",
+        "browseCoursesLabel": "Browse your {{courses}}",
+        "browseCoursesHint": "Open a topic and start your first {{slide}}",
+        "tryAssessmentLabel": "Try an assessment",
+        "tryAssessmentHint": "Check what you know with a quick quiz",
+        "completeProfileLabel": "Complete your profile",
+        "completeProfileHint": "Add your details to personalize learning"
+    },
+    "activityChart": {
+        "emptyMessage": "Your activity will appear here as you learn.",
+        "title": "Learning Progress Trend",
+        "subtitle": "Weekly learning activity comparison",
+        "status": {
+            "justStarting": "Just getting started",
+            "excellent": "Excellent",
+            "onTrack": "On Track",
+            "needsFocus": "Needs Focus"
+        },
+        "avgLabel": "Avg: {{time}}",
+        "yourStudyTime": "Your Study Time",
+        "batchAverage": "{{batch}} Average",
+        "realTimeData": "Real-time data",
+        "performanceVsBatch": "Performance vs {{batch}}:",
+        "above": "↗ Above",
+        "below": "↘ Below",
+        "activeDays": "{{active}}/{{total}} active days",
+        "peakDay": "Peak Day",
+        "vsBatch": "Vs {{batch}}",
+        "percentDifference": "{{percent}}% difference",
+        "yourTime": "Your Time"
+    },
+    "learningInsights": {
+        "title": "Learning Progress",
+        "subtitle": "Past 7 days activity vs {{batch}} average",
+        "avgLabel": "avg",
+        "sessionsLabel": "sessions",
+        "streakLabel_one": "day streak",
+        "streakLabel_other": "days streak",
+        "chartViewTitle": "Chart view",
+        "tableViewTitle": "Table view",
+        "loadError": "Couldn't load your learning activity.",
+        "tryAgain": "Try again"
+    },
+    "mentors": {
+        "title": "My Mentors",
+        "emptyStateTitle": "Mentorship",
+        "emptyStateBody": "Get one-to-one guidance — browse your institute's mentors and request the one that fits what you're working on.",
+        "findMentorButton": "Find a mentor",
+        "viewAll": "View all",
+        "nextSession": "Next session",
+        "mentorSessionFallback": "Mentor session",
+        "linkPendingTooltip": "Your mentor's meeting link is still being created. Check back shortly.",
+        "linkComingSoon": "Link coming soon",
+        "mentorFallbackName": "Mentor",
+        "chatOpenError": "Couldn't open the chat. Please try again."
+    },
+    "onboardingGate": {
+        "finishSetupWithName": "Finish setting up {{name}}'s account",
+        "finishSetupGeneric": "Finish setting up your account",
+        "completeStepsPrompt": "Complete the steps below to continue to your dashboard.",
+        "progressLabel": "Progress",
+        "waitingOnAdminSuffix": "is being handled by your school admin — you don't need to do anything here."
+    },
+    "dashboardPage": {
+        "pageTitle": "Dashboard",
+        "metaDescription": "Enterprise Dashboard - Learning Management System",
+        "yogaGreeting": "Ready for today's yoga journey?",
+        "classesToday": "{{count}} {{liveClass}} today",
+        "attendanceStreakFact": "{{count}}-day attendance streak",
+        "statCard": {
+            "coursesEmptyAction": "Browse {{courses}}",
+            "liveClassesEmptyAction": "View {{liveClasses}}",
+            "assessmentsTitle": "Assessments",
+            "assessmentsEmptyAction": "View Assessments"
+        },
+        "customWidgetFallbackTitle": "Custom Widget",
+        "openButton": "Open",
+        "devTesting": {
+            "title": "Developer Testing",
+            "description": "Test push notification functionality"
+        },
+        "exploreMembershipsButton": "Explore Memberships",
+        "exploreBooksButton": "Explore Books",
+        "toast": {
+            "attendanceMarkFailed": "Failed to mark attendance"
+        },
+        "holistic": {
+            "yogaIllustrationAlt": "Yoga illustration",
+            "thisWeekTitle": "This Week",
+            "referFriendTitle": "Refer A Friend",
+            "referFriendSubtitle": "Share the journey",
+            "inviteButton": "Invite",
+            "myClassesTitle": "My Classes",
+            "liveBadge": "Live",
+            "joinNowButton": "Join Now",
+            "noLiveClassesScheduled": "No {{liveClasses}} scheduled",
+            "checkBackLater": "Check back later for upcoming live classes",
+            "viewAllClassesButton": "View All Classes",
+            "dateAtTime": "{{date}} at {{time}}"
+        }
+    },
+    "getApp": {
+        "title": "Get the app",
+        "subtitle": "For a seamless experience, download our apps.",
+        "android": "Android app",
+        "ios": "iPhone & iPad app",
+        "windows": "Windows app",
+        "mac": "Mac app",
+        "webPortal": "Web portal"
     }
 }

@@ -50,6 +50,14 @@ public interface FormWebhookConnectorRepository extends JpaRepository<FormWebhoo
     java.util.Optional<FormWebhookConnector> findByVendorAndVendorId(String vendor, String vendorId);
 
     /**
+     * Active connector for one vendor + vendorId — the Google webhook lookup. Scoped by
+     * vendor so a Zoho/Meta row that happens to share the id can never answer for it, and
+     * findFirst so a stray duplicate row (vendor_id has no unique constraint) can't throw.
+     */
+    java.util.Optional<FormWebhookConnector> findFirstByVendorAndVendorIdAndIsActiveTrueOrderByUpdatedAtDesc(
+            String vendor, String vendorId);
+
+    /**
      * Find connector by platform form ID and vendor — used for ad platform webhooks.
      * Meta sends form_id in webhook payload; Google sends campaign_id as google_key context.
      */
@@ -74,6 +82,22 @@ public interface FormWebhookConnectorRepository extends JpaRepository<FormWebhoo
             @org.springframework.data.repository.query.Param("id") String id,
             @org.springframework.data.repository.query.Param("ts") java.time.LocalDateTime ts,
             @org.springframework.data.repository.query.Param("leadId") String leadId);
+
+    /**
+     * Record the outcome of the latest Google webhook delivery — the "did my test data
+     * arrive?" signal the admin's setup dialog shows. Targeted update so it can't clobber
+     * a concurrent full-row save of the connector's other columns.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+        "UPDATE FormWebhookConnector c SET c.lastCheckedAt = :ts, c.connectionStatus = :status, " +
+        "c.statusDetail = :detail WHERE c.id = :id")
+    void updateDeliveryStatus(
+            @org.springframework.data.repository.query.Param("id") String id,
+            @org.springframework.data.repository.query.Param("ts") java.time.LocalDateTime ts,
+            @org.springframework.data.repository.query.Param("status") String status,
+            @org.springframework.data.repository.query.Param("detail") String detail);
 
     /**
      * Find all active connectors for a given vendor where tokens are expiring soon.

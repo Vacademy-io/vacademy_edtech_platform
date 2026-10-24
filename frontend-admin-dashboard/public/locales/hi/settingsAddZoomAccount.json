@@ -1,0 +1,75 @@
+{
+    "dialog": {
+        "titleCreate": "Zoom खाता जोड़ें",
+        "titleEdit": "Zoom खाता संपादित करें",
+        "description": "Zoom Marketplace से अपने Server-to-Server OAuth ऐप क्रेडेंशियल पेस्ट करें। प्रति-खाता Meeting SDK ऐप वैकल्पिक है (नीचे देखें)। ऐप्स एक ही Zoom खाते में होने चाहिए।",
+        "editWarning": "मौजूदा मान बनाए रखने के लिए सीक्रेट फ़ील्ड खाली छोड़ें।"
+    },
+    "sections": {
+        "s2sCredentials": {
+            "title": "S2S OAuth क्रेडेंशियल"
+        },
+        "sdkCredentials": {
+            "title": "Meeting SDK क्रेडेंशियल (वैकल्पिक)",
+            "description": "प्लेटफ़ॉर्म द्वारा प्रदान किए गए साझा Meeting SDK ऐप का उपयोग करने के लिए खाली छोड़ें। अनाम शिक्षार्थी जुड़ावों के लिए, Meeting SDK ऐप इसी Zoom खाते का होना चाहिए — जब तक आपके प्लेटफ़ॉर्म पर साझा ऐप कॉन्फ़िगर न हो, यहाँ अपना खुद का SDK ऐप जोड़ें।"
+        },
+        "webhook": {
+            "title": "वेबहुक (वैकल्पिक — उपस्थिति/रिकॉर्डिंग के लिए बाद में आवश्यक)"
+        }
+    },
+    "fields": {
+        "label": {
+            "label": "लेबल",
+            "placeholder": "उदा. मुख्य अकादमी खाता"
+        },
+        "zoomAccountId": {
+            "label": "Zoom खाता ID"
+        },
+        "s2sClientId": {
+            "label": "S2S क्लाइंट ID"
+        },
+        "s2sClientSecret": {
+            "label": "S2S क्लाइंट सीक्रेट"
+        },
+        "sdkClientKey": {
+            "label": "SDK क्लाइंट की"
+        },
+        "sdkClientSecret": {
+            "label": "SDK क्लाइंट सीक्रेट"
+        },
+        "webhookToken": {
+            "label": "वेबहुक सत्यापन टोकन",
+            "placeholder": "Zoom Marketplace → अपने S2S ऐप → Feature → Event Subscriptions से कॉपी करें"
+        },
+        "common": {
+            "leaveBlankToKeepExisting": "मौजूदा मान बनाए रखने के लिए खाली छोड़ें"
+        }
+    },
+    "setDefault": {
+        "title": "डिफ़ॉल्ट खाते के रूप में सेट करें",
+        "description": "जब एडमिन नई Zoom मीटिंग बनाते हैं, तो डिफ़ॉल्ट पहले से चुना जाता है।"
+    },
+    "footer": {
+        "testConnection": "कनेक्शन जाँचें",
+        "cancel": "रद्द करें",
+        "addAccount": "खाता जोड़ें",
+        "saveChanges": "बदलाव सहेजें"
+    },
+    "common": {
+        "show": "दिखाएँ",
+        "hide": "छिपाएँ"
+    },
+    "validation": {
+        "required": "आवश्यक"
+    },
+    "toasts": {
+        "accountAdded": "Zoom खाता जोड़ा गया",
+        "accountUpdated": "Zoom खाता अपडेट किया गया",
+        "saveFailed": "Zoom खाता सहेजने में विफल",
+        "connected": "{{email}} के रूप में कनेक्ट किया गया",
+        "connectedWithPlan": "{{email}} ({{planType}}) के रूप में कनेक्ट किया गया",
+        "unknownAccount": "अज्ञात",
+        "connectionFailed": "कनेक्शन विफल",
+        "connectionTestFailed": "कनेक्शन जाँच विफल"
+    }
+}

@@ -1,0 +1,169 @@
+{
+    "contentTypes": {
+        "video": {
+            "label": "Video",
+            "description": "Narrated videos with animations and visuals"
+        },
+        "slides": {
+            "label": "Slides",
+            "description": "Slide decks with images, charts, and diagrams"
+        },
+        "quiz": {
+            "label": "Quiz",
+            "description": "Interactive quizzes to test knowledge"
+        },
+        "storybook": {
+            "label": "Storybook",
+            "description": "Illustrated stories to flip through"
+        },
+        "interactiveGame": {
+            "label": "Interactive Game",
+            "description": "Playable games that teach through interaction"
+        },
+        "puzzleBook": {
+            "label": "Puzzle Book",
+            "description": "Crosswords, word searches, and brain teasers"
+        },
+        "simulation": {
+            "label": "Simulation",
+            "description": "Hands-on science and physics simulations"
+        },
+        "flashcards": {
+            "label": "Flashcards",
+            "description": "Study flashcards for quick memorization"
+        },
+        "mapExploration": {
+            "label": "Map Exploration",
+            "description": "Interactive maps to click and explore"
+        },
+        "worksheet": {
+            "label": "Worksheet",
+            "description": "Practice worksheets with exercises and answers"
+        },
+        "codePlayground": {
+            "label": "Code Playground",
+            "description": "Coding challenges with a live editor"
+        },
+        "timeline": {
+            "label": "Timeline",
+            "description": "Interactive, scrollable event timelines"
+        },
+        "conversation": {
+            "label": "Conversation",
+            "description": "Real-world conversation simulations"
+        }
+    },
+    "visualPreferenceFamilies": {
+        "stockVideo": "Stock video / real footage",
+        "aiImagery": "AI-generated imagery",
+        "svgIllustrated": "SVG / illustrated diagrams",
+        "motionGraphics": "Motion graphics",
+        "appUiMockup": "App / device UI mockups",
+        "aiVideo": "AI-generated video (Veo)"
+    },
+    "aiVideoModels": {
+        "veo31": {
+            "label": "Veo 3.1 — Best quality",
+            "hint": "Top photoreal fidelity + prompt adherence. ~$0.20/s (≈$1.60 per 8s clip)."
+        },
+        "veo31Fast": {
+            "label": "Veo 3.1 Fast — Balanced",
+            "hint": "Full-model quality, cheaper. ~$0.10/s (≈$0.80 per 8s clip)."
+        },
+        "veo31Lite": {
+            "label": "Veo 3.1 Lite — Budget",
+            "hint": "Lowest fidelity, cheapest. ~$0.03/s (≈$0.24 per 8s clip)."
+        }
+    },
+    "overridableStages": {
+        "shotPlanner": {
+            "label": "Shot planning",
+            "hint": "Plans the whole video shot-by-shot."
+        },
+        "narrationWriter": {
+            "label": "Narration writing",
+            "hint": "Authors per-shot narration text."
+        },
+        "perShotHtml": {
+            "label": "Per-shot HTML",
+            "hint": "Generates HTML for every shot — biggest token bucket."
+        },
+        "actPlanner": {
+            "label": "Act planner",
+            "hint": "Decomposes intent into acts before shot planning."
+        },
+        "regenHtml": {
+            "label": "HTML regeneration",
+            "hint": "Corrective regen for failed validation passes."
+        }
+    },
+    "avatarModels": {
+        "flashtalk": "FlashTalk (fast, budget)",
+        "klingStandard": "Kling AI Avatar v2 (Standard)",
+        "veedFabric": "VEED Fabric 1.0",
+        "heygenAvatar4": "HeyGen Avatar 4",
+        "klingPro": "Kling AI Avatar v2 (Pro)",
+        "ltx23": "LTX 2.3 (audio-to-video)",
+        "seedance20": "Seedance 2.0 (reference-to-video)"
+    },
+    "qualityTiers": {
+        "free": {
+            "label": "Free",
+            "description": "Fast generation, basic quality"
+        },
+        "standard": {
+            "label": "Standard",
+            "description": "Smart visuals with diversity & validation"
+        },
+        "premium": {
+            "label": "Premium",
+            "description": "Script review + image enhancement"
+        },
+        "ultra": {
+            "label": "Ultra",
+            "description": "Best quality — all enhancements enabled",
+            "badge": "Default"
+        },
+        "superUltra": {
+            "label": "Super Ultra",
+            "description": "Crossfade transitions + kinetic text shots with frame-perfect word sync",
+            "badge": "New"
+        }
+    },
+    "voiceGenders": {
+        "female": "Female",
+        "male": "Male"
+    },
+    "ttsProviders": {
+        "standard": {
+            "label": "Standard",
+            "description": "Microsoft Edge TTS (Free)"
+        },
+        "premium": {
+            "label": "Premium",
+            "description": "Google Cloud / Sarvam AI (2x credits)"
+        }
+    },
+    "targetAudiences": {
+        "class1to2": "Class 1-2 (Ages 6-7)",
+        "class3to4": "Class 3-4 (Ages 8-9)",
+        "class5": "Class 5 (Ages 10-11)",
+        "class6to8": "Class 6-8 (Ages 11-14)",
+        "class9to10": "Class 9-10 (Ages 14-16)",
+        "class11to12": "Class 11-12 (Ages 16-18)",
+        "undergraduate": "Undergraduate",
+        "graduateProfessional": "Graduate/Professional",
+        "generalAdult": "General/Adult"
+    },
+    "targetDurations": {
+        "seconds30": "30 seconds",
+        "minute1": "1 minute",
+        "minutes2to3": "2-3 minutes",
+        "minutes5": "5 minutes",
+        "minutes10": "10 minutes"
+    },
+    "errors": {
+        "insufficientCredits": "Insufficient credits",
+        "rateLimited": "Too many requests. Please wait a moment and try again."
+    }
+}

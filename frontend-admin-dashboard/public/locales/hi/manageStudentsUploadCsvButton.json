@@ -1,0 +1,33 @@
+{
+    "button": {
+        "uploadCsv": "CSV अपलोड करें",
+        "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+        "preview": "पूर्वावलोकन",
+        "showUploadedFile": "अपलोड की गई फ़ाइल दिखाएं",
+        "upload": "अपलोड करें"
+    },
+    "dialog": {
+        "title": "CSV अपलोड करें"
+    },
+    "dropzone": {
+        "instructions": "यहां CSV फ़ाइल खींचें और छोड़ें, या एक चुनने के लिए क्लिक करें",
+        "fileSizeKb": "{{size}} KB"
+    },
+    "errors": {
+        "csvOnly": "कृपया केवल CSV फ़ाइलें अपलोड करें",
+        "headersUnavailable": "हेडर कॉन्फ़िगरेशन उपलब्ध नहीं है",
+        "parseCsv": "CSV पार्स करने में त्रुटि",
+        "fixValidationErrors": "अपलोड करने से पहले कृपया सत्यापन त्रुटियां ठीक करें!",
+        "fixErrors": "कृपया त्रुटियां ठीक करें",
+        "uploadFailed": "CSV अपलोड करने में विफल"
+    },
+    "toast": {
+        "uploadCompleted": "अपलोड पूर्ण! {{success}} सफल, {{failed}} विफल"
+    },
+    "notification": {
+        "heading": "सूचना प्राथमिकता",
+        "dontNotify": "सूचित न करें",
+        "notify": "{{term}} को सूचित करें",
+        "description": "क्या आप {{term}} को उनके नामांकन के बारे में सूचना ईमेल भेजना चाहेंगे?"
+    }
+}

@@ -1,0 +1,53 @@
+{
+    "navHeading": "المساعد الذكي للمدرّس",
+    "pageTitle": "المساعد الذكي للمدرّس",
+    "pageDescription": "أدر محاضراتك، وسجّل الجلسات، وحلّل الأداء باستخدام المساعد الذكي للمدرّس.",
+    "toast": {
+        "generationStarted": "بدأ إنشاء المحتوى بنجاح!",
+        "generationStartFailed": "فشل بدء إنشاء المحتوى.",
+        "logDeleted": "تم حذف السجل بنجاح",
+        "logDeleteFailed": "فشل حذف السجل",
+        "regenerationStarted": "بدأت إعادة إنشاء المحتوى!",
+        "regenerationFailed": "فشلت إعادة إنشاء المحتوى",
+        "uploadingAudio": "جارٍ تحميل ملف الصوت...",
+        "processingTranscription": "جارٍ معالجة النص المكتوب...",
+        "transcriptionCompleted": "اكتمل تحويل الصوت إلى نص!",
+        "audioProcessFailed": "فشلت معالجة ملف الصوت"
+    },
+    "status": {
+        "uploadingAudio": "جارٍ تحميل ملف الصوت...",
+        "creatingTranscriptionJob": "جارٍ إنشاء مهمة تحويل الصوت إلى نص...",
+        "transcribingAudio": "جارٍ تحويل الصوت إلى نص...",
+        "transcriptionStatus": "حالة التحويل: {{status}}"
+    },
+    "confirmDeleteLog": "هل أنت متأكد أنك تريد حذف هذا السجل؟",
+    "back": "رجوع",
+    "untitledSession": "جلسة بلا عنوان",
+    "generatedOn": "تم الإنشاء في {{date}}",
+    "regenerating": "جارٍ إعادة الإنشاء...",
+    "waitCountdown": "انتظر {{minutes}}:{{seconds}}",
+    "regenerateContent": "إعادة إنشاء المحتوى",
+    "backToSelection": "رجوع إلى الاختيار",
+    "recordAudio": "تسجيل الصوت",
+    "uploadAudio": "تحميل الصوت",
+    "recordLectureDescription": "سجّل محاضرتك المباشرة مباشرةً.",
+    "uploadLectureDescription": "حمّل ملف صوت محاضرة مسجلة مسبقًا.",
+    "generatingContent": "جارٍ إنشاء المحتوى...",
+    "cancel": "إلغاء",
+    "backToMenu": "رجوع إلى القائمة",
+    "previousLectureLogs": "سجلات المحاضرات السابقة",
+    "logStatus": {
+        "ready": "جاهز",
+        "processing": "قيد المعالجة"
+    },
+    "contentGenerationInProgress": "إنشاء المحتوى قيد التقدم...",
+    "viewDetails": "عرض التفاصيل",
+    "noSessionsYet": "لا توجد جلسات حتى الآن",
+    "startSessionToSeeLogs": "ابدأ جلسة جديدة لرؤية سجلاتك هنا.",
+    "tabs": {
+        "lecture": "المحاضرة",
+        "assessment": "التقييم"
+    },
+    "assessmentTools": "أدوات التقييم",
+    "comingSoon": "قريبًا."
+}

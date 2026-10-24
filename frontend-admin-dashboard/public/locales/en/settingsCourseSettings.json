@@ -1,0 +1,17 @@
+{
+    "header": {
+        "title": "Course Settings",
+        "subtitle": "Configure how courses are created and managed in your institute"
+    },
+    "loading": "Loading course settings...",
+    "success": {
+        "saved": "Course settings saved successfully!"
+    },
+    "errors": {
+        "generic": "Failed to {{operation}}. Please try again.",
+        "loadFailed": "Failed to load course settings. Please refresh the page to try again.",
+        "operations": {
+            "saveCourseSettings": "save course settings"
+        }
+    }
+}

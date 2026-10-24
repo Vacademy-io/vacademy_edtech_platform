@@ -1,42 +1,68 @@
+import type { TFunction } from 'i18next';
 import { QuizQuestion } from '../types';
 
-export const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [
+/**
+ * Sample quiz shown as placeholder content in the AI course-outline preview
+ * (generating/index.tsx) before real quiz content is generated/loaded, and as
+ * the fallback quiz payload in mockSlideContent.ts. This is a module-scope
+ * constant consumed from more than one file, so it's a `buildXxx(t)` factory
+ * rather than a component-bound `useTranslation()` call — each caller passes
+ * its own bound `t`; the namespace is pinned explicitly per-key (same pattern
+ * as `studyLibraryOptions` in live-session/schedule/-constants/options.ts) so
+ * it resolves correctly regardless of the caller's own default namespace.
+ */
+const NAMESPACE = 'studyLibraryDefaultQuizQuestions';
+
+/** Correct-answer index for each sample question, in order. Kept separate from
+ * the (translated) question/option text so `buildDefaultSelectedAnswers` never
+ * needs a `t`. */
+const CORRECT_ANSWER_INDICES = [1, 1, 0] as const;
+
+export const buildDefaultQuizQuestions = (t: TFunction): QuizQuestion[] => [
     {
-        question: 'What is the primary purpose of machine learning?',
+        question: t('q1.question', { ns: NAMESPACE }),
         options: [
-            'To create databases',
-            'To enable computers to learn from data',
-            'To design user interfaces',
-            'To manage network security',
+            t('q1.options.0', { ns: NAMESPACE }),
+            t('q1.options.1', { ns: NAMESPACE }),
+            t('q1.options.2', { ns: NAMESPACE }),
+            t('q1.options.3', { ns: NAMESPACE }),
         ],
-        correctAnswerIndex: 1,
+        correctAnswerIndex: CORRECT_ANSWER_INDICES[0],
     },
     {
-        question: 'Which ensemble method combines multiple weak learners sequentially?',
-        options: ['Bagging', 'Boosting', 'Stacking', 'Random Forest'],
-        correctAnswerIndex: 1,
+        question: t('q2.question', { ns: NAMESPACE }),
+        options: [
+            t('q2.options.0', { ns: NAMESPACE }),
+            t('q2.options.1', { ns: NAMESPACE }),
+            t('q2.options.2', { ns: NAMESPACE }),
+            t('q2.options.3', { ns: NAMESPACE }),
+        ],
+        correctAnswerIndex: CORRECT_ANSWER_INDICES[1],
     },
     {
-        question: 'What does PCA stand for in dimensionality reduction?',
+        question: t('q3.question', { ns: NAMESPACE }),
         options: [
-            'Principal Component Analysis',
-            'Primary Correlation Assessment',
-            'Progressive Component Algorithm',
-            'Practical Classification Approach',
+            t('q3.options.0', { ns: NAMESPACE }),
+            t('q3.options.1', { ns: NAMESPACE }),
+            t('q3.options.2', { ns: NAMESPACE }),
+            t('q3.options.3', { ns: NAMESPACE }),
         ],
-        correctAnswerIndex: 0,
+        correctAnswerIndex: CORRECT_ANSWER_INDICES[2],
     },
 ];
 
-export const DEFAULT_SELECTED_ANSWERS: Record<number, string> = DEFAULT_QUIZ_QUESTIONS.reduce(
-    (acc, question, index) => {
-        if (question.correctAnswerIndex !== undefined) {
-            acc[index] = question.correctAnswerIndex.toString();
-        }
-        return acc;
-    },
-    {} as Record<number, string>
-);
+export const buildDefaultSelectedAnswers = (
+    questions: QuizQuestion[] = []
+): Record<number, string> =>
+    questions.reduce(
+        (acc, question, index) => {
+            if (question.correctAnswerIndex !== undefined) {
+                acc[index] = question.correctAnswerIndex.toString();
+            }
+            return acc;
+        },
+        {} as Record<number, string>
+    );
 
 export const DEFAULT_SOLUTION_CODE = `// Sample solution implementation
 function solveHomeworkProblem(input) {

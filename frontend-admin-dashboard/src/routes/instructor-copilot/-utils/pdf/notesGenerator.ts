@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { NoteData } from './types';
+import i18n from '@/i18n';
 import {
     stripHtmlTags,
     addHeader,
@@ -28,7 +29,7 @@ export const generateNotesPDF = (content: string): void => {
     }
 
     const doc = new jsPDF();
-    addHeader(doc, 'Notes');
+    addHeader(doc, i18n.t('instructorCopilotNotesGenerator:pdfHeaderTitle'));
 
     let yPosition: number = PDF_CONSTANTS.HEADER_START_Y;
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -68,5 +69,5 @@ export const generateNotesPDF = (content: string): void => {
     });
 
     addPageNumbers(doc);
-    doc.save('notes.pdf');
+    doc.save(i18n.t('instructorCopilotNotesGenerator:pdfFilename'));
 };

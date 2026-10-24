@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg" alt="License: AGPL v3" /></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
-  <a href="https://deepwiki.com/Vacademy-io/vacademy_platform"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
+  <a href="https://deepwiki.com/Vacademy-io/vacademy_edtech_platform"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
 </p>
 
 <p align="center">
@@ -264,8 +264,8 @@ Before installing Vacademy, ensure you have:
 **🚀 One-Command Setup:**
 ```bash
 # Clone and setup (2 minutes total)
-git clone https://github.com/Vacademy-io/vacademy_platform.git
-cd vacademy_platform
+git clone https://github.com/Vacademy-io/vacademy_edtech_platform.git
+cd vacademy_edtech_platform
 chmod +x scripts/local-dev-setup.sh
 ./scripts/local-dev-setup.sh
 ```
@@ -282,8 +282,8 @@ chmod +x scripts/local-dev-setup.sh
 **Manual Docker Compose Setup:**
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Vacademy-io/vacademy_platform.git
-cd vacademy_platform
+git clone https://github.com/Vacademy-io/vacademy_edtech_platform.git
+cd vacademy_edtech_platform
 
 # 2. Start all services
 docker-compose up -d
@@ -344,7 +344,7 @@ For detailed setup and configuration, see:
 ## 📁 Monorepo Structure
 
 ```
-vacademy_platform/
+vacademy_edtech_platform/
 ├── frontend-admin-dashboard/       # Admin dashboard (React + Vite + TanStack)
 ├── frontend-learner-dashboard-app/ # Learner dashboard (React + Vite + Capacitor)
 ├── admin_core_service/             # Course management, admin operations
@@ -664,11 +664,11 @@ Vacademy integrates AI deeply into the teaching and learning experience — not 
 
 ## Star History
 
-<a href="https://star-history.com/#Vacademy-io/vacademy_platform&Date">
+<a href="https://star-history.com/#Vacademy-io/vacademy_edtech_platform&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Vacademy-io/vacademy_platform&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Vacademy-io/vacademy_platform&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Vacademy-io/vacademy_platform&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Vacademy-io/vacademy_edtech_platform&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Vacademy-io/vacademy_edtech_platform&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Vacademy-io/vacademy_edtech_platform&type=Date" />
  </picture>
 </a>
 
@@ -687,4 +687,4 @@ Vacademy integrates AI deeply into the teaching and learning experience — not 
 
 ---
 
-*Built with ❤️ by the Vacademy community • [Contribute](https://github.com/Vacademy-io/vacademy_platform) • [Report Issues](https://github.com/Vacademy-io/vacademy_platform/issues) • [Join Discussions](https://github.com/Vacademy-io/vacademy_platform/discussions)*
+*Built with ❤️ by the Vacademy community • [Contribute](https://github.com/Vacademy-io/vacademy_edtech_platform) • [Report Issues](https://github.com/Vacademy-io/vacademy_edtech_platform/issues) • [Join Discussions](https://github.com/Vacademy-io/vacademy_edtech_platform/discussions)*

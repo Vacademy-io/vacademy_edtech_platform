@@ -89,6 +89,9 @@ export interface CounselorRow {
 export interface CounselorPerformance {
     from_date: string;
     to_date: string;
+    /** TAT threshold in minutes used for tat_met (null when TAT is disabled). */
+    tat_minutes?: number | null;
+    /** Same threshold in whole hours, rounded up — prefer tat_minutes. */
     tat_hours: number | null;
     rows: CounselorRow[];
     summary: {

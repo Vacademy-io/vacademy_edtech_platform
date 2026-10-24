@@ -41,6 +41,52 @@ export interface AIAssessmentCompleteQuestion {
     warnings: string[];
     tags: string[];
     level: string;
+    /** Vsmart Extract: the paper's section the question was printed under, and its printed marks. */
+    section_name?: string | null;
+    marks?: number | null;
+    negative_marks?: number | null;
+}
+
+/** A section the paper prints, as found at upload / after extraction. */
+export interface AIPaperSection {
+    name: string;
+    count: number;
+    from?: number | null;
+    to?: number | null;
+    marks?: number | null;
+    negative_marks?: number | null;
+    instruction?: string | null;
+    /** Time the paper allows for this section, when it says so. */
+    duration_minutes?: number | null;
+}
+
+export interface AIPaperMarking {
+    marks: number | null;
+    negative_marks: number | null;
+}
+
+/** How a paper was digitised (Vsmart Extract only); absent for generated papers. */
+export interface AIExtractionSummary {
+    parts: number;
+    key_parts: number;
+    questions: number;
+    key_found: boolean;
+    keyed: number;
+    unkeyed: number;
+    explained: number;
+    /** Question numbers the teacher should look at (e.g. options the model dropped and the paper text could not restore). */
+    check?: string[];
+    key_source?: 'regex' | 'regex+model' | 'none';
+    ocr_pages?: number;
+    /** The paper's sections and how the teacher asked for them: one assessment section each, or all in one. */
+    sections?: AIPaperSection[];
+    section_mode?: 'split' | 'single';
+    marking?: AIPaperMarking | null;
+    /** Time the paper allows in all, when it says so (or the sum of its sections' times). */
+    duration_minutes?: number | null;
+    credits: number | null;
+    prompt_tokens: number;
+    completion_tokens: number;
 }
 
 export interface AIAssessmentResponseInterface {
@@ -51,6 +97,7 @@ export interface AIAssessmentResponseInterface {
     subjects: string[];
     classes: string[];
     questions: AIAssessmentCompleteQuestion[];
+    extraction?: AIExtractionSummary | null;
 }
 
 export interface AITaskIndividualListInterface {
@@ -61,7 +108,10 @@ export interface AITaskIndividualListInterface {
     status: string; // Add more status values as needed
     result_json: string;
     input_id: string;
-    input_type: string; // Add more input types as needed
+    input_type: string; // PROMPT_ID | PDF_ID | IMAGE_ID | AUDIO_ID | ...
+    // AiTaskType (TEXT_TO_QUESTIONS, LECTURE_PLANNER, ...). Optional because the
+    // legacy media_service TaskStatusDto never carried it; ai_service does.
+    type?: string;
     created_at: string; // ISO datetime string
     updated_at: string; // ISO datetime string
     file_detail: {

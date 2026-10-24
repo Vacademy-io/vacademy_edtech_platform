@@ -1,0 +1,21 @@
+{
+    "heading": "معايير التقييم",
+    "invalidFormat": {
+        "title": "تنسيق معايير غير صالح",
+        "description": "بنية بيانات المعايير غير صالحة. يرجى إعادة التوليد أو إنشاء المعايير يدويًا."
+    },
+    "totalMarksLabel": "إجمالي الدرجات:",
+    "totalMarksValue_zero": "{{count}} درجة",
+    "totalMarksValue_one": "{{count}} درجة واحدة",
+    "totalMarksValue_two": "{{count}} درجتان",
+    "totalMarksValue_few": "{{count}} درجات",
+    "totalMarksValue_many": "{{count}} درجة",
+    "totalMarksValue_other": "{{count}} درجة",
+    "breakdownHeading": "تفصيل المعايير:",
+    "itemMarks_zero": "{{count}} درجة",
+    "itemMarks_one": "{{count}} درجة واحدة",
+    "itemMarks_two": "{{count}} درجتان",
+    "itemMarks_few": "{{count}} درجات",
+    "itemMarks_many": "{{count}} درجة",
+    "itemMarks_other": "{{count}} درجة"
+}

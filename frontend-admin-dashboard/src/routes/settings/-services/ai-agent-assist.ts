@@ -31,33 +31,78 @@ export interface AssistAnalysis {
     dimensions?: AssistDimension[];
     suggestions?: AssistSuggestion[];
     derived?: AssistDerived;
-    /** draft / improve / feedback also return the (new) prompt. */
+    /** draft / improve / feedback / regenerate also return the (new) prompt + opening line. */
     prompt?: string;
-    /** feedback only. */
+    opening_line?: string;
     change_summary?: string;
+    /** feedback / regenerate. */
     call_insights?: string[];
+    /** Deterministic spoken-line checks on the resulting prompt (placeholders, slashes, …). */
+    lint?: string[];
 }
 
-const post = async (path: string, body: Record<string, unknown>): Promise<AssistAnalysis> => {
-    const { data } = await authenticatedAxiosInstance.post<AssistAnalysis>(
-        `${ASSIST_BASE}/${path}`,
-        body
+/** Everything about the agent the assistant reads, and hands back in sync after a rewrite. */
+export interface AssistAgentFields {
+    agentName?: string;
+    language?: string;
+    openingLine?: string;
+    extractionQuestions?: string[];
+    dispositions?: string[];
+}
+
+export type AssistOperation = 'draft' | 'analyze' | 'improve' | 'feedback' | 'regenerate';
+
+export interface AssistJobRequest extends AssistAgentFields {
+    instituteId: string;
+    agentId?: string;
+    prompt?: string;
+    brief?: string;
+    additions?: string[];
+    feedback?: string;
+    notes?: string;
+}
+
+interface AssistJob {
+    jobId: string;
+    status: 'RUNNING' | 'DONE' | 'FAILED';
+    result?: AssistAnalysis;
+    error?: string;
+    elapsedSeconds?: number;
+}
+
+const POLL_MS = 3000;
+/** A full rewrite on a reasoning model can take several minutes; stop waiting after 12. */
+const MAX_WAIT_MS = 12 * 60 * 1000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Runs an assist operation as a background job and polls until it finishes. The job
+ * keeps running server-side if the tab closes; `onProgress` gets elapsed seconds.
+ */
+export async function runAssistJob(
+    operation: AssistOperation,
+    req: AssistJobRequest,
+    onProgress?: (elapsedSeconds: number) => void
+): Promise<AssistAnalysis> {
+    const { data: started } = await authenticatedAxiosInstance.post<AssistJob>(
+        `${ASSIST_BASE}/jobs`,
+        { ...req, operation }
     );
-    return data;
-};
-
-export const draftAgentPrompt = (instituteId: string, brief: string, language?: string) =>
-    post('draft', { instituteId, brief, language });
-
-export const analyzeAgentPrompt = (instituteId: string, prompt: string) =>
-    post('analyze', { instituteId, prompt });
-
-export const improveAgentPrompt = (instituteId: string, prompt: string, additions: string[]) =>
-    post('improve', { instituteId, prompt, additions });
-
-export const feedbackReviseAgentPrompt = (
-    instituteId: string,
-    agentId: string | undefined,
-    prompt: string,
-    feedback: string
-) => post('feedback', { instituteId, agentId, prompt, feedback });
+    const deadline = Date.now() + MAX_WAIT_MS;
+    let job = started;
+    while (job.status === 'RUNNING') {
+        if (Date.now() > deadline) throw new Error('assist-timeout');
+        await sleep(POLL_MS);
+        const { data } = await authenticatedAxiosInstance.get<AssistJob>(
+            `${ASSIST_BASE}/jobs/${job.jobId}`,
+            { params: { instituteId: req.instituteId } }
+        );
+        job = data;
+        onProgress?.(job.elapsedSeconds ?? 0);
+    }
+    if (job.status === 'FAILED' || !job.result) {
+        throw Object.assign(new Error(job.error ?? 'assist-failed'), { assistMessage: job.error });
+    }
+    return job.result;
+}

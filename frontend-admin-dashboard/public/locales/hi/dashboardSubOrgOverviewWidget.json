@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "{{plural}} स्नैपशॉट",
+        "subtitle": "आपके {{singular}} नेटवर्क का एक नज़र में विवरण"
+    },
+    "manage": "प्रबंधित करें",
+    "stats": {
+        "total": {
+            "label": "कुल {{plural}}",
+            "subtitle": "पंजीकृत {{plural}}"
+        },
+        "active": {
+            "label": "सक्रिय",
+            "subtitle": "सक्रिय योजना के साथ"
+        },
+        "learners": {
+            "label": "शिक्षार्थी",
+            "subtitle": "{{plural}} में नामांकित"
+        },
+        "seats": {
+            "label": "सीटें",
+            "subtitleOccupied": "क्षमता में से भरी हुई",
+            "subtitleNoCap": "कोई सीमा निर्धारित नहीं"
+        }
+    }
+}

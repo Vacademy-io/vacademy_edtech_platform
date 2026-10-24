@@ -1,0 +1,7 @@
+{
+    "failedToNavigateInitial": "Failed to navigate to initial page",
+    "navigatedToPage": "Navigated to page {{page}}",
+    "failedToNavigate": "Failed to navigate to page",
+    "noPdfUploaded": "No PDF has been uploaded for this slide yet.",
+    "loadingEllipsis": "Loading…"
+}

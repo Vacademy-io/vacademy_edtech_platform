@@ -1,6 +1,7 @@
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ArrowLeft,
     Books,
@@ -18,13 +19,14 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { StatusChip } from '@/components/design-system/status-chips';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LANGUAGE_LABEL, PURPOSE_OPTIONS } from './-constants';
+import { buildLanguageLabel, buildPurposeOptions } from './-constants';
 import { useKnowledgeBase, useReviewPages } from './-hooks';
 import { getOutline } from './-services/knowledge-base-service';
 import { AddSourceDialog } from './-components/AddSourceDialog';
 import { AskPanel } from './-components/AskPanel';
 import { SourcesTable } from './-components/SourcesTable';
 import { GenerationHistory } from './-components/GenerationHistory';
+import { CompanionsSection } from './-components/companion/CompanionsSection';
 import type { OutlineNode } from './-types';
 
 export const Route = createLazyFileRoute('/knowledge-base/$kbId')({
@@ -51,24 +53,21 @@ function ReviewPagesDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('knowledgeBaseKbIdIndex');
     const { data: pages, isLoading } = useReviewPages(kbId, open);
 
     return (
         <MyDialog
-            heading="Pages that may be inaccurate"
+            heading={t('reviewDialog.heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-2xl"
         >
             <div className="flex flex-col gap-3 p-6">
-                <p className="text-body text-neutral-500">
-                    These pages were scanned rather than digital, and came out unreliable when read.
-                    Everything else in this knowledge base is unaffected. The usual fix is to
-                    re-upload a clearer scan of just these pages as a separate document.
-                </p>
+                <p className="text-body text-neutral-500">{t('reviewDialog.description')}</p>
                 {isLoading && <Skeleton className="h-32 w-full rounded-md" />}
                 {!isLoading && (pages?.length ?? 0) === 0 && (
-                    <p className="text-body text-neutral-500">Nothing needs a look right now.</p>
+                    <p className="text-body text-neutral-500">{t('reviewDialog.empty')}</p>
                 )}
                 {!isLoading && (pages?.length ?? 0) > 0 && (
                     <div className="max-h-80 overflow-y-auto rounded-md border border-neutral-200">
@@ -82,15 +81,21 @@ function ReviewPagesDialog({
                                         {page.source_title}
                                     </p>
                                     <p className="text-caption text-neutral-500">
-                                        Page {page.page_number}
+                                        {t('reviewDialog.pageLabel', {
+                                            number: page.page_number,
+                                        })}
                                         {page.text_chars === 0
-                                            ? ' — no text could be read'
-                                            : ` — only ${formatCount(page.text_chars)} characters read`}
+                                            ? ` — ${t('reviewDialog.noTextRead')}`
+                                            : ` — ${t('reviewDialog.charsRead', {
+                                                  formatted: formatCount(page.text_chars),
+                                              })}`}
                                     </p>
                                 </div>
                                 {page.confidence != null && (
                                     <span className="shrink-0 text-caption text-neutral-500">
-                                        {Math.round(page.confidence * 100)}% confidence
+                                        {t('reviewDialog.confidence', {
+                                            percent: Math.round(page.confidence * 100),
+                                        })}
                                     </span>
                                 )}
                             </div>
@@ -111,6 +116,7 @@ function OutlineDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation('knowledgeBaseKbIdIndex');
     const [nodes, setNodes] = useState<OutlineNode[] | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -125,22 +131,16 @@ function OutlineDialog({
 
     return (
         <MyDialog
-            heading="What this knowledge base covers"
+            heading={t('outlineDialog.heading')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="max-w-3xl"
         >
             <div className="flex flex-col gap-3 p-6">
-                <p className="text-body text-neutral-500">
-                    Built while reading your material. This is what the AI will use to plan courses
-                    and question papers, so it is worth a skim — if a chapter is missing here, it
-                    will be missing from anything generated later.
-                </p>
+                <p className="text-body text-neutral-500">{t('outlineDialog.description')}</p>
                 {loading && <Skeleton className="h-40 w-full rounded-md" />}
                 {!loading && (nodes?.length ?? 0) === 0 && (
-                    <p className="text-body text-neutral-500">
-                        No summary yet. It is built once a document finishes processing.
-                    </p>
+                    <p className="text-body text-neutral-500">{t('outlineDialog.empty')}</p>
                 )}
                 {!loading && (nodes?.length ?? 0) > 0 && (
                     <div className="max-h-96 space-y-3 overflow-y-auto">
@@ -159,11 +159,13 @@ function OutlineDialog({
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <p className="text-body font-medium text-neutral-700">
-                                            {node.title || 'Untitled'}
+                                            {node.title || t('outlineDialog.untitled')}
                                         </p>
                                         {node.page_start != null && (
                                             <span className="shrink-0 text-caption text-neutral-400">
-                                                p. {node.page_start}
+                                                {t('outlineDialog.pagePrefix', {
+                                                    start: node.page_start,
+                                                })}
                                                 {node.page_end && node.page_end !== node.page_start
                                                     ? `-${node.page_end}`
                                                     : ''}
@@ -199,6 +201,10 @@ function OutlineDialog({
 function KnowledgeBaseDetailPage() {
     const { kbId } = Route.useParams();
     const navigate = useNavigate();
+    const { t: tConstants } = useTranslation('knowledgeBaseConstants');
+    const { t } = useTranslation('knowledgeBaseKbIdIndex');
+    const purposeOptions = useMemo(() => buildPurposeOptions(tConstants), [tConstants]);
+    const languageLabel = useMemo(() => buildLanguageLabel(tConstants), [tConstants]);
     const { setNavHeading } = useNavHeadingStore();
     const [addOpen, setAddOpen] = useState(false);
     const [reviewOpen, setReviewOpen] = useState(false);
@@ -207,8 +213,8 @@ function KnowledgeBaseDetailPage() {
     const { data: kb, isLoading, isError, refetch } = useKnowledgeBase(kbId);
 
     useEffect(() => {
-        setNavHeading(kb?.name ?? 'Knowledge Base');
-    }, [kb?.name, setNavHeading]);
+        setNavHeading(kb?.name ?? t('navHeadingDefault'));
+    }, [kb?.name, setNavHeading, t]);
 
     const sources = kb?.sources ?? [];
     const writable = kb?.writable ?? false;
@@ -224,20 +230,26 @@ function KnowledgeBaseDetailPage() {
         const titles = readySources.slice(0, 2).map((s) => s.title);
         if (titles.length === 0) return [];
         return [
-            `What topics does ${titles[0]} cover?`,
-            'List the main formulas in this material.',
-            'Suggest five exam questions from this material.',
+            t('suggestions.whatTopics', { title: titles[0] }),
+            t('suggestions.mainFormulas'),
+            t('suggestions.suggestExamQuestions'),
         ];
-    }, [readySources]);
+    }, [readySources, t]);
 
     const purposeLabel =
-        PURPOSE_OPTIONS.find((p) => p.value === kb?.purpose)?.label ??
-        (kb?.purpose === 'institute_info' ? 'Institute info' : 'General reference');
+        purposeOptions.find((p) => p.value === kb?.purpose)?.label ??
+        (kb?.purpose === 'institute_info'
+            ? t('purpose.instituteInfo')
+            : t('purpose.generalReference'));
 
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{kb?.name ? `${kb.name} — Knowledge Base` : 'Knowledge Base'}</title>
+                <title>
+                    {kb?.name
+                        ? t('pageTitleWithName', { name: kb.name })
+                        : t('pageTitleDefault')}
+                </title>
             </Helmet>
 
             <div className="flex flex-col gap-5">
@@ -248,7 +260,7 @@ function KnowledgeBaseDetailPage() {
                     className="w-fit"
                 >
                     <ArrowLeft className="mr-1 size-4" />
-                    All knowledge bases
+                    {t('backToAll')}
                 </MyButton>
 
                 {isLoading && (
@@ -261,11 +273,9 @@ function KnowledgeBaseDetailPage() {
                 {isError && (
                     <Card className="flex flex-col items-center gap-3 p-8 text-center">
                         <WarningCircle className="size-7 text-danger-500" />
-                        <p className="text-body text-neutral-600">
-                            Could not load this knowledge base.
-                        </p>
+                        <p className="text-body text-neutral-600">{t('loadError')}</p>
                         <MyButton buttonType="secondary" scale="medium" onClick={() => refetch()}>
-                            Try again
+                            {t('tryAgainButton')}
                         </MyButton>
                     </Card>
                 )}
@@ -285,7 +295,7 @@ function KnowledgeBaseDetailPage() {
                                         <p className="text-caption text-neutral-500">
                                             {purposeLabel}
                                             {kb.language_hint
-                                                ? ` · ${LANGUAGE_LABEL[kb.language_hint] ?? kb.language_hint}`
+                                                ? ` · ${languageLabel[kb.language_hint] ?? kb.language_hint}`
                                                 : ''}
                                         </p>
                                         {kb.description && (
@@ -300,7 +310,7 @@ function KnowledgeBaseDetailPage() {
                                     {kb.owner_type === 'PLATFORM' && (
                                         <StatusChip
                                             status="INFO"
-                                            text="Shared library — read only"
+                                            text={t('sharedLibraryBadge')}
                                             textSize="text-caption"
                                             showIcon={false}
                                         />
@@ -311,7 +321,7 @@ function KnowledgeBaseDetailPage() {
                                         onClick={() => setOutlineOpen(true)}
                                     >
                                         <ListNumbers className="mr-1 size-4" />
-                                        What it covers
+                                        {t('whatItCoversButton')}
                                     </MyButton>
                                     {readySources.length > 0 && (
                                         <MyButton
@@ -325,7 +335,7 @@ function KnowledgeBaseDetailPage() {
                                             }
                                         >
                                             <Exam className="mr-1 size-4" />
-                                            Create question paper
+                                            {t('createQuestionPaperButton')}
                                         </MyButton>
                                     )}
                                     {readySources.length > 0 && (
@@ -340,7 +350,7 @@ function KnowledgeBaseDetailPage() {
                                             }
                                         >
                                             <GraduationCap className="mr-1 size-4" />
-                                            Create course
+                                            {t('createCourseButton')}
                                         </MyButton>
                                     )}
                                     {writable && (
@@ -350,7 +360,7 @@ function KnowledgeBaseDetailPage() {
                                             onClick={() => setAddOpen(true)}
                                         >
                                             <Plus className="mr-1 size-4" />
-                                            Add material
+                                            {t('addMaterialButton')}
                                         </MyButton>
                                     )}
                                 </div>
@@ -358,16 +368,19 @@ function KnowledgeBaseDetailPage() {
 
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                                 <StatTile
-                                    label="Sources"
+                                    label={t('stats.sources')}
                                     value={formatCount(kb.stats?.sources ?? sources.length)}
                                 />
-                                <StatTile label="Pages" value={formatCount(kb.stats?.pages ?? 0)} />
                                 <StatTile
-                                    label="Searchable passages"
+                                    label={t('stats.pages')}
+                                    value={formatCount(kb.stats?.pages ?? 0)}
+                                />
+                                <StatTile
+                                    label={t('stats.searchablePassages')}
                                     value={formatCount(kb.stats?.chunks ?? 0)}
                                 />
                                 <StatTile
-                                    label="Diagrams & tables"
+                                    label={t('stats.diagramsAndTables')}
                                     value={formatCount(kb.stats?.figures ?? 0)}
                                 />
                             </div>
@@ -376,9 +389,7 @@ function KnowledgeBaseDetailPage() {
                                 {processing > 0 && (
                                     <span className="flex items-center gap-1.5 text-caption text-primary-500">
                                         <Spinner className="size-4 animate-spin" />
-                                        Reading {processing}{' '}
-                                        {processing === 1 ? 'source' : 'sources'}— you can leave
-                                        this page, it keeps going.
+                                        {t('processingSources', { count: processing })}
                                     </span>
                                 )}
                                 {kb.review_pages > 0 && (
@@ -389,7 +400,10 @@ function KnowledgeBaseDetailPage() {
                                         className="text-warning-600"
                                     >
                                         <WarningCircle className="mr-1 size-4" />
-                                        {formatCount(kb.review_pages)} pages may be inaccurate
+                                        {t('reviewPagesWarning', {
+                                            count: kb.review_pages,
+                                            formatted: formatCount(kb.review_pages),
+                                        })}
                                     </MyButton>
                                 )}
                             </div>
@@ -398,14 +412,14 @@ function KnowledgeBaseDetailPage() {
                         <div className="grid gap-4 lg:grid-cols-2">
                             <div className="flex flex-col gap-2">
                                 <p className="text-subtitle font-semibold text-neutral-700">
-                                    Material
+                                    {t('materialHeading')}
                                 </p>
                                 <SourcesTable kbId={kbId} sources={sources} writable={writable} />
                             </div>
 
                             <div className="flex flex-col gap-2">
                                 <p className="text-subtitle font-semibold text-neutral-700">
-                                    Check it works
+                                    {t('checkItWorksHeading')}
                                 </p>
                                 <AskPanel
                                     kbId={kbId}
@@ -416,9 +430,13 @@ function KnowledgeBaseDetailPage() {
                             </div>
                         </div>
 
+                        {kb.purpose !== 'institute_info' && (
+                            <CompanionsSection kbId={kbId} kbName={kb.name} />
+                        )}
+
                         <div className="flex flex-col gap-2">
                             <p className="text-subtitle font-semibold text-neutral-700">
-                                Made from this knowledge base
+                                {t('madeFromHeading')}
                             </p>
                             <GenerationHistory kbId={kbId} />
                         </div>

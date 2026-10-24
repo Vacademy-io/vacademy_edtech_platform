@@ -1,0 +1,9 @@
+{
+    "blockLabel": "Timeline / Steps",
+    "preview": "Preview",
+    "edit": "Edit",
+    "defaultStepTitle": "Step {{number}}",
+    "stepTitlePlaceholder": "Step title",
+    "stepDescriptionPlaceholder": "Step description (optional)",
+    "addStep": "+ Add Step"
+}

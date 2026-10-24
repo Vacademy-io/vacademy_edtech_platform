@@ -23,6 +23,7 @@ export const VISIBILITY_KEY_TO_TAB_ID: Record<StudentSideViewVisibilityKey, Stud
         applicationTab: 'application',
         leadTab: 'lead',
         fullHistoryTab: 'fullHistory',
+        workflowsTab: 'workflows',
         parentTab: 'parent',
         onboardingTab: 'onboarding',
     };
@@ -55,6 +56,7 @@ export const STUDENT_SIDE_VIEW_TAB_LABELS: Record<StudentSideViewTabId, string> 
     application: 'Application',
     lead: 'Lead Profile',
     fullHistory: 'Full History',
+    workflows: 'Workflows',
     parent: 'Guardian',
     onboarding: 'Onboarding',
 };

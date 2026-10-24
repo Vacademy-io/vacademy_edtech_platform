@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "campaignNameRequired": "اسم الاستفسار مطلوب",
+        "campaignNameMinLength": "يجب أن يتكون الاسم من 3 أحرف على الأقل",
+        "campaignTypeRequired": "نوع الاستفسار مطلوب",
+        "sessionRequired": "الجلسة مطلوبة",
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "endDateRequired": "تاريخ الانتهاء مطلوب"
+    }
+}

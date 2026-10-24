@@ -1,0 +1,192 @@
+{
+    "loading": "جارٍ التحميل...",
+    "resetToDefaults": "إعادة التعيين إلى الإعدادات الافتراضية",
+    "sections": {
+        "coursesAndPermissions": "الدورات والصلاحيات",
+        "layoutAndNavigation": "التخطيط والتنقل",
+        "contentAndLearners": "المحتوى والمتعلمون",
+        "dashboardAndAccess": "لوحة التحكم والوصول"
+    },
+    "common": {
+        "visible": "ظاهر",
+        "hidden": "مخفي",
+        "locked": "مقفل",
+        "default": "افتراضي",
+        "remove": "إزالة",
+        "aiTools": "أدوات الذكاء الاصطناعي"
+    },
+    "toast": {
+        "saveSuccess": "تم حفظ إعدادات عرض المعلم",
+        "saveFailed": "فشل الحفظ"
+    },
+    "sidebarTabs": {
+        "newCustomTabLabel": "علامة تبويب مخصصة",
+        "newCustomSubTabLabel": "علامة تبويب فرعية مخصصة"
+    },
+    "cards": {
+        "coursePage": {
+            "title": "إعدادات صفحة الدورة",
+            "description": "التحكم في ظهور عناصر صفحة الدورة.",
+            "options": {
+                "viewInviteLinks": "عرض روابط الدعوة",
+                "viewShortInviteLinks": "عرض روابط الدعوة المختصرة",
+                "viewCourseConfiguration": "عرض إعدادات الدورة",
+                "viewCourseOverviewItem": "عرض عنصر نظرة عامة على الدورة",
+                "viewContentNumbering": "عرض ترقيم المحتوى",
+                "allowViewSlidesInReadOnly": "السماح بعرض الشرائح في الدورات المنشورة / قيد المراجعة (للقراءة فقط)",
+                "showAddSubject": "إظهار زر \"إضافة مادة\" (المخطط وهيكل المحتوى)",
+                "showAddModule": "إظهار زر \"إضافة وحدة\" (المخطط وهيكل المحتوى)",
+                "showAddChapter": "إظهار زر \"إضافة فصل\" (المخطط وهيكل المحتوى)",
+                "showAddSlide": "إظهار زر \"إضافة شريحة\" (المخطط وهيكل المحتوى)",
+                "showLearnerProgressReport": "إظهار علامة تبويب \"تقدم الطالب\" في التقارير (تقدم الدورة لكل متعلم)"
+            },
+            "showAdvancedCourseIds": "إظهار قائمة المعرّفات المتقدمة في تفاصيل الدورة (الدورة / جلسة الحزمة / الجلسة / المستوى)"
+        },
+        "coursePermission": {
+            "title": "صلاحية الدورة",
+            "description": "التحكم فيما يمكن لهذا الدور فعله على الدورة وشرائحها.",
+            "directEdit": "يمكن التعديل مباشرة (دون نسخ للتعديل / الموافقة)",
+            "options": {
+                "showCopyTo": "يمكن نسخ الشريحة",
+                "showMoveTo": "يمكن نقل الشريحة",
+                "showDelete": "يمكن حذف الشريحة"
+            },
+            "editStructure": "يمكن تعديل المادة / الوحدة / الفصل",
+            "deleteStructure": "يمكن حذف المادة / الوحدة / الفصل",
+            "showBulkUpload": "إظهار زر الرفع الجماعي (ZIP)",
+            "deleteCourse": "يمكن حذف الدورة",
+            "requireCourseApproval": "يتطلب موافقة المشرف قبل نشر الدورات الجديدة (إرسال للمراجعة)"
+        },
+        "authoredCoursesCard": {
+            "title": "بطاقة الدورات المؤلَّفة",
+            "description": "التحكم في الإجراءات الظاهرة على بطاقة الدورة ضمن استكشاف الدورات ← الدورات المؤلَّفة.",
+            "showCopyToEdit": "إظهار زر \"نسخ للتعديل\""
+        },
+        "courseListCard": {
+            "title": "بطاقة قائمة الدورات",
+            "description": "التحكم في التفاصيل الظاهرة على كل بطاقة دورة ضمن استكشاف الدورات.",
+            "showEnrolledStudentCount": "إظهار عدد الطلاب المسجَّلين"
+        },
+        "courseCreation": {
+            "title": "إنشاء الدورات",
+            "description": "التحكم في من يمكنه إنشاء الدورات، ونقاط دخول الذكاء الاصطناعي، وإعدادات الفصل الافتراضية.",
+            "showCreateCourse": "السماح بإنشاء الدورات (إظهار زر \"إضافة دورة\")",
+            "showCreateCourseWithAI": "إظهار \"إنشاء دورة بالذكاء الاصطناعي\"",
+            "requirePackageSelectionForNewChapter": "طلب اختيار جلسة الحزمة عند إضافة فصل جديد",
+            "showAdvancedSettings": "إظهار الإعدادات المتقدمة",
+            "limitToSingleLevel": "قصر الدورة على مستوى واحد"
+        },
+        "courseListTabs": {
+            "title": "علامات تبويب قائمة الدورات",
+            "description": "اضبط علامات التبويب الظاهرة وترتيبها والتبويب الافتراضي. Course Approval مخصص للمشرفين فقط ويبقى مخفيًا لهذا الدور."
+        },
+        "courseDetailsTabs": {
+            "title": "علامات تبويب تفاصيل الدورة",
+            "description": "اختر علامات التبويب الظاهرة وحدد العلامة الافتراضية.",
+            "offlineLockedHint": "معطَّل لأن التنزيلات غير المتصلة معطَّلة للمؤسسة (الإعدادات ← الوصول غير المتصل)."
+        },
+        "uiOptions": {
+            "title": "خيارات الواجهة",
+            "description": "تفضيلات الواجهة العامة",
+            "showSupportButton": "إظهار زر الدعم",
+            "showSidebar": "إظهار الشريط الجانبي",
+            "showAiCredits": "إظهار أرصدة الذكاء الاصطناعي",
+            "showStatus": "إظهار الحالة",
+            "showSettings": "إظهار الإعدادات",
+            "showSettingsHint": "يخفي أيقونة الإعدادات في الشريط الجانبي. يمكن ما زال فتح الإعدادات مباشرة عبر ‎/settings.",
+            "showAssistDock": "إظهار الشريط الجانبي الأيمن",
+            "showAssistDockHint": "الأدلة، التدريب، المساعدة، المشكلات، ما الجديد، الاستكشاف وتطبيق الإدارة. مخفي افتراضيًا لهذا الدور."
+        },
+        "sidebarCategories": {
+            "title": "فئات الشريط الجانبي",
+            "description": "تكوين الظهور والترتيب والفئة الافتراضية للشريط الجانبي."
+        },
+        "sidebarTabs": {
+            "title": "علامات تبويب الشريط الجانبي",
+            "description": "ترتيب علامات التبويب وتبديل ظهورها. علامة تبويب الإعدادات مخفية دائمًا للمعلمين.",
+            "tabName": "اسم علامة التبويب",
+            "route": "المسار",
+            "subTabs": "علامات التبويب الفرعية",
+            "addSubTab": "إضافة علامة تبويب فرعية",
+            "labelPlaceholder": "التسمية",
+            "routePlaceholder": "المسار",
+            "addCustomTab": "إضافة علامة تبويب مخصصة"
+        },
+        "courseContentTypes": {
+            "title": "أنواع محتوى الدورة",
+            "description": "تفعيل أو تعطيل أنواع محتوى الشرائح. يحتوي الفيديو على خيار إضافي للأسئلة داخل الفيديو.",
+            "options": {
+                "pdf": "PDF",
+                "ppt": "عرض PPT تقديمي",
+                "codeEditor": "محرر الأكواد",
+                "document": "مستند",
+                "question": "سؤال",
+                "quiz": "اختبار قصير",
+                "assignment": "واجب",
+                "jupyterNotebook": "دفتر Jupyter",
+                "scratch": "Scratch",
+                "audio": "صوت",
+                "scorm": "حزمة SCORM",
+                "assessment": "تقييم"
+            },
+            "video": "فيديو",
+            "inVideoQuestionVisible": "سؤال داخل الفيديو ظاهر",
+            "canAddVideoQuestion": "يمكن إضافة أسئلة إلى شرائح الفيديو",
+            "canConvertToSplitScreen": "يمكن تحويل الفيديو إلى شاشة مقسَّمة"
+        },
+        "learnerManagement": {
+            "title": "إدارة المتعلمين",
+            "description": "تكوين صلاحيات إدارة المتعلمين وضوابط الوصول."
+        },
+        "dashboardWidgets": {
+            "title": "أدوات لوحة التحكم",
+            "description": "ترتيب وتبديل الأدوات التي يمكن للمعلمين رؤيتها."
+        },
+        "permissions": {
+            "title": "الصلاحيات",
+            "description": "تكوين ظهور وصلاحيات تعديل بيانات المؤسسة والملف الشخصي.",
+            "options": {
+                "canViewInstituteDetails": "يمكن عرض بيانات المؤسسة",
+                "canEditInstituteDetails": "يمكن تعديل بيانات المؤسسة",
+                "canViewProfileDetails": "يمكن عرض بيانات الملف الشخصي",
+                "canEditProfileDetails": "يمكن تعديل بيانات الملف الشخصي"
+            }
+        },
+        "postLoginRedirect": {
+            "title": "إعادة التوجيه بعد تسجيل الدخول",
+            "description": "اختر إلى أين يُعاد توجيه المعلمين بعد تسجيل الدخول.",
+            "route": "المسار"
+        }
+    },
+    "studentSideViewOptions": {
+        "overviewTab": "علامة تبويب النظرة العامة",
+        "coursesTab": "علامة تبويب الدورات",
+        "testTab": "علامة تبويب الاختبار",
+        "progressTab": "علامة تبويب التقدم",
+        "notificationTab": "علامة تبويب الإشعارات",
+        "membershipTab": "علامة تبويب العضوية",
+        "paymentHistoryTab": "علامة تبويب سجل المدفوعات",
+        "userTaggingTab": "علامة تبويب وسم المستخدمين",
+        "badgesTab": "علامة تبويب الشارات",
+        "fileTab": "علامة تبويب الملفات",
+        "portalAccessTab": "علامة تبويب الوصول إلى البوابة",
+        "reportsTab": "علامة تبويب التقارير",
+        "enrollDerollTab": "علامة تبويب التسجيل/إلغاء التسجيل",
+        "enquiryTab": "علامة تبويب الاستفسار",
+        "applicationTab": "علامة تبويب الطلب",
+        "leadTab": "علامة تبويب ملف العميل المحتمل",
+        "fullHistoryTab": "علامة تبويب السجل الكامل",
+        "workflowsTab": "تبويب سير العمل",
+        "parentTab": "علامة تبويب ولي الأمر",
+        "onboardingTab": "علامة تبويب التهيئة"
+    },
+    "learnerManagementOptions": {
+        "allowPortalAccess": "السماح بالوصول إلى بوابة المتعلم",
+        "allowViewPassword": "السماح بعرض كلمة مرور المتعلم",
+        "allowEditCredentials": "السماح بتعديل اسم مستخدم المتعلم وكلمة المرور",
+        "allowSendResetPasswordMail": "السماح بإرسال بريد إعادة تعيين كلمة المرور",
+        "showApprovalToggle": "إظهار مفتاح \"طلبات الموافقة\" في قائمة المتعلمين",
+        "allowDeletePayments": "السماح بالحذف النهائي للمدفوعات والفواتير (لا يمكن التراجع عنه)",
+        "canApplyDiscounts": "السماح بتطبيق الخصومات عند تسجيل المتعلمين أو التعيين الجماعي أو إنشاء الفواتير"
+    }
+}

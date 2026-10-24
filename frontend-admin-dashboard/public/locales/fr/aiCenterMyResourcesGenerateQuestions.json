@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "label": "Générer des questions"
+    },
+    "dialog": {
+        "title": "Générer des questions",
+        "promptLabel": "Consigne",
+        "promptPlaceholder": "Saisissez votre consigne ici",
+        "generateButton": "Générer"
+    },
+    "tasksList": {
+        "heading": "Vsmart Upload"
+    }
+}

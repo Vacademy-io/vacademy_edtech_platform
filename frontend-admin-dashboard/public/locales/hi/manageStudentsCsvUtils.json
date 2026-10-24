@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "required": "{{field}} आवश्यक है",
+        "requiredResolution": "कृपया {{field}} के लिए एक मान दर्ज करें",
+        "usernameNoSpaces": "उपयोगकर्ता नाम में स्पेस नहीं हो सकते",
+        "usernameNoSpacesResolution": "उपयोगकर्ता नाम से स्पेस हटाएं",
+        "usernameNoSpacesFormat": "स्पेस की अनुमति नहीं है",
+        "invalidValue": "{{field}} के लिए अमान्य मान",
+        "invalidValueResolution": "मान इनमें से एक होना चाहिए: {{options}}",
+        "invalidDateFormat": "{{field}} के लिए अमान्य दिनांक प्रारूप",
+        "invalidDateFormatResolution": "दिनांक इस प्रारूप में होनी चाहिए: {{format}}",
+        "invalidFormat": "{{field}} के लिए अमान्य प्रारूप",
+        "checkFormat": "कृपया प्रारूप जांचें"
+    }
+}

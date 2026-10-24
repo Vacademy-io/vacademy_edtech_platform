@@ -1,0 +1,33 @@
+{
+    "title": "गिरावट और चर्न विश्लेषण",
+    "noData": "चर्न विश्लेषण के लिए कोई डेटा उपलब्ध नहीं है",
+    "subtitle": "ड्रॉप-ऑफ बिंदुओं की पहचान करें और सहभागिता को बेहतर बनाएं",
+    "churnRate": "चर्न दर",
+    "retention": "प्रतिधारण",
+    "funnelHeading": "उपयोगकर्ता ड्रॉप-ऑफ फ़नल",
+    "funnelInsufficientData": "फ़नल विज़ुअलाइज़ेशन के लिए अपर्याप्त डेटा",
+    "usersTooltip_one": "{{count}} उपयोगकर्ता",
+    "usersTooltip_other": "{{count}} उपयोगकर्ता",
+    "critical": "गंभीर",
+    "urgent": "अत्यावश्यक",
+    "warning": "चेतावनी",
+    "noCriticalIssues": "कोई गंभीर समस्या नहीं मिली! सहभागिता स्वस्थ है।",
+    "recommendationsHeading": "सिफारिशें",
+    "alerts": {
+        "noOutgoingMessages": "दिन {{dayNumber}} में कोई आउटगोइंग संदेश नहीं है",
+        "lowResponseRate": "दिन {{dayNumber}} में {{rate}}% प्रतिक्रिया दर है",
+        "suddenDrop": "दिन {{previousDay}} से दिन {{dayNumber}} तक {{dropPercentage}}% की गिरावट"
+    },
+    "actions": {
+        "scheduleContentImmediately": "तुरंत सामग्री शेड्यूल करें",
+        "reviewAndOptimizeContent": "सामग्री की समीक्षा करें और अनुकूलित करें",
+        "investigateContentChange": "सामग्री में बदलाव की जांच करें"
+    },
+    "recommendations": {
+        "scheduleAutomatedMessages": "बिना सामग्री वाले दिनों के लिए स्वचालित संदेश शेड्यूल करें",
+        "reviewContentStrategy": "सामग्री रणनीति की समीक्षा करें - महत्वपूर्ण सहभागिता गिरावट देखी गई",
+        "addIncentives": "चुनौती के बीच में प्रोत्साहन या सहभागिता हुक जोड़ने पर विचार करें",
+        "abTestFormats": "प्रतिक्रिया दर सुधारने के लिए विभिन्न संदेश प्रारूपों का ए/बी परीक्षण करें",
+        "healthyEngagement": "बहुत बढ़िया! सहभागिता का स्तर स्वस्थ है। पावर उपयोगकर्ताओं को रेफ़रल के लिए लक्षित करने पर विचार करें।"
+    }
+}

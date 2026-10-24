@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -13,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import { Route } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/index';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { YoutubeLogo, CheckCircle, PlayCircle } from '@phosphor-icons/react';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { getSlideStatusForUser } from '../../non-admin/hooks/useNonAdminSlides';
@@ -22,18 +24,19 @@ import {
     getNextSlideOrder,
 } from '../../-helper/slide-naming-utils';
 
-const formSchema = z.object({
-    videoUrl: z
-        .string()
-        .min(1, 'URL is required')
-        .url('Please enter a valid URL')
-        .refine((url) => url.includes('youtube.com') || url.includes('youtu.be'), {
-            message: 'Please enter a valid YouTube URL',
-        }),
-    videoName: z.string().optional(),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        videoUrl: z
+            .string()
+            .min(1, t('validation.urlRequired'))
+            .url(t('validation.urlInvalid'))
+            .refine((url) => url.includes('youtube.com') || url.includes('youtu.be'), {
+                message: t('validation.youtubeUrlInvalid'),
+            }),
+        videoName: z.string().optional(),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 export const AddVideoDialog = ({
     openState,
@@ -43,6 +46,8 @@ export const AddVideoDialog = ({
     // When provided, the dialog edits this slide's link instead of creating a new slide.
     editSlide?: Slide;
 }) => {
+    const { t } = useTranslation('studyLibraryAddVideoDialog');
+    const formSchema = useMemo(() => buildFormSchema(t), [t]);
     const { getPackageSessionId } = useInstituteDetailsStore();
     const { courseId, levelId, chapterId, moduleId, subjectId, sessionId } = Route.useSearch();
     const { addUpdateVideoSlide, updateSlideOrder } = useSlidesMutations(
@@ -107,11 +112,11 @@ export const AddVideoDialog = ({
             fetch(`https://www.youtube.com/oembed?url=${url}&format=json`)
                 .then((response) => response.json())
                 .then((data) => {
-                    form.setValue('videoName', data.title || 'YouTube Video');
+                    form.setValue('videoName', data.title || t('defaults.videoName'));
                     setVideoPreview({ title: data.title, thumbnail: data.thumbnail_url });
                 })
                 .catch(() => {
-                    form.setValue('videoName', 'YouTube Video');
+                    form.setValue('videoName', t('defaults.videoName'));
                     setVideoPreview(null);
                 });
         } else {
@@ -131,7 +136,7 @@ export const AddVideoDialog = ({
     const handleSubmit = async (data: FormValues) => {
         const videoId = extractVideoId(data.videoUrl);
         if (!videoId) {
-            toast.error('Invalid YouTube URL');
+            toast.error(t('toasts.invalidYoutubeUrl'));
             return;
         }
 
@@ -149,9 +154,7 @@ export const AddVideoDialog = ({
                     onReady: (event) => {
                         const durationSeconds = event.target.getDuration();
                         if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
-                            toast.error(
-                                'Could not read video duration from YouTube. Please try again.'
-                            );
+                            toast.error(t('toasts.durationReadFailed'));
                             event.target.destroy();
                             return;
                         }
@@ -164,7 +167,7 @@ export const AddVideoDialog = ({
             // YouTube IFrame API hasn't finished loading yet. Don't submit with
             // length=0 — that would break learner-side progress tracking on
             // this slide forever. Ask the user to retry.
-            toast.error('YouTube is still loading. Please wait a moment and try again.');
+            toast.error(t('toasts.youtubeLoading'));
         }
     };
 
@@ -176,7 +179,7 @@ export const AddVideoDialog = ({
                 const slideStatus = editSlide.status;
                 const response: string = await addUpdateVideoSlide({
                     id: editSlide.id,
-                    title: data.videoName || editSlide.title || 'YouTube Video',
+                    title: data.videoName || editSlide.title || t('defaults.videoName'),
                     description: editSlide.description ?? null,
                     image_file_id: editSlide.image_file_id ?? null,
                     slide_order: editSlide.slide_order ?? null,
@@ -184,7 +187,7 @@ export const AddVideoDialog = ({
                         id: editSlide.video_slide?.id || crypto.randomUUID(),
                         description: editSlide.video_slide?.description || '',
                         url: data.videoUrl,
-                        title: data.videoName || 'YouTube Video',
+                        title: data.videoName || t('defaults.videoName'),
                         video_length_in_millis: duration,
                         published_url:
                             slideStatus === 'PUBLISHED'
@@ -207,7 +210,7 @@ export const AddVideoDialog = ({
                 if (response) {
                     refreshActiveSlideAfterEdit(data.videoUrl, duration);
                     openState?.(false);
-                    toast.success('Video link updated successfully!');
+                    toast.success(t('toasts.updateSuccess'));
                 }
                 return;
             }
@@ -216,7 +219,7 @@ export const AddVideoDialog = ({
             const slideStatus = getSlideStatusForUser();
             const response: string = await addUpdateVideoSlide({
                 id: slideId,
-                title: data.videoName || 'YouTube Video',
+                title: data.videoName || t('defaults.videoName'),
                 description: null,
                 image_file_id: null,
                 slide_order: getNextSlideOrder(items || []),
@@ -224,7 +227,7 @@ export const AddVideoDialog = ({
                     id: crypto.randomUUID(),
                     description: '',
                     url: data.videoUrl,
-                    title: data.videoName || 'YouTube Video',
+                    title: data.videoName || t('defaults.videoName'),
                     video_length_in_millis: duration,
                     published_url: slideStatus === 'PUBLISHED' ? data.videoUrl : null,
                     published_video_length_in_millis: slideStatus === 'PUBLISHED' ? duration : 0,
@@ -238,10 +241,10 @@ export const AddVideoDialog = ({
             if (response) {
                 await reorderSlidesAfterNewSlide(response);
                 openState?.(false);
-                toast.success('Video added successfully!');
+                toast.success(t('toasts.addSuccess'));
             }
         } catch (error) {
-            toast.error(editSlide ? 'Failed to update link' : 'Failed to add video');
+            toast.error(editSlide ? t('toasts.updateFailed') : t('toasts.addFailed'));
         } finally {
             setIsVideoUploading(false);
         }
@@ -294,7 +297,7 @@ export const AddVideoDialog = ({
                 setActiveItem(getSlideById(newSlideId));
             }, 500);
         } catch (error) {
-            toast.error('Slide created but reordering failed');
+            toast.error(t('toasts.reorderFailed'));
         }
     };
 
@@ -319,7 +322,7 @@ export const AddVideoDialog = ({
                                                 field.onChange(e);
                                                 handleUrlChange(e.target.value);
                                             }}
-                                            placeholder="https://www.youtube.com/watch?v=..."
+                                            placeholder={t('fields.urlPlaceholder')}
                                             className="w-full rounded-lg border border-neutral-300 px-4 py-3 pr-10 text-sm"
                                             required
                                         />
@@ -342,7 +345,7 @@ export const AddVideoDialog = ({
                                 <div className="relative shrink-0">
                                     <img
                                         src={videoPreview.thumbnail}
-                                        alt="Video thumbnail"
+                                        alt={t('preview.thumbnailAlt')}
                                         className="h-12 w-16 rounded-lg object-cover"
                                     />
                                     <div className="absolute inset-0 flex items-center justify-center">
@@ -353,7 +356,7 @@ export const AddVideoDialog = ({
                                     <p className="truncate text-sm font-medium text-neutral-700">
                                         {videoPreview.title}
                                     </p>
-                                    <p className="text-xs text-neutral-500">YouTube Video</p>
+                                    <p className="text-xs text-neutral-500">{t('defaults.videoName')}</p>
                                 </div>
                             </div>
                         </div>
@@ -381,12 +384,12 @@ export const AddVideoDialog = ({
                         {isVideoUploading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                {editSlide ? 'Updating Link...' : 'Adding Video...'}
+                                {editSlide ? t('actions.updatingLink') : t('actions.addingVideo')}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center gap-2">
                                 <YoutubeLogo className="size-4" />
-                                {editSlide ? 'Update YouTube Link' : 'Add YouTube Video'}
+                                {editSlide ? t('actions.updateLink') : t('actions.addVideo')}
                             </div>
                         )}
                     </MyButton>

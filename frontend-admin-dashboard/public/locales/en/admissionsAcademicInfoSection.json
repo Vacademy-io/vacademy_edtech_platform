@@ -1,0 +1,70 @@
+{
+    "sections": {
+        "previousSchoolDetails": "Current / Previous School Details",
+        "transferCertificateDetails": "Transfer Certificate (TC) Details",
+        "applyingFor": "Applying For"
+    },
+    "fields": {
+        "previousSchoolName": {
+            "label": "Previous School Name",
+            "placeholder": "Enter previous school name"
+        },
+        "previousSchoolBoard": {
+            "label": "Previous School Board",
+            "placeholder": "Select board",
+            "hint": "CBSE / ICSE"
+        },
+        "lastClassAttended": {
+            "label": "Last Class Attended",
+            "placeholder": "Select class"
+        },
+        "academicYear": {
+            "label": "Academic Year",
+            "placeholder": "Session will be auto-filled",
+            "hint": "Based on selected session"
+        },
+        "lastExamResult": {
+            "label": "Last Exam Result / Percentage",
+            "placeholder": "E.g., 85% or A1 Grade or 9 CGPA"
+        },
+        "subjectsStudied": {
+            "label": "Subjects Studied (Previous Class)",
+            "placeholder": "E.g., English, Hindi, Maths, Science, Social Science"
+        },
+        "tcNumber": {
+            "label": "TC Number",
+            "placeholder": "Enter TC number"
+        },
+        "tcIssueDate": {
+            "label": "TC Issue Date"
+        },
+        "tcPending": {
+            "label": "TC Pending / Will be submitted later",
+            "hint": "(Admission cannot be confirmed without TC)"
+        },
+        "applyingForClass": {
+            "label": "Class / Grade Applying For",
+            "placeholder": "Select class",
+            "hint": "Select the class or grade for admission"
+        },
+        "preferredBoard": {
+            "label": "Board Preference",
+            "placeholder": "Select board"
+        }
+    },
+    "boardOptions": {
+        "cbse": "CBSE",
+        "icse": "ICSE",
+        "stateBoard": "State Board",
+        "ib": "IB",
+        "igcse": "IGCSE",
+        "other": "Other"
+    },
+    "classLevelOptions": {
+        "kindergarten": "Kindergarten",
+        "nursery": "Nursery",
+        "lkg": "LKG",
+        "ukg": "UKG"
+    },
+    "classNumber": "Class {{number}}"
+}

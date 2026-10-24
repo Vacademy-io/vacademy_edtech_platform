@@ -1,0 +1,74 @@
+{
+    "chapterHeader": {
+        "updating": "Updating...",
+        "saveChanges": "Save Changes"
+    },
+    "thumbnailAlt": "Thumbnail",
+    "importContent": {
+        "noBatchSelected": "No batch selected — pick a session/level first.",
+        "sameBatch": "Source and target batch are the same — pick a different batch.",
+        "targetHasContent": "This batch already has its own content. Linking it would mix linked and existing lessons. Choose \"Make a separate copy\" instead.",
+        "summary": "{{subjects}} subject(s), {{modules}} module(s), {{chapters}} chapter(s), {{slides}} slide(s)",
+        "modeLinked": "linked from source",
+        "modeCopied": "copied in",
+        "warningSuffix": "{{summary}}. {{count}} drip-condition warning(s).",
+        "successMessage": "Content {{mode}} ({{summary}}).",
+        "failed": "Failed to import content into this batch.",
+        "importing": "Importing…",
+        "importButton": "Import Content"
+    },
+    "dripConditions": {
+        "saveFailed": "Failed to save drip conditions. Please try again.",
+        "reorderSubjectsFailed": "Failed to reorder subjects. Changes have been reverted.",
+        "reorderModulesFailed": "Failed to reorder modules. Changes have been reverted.",
+        "reorderChaptersFailed": "Failed to reorder chapters. Changes have been reverted."
+    },
+    "untitledSlide": "Untitled slide",
+    "courseStructureHeading": "Course Structure",
+    "scheduleUnlock": "Schedule Unlock",
+    "collapseAll": "Collapse All",
+    "expandAll": "Expand All",
+    "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "unlockRule": "Unlock Rule",
+        "offlineAvailability": "Offline Availability"
+    },
+    "add": "Add",
+    "noSlidesInChapter": "No {{term}} in this chapter.",
+    "manageTeachers": "Manage {{teacher}}",
+    "viewAndManageTeachers": "View and manage {{teacher}} assigned to this batch.",
+    "selectBatchFor": {
+        "liveSessions": "Select a batch to view its live sessions.",
+        "reports": "Select a batch to view its reports.",
+        "offlineDownloads": "Select a batch to view its offline downloads.",
+        "discussion": "Select a batch to view its discussion."
+    },
+    "contentStructureHeading": "Content Structure",
+    "navigateFolders": "Navigate through your course content using folders",
+    "numbering": {
+        "subject": "Subject {{number}}",
+        "module": "Module {{number}}",
+        "chapter": "Chapter {{number}}",
+        "slide": "Slide {{number}}"
+    },
+    "restriction": {
+        "banner": "Editing Restricted: This course is {{status}}.",
+        "statusPublished": "published",
+        "statusUnderReview": "under review",
+        "statusRestricted": "restricted",
+        "publishedHint": "Go to My Courses to create an editable copy.",
+        "reviewHint": "You cannot edit the content while it's under review.",
+        "restrictedHint": "You cannot edit this content."
+    },
+    "updatingStructure": "Updating course structure...",
+    "editSubjectHeading": "Edit Subject",
+    "editModuleHeading": "Edit Module",
+    "editChapterHeading": "Edit Chapter",
+    "confirmDeletion": {
+        "title": "Confirm Deletion",
+        "body": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+        "cancel": "Cancel"
+    },
+    "defaultNodeName": "This content"
+}

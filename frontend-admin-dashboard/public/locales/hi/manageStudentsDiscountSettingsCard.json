@@ -1,0 +1,15 @@
+{
+    "title": "छूट सेटिंग्स",
+    "changeButton": "छूट सेटिंग्स बदलें",
+    "noDiscount": {
+        "label": "कोई छूट लागू नहीं है"
+    },
+    "badge": {
+        "active": "सक्रिय"
+    },
+    "value": {
+        "percentOff": "{{value}}% की छूट",
+        "amountOff": "₹{{value}} की छूट"
+    },
+    "expires": "समाप्ति: {{date}}"
+}

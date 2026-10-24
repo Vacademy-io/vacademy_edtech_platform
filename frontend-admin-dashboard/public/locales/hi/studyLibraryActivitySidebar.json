@@ -1,0 +1,30 @@
+{
+    "activityStats": "गतिविधि आँकड़े",
+    "trackEngagementSubtitle": "छात्र जुड़ाव और सबमिशन ट्रैक करें",
+    "downloadAllSubmissions": "सभी सबमिशन डाउनलोड करें (CSV)",
+    "downloading": "डाउनलोड हो रहा है...",
+    "downloadCsv": "CSV डाउनलोड करें",
+    "participants": "प्रतिभागी",
+    "avgTime": "औसत समय",
+    "onThisPage": "इस पेज पर",
+    "searchPlaceholder": "नाम, ईमेल या फ़ोन से खोजें...",
+    "failedToLoad": "गतिविधि डेटा लोड नहीं हो सका",
+    "noMatchesFound": "कोई मेल नहीं मिला",
+    "noActivityYet": "अभी तक कोई छात्र गतिविधि नहीं",
+    "tryDifferentSearch": "कोई अलग खोज शब्द आज़माएँ",
+    "activityWillAppear": "छात्रों के जुड़ते ही गतिविधि यहाँ दिखाई देगी",
+    "lateSubmissionTooltip": "असाइनमेंट की समाप्ति तिथि के बाद सबमिट किया गया",
+    "late": "देर से",
+    "checked": "जाँचा गया",
+    "pendingReview": "समीक्षा लंबित",
+    "viewActivity": "गतिविधि देखें",
+    "time": {
+        "justNow": "अभी अभी",
+        "minutesAgo_one": "{{count}} मिनट पहले",
+        "minutesAgo_other": "{{count}} मिनट पहले",
+        "hoursAgo_one": "{{count}} घंटे पहले",
+        "hoursAgo_other": "{{count}} घंटे पहले",
+        "daysAgo_one": "{{count}} दिन पहले",
+        "daysAgo_other": "{{count}} दिन पहले"
+    }
+}

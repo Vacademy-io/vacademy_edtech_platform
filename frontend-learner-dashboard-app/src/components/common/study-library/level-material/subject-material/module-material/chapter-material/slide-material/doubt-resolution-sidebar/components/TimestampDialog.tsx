@@ -172,7 +172,7 @@ export const TimestampDialog = ({
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="flex flex-col gap-3 p-4">
+                <div className="flex flex-col gap-stack p-4">
                     {isDocument ? (
                         <MyInput
                             inputType="text"

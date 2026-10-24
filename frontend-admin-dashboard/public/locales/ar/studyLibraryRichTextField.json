@@ -1,0 +1,12 @@
+{
+    "toolbar": {
+        "bold": "غامق",
+        "italic": "مائل",
+        "underline": "تسطير",
+        "bulletList": "قائمة نقطية",
+        "numberedList": "قائمة مرقمة",
+        "insertLink": "إدراج رابط",
+        "insertImage": "إدراج صورة",
+        "linkPrompt": "رابط URL:"
+    }
+}

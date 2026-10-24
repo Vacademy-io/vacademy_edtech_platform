@@ -56,6 +56,27 @@ public class PaymentLogFilterRequestDTO {
      * payment amount. Matching payment logs are those whose user matches OR whose amount contains
      * this string.
      */
+    /**
+     * Narrow to rows whose payment plan carries one of these names. Plans are matched by name
+     * because that is what the picker shows and what an institute renames; ids churn when a plan
+     * is edited. Invoice rows have no plan, so any value here drops them.
+     */
+    private List<String> paymentPlanNames;
+
+    /**
+     * Which KPI tile the table is showing: total | paid | pending | abandoned | failed. Server-side
+     * because "pending" absorbs NULL and unknown statuses, which no `payment_status IN (...)`
+     * filter can express.
+     */
+    private String statusBucket;
+
     private String searchString;
+
+    /**
+     * Fill each row's enrolled_date / next_due_on, for the optional Enrollment Date and Next Due
+     * Date columns. Off unless asked for, so the list costs exactly what it did for everyone who
+     * keeps those columns hidden.
+     */
+    private Boolean includePlanDates;
 }
 

@@ -1,0 +1,73 @@
+{
+    "loading": "Loading enquiry details…",
+    "loadError": "Failed to load enquiry details.",
+    "duplicateBanner": {
+        "message": "This is a duplicate lead.",
+        "primaryLabel": "Primary: {{id}}…"
+    },
+    "header": {
+        "trackingId": "Tracking ID",
+        "copy": "Copy",
+        "copiedToast": "Tracking ID copied!",
+        "enquiryStatus": "Enquiry Status",
+        "overallStatus": "Overall Status"
+    },
+    "sections": {
+        "child": {
+            "title": "Student / Child",
+            "name": "Name",
+            "dob": "Date of Birth",
+            "gender": "Gender",
+            "applyingForClass": "Applying For Class",
+            "academicYear": "Academic Year",
+            "previousSchool": "Previous School"
+        },
+        "parent": {
+            "title": "Parent / Guardian",
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "address": "Address",
+            "city": "City",
+            "pinCode": "Pin Code"
+        },
+        "enquiryInfo": {
+            "title": "Enquiry Info",
+            "mode": "Mode",
+            "referenceSource": "Reference Source",
+            "leadInterestScore": "Lead Interest Score",
+            "feeRangeExpectation": "Fee Range Expectation",
+            "transportRequirement": "Transport Requirement",
+            "currentStage": "Current Stage",
+            "createdAt": "Created At",
+            "updatedAt": "Updated At",
+            "notes": "Notes"
+        },
+        "campaign": {
+            "title": "Enquiry",
+            "enquiry": "Enquiry",
+            "source": "Source",
+            "classLevel": "Class / Level",
+            "session": "Session"
+        },
+        "applicationStatus": {
+            "title": "Application Status",
+            "applied": "Applied",
+            "applicantId": "Applicant ID",
+            "assignedCounselor": "Assigned Counselor",
+            "yes": "Yes",
+            "no": "No"
+        },
+        "customFields": {
+            "title": "Custom Fields"
+        }
+    },
+    "status": {
+        "NEW": "New",
+        "CONTACTED": "Contacted",
+        "QUALIFIED": "Qualified",
+        "NOT_ELIGIBLE": "Not Eligible",
+        "ENQUIRY": "Enquiry",
+        "APPLICATION": "Application"
+    }
+}

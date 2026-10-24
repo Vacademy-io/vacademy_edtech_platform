@@ -1,0 +1,9 @@
+{
+  "emptyState": {
+    "message": "لا يوجد مستخدمون في المؤسسة."
+  },
+  "status": {
+    "active": "نشط",
+    "disabled": "معطل"
+  }
+}

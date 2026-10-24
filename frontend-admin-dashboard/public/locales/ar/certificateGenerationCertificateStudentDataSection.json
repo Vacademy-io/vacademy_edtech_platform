@@ -1,0 +1,15 @@
+{
+    "certificateGeneration": "إصدار الشهادات",
+    "backTo": "العودة إلى {{term}}",
+    "studentsSelected_zero": "لم يتم تحديد أي {{term}}",
+    "studentsSelected_one": "تم تحديد {{term}} واحد",
+    "studentsSelected_two": "تم تحديد {{term}}ين",
+    "studentsSelected_few": "تم تحديد {{count}} من {{term}}",
+    "studentsSelected_many": "تم تحديد {{count}} من {{term}}",
+    "studentsSelected_other": "تم تحديد {{count}} من {{term}}",
+    "certificateSettings": "إعدادات الشهادة",
+    "steps": {
+        "studentData": "بيانات الطلاب وتحميل CSV",
+        "pdfAnnotation": "تعليقات PDF"
+    }
+}

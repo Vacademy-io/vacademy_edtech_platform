@@ -1,0 +1,134 @@
+{
+    "volt": {
+        "title": "Welcome to Volt",
+        "subtitle": "The future of interactive presentations.",
+        "redirecting": "Redirecting you to your workspace..."
+    },
+    "alertsDialog": {
+        "title": "System Alerts",
+        "loading": "Loading...",
+        "loadMore": "Load more",
+        "empty": "No alerts found"
+    },
+    "myCourses": {
+        "title": "My Courses",
+        "viewAll": "View All",
+        "description": "Quick access to your authored courses and submissions",
+        "authored": "Authored Courses",
+        "inReview": "In Review",
+        "loadError": "Failed to load course data"
+    },
+    "page": {
+        "title": "Dashboard",
+        "metaDescription": "This page shows the dashboard of the institute."
+    },
+    "greeting": {
+        "morning": "Good morning, <strong>{{name}}!</strong>",
+        "afternoon": "Good afternoon, <strong>{{name}}!</strong>",
+        "evening": "Good evening, <strong>{{name}}!</strong>"
+    },
+    "subtitle": {
+        "admin": "Here's how {{instituteName}} is doing today.",
+        "adminFallbackInstitute": "your institute",
+        "nonAdmin": "Track your courses and learners at a glance."
+    },
+    "header": {
+        "roleFallback": "Admin"
+    },
+    "welcomeVideo": {
+        "text": "Welcome aboard! We're excited to have you here. Let's set up your admin dashboard and make learning seamless and engaging.",
+        "textGeneral": "Welcome aboard! We're excited to have you here. Let's set up your admin dashboard so your institute runs smoothly."
+    },
+    "profileCard": {
+        "title": "Complete your institute profile",
+        "dismissAriaLabel": "Dismiss profile completion card",
+        "percentComplete": "{{percent}}% complete"
+    },
+    "namingCard": {
+        "title": "Naming Settings",
+        "description": "Customize the naming conventions used throughout your institute",
+        "button": "Naming Settings",
+        "dismissAriaLabel": "Dismiss naming settings card"
+    },
+    "revenueTrends": {
+        "subOrgTitle": "Amount collected — my organization"
+    },
+    "roleTypeCard": {
+        "title": "Role Type Users"
+    },
+    "aiCard": {
+        "dismissAriaLabel": "Dismiss AI features card",
+        "title": "Try New AI Features!",
+        "description": "Explore cutting-edge AI tools to enhance your teaching",
+        "features": {
+            "pdf": "Questions from PDF",
+            "lectureAudio": "Questions From Lecture Audio",
+            "sortTopicWise": "Sort Questions Topic wise",
+            "image": "Questions From Image",
+            "lectureFeedback": "Get Feedback of Lecture",
+            "planLecture": "Plan Your Lecture"
+        },
+        "manyMore": "Many More"
+    },
+    "assistant": {
+        "name": "Institute Chatbot",
+        "heading": "What would you like to get done today?",
+        "description": "Ask a question or choose a task to get started.",
+        "openChat": "Open chat",
+        "inputLabel": "Ask {{chatbotName}}",
+        "placeholder": "What can I help you with?",
+        "inputHint": "Enter to send · Shift + Enter for a new line",
+        "submit": "Ask assistant",
+        "suggestionsLabel": "Suggested tasks. Select one to edit your question.",
+        "loading": "Loading your assistant",
+        "unavailable": "The assistant is temporarily unavailable. Your dashboard is still ready to use.",
+        "retry": "Try again",
+        "starters": {
+            "overview": {
+                "label": "Check pending fees",
+                "prompt": "How much in fees is pending across the institute?"
+            },
+            "learner": {
+                "label": "Find a learner",
+                "prompt": "Help me find a learner by name."
+            },
+            "assessments": {
+                "label": "Pending evaluations",
+                "prompt": "Which assessment submissions are still pending evaluation?"
+            },
+            "announcement": {
+                "label": "Draft an announcement",
+                "prompt": "Help me draft an announcement for a batch."
+            },
+            "schedule": {
+                "label": "Today’s classes",
+                "prompt": "What classes are scheduled for today?"
+            },
+            "payments": {
+                "label": "Check learner fees",
+                "prompt": "Help me check a learner’s overdue fees."
+            },
+            "batch": {
+                "label": "View a batch roster",
+                "prompt": "Help me find the learners in a batch."
+            },
+            "help": {
+                "label": "Help with a task",
+                "prompt": "How do I create a course?",
+                "promptGeneral": "How do I add a team member?"
+            }
+        },
+        "instituteName": "{{instituteName}} Institute Chatbot",
+        "helpDescription": "Ask me how or where to do anything in your admin workspace."
+    },
+    "quickActions": {
+        "title": "Quick actions"
+    },
+    "overview": {
+        "title": "Institute overview"
+    },
+    "sourceError": {
+        "message": "Couldn't load",
+        "retry": "Retry"
+    }
+}

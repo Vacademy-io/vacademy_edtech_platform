@@ -1,0 +1,30 @@
+{
+    "audio": {
+        "noAudio": "Aucun audio importé"
+    },
+    "pdf": {
+        "noPdf": "Aucun PDF importé",
+        "openInNewTab": "Ouvrir le PDF dans un nouvel onglet"
+    },
+    "fillBlanks": {
+        "title": "Texte à trous"
+    },
+    "jupyter": {
+        "notConfigured": "Aucun notebook configuré",
+        "notConfiguredDetail": "Le nom du projet et l'URL du contenu sont nécessaires pour afficher le notebook Jupyter",
+        "heading": "Notebook Jupyter : {{name}}",
+        "previewTitle": "Aperçu du notebook Jupyter",
+        "repository": "Dépôt :",
+        "branch": "Branche :",
+        "location": "Emplacement :"
+    },
+    "scratch": {
+        "notConfigured": "Aucun projet Scratch configuré",
+        "notConfiguredDetail": "L'ID du projet est nécessaire pour afficher le projet Scratch",
+        "heading": "Projet Scratch"
+    },
+    "toc": {
+        "title": "Table des matières",
+        "subtitle": "Le plan est généré automatiquement à partir des titres du document."
+    }
+}

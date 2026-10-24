@@ -1,0 +1,19 @@
+{
+    "heading": "असहेजे गए परिवर्तन",
+    "keptOnDeviceHint": "केवल इस डिवाइस पर रखा गया है — लॉग आउट करने या ब्राउज़र डेटा साफ़ करने पर ये परिवर्तन खो जाएंगे। इसे सहेजने के लिए एक {{slideTerm}} खोलें।",
+    "keepInBrowser": "ब्राउज़र में रखें",
+    "discardChanges": "परिवर्तन छोड़ें",
+    "close": "बंद करें",
+    "unsavedEditsHintLeave": "इन {{slidesTermPlural}} में ऐसे संपादन हैं जो डेटाबेस में सहेजे नहीं गए हैं। किसी एक पर क्लिक करके उसे खोलें, या छोड़ने से पहले तय करें कि क्या करना है।",
+    "unsavedEditsHintReview": "इन {{slidesTermPlural}} में ऐसे संपादन हैं जो डेटाबेस में सहेजे नहीं गए हैं। किसी एक पर क्लिक करके उसे खोलें और सहेजें।",
+    "untitled": "शीर्षकहीन",
+    "editedAgo": "{{timeAgo}} संपादित किया गया",
+    "noUnsavedChanges": "इस कोर्स में कोई असहेजा परिवर्तन नहीं है।",
+    "justNow": "अभी अभी",
+    "minAgo_one": "{{count}} मिनट पहले",
+    "minAgo_other": "{{count}} मिनट पहले",
+    "hrAgo_one": "{{count}} घंटे पहले",
+    "hrAgo_other": "{{count}} घंटे पहले",
+    "dayAgo_one": "{{count}} दिन पहले",
+    "dayAgo_other": "{{count}} दिन पहले"
+}

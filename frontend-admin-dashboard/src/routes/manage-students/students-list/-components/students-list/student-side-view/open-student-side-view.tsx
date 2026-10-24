@@ -18,6 +18,7 @@ import {
     FileText,
 } from '@phosphor-icons/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useAssistDockVisible } from '@/components/assist-dock/visibility';
 import { useQuery } from '@tanstack/react-query';
@@ -37,21 +38,28 @@ const DetailRow = ({
     icon: React.ReactNode;
     label: string;
     value?: string | null;
-}) => (
-    <div className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-slate-50">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-500">
-            {icon}
+}) => {
+    const { t } = useTranslation('manageStudentsOpenSideView');
+    return (
+        <div className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-slate-50">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-50 text-primary-500">
+                {icon}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+                <p className="text-caption font-medium uppercase tracking-wider text-slate-500">
+                    {label}
+                </p>
+                <p className="truncate text-sm font-semibold text-slate-900">
+                    {value || (
+                        <span className="italic font-normal text-slate-400">
+                            {t('common.notProvided')}
+                        </span>
+                    )}
+                </p>
+            </div>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col">
-            <p className="text-caption font-medium uppercase tracking-wider text-slate-500">
-                {label}
-            </p>
-            <p className="truncate text-sm font-semibold text-slate-900">
-                {value || <span className="italic font-normal text-slate-400">Not provided</span>}
-            </p>
-        </div>
-    </div>
-);
+    );
+};
 
 const SectionHeader = ({ icon, title }: { icon: React.ReactNode; title: string }) => (
     <div className="mb-2 flex items-center gap-2 px-1">
@@ -61,6 +69,7 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode; title: string }
 );
 
 export const OpenStudentSidebar = () => {
+    const { t } = useTranslation('manageStudentsOpenSideView');
     const { state, toggleSidebar } = useSidebar();
     const { selectedStudent } = useStudentSidebar();
 
@@ -86,7 +95,8 @@ export const OpenStudentSidebar = () => {
         data?.participant_name?.trim().charAt(0).toUpperCase() ||
         selectedStudent?.full_name?.trim().charAt(0).toUpperCase() ||
         '?';
-    const displayName = data?.participant_name || selectedStudent?.full_name || 'Participant';
+    const displayName =
+        data?.participant_name || selectedStudent?.full_name || t('common.participantFallback');
 
     return (
         <Sidebar side="right">
@@ -104,14 +114,14 @@ export const OpenStudentSidebar = () => {
                                 <h2 className="text-base font-semibold text-slate-900">
                                     {displayName}
                                 </h2>
-                                <p className="text-xs text-slate-500">Registration Details</p>
+                                <p className="text-xs text-slate-500">{t('header.subtitle')}</p>
                             </div>
                         </div>
                         <button
                             type="button"
                             onClick={toggleSidebar}
                             className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-                            aria-label="Close"
+                            aria-label={t('header.close')}
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -127,13 +137,13 @@ export const OpenStudentSidebar = () => {
 
                     {isError && (
                         <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                            Failed to load registration details.
+                            {t('states.loadError')}
                         </div>
                     )}
 
                     {!isLoading && !isError && !registrationId && (
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                            Select a participant to view their registration details.
+                            {t('states.noParticipantSelected')}
                         </div>
                     )}
 
@@ -164,21 +174,21 @@ export const OpenStudentSidebar = () => {
                                 <CardContent className="p-3">
                                     <SectionHeader
                                         icon={<IdentificationCard className="h-3.5 w-3.5" />}
-                                        title="Contact Information"
+                                        title={t('contact.sectionTitle')}
                                     />
                                     <DetailRow
                                         icon={<EnvelopeSimple className="h-4 w-4" />}
-                                        label="Email"
+                                        label={t('contact.email')}
                                         value={data.email}
                                     />
                                     <DetailRow
                                         icon={<Phone className="h-4 w-4" />}
-                                        label="Mobile Number"
+                                        label={t('contact.mobileNumber')}
                                         value={data.phone_number}
                                     />
                                     <DetailRow
                                         icon={<Clock className="h-4 w-4" />}
-                                        label="Registered On"
+                                        label={t('contact.registeredOn')}
                                         value={
                                             data.registration_time
                                                 ? convertToLocalDateTime(data.registration_time)
@@ -192,7 +202,7 @@ export const OpenStudentSidebar = () => {
                             <div>
                                 <SectionHeader
                                     icon={<ListChecks className="h-3.5 w-3.5" />}
-                                    title={`Form Responses${
+                                    title={`${t('formResponses.sectionTitle')}${
                                         data.custom_fields?.length
                                             ? ` (${data.custom_fields.length})`
                                             : ''
@@ -205,7 +215,10 @@ export const OpenStudentSidebar = () => {
                                                 <div key={field.field_id || idx}>
                                                     <DetailRow
                                                         icon={<FileText className="h-4 w-4" />}
-                                                        label={field.field_name || 'Field'}
+                                                        label={
+                                                            field.field_name ||
+                                                            t('formResponses.fieldFallback')
+                                                        }
                                                         value={field.answer}
                                                     />
                                                     {idx < data.custom_fields.length - 1 && (
@@ -218,7 +231,7 @@ export const OpenStudentSidebar = () => {
                                 ) : (
                                     <Card className="border-dashed border-slate-200 shadow-none">
                                         <CardContent className="flex items-center justify-center p-6 text-sm text-slate-500">
-                                            No additional form fields submitted.
+                                            {t('formResponses.empty')}
                                         </CardContent>
                                     </Card>
                                 )}

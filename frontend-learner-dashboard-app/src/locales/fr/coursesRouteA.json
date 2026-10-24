@@ -1,0 +1,146 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "login": "Connexion",
+    "unknownInstructor": "Formateur inconnu"
+  },
+  "courseCard": {
+    "noTagsAvailable": "Aucune étiquette disponible",
+    "moreTags": "+ {{count}} de plus",
+    "viewButton": "Voir {{course}}"
+  },
+  "catalogPage": {
+    "bannerAlt": "Bannière {{course}}"
+  },
+  "header": {
+    "nav": {
+      "home": "Accueil",
+      "about": "À propos",
+      "impact": "Impact",
+      "getInvolved": "S'impliquer",
+      "contact": "Contact"
+    },
+    "loadingLogoAriaLabel": "Chargement du logo",
+    "toggleMobileMenuAriaLabel": "Afficher/masquer le menu mobile",
+    "logoAlt": "logo",
+    "donate": "Faire un don"
+  },
+  "donationDialog": {
+    "closeAriaLabel": "Fermer",
+    "continueButton": "Continuer",
+    "errors": {
+      "amountRequired": "Veuillez sélectionner ou saisir un montant de don",
+      "invalidEmail": "Veuillez saisir une adresse e-mail valide"
+    }
+  },
+  "coursesPage": {
+    "untitledPackage": "Forfait sans titre",
+    "defaultLevelName": "Débutant",
+    "empty": {
+      "title": "Aucun {{courses}} disponible",
+      "description": "Essayez d'ajuster vos critères de recherche ou revenez plus tard pour de nouveaux {{courses}}."
+    }
+  },
+  "filterPanel": {
+    "title": "Filtres",
+    "clearAll": "Tout effacer",
+    "apply": "Appliquer",
+    "showLess": "Afficher moins",
+    "showMore": "Afficher plus",
+    "noItemsAvailable": "Aucun {{title}} disponible.",
+    "filtersUnavailable": "Les filtres {{title}} ne sont pas disponibles actuellement."
+  },
+  "footer": {
+    "tagline": "Donner aux enfants les moyens d'apprendre",
+    "logoAlt": "Logo",
+    "quickLinks": "Liens rapides",
+    "contactUs": "Contactez-nous",
+    "websiteLabel": "Codecircle.org",
+    "emailLabel": "E-mail :",
+    "newsletterTitle": "Abonnez-vous à notre newsletter",
+    "namePlaceholder": "Votre nom",
+    "emailPlaceholder": "Votre e-mail",
+    "subscribeButton": "S'abonner",
+    "copyright": "© 2025 Codecircle.org. Tous droits réservés",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation"
+  },
+  "hero": {
+    "bannerAlt": "Bannière du catalogue de {{course}}"
+  },
+  "cta": {
+    "titlePrefix": "Envie de créer votre propre",
+    "titleSuffix": " ?",
+    "subtitle1": "Partagez vos connaissances avec le monde !",
+    "subtitle2": "Connectez-vous et commencez à créer vos propres {{courses}} pour que d'autres puissent les découvrir et en apprendre."
+  },
+  "pagination": {
+    "ariaLabel": "Pagination",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+  "searchAndSortBar": {
+    "searchPlaceholder": "Rechercher des {{courses}} par titre...",
+    "sortNewest": "Trier par : plus récent",
+    "sortOldest": "Trier par : plus ancien"
+  },
+  "supporters": {
+    "titlePrefix": "Nos",
+    "titleHighlight": "Partenaires"
+  },
+  "donation": {
+    "amountStep": {
+      "loadingOptions": "Chargement des options de paiement...",
+      "other": "Autre",
+      "minAmountPlaceholder": "{{currencySymbol}} (min {{currencySymbol}}{{minAmount}})"
+    },
+    "summary": {
+      "title": "Récapitulatif du don",
+      "amountLabel": "Montant :",
+      "emailLabel": "E-mail :",
+      "editButton": "Modifier"
+    },
+    "emailStep": {
+      "emailLabel": "Votre e-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "receiptNote": "Nous enverrons votre reçu à cette adresse e-mail"
+    },
+    "header": {
+      "title": "Soutenez l'éducation gratuite",
+      "subtitle": "Choisissez un montant à donner"
+    },
+    "paymentStep": {
+      "loadingGateway": "Chargement de la passerelle de paiement...",
+      "gatewayUnavailable": "Passerelle de paiement indisponible",
+      "cardDetailsLabel": "Informations de la carte",
+      "errors": {
+        "gatewayNotConfigured": "La passerelle de paiement n'est pas configurée",
+        "failedToLoad": "Échec du chargement de la passerelle de paiement"
+      }
+    },
+    "successStep": {
+      "thankYouTitle": "Merci !",
+      "donationProcessingPrefix": "Votre don de",
+      "donationProcessingSuffix": "est en cours de traitement.",
+      "thankYouMessage": "Merci de soutenir l'éducation gratuite et de contribuer à la rendre accessible à tous !",
+      "paymentFailedTitle": "Échec du paiement",
+      "paymentFailedPrefix": "Nous n'avons pas pu traiter votre don de",
+      "paymentFailedSuffix": ".",
+      "paymentIssueTitle": "Problème de paiement",
+      "tryAgainButton": "Réessayer"
+    },
+    "paymentForm": {
+      "processing": "Traitement en cours...",
+      "donateNow": "Faire un don maintenant",
+      "securePaymentBy": "Paiement sécurisé propulsé par",
+      "stripeBrand": "Stripe",
+      "errors": {
+        "stripeNotLoaded": "Stripe n'est pas chargé. Veuillez actualiser la page.",
+        "cardElementNotFound": "Élément de carte introuvable.",
+        "paymentMethodCreationFailed": "Échec de la création du moyen de paiement.",
+        "paymentProcessingFailed": "Échec du traitement du paiement",
+        "paymentFailedRetry": "Le paiement a échoué. Veuillez réessayer."
+      }
+    }
+  }
+}

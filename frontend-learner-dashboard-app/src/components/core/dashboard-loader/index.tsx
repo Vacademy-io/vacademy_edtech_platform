@@ -1,5 +1,7 @@
 import { Component, ErrorInfo, ReactNode, useEffect, useState } from "react";
 import { Warning, ArrowClockwise } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { MyButton } from "@/components/design-system/button";
 import { useTheme } from "@/providers/theme/theme-provider";
 import { getCachedInstituteBranding } from "@/services/domain-routing";
@@ -39,21 +41,20 @@ export class ErrorBoundary extends Component<
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-reg-400 flex-col items-center justify-center rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-orange-50 px-6 py-12 text-center">
+        <div className="flex min-h-reg-400 flex-col items-center justify-center rounded-xl border border-red-200 bg-gradient-to-br from-danger-50 to-primary-50 px-6 py-12 text-center">
           <div className="mb-6 rounded-full bg-red-100 p-4">
             <Warning className="size-12 text-red-600" />
           </div>
 
           <h2 className="mb-3 text-xl font-semibold text-neutral-800">
-            Something went wrong
+            {i18n.t("courseComponentsExtra:common.somethingWentWrong")}
           </h2>
 
           <p className="mb-6 max-w-md text-sm leading-relaxed text-neutral-600">
-            We encountered an unexpected error while loading this content. This
-            might be due to a temporary issue or insufficient permissions.
+            {i18n.t("courseComponentsExtra:dashboardLoader.errorBoundaryDescription")}
           </p>
 
-          <div className="flex flex-col items-center gap-3 sm:flex-row">
+          <div className="flex flex-col items-center gap-stack sm:flex-row">
             <MyButton
               onClick={this.handleReset}
               buttonType="primary"
@@ -61,7 +62,7 @@ export class ErrorBoundary extends Component<
               className="flex items-center gap-2"
             >
               <ArrowClockwise className="size-4" />
-              Try Again
+              {i18n.t("courseComponentsExtra:common.tryAgain")}
             </MyButton>
 
             <MyButton
@@ -69,14 +70,14 @@ export class ErrorBoundary extends Component<
               buttonType="secondary"
               scale="medium"
             >
-              Reload Page
+              {i18n.t("courseComponentsExtra:runtimeErrorPage.reloadPage")}
             </MyButton>
           </div>
 
           {process.env.NODE_ENV === "development" && this.state.error && (
-            <details className="mt-6 max-w-full overflow-auto rounded-lg bg-red-100 p-4 text-start">
-              <summary className="mb-2 cursor-pointer text-sm font-medium text-red-800">
-                Error Details (Development)
+            <details className="mt-6 max-w-full overflow-auto rounded-lg bg-red-100 p-4 text-start space-y-2">
+              <summary className="cursor-pointer text-sm font-medium text-red-800">
+                {i18n.t("courseComponentsExtra:dashboardLoader.errorDetailsDev")}
               </summary>
               <pre className="whitespace-pre-wrap break-words text-xs text-red-700">
                 {this.state.error.stack}
@@ -91,14 +92,16 @@ export class ErrorBoundary extends Component<
   }
 }
 
-const VacademyLogoSVG = ({ className = "" }: { className?: string }) => (
+const VacademyLogoSVG = ({ className = "" }: { className?: string }) => {
+  const { t } = useTranslation("courseComponentsExtra");
+  return (
   <svg
     className={className}
     viewBox="0 0 80 80"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <title>Loading</title>
+    <title>{t("dashboardLoader.loading")}</title>
     <circle cx="40" cy="40" r="32" fill="#F8FAFC" /> {/* design-lint-ignore: SVG illustration fill */}
     <circle
       cx="40"
@@ -122,9 +125,11 @@ const VacademyLogoSVG = ({ className = "" }: { className?: string }) => (
     />
     <circle cx="40" cy="40" r="6" fill="#6366F1" opacity="0.6" /> {/* design-lint-ignore: SVG illustration fill */}
   </svg>
-);
+  );
+};
 
 const Logo = ({ className = "" }: { className?: string }) => {
+  const { t } = useTranslation("courseComponentsExtra");
   const [logoLoaded, setLogoLoaded] = useState(false);
   const cachedBranding = getCachedInstituteBranding();
 
@@ -144,7 +149,7 @@ const Logo = ({ className = "" }: { className?: string }) => {
     return (
       <img
         src={logoUrl}
-        alt="Logo"
+        alt={t("dashboardLoader.logoAlt")}
         className={className}
         onLoad={() => setLogoLoaded(true)}
         onError={() => {
@@ -155,7 +160,7 @@ const Logo = ({ className = "" }: { className?: string }) => {
   }
 
   if (logoUrl && logoLoaded) {
-    return <img src={logoUrl} alt="Logo" className={className} />;
+    return <img src={logoUrl} alt={t("dashboardLoader.logoAlt")} className={className} />;
   }
 
   return <VacademyLogoSVG className={className} />;

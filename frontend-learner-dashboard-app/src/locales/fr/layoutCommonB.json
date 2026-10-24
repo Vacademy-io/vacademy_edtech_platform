@@ -1,0 +1,879 @@
+{
+  "aiReportDetails": {
+    "areasOfImprovement": {
+      "title": "📝 Axes d'amélioration"
+    },
+    "behavioralInsights": {
+      "difficultyResponse": "📈 Réponse à la difficulté",
+      "fatigueIndicator": "😴 Indicateur de fatigue",
+      "skipPattern": "⏭️ Schéma de questions passées",
+      "timeManagement": "⏱️ Gestion du temps",
+      "title": "🧩 Analyse comportementale"
+    },
+    "bloomLevels": {
+      "analyze": "Analyser",
+      "apply": "Appliquer",
+      "create": "Créer",
+      "evaluate": "Évaluer",
+      "remember": "Mémoriser",
+      "understand": "Comprendre"
+    },
+    "bloomsTaxonomy": {
+      "caption": "Vos résultats aux différents niveaux de réflexion — du simple rappel à l'analyse et à la résolution de problèmes complexes.",
+      "performanceByLevel": "Performance par niveau cognitif",
+      "title": "🎓 Taxonomie de Bloom"
+    },
+    "confidence": {
+      "aiInsight": "Analyse de l'IA :",
+      "caption": "Confiance estimée à partir du temps de réponse, des schémas de réponses et de la difficulté des questions.",
+      "high": "ÉLEVÉ",
+      "highConfCorrect": "Confiance élevée & correct",
+      "highConfWrong": "Confiance élevée & incorrect",
+      "likelyGuessed": "Probablement deviné",
+      "low": "FAIBLE",
+      "lowConfCorrect": "Confiance faible & correct",
+      "medium": "MOYEN",
+      "perQuestion": "Confiance par question",
+      "title": "🎯 Estimation de la confiance"
+    },
+    "defaultSubtitle": "Analyse de performance personnalisée",
+    "downloadPdf": "Télécharger le PDF",
+    "failed": "Échec",
+    "flashcards": {
+      "answer": "Réponse",
+      "flip": "Retourner",
+      "question": "Question",
+      "title": "🃏 Cartes mémoire"
+    },
+    "generating": "Génération...",
+    "improvementPath": {
+      "title": "🚀 Parcours d'amélioration"
+    },
+    "leaderboard": {
+      "marks": "Points",
+      "ofNStudents": "sur {{total}} élèves",
+      "percentile": "Percentile",
+      "rank": "Rang",
+      "student": "Élève",
+      "title": "🏅 Classement (votre position)",
+      "youMarker": ">> {{name}} (vous)",
+      "yourRankPrefix": "Votre rang :"
+    },
+    "learningPath": {
+      "title": "🗺️ Parcours d'apprentissage recommandé"
+    },
+    "misconceptions": {
+      "caption": "Les questions auxquelles vous avez mal répondu et les erreurs conceptuelles précises derrière chaque erreur.",
+      "correct": "Correct :",
+      "misconceptionLabel": "Erreur de compréhension :",
+      "title": "🔍 Analyse des erreurs de compréhension",
+      "yourAnswer": "Votre réponse :"
+    },
+    "performanceAnalysis": {
+      "title": "📊 Analyse de performance"
+    },
+    "scoreOverview": {
+      "marksObtained": "Points obtenus",
+      "percentile": "Percentile",
+      "rankOf": "Rang (sur {{total}})"
+    },
+    "strengths": {
+      "title": "💪 Points forts"
+    },
+    "topicAnalysis": {
+      "caption": "Vos résultats sur les différents sujets couverts par cette évaluation.",
+      "table": {
+        "accuracy": "Précision",
+        "avgTime": "Temps moyen",
+        "correct": "Correct",
+        "mastery": "Maîtrise",
+        "questions": "Qs",
+        "topic": "Sujet"
+      },
+      "title": "🧠 Analyse par sujet"
+    },
+    "vsClass": {
+      "accuracyCaption": "Précision (vous vs moyenne de la classe)",
+      "avg": "Moy. : {{value}}",
+      "highest": "Le plus élevé :",
+      "lowest": "Le plus bas :",
+      "marksCaption": "Points (vous vs moyenne de la classe)",
+      "participants": "Participants :",
+      "title": "📊 Votre performance vs la classe",
+      "you": "Vous : {{value}}"
+    },
+    "weaknesses": {
+      "title": "🎯 Points faibles"
+    }
+  },
+  "attendanceReport": {
+    "attendanceRate": "Taux de présence",
+    "bestRegards": "Cordialement,",
+    "closingNote": "Une présence régulière est la clé de la réussite.",
+    "downloadPdf": "Télécharger le PDF",
+    "engagement": {
+      "attendanceLabel": "Présence :",
+      "attendancePts": "80 pts",
+      "breakdownTitle": "Détail du score d'engagement",
+      "chats_many": "{{count}} messages",
+      "chats_one": "{{count}} message",
+      "chats_other": "{{count}} messages",
+      "emojis_many": "{{count}} emojis",
+      "emojis_one": "{{count}} emoji",
+      "emojis_other": "{{count}} emojis",
+      "explanationMiddle": "en fonction du temps de présence par rapport à la durée totale de la session, plus",
+      "explanationPrefix": "Comment le score de chaque session est calculé :",
+      "explanationSuffix": "pour les interactions pendant la session. Total plafonné à 100.",
+      "interactionPts": "20 pts",
+      "interactionsLabel": "Interactions :",
+      "joinedOf": "({{joined}} sur {{total}} min rejointes)",
+      "polls_many": "{{count}} sondages",
+      "polls_one": "{{count}} sondage",
+      "polls_other": "{{count}} sondages",
+      "raises_many": "{{count}} mains levées",
+      "raises_one": "{{count}} main levée",
+      "raises_other": "{{count}} mains levées",
+      "talkTime": "{{count}} temps de parole (en s)",
+      "total": "Total : {{score}}/100"
+    },
+    "generated": "Généré",
+    "generating": "Génération...",
+    "greeting": {
+      "middle": ", voici votre récapitulatif de présence pour la période du",
+      "prefix": "Bonjour",
+      "to": "au"
+    },
+    "loadFailed": "Échec du chargement du rapport.",
+    "minutesTotal": "{{count}} min au total",
+    "noData": "Aucune donnée de présence disponible pour cette période.",
+    "pdfGenerationFailed": "Échec de la génération du PDF. Veuillez réessayer.",
+    "sessionDetails": "Détails des sessions",
+    "sessionsAttended": "{{count}} sessions suivies",
+    "title": "Rapport de présence",
+    "unknownError": "Erreur inconnue"
+  },
+  "comprehensiveReportCard": {
+    "academics": {
+      "average": "Moyenne",
+      "best": "Meilleur :",
+      "needsWork": "À améliorer :",
+      "subjectPerformanceVsClass": "Performance par {{subject}} vs la classe",
+      "table": {
+        "assessment": "Évaluation",
+        "needsWorkBadge": "À améliorer",
+        "rank": "Rang",
+        "score": "Score",
+        "status": "Statut"
+      },
+      "title": "Performance académique",
+      "vsClassAverage": "vs moyenne de la classe {{percent}}%"
+    },
+    "achievements": {
+      "title": "Réussites"
+    },
+    "aiInsights": {
+      "recommendedNextSteps": "Prochaines étapes recommandées",
+      "whatWeNoticed": "Ce que nous avons remarqué"
+    },
+    "assignments": {
+      "assigned": "Assignés",
+      "avgScore": "Score moyen",
+      "late": "En retard",
+      "onTime": "À temps",
+      "pending": "En attente",
+      "submitted": "Soumis",
+      "title": "Devoirs"
+    },
+    "attendance": {
+      "absent": "Absent",
+      "late": "En retard",
+      "present": "Présent",
+      "presentOfTotal": "{{present}} / {{total}} présent",
+      "title": "Présence",
+      "weeklyTrend": "Tendance hebdomadaire"
+    },
+    "courseProgress": {
+      "title": "Progression du {{course}} — {{percent}}% terminé"
+    },
+    "footer": "Généré par {{institute}} le {{date}} · Ce rapport couvre {{period}}.",
+    "header": {
+      "classBatch": "Classe / Groupe",
+      "downloadPdf": "Télécharger le PDF",
+      "enrollmentNo": "N° d'inscription",
+      "periodGenerated": "{{period}} · Généré le {{date}}",
+      "preparing": "Préparation…",
+      "rollNo": "N° de dossier",
+      "statusGrade": "● {{status}} · Note {{grade}}",
+      "student": "Élève",
+      "title": "Rapport de progression de l'élève"
+    },
+    "liveClasses": {
+      "attendance": "Présence",
+      "attended": "Suivis",
+      "missed": "Manqués",
+      "notMarked": "Non marqués",
+      "total": "Total des cours"
+    },
+    "parentSummary": {
+      "title": "Résumé pour les parents"
+    },
+    "strengths": {
+      "areasToImproveTitle": "Axes d'amélioration",
+      "strengthsTitle": "Points forts"
+    },
+    "studyHabits": {
+      "activeDays": "Jours actifs",
+      "contentExplored": "Contenu exploré :",
+      "dailyStudyTime": "Temps d'étude quotidien (minutes) · {{count}} jours",
+      "dayN": "Jour {{day}}",
+      "days": "jours",
+      "documents": "documents",
+      "focusScore": "Score de concentration",
+      "longestStreak": "Plus longue série",
+      "mostActive": "Plus actif",
+      "quizzes": "quiz",
+      "title": "Habitudes d'étude & engagement quotidien",
+      "videos": "vidéos"
+    },
+    "subjectMarks": {
+      "caption": "Agrégé sur les évaluations, devoirs, quiz et questions d'entraînement.",
+      "title": "Notes par {{subject}}"
+    }
+  },
+  "couponInput": {
+    "apply": "Appliquer",
+    "applying": "Application...",
+    "couponCode": "Code promo",
+    "discountOff": "— {{amount}} de réduction",
+    "errors": {
+      "applyFailed": "Impossible d'appliquer le code promo. Veuillez réessayer.",
+      "enterCodeFirst": "Veuillez d'abord saisir un code promo."
+    },
+    "heading": "Code promo",
+    "placeholder": "Saisir le code promo",
+    "removeCoupon": "Supprimer le code promo"
+  },
+  "customFields": {
+    "enterField": "Saisir {{name}}",
+    "file": {
+      "allowedTypes": "Autorisés : {{allowed}}",
+      "maxSize": " · Max {{maxSizeMB}}Mo",
+      "tooLarge": "La taille du fichier doit être inférieure à {{maxSizeMB}}Mo",
+      "typeNotAllowed": "Le type de fichier .{{ext}} n'est pas autorisé. Autorisés : {{allowed}}",
+      "uploadFailed": "Échec de l'envoi du fichier. Veuillez réessayer.",
+      "uploaded": "Envoyé : {{fileName}}",
+      "uploading": "Envoi en cours...",
+      "viewCurrentFile": "Voir le fichier actuel"
+    },
+    "pickDate": "Choisir une date",
+    "selectField": "Sélectionner {{name}}"
+  },
+  "donation": {
+    "amountSelector": {
+      "customAmountPlaceholder": "{{symbol}} (min {{minAmount}})",
+      "other": "Autre"
+    },
+    "dialog": {
+      "chooseAmount": "Choisissez un montant à donner",
+      "close": "Fermer",
+      "continue": "Continuer",
+      "loadingOptions": "Chargement des options de don...",
+      "processing": "Traitement...",
+      "skip": "Passer",
+      "supportFreeLearning": "Soutenez l'apprentissage gratuit",
+      "tryAgain": "Réessayer"
+    },
+    "emailForm": {
+      "emailPlaceholder": "vous@exemple.com",
+      "receiptNotice": "Nous enverrons votre reçu à cette adresse e-mail",
+      "yourEmail": "Votre e-mail"
+    },
+    "hook": {
+      "errors": {
+        "accessDenied": "Accès refusé. Veuillez vérifier vos autorisations et réessayer.",
+        "alreadyEnrolled": "Vous êtes déjà inscrit à ce {{course}}. Veuillez vérifier vos {{courses}} inscrits.",
+        "cardMountFailed": "Échec du chargement du champ carte. Veuillez actualiser et réessayer.",
+        "courseConfigError": "Erreur de configuration du {{course}}. Veuillez actualiser la page et réessayer.",
+        "courseDataError": "Erreur de données du {{course}}. Veuillez actualiser la page et réessayer.",
+        "enrollmentError": "Erreur d'inscription. Veuillez réessayer ou contacter le support.",
+        "enrollmentFailed": "Échec de l'inscription. Veuillez réessayer.",
+        "enterAmount": "Veuillez saisir un montant de don",
+        "enterEmail": "Veuillez saisir votre adresse e-mail",
+        "invalidAmount": "Veuillez saisir un montant de don valide",
+        "invalidEmail": "Veuillez saisir une adresse e-mail valide",
+        "invalidEmailFormat": "Format d'e-mail invalide",
+        "loginAgain": "Veuillez vous reconnecter et réessayer.",
+        "minimumAmount": "Le montant minimum du don est de {{amount}}",
+        "paymentFailed": "Échec du paiement. Veuillez réessayer.",
+        "paymentFormLoadFailed": "Échec du chargement du formulaire de paiement. Veuillez actualiser et réessayer.",
+        "paymentFormNotLoaded": "Le formulaire de paiement n'est pas chargé. Veuillez actualiser et réessayer.",
+        "paymentGatewayError": "Erreur du système de paiement. Veuillez réessayer ou contacter le support.",
+        "selectAmount": "⚠️ Veuillez sélectionner ou saisir un montant de don pour continuer",
+        "somethingWentWrong": "Une erreur est survenue. Veuillez réessayer ou contacter le support.",
+        "systemError": "Erreur système. Veuillez réessayer ou contacter le support.",
+        "unableToFetchUserData": "Impossible de récupérer vos données. Veuillez réessayer."
+      }
+    },
+    "paymentForm": {
+      "cardDetails": "Détails de la carte",
+      "donateNow": "Faire un don",
+      "loadingPaymentForm": "Chargement du formulaire de paiement...",
+      "processing": "Traitement...",
+      "securePaymentPoweredBy": "Paiement sécurisé propulsé par",
+      "skip": "Passer",
+      "stripe": "Stripe"
+    },
+    "summary": {
+      "amount": "Montant :",
+      "edit": "Modifier",
+      "email": "E-mail :",
+      "plan": "Formule :",
+      "title": "Résumé du don"
+    }
+  },
+  "instructionPage": {
+    "assessmentInstructions": {
+      "attachment": "Pièce jointe",
+      "attemptOf": "Tentative {{used}} sur {{max}}",
+      "downloadPaper": "Télécharger",
+      "instructionsFromInstitute": "Instructions de votre établissement",
+      "no": "Non",
+      "noAdditionalInstructions": "Aucune instruction supplémentaire n'a été fournie pour cette évaluation.",
+      "readBeforeYouBegin": "Lisez ceci avant de commencer. Le chronomètre démarre dès que vous entrez dans le test.",
+      "rules": {
+        "attempts": {
+          "bodyFirst": "Il s'agit de votre première tentative sur cette épreuve.",
+          "bodyUsed_many": "Vous avez déjà utilisé {{count}} tentatives sur cette épreuve.",
+          "bodyUsed_one": "Vous avez déjà utilisé {{count}} tentative sur cette épreuve.",
+          "bodyUsed_other": "Vous avez déjà utilisé {{count}} tentatives sur cette épreuve."
+        },
+        "autoSave": {
+          "body": "Chaque réponse est synchronisée au fur et à mesure. Si votre connexion se coupe, les réponses sont conservées sur cet appareil et renvoyées dès que vous êtes à nouveau en ligne.",
+          "title": "Vos réponses sont enregistrées automatiquement"
+        },
+        "clock": {
+          "bodyFixed": "Les sections s'ouvrent dans l'ordre. Une fois le temps d'une section écoulé, vous ne pouvez plus y revenir.",
+          "bodySwitchable": "Vous pouvez naviguer librement entre les sections jusqu'à la fin du chronomètre global.",
+          "title": "{{duration}} au chronomètre"
+        },
+        "fullScreen": {
+          "body": "Le test s'exécute en plein écran. Le quitter, changer d'onglet ou ouvrir une autre fenêtre est enregistré. Trois avertissements entraîneront la soumission automatique de votre épreuve.",
+          "title": "Restez en plein écran"
+        },
+        "preview": {
+          "body": "Vous obtenez un aperçu en lecture seule de l'épreuve avant le début du temps de réponse.",
+          "title": "Aperçu avant de commencer"
+        },
+        "questionPalette": {
+          "body": "La palette indique ce qui est répondu, passé ou marqué pour révision. Marquer une question pour révision soumet quand même la réponse sélectionnée.",
+          "title": "Utilisez la palette de questions"
+        },
+        "tools": {
+          "and": " et ",
+          "body": "Ce test vous donne accès à {{tools}}. Ouvrez-les depuis la barre d'outils pendant le test.",
+          "title": "Outils à votre disposition"
+        }
+      },
+      "stats": {
+        "duration": "Durée",
+        "preview": "Aperçu",
+        "switching": "Navigation"
+      },
+      "tools": {
+        "calculator": "une calculatrice",
+        "scientificCalculator": "une calculatrice scientifique",
+        "scratchpad": "un brouillon pour vos calculs"
+      },
+      "yes": "Oui"
+    },
+    "instructionPage": {
+      "acknowledgement": "J'ai lu les instructions et je comprends que quitter le plein écran est enregistré et peut entraîner la soumission automatique de mon épreuve.",
+      "detailsUnavailable": "Détails de l'évaluation indisponibles",
+      "loadFailed": "Nous n'avons pas pu charger cette évaluation. Veuillez revenir en arrière et réessayer.",
+      "loadingDetails": "Chargement des détails de l'évaluation…",
+      "tickToBegin": "Cochez la case ci-dessus pour commencer."
+    },
+    "navbar": {
+      "assessmentBrief": "Présentation de l'évaluation",
+      "goBack": "Retour"
+    },
+    "sectionDetails": {
+      "cutoffMarks": "Note d'admissibilité :",
+      "description": "Description de la section :",
+      "duration": "Durée de la section :",
+      "notApplicable": "N/A",
+      "totalMarks": "Total des points :"
+    },
+    "startAssessment": {
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "confirmBody": "Une fois l'évaluation commencée, vous devez la terminer sans interruption. Ne commencez que lorsque vous êtes prêt.",
+      "loading": "Chargement...",
+      "proceed": "Continuer",
+      "startAssessment": "Commencer l'évaluation",
+      "uploadAnswer": "Envoyer la réponse"
+    }
+  },
+  "languageDropdown": {
+    "changeLanguage": "Changer de langue"
+  },
+  "myFilesPage": {
+    "actions": {
+      "download": "Télécharger",
+      "downloadFile": "Télécharger le fichier",
+      "edit": "Modifier",
+      "editFile": "Modifier le fichier",
+      "openUrl": "Ouvrir l'URL",
+      "view": "Voir",
+      "viewNote": "Voir la note"
+    },
+    "backToDashboard": "Retour au tableau de bord",
+    "empty": {
+      "message": "Vous n'avez encore aucun rapport.",
+      "title": "Aucun rapport trouvé"
+    },
+    "errorLoading": {
+      "message": "Veuillez réessayer plus tard.",
+      "title": "Erreur lors du chargement des fichiers"
+    },
+    "fileType": {
+      "note": "Note",
+      "text": "Texte"
+    },
+    "table": {
+      "actions": "Actions",
+      "addedBy": "Ajouté par",
+      "dateAdded": "Date d'ajout",
+      "mediaType": "Type de média",
+      "name": "Nom",
+      "type": "Type"
+    },
+    "title": "Mes fichiers"
+  },
+  "myReportsPage": {
+    "activity": {
+      "viewInsights": "Voir les analyses"
+    },
+    "emptyActivity": {
+      "message": "Les analyses apparaissent ici après avoir terminé un quiz, une question ou un devoir. Elles sont préparées peu après votre soumission.",
+      "title": "Aucune analyse d'activité pour le moment"
+    },
+    "emptyTerm": {
+      "message": "Vous n'avez encore aucun rapport.",
+      "title": "Aucun rapport trouvé"
+    },
+    "errorLoading": {
+      "message": "Veuillez réessayer plus tard.",
+      "title": "Erreur lors du chargement des rapports"
+    },
+    "header": {
+      "activityInsightsTab": "Analyses d'activité",
+      "backToDashboard": "Retour au tableau de bord",
+      "progressReportsTab": "Rapports de progression",
+      "title": "Mes rapports"
+    },
+    "term": {
+      "comprehensive": "Complet",
+      "created": "Créé le : {{date}}",
+      "viewDetails": "Voir les détails"
+    }
+  },
+  "notificationSettings": {
+    "categories": {
+      "announcements": {
+        "description": "Annonces importantes de votre établissement",
+        "label": "Annonces"
+      },
+      "assignments": {
+        "description": "Nouveaux devoirs et rappels de soumission",
+        "label": "Devoirs"
+      },
+      "description": "Choisissez les types de contenu pour lesquels vous souhaitez être notifié",
+      "general": {
+        "description": "Mises à jour et informations générales de l'application",
+        "label": "Général"
+      },
+      "liveClasses": {
+        "description": "Rappels et mises à jour des {{liveClasses}}",
+        "label": "{{liveClasses}}"
+      },
+      "title": "Catégories de notifications"
+    },
+    "helpText": {
+      "body": "Pour recevoir des notifications push, vous devez accorder l'autorisation. Cliquez sur « Activer les notifications » ci-dessus pour commencer. Vous pouvez toujours modifier ces paramètres plus tard dans les réglages de notification de votre appareil.",
+      "title": "Activer les notifications"
+    },
+    "preferences": {
+      "appBadge": {
+        "description": "Afficher le nombre de notifications sur l'icône de l'application",
+        "label": "Badge de l'application"
+      },
+      "description": "Choisissez les types de notifications que vous souhaitez recevoir",
+      "enableNotifications": {
+        "description": "Activer ou désactiver toutes les notifications",
+        "label": "Activer les notifications"
+      },
+      "sound": {
+        "description": "Jouer un son à la réception des notifications",
+        "label": "Son"
+      },
+      "title": "Préférences de notification"
+    },
+    "status": {
+      "description": "Gérez vos préférences de notification push sur tous vos appareils",
+      "enableNotifications": "Activer les notifications",
+      "enabled": "Activé",
+      "notSupported": "Non pris en charge",
+      "notificationsDisabled": "Les notifications sont désactivées",
+      "notificationsEnabled": "Les notifications sont activées",
+      "permissionStatus": "Statut de l'autorisation",
+      "platform": "Plateforme",
+      "sendTest": "Envoyer un test",
+      "supported": "Pris en charge",
+      "testNotifications": "Notifications de test",
+      "testNotificationsDescription": "Envoyez une notification de test pour vérifier que tout fonctionne",
+      "title": "Statut des notifications",
+      "unreadBadge": "{{count}} non lue(s)"
+    },
+    "testNotification": {
+      "body": "Ceci est une notification de test de Vacademy Learner !",
+      "title": "Notification de test"
+    },
+    "toasts": {
+      "disableViaDeviceSettings": "Les notifications sont actuellement activées. Pour les désactiver, veuillez utiliser les paramètres de votre appareil."
+    }
+  },
+  "offline": {
+    "deviceLimitDialog": {
+      "heading": "Limite d'appareils hors ligne atteinte",
+      "remove": "Supprimer",
+      "removed": "Supprimé",
+      "retryDownload": "Réessayer le téléchargement",
+      "toasts": {
+        "removeFailed": "Impossible de supprimer cet appareil. Veuillez réessayer.",
+        "removed": "Appareil supprimé. Vous pouvez maintenant enregistrer cet appareil."
+      },
+      "unknownPlatform": "inconnu",
+      "unnamedDevice": "Appareil sans nom"
+    },
+    "downloadNodeButton": {
+      "cancelDownload": "Annuler le téléchargement",
+      "confirmDelete": {
+        "cancel": "Annuler",
+        "confirm": "Supprimer",
+        "description": "Ce contenu sera supprimé de cet appareil. Vous aurez besoin d'une connexion internet pour le télécharger à nouveau.",
+        "title": "Supprimer le contenu téléchargé ?"
+      },
+      "removeDownload": "Supprimer le téléchargement",
+      "status": {
+        "downloaded": "Téléchargé — disponible hors ligne",
+        "downloading": "Téléchargement…",
+        "error": "Échec du téléchargement — appuyez pour réessayer",
+        "notDownloaded": "Télécharger pour une utilisation hors ligne",
+        "partial": "Partiellement enregistré — appuyez pour télécharger le reste",
+        "removedByAdmin": "Supprimé par l'administrateur",
+        "savedWithOnlineOnly": "Enregistré hors ligne — une partie du contenu nécessite encore internet",
+        "updateAvailable": "Mise à jour disponible — appuyez pour actualiser"
+      },
+      "toasts": {
+        "changeSettings": "Modifier les paramètres",
+        "downloadStarted": "Téléchargement démarré",
+        "networkError": "Impossible de joindre le serveur — vérifiez votre connexion et réessayez",
+        "startFailed": "Impossible de démarrer le téléchargement — veuillez réessayer",
+        "wifiOnlyDescription": "Vous êtes connecté aux données mobiles.",
+        "wifiOnlyTitle": "Téléchargement Wi-Fi uniquement"
+      }
+    },
+    "downloadsPage": {
+      "confirmDialog": {
+        "cancel": "Annuler",
+        "clearAllConfirm": "Tout effacer",
+        "clearAllDescription": "Tout ce qui est enregistré sur cet appareil sera supprimé. Vous aurez besoin d'une connexion internet pour le télécharger à nouveau.",
+        "clearAllTitle": "Effacer tous les téléchargements ?",
+        "removeConfirm": "Supprimer",
+        "removeContentDescription": "Ce contenu sera supprimé de cet appareil. Vous aurez besoin d'une connexion internet pour le télécharger à nouveau.",
+        "removeNamedTitle": "Supprimer « {{label}} » ?",
+        "removeOtherDeviceDescription": "Cet appareil perdra l'accès hors ligne et son contenu téléchargé sera supprimé à sa prochaine connexion.",
+        "removeThisDeviceDescription": "Cet appareil perdra l'accès hors ligne et tout le contenu téléchargé sur celui-ci sera supprimé. Vous pourrez le retélécharger plus tard.",
+        "removeThisDeviceTitle": "Supprimer cet appareil ?"
+      },
+      "content": {
+        "clearAll": "Effacer tous les téléchargements",
+        "delete": "Supprimer",
+        "emptyDescription": "Ouvrez un {{course}} et appuyez sur l'icône de téléchargement pour l'enregistrer hors ligne.",
+        "emptyTitle": "Rien n'a encore été téléchargé",
+        "newContentInPrefix": "Nouveau contenu dans",
+        "open": "Ouvrir",
+        "update": "Mettre à jour",
+        "updateAvailable": "Mise à jour disponible",
+        "updating": "Mise à jour…"
+      },
+      "devices": {
+        "loading": "Chargement…",
+        "none": "Aucun appareil enregistré pour l'accès hors ligne.",
+        "remove": "Supprimer",
+        "thisDeviceFallbackLabel": "cet appareil",
+        "thisDeviceSuffix": "(cet appareil)",
+        "title": "Appareils hors ligne",
+        "unknownPlatform": "inconnu",
+        "unnamedDevice": "Appareil sans nom"
+      },
+      "dismiss": "Ignorer",
+      "downloadSettings": {
+        "mobileDataAllowed": "Les données mobiles peuvent être utilisées",
+        "title": "Paramètres de téléchargement",
+        "waitsForWifi": "Les téléchargements attendent le Wi-Fi",
+        "wifiOnly": "Téléchargement Wi-Fi uniquement"
+      },
+      "downloadedContent": "Contenu téléchargé",
+      "heading": "Téléchargements",
+      "lease": {
+        "expired": "L'accès hors ligne doit se reconnecter pour être renouvelé.",
+        "none": "Aucun appareil hors ligne enregistré pour le moment.",
+        "revoked": "L'accès hors ligne est désactivé pour cet appareil.",
+        "validUntil": "Accès hors ligne valide jusqu'au {{date}}"
+      },
+      "offlineAccess": {
+        "title": "Accès hors ligne"
+      },
+      "storage": {
+        "availableOnDevice": "Disponible sur l'appareil",
+        "lowSpace": "L'espace de stockage est faible — les nouveaux téléchargements peuvent échouer.",
+        "title": "Stockage",
+        "usedByDownloads": "Utilisé par les téléchargements"
+      },
+      "subheading": "Gérez ce qui est enregistré sur cet appareil pour une utilisation hors ligne.",
+      "tabs": {
+        "content": "Contenu",
+        "contentWithCount": "Contenu ({{count}})",
+        "settings": "Paramètres"
+      },
+      "toasts": {
+        "allCleared": "Tous les téléchargements ont été effacés",
+        "clearFailed": "Impossible d'effacer les téléchargements — veuillez réessayer",
+        "deviceRemoveFailed": "Impossible de supprimer cet appareil. Veuillez réessayer.",
+        "deviceRemoved": "Appareil retiré de l'accès hors ligne.",
+        "openChapterFailed": "Impossible d'ouvrir ce chapitre — essayez de l'ouvrir depuis le {{course}}",
+        "removeDownloadFailed": "Impossible de supprimer ce téléchargement — veuillez réessayer",
+        "removedFromDownloads": "Retiré des téléchargements",
+        "thisDeviceRemoved": "Cet appareil a été supprimé. Le contenu téléchargé a été effacé.",
+        "updateFetchFailed": "Impossible de récupérer la mise à jour — veuillez réessayer",
+        "updateStarted": "Mise à jour — le nouveau contenu est en cours de téléchargement"
+      },
+      "unavailable": {
+        "description": "L'accès hors ligne fonctionne dans l'application mobile, et uniquement si votre établissement l'a activé.",
+        "title": "Les téléchargements hors ligne ne sont pas disponibles ici"
+      }
+    },
+    "revokedDeviceDialog": {
+      "body": "Votre établissement a révoqué l'accès hors ligne pour cet appareil. Tout le contenu téléchargé sur cet appareil a été supprimé. Vous pouvez toujours accéder à tout en ligne, et enregistrer un autre appareil pour un usage hors ligne.",
+      "gotIt": "Compris",
+      "heading": "Accès hors ligne supprimé"
+    }
+  },
+  "reportDetailsDialog": {
+    "generatedOn": "Généré le {{date}}",
+    "heading": "Rapport : {{start}} - {{end}}",
+    "sections": {
+      "areasForImprovement": "Axes d'amélioration",
+      "learningFrequency": "Fréquence d'apprentissage",
+      "overallProgress": "Progression globale",
+      "recommendedRemedialActions": "Actions correctives recommandées",
+      "strengths": "Points forts",
+      "topicsNeedingAttention": "Sujets nécessitant de l'attention",
+      "topicsOfImprovement": "Sujets à améliorer"
+    }
+  },
+  "reportDetailsPage": {
+    "generatedOn": "Généré le {{date}}",
+    "reportSections": "Sections du rapport",
+    "sections": {
+      "learningPattern": "Schéma d'apprentissage",
+      "overallProgress": "Progression globale",
+      "recommendedRemedialActions": "Actions correctives recommandées",
+      "strengths": "Points forts",
+      "studentEfforts": "Efforts de l'élève",
+      "topicsNeedingAttention": "Sujets nécessitant de l'attention",
+      "topicsOfImprovement": "Sujets à améliorer",
+      "weaknesses": "Points faibles"
+    }
+  },
+  "reviewItem": {
+    "actions": {
+      "delete": "Supprimer"
+    },
+    "deleteDialog": {
+      "cancel": "Annuler",
+      "confirm": "Supprimer",
+      "description": "Voulez-vous vraiment supprimer cet avis ? Cette action est irréversible.",
+      "title": "Supprimer l'avis"
+    },
+    "timeAgo": {
+      "days": "il y a {{count}} j",
+      "hours": "il y a {{count}} h",
+      "minutes": "il y a {{count}} min",
+      "seconds": "il y a {{count}} s"
+    }
+  },
+  "safetyWarningModal": {
+    "adultVerification": {
+      "body": "Pour accéder aux fonctionnalités sociales (comme le chat ou les sessions en direct), un adulte doit valider cette action.",
+      "challengeLabel": "Combien font 12 + 7 ?",
+      "placeholder": "Saisissez le nombre",
+      "title": "Vérification adulte requise"
+    },
+    "agreeAndProceed": "J'accepte et je continue",
+    "goBack": "Retour",
+    "incorrectAnswer": "Réponse incorrecte. Veuillez réessayer.",
+    "readCarefully": "Veuillez lire attentivement avant de continuer :",
+    "rules": {
+      "beSafeOnline": {
+        "body": "Ne partagez jamais d'informations personnelles (comme votre numéro de téléphone, votre adresse ou votre école) avec des inconnus.",
+        "title": "Restez en sécurité en ligne :"
+      },
+      "chatWithCaution": {
+        "body": "N'interagissez qu'avec des personnes que vous connaissez et en qui vous avez confiance.",
+        "title": "Discutez avec prudence :"
+      },
+      "respectOthers": {
+        "body": "Soyez bienveillant et respectueux dans toutes les interactions en ligne.",
+        "title": "Respectez les autres :"
+      }
+    },
+    "title": "Sécurité avant tout"
+  },
+  "studentReportCard": {
+    "charts": {
+      "confidence": "confiance",
+      "confidenceDonutAriaLabel": "Anneau de calibration de la confiance",
+      "radarAriaLabel": "Radar des compétences de réflexion"
+    },
+    "fallbacks": {
+      "institute": "Établissement",
+      "progressReport": "Rapport de progression",
+      "student": "Élève"
+    },
+    "masthead": {
+      "enrolment": "Inscription {{enrollment}}",
+      "generated": "Généré {{date}}",
+      "roll": "N° {{roll}}"
+    },
+    "sections": {
+      "achievements": {
+        "caption": "Badges et certificats obtenus",
+        "title": "Réussites"
+      },
+      "aiInsights": {
+        "aiSummary": "Résumé de l'IA",
+        "mediumPriority": "Moyenne",
+        "recommendedNextSteps": "Prochaines étapes recommandées",
+        "whatWeNoticed": "Ce que nous avons remarqué"
+      },
+      "assessments": {
+        "title": "Évaluations",
+        "caption": "{{count}} sur la période",
+        "rank": "Rang {{rank}}"
+      },
+      "assignments": {
+        "assigned": "Assignés",
+        "avgScore": "Score moyen",
+        "late": "En retard",
+        "onTime": "À temps",
+        "pending": "En attente",
+        "submitted": "Soumis",
+        "title": "Devoirs"
+      },
+      "attendance": {
+        "absent": "Absent",
+        "late": "En retard",
+        "present": "Présent",
+        "title": "Présence",
+        "totalSessions": "Total des sessions",
+        "vsLastPeriod": "{{change}} vs la période précédente"
+      },
+      "courseProgress": {
+        "percentComplete": "{{percent}}% terminé au total",
+        "title": "Progression du {{course}}"
+      },
+      "doubts": {
+        "avgResolutionTime": "Temps de résolution moyen",
+        "hours": "{{count}} h",
+        "questionsAsked": "Questions posées",
+        "resolved": "Résolues",
+        "title": "Doutes & engagement"
+      },
+      "gradeMix": {
+        "title": "Notes obtenues",
+        "summary_one": "{{good}} évaluation sur {{total}} avec la note B ou plus",
+        "summary_other": "{{good}} évaluations sur {{total}} avec la note B ou plus",
+        "testCount_one": "{{count}} évaluation",
+        "testCount_other": "{{count}} évaluations",
+        "range": {
+          "ap": "90 % et plus",
+          "a": "80–89 %",
+          "bp": "70–79 %",
+          "b": "60–69 %",
+          "c": "50–59 %",
+          "d": "moins de 50 %"
+        }
+      },
+      "liveClasses": {
+        "attendance": "Présence",
+        "attended": "Suivis",
+        "missed": "Manqués",
+        "title": "{{liveClasses}}",
+        "total": "Total des cours"
+      },
+      "marksBySubject": {
+        "note": "sur les évaluations, devoirs, quiz et questions",
+        "title": "Notes par {{subject}}",
+        "vsClassAverage": "Performance par {{subject}} vs la moyenne de la classe"
+      },
+      "misconceptions": {
+        "note": "erreurs de compréhension précises + comment les corriger",
+        "title": "Sur quoi travailler ensuite"
+      },
+      "narrative": {
+        "actionChecklist": "Liste d'actions",
+        "detailedAnalysis": "Analyse détaillée",
+        "effortVsOutput": "Effort vs résultat",
+        "learningFrequency": "Fréquence d'apprentissage",
+        "progress": "Progression",
+        "topicsImproving": "Sujets en progression",
+        "topicsNeedingAttention": "Sujets nécessitant de l'attention"
+      },
+      "strengthsAreas": {
+        "areasToImprove": "Axes d'amélioration",
+        "strengths": "Points forts"
+      },
+      "studyHabits": {
+        "activeDaysOf": "Jours actifs / {{total}}",
+        "caption": "Minutes d'étude quotidiennes sur cette période",
+        "consistency": "Régularité",
+        "days": "jours",
+        "longestStreak": "Plus longue série",
+        "title": "Habitudes d'étude"
+      },
+      "thinking": {
+        "confidenceCaption": "Calibration de la confiance sur les questions répondues",
+        "confidenceTitle": "Savoir vs deviner",
+        "confidentlyRight": "Sûr et correct",
+        "confidentlyWrong": "Sûr mais incorrect",
+        "note": "d'après l'analyse IA de {{count}} tentatives récentes",
+        "radarCaption": "Précision selon les niveaux cognitifs (taxonomie de Bloom)",
+        "radarTitle": "Profil de compétences de réflexion",
+        "rightButUnsure": "Correct mais incertain",
+        "title": "Comment pense {{firstName}}"
+      },
+      "topicMastery": {
+        "note": "précision par sujet, toutes les tentatives de cette période",
+        "title": "Maîtrise des sujets"
+      },
+      "trend": {
+        "title": "Évolution des notes",
+        "classAverage": "Moyenne de la classe",
+        "ariaLabel": "Note à chaque évaluation comparée à la moyenne de la classe"
+      }
+    }
+  }
+}

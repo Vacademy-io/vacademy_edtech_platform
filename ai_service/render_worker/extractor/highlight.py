@@ -1,8 +1,9 @@
 """
 Stage 2: LLM-based highlight window selection.
 
-Uses OpenRouter API (same as the main AI pipeline) with Claude Haiku to
-pick the most engaging 30-60s window from the transcript + prosody data.
+Uses OpenRouter API (same as the main AI pipeline) to pick the most engaging
+30-60s window from the transcript + prosody data. Model: $HIGHLIGHT_LLM_MODEL
+> $RENDER_WORKER_LLM_MODEL > the platform default (GLM, low reasoning effort).
 Falls back to an energy-based heuristic if the API key is missing or the
 call fails.
 """
@@ -15,6 +16,7 @@ from typing import Optional
 
 import numpy as np
 
+from .llm_defaults import LLM_MAX_TOKENS, llm_model, reasoning_extra_body
 from .schemas import (
     EmphasisMark,
     HighlightWindow,
@@ -25,8 +27,8 @@ from .schemas import (
 
 logger = logging.getLogger(__name__)
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "anthropic/claude-haiku-4-5-20251001"
+OPENROUTER_API_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+_MODEL_ENV = "HIGHLIGHT_LLM_MODEL"
 
 
 # ---------------------------------------------------------------------------
@@ -42,7 +44,7 @@ def select_highlight_llm(
     min_window: float = 30.0,
     max_window: float = 60.0,
 ) -> Optional[HighlightWindow]:
-    """Call OpenRouter (Haiku) to pick the highlight window.
+    """Call OpenRouter to pick the highlight window.
 
     Returns HighlightWindow or None if the call fails.
     """
@@ -91,15 +93,18 @@ def select_highlight_llm(
             api_key=api_key,
             base_url=OPENROUTER_API_URL,
         )
+        model = llm_model(_MODEL_ENV)
         response = client.chat.completions.create(
-            model=DEFAULT_MODEL,
+            model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
             ],
             temperature=0.3,
-            max_tokens=200,
+            # Room for GLM's (low-effort) reasoning on top of a ~100-token reply.
+            max_tokens=LLM_MAX_TOKENS,
             response_format={"type": "json_object"},
+            extra_body=reasoning_extra_body(model) or None,
         )
         raw = response.choices[0].message.content or ""
         parsed = json.loads(raw)

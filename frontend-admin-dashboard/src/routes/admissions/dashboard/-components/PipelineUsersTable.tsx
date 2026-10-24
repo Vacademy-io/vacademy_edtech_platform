@@ -1,34 +1,40 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { getPipelineUsersQuery } from '../-services/pipeline-services';
 import type { PipelineStage, PipelineUser } from '../-types/pipeline-types';
 
-const STAGE_CONFIG: Record<
+type StageConfig = Record<
     PipelineStage,
     { label: string; badgeColor: string; badgeBg: string; dateKey: keyof PipelineUser }
-> = {
-    ENQUIRY: {
-        label: 'Enquiry',
-        badgeColor: 'text-amber-700',
-        badgeBg: 'bg-amber-100',
-        dateKey: 'enquiry_date',
-    },
-    APPLICATION: {
-        label: 'Application',
-        badgeColor: 'text-blue-700',
-        badgeBg: 'bg-blue-100',
-        dateKey: 'application_date',
-    },
-    ADMITTED: {
-        label: 'Admitted',
-        badgeColor: 'text-green-700',
-        badgeBg: 'bg-green-100',
-        dateKey: 'admission_date',
-    },
-};
+>;
+
+function buildStageConfig(t: TFunction): StageConfig {
+    return {
+        ENQUIRY: {
+            label: t('stages.ENQUIRY'),
+            badgeColor: 'text-amber-700',
+            badgeBg: 'bg-amber-100',
+            dateKey: 'enquiry_date',
+        },
+        APPLICATION: {
+            label: t('stages.APPLICATION'),
+            badgeColor: 'text-blue-700',
+            badgeBg: 'bg-blue-100',
+            dateKey: 'application_date',
+        },
+        ADMITTED: {
+            label: t('stages.ADMITTED'),
+            badgeColor: 'text-green-700',
+            badgeBg: 'bg-green-100',
+            dateKey: 'admission_date',
+        },
+    };
+}
 
 function formatDate(dateStr: string | null): string {
     if (!dateStr) return '-';
@@ -49,6 +55,8 @@ export default function PipelineUsersTable({
     instituteId,
     packageSessionId,
 }: PipelineUsersTableProps) {
+    const { t } = useTranslation('admissionsPipelineUsersTable');
+    const STAGE_CONFIG = buildStageConfig(t);
     const [activeStage, setActiveStage] = useState<PipelineStage>('ENQUIRY');
     const [pageNo, setPageNo] = useState(0);
     const pageSize = 10;
@@ -71,7 +79,7 @@ export default function PipelineUsersTable({
         <Card className="shadow-sm">
             <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    Students by Stage
+                    {t('title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -92,7 +100,7 @@ export default function PipelineUsersTable({
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                                     <div className="text-4xl mb-2">-</div>
                                     <p className="text-sm">
-                                        No students at {STAGE_CONFIG[stage].label.toLowerCase()} stage
+                                        {t('emptyState', { stage: STAGE_CONFIG[stage].label })}
                                     </p>
                                 </div>
                             ) : (
@@ -102,22 +110,22 @@ export default function PipelineUsersTable({
                                             <thead className="border-b bg-gray-50">
                                                 <tr>
                                                     <th className="px-4 py-3 font-semibold text-gray-600 w-12">
-                                                        #
+                                                        {t('columns.index')}
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold text-gray-600">
-                                                        Student Name
+                                                        {t('columns.studentName')}
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold text-gray-600">
-                                                        Parent Name
+                                                        {t('columns.parentName')}
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold text-gray-600">
-                                                        Source
+                                                        {t('columns.source')}
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold text-gray-600">
-                                                        Date
+                                                        {t('columns.date')}
                                                     </th>
                                                     <th className="px-4 py-3 font-semibold text-gray-600">
-                                                        Stage
+                                                        {t('columns.stage')}
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -164,9 +172,11 @@ export default function PipelineUsersTable({
                                     {/* Pagination */}
                                     <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
                                         <span>
-                                            Showing {pageNo * pageSize + 1}–
-                                            {Math.min((pageNo + 1) * pageSize, totalElements)} of{' '}
-                                            {totalElements}
+                                            {t('pagination.showing', {
+                                                from: pageNo * pageSize + 1,
+                                                to: Math.min((pageNo + 1) * pageSize, totalElements),
+                                                total: totalElements,
+                                            })}
                                         </span>
                                         <div className="flex items-center gap-2">
                                             <button
@@ -174,17 +184,20 @@ export default function PipelineUsersTable({
                                                 disabled={pageNo === 0}
                                                 className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                                             >
-                                                <ChevronLeft className="size-4" /> Previous
+                                                <CaretLeft className="size-4" /> {t('pagination.previous')}
                                             </button>
                                             <span className="text-xs text-gray-400">
-                                                Page {pageNo + 1} of {totalPages}
+                                                {t('pagination.pageOf', {
+                                                    current: pageNo + 1,
+                                                    total: totalPages,
+                                                })}
                                             </span>
                                             <button
                                                 onClick={() => setPageNo((p) => p + 1)}
                                                 disabled={pageNo + 1 >= totalPages}
                                                 className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                                             >
-                                                Next <ChevronRight className="size-4" />
+                                                {t('pagination.next')} <CaretRight className="size-4" />
                                             </button>
                                         </div>
                                     </div>

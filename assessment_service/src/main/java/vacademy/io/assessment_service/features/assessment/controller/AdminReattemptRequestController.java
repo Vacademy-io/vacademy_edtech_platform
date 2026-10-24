@@ -40,11 +40,17 @@ public class AdminReattemptRequestController {
         return ResponseEntity.ok(reattemptRequestManager.listForAdmin(instituteId, assessmentId, status, page, size));
     }
 
-    /** Badge count for the admin nav — the "system alert" that requests are waiting. */
+    /**
+     * Badge count for the admin nav — the "system alert" that requests are waiting.
+     *
+     * @param assessmentId optional — omit for the institute-wide badge, pass it for a badge that
+     *                     sits on one assessment's tab
+     */
     @GetMapping("/pending-count")
     public ResponseEntity<Long> pendingCount(@RequestAttribute("user") CustomUserDetails user,
-                                              @RequestParam("instituteId") String instituteId) {
-        return ResponseEntity.ok(reattemptRequestManager.pendingCount(instituteId));
+                                              @RequestParam("instituteId") String instituteId,
+                                              @RequestParam(value = "assessmentId", required = false) String assessmentId) {
+        return ResponseEntity.ok(reattemptRequestManager.pendingCount(instituteId, assessmentId));
     }
 
     /** Approve (granting {@code granted_count} attempts) or reject one request. */

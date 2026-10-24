@@ -1,0 +1,15 @@
+{
+    "sections": {
+        "creationAccessTitle": "Accès à la création de devoirs",
+        "liveNotificationsTitle": "Notifications de devoirs en direct",
+        "submissionReportsTitle": "Accès aux soumissions et rapports de devoirs",
+        "evaluationTitle": "Accès à l'évaluation"
+    },
+    "roles": {
+        "admin": "Administrateur",
+        "contentCreator": "Créateur de contenu",
+        "assessmentCreator": "Créateur d'évaluation",
+        "evaluator": "Évaluateur",
+        "teacher": "Enseignant"
+    }
+}

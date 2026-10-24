@@ -1,0 +1,46 @@
+{
+    "adminList": {
+        "noAdmins": "This organisation has no admin on record yet.",
+        "unnamedAdmin": "Unnamed admin",
+        "noEmailOnRecord": "no email on record"
+    },
+    "picker": {
+        "label": "Sub-Organisation *",
+        "placeholder": "Select an organisation",
+        "memberCount_one": " · {{count}} member",
+        "memberCount_other": " · {{count}} members",
+        "createNewOption": "+ Create new organisation",
+        "skipOption": "Don’t link an organisation",
+        "emptyState": "No organisation is enrolled in this batch yet — create the first one."
+    },
+    "skippedNotice": "Enrolled as an ordinary {{learnerTerm}} with no organisation link. Runs the standard enrollment automation, not the sub-org member one.",
+    "adminInfo": {
+        "heading": "Organisation admins",
+        "contactLine": "Organisation contact: {{email}}{{mobile}}"
+    },
+    "newOrgForm": {
+        "heading": "New organisation details",
+        "nameLabel": "Organisation Name *",
+        "namePlaceholder": "e.g. Green Valley Clinic",
+        "emailLabel": "Email",
+        "emailPlaceholder": "contact@organisation.com",
+        "phoneLabel": "Phone",
+        "phonePlaceholder": "Contact number"
+    },
+    "role": {
+        "label": "Role inside the organisation",
+        "staffOption": "Staff — {{learnerTerm}} (default)",
+        "adminOption": "Admin + {{learnerTerm}}",
+        "adminOnlyOption": "Admin only",
+        "adminOnlyDescription": "Manages the organisation’s roster without course access. Member-enrollment automations do not run for admin-only members.",
+        "adminDescription": "Gets course access AND manages the organisation’s roster — they will show as an organisation admin.",
+        "staffDescription": "Course access only. No admin rights over the organisation."
+    },
+    "emptyState": {
+        "heading": "No organisation-linked {{batchTerm}} selected"
+    },
+    "warningBanner": {
+        "message_one": "This batch is sold to organisations. Pick the organisation each selected {{learnerSingular}} joins and the role they hold inside it. The same choice applies to every {{learnerPlural}} in this run.",
+        "message_other": "These batches are sold to organisations. Pick the organisation each selected {{learnerSingular}} joins and the role they hold inside it. The same choice applies to every {{learnerPlural}} in this run."
+    }
+}

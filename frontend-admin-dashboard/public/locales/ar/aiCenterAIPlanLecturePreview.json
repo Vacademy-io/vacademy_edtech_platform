@@ -1,0 +1,10 @@
+{
+    "failedDialog": {
+        "title": "تعذر تحميل الأسئلة",
+        "message": "انقر <retryLink>هنا</retryLink> لإعادة المحاولة"
+    },
+    "retryButton": "إعادة المحاولة",
+    "viewPlanButton": "عرض الخطة",
+    "loading": "جارٍ التحميل…",
+    "noDataToast": "لا توجد بيانات!"
+}

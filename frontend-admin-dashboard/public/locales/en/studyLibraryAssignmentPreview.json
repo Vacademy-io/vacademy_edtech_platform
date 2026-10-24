@@ -1,0 +1,61 @@
+{
+    "questionTypes": {
+        "mcqs": "Single Choice",
+        "mcqm": "Multiple Choice",
+        "trueFalse": "True / False",
+        "oneWord": "One Word",
+        "longAnswer": "Long Answer",
+        "numeric": "Numeric",
+        "cmcqs": "Comprehension (Single)",
+        "cmcqm": "Comprehension (Multiple)"
+    },
+    "toasts": {
+        "linkCopied": "Link copied to clipboard",
+        "copyFailed": "Failed to copy link"
+    },
+    "shareAssignment": {
+        "heading": "Share Assignment",
+        "copyLinkTitle": "Copy link"
+    },
+    "taskDescription": {
+        "heading": "Task Description"
+    },
+    "liveDateRange": {
+        "heading": "Live Date Range",
+        "description": "Times are interpreted in your local timezone. Submissions before the start time are blocked; submissions after the end time are accepted but flagged as late.",
+        "startDateLabel": "Start Date & Time",
+        "endDateLabel": "End Date & Time"
+    },
+    "reattemptCount": {
+        "label": "Reattempt Count"
+    },
+    "allowedFileTypes": {
+        "heading": "Allowed Submission File Types",
+        "description": "Choose which file types learners can upload, or select All Files to accept any file (including formats like .sb3 PictoBlox/Scratch projects)."
+    },
+    "marks": {
+        "heading": "Marks",
+        "totalMarksLabel": "Total Marks",
+        "totalMarksPlaceholder": "e.g. 100",
+        "passingMarksLabel": "Passing Marks (optional)",
+        "passingMarksPlaceholder": "e.g. 40"
+    },
+    "uploadQuestionPaper": {
+        "heading": "Upload Question Paper",
+        "uploadFromDevice": "Upload from Device",
+        "uploadFromDeviceDialogTitle": "Upload Question Paper From Device",
+        "createManually": "Create Manually",
+        "createManuallyDialogTitle": "Create Question Paper Manually",
+        "chooseSavedPaper": "Choose Saved Paper",
+        "chooseSavedPaperDialogTitle": "Choose Saved Question Paper From List"
+    },
+    "questionsList": {
+        "heading_one": "Questions ({{count}})",
+        "heading_other": "Questions ({{count}})"
+    },
+    "responses": {
+        "heading": "Responses",
+        "totalParticipants_one": "Total Participants: {{count}}",
+        "totalParticipants_other": "Total Participants: {{count}}"
+    }
+}

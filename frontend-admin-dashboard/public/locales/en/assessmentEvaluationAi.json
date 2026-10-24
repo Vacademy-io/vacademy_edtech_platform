@@ -1,0 +1,120 @@
+{
+    "status": {
+        "pending": "Evaluation is yet to start",
+        "inProgress": "Evaluation is in progress",
+        "initiated": "Evaluation has initiated",
+        "processing": "Processing student answer sheet",
+        "extracting": "Extracting Student Answers",
+        "evaluating": "Evaluating Student Answers",
+        "grading": "Grading evaluated answers",
+        "completed": "Evaluation has completed",
+        "failed": "Evaluation has failed",
+        "cancelled": "Evaluation has been cancelled",
+        "unknown": "Unknown"
+    },
+    "common": {
+        "loading": "Loading..."
+    },
+    "nav": {
+        "heading": "AI evaluation"
+    },
+    "error": {
+        "title": "Error Loading Progress",
+        "loadFailed": "Failed to load evaluation progress",
+        "goBack": "Go Back"
+    },
+    "toasts": {
+        "evaluationStopped": "Evaluation stopped successfully!",
+        "stopFailed": "Failed to stop evaluation",
+        "answerSheetUnavailable": "Answer sheet not available",
+        "answerSheetLoadFailed": "Failed to load answer sheet",
+        "evaluationCompleted": "Evaluation completed successfully!",
+        "evaluationFailedRetry": "Evaluation failed. Please try again.",
+        "marksUpdated": "Marks updated",
+        "marksUpdateFailed": "Failed to update marks. Please try again."
+    },
+    "header": {
+        "participant": "Participant",
+        "assessment": "Assessment",
+        "status": "Status",
+        "duration": "Duration",
+        "progress": "Progress",
+        "stop": "Stop",
+        "stopping": "Stopping..."
+    },
+    "summary": {
+        "totalScore": "Total Score",
+        "percentage": "Percentage",
+        "completed": "Completed",
+        "pending": "Pending"
+    },
+    "filters": {
+        "all": "All",
+        "completed": "Completed",
+        "pending": "Pending",
+        "ariaLabel": "Filter questions"
+    },
+    "answerSheet": {
+        "loading": "Loading...",
+        "button": "Answer Sheet",
+        "panelTitle": "Student Answer Sheet",
+        "close": "Close"
+    },
+    "banners": {
+        "aiDrafted": "AI has drafted this evaluation. Review each question, adjust any marks or feedback, then release the result.",
+        "needsReview_one": "{{count}} question could not be graded automatically and needs your review. Open it below to enter marks before releasing the result.",
+        "needsReview_other": "{{count}} questions could not be graded automatically and need your review. Open them below to enter marks before releasing the result."
+    },
+    "emptyState": {
+        "all": "No questions to display",
+        "completed": "No completed questions to display",
+        "pending": "No pending questions to display"
+    },
+    "question": {
+        "qLabel": "Q{{number}}",
+        "title": "Question {{number}}",
+        "reviewedPrefix": "Reviewed by you · ",
+        "completedAt": "Completed {{time}}",
+        "pendingStatus": "Pending",
+        "failedGradeMessage": "AI could not grade this — needs your review",
+        "editedBadge": "Edited",
+        "needsReviewBadge": "Needs review",
+        "reviewMeta": {
+            "reviewedViaApiBy": "Reviewed via API by {{reviewer}}",
+            "reviewedViaApi": "Reviewed via API",
+            "reviewedBy": "Reviewed by {{reviewer}}",
+            "reviewed": "Reviewed",
+            "approvedViaApiBy": "Approved via API by {{reviewer}}",
+            "approvedViaApi": "Approved via API",
+            "approvedBy": "Approved by {{reviewer}}",
+            "approved": "Approved"
+        }
+    },
+    "teacherReview": {
+        "failedTitle": "This question was not graded automatically.",
+        "aiDraftedTitle": "AI-drafted marks",
+        "failedHint": "Enter marks and feedback to grade it yourself.",
+        "aiDraftedHint": "Adjust the marks or feedback if you disagree with the AI.",
+        "gradeManually": "Grade manually",
+        "edit": "Edit",
+        "marksLabel": "Marks",
+        "feedbackLabel": "Feedback",
+        "feedbackPlaceholder": "Feedback for this question",
+        "cancel": "Cancel",
+        "save": "Save marks",
+        "saving": "Saving..."
+    },
+    "details": {
+        "questionHeading": "Question",
+        "correctAnswerHeading": "Correct Answer",
+        "studentAnswerHeading": "Student's Answer",
+        "feedbackHeading": "Feedback",
+        "gradingBreakdownHeading": "Grading Breakdown"
+    },
+    "table": {
+        "criteria": "Criteria",
+        "reason": "Reason",
+        "marks": "Marks",
+        "totalMarksAwarded": "Total Marks Awarded:"
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "label": "Allow {{learners}} to switch into this payment option",
+    "message": {
+        "on": "Pick which plans below {{learners}} may switch to. They pay the prorated difference to upgrade; downgrades take effect at the end of their paid cycle.",
+        "off": "Turn this on to let existing members move onto this option's plans."
+    }
+}

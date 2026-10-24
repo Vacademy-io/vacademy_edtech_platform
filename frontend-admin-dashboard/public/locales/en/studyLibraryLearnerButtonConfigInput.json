@@ -1,0 +1,16 @@
+{
+    "defaultButtonText": "View Class Material",
+    "addCustomButton": "Add Custom Button",
+    "customButtonConfiguration": "Custom Button Configuration",
+    "addCustomActionButtonNote": "Add a custom action button for learners",
+    "remove": "Remove",
+    "buttonText": "Button Text",
+    "buttonTextPlaceholder": "e.g., View Class Material",
+    "charactersCount_one": "{{count}}/{{max}} character",
+    "charactersCount_other": "{{count}}/{{max}} characters",
+    "buttonUrl": "Button URL",
+    "buttonUrlPlaceholder": "https://example.com/class-link...",
+    "backgroundColor": "Background Color",
+    "textColor": "Text Color",
+    "preview": "Preview"
+}

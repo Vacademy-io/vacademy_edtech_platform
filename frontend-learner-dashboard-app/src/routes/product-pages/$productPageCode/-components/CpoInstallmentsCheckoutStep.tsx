@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useProductPageStore } from '../-stores/product-page-store';
-import { enrollCpoForProductPage } from '../-services/product-page-service';
+import { enrollCpoForProductPage, handleGetProductPage } from '../-services/product-page-service';
+import { checkoutErrorOf } from '../-utils/checkout-error';
 import {
     fetchCpoSchedule,
     fetchCpoDues,
@@ -11,9 +14,15 @@ import {
 import { CpoInstallmentSelectionStep } from '@/components/common/enroll-by-invite/-components';
 import { RazorpayCheckoutForm } from '@/components/common/enroll-by-invite/-components/razorpay-checkout-form';
 import type { RazorpayCheckoutFormRef } from '@/components/common/enroll-by-invite/-components/razorpay-checkout-form';
-import { ArrowLeft, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, SpinnerGap, ShieldCheck } from '@phosphor-icons/react';
 import type { ProductPageData, ProductPageSettings } from '../-types/product-page-types';
 import type { FieldValue } from '../-types/product-page-types';
+import { resolveLearnerIdentity } from '../-utils/learner-identity';
+import {
+    clearPurchasedFromSiteCart,
+    isPaidCpoPayment,
+    notePendingSiteCartPurchase,
+} from '../-utils/site-cart-housekeeping';
 
 interface CpoInstallmentsCheckoutStepProps {
     pageData: ProductPageData;
@@ -24,14 +33,18 @@ interface CpoInstallmentsCheckoutStepProps {
     onSuccess: () => void;
 }
 
+/** A failure this step explains itself, in words already translated. */
+class CpoStepError extends Error {}
+
 export const CpoInstallmentsCheckoutStep = ({
     pageData,
     settings,
     vendor,
-    primaryColor = '#2563eb',
+    primaryColor = '#2563eb', // design-lint-ignore: page-builder default color
     onBack,
     onSuccess,
 }: CpoInstallmentsCheckoutStepProps) => {
+    const { t, i18n } = useTranslation('productPages');
     const {
         selectedPsOptionIds,
         registrationData,
@@ -62,18 +75,44 @@ export const CpoInstallmentsCheckoutStep = ({
             selectedPsOptionIds.includes(m.ps_invite_payment_option_id) &&
             m.payment_option_type?.toUpperCase() === 'CPO'
     );
+    // What this checkout enrols — leaves the site-wide cart once it succeeds.
+    const cpoSessionIds = cpoMapping?.package_session_id ? [cpoMapping.package_session_id] : [];
 
-    const emailEntry = Object.values(registrationData as Record<string, FieldValue>).find(
-        (f) => f.type?.toLowerCase().includes('email') || f.name?.toLowerCase().includes('email')
+    // Same resolver the submit calls use — a label search for "name" also
+    // matches "School Name", and the first MATCH is not necessarily the first
+    // ANSWER. See learner-identity.
+    const { email: userEmail, name: userName } = resolveLearnerIdentity(
+        Object.values(registrationData as Record<string, FieldValue>)
     );
-    const userEmail = emailEntry?.value || '';
-
-    const nameEntry = Object.values(registrationData as Record<string, FieldValue>).find(
-        (f) => f.name?.toLowerCase().includes('name') || f.type?.toLowerCase().includes('name')
-    );
-    const userName = nameEntry?.value || '';
 
     const payAmount = cpoCustomAmount !== undefined ? cpoCustomAmount : cpoSelectedTotal;
+
+    const queryClient = useQueryClient();
+    const priceChangedMessage = t(
+        'common.priceChangedReload',
+        'The price of a course in your cart has changed. Please review your cart and try again.'
+    );
+    /**
+     * Why a payment step failed, as the combined checkout says it
+     * (checkoutErrorOf): the server's own words when they were written for the
+     * learner, else `fallback` — never the transport's "Request failed with
+     * status code …". A 409 means the plan on this page changed since it
+     * loaded (the server refuses the plan id the step sent): the page is
+     * fetched again, so a retry sends the mapping's current plan.
+     */
+    const failPayment = (err: unknown, fallback: string) => {
+        if (err instanceof CpoStepError) {
+            setPaymentError(err.message);
+            return;
+        }
+        const { message, priceChanged } = checkoutErrorOf(err, fallback, priceChangedMessage);
+        setPaymentError(message);
+        if (priceChanged) {
+            void queryClient.invalidateQueries({
+                queryKey: handleGetProductPage(pageData.code, pageData.institute_id).queryKey,
+            });
+        }
+    };
 
     // On mount: fetch the CPO installment template (before enrollment)
     useEffect(() => {
@@ -81,7 +120,7 @@ export const CpoInstallmentsCheckoutStep = ({
         scheduleFetched.current = true;
 
         if (!cpoMapping?.payment_option_id) {
-            setScheduleError('No CPO payment option found in selection.');
+            setScheduleError(t('cpoInstallments.noCpoOptionFoundInSelection'));
             return;
         }
 
@@ -91,7 +130,7 @@ export const CpoInstallmentsCheckoutStep = ({
                 setTemplateDues(mapCpoScheduleToDues(cpoDto));
             })
             .catch((err) => {
-                setScheduleError(err instanceof Error ? err.message : 'Failed to load installment schedule.');
+                setScheduleError(err instanceof Error ? err.message : t('cpoInstallments.failedToLoadSchedule'));
             })
             .finally(() => setLoadingSchedule(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,7 +146,7 @@ export const CpoInstallmentsCheckoutStep = ({
         sfpIds: string[],
     ) => Promise<void>) => {
         if (!cpoMapping) {
-            setPaymentError('No CPO payment option found.');
+            setPaymentError(t('cpoInstallments.noCpoOptionFound'));
             return;
         }
 
@@ -132,7 +171,7 @@ export const CpoInstallmentsCheckoutStep = ({
         }
 
         if (!currentUserId || !currentUserPlanId) {
-            throw new Error('Enrollment data missing — please go back and retry.');
+            throw new CpoStepError(t('cpoInstallments.enrollmentDataMissingRetryLater'));
         }
 
         // Fetch actual SFP rows to get their IDs
@@ -142,7 +181,7 @@ export const CpoInstallmentsCheckoutStep = ({
             .map((d) => d.id);
 
         if (pendingSfpIds.length === 0) {
-            throw new Error('No pending installments found after enrollment.');
+            throw new CpoStepError(t('cpoInstallments.noPendingInstallmentsFound'));
         }
 
         await buildPayRequest(currentUserId, currentUserPlanId, pendingSfpIds);
@@ -176,7 +215,7 @@ export const CpoInstallmentsCheckoutStep = ({
                 }
             });
         } catch (err) {
-            setPaymentError(err instanceof Error ? err.message : 'Could not initiate payment.');
+            failPayment(err, t('common.couldNotInitiatePayment'));
         } finally {
             setIsProcessing(false);
         }
@@ -193,7 +232,7 @@ export const CpoInstallmentsCheckoutStep = ({
             // Read from ref — always up-to-date even if this closure is stale
             const enrolled = enrolledDataRef.current;
             if (!enrolled?.userId || !enrolled?.userPlanId) {
-                throw new Error('Enrollment data missing. Please try again.');
+                throw new CpoStepError(t('cpoInstallments.enrollmentDataMissingRetry'));
             }
             const sfpDues = await fetchCpoDues({ userId: enrolled.userId, userPlanId: enrolled.userPlanId });
             const pendingSfpIds = sfpDues
@@ -212,9 +251,10 @@ export const CpoInstallmentsCheckoutStep = ({
                 name: userName,
                 razorpayPaymentData: razorpayData,
             });
+            void clearPurchasedFromSiteCart([pageData.institute_id], cpoSessionIds);
             onSuccess();
         } catch (err) {
-            setPaymentError(err instanceof Error ? err.message : 'Payment confirmation failed.');
+            failPayment(err, t('cpoInstallments.paymentConfirmationFailed'));
         } finally {
             setIsProcessing(false);
         }
@@ -238,13 +278,32 @@ export const CpoInstallmentsCheckoutStep = ({
                 });
 
                 if (result?.payment_url) {
+                    // order_id is the payment log the gateway settles.
+                    await notePendingSiteCartPurchase({
+                        paymentLogId: result?.order_id,
+                        instituteIds: [pageData.institute_id],
+                        packageSessionIds: cpoSessionIds,
+                    });
                     window.location.href = result.payment_url;
                 } else {
+                    // Only a confirmed payment clears the site cart. Anything
+                    // else (a gateway still settling, or one whose payment page
+                    // this step does not open) is noted against its payment
+                    // log, so the course leaves the cart once it is paid.
+                    if (isPaidCpoPayment(result)) {
+                        void clearPurchasedFromSiteCart([pageData.institute_id], cpoSessionIds);
+                    } else {
+                        await notePendingSiteCartPurchase({
+                            paymentLogId: result?.order_id,
+                            instituteIds: [pageData.institute_id],
+                            packageSessionIds: cpoSessionIds,
+                        });
+                    }
                     onSuccess();
                 }
             });
         } catch (err) {
-            setPaymentError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+            failPayment(err, t('common.genericPaymentFailed'));
         } finally {
             setIsProcessing(false);
         }
@@ -254,10 +313,10 @@ export const CpoInstallmentsCheckoutStep = ({
 
     if (loadingSchedule) {
         return (
-            <div className="flex min-h-[300px] items-center justify-center">
+            <div className="flex min-h-reg-300 items-center justify-center">
                 <div className="text-center space-y-3">
-                    <Loader2 className="size-8 animate-spin text-blue-500 mx-auto" />
-                    <p className="text-sm text-gray-500">Loading installment schedule...</p>
+                    <SpinnerGap className="size-8 animate-spin text-primary-500 mx-auto" aria-hidden="true" />
+                    <p className="text-sm text-gray-500">{t('cpoInstallments.loadingSchedule')}</p>
                 </div>
             </div>
         );
@@ -265,7 +324,7 @@ export const CpoInstallmentsCheckoutStep = ({
 
     if (scheduleError) {
         return (
-            <div className="mx-auto max-w-xl px-4 py-8">
+            <div className="px-5 py-6 sm:px-6">
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
                     {scheduleError}
                 </div>
@@ -276,7 +335,7 @@ export const CpoInstallmentsCheckoutStep = ({
                         className="mt-4 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
                     >
                         <ArrowLeft className="size-4" />
-                        Back
+                        {t('common.back')}
                     </button>
                 )}
             </div>
@@ -284,11 +343,11 @@ export const CpoInstallmentsCheckoutStep = ({
     }
 
     return (
-        <div className="mx-auto max-w-xl px-4 py-8 space-y-6">
+        <div className="px-5 py-6 sm:px-6 space-y-6">
             <div>
-                <h1 className="text-xl font-bold text-gray-900">Select Installments</h1>
+                <h1 className="text-xl font-bold text-gray-900">{t('cpoInstallments.selectInstallments.title')}</h1>
                 <p className="mt-1 text-sm text-gray-500">
-                    Choose which installments you'd like to pay now
+                    {t('cpoInstallments.selectInstallments.subtitle')}
                 </p>
             </div>
 
@@ -318,7 +377,7 @@ export const CpoInstallmentsCheckoutStep = ({
                                 currency={currency}
                                 userName=""
                                 courseName={pageData.name}
-                                courseDescription="Installment payment"
+                                courseDescription={t('cpoInstallments.installmentPaymentDescription')}
                                 onPaymentReady={handleRazorpaySuccess}
                                 onError={(err) => {
                                     setPaymentError(err);
@@ -334,9 +393,9 @@ export const CpoInstallmentsCheckoutStep = ({
                                 style={{ backgroundColor: primaryColor }}
                             >
                                 {isProcessing ? (
-                                    <><Loader2 className="size-4 animate-spin" /> Processing...</>
+                                    <><SpinnerGap className="size-4 animate-spin" aria-hidden="true" /> {t('common.processing')}</>
                                 ) : (
-                                    <>Pay {currency} {payAmount.toLocaleString()}</>
+                                    t('common.pay', { currency, amount: payAmount.toLocaleString(i18n.language) })
                                 )}
                             </button>
                         </>
@@ -349,9 +408,9 @@ export const CpoInstallmentsCheckoutStep = ({
                             style={{ backgroundColor: primaryColor }}
                         >
                             {isProcessing ? (
-                                <><Loader2 className="size-4 animate-spin" /> Processing...</>
+                                <><SpinnerGap className="size-4 animate-spin" aria-hidden="true" /> {t('common.processing')}</>
                             ) : (
-                                <>Pay {currency} {payAmount.toLocaleString()}</>
+                                t('common.pay', { currency, amount: payAmount.toLocaleString(i18n.language) })
                             )}
                         </button>
                     )}
@@ -367,12 +426,12 @@ export const CpoInstallmentsCheckoutStep = ({
                         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-40"
                     >
                         <ArrowLeft className="size-4" />
-                        Back
+                        {t('common.back')}
                     </button>
                 ) : <div />}
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
                     <ShieldCheck className="size-3.5" />
-                    Secured payment
+                    {t('common.securedPayment')}
                 </div>
             </div>
         </div>

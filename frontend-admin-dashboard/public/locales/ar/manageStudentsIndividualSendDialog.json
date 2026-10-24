@@ -1,0 +1,151 @@
+{
+    "dialogTitle": "إرسال {{channelLabel}}",
+    "dialogDescription": {
+        "withStudent": "إرسال {{contentType}} إلى {{name}}.",
+        "noStudent": "لم يتم اختيار متعلم."
+    },
+    "channelLabel": {
+        "EMAIL": "البريد الإلكتروني",
+        "WHATSAPP": "واتساب"
+    },
+    "contentType": {
+        "EMAIL": "بريد إلكتروني بقالب",
+        "WHATSAPP": "رسالة واتساب بقالب"
+    },
+    "steps": {
+        "selectTemplate": "اختيار القالب",
+        "composeContent": "كتابة المحتوى",
+        "mapVariables": "ربط المتغيرات",
+        "reviewSend": "المراجعة والإرسال"
+    },
+    "systemFields": {
+        "fullName": "الاسم الكامل",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "city": "المدينة",
+        "region": "المنطقة",
+        "gender": "الجنس",
+        "enrollmentId": "رقم التسجيل",
+        "fathersName": "اسم الأب",
+        "mothersName": "اسم الأم",
+        "username": "اسم المستخدم",
+        "password": "كلمة المرور"
+    },
+    "toasts": {
+        "loadEmailTemplatesFailed": "تعذر تحميل قوالب البريد الإلكتروني",
+        "loadWaTemplatesFailed": "تعذر تحميل قوالب واتساب",
+        "loadTemplateContentFailed": "تعذر تحميل محتوى القالب",
+        "noEmailAddress": "لا يملك هذا المتعلم عنوان بريد إلكتروني.",
+        "noMobileNumber": "لا يملك هذا المتعلم رقم جوال.",
+        "emailSent": "تم إرسال البريد الإلكتروني",
+        "selectWaTemplateFirst": "يرجى اختيار قالب واتساب أولاً",
+        "whatsappSent": "تم إرسال رسالة واتساب",
+        "sendFailed": "تعذر الإرسال",
+        "whatsappQueued": "قبل واتساب الرسالة — يتم تأكيد التسليم بشكل منفصل",
+        "whatsappRejected": "رفض واتساب هذه الرسالة — لم يتم إرسالها",
+        "whatsappRejectedWithReason": "رفض واتساب هذه الرسالة: {{reason}}",
+        "emailRejected": "لم يتم قبول البريد الإلكتروني للتسليم",
+        "emailRejectedWithReason": "لم يتم قبول البريد الإلكتروني: {{reason}}"
+    },
+    "emailTemplateStep": {
+        "templateLabel": "القالب",
+        "loadingTemplates": "جارٍ تحميل القوالب...",
+        "selectPlaceholder": "اختر قالبًا",
+        "emptyText": "لا يوجد قالب يطابق بحثك.",
+        "customOption": "مخصص — الكتابة من البداية",
+        "loadingContent": "جارٍ تحميل محتوى القالب..."
+    },
+    "emailComposeStep": {
+        "emailTypeLabel": "نوع البريد الإلكتروني",
+        "emailTypeUtility": "بريد وظيفي",
+        "emailTypePromotional": "بريد ترويجي",
+        "emailTypeTransactional": "بريد معاملات",
+        "subjectLabel": "الموضوع",
+        "subjectPlaceholder": "أدخل موضوع البريد الإلكتروني...",
+        "bodyLabel": "المحتوى",
+        "previewTab": "معاينة",
+        "editTab": "تحرير HTML",
+        "emptyBodyPreview": "اختر قالبًا أو انتقل إلى تحرير HTML لكتابة المحتوى.",
+        "bodyPlaceholder": "أدخل محتوى البريد الإلكتروني بصيغة HTML... استخدم {{varSyntax}} لإدراج المتغيرات",
+        "bodyHelpPrefix": "العناصر النائبة مثل",
+        "bodyHelpSuffix": "يتم استبدالها ببيانات المتعلم عند الإرسال. يمكنك ربطها في الخطوة التالية."
+    },
+    "waTemplateStep": {
+        "templateLabel": "القالب",
+        "loadingTemplates": "جارٍ تحميل القوالب...",
+        "selectPlaceholder": "اختر قالبًا معتمدًا",
+        "emptyText": "لا يوجد قالب معتمد يطابق بحثك.",
+        "languageCodeLabel": "رمز اللغة",
+        "templatePreviewLabel": "معاينة القالب",
+        "previewHint": "الأجزاء المميّزة هي متغيّرات — ستُملأ ببيانات هذا المتعلّم في الخطوة التالية.",
+        "headerBadge": "ترويسة {{kind}}"
+    },
+    "mediaKind": {
+        "image": "صورة",
+        "video": "فيديو",
+        "document": "مستند"
+    },
+    "headerMediaField": {
+        "label": "رابط {{kind}} الترويسة",
+        "helpText": "يحتوي هذا القالب على ترويسة من نوع {{kind}}، ويشترط واتساب إرفاقها في كل إرسال — وإلا تفشل الرسالة. تم تعبئته مسبقًا بالوسائط المعتمدة مع القالب.",
+        "previewAlt": "معاينة الترويسة"
+    },
+    "variableMappingStep": {
+        "noVariables": "لا توجد متغيرات لربطها. يمكنك المتابعة.",
+        "mapHint": "اربط كل عنصر نائب بحقل خاص بالمتعلم، أو أدخل قيمة ثابتة.",
+        "columnVariable": "المتغير",
+        "columnSource": "المصدر",
+        "columnResolvedValue": "القيمة المحسوبة",
+        "sourcePlaceholder": "اختر المصدر...",
+        "literalOption": "قيمة ثابتة...",
+        "literalPlaceholder": "اكتب قيمة",
+        "unresolved": "(غير محدد)",
+        "livePreviewLabel": "معاينة الرسالة",
+        "sourceSearchPlaceholder": "ابحث في الحقول...",
+        "sourceNoMatch": "لا يوجد حقل يطابق بحثك."
+    },
+    "reviewStep": {
+        "messageSent": "تم إرسال الرسالة",
+        "sendCompleted": "اكتمل الإرسال",
+        "statusLabel": "الحالة",
+        "acceptedLabel": "المقبول",
+        "failedLabel": "الفاشل",
+        "close": "إغلاق",
+        "noSubject": "(بلا موضوع)",
+        "channelHeading": "القناة",
+        "subjectLabel": "الموضوع",
+        "templateLabel": "القالب",
+        "recipientLabel": "المستلم",
+        "variablesLabel": "المتغيرات",
+        "empty": "(فارغ)",
+        "sending": "جارٍ الإرسال...",
+        "sendTo": "إرسال إلى {{name}}",
+        "delivered": "تم التسليم",
+        "notDelivered": "لم يتم التسليم",
+        "confirmingDelivery": "جارٍ تأكيد التسليم…",
+        "deliveryLabel": "التسليم",
+        "sendFailed": "لم يتم إرسال الرسالة",
+        "noReason": "لم يبلّغ المزوّد عن سبب.",
+        "deliveryStatus": {
+            "SENT": "تم الإرسال",
+            "DELIVERED": "تم التسليم",
+            "READ": "تمت القراءة",
+            "FAILED": "فشل"
+        },
+        "messagePreviewLabel": "الرسالة التي سيتم إرسالها"
+    },
+    "footer": {
+        "back": "رجوع",
+        "next": "التالي"
+    },
+    "templatePicker": {
+        "showFullMessage": "عرض الرسالة كاملة",
+        "showLess": "عرض أقل"
+    },
+    "waPreview": {
+        "image": "صورة",
+        "video": "فيديو",
+        "document": "مستند",
+        "emptyBody": "لا يحتوي هذا القالب على نص رسالة."
+    }
+}

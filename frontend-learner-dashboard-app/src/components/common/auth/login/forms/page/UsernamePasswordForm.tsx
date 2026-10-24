@@ -31,6 +31,7 @@ import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { navigateAfterLogin } from "@/lib/auth/post-login-redirect";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
+import { isSignupLinkVisible } from "./signup-link-visibility";
 type FormValues = z.infer<typeof loginSchema>;
 
 interface UsernameLoginProps {
@@ -39,6 +40,8 @@ interface UsernameLoginProps {
   courseId?: string;
   allowEmailOtpAuth?: boolean;
   allowPhoneAuth?: boolean;
+  /** Portal policy from domain routing; undefined = unknown, see isSignupLinkVisible. */
+  allowSignup?: boolean;
   initialUsername?: string;
   initialPassword?: string;
   autoSubmit?: boolean;
@@ -49,6 +52,7 @@ export function UsernameLogin({
   courseId,
   allowEmailOtpAuth,
   allowPhoneAuth,
+  allowSignup,
   initialUsername,
   initialPassword,
   autoSubmit,
@@ -515,34 +519,21 @@ export function UsernameLogin({
           </motion.button>
         )}
 
-        {(() => {
-          try {
-            const raw = localStorage.getItem("InstituteId");
-            const instituteId = raw || "";
-            if (!instituteId) return null;
-            const stored = localStorage.getItem(`LEARNER_${instituteId}`);
-            if (!stored) return null;
-            const parsed = JSON.parse(stored);
-            if (parsed?.allowSignup === false) return null;
-          } catch {
-            return null;
-          }
-          return (
-            <div className="text-xs text-gray-600">
-              {t("common.dontHaveAccount")}{" "}
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.02 }}
-                onClick={
-                  onSwitchToSignup || (() => navigate({ to: "/signup" }))
-                }
-                className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
-              >
-                {t("common.signUpHere")}
-              </motion.button>
-            </div>
-          );
-        })()}
+        {isSignupLinkVisible(allowSignup) && (
+          <div className="text-xs text-gray-600">
+            {t("common.dontHaveAccount")}{" "}
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              onClick={
+                onSwitchToSignup || (() => navigate({ to: "/signup" }))
+              }
+              className="text-gray-800 hover:text-gray-900 font-medium underline cursor-pointer"
+            >
+              {t("common.signUpHere")}
+            </motion.button>
+          </div>
+        )}
       </motion.div>
 
       <SessionLimitDialog

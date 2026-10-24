@@ -1,0 +1,186 @@
+{
+    "dialog": {
+        "title": "Correction IA en masse",
+        "intro": "Téléversez toutes les copies numérisées d'un coup. Le nom écrit en haut de chaque feuille est lu et associé à un élève de cette évaluation ; les copies sont ensuite corrigées une à une en arrière-plan. Vous recevrez un e-mail et une alerte quand ce sera terminé.",
+        "drop": "Déposez les copies PDF ici ou cliquez pour choisir",
+        "dropHint": "Un fichier par élève · jusqu'à {{max}} fichiers · {{mb}} Mo chacun",
+        "counting": "Comptage des pages…",
+        "uploading": "Téléversement…",
+        "uploadFailed": "Échec du téléversement",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "remove": "Retirer",
+        "costEmpty": "Ajoutez des copies pour voir le coût.",
+        "cost_one": "1 copie · {{questions}} questions · {{credits}} crédits",
+        "cost_other": "{{count}} copies · {{questions}} questions chacune · {{credits}} crédits",
+        "rate": "Tarif : {{flat}} + {{perUnit}} crédits par {{unit}}, par copie",
+        "rateNoBase": "Tarif : {{perUnit}} crédits par {{unit}}, par copie",
+        "unitQuestion": "question",
+        "unitPage": "page",
+        "balance_one": "Solde : {{count}}",
+        "balance_other": "Solde : {{count}}",
+        "insufficient": "Crédits insuffisants pour toutes ces copies. Retirez-en, ou ajoutez des crédits à l'établissement.",
+        "notifyEmail": "M'envoyer un e-mail quand la correction est terminée",
+        "someFailed_one": "{{count}} fichier n'a pas pu être téléversé et a été laissé de côté.",
+        "someFailed_other": "{{count}} fichiers n'ont pas pu être téléversés et ont été laissés de côté.",
+        "cancel": "Annuler",
+        "start_one": "Corriger {{count}} copie",
+        "start_other": "Corriger {{count}} copies",
+        "starting": "Téléversement et démarrage…"
+    },
+    "errors": {
+        "notPdf": "{{name}} : seuls les fichiers PDF peuvent être corrigés",
+        "tooLarge": "{{name}} dépasse {{mb}} Mo",
+        "tooMany": "Au plus {{max}} fichiers par lot — divisez le téléversement",
+        "nothingUploaded": "Aucun des fichiers n'a pu être téléversé",
+        "startFailed": "Impossible de lancer la correction",
+        "actionFailed": "Cela n'a pas fonctionné ; réessayez"
+    },
+    "toasts": {
+        "started_one": "{{count}} copie téléversée — lecture du nom et mise en file de la correction",
+        "started_other": "{{count}} copies téléversées — lecture des noms et mise en file des corrections",
+        "completed": "Correction IA terminée : {{checked}} copies sur {{total}} corrigées",
+        "needsReview_one": "Correction IA terminée — {{count}} copie attend que vous choisissiez l'élève",
+        "needsReview_other": "Correction IA terminée — {{count}} copies attendent que vous choisissiez l'élève",
+        "failed": "La correction en masse a échoué",
+        "assigned": "Élève attribué — la copie est en file pour correction",
+        "skipped": "Copie ignorée",
+        "retried": "Copie remise en file"
+    },
+    "panel": {
+        "title": "Correction IA en masse",
+        "subtitle": "Chaque copie téléversée, l'élève associé et l'avancement de sa correction.",
+        "refresh": "Actualiser",
+        "close": "Fermer",
+        "empty": "Aucune correction en masse pour cette évaluation.",
+        "startedBy": "Lancée par {{name}} · {{when}}",
+        "emailFailed": "L'e-mail de fin n'a pas pu être envoyé.",
+        "waitingHint_one": "{{count}} copie n'a pas pu être associée à un élève. Choisissez l'élève pour la corriger.",
+        "waitingHint_other": "{{count}} copies n'ont pas pu être associées à un élève. Choisissez l'élève de chacune pour les corriger."
+    },
+    "stats": {
+        "total": "Copies",
+        "checked": "Corrigées",
+        "inProgress": "En cours",
+        "needReview": "À vérifier",
+        "failed": "Échouées"
+    },
+    "batchStatus": {
+        "RUNNING": "En cours",
+        "NEEDS_REVIEW": "À vérifier",
+        "COMPLETED": "Terminé",
+        "FAILED": "Échoué"
+    },
+    "itemStatus": {
+        "PENDING": "En attente",
+        "IDENTIFYING": "Lecture du nom",
+        "MATCHED": "Associée",
+        "AMBIGUOUS": "Quel élève ?",
+        "UNMATCHED": "Aucune correspondance",
+        "QUEUED": "En file",
+        "EVALUATING": "Correction",
+        "COMPLETED": "Corrigée",
+        "FAILED": "Échouée",
+        "SKIPPED": "Ignorée"
+    },
+    "table": {
+        "file": "Fichier",
+        "read": "Lu sur la feuille",
+        "student": "Élève",
+        "status": "Statut",
+        "actions": "",
+        "pages_one": "{{count}} page",
+        "pages_other": "{{count}} pages",
+        "roll": "N° {{roll}}",
+        "reading": "Lecture…",
+        "noName": "Aucun nom trouvé sur la feuille"
+    },
+    "actions": {
+        "pickStudent": "Choisir l'élève",
+        "skip": "Ignorer",
+        "retry": "Réessayer",
+        "openResult": "Ouvrir"
+    },
+    "picker": {
+        "title": "À qui est cette copie ?",
+        "readAs": "Le nom sur la feuille se lit « {{name}} ».",
+        "nothingRead": "Aucun nom n'a pu être lu sur cette feuille.",
+        "suggested": "Suggestions",
+        "all": "Tous les élèves",
+        "search": "Rechercher par nom, numéro ou e-mail",
+        "none": "Aucun élève ne correspond à cette recherche.",
+        "registered": "Participant inscrit"
+    },
+    "placement": {
+        "label": "Où placer les commentaires de l'enseignant ?",
+        "panelHeading": "Commentaires",
+        "sampleStatus": "Q4 : Partiel",
+        "sampleRemark": "Expliquez les deux côtés",
+        "INSIDE": {
+            "title": "Sur la copie",
+            "description": "Les remarques sont écrites sur la copie, à côté de la réponse (par défaut)."
+        },
+        "OUTSIDE": {
+            "title": "Hors de la copie",
+            "description": "Les marques restent sur la copie ; les remarques vont dans un panneau Commentaires à côté."
+        }
+    },
+    "download": {
+        "button_one": "Télécharger {{count}} copie corrigée",
+        "button_other": "Télécharger {{count}} copies corrigées",
+        "preparing": "Préparation…",
+        "progress": "Téléchargement {{done}}/{{total}}…",
+        "done_one": "{{count}} copie corrigée téléchargée",
+        "done_other": "{{count}} copies corrigées téléchargées",
+        "partial": "{{count}} copies téléchargées ; {{failed}} n'ont pas pu être récupérées",
+        "failed": "Impossible de télécharger les copies corrigées",
+        "none": "Aucune copie corrigée dans ce lot pour l'instant"
+    },
+    "aiSettings": {
+        "subject": "Matière",
+        "subjectPlaceholder": "ex. English Language and Literature",
+        "level": "Classe / programme",
+        "levelPlaceholder": "ex. CBSE Classe X",
+        "instructions": "Consignes pour le correcteur IA",
+        "instructionsPlaceholder": "ex. Suivre le barème CBSE. Lettre : format 1, contenu 2, expression 2. Citer les points manquants dans le commentaire.",
+        "instructionsHint": "Utilisées pour chaque copie de cette évaluation, avec le corrigé et la grille",
+        "instructionsDefaultHint": "Utilisées pour chaque évaluation qui n'a pas ses propres consignes",
+        "language": "Signaler les fautes d'orthographe et de grammaire",
+        "languageHint": "Chaque faute est soulignée avec sa correction et listée dans le commentaire de la réponse. Aucun point n'est retiré. Pour les réponses rédigées en anglais."
+    },
+    "criteria": {
+        "title": "Critères d'évaluation",
+        "loading": "Chargement des critères…",
+        "loadFailed": "Les critères n'ont pas pu être chargés.",
+        "noQuestions": "Ce test n'a encore aucune question.",
+        "summary": "{{set}} questions sur {{total}} ont des critères · les autres sont rédigés par l'IA à la première correction",
+        "review": "Voir les critères",
+        "addOpen": "Ajouter des critères d'évaluation",
+        "dialogTitle": "Critères d'évaluation pour la correction IA",
+        "dialogIntro": "L'IA note chaque réponse selon ces critères. Les changements s'appliquent à chaque copie corrigée désormais ; les copies déjà corrigées gardent leurs notes jusqu'à une nouvelle correction.",
+        "countSet_one": "{{count}} défini",
+        "countSet_other": "{{count}} définis",
+        "countFromQuestion_one": "{{count}} depuis la banque",
+        "countFromQuestion_other": "{{count}} depuis la banque",
+        "countAi_one": "{{count}} rédigé par l'IA",
+        "countAi_other": "{{count}} rédigés par l'IA",
+        "useQuestionCriteria_one": "Utiliser les critères de la question pour {{count}} question",
+        "useQuestionCriteria_other": "Utiliser les critères des questions pour {{count}} questions",
+        "marks_one": "{{marks}} point",
+        "marks_other": "{{marks}} points",
+        "status": {
+            "SET": "Défini",
+            "FROM_QUESTION": "Pas encore utilisé",
+            "AI": "Rédigé par l'IA"
+        },
+        "noText": "Texte de la question indisponible",
+        "aiWillWrite": "Pas encore de critères : l'IA les rédige à la première correction",
+        "add": "Ajouter",
+        "edit": "Modifier",
+        "saved_one": "Critères enregistrés",
+        "saved_other": "Critères enregistrés pour {{count}} questions",
+        "saveFailed": "Les critères n'ont pas pu être enregistrés",
+        "retry": "Réessayer",
+        "done": "Terminé"
+    }
+}

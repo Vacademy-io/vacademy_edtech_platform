@@ -1,0 +1,241 @@
+---
+title: "Playbooks"
+description: "Copy-paste prompts for admins, counsellors, sales managers and owners, with what to expect from each."
+icon: "list-check"
+---
+
+Each playbook lists prompts you can copy into your AI app, what happens next, and which settings must be on. Swap in your own names, dates and courses.
+
+<Tip>
+Start every chat with `Who am I connected as?`. It checks the connection and teaches the AI app your institute's name and terms.
+</Tip>
+
+<Note>
+**The AI app acts as you.** It can use the areas your admin turned on for your role. In the CRM, a counsellor's AI app sees the leads that counsellor sees in your admin portal. An admin's sees the whole institute. If a prompt below returns nothing, check [Troubleshooting](/mcp-server/usage/troubleshooting).
+</Note>
+
+## Admin: build a website
+
+**Needs:** **Website** set to **Edit** (Build and edit pages). To let the AI app publish, also **Website → Publish and roll back**, turned on separately.
+
+*Ask your admin to turn on:* Website (Edit), and Publish and roll back if you want to publish from the chat.
+
+<Steps>
+  <Step title="Brief">
+    ```text
+    Build a new admissions website for our JEE 2027 batch. Interview me first, one question at a time.
+    ```
+    The AI app asks for what's missing: colours, logo, photos, tone, pages, which courses to show and which lead campaign enquiries go to. Have your logo and a few photos ready.
+  </Step>
+  <Step title="Or start from a design">
+    ```text
+    Rebuild this Figma design as a draft site: <Figma link>. Follow your Figma playbook.
+    ```
+    Your AI app needs its own Figma connection for this. The design decides the look; the AI app still asks for the data (courses, prices, enquiry form).
+  </Step>
+  <Step title="Review the draft">
+    ```text
+    Review the homepage and fix everything the review reports. Then give me the editor link.
+    ```
+    Everything is a **draft**. Open the editor link to look at it in your admin portal.
+  </Step>
+  <Step title="Small changes">
+    ```text
+    On the Fees page, change the second plan's price label to "₹4,999 / month" and make the "Apply now" button go to the enquiry form.
+    ```
+  </Step>
+  <Step title="Publish">
+    ```text
+    Check the draft is ready to publish and show me what changes compared with the live site.
+    ```
+    The AI app runs the pre-publish check and shows the differences and any blockers. Publish from **Manage Pages**, or, if **Publish and roll back** is on, say "Yes, publish it" in the chat. See [Confirmations](/mcp-server/usage/confirmations).
+  </Step>
+</Steps>
+
+## Admin: build a course
+
+**Needs:** **Courses** set to **Edit** (Content). For pricing, **Courses → Invite links, pricing and enrolment forms** (comes on with Edit; its edits apply at once). For enrolling, **Learners → Enrol into courses**, turned on separately.
+
+*Ask your admin to turn on:* Courses (Edit), and Enrol into courses if you enrol from the chat.
+
+```text
+I want a new 6-week course: "Spoken English for Beginners". Ask me whether to start from scratch or copy an existing course, then interview me.
+```
+
+```text
+Write the chapter "Greetings and introductions": a reading page, a YouTube video I'll give you, and a 5-question quiz. Save the slides as drafts.
+```
+
+```text
+Run the course review and fix what it finds. Then create an invite link. Ask me the price.
+```
+
+```text
+Submit the course for review.
+```
+
+The course stays a **draft** until an admin approves it in your admin portal. Then:
+
+```text
+Enrol the learners in this CSV into Spoken English for Beginners. Preview first. Ask me about the welcome and login emails.
+```
+
+<Tip>
+For a bulk enrolment, ask "Give me the bulk-enrol CSV template" first, fill it in, then attach it.
+</Tip>
+
+## Admin: more one-liners
+
+```text
+Which lead campaigns got the most leads this week, and which website forms feed them?
+```
+
+```text
+Draft an automation: when a lead fills the "Demo class" form, send our "demo_confirmation" WhatsApp template, wait one day, then email the brochure. Save it as a draft.
+```
+
+```text
+Write the October progress report for Aarav Mehta, for his parents. Use only the data; tell me what's missing.
+```
+
+```text
+Write a 900-word blog post on "How to plan your last 60 days before NEET". Save it as a draft and give me the link.
+```
+
+## Counsellor: your day
+
+**Needs:** **CRM: Leads** at View. For logging calls and follow-ups, **CRM: Leads → lead activity (notes, logged calls, follow-ups)**, turned on separately. For booking demos, **CRM: Meetings → booking meetings**, turned on separately. For WhatsApp, **CRM: Messages → sending WhatsApp templates**, turned on separately.
+
+*Ask your admin to turn on:* CRM: Leads (View) and lead activity; CRM: Meetings booking and CRM: Messages sending if you book demos or send WhatsApp templates.
+
+<AccordionGroup>
+  <Accordion title="What's on my plate?" icon="mug-hot" defaultOpen>
+    ```text
+    What's on my plate today?
+    ```
+    You get one ranked list, each item with a reason: new leads waiting for a first contact past their deadline, overdue follow-ups, follow-ups due today, leads an AI call flagged for a callback, and hot leads nobody has touched. Then:
+    ```text
+    Start with the first one. What do I need to know before I call?
+    ```
+  </Accordion>
+  <Accordion title="Find a lead" icon="magnifying-glass">
+    ```text
+    Find Priya.
+    ```
+    If there are several, the AI app lists them (masked phone, list, status) and asks which one. Be more specific to skip that step:
+    ```text
+    Find the lead with phone ending 4321.
+    ```
+    ```text
+    Open Priya Sharma's record: her answers, last calls, open follow-ups and what was said last time.
+    ```
+  </Accordion>
+  <Accordion title="Log the call and set a callback" icon="phone">
+    ```text
+    Log a call with Priya Sharma: interested in the weekend batch, wants to talk to her father first. Call back Friday 5 pm.
+    ```
+    The note and the follow-up are saved straight away; they only add to her history. If you also change her status and that status starts an automation, the AI app previews that part and waits for your yes.
+  </Accordion>
+  <Accordion title="Book a demo" icon="calendar-check">
+    ```text
+    Book a demo class for Priya Sharma tomorrow at 4 pm, 30 minutes, with a Google Meet link.
+    ```
+    The AI app checks the time against your other bookings. The preview shows the slot and what Priya will receive (for example a calendar invite and an email). It is booked only after your yes, and each yes books once.
+  </Accordion>
+  <Accordion title="Send a WhatsApp" icon="message">
+    ```text
+    Can I message Priya on WhatsApp? If yes, send her the "brochure_followup" template.
+    ```
+    Only approved WhatsApp templates can be sent. The AI app previews the message and sends it once, after your yes. Hourly limits apply.
+  </Accordion>
+  <Accordion title="Send an email" icon="envelope">
+    ```text
+    Email Priya our fee structure: subject "NEET 2027 fees", and tell her the first installment is due on the 5th.
+    ```
+    The AI app shows you the exact email first and sends it once, after your yes. Addresses on your unsubscribe list are never emailed.
+  </Accordion>
+  <Accordion title="End of day" icon="moon">
+    ```text
+    Which of my follow-ups for today are still open? Reschedule the ones I didn't reach to tomorrow morning.
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Sales manager: your team
+
+**Needs:** **CRM: Reports** at View. For moving leads and pausing routing, **CRM: Leads → assigning leads (admins and managers)**, turned on separately. You see the counsellors and leads you see in your admin portal.
+
+*Ask your admin to turn on:* CRM: Reports (View), CRM: Leads (View), and assigning leads for your role.
+
+```text
+Who's slowest to respond to new leads this week? Show average first-response time and how many leads breached the deadline, per counsellor.
+```
+
+```text
+Which leads are unassigned right now, and why?
+```
+
+```text
+Rahul is on leave until Monday. Reassign his open leads evenly between Anjali and Vikram. Preview first.
+```
+The preview lists the leads and explains what moves, what stays and what happens to new leads. Nothing moves until you say yes.
+
+```text
+Pause new lead routing to Rahul without moving his current leads.
+```
+
+```text
+How did Meta leads convert this month compared with last month? Show the numbers and how they were counted.
+```
+
+```text
+Which leads have been stuck in "Interested" for more than 10 days?
+```
+
+## Owner: revenue, regions and cohorts
+
+**Needs:** **CRM: Payments** and **CRM: Reports** at View, as an institute admin. Tagging lists needs **CRM: Leads → edit status, tier, details and tags**, turned on separately.
+
+```text
+Revenue by state by month since April, counted on the day each payment was made. Which states grew?
+```
+
+```text
+Why does the revenue report say less than collections this month? Break down the difference.
+```
+
+```text
+Look at our lead lists and tag each one with its state, course and channel from its name. Show me the mapping first.
+```
+The preview lists every list's tags before and after. Nothing changes until you say yes.
+
+```text
+For leads from each week since August, what share converted within 30 days? Compare it with the month before.
+```
+
+## Owner: weekly review and AI calls
+
+**Needs:** **CRM: Reports** at View. Some reports, such as revenue, are for admins only. For AI calling campaigns: **CRM: Calls → AI calling campaigns (admins only)**, turned on separately.
+
+*Ask your admin to turn on:* CRM: Reports and CRM: Calls (View), and AI calling campaigns for the Admin role.
+
+```text
+Give me this week's review: leads by source, conversions, response times by counsellor, follow-ups overdue and anything unusual. Compare with last week.
+```
+
+```text
+How did yesterday's AI calls go? How many connected, and which leads asked for a callback?
+```
+
+```text
+AI-call every new lead from yesterday that nobody has spoken to yet. Show me who's included, who's left out and why, the estimated credits and when it will finish.
+```
+The preview drops leads that should not be called (for example opted out, already converted, or contacted very recently) and gives the reason for each. One yes starts the whole run, once. See [Confirmations](/mcp-server/usage/confirmations).
+
+```text
+Cancel the calls from this morning's AI run that haven't started yet.
+```
+
+<Warning>
+AI calls and messages reach real people and can use calling credits. Read every preview. If a list looks too long, ask the AI app to narrow it before you say yes.
+</Warning>

@@ -1,0 +1,29 @@
+{
+    "tabs": {
+        "selectBatch": "Select Batch",
+        "selectIndividually": "Select Individually"
+    },
+    "search": {
+        "placeholder": "Search courses or batches…",
+        "clearAriaLabel": "Clear search"
+    },
+    "emptyStates": {
+        "selectSessionFirst": "Select a session above to choose participants.",
+        "noSearchMatches": "No courses or batches match your search.",
+        "noCoursesAvailable": "No courses available for this session."
+    },
+    "actions": {
+        "clear": "Clear",
+        "selectAllInSession": "Select all in this session"
+    },
+    "summary": {
+        "selectedOfTotalBatches": "{{selected}} of {{total}} batches",
+        "courseCount_one": "{{count}} course",
+        "courseCount_other": "{{count}} courses",
+        "withSelections_one": "{{count}} with selection",
+        "withSelections_other": "{{count}} with selections",
+        "batchCount_one": "{{count}} batch",
+        "batchCount_other": "{{count}} batches",
+        "footerSelected": "{{batchPart}} across {{coursePart}} selected"
+    }
+}

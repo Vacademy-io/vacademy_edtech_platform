@@ -1,0 +1,47 @@
+{
+    "trigger": {
+        "title": "Add a source video clip",
+        "ariaLabel": "Add source video"
+    },
+    "heading": {
+        "title": "Source videos",
+        "description": "Demo footage or podcast audio used inside the generated video."
+    },
+    "processing": {
+        "label": "Processing"
+    },
+    "available": {
+        "label": "Available",
+        "allSelected": "All available videos selected.",
+        "durationSeconds": "{{seconds}}s"
+    },
+    "limit": {
+        "message_one": "Max {{count}} source.",
+        "message_other": "Max {{count}} sources."
+    },
+    "modes": {
+        "demo": "Demo",
+        "podcast": "Podcast",
+        "photo": "Photo",
+        "screenshot": "Screenshot",
+        "diagram": "Diagram"
+    },
+    "upload": {
+        "namePlaceholder": "Video name",
+        "typeLabel": "Type:",
+        "confirm": "Upload & Index",
+        "uploading": "Uploading…",
+        "cancel": "Cancel",
+        "dropCta": "Upload video (≤500MB) or image (≤10MB)"
+    },
+    "errors": {
+        "videoTooLarge": "Video too large. Max 500MB.",
+        "imageTooLarge": "Image too large. Max 10MB.",
+        "unsupportedFormat": "Unsupported format. Use MP4/WebM/MOV or PNG/JPEG/WebP.",
+        "uploadFailed": "Upload failed",
+        "urlFailed": "Failed to get URL"
+    },
+    "success": {
+        "uploaded": "\"{{name}}\" uploaded — indexing started"
+    }
+}

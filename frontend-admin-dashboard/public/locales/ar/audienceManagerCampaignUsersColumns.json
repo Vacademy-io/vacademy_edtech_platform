@@ -1,0 +1,17 @@
+{
+    "columns": {
+        "serialNumber": "الرقم التسلسلي",
+        "details": "التفاصيل",
+        "status": "الحالة",
+        "reachOutIn": "التواصل خلال",
+        "followUpAt": "المتابعة في",
+        "counsellor": "المستشار",
+        "activityNotes": "النشاط والملاحظات",
+        "submittedOn": "تاريخ الإرسال"
+    },
+    "actions": {
+        "reassign": "إعادة التعيين",
+        "assign": "تعيين",
+        "deleteLead": "حذف العميل المحتمل"
+    }
+}

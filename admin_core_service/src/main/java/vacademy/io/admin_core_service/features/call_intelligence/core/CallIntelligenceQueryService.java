@@ -58,9 +58,24 @@ public class CallIntelligenceQueryService {
         return repo.findByCallLogId(callLogId).map(row -> CallTranscriptDto.builder()
                 .callLogId(callLogId)
                 .detectedLanguage(row.getDetectedLanguage())
-                .sourceText(fetchText(row.getSourceTextKey()))
+                .sourceText(firstNonBlank(fetchText(row.getSourceTextKey()), inlineTranscript(row)))
                 .englishText(fetchText(row.getEnglishTextKey()))
                 .build());
+    }
+
+    /**
+     * Since 2026-09-11 the pipeline transcribes through OpenRouter, which returns
+     * text rather than a file: the transcript then lives in analysis_json
+     * ("transcript") and there is no S3 artifact to fetch.
+     */
+    private static String inlineTranscript(CallIntelligence row) {
+        Map<String, Object> a = row.getAnalysisJson();
+        Object t = a == null ? null : a.get("transcript");
+        return t == null ? null : String.valueOf(t);
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        return (a != null && !a.isBlank()) ? a : b;
     }
 
     private String fetchText(String url) {

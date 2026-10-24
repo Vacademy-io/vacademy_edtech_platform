@@ -1,6 +1,7 @@
 import { STUDENT_RE_REGISTER_OPERATION } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export interface ReRegisterStudentRequestType {
@@ -15,6 +16,7 @@ export interface ReRegisterStudentRequestType {
 
 export const useReRegisterStudent = () => {
     const queryClient = useQueryClient();
+    const { t } = useTranslation('manageStudentsReRegisterStudentService');
 
     return useMutation({
         mutationFn: async ({ request }: { request: ReRegisterStudentRequestType }) => {
@@ -28,7 +30,7 @@ export const useReRegisterStudent = () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
         },
         onError: (error) => {
-            toast.error(error.message || 'Failed to re-register student');
+            toast.error(error.message || t('reRegisterError'));
         },
     });
 };

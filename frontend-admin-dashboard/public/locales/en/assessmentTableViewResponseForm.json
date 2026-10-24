@@ -1,0 +1,17 @@
+{
+    "table": {
+        "headers": {
+            "number": "#",
+            "view": "View",
+            "options": "Options",
+            "marks": "Marks"
+        },
+        "questionNumber": "Q{{number}}.",
+        "viewButton": "View",
+        "optionFallback": "Option {{label}}",
+        "marksPlaceholder": "-"
+    },
+    "actions": {
+        "submit": "Submit"
+    }
+}

@@ -1,0 +1,83 @@
+{
+    "actions": {
+        "resetAll": "Reset All",
+        "saving": "Saving...",
+        "saveChanges": "Save Changes"
+    },
+    "unsavedChanges": "You have unsaved changes. Don't forget to save your updates.",
+    "courseInformation": {
+        "heading": "Course Information Requirements",
+        "descriptionRequired": "Description Required",
+        "enablePopularTopics": "Enable Popular Topics",
+        "learnerOutcomesRequired": "Learner Outcomes Required",
+        "aboutCourseRequired": "About Course Required",
+        "targetAudienceRequired": "Target Audience Required",
+        "previewImageRequired": "Preview Image Required",
+        "enableBannerImage": "Enable Banner Image",
+        "bannerImageRequired": "Banner Image Required",
+        "enableCourseMedia": "Enable Course Media"
+    },
+    "courseStructure": {
+        "heading": "Course Structure Configuration",
+        "defaultDepth": "Default Course Depth",
+        "depthOption_one": "{{count}} Level",
+        "depthOption_other": "{{count}} Levels",
+        "fixCourseDepth": "Fix Course Depth",
+        "enableSessions": "Enable Sessions",
+        "enableLevels": "Enable Levels"
+    },
+    "catalogueSettings": {
+        "heading": "Catalogue & Publishing Settings",
+        "catalogueMode": "Catalogue Mode",
+        "modeAsk": "Ask Before Publishing",
+        "modeAuto": "Auto Publish",
+        "modeManual": "Manual Only",
+        "autoPublish": "Auto Publish to Catalogue",
+        "filterWizard": {
+            "heading": "Course Filter Wizard (Learner Catalogue)",
+            "description": "The first time a learner opens the course catalogue, ask them to pick filters step by step, then show only the matching courses.",
+            "stepsToAsk": "Steps to ask",
+            "order": "Learners are asked in this fixed order — {{level}}, then {{session}}, then {{tag}} — skipping any step left unchecked.",
+            "requireCompletion": "Require completion (no skip)"
+        }
+    },
+    "viewSettings": {
+        "heading": "Course View & Display Settings",
+        "defaultViewMode": "Default View Mode",
+        "outlineMode": "Outline Mode",
+        "structureMode": "Course Structure Mode",
+        "defaultOutlineState": "Default Outline State",
+        "expanded": "Expanded",
+        "collapsed": "Collapsed",
+        "copiedSlideStatus": "Publish Status for Copied Slides",
+        "keepDraft": "Keep as Draft (default)",
+        "inheritSource": "Match the original slide",
+        "alwaysPublished": "Always publish",
+        "copiedSlideDescription": "When a slide is copied to another course, choose whether the copy stays a draft, matches the original's published state, or is always published. Draft copies are not visible to learners.",
+        "showContentDescriptions": "Show Module & Chapter Descriptions",
+        "showContentDescriptionsHint": "Display the description entered for a module or chapter under its title on the content cards — in Course Details and in the learner app. Turn off to keep those cards title-only."
+    },
+    "permissions": {
+        "heading": "User Permissions & Access Control",
+        "allowLearnersCreate": "Allow Learners to Create Courses",
+        "allowPaymentChange": "Allow Payment Option Changes",
+        "allowDiscountChange": "Allow Discount Option Changes",
+        "allowReferralChange": "Allow Referral Option Changes",
+        "defaultCourseFilter": "Default Course Filter (Explore Courses)",
+        "selectDefaultFilter": "Select default filter",
+        "filterAll": "Show all (no default filter)",
+        "filterParentsOnly": "Only parent batches (PARENTS_ONLY)",
+        "filterChildrenOnly": "Only child batches (CHILDREN_ONLY)",
+        "filterHint": "Controls whether Explore Courses shows only parent batches, only child batches, or all batches by default."
+    },
+    "enrollmentNotifications": {
+        "heading": "Enrollment Notifications",
+        "description": "Controls which notification toggles admins see in the bulk enrollment dialog. When a toggle is turned off here, the corresponding option is hidden in the dialog AND forced to off in the API request — so no emails go out by accident.",
+        "showNotifyLearners": "Show \"Notify Learners\" in bulk enroll",
+        "showSendCredentials": "Show \"Send Credentials\" in bulk enroll"
+    },
+    "footerNote": {
+        "label": "Note:",
+        "text": "Changes will be applied across your entire institute once saved. All course creation flows will use these updated settings."
+    }
+}

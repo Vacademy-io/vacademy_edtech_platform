@@ -1,0 +1,39 @@
+{
+    "schema": {
+        "titleRequired": "शीर्षक आवश्यक है",
+        "dateRequired": "तारीख आवश्यक है",
+        "startTimeRequired": "प्रारंभ समय आवश्यक है",
+        "durationRequired": "अवधि आवश्यक है",
+        "emailInvalid": "एक मान्य ईमेल दर्ज करें"
+    },
+    "durationOption_one": "{{count}} मिनट",
+    "durationOption_other": "{{count}} मिनट",
+    "toast": {
+        "missingInstitute": "इंस्टिट्यूट संदर्भ अनुपलब्ध है",
+        "scheduled": "मीटिंग शेड्यूल की गई",
+        "scheduleFailed": "मीटिंग शेड्यूल करने में विफल। पुनः प्रयास करें।"
+    },
+    "heading": "नई मीटिंग",
+    "titleLabel": "शीर्षक",
+    "titlePlaceholder": "मीटिंग का शीर्षक",
+    "dateLabel": "तारीख",
+    "startTimeLabel": "प्रारंभ समय",
+    "durationLabel": "अवधि",
+    "participantsLabel": "प्रतिभागी",
+    "inviteeFromLead": "आमंत्रित व्यक्ति (लीड से)",
+    "inviteeExternal": "बाहरी आमंत्रित व्यक्ति (वैकल्पिक)",
+    "prefilledFromLead": "लीड से पहले से भरा गया — केवल तभी संपादित करें जब विवरण गलत हों।",
+    "inviteeNameLabel": "आमंत्रित व्यक्ति का नाम",
+    "inviteeNamePlaceholder": "पूरा नाम",
+    "inviteeEmailLabel": "आमंत्रित व्यक्ति का ईमेल",
+    "inviteeEmailPlaceholder": "name@example.com",
+    "inviteePhoneLabel": "आमंत्रित व्यक्ति का फोन",
+    "inviteePhonePlaceholder": "फोन नंबर",
+    "allocateMeetTitle": "Google Meet लिंक आवंटित करें",
+    "allocateMeetDescription": "इस मीटिंग में स्वचालित रूप से एक Meet लिंक जोड़ें",
+    "actions": {
+        "cancel": "रद्द करें",
+        "scheduling": "शेड्यूल किया जा रहा है...",
+        "scheduleMeeting": "मीटिंग शेड्यूल करें"
+    }
+}

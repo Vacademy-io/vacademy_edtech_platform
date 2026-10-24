@@ -1,0 +1,59 @@
+{
+    "header": {
+        "title": "WhatsApp Settings",
+        "subtitle": "Configure and switch between WhatsApp providers for your institute"
+    },
+    "loading": "Loading WhatsApp settings...",
+    "errors": {
+        "loadStatus": "Failed to load WhatsApp provider settings",
+        "switchProvider": "Failed to switch provider",
+        "saveCredentials": "Failed to save credentials",
+        "fillAllFields": "Please fill in all fields"
+    },
+    "toasts": {
+        "switchedProvider": "Switched active provider to {{provider}}",
+        "credentialsSaved": "{{provider}} credentials saved"
+    },
+    "banner": {
+        "activeProviderLabel": "Active Provider:",
+        "activeProviderDescription": "All outgoing WhatsApp messages are routed through this provider"
+    },
+    "providers": {
+        "COMBOT": {
+            "name": "Combot",
+            "description": "Com.bot WhatsApp Business API provider"
+        },
+        "WATI": {
+            "name": "WATI",
+            "description": "WATI WhatsApp Business API provider"
+        },
+        "META": {
+            "name": "Meta",
+            "description": "Direct Meta WhatsApp Cloud API"
+        }
+    },
+    "card": {
+        "radio": {
+            "configureFirst": "Configure credentials first",
+            "currentlyActive": "Currently active",
+            "switchTo": "Switch to {{provider}}"
+        },
+        "badge": {
+            "active": "Active",
+            "configured": "Configured",
+            "notConfigured": "Not Configured"
+        },
+        "configure": "Configure",
+        "credentialsTitle": "Provider Credentials",
+        "edit": "Edit"
+    },
+    "editMode": {
+        "updateDescription": "Update your provider credentials below.",
+        "enterDescription": "Enter your provider credentials to configure this provider.",
+        "cancel": "Cancel",
+        "saveCredentials": "Save Credentials"
+    },
+    "info": {
+        "note": "<0>Note:</0> Switching the active provider instantly routes all outgoing WhatsApp messages through the selected provider. Make sure the same message templates exist on the new provider before switching. Inbound messages (user replies) are handled automatically via the smart fallback system."
+    }
+}

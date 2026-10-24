@@ -6,6 +6,8 @@
  */
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -23,6 +25,8 @@ import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-compone
 import { useEditorStore } from '../-stores/editor-store';
 import { ImageUploadField } from './ImageUploadField';
 import { AiIntakeChat, IntakeResult } from './AiIntakeChat';
+import { FigmaLinkNotice } from './FigmaLinkNotice';
+import { isFigmaUrl } from '../-utils/figma-link';
 import { renderComponentPreview } from './ComponentPreviews';
 import {
     generateAiPage, estimateAiPageCredits, generateAiImage, generateAiSite,
@@ -35,13 +39,13 @@ import { Component, Page } from '../-types/editor-types';
 // with no chip for it the brief step renders with nothing selected and the
 // admin has to pick something else — silently swapping the archetype that
 // guarantees every offering gets its own block for one that does not.
-const PAGE_TYPES = [
-    { key: 'homepage', label: 'Homepage' },
-    { key: 'courses', label: 'All courses' },
-    { key: 'course-landing', label: 'Course landing' },
-    { key: 'about', label: 'About us' },
-    { key: 'admissions', label: 'Admissions' },
-    { key: 'contact', label: 'Contact' },
+const buildPageTypes = (t: TFunction) => [
+    { key: 'homepage', label: t('pageTypes.homepage') },
+    { key: 'courses', label: t('pageTypes.courses') },
+    { key: 'course-landing', label: t('pageTypes.courseLanding') },
+    { key: 'about', label: t('pageTypes.about') },
+    { key: 'admissions', label: t('pageTypes.admissions') },
+    { key: 'contact', label: t('pageTypes.contact') },
 ];
 
 /** "Try another direction" re-runs generation with a distinct design angle. */
@@ -78,10 +82,12 @@ export const AiPageWizard = ({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) => {
+    const { t } = useTranslation('managePagesAiPageWizard');
     const instituteId = getCurrentInstituteId();
     const { instituteDetails } = useInstituteDetailsStore();
     const { config, addPage, updateGlobalSettings } = useEditorStore();
     const { toast } = useToast();
+    const pageTypes = useMemo(() => buildPageTypes(t), [t]);
 
     const [step, setStep] = useState<Step>('chat');
     const [brief, setBrief] = useState('');
@@ -91,6 +97,14 @@ export const AiPageWizard = ({
     const [pendingUrl, setPendingUrl] = useState('');
     const [inspiration, setInspiration] = useState<string[]>([]);
     const [sourceUrl, setSourceUrl] = useState('');
+    const [referenceUrl, setReferenceUrl] = useState('');
+    // A figma.com link is Figma's sign-in page to our server: it is never sent
+    // (the server would screenshot / scrape a login form) and the field says
+    // what works instead.
+    const sourceIsFigma = isFigmaUrl(sourceUrl);
+    const referenceIsFigma = isFigmaUrl(referenceUrl);
+    const sourceUrlToSend = sourceIsFigma ? undefined : sourceUrl.trim() || undefined;
+    const referenceUrlToSend = referenceIsFigma ? undefined : referenceUrl.trim() || undefined;
     const [pendingInsp, setPendingInsp] = useState('');
     // The brief step was reached from the assistant rather than typed by hand,
     // so its fields are a proposal to review — chiefly the page type.
@@ -179,8 +193,9 @@ export const AiPageWizard = ({
                 institute_name: (instituteDetails as any)?.institute_name || undefined,
                 images,
                 inspiration_image_urls: inspiration,
+                reference_url: referenceUrlToSend,
                 global_settings: keepTheme ? siteTheme : undefined,
-                source_url: sourceUrl.trim() || undefined,
+                source_url: sourceUrlToSend,
                 courses: useRealData ? courseSnapshot : [],
                 terminology,
                 direction,
@@ -196,8 +211,8 @@ export const AiPageWizard = ({
         onError: (err: any) => {
             const detail = err?.response?.data?.detail;
             toast({
-                title: 'Generation failed',
-                description: typeof detail === 'string' ? detail : 'Please try again.',
+                title: t('toast.generationFailedTitle'),
+                description: typeof detail === 'string' ? detail : t('toast.tryAgain'),
                 variant: 'destructive',
             });
         },
@@ -208,7 +223,7 @@ export const AiPageWizard = ({
         onSuccess: (res) => setLogoOptions(res.urls),
         onError: (err: any) => {
             const detail = err?.response?.data?.detail;
-            toast({ title: 'Logo generation failed', description: typeof detail === 'string' ? detail : 'Please try again.', variant: 'destructive' });
+            toast({ title: t('toast.logoGenerationFailedTitle'), description: typeof detail === 'string' ? detail : t('toast.tryAgain'), variant: 'destructive' });
         },
     });
 
@@ -221,13 +236,19 @@ export const AiPageWizard = ({
                 images,
                 courses: useRealData ? courseSnapshot : [],
                 terminology,
-                source_url: sourceUrl.trim() || undefined,
+                source_url: sourceUrlToSend,
+                // Same reference + theme contract as the single-page build: the
+                // site call silently dropped both before, so a whole-site run
+                // ignored the screenshots and always proposed a fresh theme.
+                inspiration_image_urls: inspiration,
+                reference_url: referenceUrlToSend,
+                global_settings: keepTheme ? siteTheme : undefined,
                 auto_images: autoImages,
             }),
         onSuccess: (data) => { setSiteResult(data); setStep('review'); },
         onError: (err: any) => {
             const detail = err?.response?.data?.detail;
-            toast({ title: 'Site generation failed', description: typeof detail === 'string' ? detail : 'Please try again.', variant: 'destructive' });
+            toast({ title: t('toast.siteGenerationFailedTitle'), description: typeof detail === 'string' ? detail : t('toast.tryAgain'), variant: 'destructive' });
         },
     });
 
@@ -242,7 +263,10 @@ export const AiPageWizard = ({
             routes.add(route);
             addPage({ id: sp.page.id, route, title: sp.page.title || undefined, components: sp.page.components as Component[] } as Page);
         }
-        toast({ title: `${siteResult.pages.length} pages added`, description: 'Review on the canvas, then Save and Publish.' });
+        toast({
+            title: t('toast.pagesAddedTitle', { count: siteResult.pages.length }),
+            description: t('toast.pagesAddedDescription'),
+        });
         handleClose(false);
     };
 
@@ -278,6 +302,7 @@ export const AiPageWizard = ({
         setImages([]);
         setInspiration([]);
         setSourceUrl('');
+        setReferenceUrl('');
         setPendingInsp('');
         setFromAssistant(false);
         setDirectionIdx(-1);
@@ -324,8 +349,8 @@ export const AiPageWizard = ({
         } as Page;
         addPage(page);
         toast({
-            title: 'Page added',
-            description: 'Review it on the canvas, then Save and Publish when ready.',
+            title: t('toast.pageAddedTitle'),
+            description: t('toast.pageAddedDescription'),
         });
         handleClose(false);
     };
@@ -343,7 +368,7 @@ export const AiPageWizard = ({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Sparkle className="size-4 text-primary-500" weight="duotone" />
-                        Create page with AI
+                        {t('dialogTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -369,57 +394,54 @@ export const AiPageWizard = ({
                                through --primary-500, so 600 keeps index.css's orange default and
                                rendered orange-on-green for a green-branded institute. */
                             <p className="rounded-lg border border-primary-200 bg-primary-50 p-2.5 text-caption text-primary-500">
-                                The assistant filled this in from your chat. Check the page type below — it
-                                decides how the page is structured — then edit anything before continuing.
+                                {t('brief.assistantBanner')}
                             </p>
                         )}
                         <div>
-                            <Label className="text-xs">What kind of page?</Label>
+                            <Label className="text-xs">{t('brief.pageTypeQuestion')}</Label>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                {PAGE_TYPES.map((t) => (
+                                {pageTypes.map((pt) => (
                                     <button
-                                        key={t.key}
-                                        onClick={() => setPageType(t.key)}
+                                        key={pt.key}
+                                        onClick={() => setPageType(pt.key)}
                                         className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                                            pageType === t.key
+                                            pageType === pt.key
                                                 ? 'border-primary-400 bg-primary-50 text-primary-500'
                                                 : 'border-gray-200 text-gray-600 hover:border-gray-300'
                                         }`}
                                     >
-                                        {t.label}
+                                        {pt.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
                         <div>
-                            <Label className="text-xs">Tell us about this page</Label>
+                            <Label className="text-xs">{t('brief.briefLabel')}</Label>
                             <Textarea
                                 value={brief}
                                 onChange={(e) => setBrief(e.target.value)}
                                 rows={6}
-                                placeholder="e.g. A landing page for our Arduino course aimed at school students — highlight hands-on projects, the free trial class, and parent testimonials. Friendly but premium tone."
+                                placeholder={t('brief.briefPlaceholder')}
                                 className="mt-1.5"
                             />
                             <p className="mt-1 text-caption text-gray-400">
-                                Write in any language — the page copy will match it.
+                                {t('brief.anyLanguageHint')}
                             </p>
                             {/* The images step sits behind a Next button that is disabled until a
                                 brief exists, so uploading looked impossible from this route. Say
                                 where the uploads are, and why the button is greyed out. */}
                             <p className="mt-1 text-caption text-gray-400">
                                 {brief.trim()
-                                    ? 'Next step: upload your logo, photos, and screenshots of sites you want this to look like.'
-                                    : 'Add a brief to continue — your logo, photos and inspiration screenshots come next.'}
+                                    ? t('brief.nextHintReady')
+                                    : t('brief.nextHintEmpty')}
                             </p>
                         </div>
                         {siteTheme && (
                             <div className="flex items-center justify-between rounded border bg-gray-50 p-3">
                                 <div>
-                                    <Label className="text-xs">Match my current site theme</Label>
+                                    <Label className="text-xs">{t('brief.matchThemeLabel')}</Label>
                                     <p className="text-caption text-gray-400">
-                                        Keeps the colours and fonts your other pages already use. Turn off
-                                        only if you want this page to propose its own — that would restyle
-                                        the whole site when you accept it.
+                                        {t('brief.matchThemeDescription')}
                                     </p>
                                 </div>
                                 <Switch checked={keepTheme} onCheckedChange={setKeepTheme} />
@@ -427,18 +449,18 @@ export const AiPageWizard = ({
                         )}
                         <div className="flex items-center justify-between rounded border bg-gray-50 p-3">
                             <div>
-                                <Label className="text-xs">Use my real {terminology.course.toLowerCase()} data</Label>
+                                <Label className="text-xs">{t('brief.useRealDataLabel', { course: terminology.course.toLowerCase() })}</Label>
                                 <p className="text-caption text-gray-400">
-                                    Copy will reference your actual offerings ({courseSnapshot.length} found)
+                                    {t('brief.useRealDataDescription', { count: courseSnapshot.length })}
                                 </p>
                             </div>
                             <Switch checked={useRealData} onCheckedChange={setUseRealData} />
                         </div>
                         <div className="flex items-center justify-between rounded border bg-gray-50 p-3">
                             <div>
-                                <Label className="text-xs">Generate a whole site</Label>
+                                <Label className="text-xs">{t('brief.wholeSiteLabel')}</Label>
                                 <p className="text-caption text-gray-400">
-                                    Home, About &amp; Contact with one consistent theme (uses more credits)
+                                    {t('brief.wholeSiteDescription')}
                                 </p>
                             </div>
                             <Switch checked={wholeSite} onCheckedChange={setWholeSite} />
@@ -449,8 +471,7 @@ export const AiPageWizard = ({
                 {step === 'assets' && (
                     <div className="space-y-3">
                         <p className="text-xs text-gray-500">
-                            Add photos, your logo, or banners — the AI places them where they fit.
-                            All optional.
+                            {t('assets.intro')}
                         </p>
                         {images.map((img, i) => (
                             <div key={i} className="flex items-center gap-2 rounded border bg-gray-50 p-2">
@@ -458,7 +479,7 @@ export const AiPageWizard = ({
                                 <Input
                                     className="flex-1"
                                     value={img.caption || ''}
-                                    placeholder="What is this image? (e.g. Our robotics lab)"
+                                    placeholder={t('assets.captionPlaceholder')}
                                     onChange={(e) => {
                                         const next = [...images];
                                         next[i] = { ...next[i]!, caption: e.target.value };
@@ -480,7 +501,7 @@ export const AiPageWizard = ({
                                 {/* Buffer the field (its onChange fires per keystroke for
                                     typed URLs) and append only on explicit Add. */}
                                 <ImageUploadField
-                                    label="Add image"
+                                    label={t('assets.addImageLabel')}
                                     value={pendingUrl}
                                     onChange={setPendingUrl}
                                     aiKind="photo"
@@ -494,7 +515,7 @@ export const AiPageWizard = ({
                                             setPendingUrl('');
                                         }}
                                     >
-                                        <Plus className="mr-1 size-4" /> Add this image
+                                        <Plus className="me-1 size-4" /> {t('assets.addThisImage')}
                                     </Button>
                                 )}
                             </div>
@@ -502,11 +523,11 @@ export const AiPageWizard = ({
 
                         {/* Logo generator */}
                         <div className="mt-4 space-y-2 rounded-lg border border-dashed border-gray-200 p-3">
-                            <p className="text-xs font-medium text-gray-700">Need a logo?</p>
+                            <p className="text-xs font-medium text-gray-700">{t('assets.logoHeading')}</p>
                             <Input
                                 value={logoPrompt}
                                 onChange={(e) => setLogoPrompt(e.target.value)}
-                                placeholder="Describe your brand (e.g. a rocket for a coding academy)"
+                                placeholder={t('assets.logoPromptPlaceholder')}
                             />
                             <Button
                                 size="sm"
@@ -515,8 +536,8 @@ export const AiPageWizard = ({
                                 disabled={!logoPrompt.trim() || logoMutation.isPending}
                             >
                                 {logoMutation.isPending
-                                    ? <><CircleNotch className="mr-1 size-4 animate-spin" /> Generating…</>
-                                    : <><Sparkle className="mr-1 size-4" weight="duotone" /> Generate 3 logo options</>}
+                                    ? <><CircleNotch className="me-1 size-4 animate-spin" /> {t('assets.generating')}</>
+                                    : <><Sparkle className="me-1 size-4" weight="duotone" /> {t('assets.generateLogoOptions')}</>}
                             </Button>
                             {logoOptions.length > 0 && (
                                 <div className="flex flex-wrap gap-2 pt-1">
@@ -524,12 +545,12 @@ export const AiPageWizard = ({
                                         <button
                                             key={i}
                                             onClick={() => {
-                                                setImages((im) => [...im, { url, kind: 'logo', caption: 'Logo' }]);
+                                                setImages((im) => [...im, { url, kind: 'logo', caption: t('assets.logoCaption') }]);
                                                 setLogoOptions([]);
                                                 setLogoPrompt('');
                                             }}
                                             className="rounded border border-gray-200 p-1 hover:border-primary-400"
-                                            title="Use this logo"
+                                            title={t('assets.useThisLogo')}
                                         >
                                             <img src={url} alt="" className="size-16 rounded object-contain" />
                                         </button>
@@ -540,22 +561,41 @@ export const AiPageWizard = ({
 
                         {/* Rebuild from an existing website — import real copy */}
                         <div className="mt-4 space-y-2 rounded-lg border border-dashed border-gray-200 p-3">
-                            <p className="text-xs font-medium text-gray-700">Rebuild from your current website (optional)</p>
+                            <p className="text-xs font-medium text-gray-700">{t('assets.rebuildHeading')}</p>
                             <p className="text-caption text-gray-400">
-                                We read your existing page&apos;s real copy and rebuild it here — import content you own.
+                                {t('assets.rebuildDescription')}
                             </p>
                             <Input
                                 value={sourceUrl}
                                 onChange={(e) => setSourceUrl(e.target.value)}
-                                placeholder="https://your-current-site.com"
+                                placeholder={t('assets.rebuildUrlPlaceholder')}
+                                aria-label={t('assets.rebuildHeading')}
                             />
+                            {sourceIsFigma && <FigmaLinkNotice />}
+                        </div>
+
+                        {/* Reference website — "make mine look like THAT": captured server-side */}
+                        <div className="mt-4 space-y-2 rounded-lg border border-dashed border-gray-200 p-3">
+                            <p className="text-xs font-medium text-gray-700">{t('assets.referenceHeading')}</p>
+                            <p className="text-caption text-gray-400">
+                                {keepTheme && siteTheme
+                                    ? t('assets.referenceDescriptionLocked')
+                                    : t('assets.referenceDescriptionFree')}
+                            </p>
+                            <Input
+                                value={referenceUrl}
+                                onChange={(e) => setReferenceUrl(e.target.value)}
+                                placeholder={t('assets.referenceUrlPlaceholder')}
+                                aria-label={t('assets.referenceHeading')}
+                            />
+                            {referenceIsFigma && <FigmaLinkNotice />}
                         </div>
 
                         {/* Inspiration screenshots — analysed for layout/mood only */}
                         <div className="mt-4 space-y-2 rounded-lg border border-dashed border-gray-200 p-3">
-                            <p className="text-xs font-medium text-gray-700">Screenshots of sites you like (optional)</p>
+                            <p className="text-xs font-medium text-gray-700">{t('assets.inspirationHeading')}</p>
                             <p className="text-caption text-gray-400">
-                                We read the layout &amp; style direction — never their content.
+                                {t('assets.inspirationDescription')}
                             </p>
                             {inspiration.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
@@ -575,7 +615,7 @@ export const AiPageWizard = ({
                             {inspiration.length < MAX_INSPIRATION_IMAGES && (
                                 <div className="space-y-2">
                                     <ImageUploadField
-                                        label="Add a screenshot"
+                                        label={t('assets.addScreenshotLabel')}
                                         value={pendingInsp}
                                         onChange={setPendingInsp}
                                     />
@@ -588,7 +628,7 @@ export const AiPageWizard = ({
                                                 setPendingInsp('');
                                             }}
                                         >
-                                            <Plus className="mr-1 size-4" /> Add this screenshot
+                                            <Plus className="me-1 size-4" /> {t('assets.addThisScreenshot')}
                                         </Button>
                                     )}
                                 </div>
@@ -600,40 +640,44 @@ export const AiPageWizard = ({
                 {step === 'confirm' && (
                     <div className="space-y-4">
                         <div className="rounded border bg-gray-50 p-3 text-xs text-gray-600">
-                            <p className="font-medium text-gray-800">Ready to generate</p>
+                            <p className="font-medium text-gray-800">{t('confirm.ready')}</p>
                             <p className="mt-1">
-                                {PAGE_TYPES.find((t) => t.key === pageType)?.label} · {images.length} image
-                                {images.length === 1 ? '' : 's'} ·{' '}
-                                {useRealData ? `real ${terminology.course.toLowerCase()} data` : 'generic content'}
+                                {pageTypes.find((pt) => pt.key === pageType)?.label} ·{' '}
+                                {t('confirm.imageCount', { count: images.length })} ·{' '}
+                                {useRealData
+                                    ? t('confirm.realDataSummary', { course: terminology.course.toLowerCase() })
+                                    : t('confirm.genericContentSummary')}
                             </p>
                         </div>
                         <div className="flex items-center justify-between rounded border bg-gray-50 p-3">
                             <div>
-                                <Label className="text-xs">Generate images automatically</Label>
+                                <Label className="text-xs">{t('confirm.generateImagesLabel')}</Label>
                                 <p className="text-caption text-gray-400">
-                                    AI creates a hero image + a few visuals (uses extra credits)
+                                    {t('confirm.generateImagesDescription')}
                                 </p>
                             </div>
                             <Switch checked={autoImages} onCheckedChange={setAutoImages} />
                         </div>
                         {estimate && (
                             <p className="text-xs text-gray-500">
-                                Estimated cost:{' '}
+                                {t('confirm.estimatedCostLabel')}{' '}
                                 <span className="font-semibold text-gray-800">
-                                    {estimate.estimated_credits ?? '—'} credits
+                                    {typeof estimate.estimated_credits === 'number'
+                                        ? t('confirm.estimatedCredits', { count: estimate.estimated_credits })
+                                        : t('confirm.estimatedCreditsUnknown')}
                                 </span>
                                 {typeof estimate.current_balance === 'number' && (
-                                    <> · balance {estimate.current_balance}</>
+                                    <> · {t('confirm.balance', { value: estimate.current_balance })}</>
                                 )}
                                 {estimate.sufficient === false && (
-                                    <span className="ml-1 font-medium text-red-600">— insufficient balance</span>
+                                    <span className="ms-1 font-medium text-red-600">{t('confirm.insufficientBalance')}</span>
                                 )}
                             </p>
                         )}
                         {busy && (
                             <div className="flex items-center gap-2 rounded border border-primary-100 bg-primary-50 p-3 text-xs text-primary-500">
                                 <CircleNotch className="size-4 animate-spin" />
-                                Designing sections and writing your copy — usually under a minute…
+                                {t('confirm.generating')}
                             </div>
                         )}
                     </div>
@@ -642,30 +686,36 @@ export const AiPageWizard = ({
                 {step === 'review' && siteResult && (
                     <div className="space-y-3">
                         <p className="text-xs text-gray-500">
-                            Site ready — <span className="font-medium text-gray-800">{siteResult.pages.length} pages</span>, one shared theme:
+                            {t('review.siteReady', { count: siteResult.pages.length })}
                         </p>
                         <ul className="space-y-1.5 rounded border bg-gray-50 p-3">
                             {siteResult.pages.map((sp) => (
                                 <li key={sp.page_type} className="flex items-center justify-between text-xs text-gray-700">
-                                    <span className="font-medium capitalize">{sp.page_type}</span>
-                                    <span className="text-caption text-gray-400">{sp.page.components.length} sections</span>
+                                    <span className="font-medium">
+                                        {pageTypes.find((pt) => pt.key === sp.page_type)?.label ?? sp.page_type}
+                                    </span>
+                                    <span className="text-caption text-gray-400">
+                                        {t('review.sectionsCount', { count: sp.page.components.length })}
+                                    </span>
                                 </li>
                             ))}
                         </ul>
                         {siteResult.global_settings && (
                             <div className="flex items-center justify-between rounded-lg border border-primary-100 bg-primary-50 p-3">
                                 <div className="min-w-0">
-                                    <p className="text-xs font-medium text-primary-600">Apply the matching site theme</p>
+                                    <p className="text-xs font-medium text-primary-600">{t('review.applyThemeLabel')}</p>
                                     <p className="text-caption text-gray-500">
-                                        {(siteResult.global_settings as any)?.theme?.preset || 'default'} ·{' '}
-                                        {String((siteResult.global_settings as any)?.fonts?.headingFamily || (siteResult.global_settings as any)?.fonts?.family || '').split(',')[0]}
+                                        {t('review.themeCaption', {
+                                            preset: (siteResult.global_settings as any)?.theme?.preset || t('review.defaultThemeLabel'),
+                                            font: String((siteResult.global_settings as any)?.fonts?.headingFamily || (siteResult.global_settings as any)?.fonts?.family || '').split(',')[0],
+                                        })}
                                     </p>
                                 </div>
                                 <Switch checked={applyTheme} onCheckedChange={setApplyTheme} />
                             </div>
                         )}
                         <p className="text-caption text-gray-400">
-                            Adds all pages as unsaved changes — review on the canvas, then Save and Publish.
+                            {t('review.siteAddNote')}
                         </p>
                     </div>
                 )}
@@ -685,14 +735,16 @@ export const AiPageWizard = ({
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                     >
-                                        Option {i + 1}
+                                        {t('review.optionTab', { index: i + 1 })}
                                     </button>
                                 ))}
                             </div>
                         )}
                         <p className="text-xs text-gray-500">
-                            Draft ready — <span className="font-medium text-gray-800">{result.page.title || 'Untitled page'}</span>{' '}
-                            · {result.page.components.length} sections
+                            {t('review.draftReady', {
+                                title: result.page.title || t('review.untitledPage'),
+                                sections: t('review.sectionsCount', { count: result.page.components.length }),
+                            })}
                         </p>
                         {/* LIVE mini-preview: the actual component previews rendered
                             with the proposed theme, scaled to fit the dialog. */}
@@ -725,8 +777,7 @@ export const AiPageWizard = ({
                                nothing they could act on. */
                             <details className="rounded-lg border border-warning-200 bg-warning-50 p-3">
                                 <summary className="cursor-pointer text-caption font-medium text-warning-700">
-                                    {result.warnings.length} thing{result.warnings.length === 1 ? '' : 's'} to
-                                    check before you publish
+                                    {t('review.warningsSummary', { count: result.warnings.length })}
                                 </summary>
                                 <ul className="mt-2 list-disc space-y-1 pl-4 text-caption text-warning-700">
                                     {result.warnings.slice(0, 8).map((w, i) => (
@@ -735,7 +786,7 @@ export const AiPageWizard = ({
                                 </ul>
                                 {result.warnings.length > 8 && (
                                     <p className="mt-1 pl-4 text-caption text-warning-600">
-                                        +{result.warnings.length - 8} more
+                                        {t('review.moreWarnings', { count: result.warnings.length - 8 })}
                                     </p>
                                 )}
                             </details>
@@ -743,18 +794,19 @@ export const AiPageWizard = ({
                         {result.global_settings && (
                             <div className="flex items-center justify-between rounded-lg border border-primary-100 bg-primary-50 p-3">
                                 <div className="min-w-0">
-                                    <p className="text-xs font-medium text-primary-600">Apply the matching site theme</p>
+                                    <p className="text-xs font-medium text-primary-600">{t('review.applyThemeLabel')}</p>
                                     <p className="text-caption text-gray-500">
-                                        {(result.global_settings as any)?.theme?.preset || 'default'} theme ·{' '}
-                                        {String((result.global_settings as any)?.fonts?.family || '').split(',')[0]} · sets colors &amp; fonts site-wide
+                                        {t('review.themeSummaryFull', {
+                                            preset: (result.global_settings as any)?.theme?.preset || t('review.defaultThemeLabel'),
+                                            font: String((result.global_settings as any)?.fonts?.family || '').split(',')[0],
+                                        })}
                                     </p>
                                 </div>
                                 <Switch checked={applyTheme} onCheckedChange={setApplyTheme} />
                             </div>
                         )}
                         <p className="text-caption text-gray-400">
-                            Accepting adds this page to your site as an unsaved change — review it on the
-                            canvas, then Save and Publish.
+                            {t('review.pageAddNote')}
                         </p>
                     </div>
                 )}
@@ -764,31 +816,31 @@ export const AiPageWizard = ({
                 <DialogFooter className="gap-2">
                     {step === 'chat' && (
                         <Button variant="ghost" className="text-gray-500" onClick={() => setStep('brief')}>
-                            Prefer a form? Use the quick brief
+                            {t('footer.preferForm')}
                         </Button>
                     )}
                     {step === 'brief' && (
                         <>
                             <Button variant="ghost" onClick={() => setStep('chat')}>
-                                <ArrowLeft className="mr-1 size-4" /> Assistant
+                                <ArrowLeft className="me-1 size-4" /> {t('footer.assistantBack')}
                             </Button>
                             <Button onClick={() => setStep('assets')} disabled={!brief.trim()}>
-                                Next: images
+                                {t('footer.nextImages')}
                             </Button>
                         </>
                     )}
                     {step === 'assets' && (
                         <>
                             <Button variant="ghost" onClick={() => setStep('brief')}>
-                                <ArrowLeft className="mr-1 size-4" /> Back
+                                <ArrowLeft className="me-1 size-4" /> {t('footer.back')}
                             </Button>
-                            <Button onClick={() => setStep('confirm')}>Next: generate</Button>
+                            <Button onClick={() => setStep('confirm')}>{t('footer.nextGenerate')}</Button>
                         </>
                     )}
                     {step === 'confirm' && (
                         <>
                             <Button variant="ghost" onClick={() => setStep('assets')} disabled={busy}>
-                                <ArrowLeft className="mr-1 size-4" /> Back
+                                <ArrowLeft className="me-1 size-4" /> {t('footer.back')}
                             </Button>
                             <Button
                                 onClick={() => (wholeSite ? siteMutation.mutate() : generateMutation.mutate(directionIdx >= 0 ? DIRECTIONS[directionIdx] : undefined))}
@@ -799,13 +851,13 @@ export const AiPageWizard = ({
                                 ) : (
                                     <Sparkle className="mr-1 size-4" />
                                 )}
-                                {wholeSite ? 'Generate site' : 'Generate page'}
+                                {wholeSite ? t('footer.generateSite') : t('footer.generatePage')}
                             </Button>
                         </>
                     )}
                     {step === 'review' && siteResult && (
                         <Button onClick={acceptSite} disabled={siteMutation.isPending}>
-                            <Plus className="mr-1 size-4" /> Add {siteResult.pages.length} pages to site
+                            <Plus className="me-1 size-4" /> {t('footer.addPagesToSite', { count: siteResult.pages.length })}
                         </Button>
                     )}
                     {step === 'review' && !siteResult && (
@@ -816,10 +868,10 @@ export const AiPageWizard = ({
                                 ) : (
                                     <ArrowsClockwise className="mr-1 size-4" />
                                 )}
-                                Try another direction
+                                {t('footer.tryAnotherDirection')}
                             </Button>
                             <Button onClick={acceptPage} disabled={busy}>
-                                <Plus className="mr-1 size-4" /> Add to site
+                                <Plus className="me-1 size-4" /> {t('footer.addToSite')}
                             </Button>
                         </>
                     )}

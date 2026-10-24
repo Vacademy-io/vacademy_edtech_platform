@@ -1,0 +1,27 @@
+{
+    "pageHeading": "Assessments",
+    "metaDescription": "This page shows all types of assessments that you can create here.",
+    "createAssessmentHeading": "Create Assessment",
+    "cards": {
+        "examination": {
+            "title": "Examination",
+            "description": "A Fixed-time assessment that goes live for a specific schedule, simulating real exam conditions."
+        },
+        "mock": {
+            "title": "Mock Assessment",
+            "description": "A practice assessment always available, with a fixed duration to replicate exam scenarios."
+        },
+        "practice": {
+            "title": "Practice Assessment",
+            "description": "An on-demand assessment with no time limits, allowing students to attempt it anytime."
+        },
+        "survey": {
+            "title": "Survey",
+            "description": "A set of questions for feedback or opinions, with no right or wrong answers."
+        },
+        "manualUploadExam": {
+            "title": "Manual Upload Exam",
+            "description": "Students download the question paper, solve offline, and upload answer sheets. Teachers check and assign marks manually."
+        }
+    }
+}

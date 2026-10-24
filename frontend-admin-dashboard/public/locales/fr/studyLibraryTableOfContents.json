@@ -1,0 +1,9 @@
+{
+    "block": {
+        "title": "Table des matières",
+        "subtitle": "Répertorie automatiquement les titres de votre document — cliquez sur l'un d'eux pour y accéder.",
+        "addHeading": "Ajouter un titre :",
+        "emptyState": "Aucun titre pour le moment. Ajoutez-en un ci-dessous — il apparaîtra ici et vous pourrez cliquer dessus pour y accéder.",
+        "jumpToHeadingTitle": "Cliquez pour accéder à ce titre"
+    }
+}

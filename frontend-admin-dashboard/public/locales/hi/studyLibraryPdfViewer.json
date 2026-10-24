@@ -1,0 +1,7 @@
+{
+    "failedToNavigateInitial": "प्रारंभिक पृष्ठ पर जाने में विफल",
+    "navigatedToPage": "पृष्ठ {{page}} पर पहुँच गए",
+    "failedToNavigate": "पृष्ठ पर जाने में विफल",
+    "noPdfUploaded": "इस स्लाइड के लिए अभी तक कोई PDF अपलोड नहीं की गई है।",
+    "loadingEllipsis": "लोड हो रहा है…"
+}

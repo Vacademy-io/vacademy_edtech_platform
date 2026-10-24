@@ -1,0 +1,68 @@
+{
+    "courseEnrollment": {
+        "configuration": {
+            "title": "{{course}} Configuration",
+            "previewBadge": "{{course}} Preview Mode",
+            "previewDescription": "Browse {{course}} structure. Enroll to access {{slides}}s and materials.",
+            "selectSession": "Select {{session}}",
+            "selectLevel": "Select {{level}}",
+            "noSessionsTitleAll": "No {{session}} available for this {{course}}",
+            "noSessionsTitleEnrolled": "You are not enrolled in any {{session}} for this {{course}}",
+            "noSessionsDescriptionAll": "This {{course}} may not have any active {{session}}s configured.",
+            "noSessionsDescriptionEnrolled": "Please contact your {{teacher}} or {{admin}} to get enrolled."
+        },
+        "certificate": {
+            "title": "Certificate available",
+            "description": "You can view or download your certificate now.",
+            "viewButton": "View Certificate"
+        },
+        "enrollButton": "Enroll"
+    },
+    "courseSidebar": {
+        "overviewTitle": "{{course}} Overview",
+        "errorLoadingCounts": "Error loading {{slides}}counts"
+    },
+    "chapterPath": {
+        "emptyModule": "Nothing to learn here yet. Check back soon!",
+        "slideState": {
+            "completed": "completed",
+            "current": "up next",
+            "locked": "locked",
+            "upcoming": "not started"
+        },
+        "slideAriaLabel": "{{title}} — {{state}}",
+        "enrollToStart": "Enroll to start learning",
+        "locked": "Locked",
+        "start": "Start",
+        "chapterTitle": "{{chapter}}: {{name}}",
+        "moduleComplete": "{{module}} complete!",
+        "finishLine": "Finish line",
+        "previousModule": "Previous {{module}}",
+        "nextModule": "Next {{module}}",
+        "moduleProgress": "{{module}} {{current}} of {{total}}",
+        "noSlidesYet": "This {{module}} has no {{slides}} yet."
+    },
+    "courseContent": {
+        "whatYoullLearn": "What you'll learn",
+        "aboutThisCourse": "About this {{course}}",
+        "whoShouldJoin": "Who should join",
+        "instructorsHeading": "{{teacher}}s"
+    },
+    "videoPlayer": {
+        "vimeoTitle": "Vimeo video player",
+        "youtubeTitle": "YouTube video player",
+        "unsupported": "Your browser does not support the video tag."
+    },
+    "certificateGeneration": {
+        "toast": {
+            "successTitle": "Certificate generated successfully!",
+            "successDescription": "You can now view your certificate.",
+            "error": "Failed to generate certificate. Please try again later."
+        }
+    },
+    "enrollmentActions": {
+        "toast": {
+            "updateFailed": "Failed to update enrollment status. Please refresh the page."
+        }
+    }
+}

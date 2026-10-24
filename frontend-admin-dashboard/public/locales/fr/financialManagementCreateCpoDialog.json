@@ -1,0 +1,92 @@
+{
+    "dialog": {
+        "eyebrow": "Créer un plan",
+        "title": "Nouveau plan de frais"
+    },
+    "summary": {
+        "feeTypes": "Types de frais",
+        "totalAmount": "Montant total",
+        "paymentDates": "Dates de paiement"
+    },
+    "classSelect": {
+        "label": "Sélectionner la classe",
+        "placeholder": "Sélectionner des classes...",
+        "searchPlaceholder": "Rechercher des classes...",
+        "noClasses": "Aucune classe disponible",
+        "noMatch": "Aucune classe ne correspond à votre recherche",
+        "selectedBadge_one": "{{count}} classe sélectionnée",
+        "selectedBadge_many": "{{count}} classe sélectionnée",
+        "selectedBadge_other": "{{count}} classes sélectionnées",
+        "selectedSummary_one": "{{count}} classe sélectionnée",
+        "selectedSummary_many": "{{count}} classe sélectionnée",
+        "selectedSummary_other": "{{count}} classes sélectionnées"
+    },
+    "packageName": {
+        "label": "Nom du forfait",
+        "placeholder": "ex. Plan de frais Elite 2026"
+    },
+    "status": {
+        "label": "Statut",
+        "active": "Actif",
+        "draft": "Brouillon"
+    },
+    "approval": {
+        "label": "Inscrire les apprenants sur approbation",
+        "description": "Lorsque cette option est activée, les apprenants qui s'inscrivent via ce plan attendent l'approbation de l'administrateur avant d'accéder au cours."
+    },
+    "feeType": {
+        "remove": "Supprimer",
+        "defaultName": "Type de frais {{index}}",
+        "installmentCount_one": "{{count}} versement",
+        "installmentCount_many": "{{count}} versement",
+        "installmentCount_other": "{{count}} versements",
+        "nameLabel": "Nom des frais",
+        "namePlaceholder": "ex. Frais de scolarité",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Brève description",
+        "totalAmountLabel": "Montant total (₹)",
+        "amountPlaceholder": "ex. 50000",
+        "hasInstallments": "Paiement échelonné",
+        "refundable": "Remboursable",
+        "latePenalty": "Pénalité de retard",
+        "penaltyPlaceholder": "%",
+        "paymentFrequency": "Fréquence de paiement",
+        "presetMultiplier": "({{count}}x)",
+        "installmentCountPlaceholder": "Nombre de versements",
+        "columnIndex": "#",
+        "columnAmount": "Montant (₹)",
+        "columnStartDate": "Date de début",
+        "columnEndDate": "Date de fin",
+        "columnDueDate": "Date d'échéance",
+        "remainingToAllocate": "₹{{amount}} restant à allouer",
+        "exceedsTotal": "Dépasse le total de ₹{{amount}}",
+        "total": "Total"
+    },
+    "presets": {
+        "installment": {
+            "annual": "Annuel",
+            "halfYearly": "Semestriel",
+            "quarterly": "Trimestriel",
+            "monthly": "Mensuel",
+            "custom": "Personnalisé"
+        },
+        "feeType": {
+            "tuitionLabel": "Frais de scolarité",
+            "tuitionDescription": "Frais de scolarité réguliers pour l'année académique",
+            "examLabel": "Frais d'examen",
+            "examDescription": "Frais d'examen et d'évaluation",
+            "libraryLabel": "Frais de bibliothèque",
+            "libraryDescription": "Frais d'accès et de ressources de bibliothèque",
+            "transportLabel": "Frais de transport",
+            "transportDescription": "Frais de transport scolaire",
+            "hostelLabel": "Frais d'internat",
+            "hostelDescription": "Frais d'hébergement en internat",
+            "labLabel": "Frais de laboratoire",
+            "labDescription": "Frais d'utilisation et de matériel de laboratoire"
+        }
+    },
+    "addFeeType": "Ajouter un type de frais",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "savePackage": "Enregistrer le forfait"
+}

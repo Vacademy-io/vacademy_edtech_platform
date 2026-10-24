@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MermaidDiagram } from './MermaidDiagram';
 import { extractMermaidDiagrams, MermaidDiagramInfo } from '../utils/mermaidExtractor';
 
@@ -139,6 +140,7 @@ export const DocumentWithMermaidSimple: React.FC<DocumentWithMermaidProps> = ({
     htmlContent,
     className = '',
 }) => {
+    const { t } = useTranslation('studyLibraryDocumentWithMermaid');
     const [sections, setSections] = useState<Array<{ type: 'html' | 'mermaid'; content: string }>>([]);
     const [hasError, setHasError] = useState(false);
 
@@ -407,7 +409,7 @@ export const DocumentWithMermaidSimple: React.FC<DocumentWithMermaidProps> = ({
                             }}
                         >
                             <div style={{ maxWidth: '100%', width: '100%' }}>
-                                <React.Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading diagram...</div>}>
+                                <React.Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>{t('loadingDiagram')}</div>}>
                                     <MermaidDiagram
                                         code={section.content}
                                         className="my-4"

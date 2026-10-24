@@ -1,0 +1,91 @@
+{
+    "ruleTypes": {
+        "role": "Tous ceux qui ont un rôle",
+        "packageSession": "Groupes spécifiques",
+        "packageSessionSpecific": "{{batchNounPlural}} spécifiques",
+        "user": "Personnes spécifiques",
+        "tag": "Personnes avec des étiquettes",
+        "audience": "Une audience de campagne",
+        "customFieldFilter": "Personnes correspondant aux valeurs de champ"
+    },
+    "removeAudience": "Supprimer l'audience {{index}}",
+    "role": {
+        "label": "Rôle",
+        "placeholder": "Choisir un rôle",
+        "admins": "Administrateurs"
+    },
+    "packageSession": {
+        "orgRoleLabel": "Qui, au sein de la sous-organisation ?",
+        "orgRolePlaceholder": "Choisir Administrateur ou Apprenant",
+        "orgRoleLearners": "Apprenants",
+        "orgRoleAdmins": "Administrateurs",
+        "orgRoleHint": "Un ou plusieurs {{batchNounPlural}} sélectionnés appartiennent à une sous-organisation, ce qui nécessite un rôle explicite."
+    },
+    "user": {
+        "label": "Identifiants ou e-mails des utilisateurs",
+        "placeholder": "Collez des identifiants ou e-mails, séparés par des virgules",
+        "add": "Ajouter",
+        "remove": "Supprimer {{id}}"
+    },
+    "tag": {
+        "label": "Étiquettes",
+        "scopeAll": "Toutes les étiquettes",
+        "scopeDefault": "Étiquettes par défaut",
+        "scopeInstitute": "Étiquettes de l'institut",
+        "loading": "Chargement des étiquettes…",
+        "placeholder": "Sélectionner une ou plusieurs étiquettes",
+        "hintPrefix": "Toute personne portant",
+        "hintAny": "l'une",
+        "hintSuffix": "des étiquettes sélectionnées reçoit ceci."
+    },
+    "audience": {
+        "label": "Campagnes",
+        "loading": "Chargement des campagnes…",
+        "placeholder": "Sélectionner une ou plusieurs campagnes",
+        "searchPlaceholder": "Rechercher des campagnes…",
+        "emptyText": "Aucune campagne trouvée.",
+        "hint": "Toute personne appartenant à l’une des campagnes sélectionnées le reçoit."
+    },
+    "customFieldFilter": {
+        "hintPrefix": "Toute personne dont le profil correspond aux filtres ci-dessous reçoit ceci. Ajoutez-les sous",
+        "hintRefine": "Affiner"
+    },
+    "refine": {
+        "toggle": "Affiner — filtres de champs et exclusions",
+        "fieldFiltersLabel": "Filtres de champs",
+        "addFilter": "Ajouter un filtre",
+        "noCustomFields": "Aucun champ personnalisé n'est configuré pour cet institut.",
+        "noFilters": "Aucun filtre — tout le monde ci-dessus est inclus.",
+        "chooseField": "Choisir un champ",
+        "removeFilter": "Supprimer le filtre",
+        "selectValues": "Sélectionner des valeurs",
+        "enterNumber": "Entrer un nombre",
+        "operatorEquals": "Égal à",
+        "operatorContains": "Contient",
+        "operatorStartsWith": "Commence par",
+        "operatorEndsWith": "Se termine par",
+        "valueToMatch": "Valeur à comparer",
+        "exclusionsLabel": "Exclusions",
+        "addExclusion": "Ajouter une exclusion",
+        "noExclusions": "Personne n'est exclu de cette audience.",
+        "exclusionRole": "Rôle",
+        "exclusionTag": "Étiquette",
+        "exclusionUser": "Utilisateur",
+        "selectRole": "Sélectionner un rôle",
+        "removeExclusion": "Supprimer l'exclusion",
+        "selectBatch": "Sélectionner un(e) {{batchNoun}}",
+        "searchBatches": "Rechercher des {{batchNounPlural}}…",
+        "noBatchesFound": "Aucun(e) {{batchNounPlural}} trouvé(e).",
+        "selectTag": "Sélectionner une étiquette",
+        "searchTags": "Rechercher des étiquettes…",
+        "noTagsFound": "Aucune étiquette trouvée.",
+        "userIdOrEmail": "Identifiant ou e-mail de l'utilisateur"
+    },
+    "reach": {
+        "estimating": "Estimation de la portée…",
+        "unavailable": "Estimation de la portée indisponible.",
+        "summary_one": "Environ {{formattedCount}} personne porte les étiquettes sélectionnées dans cette annonce.",
+        "summary_many": "Environ {{formattedCount}} personnes portent les étiquettes sélectionnées dans cette annonce.",
+        "summary_other": "Environ {{formattedCount}} personnes portent les étiquettes sélectionnées dans cette annonce."
+    }
+}

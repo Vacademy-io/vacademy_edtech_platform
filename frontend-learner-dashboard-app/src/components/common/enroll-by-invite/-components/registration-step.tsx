@@ -16,6 +16,10 @@ import { SubscriptionPlanSection } from "./subscription-plan-sections";
 import { OneTimePlanSection } from "./onetime-plan-section";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
   LIVE_SESSION_REQUEST_OTP,
   LIVE_SESSION_VERIFY_OTP,
@@ -28,9 +32,9 @@ import {
 import { capitalise } from "@/utils/custom-field";
 import {
   getCountryCode,
+  lookupCountryCode,
   findCountryFieldKey,
 } from "../-utils/country-code-mapping";
-import { getCachedPreferredCountries } from "@/services/domain-routing";
 import { EMAIL_OTP_VERIFICATION_ENABLED } from "@/constants/feature-flags";
 // Replace heavy country-state-city with lightweight country-region-data
 // import { State, City } from "country-state-city";
@@ -126,11 +130,11 @@ export interface BillingContactFieldsConfig {
   role?:  { label?: string; required?: boolean; options?: string };
 }
 
-const DEFAULT_BILLING_FIELD_LABELS = {
-  name: "Billing Contact Full Name",
-  email: "Billing Contact Email",
-  role: "Role",
-};
+const getDefaultBillingFieldLabels = (t: TFunction) => ({
+  name: t("registrationStep.billingContact.fullNameLabel"),
+  email: t("registrationStep.billingContact.emailLabel"),
+  role: t("registrationStep.billingContact.roleLabel"),
+});
 
 export interface RegistrationStepProps {
   /** Course data containing all course-related information */
@@ -191,20 +195,23 @@ const RegistrationStep = ({
   onBillingContactChange,
   billingContactFields,
 }: RegistrationStepProps) => {
+  const { t } = useTranslation("enrollmentA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
+  const defaultBillingFieldLabels = getDefaultBillingFieldLabels(t);
   // Resolve the per-field billing config once. Falls back to the previously
   // hard-coded labels + required-ness so invites written before the admin
   // schema landed continue to render exactly as they used to.
   const billingFieldConfig = {
     name: {
-      label: billingContactFields?.name?.label || DEFAULT_BILLING_FIELD_LABELS.name,
+      label: billingContactFields?.name?.label || defaultBillingFieldLabels.name,
       required: billingContactFields?.name?.required ?? true,
     },
     email: {
-      label: billingContactFields?.email?.label || DEFAULT_BILLING_FIELD_LABELS.email,
+      label: billingContactFields?.email?.label || defaultBillingFieldLabels.email,
       required: billingContactFields?.email?.required ?? true,
     },
     role: {
-      label: billingContactFields?.role?.label || DEFAULT_BILLING_FIELD_LABELS.role,
+      label: billingContactFields?.role?.label || defaultBillingFieldLabels.role,
       required: billingContactFields?.role?.required ?? true,
       options: (billingContactFields?.role?.options || "")
         .split(",")
@@ -242,19 +249,24 @@ const RegistrationStep = ({
     control: form.control,
   });
 
-  // Determine the phone country code based on country field value.
-  // Falls back to the institute's first configured preferred country (from
-  // domain routing) so the phone input defaults match the institute settings.
-  const getPhoneCountryCode = (): string => {
-    const preferred = getCachedPreferredCountries();
-    const fallback = preferred[0] ?? "in";
+  // A country field in this form, when there is one, is the strongest signal
+  // — the visitor just told us where they are.
+  //
+  // Undefined means "no such signal", and PhoneInputField then resolves the
+  // country itself through the portal's chain (institute preference, else the
+  // region the form is opened in). It has to be undefined rather than that
+  // chain's answer read here: a `country` prop overrides the field's own
+  // resolution, so passing a value read before domain routing replied would
+  // pin the field to the platform fallback (+91) even after the real
+  // preference arrived.
+  const getPhoneCountryCode = (): string | undefined => {
     if (countryFieldKey && formValues) {
       const countryField = formValues[countryFieldKey];
       if (countryField && typeof countryField.value === "string") {
-        return getCountryCode(countryField.value, fallback);
+        return lookupCountryCode(countryField.value);
       }
     }
-    return fallback;
+    return undefined;
   };
 
   // Memoize state and city options to prevent recalculation on every render
@@ -331,25 +343,25 @@ const RegistrationStep = ({
     // Validate all fields first
     const isValid = await form.trigger();
     if (!isValid) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("registrationStep.errors.fillRequiredFields"));
       return;
     }
 
     if (!areAllFieldsFilled()) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("registrationStep.errors.fillRequiredFields"));
       return;
     }
 
     const emailField = getEmailField();
     if (!emailField || !emailField.value) {
-      toast.error("Please enter your email address");
+      toast.error(t("registrationStep.errors.enterEmail"));
       return;
     }
 
     const email = emailField.value;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
+      toast.error(t("registrationStep.errors.enterValidEmail"));
       return;
     }
 
@@ -362,19 +374,19 @@ const RegistrationStep = ({
       // to be filled. Email format is only validated when a value is present
       // (matches the spirit of "optional but valid").
       if (billingFieldConfig.name.required && !trimmedName) {
-        toast.error(`Please enter ${billingFieldConfig.name.label.toLowerCase()}`);
+        toast.error(t("registrationStep.errors.pleaseEnterField", { field: billingFieldConfig.name.label.toLowerCase() }));
         return;
       }
       if (billingFieldConfig.email.required && !trimmedEmail) {
-        toast.error(`Please enter ${billingFieldConfig.email.label.toLowerCase()}`);
+        toast.error(t("registrationStep.errors.pleaseEnterField", { field: billingFieldConfig.email.label.toLowerCase() }));
         return;
       }
       if (billingFieldConfig.role.required && !trimmedRole) {
-        toast.error(`Please enter ${billingFieldConfig.role.label.toLowerCase()}`);
+        toast.error(t("registrationStep.errors.pleaseEnterField", { field: billingFieldConfig.role.label.toLowerCase() }));
         return;
       }
       if (trimmedEmail && !emailRegex.test(trimmedEmail)) {
-        toast.error(`Please enter a valid ${billingFieldConfig.email.label.toLowerCase()}`);
+        toast.error(t("registrationStep.errors.pleaseEnterValidField", { field: billingFieldConfig.email.label.toLowerCase() }));
         return;
       }
     }
@@ -403,9 +415,9 @@ const RegistrationStep = ({
       );
 
       setSubStep(1);
-      toast.success("Verification code sent to your email");
+      toast.success(t("registrationStep.otp.codeSent"));
     } catch (error) {
-      toast.error("Failed to send verification code. Please try again");
+      toast.error(t("registrationStep.otp.sendFailed"));
       console.error("Send OTP Error:", error);
     } finally {
       setIsLoadingOtp(false);
@@ -427,9 +439,9 @@ const RegistrationStep = ({
           params: { instituteId },
         }
       );
-      toast.success("Verification code resent");
+      toast.success(t("registrationStep.otp.codeResent"));
     } catch (error) {
-      toast.error("Failed to resend. Please try again");
+      toast.error(t("registrationStep.otp.resendFailed"));
       console.error("Resend OTP Error:", error);
     } finally {
       setIsLoadingOtp(false);
@@ -439,7 +451,7 @@ const RegistrationStep = ({
   // Verify OTP
   const handleVerifyOTP = async () => {
     if (!otp.trim() || otp.length < 4) {
-      toast.error("Please enter a valid verification code");
+      toast.error(t("registrationStep.otp.enterValidCode"));
       return;
     }
 
@@ -462,14 +474,14 @@ const RegistrationStep = ({
       );
 
       setIsEmailVerified(true);
-      toast.success("Email verified successfully!");
-      
+      toast.success(t("registrationStep.otp.verifiedSuccess"));
+
       // Auto-submit the form after successful verification
       setTimeout(() => {
         form.handleSubmit(onSubmit, (err) => console.error(err))();
       }, 500);
     } catch (error) {
-      toast.error("Invalid code. Please check and try again");
+      toast.error(t("registrationStep.otp.invalidCode"));
       console.error("Verify Email Error:", error);
     } finally {
       setIsVerifyingOtp(false);
@@ -486,7 +498,7 @@ const RegistrationStep = ({
   if (subStep === 1) {
     return (
       <Card id="registration-card" className="overflow-hidden border border-gray-200 w-full">
-        <CardContent className="p-6 sm:p-8">
+        <CardContent className="p-card-lg sm:p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -495,10 +507,10 @@ const RegistrationStep = ({
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Verify Your Email
+              {t("registrationStep.otp.title")}
             </h2>
             <p className="text-sm text-gray-500">
-              We've sent a verification code to
+              {t("registrationStep.otp.sentTo")}
             </p>
             <p className="text-sm font-medium text-gray-900 mt-1">
               {userEmail}
@@ -511,12 +523,18 @@ const RegistrationStep = ({
               <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="text-sm text-amber-800">
-                <p className="font-medium mb-1">Can't find the email?</p>
+              <div className="text-sm text-amber-800 space-y-1">
+                <p className="font-medium">{t("registrationStep.otp.cantFindEmail")}</p>
                 <ul className="list-disc list-inside space-y-1 text-amber-700">
-                  <li>Check your <strong>Spam</strong> or <strong>Junk</strong> folder</li>
-                  <li>Make sure the email address is correct</li>
-                  <li>Wait a few seconds and refresh your inbox</li>
+                  <li>
+                    {t("registrationStep.otp.checkSpamPrefix")}{" "}
+                    <strong>{t("registrationStep.otp.spam")}</strong>{" "}
+                    {t("registrationStep.otp.orWord")}{" "}
+                    <strong>{t("registrationStep.otp.junk")}</strong>{" "}
+                    {t("registrationStep.otp.folderSuffix")}
+                  </li>
+                  <li>{t("registrationStep.otp.checkEmailCorrect")}</li>
+                  <li>{t("registrationStep.otp.waitAndRefresh")}</li>
                 </ul>
               </div>
             </div>
@@ -524,15 +542,15 @@ const RegistrationStep = ({
 
           {/* OTP Input */}
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Enter Verification Code
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {t("registrationStep.otp.enterCodeLabel")}
               </label>
               <input
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="Enter 6-digit code"
+                placeholder={t("registrationStep.otp.enterCodePlaceholder")}
                 className="w-full px-4 py-3 text-center text-lg font-mono tracking-widest border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 maxLength={6}
                 autoFocus
@@ -556,17 +574,17 @@ const RegistrationStep = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Verifying...
+                  {t("registrationStep.otp.verifying")}
                 </>
               ) : isEmailVerified ? (
                 <>
                   <svg className="w-5 h-5 me-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Verified! Proceeding...
+                  {t("registrationStep.otp.verifiedProceeding")}
                 </>
               ) : (
-                "Verify & Continue"
+                t("registrationStep.otp.verifyAndContinue")
               )}
             </MyButton>
 
@@ -581,16 +599,16 @@ const RegistrationStep = ({
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Edit Details
+                {t("registrationStep.otp.editDetails")}
               </button>
-              
+
               <button
                 type="button"
                 onClick={handleResendOTP}
                 disabled={isLoadingOtp || isVerifyingOtp}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
               >
-                {isLoadingOtp ? "Sending..." : "Resend Code"}
+                {isLoadingOtp ? t("registrationStep.sending") : t("registrationStep.otp.resendCode")}
               </button>
             </div>
           </div>
@@ -603,22 +621,22 @@ const RegistrationStep = ({
   return (
     <>
       <Card id="registration-card" className="overflow-hidden border border-gray-200 w-full">
-        <CardContent className="p-4 sm:p-5 md:p-6">
-          <div className="flex items-start gap-2 sm:gap-3 mb-5">
+        <CardContent className="p-card sm:p-5 md:p-card-lg space-y-5">
+          <div className="flex items-start gap-2 sm:gap-3">
             <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg flex-shrink-0">
               <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 leading-tight">
-                Registration Details
+                {t("registrationStep.title")}
               </h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                Fill in your details to enroll in the course
+                {t("registrationStep.subtitle", { course })}
               </p>
             </div>
           </div>
 
-          <Separator className="mb-5" />
+          <Separator />
 
           <FormProvider {...form}>
             <form className="w-full flex flex-col gap-4">
@@ -641,7 +659,7 @@ const RegistrationStep = ({
                             <FormControl>
                               <PhoneInputField
                                 label={capitalise(value.name)}
-                                placeholder="123 456 7890"
+                                placeholder={t("registrationStep.phonePlaceholder")}
                                 name={`${key}.value`}
                                 control={form.control}
                                 country={phoneCountryCode}
@@ -749,13 +767,10 @@ const RegistrationStep = ({
                       className="flex-1 cursor-pointer select-none"
                     >
                       <div className="text-sm font-semibold text-gray-900">
-                        Add a separate billing contact
+                        {t("registrationStep.billingContact.addSeparate")}
                       </div>
                       <p className="mt-1 text-xs text-gray-600">
-                        Choose this if the person who will receive invoices and
-                        renewal notices for this enrollment is different from
-                        you (e.g. a parent / guardian, your employer, or your
-                        finance team).
+                        {t("registrationStep.billingContact.addSeparateHint")}
                       </p>
                     </label>
                   </div>
@@ -779,7 +794,7 @@ const RegistrationStep = ({
                           onChange={(e) =>
                             updateBillingContact({ name: e.target.value })
                           }
-                          placeholder="First name & last name"
+                          placeholder={t("registrationStep.billingContact.namePlaceholder")}
                           required={billingFieldConfig.name.required}
                         />
                       </div>
@@ -825,7 +840,7 @@ const RegistrationStep = ({
                             required={billingFieldConfig.role.required}
                             className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                           >
-                            <option value="">Select…</option>
+                            <option value="">{t("registrationStep.billingContact.selectPlaceholder")}</option>
                             {billingFieldConfig.role.options.map((opt) => (
                               <option key={opt} value={opt}>
                                 {opt}
@@ -857,7 +872,7 @@ const RegistrationStep = ({
                   onClick={() => form.reset()}
                 >
                   <ArrowCounterClockwise className="w-4 h-4" />
-                  Reset
+                  {t("registrationStep.reset")}
                 </button>
                 
                 <MyButton
@@ -875,11 +890,11 @@ const RegistrationStep = ({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Sending...
+                      {t("registrationStep.sending")}
                     </>
                   ) : (
                     <>
-                      Next
+                      {t("registrationStep.next")}
                       <svg className="w-4 h-4 ms-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -894,7 +909,7 @@ const RegistrationStep = ({
       
       {courseData?.customHtml && (
         <Card className="overflow-hidden border border-gray-200 w-full mt-4">
-          <CardContent className="p-4 sm:p-5 md:p-6">
+          <CardContent className="p-card sm:p-5 md:p-card-lg">
             <div
               className="w-full h-full"
               dangerouslySetInnerHTML={{
@@ -910,7 +925,7 @@ const RegistrationStep = ({
         selectedPlan?.type === "ONE_TIME") &&
         courseData.includePaymentPlans && (
           <Card className="mt-4 flex flex-col gap-0 border border-gray-200">
-            <div className="flex flex-col items-start gap-3 p-3 sm:p-4">
+            <div className="flex flex-col items-start gap-stack p-3 sm:p-4">
               <div className="flex items-center gap-3">
                 {getPaymentPlanIcon(selectedPlan?.type || "")}
                 <div className="flex flex-1 flex-col font-semibold">

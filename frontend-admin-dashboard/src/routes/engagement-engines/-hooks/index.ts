@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { getInstituteId } from '@/constants/helper';
 import type { CreateEngineRequest, EngineStatus, TemplateEditRequest } from '../-types';
@@ -29,8 +30,15 @@ import {
 } from '../-services';
 
 const errMsg = (e: unknown, fallback: string): string => {
-    const anyErr = e as { response?: { data?: { message?: string } }; message?: string };
-    return anyErr?.response?.data?.message || anyErr?.message || fallback;
+    // A VacademyException body carries its text in `ex`; reading only `message` showed axios's own
+    // "Request failed with status code 510" instead of the server's reason.
+    const anyErr = e as {
+        response?: { data?: { ex?: string; message?: string } };
+        message?: string;
+    };
+    return (
+        anyErr?.response?.data?.ex || anyErr?.response?.data?.message || anyErr?.message || fallback
+    );
 };
 
 // ---- Engines ----
@@ -62,19 +70,21 @@ export const useDataPointCatalog = () =>
     });
 
 export const useCreateEngine = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
         mutationFn: (payload: CreateEngineRequest) => createEngine(instituteId, payload),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['engagementEngines'] });
-            toast.success('Engine created');
+            toast.success(t('toast.engineCreated'));
         },
-        onError: (e) => toast.error(errMsg(e, 'Failed to create engine')),
+        onError: (e) => toast.error(errMsg(e, t('toast.createEngineFailed'))),
     });
 };
 
 export const useTransitionEngine = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
@@ -83,13 +93,14 @@ export const useTransitionEngine = () => {
         onSuccess: (_data, vars) => {
             qc.invalidateQueries({ queryKey: ['engagementEngines'] });
             qc.invalidateQueries({ queryKey: ['engagementEngine', instituteId, vars.engineId] });
-            toast.success('Engine updated');
+            toast.success(t('toast.engineUpdated'));
         },
-        onError: (e) => toast.error(errMsg(e, 'Could not change status')),
+        onError: (e) => toast.error(errMsg(e, t('toast.changeStatusFailed'))),
     });
 };
 
 export const useSetAutonomy = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
@@ -98,13 +109,14 @@ export const useSetAutonomy = () => {
         onSuccess: (_d, vars) => {
             qc.invalidateQueries({ queryKey: ['engagementEngine', instituteId, vars.engineId] });
             qc.invalidateQueries({ queryKey: ['engagementEngines'] });
-            toast.success(vars.killed ? 'Auto-send off — copilot only' : 'Auto-send allowed');
+            toast.success(vars.killed ? t('toast.autonomyOff') : t('toast.autonomyOn'));
         },
-        onError: (e) => toast.error(errMsg(e, 'Could not change autonomy')),
+        onError: (e) => toast.error(errMsg(e, t('toast.autonomyFailed'))),
     });
 };
 
 export const useEnrollEngine = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
@@ -112,14 +124,19 @@ export const useEnrollEngine = () => {
         onSuccess: (data, engineId) => {
             qc.invalidateQueries({ queryKey: ['engagementEngine', instituteId, engineId] });
             toast.success(
-                `Audience resolved: ${data.newlyEnrolled} added, ${data.exited} exited (${data.audienceSize} total)`
+                t('toast.enrollResult', {
+                    added: data.newlyEnrolled,
+                    exited: data.exited,
+                    total: data.audienceSize,
+                })
             );
         },
-        onError: (e) => toast.error(errMsg(e, 'Enrollment failed')),
+        onError: (e) => toast.error(errMsg(e, t('toast.enrollFailed'))),
     });
 };
 
 export const useEditPrompt = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
@@ -127,22 +144,23 @@ export const useEditPrompt = () => {
             editPrompt(engineId, instituteId, deltaText),
         onSuccess: (_d, vars) => {
             qc.invalidateQueries({ queryKey: ['engagementEngine', instituteId, vars.engineId] });
-            toast.success('Amendment added to the brief');
+            toast.success(t('toast.promptUpdated'));
         },
-        onError: (e) => toast.error(errMsg(e, 'Could not update the brief')),
+        onError: (e) => toast.error(errMsg(e, t('toast.promptUpdateFailed'))),
     });
 };
 
 export const useArchiveEngine = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
         mutationFn: (engineId: string) => archiveEngine(engineId, instituteId),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ['engagementEngines'] });
-            toast.success('Engine archived');
+            toast.success(t('toast.engineArchived'));
         },
-        onError: (e) => toast.error(errMsg(e, 'Could not archive')),
+        onError: (e) => toast.error(errMsg(e, t('toast.archiveFailed'))),
     });
 };
 
@@ -158,6 +176,7 @@ export const useTasks = (statuses: string, page: number, size: number) => {
 };
 
 export const useTaskAction = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     return useMutation({
@@ -183,18 +202,32 @@ export const useTaskAction = () => {
                     return sendTask(taskId, instituteId, editedBody);
             }
         },
-        onSuccess: (_d, vars) => {
+        onSuccess: (data, vars) => {
             qc.invalidateQueries({ queryKey: ['engagementTasks'] });
+            if (vars.verb === 'send') {
+                // The graduation count on the engine page moves with every approved send.
+                qc.invalidateQueries({ queryKey: ['engagementEngine'] });
+                // An unknown-outcome send comes back 200 with status FAILED: it must not read "Sent".
+                const status = (data as { status?: string } | undefined)?.status;
+                if (status && status !== 'SENT') {
+                    toast.error(t('taskAction.sendNotConfirmed'));
+                    return;
+                }
+            }
             const msg: Record<string, string> = {
-                ack: 'Task acknowledged',
-                done: 'Marked done',
-                dismiss: 'Dismissed',
-                reopen: 'Reopened',
-                send: 'Sent',
+                ack: t('taskAction.ack'),
+                done: t('taskAction.done'),
+                dismiss: t('taskAction.dismiss'),
+                reopen: t('taskAction.reopen'),
+                send: t('taskAction.send'),
             };
-            toast.success(msg[vars.verb] ?? 'Done');
+            toast.success(msg[vars.verb] ?? t('taskAction.default'));
         },
-        onError: (e) => toast.error(errMsg(e, 'Action failed')),
+        onError: (e) => {
+            // Refresh either way: a task another admin already handled should leave the list.
+            qc.invalidateQueries({ queryKey: ['engagementTasks'] });
+            toast.error(errMsg(e, t('toast.taskActionFailed')));
+        },
     });
 };
 
@@ -210,6 +243,7 @@ export const useTemplates = (engineId: string | undefined) => {
 };
 
 export const useTemplateMutation = () => {
+    const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     const invalidate = (engineId?: string) => {
@@ -222,18 +256,18 @@ export const useTemplateMutation = () => {
                 recommendTemplates(engineId, instituteId, count),
             onSuccess: (_d, v) => {
                 invalidate(v.engineId);
-                toast.success('AI proposed templates');
+                toast.success(t('toast.templatesProposed'));
             },
-            onError: (e) => toast.error(errMsg(e, 'Could not propose templates')),
+            onError: (e) => toast.error(errMsg(e, t('toast.proposeTemplatesFailed'))),
         }),
         alternatives: useMutation({
             mutationFn: ({ engineId, feedback }: { engineId: string; feedback?: string }) =>
                 requestAlternatives(engineId, instituteId, feedback),
             onSuccess: (_d, v) => {
                 invalidate(v.engineId);
-                toast.success('New options proposed');
+                toast.success(t('toast.alternativesProposed'));
             },
-            onError: (e) => toast.error(errMsg(e, 'Could not get alternatives')),
+            onError: (e) => toast.error(errMsg(e, t('toast.alternativesFailed'))),
         }),
         edit: useMutation({
             mutationFn: ({
@@ -246,41 +280,45 @@ export const useTemplateMutation = () => {
             }) => editTemplate(id, instituteId, payload),
             onSuccess: (_d, v) => {
                 invalidate(v.engineId);
-                toast.success('Template updated');
+                toast.success(t('toast.templateUpdated'));
             },
-            onError: (e) => toast.error(errMsg(e, 'Could not save the template')),
+            onError: (e) => toast.error(errMsg(e, t('toast.templateSaveFailed'))),
         }),
         approve: useMutation({
             mutationFn: ({ id }: { id: string; engineId: string }) => approveTemplate(id, instituteId),
             onSuccess: (_d, v) => {
                 invalidate(v.engineId);
-                toast.success('Template approved');
+                toast.success(t('toast.templateApproved'));
             },
-            onError: (e) => toast.error(errMsg(e, 'Could not approve')),
+            onError: (e) => toast.error(errMsg(e, t('toast.approveFailed'))),
         }),
         submit: useMutation({
             mutationFn: ({ id }: { id: string; engineId: string }) => submitTemplate(id, instituteId),
             onSuccess: (_d, v) => {
                 invalidate(v.engineId);
-                toast.success('Submitted to Meta');
+                toast.success(t('toast.submittedToMeta'));
             },
-            onError: (e) => toast.error(errMsg(e, 'Submission failed')),
+            onError: (e) => toast.error(errMsg(e, t('toast.submitFailed'))),
         }),
         withdraw: useMutation({
             mutationFn: ({ id }: { id: string; engineId: string }) => withdrawTemplate(id, instituteId),
             onSuccess: (_d, v) => {
                 invalidate(v.engineId);
-                toast.success('Template withdrawn');
+                toast.success(t('toast.templateWithdrawn'));
             },
-            onError: (e) => toast.error(errMsg(e, 'Could not withdraw')),
+            onError: (e) => toast.error(errMsg(e, t('toast.withdrawFailed'))),
         }),
         sync: useMutation({
             mutationFn: ({ engineId }: { engineId: string }) => syncTemplates(instituteId).then((r) => ({ ...r, engineId })),
             onSuccess: (r) => {
                 invalidate(r.engineId);
-                toast.success(r.changed > 0 ? `${r.changed} template(s) updated` : 'No changes from Meta yet');
+                toast.success(
+                    r.changed > 0
+                        ? t('toast.templatesUpdated', { count: r.changed })
+                        : t('toast.noChangesFromMeta')
+                );
             },
-            onError: (e) => toast.error(errMsg(e, 'Could not check Meta')),
+            onError: (e) => toast.error(errMsg(e, t('toast.syncFailed'))),
         }),
     };
 };

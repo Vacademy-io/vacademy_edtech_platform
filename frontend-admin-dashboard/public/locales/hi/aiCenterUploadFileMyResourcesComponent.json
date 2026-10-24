@@ -1,0 +1,12 @@
+{
+    "trigger": {
+        "uploadButton": "अपलोड करें"
+    },
+    "dialog": {
+        "title": "फ़ाइल अपलोड करें",
+        "uploadButton": "PDF/DOCX/PPT अपलोड करें"
+    },
+    "toast": {
+        "success": "फ़ाइल सफलतापूर्वक अपलोड हो गई!"
+    }
+}

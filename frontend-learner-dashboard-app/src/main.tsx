@@ -20,6 +20,7 @@ import { ThemeProvider as ColorThemeProvider } from "./providers/theme/theme-pro
 import { ThemeProvider as ModeThemeProvider } from "./providers/theme-provider";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { routeTree } from "./routeTree.gen";
+import { registerAppRoutePaths } from "./services/reserved-app-routes";
 import "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import "./lib/debug";
@@ -32,6 +33,7 @@ import {
   getTokenFromCookie,
   getTokenDecodedData,
 } from "@/lib/auth/sessionUtility";
+import { captureUtmOnce } from "@/lib/utm-attribution";
 import { TokenKey } from "@/constants/auth/tokens";
 import { getCachedInstituteBranding } from "@/services/domain-routing";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
@@ -40,6 +42,17 @@ import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDet
 // Must run before React renders so failures during the first lazy import
 // are intercepted at the window level instead of bubbling to an error boundary.
 installChunkErrorHandler();
+
+// First-touch campaign capture, at boot rather than in a React effect.
+//
+// Every capture route validates its search params with a plain `z.object`,
+// which STRIPS unknown keys — so `?instituteId=…&audienceId=…&utm_source=meta`
+// is normalised by the router down to the two keys it declares, and the
+// campaign is gone from the URL before any component effect could read it.
+// Reading window.location.search here, synchronously at module evaluation,
+// happens before the router is even created, so the value is banked whatever
+// the route then does with the URL.
+captureUtmOnce();
 
 /**
  * Read the current access token synchronously from the fastest available
@@ -71,6 +84,15 @@ if (import.meta.env.VITE_ENABLE_SENTRY === "true") {
       "error loading dynamically imported module",
       "Unable to preload CSS",
       "ChunkLoadError",
+      // Junk from CEFSharp — a .NET library that embeds Chromium in Windows
+      // desktop apps. The host app's own script rejects with a bare string, so
+      // Sentry wraps it as a non-Error rejection; nothing here is ours and
+      // there is nothing to fix. The SDK already denies this by default, but
+      // its built-in regex hardcodes `MethodName:simulateEvent`, so the
+      // `MethodName:update` variant slips through. Match the whole family, and
+      // leave the end unanchored because beforeSend appends a
+      // " — user: …, institute: …" suffix to the value.
+      /Non-Error promise rejection captured with value: Object Not Found Matching Id:\d+, MethodName:\w+, ParamCount:\d+/,
     ],
     beforeSend(event) {
       try {
@@ -218,6 +240,11 @@ const router = createRouter({
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
 });
+
+// Catalogue link builders need to know which first segments the app owns —
+// see reserved-app-routes.ts for why a root-mounted catalogue page named
+// "privacy-policy" would otherwise open the app's own page.
+registerAppRoutePaths(Object.keys(router.routesByPath));
 
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {

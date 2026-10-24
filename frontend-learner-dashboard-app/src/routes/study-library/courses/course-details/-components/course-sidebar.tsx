@@ -5,6 +5,7 @@ import {
   ChalkboardTeacher,
   TrendUp,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Steps } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -129,6 +130,8 @@ export const CourseSidebar = ({
   onEnrollmentClick,
   onRatingsLoadingChange,
 }: CourseSidebarProps) => {
+  const { t } = useTranslation("courseDetailsA");
+  const teacher = getTerminology(RoleTerms.Teacher, SystemTerms.Teacher);
   const capitalizeFirst = (text: string): string => text;
 
   const safeEnrolledSessions = enrolledSessions || [];
@@ -196,7 +199,7 @@ export const CourseSidebar = ({
       return primaryInstructorName;
     }
     if (instructorsCount > 0) {
-      return "Unknown Instructor";
+      return t("sidebar.unknownInstructor", { teacher });
     }
     return undefined;
   })();
@@ -213,14 +216,15 @@ export const CourseSidebar = ({
               <Steps size={14} className="text-primary" weight="duotone" />
             </div>
             <CardTitle className="text-sm font-bold">
-              {(() => {
-                const term = getTerminology(
-                  ContentTerms.Course,
-                  SystemTerms.Course,
-                ).toLocaleLowerCase();
-                return term.charAt(0).toUpperCase() + term.slice(1);
-              })()}{" "}
-              Overview
+              {t("sidebar.overview", {
+                course: (() => {
+                  const term = getTerminology(
+                    ContentTerms.Course,
+                    SystemTerms.Course,
+                  ).toLocaleLowerCase();
+                  return term.charAt(0).toUpperCase() + term.slice(1);
+                })(),
+              })}
             </CardTitle>
           </div>
         </CardHeader>
@@ -229,7 +233,7 @@ export const CourseSidebar = ({
           {!hideAuthorName && (
             <>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">Author</span>
+                <span className="text-muted-foreground font-medium">{t("sidebar.author")}</span>
                 <span className="font-semibold">{displayAuthorName || "—"}</span>
               </div>
 
@@ -274,7 +278,9 @@ export const CourseSidebar = ({
           ) : !slideCountQuery.error ? (
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground font-medium">
-                {getTerminology(ContentTerms.Course, SystemTerms.Course)} Time
+                {t("sidebar.courseTime", {
+                  course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                })}
               </span>
               <span className="font-semibold">{totalDuration}</span>
             </div>
@@ -399,7 +405,7 @@ export const CourseSidebar = ({
                   )}
                   onClick={onEnrollmentClick}
                 >
-                  Enroll Now
+                  {t("sidebar.enrollNow")}
                 </Button>
               </div>
             )}
@@ -456,8 +462,9 @@ export const CourseSidebar = ({
                     "[.ui-play_&]:text-play-ink",
                   )}
                 >
-                  {getTerminology(ContentTerms.Course, SystemTerms.Course)}{" "}
-                  Progress
+                  {t("sidebar.courseProgress", {
+                    course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                  })}
                 </CardTitle>
               </div>
             </CardHeader>
@@ -470,7 +477,7 @@ export const CourseSidebar = ({
                       "[.ui-play_&]:text-play-muted-deep [.ui-play_&]:font-bold",
                     )}
                   >
-                    Completion
+                    {t("sidebar.completion")}
                   </span>
                   <span
                     className={cn(
@@ -506,7 +513,7 @@ export const CourseSidebar = ({
                       "[.ui-play_&]:text-play-ink [.ui-play_&]:font-bold",
                     )}
                   >
-                    Certificate will be generated upon completion
+                    {t("sidebar.certificateOnCompletion")}
                   </p>
                 </div>
               )}

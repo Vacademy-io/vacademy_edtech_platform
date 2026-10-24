@@ -1,0 +1,71 @@
+{
+  "menu": {
+    "editProfile": "टीम सदस्य संपादित करें",
+    "changeRoleType": "भूमिका प्रकार बदलें",
+    "disableUser": "उपयोगकर्ता अक्षम करें",
+    "enableUser": "उपयोगकर्ता सक्षम करें",
+    "deleteUser": "उपयोगकर्ता हटाएं"
+  },
+  "changeRoleType": {
+    "title": "भूमिकाएं बदलें",
+    "roleTypeLabel": "भूमिका प्रकार",
+    "submit": "सबमिट करें",
+    "validation": {
+      "roleRequired": "कम से कम एक भूमिका प्रकार आवश्यक है"
+    },
+    "toast": {
+      "success": "उपयोगकर्ता की भूमिकाएं सफलतापूर्वक बदल दी गई हैं!"
+    }
+  },
+  "disableUser": {
+    "title": "उपयोगकर्ता अक्षम करें",
+    "attention": "ध्यान दें",
+    "confirmPrefix": "क्या आप वाकई अक्षम करना चाहते हैं",
+    "confirmSuffix": "?",
+    "confirmButton": "हां",
+    "toast": {
+      "success": "उपयोगकर्ता को सफलतापूर्वक अक्षम कर दिया गया है!"
+    }
+  },
+  "enableUser": {
+    "title": "उपयोगकर्ता सक्षम करें",
+    "attention": "ध्यान दें",
+    "confirmPrefix": "क्या आप वाकई सक्षम करना चाहते हैं",
+    "confirmSuffix": "?",
+    "confirmButton": "हां",
+    "toast": {
+      "success": "उपयोगकर्ता को सफलतापूर्वक सक्षम कर दिया गया है!"
+    }
+  },
+  "deleteUser": {
+    "title": "उपयोगकर्ता हटाएं",
+    "attention": "ध्यान दें",
+    "confirmPrefix": "क्या आप वाकई हटाना चाहते हैं",
+    "confirmSuffix": "?",
+    "confirmButton": "हां",
+    "toast": {
+      "success": "उपयोगकर्ता को सफलतापूर्वक हटा दिया गया है!"
+    }
+  },
+  "editProfile": {
+    "title": "{{name}} की प्रोफ़ाइल",
+    "hint": "फ़ोटो, पदनाम और परिचय वहाँ दिखाई देंगे जहाँ {{name}} किसी कोर्स पर दिखते हैं।",
+    "nameLabel": "नाम",
+    "emailLabel": "ईमेल",
+    "mobileNumberLabel": "मोबाइल नंबर",
+    "photoLabel": "प्रोफ़ाइल फ़ोटो",
+    "designationLabel": "पदनाम",
+    "designationPlaceholder": "जैसे: भौतिकी शिक्षक",
+    "bioLabel": "परिचय",
+    "bioPlaceholder": "संक्षिप्त परिचय",
+    "cancel": "रद्द करें",
+    "save": "बदलाव सहेजें",
+    "saving": "सहेजा जा रहा है…",
+    "toast": {
+      "notImage": "कृपया एक छवि फ़ाइल चुनें।",
+      "uploadFailed": "छवि अपलोड विफल रही।",
+      "success": "प्रोफ़ाइल अपडेट हो गई।",
+      "error": "प्रोफ़ाइल अपडेट नहीं हो सकी।"
+    }
+  }
+}

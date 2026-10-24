@@ -1,0 +1,10 @@
+{
+    "header": {
+        "title": "Activité des apprenants",
+        "subtitle": "Analyses en temps réel et tendances d'activité"
+    },
+    "actions": {
+        "viewFullInsights": "Voir toutes les analyses"
+    },
+    "loading": "Chargement des analyses..."
+}

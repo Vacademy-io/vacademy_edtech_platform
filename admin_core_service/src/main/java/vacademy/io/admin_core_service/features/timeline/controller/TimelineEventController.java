@@ -11,6 +11,8 @@ import vacademy.io.admin_core_service.features.timeline.dto.StudentLatestNoteDTO
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventDTO;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventRequestDTO;
 import vacademy.io.admin_core_service.features.timeline.service.TimelineEventService;
+import vacademy.io.admin_core_service.features.audience.entity.UserLeadProfile;
+import vacademy.io.admin_core_service.features.audience.service.LeadAssignmentNotifier;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
@@ -20,11 +22,20 @@ import java.util.Map;
 @RequestMapping("/admin-core-service/timeline/v1")
 public class TimelineEventController {
 
+        private static final org.slf4j.Logger log =
+                        org.slf4j.LoggerFactory.getLogger(TimelineEventController.class);
+
         @Autowired
         private TimelineEventService timelineEventService;
 
         @Autowired
         private vacademy.io.admin_core_service.features.timeline.service.LeadJourneyBatchService leadJourneyBatchService;
+
+        @Autowired
+        private vacademy.io.admin_core_service.features.audience.repository.UserLeadProfileRepository userLeadProfileRepository;
+
+        @Autowired
+        private vacademy.io.admin_core_service.features.notification_service.service.NotificationService notificationService;
 
         @GetMapping("/events")
         public ResponseEntity<Page<TimelineEventDTO>> getTimelineEvents(
@@ -44,7 +55,43 @@ public class TimelineEventController {
                         @RequestAttribute("user") CustomUserDetails user) {
 
                 TimelineEventDTO response = timelineEventService.createManualEvent(request, user);
+                clearLeadAssignmentAlert(request.getStudentUserId());
                 return ResponseEntity.ok(response);
+        }
+
+        /**
+         * A lead-assignment alert sits on the counsellor's bell and cannot be dismissed
+         * by hand. This is what takes it down: the first note, call log or status change
+         * the counsellor records against that lead.
+         *
+         * Lives here rather than in TimelineEventService on purpose — that service is
+         * deliberately kept free of cross-service dependencies to stay out of bean
+         * cycles, and says so at the top. The caller owns what happens after an event,
+         * the same way it already owns the profile recompute.
+         *
+         * Only this endpoint is hooked: it is the one a human posts to. System-written
+         * journey rows (the assignment itself writes one) must not cancel the alert in
+         * the same breath that raised it.
+         *
+         * Best-effort — a notification-service blip must never fail the note that was
+         * just written.
+         */
+        private void clearLeadAssignmentAlert(String studentUserId) {
+                if (studentUserId == null || studentUserId.isBlank()) return;
+                try {
+                        // The request carries no institute and the alert query is scoped by
+                        // one, so take it from the lead's own profile.
+                        userLeadProfileRepository.findByUserId(studentUserId)
+                                        .map(UserLeadProfile::getInstituteId)
+                                        .filter(id -> id != null && !id.isBlank())
+                                        .ifPresent(instituteId -> notificationService
+                                                        .deactivateSystemAlertsForEntity(instituteId,
+                                                                        LeadAssignmentNotifier.LEAD_ENTITY,
+                                                                        studentUserId));
+                } catch (Exception e) {
+                        log.warn("Could not clear the lead-assignment alert for lead {}: {}",
+                                        studentUserId, e.getMessage());
+                }
         }
 
         /**

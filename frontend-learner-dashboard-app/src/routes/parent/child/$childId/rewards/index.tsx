@@ -87,11 +87,14 @@ function RewardsScreen() {
 
         {/* ── Badges ── */}
         {badgeCount > 0 ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-stack">
             <h2 className="text-body font-semibold text-foreground">{t("rewards.badgesTitle")}</h2>
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {badges?.map((b, i) => {
                 const awarded = formatDate(typeof b.awardedAt === "string" ? b.awardedAt : null);
+                // Missing source = older server, where every row was a staff award.
+                const isStaffAward = (b.source ?? "MANUAL").toUpperCase() !== "AUTO";
+                const reason = isStaffAward && typeof b.reason === "string" ? b.reason.trim() : "";
                 return (
                   <li
                     key={String(b.id ?? b.badgeId ?? i)}
@@ -100,20 +103,38 @@ function RewardsScreen() {
                       "transition-transform hover:-translate-y-0.5",
                     )}
                   >
-                    <span className="flex size-14 items-center justify-center overflow-hidden rounded-full bg-cp-gold-tint">
-                      <BadgeVisual
-                        icon={String(
-                          (b.iconFileId as string | undefined) ?? (b.icon as string | undefined) ?? "Medal",
-                        )}
-                        fill
-                        weight="fill"
-                        size={30}
-                        className="text-cp-gold"
-                      />
+                    <span className="relative flex size-14 items-center justify-center overflow-visible rounded-full bg-cp-gold-tint">
+                      <span className="flex size-14 items-center justify-center overflow-hidden rounded-full">
+                        <BadgeVisual
+                          icon={String(b.badgeIcon ?? b.iconFileId ?? b.icon ?? "Medal")}
+                          fill
+                          weight="fill"
+                          size={30}
+                          className="text-cp-gold"
+                        />
+                      </span>
+                      {isStaffAward ? (
+                        <span
+                          className="absolute -end-1 -top-1 flex size-5 items-center justify-center rounded-full bg-warning-500 ring-2 ring-card"
+                          aria-hidden
+                        >
+                          <Star weight="fill" className="size-2.5 text-white" />
+                        </span>
+                      ) : null}
                     </span>
                     <span className="text-caption font-semibold text-foreground">
-                      {String(b.name ?? b.badgeName ?? t("rewards.badge"))}
+                      {String(b.badgeName ?? b.name ?? t("rewards.badge"))}
                     </span>
+                    {isStaffAward ? (
+                      <span className="text-3xs font-medium uppercase tracking-wide text-warning-600">
+                        {t("rewards.awardedByInstitute")}
+                      </span>
+                    ) : null}
+                    {reason ? (
+                      <span className="line-clamp-2 text-caption italic text-muted-foreground">
+                        {t("rewards.awardReason", { reason })}
+                      </span>
+                    ) : null}
                     {awarded ? (
                       <span className="text-caption text-muted-foreground">
                         {t("rewards.earnedOn", { date: awarded })}
@@ -128,7 +149,7 @@ function RewardsScreen() {
 
         {/* ── Certificates ── */}
         {certCount > 0 ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-stack">
             <h2 className="text-body font-semibold text-foreground">
               {t("rewards.certificatesTitle")}
             </h2>

@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteSubOrgRepository;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.admin_core_service.features.enroll_invite.dto.EnrollInviteDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessionLearnerInvitationToPaymentOption;
@@ -30,6 +30,7 @@ import vacademy.io.admin_core_service.features.suborg.dto.SubOrgFinanceDetailDTO
 import vacademy.io.admin_core_service.features.suborg.dto.SubOrgListItemDTO;
 import vacademy.io.admin_core_service.features.suborg.dto.SubOrgSubscriptionStatusDTO;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgAccessScopeService;
+import vacademy.io.admin_core_service.features.suborg.service.SubOrgAdminCredentialService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgFinanceService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgListService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgManagementService;
@@ -54,10 +55,11 @@ public class SubOrgController {
     private final SubOrgFinanceService subOrgFinanceService;
     private final EnrollInviteRepository enrollInviteRepository;
     private final PackageSessionEnrollInviteToPaymentOptionService pslipoService;
-    private final UserRoleRepository userRoleRepository;
+    private final InstituteRoleUserClient instituteRoleUserClient;
     private final InstituteRepository instituteRepository;
     private final InstituteSubOrgRepository instituteSubOrgRepository;
     private final SubOrgAccessScopeService subOrgAccessScopeService;
+    private final SubOrgAdminCredentialService subOrgAdminCredentialService;
 
     private static final String ROLE_NAME_ADMIN = "ADMIN";
 
@@ -153,8 +155,10 @@ public class SubOrgController {
         if (user.isRootUser()) {
             return;
         }
-        if (userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(
-                user.getUserId(), instituteId, ROLE_NAME_ADMIN)) {
+        // Roles live in auth_service's DB (admin_core has no user_role table); a failed
+        // lookup falls through to the staff-membership check below.
+        if (instituteRoleUserClient.findRolesOfUser(instituteId, user.getUserId())
+                .map(roles -> roles.contains(ROLE_NAME_ADMIN)).orElse(false)) {
             return;
         }
         boolean isStaff = instituteRepository.findInstitutesByUserId(user.getUserId())
@@ -235,6 +239,23 @@ public class SubOrgController {
         out.put("sub_org_id", subOrgId);
         out.put("admin_permissions", saved);
         return ResponseEntity.ok(out);
+    }
+
+    /**
+     * Re-sends the sub-org admin's current login details by email (Manage VLEs → row menu →
+     * "Share credentials"). Read-only on the admin's account; the reply carries auth-service's
+     * own {@code sent}/{@code failed}/{@code message} so the UI can say what actually happened.
+     */
+    @PostMapping("/{subOrgId}/resend-admin-credentials")
+    public ResponseEntity<Map<String, Object>> resendAdminCredentials(
+            @PathVariable String subOrgId,
+            @RequestParam String parentInstituteId,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+        subOrgAccessScopeService.assertCanAccessSubOrg(user, subOrgId, parentInstituteId);
+        subOrgAccessScopeService.assertRolePermission(user, parentInstituteId,
+                SubOrgAccessScopeService.PERM_MANAGE_TEAM);
+        return ResponseEntity.ok(
+                subOrgAdminCredentialService.resendAdminLoginDetails(subOrgId, parentInstituteId));
     }
 
     /**

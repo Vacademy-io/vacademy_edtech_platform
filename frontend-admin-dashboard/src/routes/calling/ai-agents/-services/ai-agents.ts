@@ -20,6 +20,7 @@ export {
     creditLine,
     normalizeTtsModel,
     resolveTtsModel,
+    voiceLabel,
     voicesForModel,
     defaultVoiceFor,
     patchForModelChange,
@@ -29,13 +30,22 @@ import type { VoiceOption } from './tts-catalog';
 
 export const AI_AGENTS_URL = `${BASE_URL}/admin-core-service/v1/telephony/ai-agents`;
 
-
 /** Expressiveness presets → Bulbul v3 temperature. */
 export const EXPRESSIVENESS_OPTIONS: { label: string; value: string; temperature?: number }[] = [
     { label: 'Model default', value: 'default' },
     { label: 'Calm & steady', value: 'calm', temperature: 0.3 },
     { label: 'Natural', value: 'natural', temperature: 0.6 },
     { label: 'Expressive', value: 'expressive', temperature: 0.9 },
+];
+
+/** Voice modulation presets → pitch-range expansion applied by the bot to the
+ *  audio itself, so it works on every TTS engine. `undefined` = platform default. */
+export const VOICE_MODULATION_OPTIONS: { label: string; value: string; factor?: number }[] = [
+    { label: 'Platform default', value: 'default' },
+    { label: 'Off', value: 'off', factor: 1.0 },
+    { label: 'Subtle', value: 'subtle', factor: 1.3 },
+    { label: 'Conversational', value: 'conversational', factor: 1.6 },
+    { label: 'Lively', value: 'lively', factor: 2.0 },
 ];
 
 export const DEFAULT_SAMPLE_TEXT =

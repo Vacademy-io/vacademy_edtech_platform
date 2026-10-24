@@ -1,0 +1,79 @@
+{
+    "helmetTitle": "صندوق مهام التفاعل",
+    "heading": "صندوق المهام",
+    "subheading": "كل رسالة صاغتها المحركات، مرتبة حسب الأولوية. راجع، عدّل، وأرسل.",
+    "allEngines": "كل المحركات",
+    "filters": {
+        "needsAction": "تحتاج إجراء",
+        "sent": "تم الإرسال",
+        "failed": "فشل",
+        "handled": "تمت المعالجة",
+        "dryRun": "تشغيل تجريبي"
+    },
+    "errors": {
+        "loadFailed": "تعذر تحميل المهام."
+    },
+    "emptyState": "لا يوجد شيء هنا الآن.",
+    "noDraft": "(لا توجد مسودة)",
+    "priority": "الأولوية {{value}}",
+    "kind": {
+        "reply": "رد",
+        "autoSend": "إرسال تلقائي",
+        "task": "Task"
+    },
+    "actions": {
+        "reviewAndSend": "مراجعة وإرسال",
+        "acknowledge": "إقرار",
+        "handledElsewhere": "تمت معالجتها في مكان آخر",
+        "dismiss": "تجاهل",
+        "reopen": "إعادة الفتح",
+        "cancel": "إلغاء"
+    },
+    "sendDialog": {
+        "heading": "مراجعة وإرسال",
+        "fixedTemplateNotice": "هذا قالب واتساب ثابت ومعتمد من Meta. لا يمكن تعديل النص — يمكن تعديل متغيراته فقط. هذا بالضبط ما سيتم إرساله:",
+        "variables": "المتغيرات",
+        "editableNotice": "عدّل قبل الإرسال إن أردت — ما تعدّله هو ما سيُرسل.",
+        "sending": "جارٍ الإرسال…",
+        "sendNow": "إرسال الآن"
+    },
+    "needsTemplate": "لا يمكن لواتساب إرسال إلا قالب معتمد، وهذه المهمة بلا قالب. تعامل معها بطريقة أخرى أو تجاهلها.",
+    "toolbar": {
+        "search": "Search drafts, reasons, engines or templates",
+        "allEngines": "All engines",
+        "allChannels": "All channels",
+        "allKinds": "All kinds",
+        "kindTask": "Tasks only",
+        "kindReply": "Replies only",
+        "kindSend": "Auto-sends only",
+        "sortPriority": "Priority first",
+        "sortOldest": "Oldest first",
+        "sortNewest": "Newest first",
+        "pageNote": "Search and filters apply to the tasks on this page."
+    },
+    "filteredEmpty": "No tasks on this page match these filters.",
+    "priorityShort": "P{{value}}",
+    "age": {
+        "minutes": "{{count}}m",
+        "hours": "{{count}}h",
+        "days": "{{count}}d"
+    },
+    "detail": {
+        "why": "Why the AI picked this",
+        "draft": "Draft",
+        "sentMessage": "Sent message",
+        "callBrief": "Call brief",
+        "template": "Template {{name}}",
+        "simulated": "Dry-run draft — nothing was sent",
+        "timing": "Timing",
+        "created": "Drafted",
+        "scheduledFor": "Scheduled for",
+        "expiresAt": "Expires",
+        "dispatchedAt": "Dispatched",
+        "completedAt": "Completed",
+        "outcome": "Outcome",
+        "openEngine": "Open engine",
+        "draftedAgo": "Drafted {{age}} ago"
+    },
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent."
+}

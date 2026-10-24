@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.domain_routing.dto.DomainRoutingResolveResponse;
 import vacademy.io.admin_core_service.features.domain_routing.dto.NamingOverridesDto;
 import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDomainRouting;
+import vacademy.io.admin_core_service.features.domain_routing.enums.PhoneCountryGeoMode;
 import vacademy.io.admin_core_service.features.domain_routing.repository.InstituteDomainRoutingRepository;
 import vacademy.io.admin_core_service.features.institute.enums.SettingKeyEnums;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
@@ -118,10 +119,12 @@ public class DomainRoutingService {
                 .macAppLink(mapping.getMacAppLink())
                 .convertUsernamePasswordToLowercase(mapping.isConvertUsernamePasswordToLowercase())
                 .commaSeparatedPreferredCountry(mapping.getCommaSeparatedPreferredCountry())
+                .phoneCountryGeoMode(PhoneCountryGeoMode.fromNullable(mapping.getPhoneCountryGeoMode()).name())
                 .hideInstituteName(mapping.getHideInstituteName())
                 .logoWidthPx(mapping.getLogoWidthPx())
                 .logoHeightPx(mapping.getLogoHeightPx())
-                .stackNameBelowLogo(mapping.getStackNameBelowLogo());
+                .stackNameBelowLogo(mapping.getStackNameBelowLogo())
+                .rootCatalogueTag(mapping.getRootCatalogueTag());
 
         if (institute != null) {
             responseBuilder.instituteId(institute.getId())

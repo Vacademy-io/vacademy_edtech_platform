@@ -1,0 +1,10 @@
+{
+    "evaluated": "मूल्यांकित",
+    "evaluating": "मूल्यांकन हो रहा है",
+    "pending": "लंबित",
+    "viewEvaluatedCopy": "मूल्यांकित प्रति देखें",
+    "noEvaluatedCopyError": "इस प्रयास के लिए कोई मूल्यांकित प्रति नहीं मिली।",
+    "loadFailedError": "मूल्यांकित प्रति लोड नहीं हो सकी। कृपया पुनः प्रयास करें।",
+    "evaluatedCopyHeading": "मूल्यांकित प्रति",
+    "fileNamePrefix": "मूल्यांकित-प्रति"
+}

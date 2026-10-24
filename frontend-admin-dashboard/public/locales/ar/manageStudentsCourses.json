@@ -1,0 +1,51 @@
+{
+    "noStudentSelected": {
+        "title": "تفاصيل الطالب غير متاحة",
+        "hint": "لم يتم تحديد أي متعلم أو تعذر تحديد المؤسسة."
+    },
+    "emptyState": {
+        "title": "لا يوجد {{term}} مُسند",
+        "hint": "قم بتعيين برنامج للبدء."
+    },
+    "actions": {
+        "assignToCourse": "+ إسناد إلى {{term}}",
+        "removeFromCourse": "إزالة من {{term}}",
+        "manageAccess": "إدارة الوصول",
+        "filter": "تصفية",
+        "filterCount": "تصفية ({{count}})",
+        "allLevels": "الكل"
+    },
+    "heroStats": {
+        "inProgress": "قيد التقدم",
+        "completed": "مكتمل",
+        "past": "سابق"
+    },
+    "sections": {
+        "inProgressTitle": "{{term}} قيد التقدم",
+        "completedTitle": "{{term}} المكتملة",
+        "pastTitle": "{{term}} السابقة",
+        "noneInProgress": "لا يوجد {{term}} قيد التقدم",
+        "noneCompleted": "لا يوجد {{term}} مكتمل",
+        "nonePast": "لا يوجد {{term}} سابق",
+        "completedBadge": "مكتمل"
+    },
+    "course": {
+        "unnamed": "دورة بدون اسم",
+        "sessionLabel": "{{term}}: {{name}}"
+    },
+    "accessWindow": {
+        "unlimited": "الوصول: غير محدود",
+        "expired": "انتهى الوصول في {{date}}",
+        "daysLeft_zero": "الوصول حتى {{date}} · [{{count}}] لا توجد أيام متبقية",
+        "daysLeft_one": "الوصول حتى {{date}} · [{{count}}] يوم واحد متبقٍ",
+        "daysLeft_two": "الوصول حتى {{date}} · [{{count}}] يومان متبقيان",
+        "daysLeft_few": "الوصول حتى {{date}} · [{{count}}] أيام متبقية",
+        "daysLeft_many": "الوصول حتى {{date}} · [{{count}}] يومًا متبقيًا",
+        "daysLeft_other": "الوصول حتى {{date}} · [{{count}}] يوم متبقٍ"
+    },
+    "pagination": {
+        "prev": "السابق",
+        "next": "التالي"
+    },
+    "fallbackStudentName": "طالب"
+}

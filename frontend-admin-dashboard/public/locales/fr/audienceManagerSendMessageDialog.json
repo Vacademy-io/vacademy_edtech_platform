@@ -1,0 +1,142 @@
+{
+    "dialogTitle": "Envoyer un message",
+    "dialogDescription": "Envoyer un message aux prospects de « {{campaignName}} »",
+    "stepTitles": {
+        "selectChannel": "Choisir le canal",
+        "composeContent": "Rédiger le contenu",
+        "mapVariables": "Associer les variables",
+        "reviewSend": "Vérifier et envoyer"
+    },
+    "systemFields": {
+        "fullName": "Nom complet",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "city": "Ville",
+        "region": "Région",
+        "campaignName": "Nom de la campagne",
+        "submittedAt": "Envoyé le",
+        "sourceType": "Type de source"
+    },
+    "channels": {
+        "whatsapp": {
+            "label": "WhatsApp",
+            "description": "Envoyer des messages avec modèle via l'API WhatsApp Business"
+        },
+        "email": {
+            "label": "E-mail",
+            "description": "Envoyer des e-mails avec objet et corps HTML personnalisables"
+        },
+        "push": {
+            "label": "Notification push",
+            "description": "Envoyer des notifications push aux utilisateurs mobiles et web"
+        },
+        "systemAlert": {
+            "label": "Alerte système",
+            "description": "Envoyer des alertes intégrées visibles dans le centre de notifications"
+        }
+    },
+    "toasts": {
+        "loadWhatsappTemplatesFailed": "Échec du chargement des modèles WhatsApp",
+        "loadEmailTemplatesFailed": "Échec du chargement des modèles d'e-mail",
+        "loadTemplateContentFailed": "Échec du chargement du contenu du modèle",
+        "noneSent": "Aucun message n'a pu être envoyé. Voir le détail ci-dessous.",
+        "partialSuccess": "Accepté pour {{accepted}} sur {{total}} — {{failed}} échoué(s). Voir le détail ci-dessous.",
+        "sendSuccess_one": "Message accepté pour {{count}} destinataire",
+        "sendSuccess_many": "Message accepté pour {{count}} de destinataires",
+        "sendSuccess_other": "Message accepté pour {{count}} destinataires",
+        "sendFailed": "Échec de l'envoi du message"
+    },
+    "whatsappStep": {
+        "templateLabel": "Modèle",
+        "loadingTemplates": "Chargement des modèles...",
+        "selectPlaceholder": "Sélectionner un modèle approuvé",
+        "emptyText": "Aucun modèle approuvé ne correspond à votre recherche.",
+        "languageCodeLabel": "Code de langue",
+        "templatePreviewLabel": "Aperçu du modèle"
+    },
+    "emailStep": {
+        "templateLabel": "Modèle",
+        "loadingTemplates": "Chargement des modèles...",
+        "selectPlaceholder": "Sélectionner un modèle",
+        "emptyText": "Aucun modèle ne correspond à votre recherche.",
+        "customOption": "Personnalisé — rédiger de zéro",
+        "loadingTemplateContent": "Chargement du contenu du modèle...",
+        "emailTypeLabel": "Type d'e-mail",
+        "utilityEmail": "E-mail utilitaire",
+        "promotionalEmail": "E-mail promotionnel",
+        "subjectLabel": "Objet",
+        "subjectPlaceholder": "Saisissez l'objet de l'e-mail...",
+        "bodyLabel": "Corps",
+        "previewTab": "Aperçu",
+        "editTab": "Modifier le HTML",
+        "previewEmptyState": "Choisissez un modèle ou passez à « Modifier le HTML » pour rédiger le contenu.",
+        "bodyPlaceholder": "Saisissez le HTML du corps de l'e-mail... utilisez {{token}} pour les variables",
+        "placeholderHintPrefix": "Les variables comme",
+        "placeholderHintSuffix": "sont remplacées pour chaque destinataire à l'envoi. Associez-les à l'étape suivante.",
+        "emailTypeHint": "Sent from this address. Manage senders and their daily limits in Settings → Notifications."
+    },
+    "pushStep": {
+        "titleLabel": "Titre",
+        "titlePlaceholder": "Titre de la notification...",
+        "bodyLabel": "Corps",
+        "bodyPlaceholder": "Corps de la notification..."
+    },
+    "headerMedia": {
+        "label": "URL de l'en-tête {{kind}}",
+        "hint": "Ce modèle possède un en-tête de type {{kind}}, exigé par WhatsApp à chaque envoi — sans lui, l'envoi échoue pour tous les destinataires. Pré-rempli avec le média approuvé du modèle.",
+        "imagePreviewAlt": "Aperçu de l'en-tête",
+        "kindLabels": {
+            "image": "image",
+            "video": "vidéo",
+            "document": "document"
+        }
+    },
+    "variableMapping": {
+        "noVariables": "Aucune variable à associer. Vous pouvez continuer.",
+        "mapHint": "Associez chaque variable du modèle à un champ du prospect.",
+        "columnVariable": "Variable",
+        "columnMappedField": "Champ associé",
+        "selectFieldPlaceholder": "Sélectionner un champ...",
+        "staticValueOption": "Valeur fixe…",
+        "staticValuePlaceholder": "ex. « Étudiant »"
+    },
+    "review": {
+        "messageSent": "Message envoyé",
+        "sendCompleted": "Envoi terminé",
+        "statusLabel": "Statut",
+        "recipientsLabel": "Destinataires",
+        "acceptedLabel": "Accepté",
+        "failedLabel": "Échoué",
+        "processingNotice": "Traitement en arrière-plan (lot : {{batchId}})",
+        "close": "Fermer",
+        "channelHeading": "Canal",
+        "whatsappContentLabel": "Modèle",
+        "otherContentLabel": "Objet / Titre",
+        "contentFallback": "-",
+        "recipientsAllKnown_one": "Les {{count}} membres de cette audience",
+        "recipientsAllKnown_many": "Les {{count}} de membres de cette audience",
+        "recipientsAllKnown_other": "Les {{count}} membres de cette audience",
+        "recipientsAllUnknown": "Tous les membres de cette audience",
+        "variableMappingsLabel": "Associations de variables",
+        "staticValueLabel": "Fixe : « {{value}} »",
+        "sending": "Envoi en cours...",
+        "sendButtonKnown_one": "Envoyer à {{count}} membre",
+        "sendButtonKnown_many": "Envoyer à {{count}} de membres",
+        "sendButtonKnown_other": "Envoyer à {{count}} membres",
+        "sendButtonUnknown": "Envoyer à tous les membres",
+        "statusValues": {
+            "success": "Réussi",
+            "failed": "Échoué"
+        },
+        "recipientsSelected_one": "{{count}} prospect sélectionné",
+        "recipientsSelected_many": "{{count}} de prospects sélectionnés",
+        "recipientsSelected_other": "{{count}} prospects sélectionnés"
+    },
+    "footer": {
+        "back": "Retour",
+        "next": "Suivant"
+    },
+    "dialogDescriptionSelected_one": "Envoyer un message au {{count}} prospect sélectionné",
+    "dialogDescriptionSelected_many": "Envoyer un message aux {{count}} de prospects sélectionnés",
+    "dialogDescriptionSelected_other": "Envoyer un message aux {{count}} prospects sélectionnés"
+}

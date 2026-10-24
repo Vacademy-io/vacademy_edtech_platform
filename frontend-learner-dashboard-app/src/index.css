@@ -8,8 +8,14 @@
 @import './styles/play-theme.css';
 /* Cleaner Play Theme - warm, premium, illustrated skin */
 @import './styles/cleaner-play-theme.css';
-/* Flaticon Uicons - Rounded bubbly icons for play theme */
-@import '@flaticon/flaticon-uicons/css/all/all';
+/* Corporate Theme - restrained, dense, structural skin */
+@import './styles/corporate-theme.css';
+/* Institute UI axes - corners / density / gradient (data-ui-* on <html>).
+   Imported last of the skin sheets so its --play-radius-* definitions,
+   which express the Play radii against --radius, win over the literals
+   play-theme.css used to hardcode — and so an explicitly-chosen axis beats
+   a skin's house defaults on the specificity tie (both are 0,1,1). */
+@import './styles/ui-axes.css';
 
 @tailwind base;
 @tailwind components;
@@ -205,6 +211,12 @@ html, body {
 
     /* ========= ShadCN variables ========= */
     --background: 0 0% 100%;
+    /* Page canvas: the surface BEHIND cards (body + the shell's SidebarInset).
+       Defaults to --background, so it is identical to before for every skin.
+       It exists as its own token so a skin can tint the canvas without also
+       tinting the ~100 bg-background usages that mean "white surface" —
+       dialogs, sheets, toasts, active tabs, switch thumbs, outline buttons. */
+    --canvas: var(--background);
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -340,6 +352,8 @@ html, body {
     --shadow-md: 0 4px 12px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
     --shadow-lg: 0 12px 28px -6px rgb(15 23 42 / 0.12), 0 4px 8px -4px rgb(15 23 42 / 0.06);
     --shadow-xl: 0 24px 48px -12px rgb(15 23 42 / 0.18);
+    --shadow-2xl: 0 32px 64px -16px rgb(15 23 42 / 0.24);
+    --shadow-inner: inset 0 2px 4px 0 rgb(15 23 42 / 0.06);
 
     /* ========= Motion tokens (default / vibrant; play has its own) ========= */
     --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
@@ -575,7 +589,7 @@ html, body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-canvas text-foreground font-sans;
     /* font-sans resolves to var(--app-font-family) -> Plus Jakarta Sans by default,
        white-label override at runtime. */
     font-variation-settings: normal;
@@ -947,7 +961,7 @@ html, body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-canvas text-foreground;
   }
 }
 
@@ -1358,6 +1372,166 @@ html, body {
   color: hsl(var(--catalogue-text-primary));
 }
 
+/* ─── react-phone-input-2 — overlap fix + design-system surface ─────────────
+   The library ships six mutually-incompatible stylesheets. This app used to
+   import two of them (`bootstrap.css` from the design-system field,
+   `style.css` from CustomFieldRenderer); Vite concatenates both into one
+   bundle, so the two definitions of the same selectors fought:
+
+     bootstrap  .country-list .country { padding-left: 46px }
+                .country-list .flag    { position: absolute; left: 13px }
+                .selected-flag .arrow  { left: 29px }
+     style      .country-list .country { padding-left:  9px }
+                .selected-flag .arrow  { left: 20px }
+
+   Whichever landed last won per-property, and the losing halves still applied:
+   an absolutely-positioned flag over a row with no left inset put the flag ON
+   TOP of the country name, and a 20px arrow offset put the dropdown caret on
+   top of the 25px-wide selected flag. Every consumer now imports
+   `bootstrap.css` only; the geometry below re-declares the load-bearing pairs
+   explicitly so a future stray import of another variant cannot bring the
+   overlap back.
+
+   Scope note: this block deliberately does NOT set width, height or padding on
+   `.form-control` / `.selected-flag`. Six call sites size the widget
+   themselves (`!h-10`, `!h-11`, `!ps-12`, `!w-10`), and the dropdown — which
+   none of them style — is where the bug actually lived.
+
+   NOT inside `@layer components`: Tailwind tree-shakes user layers against
+   class names it can find in the source, and `.react-tel-input` is emitted by
+   the library at runtime, so a layered version of this block silently lost two
+   thirds of its rules. Plain top-level CSS is never purged.
+
+   Sprite geometry: bootstrap's flags are 25×20, hence the 12px gutter, the
+   -10px (half-height) centering offset and the 48px row inset. */
+
+/* ── The number field ─────────────────────────────────────────────────────── */
+.react-tel-input.react-tel-input .form-control {
+  font-family: inherit;
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--input));
+  border-radius: max(0px, calc(var(--radius) - 2px));
+}
+.react-tel-input.react-tel-input .form-control::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+/* bootstrap.css hardcodes a Bootstrap-blue focus glow. */
+.react-tel-input.react-tel-input .form-control:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 1px hsl(var(--ring));
+}
+.react-tel-input.react-tel-input .form-control.invalid-number {
+  border-color: hsl(var(--danger-500));
+}
+
+/* ── The country button ───────────────────────────────────────────────────── */
+.react-tel-input.react-tel-input .flag-dropdown {
+  border-right: 1px solid hsl(var(--input));
+  border-radius: max(0px, calc(var(--radius) - 2px)) 0 0
+    max(0px, calc(var(--radius) - 2px));
+}
+.react-tel-input.react-tel-input .flag-dropdown.open,
+.react-tel-input.react-tel-input .flag-dropdown.open .selected-flag,
+.react-tel-input.react-tel-input .selected-flag:hover,
+.react-tel-input.react-tel-input .selected-flag:focus {
+  background-color: hsl(var(--accent));
+}
+/* bootstrap.css paints its own blue focus slab through this pseudo-element. */
+.react-tel-input.react-tel-input .selected-flag::before {
+  display: none;
+}
+.react-tel-input.react-tel-input .selected-flag .flag {
+  position: absolute;
+  top: 50%;
+  margin-top: -10px;
+}
+/* Absolute, not relative: the flag beside it is out of flow, so a relative
+   arrow is laid out from the padding edge — which is what put the caret on top
+   of the flag once a second stylesheet supplied a shorter offset. */
+.react-tel-input.react-tel-input .selected-flag .arrow {
+  position: absolute;
+  top: 50%;
+  left: 2.375rem;
+  margin-top: -2px;
+  border-top-color: hsl(var(--muted-foreground));
+}
+.react-tel-input.react-tel-input .selected-flag .arrow.up {
+  border-bottom-color: hsl(var(--muted-foreground));
+}
+
+/* ── The country dropdown ─────────────────────────────────────────────────── */
+.react-tel-input.react-tel-input .country-list {
+  max-width: calc(100vw - 2rem);
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  color: hsl(var(--popover-foreground));
+  background-color: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+.react-tel-input.react-tel-input .country-list .country {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  /* 48px = 12px gutter + 25px flag + 11px breathing room. This is the pair
+     that keeps the flag off the country name. */
+  padding: 0.5rem 0.75rem 0.5rem 3rem;
+  border-radius: max(0px, calc(var(--radius) - 2px));
+}
+.react-tel-input.react-tel-input .country-list .flag {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  margin: -10px 0 0;
+}
+.react-tel-input.react-tel-input .country-list .country-name {
+  margin-right: 0;
+}
+.react-tel-input.react-tel-input .country-list .country .dial-code {
+  color: hsl(var(--muted-foreground));
+}
+.react-tel-input.react-tel-input .country-list .country:hover,
+.react-tel-input.react-tel-input .country-list .country.highlight {
+  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--accent));
+}
+.react-tel-input.react-tel-input .country-list .divider {
+  margin: 0.25rem 0;
+  padding: 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.react-tel-input.react-tel-input .country-list .search {
+  display: flex;
+  padding: 0.25rem 0.25rem 0.5rem;
+  background-color: hsl(var(--popover));
+}
+.react-tel-input.react-tel-input .country-list .search-box {
+  width: 100%;
+  height: var(--ui-control-h);
+  margin: 0;
+  padding: 0 0.75rem;
+  color: hsl(var(--foreground));
+  background-color: transparent;
+  border: 1px solid hsl(var(--input));
+  border-radius: max(0px, calc(var(--radius) - 2px));
+  line-height: normal;
+}
+.react-tel-input.react-tel-input .country-list .search-box:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 1px hsl(var(--ring));
+}
+.react-tel-input.react-tel-input .country-list .no-entries-message {
+  padding: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  opacity: 1;
+}
+
 /* react-phone-input-2 inside a DARK catalogue. The library ships its own
    stylesheet hardcoding background:#fff on the input, the flag dropdown and the
    country list, so the phone field rendered as a bright white slab in an
@@ -1490,4 +1664,18 @@ html, body {
   background-color: transparent;
   border-color: hsl(var(--border));
   color: inherit;
+}
+
+/* Safe-area padding for full-height overlays (the engagement task runner's
+   bottom sheet on phones): keeps its header clear of the notch / status bar and
+   its footer CTA clear of the home indicator. env() is 0 on devices without
+   insets, so these are no-ops on the web. Unlike html/body above, no -20px
+   offset: an overlay has no app header of its own to compensate for. */
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

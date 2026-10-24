@@ -1,0 +1,5 @@
+{
+    "errors": {
+        "createFailed": "बनाना विफल हुआ ({{status}}): {{detail}}"
+    }
+}

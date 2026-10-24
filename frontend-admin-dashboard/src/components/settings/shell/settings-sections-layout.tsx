@@ -34,6 +34,11 @@ interface SettingsSectionsLayoutProps {
      */
     children: ReactNode;
     className?: string;
+    /**
+     * Section to open first (e.g. from a deep link). Ignored when it is not one
+     * of the sections; the first section is the default.
+     */
+    defaultActiveId?: string;
 }
 
 /**
@@ -47,12 +52,17 @@ export function SettingsSectionsLayout({
     toolbar,
     children,
     className,
+    defaultActiveId,
 }: SettingsSectionsLayoutProps) {
     const allSections = useMemo(
         () => groups.flatMap((g) => g.sections),
         [groups]
     );
-    const [activeId, setActiveId] = useState(allSections[0]?.id ?? '');
+    const [activeId, setActiveId] = useState(
+        defaultActiveId && allSections.some((s) => s.id === defaultActiveId)
+            ? defaultActiveId
+            : allSections[0]?.id ?? ''
+    );
 
     // Guard against an active id that no longer exists (e.g. groups changed).
     const resolvedActive = allSections.some((s) => s.id === activeId)

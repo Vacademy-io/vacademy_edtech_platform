@@ -1,0 +1,11 @@
+{
+    "dialog": {
+        "heading": "Réévaluer l'évaluation",
+        "confirmTextPrefix": "Voulez-vous vraiment réévaluer l'évaluation pour",
+        "confirmSuffix": "sélectionné(s) ?"
+    },
+    "doneButton": "Terminé",
+    "toasts": {
+        "revaluateSuccess": "La tentative pour cette évaluation a été réévaluée pour les étudiants sélectionnés. Veuillez vérifier votre e-mail !"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "searchPlaceholder": "Rechercher par nom ou téléphone...",
+    "feeType": "Type de frais",
+    "clearAll": "Tout effacer",
+    "status": {
+        "label": "Statut",
+        "paid": "Payé",
+        "partial": "Partiel",
+        "pending": "En attente",
+        "overdue": "En retard"
+    }
+}

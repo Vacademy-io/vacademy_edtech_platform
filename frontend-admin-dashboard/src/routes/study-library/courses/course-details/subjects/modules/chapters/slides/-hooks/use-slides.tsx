@@ -10,6 +10,7 @@ import {
     ADD_UPDATE_ASSIGNMENT_SLIDE,
     ADD_UPDATE_AUDIO_SLIDE,
     ADD_UPDATE_ASSESSMENT_SLIDE,
+    ADD_UPDATE_HTML_VIDEO_SLIDE,
     SCORM_ADD_OR_UPDATE,
     UPDATE_SLIDE_STATUS,
     UPDATE_SLIDE_ORDER,
@@ -150,6 +151,7 @@ export interface QuizSlide {
     time_limit_in_minutes?: number | null;
     marks_per_question?: number;
     negative_marking?: number;
+    partial_marking?: boolean | null;
     pass_percentage?: number | null;
 }
 
@@ -183,6 +185,16 @@ export interface AssessmentSlide {
     show_result?: boolean;
 }
 
+// AI-generated video slide (source_type HTML_VIDEO). The media is resolved from
+// ai_gen_video_id at view time; code_editor_config is a JSON string when set.
+export interface HtmlVideoSlideData {
+    id: string;
+    url?: string | null;
+    ai_gen_video_id?: string | null;
+    video_length_in_millis?: number | null;
+    code_editor_config?: string | null;
+}
+
 // Main slide interface
 export interface Slide {
     id: string;
@@ -201,6 +213,7 @@ export interface Slide {
     audio_slide?: AudioSlide | null;
     scorm_slide?: ScormSlide | null;
     assessment_slide?: AssessmentSlide | null;
+    html_video_slide?: HtmlVideoSlideData | null;
     is_loaded: boolean;
     new_slide: boolean;
     // Split-screen mode properties (frontend only)
@@ -437,6 +450,48 @@ export interface AssessmentSlidePayload {
         show_result?: boolean;
     };
 }
+
+// Update: the backend only overwrites html_video_slide fields that are sent, so a
+// payload carrying just the id leaves the generated video untouched.
+export interface HtmlVideoSlideUpdatePayload {
+    id: string;
+    title: string;
+    description?: string | null;
+    image_file_id?: string | null;
+    status: string;
+    slide_order?: number | null;
+    new_slide: false;
+    notify?: boolean;
+    html_video_slide: {
+        id: string;
+    };
+}
+
+// Create: HTML_VIDEO slides (AI Video / AI Slides / AI Storybook) are created by the
+// AI course flow and by "Add Slide → AI Video". Both ids are client-generated — the
+// backend has no generator for html_video_slide.id. `url` and `ai_gen_video_id` both
+// carry the ai_service video id; players resolve the media by it at view time.
+export interface HtmlVideoSlideCreatePayload {
+    id: string;
+    title: string;
+    description?: string | null;
+    image_file_id?: string | null;
+    status: 'DRAFT' | 'PUBLISHED';
+    slide_order: number;
+    source_type: 'HTML_VIDEO';
+    new_slide: true;
+    notify?: boolean;
+    html_video_slide: {
+        id: string;
+        url: string;
+        ai_gen_video_id: string;
+        video_length_in_millis: number;
+        /** JSON string, e.g. {"enabled":true,"layout":"split-right","language":"python",…}. */
+        code_editor_config?: string;
+    };
+}
+
+export type HtmlVideoSlidePayload = HtmlVideoSlideUpdatePayload | HtmlVideoSlideCreatePayload;
 
 interface UpdateStatusParams {
     chapterId: string;
@@ -763,6 +818,22 @@ export const useSlidesMutations = (
         },
     });
 
+    const addUpdateHtmlVideoSlideMutation = useMutation({
+        mutationFn: async (payload: HtmlVideoSlidePayload) => {
+            const response = await authenticatedAxiosInstance.post(
+                `${ADD_UPDATE_HTML_VIDEO_SLIDE}?chapterId=${chapterId}&moduleId=${moduleId}&subjectId=${subjectId}&packageSessionId=${packageSessionId}&instituteId=${INSTITUTE_ID}`,
+                payload
+            );
+            return { data: response.data };
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['slides'] });
+            queryClient.invalidateQueries({ queryKey: ['GET_MODULES_WITH_CHAPTERS'] });
+            queryClient.invalidateQueries({ queryKey: ['GET_STUDENT_SUBJECTS_PROGRESS'] });
+            queryClient.invalidateQueries({ queryKey: ['GET_STUDENT_SLIDES_PROGRESS'] });
+        },
+    });
+
     const updateSlideStatus = useMutation({
         mutationFn: async ({ chapterId, slideId, status, instituteId }: UpdateStatusParams) => {
             return await authenticatedAxiosInstance.put(
@@ -865,6 +936,8 @@ export const useSlidesMutations = (
             addUpdateScormSlideMutation.mutateAsync(payload).then((result) => result.data),
         addUpdateAssessmentSlide: (payload: AssessmentSlidePayload) =>
             addUpdateAssessmentSlideMutation.mutateAsync(payload).then((result) => result.data),
+        addUpdateHtmlVideoSlide: (payload: HtmlVideoSlidePayload) =>
+            addUpdateHtmlVideoSlideMutation.mutateAsync(payload).then((result) => result.data),
         updateSlideStatus: updateSlideStatus.mutateAsync,
         updateSlideOrder: updateSlideOrderMutation.mutateAsync,
         updateQuestionOrder: (payload: SlideQuestionsDataInterface) =>
@@ -880,6 +953,7 @@ export const useSlidesMutations = (
             addUpdateAudioSlideMutation.isPending ||
             addUpdateScormSlideMutation.isPending ||
             addUpdateAssessmentSlideMutation.isPending ||
+            addUpdateHtmlVideoSlideMutation.isPending ||
             updateSlideOrderMutation.isPending ||
             updateQuestionSlideMutation.isPending ||
             updateAssignmentSlideMutation.isPending,

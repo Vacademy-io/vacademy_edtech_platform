@@ -7,6 +7,7 @@ import vacademy.io.admin_core_service.features.institute.repository.InstituteRep
 import vacademy.io.admin_core_service.features.institute_learner.entity.Student;
 import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
 import vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.InstituteSection;
@@ -100,12 +101,13 @@ public class IdentityCollector {
         String pkg = ps.getPackageEntity() != null ? ps.getPackageEntity().getPackageName() : null;
         String session = ps.getSession() != null ? ps.getSession().getSessionName() : null;
         StringBuilder sb = new StringBuilder();
-        if (level != null && !level.isBlank()) sb.append(level.trim());
+        // "default" is the placeholder level of a course without levels — never show it to a parent.
+        if (level != null && !level.isBlank() && !level.trim().equalsIgnoreCase("default")) sb.append(level.trim());
         if (pkg != null && !pkg.isBlank()) {
             if (sb.length() > 0) sb.append(" ");
             sb.append(pkg.trim());
         }
-        if (session != null && !session.isBlank()) {
+        if (session != null && !session.isBlank() && !session.trim().equalsIgnoreCase("default")) {
             if (sb.length() > 0) sb.append(" ");
             sb.append("(").append(session.trim()).append(")");
         }
@@ -140,8 +142,9 @@ public class IdentityCollector {
                         }
                     }
                 }
-                // instituteThemeCode used as brand color (may be a hex value)
-                builder.themeColor(inst.getInstituteThemeCode());
+                // instituteThemeCode is a hex value or a preset code ("primary", "blue", …) — resolve
+                // it to a paintable colour; null lets the renderers use their default accent.
+                builder.themeColor(ThemeColorResolver.resolve(inst.getInstituteThemeCode()));
             }
         } catch (Exception e) {
             log.warn("[IdentityCollector] Could not fetch institute metadata for id={}: {}", instituteId, e.getMessage());

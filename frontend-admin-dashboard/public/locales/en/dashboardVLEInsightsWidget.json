@@ -1,0 +1,37 @@
+{
+    "heading": "{{plural}} insights",
+    "subtitle": "Plans, seats & growth across your network",
+    "manage": "Manage",
+    "planStatus": {
+        "title": "Plan status",
+        "active": "Active",
+        "pending": "Pending",
+        "expired": "Expired",
+        "inactive": "Inactive",
+        "none": "No plan"
+    },
+    "seatUtilization": {
+        "title": "Seat utilization",
+        "seatsFraction": "{{used}} / {{total}} seats",
+        "seatsAvailable_one": "{{formatted}} seat available across the network",
+        "seatsAvailable_other": "{{formatted}} seats available across the network"
+    },
+    "growth": {
+        "title": "New registrations",
+        "tooltipLabel": "New {{plural}}"
+    },
+    "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+    }
+}

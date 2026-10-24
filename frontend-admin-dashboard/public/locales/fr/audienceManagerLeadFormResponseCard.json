@@ -1,0 +1,27 @@
+{
+    "card": {
+        "title": "Réponse au formulaire"
+    },
+    "row": {
+        "notProvided": "Non renseigné",
+        "viewAttachment": "Voir la pièce jointe"
+    },
+    "callButton": {
+        "title": "Appeler ce prospect",
+        "ariaLabel": "Appeler le prospect",
+        "connecting": "Connexion…",
+        "callNow": "Appeler maintenant"
+    },
+    "aiCallButton": {
+        "title": "Passer un appel avec l'agent vocal IA à ce prospect",
+        "ariaLabel": "Appel IA au prospect",
+        "calling": "Appel en cours…",
+        "aiCall": "Appel IA",
+        "optionsHeading": "Options de l'appel IA",
+        "placeAiCall": "Passer l'appel IA"
+    },
+    "errors": {
+        "noResponseForCall": "Aucune réponse de campagne liée — impossible de passer un appel depuis ici.",
+        "noResponseForAiCall": "Aucune réponse de campagne liée — impossible de passer un appel IA depuis ici."
+    }
+}

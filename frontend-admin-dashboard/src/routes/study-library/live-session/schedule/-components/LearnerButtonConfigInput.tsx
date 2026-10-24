@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyInput } from '@/components/design-system/input';
 import { MyButton } from '@/components/design-system/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { LearnerButtonConfig } from '../../-constants/helper';
 import { Sparkle, Trash, Plus, Eye, Palette, TextT, Link } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 
 interface LearnerButtonConfigInputProps {
     value: LearnerButtonConfig | null | undefined;
@@ -12,19 +14,22 @@ interface LearnerButtonConfigInputProps {
     disabled?: boolean;
 }
 
-const DEFAULT_BUTTON_CONFIG: LearnerButtonConfig = {
-    text: 'View Class Material',
-    url: '',
-    background_color: '#1976D2',
-    text_color: '#FFFFFF',
-    visible: true,
-};
+function getDefaultButtonConfig(t: TFunction): LearnerButtonConfig {
+    return {
+        text: t('defaultButtonText'),
+        url: '',
+        background_color: '#1976D2',
+        text_color: '#FFFFFF',
+        visible: true,
+    };
+}
 
 export function LearnerButtonConfigInput({
     value,
     onChange,
     disabled,
 }: LearnerButtonConfigInputProps) {
+    const { t } = useTranslation('studyLibraryLearnerButtonConfigInput');
     const [config, setConfig] = useState<LearnerButtonConfig | null>(value || null);
 
     useEffect(() => {
@@ -40,7 +45,7 @@ export function LearnerButtonConfigInput({
     };
 
     const handleAdd = () => {
-        const newConfig = { ...DEFAULT_BUTTON_CONFIG };
+        const newConfig = getDefaultButtonConfig(t);
         setConfig(newConfig);
         onChange(newConfig);
     };
@@ -60,7 +65,7 @@ export function LearnerButtonConfigInput({
                     className="flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 px-4 py-3 text-sm font-medium text-gray-600 transition-all hover:border-primary hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <Plus size={18} weight="bold" className="transition-transform group-hover:scale-110" />
-                    <span>Add Custom Button</span>
+                    <span>{t('addCustomButton')}</span>
                 </button>
             </div>
         );
@@ -76,10 +81,10 @@ export function LearnerButtonConfigInput({
                     </div> */}
                     <div>
                         <h4 className="text-sm font-semibold text-gray-900">
-                            Custom Button Configuration
+                            {t('customButtonConfiguration')}
                         </h4>
                         <p className="text-xs text-gray-600">
-                            Add a custom action button for learners
+                            {t('addCustomActionButtonNote')}
                         </p>
                     </div>
                 </div>
@@ -90,7 +95,7 @@ export function LearnerButtonConfigInput({
                     className="group flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <Trash size={14} weight="bold" className="transition-transform group-hover:scale-110" />
-                    <span>Remove</span>
+                    <span>{t('remove')}</span>
                 </button>
             </div>
 
@@ -121,19 +126,21 @@ export function LearnerButtonConfigInput({
                         <div className="mb-2 flex items-center gap-2">
                             <TextT size={14} className="text-gray-500" weight="duotone" />
                             <label className="text-xs font-semibold text-gray-700">
-                                Button Text
-                                <span className="ml-1 text-red-500">*</span>
+                                {t('buttonText')}
+                                <span className="ms-1 text-red-500">*</span>
                             </label>
                         </div>
                         <MyInput
                             inputType="text"
-                            inputPlaceholder="e.g., View Class Material"
+                            inputPlaceholder={t('buttonTextPlaceholder')}
                             input={config.text}
                             onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('text', e.target.value)}
                             disabled={disabled}
                             className="w-full transition-all focus-within:ring-2 focus-within:ring-purple-500/20"
                         />
-                        <p className="mt-1 text-xs text-gray-500">{config.text.length}/50 characters</p>
+                        <p className="mt-1 text-xs text-gray-500">
+                            {t('charactersCount', { count: config.text.length, max: 50 })}
+                        </p>
                     </div>
 
                     {/* Button URL */}
@@ -141,13 +148,13 @@ export function LearnerButtonConfigInput({
                         <div className="mb-2 flex items-center gap-2">
                             <Link size={14} className="text-gray-500" weight="duotone" />
                             <label className="text-xs font-semibold text-gray-700">
-                                Button URL
-                                <span className="ml-1 text-red-500">*</span>
+                                {t('buttonUrl')}
+                                <span className="ms-1 text-red-500">*</span>
                             </label>
                         </div>
                         <MyInput
                             inputType="url"
-                            inputPlaceholder="https://example.com/class-link..."
+                            inputPlaceholder={t('buttonUrlPlaceholder')}
                             input={config.url}
                             onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('url', e.target.value)}
                             disabled={disabled}
@@ -162,7 +169,7 @@ export function LearnerButtonConfigInput({
                     <div className="group">
                         <div className="mb-2 flex items-center gap-2">
                             <Palette size={14} className="text-gray-500" weight="duotone" />
-                            <label className="text-xs font-semibold text-gray-700">Background Color</label>
+                            <label className="text-xs font-semibold text-gray-700">{t('backgroundColor')}</label>
                         </div>
                         <div className="flex gap-2">
                             <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-gray-200 shadow-sm transition-transform hover:scale-105 active:scale-95">
@@ -198,7 +205,7 @@ export function LearnerButtonConfigInput({
                     <div className="group">
                         <div className="mb-2 flex items-center gap-2">
                             <Palette size={14} className="text-gray-500" weight="duotone" />
-                            <label className="text-xs font-semibold text-gray-700">Text Color</label>
+                            <label className="text-xs font-semibold text-gray-700">{t('textColor')}</label>
                         </div>
                         <div className="flex gap-2">
                             <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border-2 border-gray-200 shadow-sm transition-transform hover:scale-105 active:scale-95">
@@ -235,7 +242,7 @@ export function LearnerButtonConfigInput({
                 <div className="rounded-lg border border-purple-100 bg-gradient-to-br from-purple-50/30 to-white p-3">
                     <div className="mb-2 flex items-center gap-2">
                         <Eye size={14} className="text-purple-600" weight="duotone" />
-                        <label className="text-xs font-semibold text-gray-700">Preview:</label>
+                        <label className="text-xs font-semibold text-gray-700">{t('preview')}:</label>
                     </div>
                     <button
                         type="button"
@@ -246,7 +253,7 @@ export function LearnerButtonConfigInput({
                         className="rounded-lg px-4 py-2 text-sm font-semibold shadow-md transition-transform hover:scale-105"
                         disabled
                     >
-                        {config.text || 'Button Text'}
+                        {config.text || t('buttonText')}
                     </button>
                 </div>
             </div>

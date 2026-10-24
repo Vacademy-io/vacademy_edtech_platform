@@ -1,0 +1,269 @@
+{
+    "common": {
+        "somethingWentWrong": "Une erreur est survenue",
+        "recommendedSteps": "Étapes recommandées",
+        "errorDetailsDevOnly": "Détails de l'erreur (développement uniquement)",
+        "returnHome": "Retour à l'accueil",
+        "goBack": "Retour",
+        "reportIssue": "Signaler un problème",
+        "signOut": "Se déconnecter",
+        "tryAgain": "Réessayer",
+        "cancel": "Annuler",
+        "refresh": "Actualiser",
+        "loading": "Chargement...",
+        "loadMore": "Charger plus",
+        "clearAll": "Tout effacer"
+    },
+    "errorTitle": "Erreur",
+    "loading": "Chargement de {{type}}...",
+    "noFrameContent": "Aucun contenu disponible pour cette image",
+    "interactHint": "Interagissez avec le contenu ci-dessus",
+    "progressOfTotal": "{{label}} {{current}} sur {{total}}",
+    "frameLayerTitle": "Calque vidéo IA {{id}}",
+    "contentType": {
+        "VIDEO": "Vidéo",
+        "QUIZ": "Quiz",
+        "STORYBOOK": "Livre d'histoires",
+        "INTERACTIVE_GAME": "Jeu",
+        "PUZZLE_BOOK": "Puzzles",
+        "SIMULATION": "Simulation",
+        "FLASHCARDS": "Cartes mémoire",
+        "MAP_EXPLORATION": "Carte",
+        "WORKSHEET": "Fiche d'exercices",
+        "CODE_PLAYGROUND": "Code",
+        "TIMELINE": "Chronologie",
+        "CONVERSATION": "Conversation"
+    },
+    "entryLabel": {
+        "VIDEO": "segment",
+        "QUIZ": "question",
+        "STORYBOOK": "page",
+        "INTERACTIVE_GAME": "jeu",
+        "PUZZLE_BOOK": "puzzle",
+        "SIMULATION": "simulation",
+        "FLASHCARDS": "carte",
+        "MAP_EXPLORATION": "lieu",
+        "WORKSHEET": "exercice",
+        "CODE_PLAYGROUND": "exercice",
+        "TIMELINE": "événement",
+        "CONVERSATION": "échange"
+    },
+    "mcq": {
+        "quickCheck": "Vérification rapide",
+        "skip": "Passer",
+        "explanationLabel": "Explication : ",
+        "continue": "Continuer"
+    },
+    "controls": {
+        "printWorksheetTitle": "Imprimer la fiche d'exercices",
+        "print": "Imprimer",
+        "rewind10": "Reculer de 10 secondes",
+        "forward10": "Avancer de 10 secondes",
+        "play": "Lecture",
+        "pause": "Pause",
+        "resetToBeginning": "Revenir au début",
+        "reset": "Réinitialiser",
+        "mute": "Couper le son",
+        "unmute": "Réactiver le son",
+        "playbackSpeed": "Vitesse de lecture",
+        "disableQuiz": "Désactiver les questions du quiz",
+        "enableQuiz": "Activer les questions du quiz",
+        "quizOn": "Quiz ACTIVÉ",
+        "quizOff": "Quiz DÉSACTIVÉ",
+        "exitFullscreen": "Quitter le plein écran",
+        "enterFullscreen": "Passer en plein écran",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "sourceVideoAudio": "Audio de la vidéo source"
+    },
+    "errors": {
+        "failedToLoadTimeline": "Échec du chargement de la chronologie",
+        "failedToLoadAudio": "Échec du chargement de l'audio",
+        "audioLoadingAborted": "Chargement audio interrompu",
+        "audioNetworkError": "Erreur réseau lors du chargement de l'audio. Vérifiez les paramètres CORS.",
+        "audioDecodeError": "Erreur de décodage audio",
+        "audioFormatNotSupported": "Format audio non pris en charge",
+        "failedToPlayAudio": "Échec de la lecture audio"
+    },
+    "dripConditions": {
+        "common": {
+            "locked": "Verrouillé"
+        },
+        "unlockRequirements": {
+            "title": "Conditions de déverrouillage"
+        },
+        "counts": {
+            "accessible": "{{count}} {{term}}",
+            "locked": "{{count}} verrouillé(s)",
+            "hidden": "{{count}} masqué(s)"
+        }
+    },
+    "systemAlertsBar": {
+        "priority": {
+            "high": "Priorité haute",
+            "medium": "Priorité moyenne",
+            "low": "Priorité basse",
+            "normal": "Priorité normale"
+        },
+        "byAuthor": "Par {{name}}",
+        "title": "Alertes système",
+        "clearAllTitle": "Effacer toutes les notifications",
+        "clearAllDescription_one": "Voulez-vous vraiment ignorer {{count}} notification ? Cette action est irréversible.",
+        "clearAllDescription_many": "Voulez-vous vraiment ignorer les {{count}} notifications ? Cette action est irréversible.",
+        "clearAllDescription_other": "Voulez-vous vraiment ignorer les {{count}} notifications ? Cette action est irréversible.",
+        "loadingAlerts": "Chargement des alertes...",
+        "noAlerts": "Aucune alerte système"
+    },
+    "appOverlayHost": {
+        "announcement": "Annonce",
+        "from": "De la part de {{name}}",
+        "gotIt": "Compris",
+        "progressOfTotal": "{{current}} sur {{total}}"
+    },
+    "packageSessionMessages": {
+        "discussion": "Discussion",
+        "close": "Fermer",
+        "writeReplyPlaceholder": "Écrire une réponse...",
+        "replyVisibilityNotice": "Votre réponse sera visible par tous les participants",
+        "posting": "Publication...",
+        "postReply": "Publier la réponse",
+        "repliesWillAppearHere": "Les réponses apparaîtront ici",
+        "courseDiscussion": "Discussion du {{course}}",
+        "loadingStreamMessages": "Chargement des messages du fil...",
+        "noStreamMessages": "Aucun message dans le fil",
+        "repliesCount_one": "{{count}} réponse",
+        "repliesCount_many": "{{count}} réponses",
+        "repliesCount_other": "{{count}} réponses"
+    },
+    "dashboardPinsPanel": {
+        "priority": {
+            "high": "Haute",
+            "medium": "Moyenne",
+            "low": "Basse",
+            "normal": "Normale"
+        },
+        "timeRemaining": {
+            "days_one": "Il reste {{count}} jour",
+            "days_many": "Il reste {{count}} jours",
+            "days_other": "Il reste {{count}} jours",
+            "hours_one": "Il reste {{count}} heure",
+            "hours_many": "Il reste {{count}} heures",
+            "hours_other": "Il reste {{count}} heures",
+            "lessThanHour": "Moins d'une heure restante"
+        },
+        "importantUpdates": "Informations importantes",
+        "clearAllTitle": "Effacer toutes les épingles",
+        "clearAllDescription_one": "Voulez-vous vraiment ignorer {{count}} épingle ? Cette action est irréversible.",
+        "clearAllDescription_many": "Voulez-vous vraiment ignorer les {{count}} épingles ? Cette action est irréversible.",
+        "clearAllDescription_other": "Voulez-vous vraiment ignorer les {{count}} épingles ? Cette action est irréversible.",
+        "loadingPins": "Chargement des épingles...",
+        "viewAll": "Tout voir ({{count}} au total)",
+        "byAuthor": "Par {{name}}",
+        "pinExpires": "Cette épingle expire {{time}}"
+    },
+    "genericErrorPage": {
+        "title": "Une erreur est survenue",
+        "description": "Une erreur inattendue s'est produite. Nous avons enregistré l'incident en toute sécurité et notre équipe l'examine.",
+        "step1": "Essayez d'actualiser la page ou de revenir au tableau de bord.",
+        "step2Prefix": "Si l'erreur persiste,",
+        "step2Emphasis": "déconnectez-vous puis reconnectez-vous",
+        "step2Suffix": "pour réinitialiser votre session."
+    },
+    "runtimeErrorPage": {
+        "applicationError": "Erreur de l'application",
+        "systemCrashed": "Le système a planté",
+        "description": "Une erreur inattendue s'est produite dans l'application. Notre équipe technique a été alertée et travaille sur un correctif.",
+        "step1": "Essayez de recharger la page ou de revenir au tableau de bord.",
+        "reloadPage": "Recharger la page"
+    },
+    "networkErrorPage": {
+        "underMaintenance": "En maintenance",
+        "title": "Nous serons bientôt de retour",
+        "description": "Notre équipe met actuellement la plateforme à niveau pour vous offrir une meilleure expérience. Nous nous excusons pour la gêne occasionnée."
+    },
+    "offlineErrorPage": {
+        "noConnection": "Aucune connexion",
+        "youAreOffline": "Vous êtes hors ligne",
+        "description": "Il semble que vous ayez perdu votre connexion à Internet. Veuillez vérifier vos paramètres réseau et réessayer."
+    },
+    "smartErrorPage": {
+        "updatingApplication": "Mise à jour de l'application..."
+    },
+    "defaultNotFound": {
+        "pageTitle": "Page non trouvée (404)",
+        "metaDescription": "Page introuvable. Nous n'avons pas trouvé la page que vous recherchiez. Vérifiez l'URL ou essayez une recherche.",
+        "heading": "Oups ! Page introuvable",
+        "descriptionLine1": "Nous n'avons pas trouvé la page que vous essayiez d'ouvrir.",
+        "descriptionLine2": "Cela peut être dû à une erreur de saisie, à un problème temporaire, ou la page a peut-être été supprimée."
+    },
+    "defaultPending": {
+        "pageTitle": "Chargement de la page...",
+        "metaDescription": "Veuillez patienter un instant pendant que nous préparons la page. Votre expérience arrive bientôt !"
+    },
+    "inlineErrorBoundary": {
+        "defaultTitle": "Cette section n'a pas pu s'afficher",
+        "defaultDescription": "Une erreur est survenue lors du chargement. Vos réponses et le minuteur ne sont pas affectés."
+    },
+    "errorFeedbackDialog": {
+        "description": "Aidez-nous à nous améliorer en fournissant des détails. Le contexte est inclus automatiquement.",
+        "nameLabel": "Nom (facultatif)",
+        "namePlaceholder": "Votre nom",
+        "emailLabel": "E-mail (facultatif)",
+        "emailPlaceholder": "Votre e-mail pour le suivi",
+        "whatWentWrongLabel": "Que s'est-il passé ?",
+        "descriptionPlaceholder": "Décrivez ce que vous faisiez lorsque l'erreur s'est produite...",
+        "attachments": "Pièces jointes",
+        "filesSelected_one": "{{count}} fichier sélectionné",
+        "filesSelected_many": "{{count}} fichiers sélectionnés",
+        "filesSelected_other": "{{count}} fichiers sélectionnés",
+        "sending": "Envoi...",
+        "sendReport": "Envoyer le rapport",
+        "submitSuccess": "Merci ! Votre rapport a été envoyé.",
+        "submitFailure": "Échec de l'envoi du rapport. Veuillez réessayer."
+    },
+    "dashboardLoader": {
+        "errorBoundaryDescription": "Une erreur inattendue s'est produite lors du chargement de ce contenu. Cela peut être dû à un problème temporaire ou à des autorisations insuffisantes.",
+        "errorDetailsDev": "Détails de l'erreur (développement)",
+        "loading": "Chargement",
+        "logoAlt": "Logo"
+    },
+    "submitModal": {
+        "title": "Soumettre l'évaluation",
+        "description": "Vous ne pourrez plus revenir à la copie après l'avoir soumise. Assurez-vous d'avoir donné vos meilleures réponses.",
+        "descriptionWithUnanswered": "{{unanswered}} question(s) sur {{total}} n'ont pas encore de réponse. Vous ne pourrez plus revenir à la copie après l'avoir soumise.",
+        "answered": "Répondu",
+        "unanswered": "Sans réponse",
+        "markedForReview": "Marqué pour révision",
+        "notVisited": "Non consulté",
+        "totalQuestions": "Total des questions",
+        "submitting": "Envoi en cours...",
+        "submit": "Soumettre"
+    },
+    "timesUpModal": {
+        "title": "Le temps est écoulé !",
+        "description": "Le temps imparti pour l'évaluation est terminé. Cliquez pour soumettre vos réponses.",
+        "finish": "Terminer"
+    },
+    "helpModal": {
+        "titles": {
+            "instructions": "Instructions de l'évaluation",
+            "alerts": "Alertes de l'évaluation",
+            "reattempt": "Demander une nouvelle tentative",
+            "time": "Demander un temps supplémentaire"
+        },
+        "noActiveAlerts": "Aucune alerte active pour le moment.",
+        "reasonPromptPrefix": "Veuillez indiquer la raison de votre demande de",
+        "reattemptWord": "nouvelle tentative",
+        "timeExtensionWord": "temps supplémentaire",
+        "reasonPromptSuffix": "pour l'évaluation, à soumettre à l'administrateur.",
+        "requestAlreadySent": "Demande déjà envoyée",
+        "requestUnderReview": "Votre établissement l'a reçue et l'examine. Vous serez averti(e) dès qu'il répondra.",
+        "quotedReason": "« {{reason}} »",
+        "reasonPlaceholder": "Saisissez votre raison ici",
+        "sending": "Envoi...",
+        "submit": "Soumettre",
+        "requestSentConfirmation": "Votre demande a été envoyée à votre établissement. Il en a été informé et vous recevrez une réponse dès qu'il l'aura examinée.",
+        "couldNotIdentifyAssessment": "Impossible d'identifier cette évaluation.",
+        "sendRequestFailed": "Nous n'avons pas pu envoyer votre demande. Veuillez réessayer."
+    }
+}

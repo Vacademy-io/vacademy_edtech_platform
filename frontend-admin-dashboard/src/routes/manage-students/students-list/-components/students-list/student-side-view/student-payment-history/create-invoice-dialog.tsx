@@ -3,7 +3,9 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Plus,
     Trash,
@@ -46,24 +48,41 @@ import {
     type InvoiceDTO,
     type InvoicePlaceholderValue,
 } from '@/services/invoice-service';
+import {
+    AdminDiscountField,
+    EMPTY_ADMIN_DISCOUNT,
+} from '@/components/common/payments/AdminDiscountField';
+import { useCanApplyDiscounts } from '@/hooks/useCanApplyDiscounts';
+import {
+    getAdminDiscountValidationError,
+    toAdminDiscountPayload,
+    type AdminDiscountPreview,
+    type AdminDiscountRequest,
+} from '@/services/admin-discounts';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
-const lineItemSchema = z.object({
-    description: z.string().min(1, 'Description is required'),
-    quantity: z.coerce.number().min(1, 'Min 1'),
-    unit_price: z.coerce.number().min(0.01, 'Must be > 0'),
-    item_type: z.string().optional(),
-});
+const buildInvoiceFormSchema = (t: TFunction) => {
+    const lineItemSchema = z.object({
+        description: z.string().min(1, t('manageStudentsCreateInvoiceDialog:validation.descriptionRequired')),
+        quantity: z.coerce.number().min(1, t('manageStudentsCreateInvoiceDialog:validation.minQuantity')),
+        unit_price: z.coerce
+            .number()
+            .min(0.01, t('manageStudentsCreateInvoiceDialog:validation.priceMustBePositive')),
+        item_type: z.string().optional(),
+    });
 
-const invoiceFormSchema = z.object({
-    line_items: z.array(lineItemSchema).min(1, 'At least one line item is required'),
-    due_date: z.string().min(1, 'Due date is required'),
-    currency: z.string().min(1, 'Currency is required'),
-    notes: z.string().optional(),
-});
+    return z.object({
+        line_items: z
+            .array(lineItemSchema)
+            .min(1, t('manageStudentsCreateInvoiceDialog:validation.lineItemsRequired')),
+        due_date: z.string().min(1, t('manageStudentsCreateInvoiceDialog:validation.dueDateRequired')),
+        currency: z.string().min(1, t('manageStudentsCreateInvoiceDialog:validation.currencyRequired')),
+        notes: z.string().optional(),
+    });
+};
 
-type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
+type InvoiceFormValues = z.infer<ReturnType<typeof buildInvoiceFormSchema>>;
 
 // ─── Currency options ────────────────────────────────────────────────────────
 
@@ -136,6 +155,7 @@ function SuccessView({
     isEditing?: boolean;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('manageStudentsCreateInvoiceDialog');
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -144,7 +164,7 @@ function SuccessView({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            toast.error('Could not copy to clipboard');
+            toast.error(t('manageStudentsCreateInvoiceDialog:success.copyFailed'));
         }
     };
 
@@ -165,7 +185,7 @@ function SuccessView({
         // Be honest about what actually got shared: only the Web Share path attaches the
         // real PDF; the fallback can only carry links (WhatsApp deep links can't take files).
         if (via === 'link') {
-            toast.info('WhatsApp opened with the payment and PDF links');
+            toast.info(t('manageStudentsCreateInvoiceDialog:success.whatsappShared'));
         }
     };
 
@@ -173,7 +193,11 @@ function SuccessView({
         <div className="flex flex-col items-center gap-6 px-6 py-8 text-center">
             <StatusChip
                 status="SUCCESS"
-                text={isEditing ? 'Invoice Updated!' : 'Invoice Created!'}
+                text={
+                    isEditing
+                        ? t('manageStudentsCreateInvoiceDialog:success.invoiceUpdatedTitle')
+                        : t('manageStudentsCreateInvoiceDialog:success.invoiceCreatedTitle')
+                }
                 textSize="text-subtitle"
                 showIcon
             />
@@ -184,7 +208,7 @@ function SuccessView({
                     <span className="text-body font-semibold text-success-700">{result.invoice_number}</span>
                 </div>
                 <p className="text-caption text-neutral-600">
-                    Total:{' '}
+                    {t('manageStudentsCreateInvoiceDialog:success.totalLabel')}{' '}
                     <span className="font-semibold text-neutral-800">
                         {fmt(result.total_amount, result.currency)}
                     </span>
@@ -193,7 +217,9 @@ function SuccessView({
 
             {result.payment_link && (
                 <div className="w-full max-w-sm space-y-2">
-                    <p className="text-caption font-medium text-neutral-600">Payment Link</p>
+                    <p className="text-caption font-medium text-neutral-600">
+                        {t('manageStudentsCreateInvoiceDialog:success.paymentLinkLabel')}
+                    </p>
                     <div className="flex items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
                         <span className="flex-1 truncate text-caption text-neutral-700">
                             {result.payment_link}
@@ -203,7 +229,7 @@ function SuccessView({
                             scale="small"
                             layoutVariant="icon"
                             onClick={handleCopy}
-                            title="Copy payment link"
+                            title={t('manageStudentsCreateInvoiceDialog:success.copyPaymentLinkTitle')}
                         >
                             <ClipboardText className="size-3.5" />
                         </MyButton>
@@ -216,24 +242,24 @@ function SuccessView({
                     buttonType="secondary"
                     scale="small"
                     onAsyncClick={handleWhatsAppShare}
-                    loadingText="Preparing…"
+                    loadingText={t('manageStudentsCreateInvoiceDialog:success.preparingWhatsapp')}
                 >
                     <WhatsappLogo className="mr-1.5 size-4" />
-                    Share on WhatsApp
+                    {t('manageStudentsCreateInvoiceDialog:success.shareOnWhatsapp')}
                 </MyButton>
                 {result.pdf_url && (
                     <MyButton
                         buttonType="secondary"
                         scale="small"
                         onAsyncClick={() => downloadInvoicePdf(pdfSource)}
-                        loadingText="Downloading…"
+                        loadingText={t('manageStudentsCreateInvoiceDialog:success.downloadingPdf')}
                     >
                         <DownloadSimple className="mr-1.5 size-4" />
-                        Download PDF
+                        {t('manageStudentsCreateInvoiceDialog:success.downloadPdf')}
                     </MyButton>
                 )}
                 <MyButton buttonType="primary" scale="small" onClick={onClose}>
-                    Close
+                    {t('manageStudentsCreateInvoiceDialog:success.close')}
                 </MyButton>
             </div>
         </div>
@@ -263,6 +289,20 @@ function ReviewStep({
     onDateChange: (key: string, value: string) => void;
     onRetry: () => void;
 }) {
+    const { t } = useTranslation('manageStudentsCreateInvoiceDialog');
+
+    // Display labels for the backend's PLACEHOLDER_META group codes (GROUP_ORDER). The codes
+    // themselves are an internal contract used to match/filter `resolvedValues` — never
+    // translate those; only the label shown to the admin.
+    const GROUP_LABELS: Record<string, string> = {
+        INVOICE: t('manageStudentsCreateInvoiceDialog:review.groups.invoice'),
+        'BILL TO': t('manageStudentsCreateInvoiceDialog:review.groups.billTo'),
+        INSTITUTE: t('manageStudentsCreateInvoiceDialog:review.groups.institute'),
+        TAX: t('manageStudentsCreateInvoiceDialog:review.groups.tax'),
+        AMOUNTS: t('manageStudentsCreateInvoiceDialog:review.groups.amounts'),
+        NOTES: t('manageStudentsCreateInvoiceDialog:review.groups.notes'),
+    };
+
     const grouped = GROUP_ORDER.map((group) => ({
         group,
         items: resolvedValues.filter((r) => r.group === group),
@@ -273,14 +313,13 @@ function ReviewStep({
             {/* ── Editable dynamic values ── */}
             <div className="w-full shrink-0 space-y-5 overflow-y-auto border-b border-neutral-200 px-6 py-5 md:w-2/5 md:border-b-0 md:border-r">
                 <p className="text-caption text-neutral-500">
-                    These values fill your invoice template. Edit anything before creating — the
-                    preview updates live.
+                    {t('manageStudentsCreateInvoiceDialog:review.helperText')}
                 </p>
 
                 {grouped.map(({ group, items }) => (
                     <div key={group} className="space-y-3">
                         <p className="text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                            {group}
+                            {GROUP_LABELS[group] ?? group}
                         </p>
                         <div className="space-y-3">
                             {items.map((field) => {
@@ -342,7 +381,9 @@ function ReviewStep({
             <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
                 <div className="flex shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-4 py-2.5">
                     <Eye className="size-4 text-neutral-500" />
-                    <span className="text-caption font-medium text-neutral-600">Invoice preview</span>
+                    <span className="text-caption font-medium text-neutral-600">
+                        {t('manageStudentsCreateInvoiceDialog:review.previewLabel')}
+                    </span>
                     {previewLoading && (
                         <ArrowsClockwise className="size-3.5 animate-spin text-primary-500" />
                     )}
@@ -353,7 +394,7 @@ function ReviewStep({
                             <p className="text-body text-danger-600">{previewError}</p>
                             <MyButton buttonType="secondary" scale="small" onClick={onRetry}>
                                 <ArrowsClockwise className="mr-1.5 size-4" />
-                                Retry
+                                {t('manageStudentsCreateInvoiceDialog:review.retry')}
                             </MyButton>
                         </div>
                     ) : !previewHtml && previewLoading ? (
@@ -362,7 +403,7 @@ function ReviewStep({
                         </div>
                     ) : (
                         <iframe
-                            title="Invoice preview"
+                            title={t('manageStudentsCreateInvoiceDialog:review.previewTitle')}
                             srcDoc={previewHtml}
                             sandbox=""
                             className="size-full border-0 bg-white"
@@ -386,7 +427,12 @@ export function CreateInvoiceDialog({
     duplicateFrom,
     editInvoice,
 }: CreateInvoiceDialogProps) {
+    const { t } = useTranslation('manageStudentsCreateInvoiceDialog');
     const isEditing = !!editInvoice;
+    // Discounts are for new invoices only (the update endpoint doesn't take one), by roles
+    // with "Apply discounts" on in Display Settings.
+    const canApplyDiscounts = useCanApplyDiscounts(instituteId);
+    const showDiscount = !isEditing && canApplyDiscounts;
     const [successResult, setSuccessResult] = useState<AdminInvoicePaymentLinkResponse | null>(null);
     const [step, setStep] = useState<'items' | 'review'>('items');
 
@@ -409,6 +455,11 @@ export function CreateInvoiceDialog({
     // keystroke. null = untouched (use the institute default); "" = cleared but not yet retyped.
     const [taxRatePercentText, setTaxRatePercentText] = useState<string | null>(null);
 
+    // Admin-granted discount (new invoices only — the update endpoint doesn't take one).
+    const [adminDiscount, setAdminDiscount] = useState<AdminDiscountRequest>(EMPTY_ADMIN_DISCOUNT);
+    const [discountPreview, setDiscountPreview] = useState<AdminDiscountPreview | null>(null);
+    const [discountServerError, setDiscountServerError] = useState<string | null>(null);
+
     const { data: invoiceSettings, isLoading: isSettingsLoading } = useQuery({
         queryKey: ['invoice-settings'],
         queryFn: fetchInvoiceSettings,
@@ -416,6 +467,8 @@ export function CreateInvoiceDialog({
     });
 
     const defaultCurrency = invoiceSettings?.currency ?? 'INR';
+
+    const invoiceFormSchema = useMemo(() => buildInvoiceFormSchema(t), [t]);
 
     const form = useForm<InvoiceFormValues>({
         resolver: zodResolver(invoiceFormSchema),
@@ -440,6 +493,8 @@ export function CreateInvoiceDialog({
         if (!open) return;
         setTaxEnabledOverride(null);
         setTaxRatePercentText(null);
+        setAdminDiscount(EMPTY_ADMIN_DISCOUNT);
+        setDiscountPreview(null);
         // Edit takes precedence over duplicate; both seed from an existing invoice's items,
         // but only edit carries the original's due date forward.
         const seedFrom = editInvoice || duplicateFrom;
@@ -479,7 +534,8 @@ export function CreateInvoiceDialog({
     const currency = useWatch({ control: form.control, name: 'currency' }) || defaultCurrency;
 
     const settingsTaxRate = invoiceSettings?.taxRate ?? 0;
-    const taxLabel = invoiceSettings?.taxLabel ?? 'Tax';
+    const taxLabel =
+        invoiceSettings?.taxLabel ?? t('manageStudentsCreateInvoiceDialog:summary.taxLabelFallback');
     const taxIncluded = invoiceSettings?.taxIncluded ?? false;
     // Effective per-invoice tax: the admin's override when touched, else the institute default.
     // A transiently-empty text buffer ("" while retyping) computes as 0, not the settings
@@ -490,15 +546,22 @@ export function CreateInvoiceDialog({
     const subtotal = watchedLineItems.reduce((sum, item) => {
         return sum + (Number(item.quantity) || 0) * (Number(item.unit_price) || 0);
     }, 0);
+    // The backend applies the admin discount as a DISCOUNT line on the pre-tax subtotal,
+    // so tax is computed on the discounted amount.
+    const discountAmount =
+        showDiscount && adminDiscount.mode !== 'NONE' && discountPreview
+            ? Math.min(subtotal, discountPreview.discount_amount || 0)
+            : 0;
+    const taxableSubtotal = subtotal - discountAmount;
     let taxAmount = 0;
-    let total = subtotal;
+    let total = taxableSubtotal;
     if (taxEnabled && taxRate > 0) {
         if (taxIncluded) {
-            const netSubtotal = subtotal / (1 + taxRate / 100);
-            taxAmount = subtotal - netSubtotal;
+            const netSubtotal = taxableSubtotal / (1 + taxRate / 100);
+            taxAmount = taxableSubtotal - netSubtotal;
         } else {
-            taxAmount = subtotal * (taxRate / 100);
-            total = subtotal + taxAmount;
+            taxAmount = taxableSubtotal * (taxRate / 100);
+            total = taxableSubtotal + taxAmount;
         }
     }
 
@@ -513,6 +576,8 @@ export function CreateInvoiceDialog({
         setPreviewError(null);
         setTaxEnabledOverride(null);
         setTaxRatePercentText(null);
+        setAdminDiscount(EMPTY_ADMIN_DISCOUNT);
+        setDiscountPreview(null);
         onOpenChange(false);
     };
 
@@ -554,6 +619,10 @@ export function CreateInvoiceDialog({
             // institute's INVOICE_SETTING default applies, same as before this feature.
             tax_enabled: taxEnabledOverride ?? undefined,
             tax_rate_percent: taxRatePercentText !== null ? Number(taxRatePercentText) || 0 : undefined,
+            // New invoices only; omitted for "No discount". Cycles don't apply to an invoice.
+            admin_discount: !showDiscount
+                ? undefined
+                : toAdminDiscountPayload(adminDiscount, { includeCycles: false }),
         };
     };
 
@@ -581,7 +650,7 @@ export function CreateInvoiceDialog({
                 skipNextPreviewRef.current = true;
             }
         } catch {
-            setPreviewError('Could not render the invoice preview. Please try again.');
+            setPreviewError(t('manageStudentsCreateInvoiceDialog:errors.previewFailed'));
         } finally {
             setPreviewLoading(false);
         }
@@ -594,16 +663,25 @@ export function CreateInvoiceDialog({
             skipNextPreviewRef.current = false;
             return;
         }
-        const t = setTimeout(() => {
+        const timer = setTimeout(() => {
             void runPreview(false);
         }, 500);
-        return () => clearTimeout(t);
+        return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [overrides, reviewDates, step]);
 
     const handleNext = async () => {
         const ok = await form.trigger();
         if (!ok) return;
+        if (showDiscount) {
+            const discountErr =
+                getAdminDiscountValidationError(adminDiscount, subtotal) ||
+                (adminDiscount.mode !== 'NONE' ? discountServerError : null);
+            if (discountErr) {
+                toast.error(discountErr);
+                return;
+            }
+        }
         const isSeed = resolvedValues === null;
         // Re-entry (Back → Next): setStep('review') re-triggers the debounce effect, which would
         // fire a second identical preview. Suppress that one — the direct runPreview(false) below
@@ -658,19 +736,31 @@ export function CreateInvoiceDialog({
             <form onSubmit={form.handleSubmit(() => {})} className="flex flex-col overflow-hidden">
                 <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
                     {isSettingsLoading && (
-                        <p className="text-caption text-neutral-500">Loading settings…</p>
+                        <p className="text-caption text-neutral-500">
+                            {t('manageStudentsCreateInvoiceDialog:items.loadingSettings')}
+                        </p>
                     )}
 
                     {/* ── Line Items ── */}
                     <div>
-                        <p className="mb-3 text-body font-semibold text-neutral-700">Items</p>
+                        <p className="mb-3 text-body font-semibold text-neutral-700">
+                            {t('manageStudentsCreateInvoiceDialog:items.heading')}
+                        </p>
 
                         {/* Table header */}
                         <div className="mb-1 grid grid-cols-12 gap-2 px-1">
-                            <span className="col-span-5 text-caption font-medium text-neutral-500">Description</span>
-                            <span className="col-span-2 text-caption font-medium text-neutral-500 text-right">Qty</span>
-                            <span className="col-span-2 text-caption font-medium text-neutral-500 text-right">Price</span>
-                            <span className="col-span-3 text-caption font-medium text-neutral-500 text-right">Amount</span>
+                            <span className="col-span-5 text-caption font-medium text-neutral-500">
+                                {t('manageStudentsCreateInvoiceDialog:items.table.description')}
+                            </span>
+                            <span className="col-span-2 text-caption font-medium text-neutral-500 text-end">
+                                {t('manageStudentsCreateInvoiceDialog:items.table.qty')}
+                            </span>
+                            <span className="col-span-2 text-caption font-medium text-neutral-500 text-end">
+                                {t('manageStudentsCreateInvoiceDialog:items.table.price')}
+                            </span>
+                            <span className="col-span-3 text-caption font-medium text-neutral-500 text-end">
+                                {t('manageStudentsCreateInvoiceDialog:items.table.amount')}
+                            </span>
                         </div>
 
                         <div className="space-y-2">
@@ -693,7 +783,9 @@ export function CreateInvoiceDialog({
                                                     <FormControl>
                                                         <MyInput
                                                             inputType="text"
-                                                            inputPlaceholder="e.g. Course Fee"
+                                                            inputPlaceholder={t(
+                                                                'manageStudentsCreateInvoiceDialog:items.descriptionPlaceholder'
+                                                            )}
                                                             input={f.value}
                                                             onChangeFunction={f.onChange}
                                                             className="w-full sm:w-full"
@@ -757,7 +849,7 @@ export function CreateInvoiceDialog({
                                                     type="button"
                                                     onClick={() => remove(index)}
                                                     className="shrink-0 rounded p-0.5 text-neutral-400 hover:text-danger-500"
-                                                    title="Remove"
+                                                    title={t('manageStudentsCreateInvoiceDialog:items.removeItem')}
                                                 >
                                                     <Trash className="size-3.5" />
                                                 </button>
@@ -783,17 +875,46 @@ export function CreateInvoiceDialog({
                             }
                         >
                             <Plus className="mr-1 size-3.5" />
-                            Add Item
+                            {t('manageStudentsCreateInvoiceDialog:items.addItem')}
                         </MyButton>
                     </div>
+
+                    {/* ── Admin discount (new invoices only) ── */}
+                    {showDiscount && (
+                        <div className="rounded-lg border border-neutral-200 px-4 py-3">
+                            <AdminDiscountField
+                                value={adminDiscount}
+                                onChange={setAdminDiscount}
+                                grossAmount={subtotal}
+                                currency={currency}
+                                instituteId={instituteId}
+                                onPreview={setDiscountPreview}
+                                onServerErrorChange={setDiscountServerError}
+                                hideCycles
+                                label={t('manageStudentsCreateInvoiceDialog:discount.label', {
+                                    defaultValue: 'Discount (optional)',
+                                })}
+                            />
+                        </div>
+                    )}
 
                     {/* ── Summary ── */}
                     <div className="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3">
                         <div className="space-y-2 text-body">
                             <div className="flex justify-between text-neutral-600">
-                                <span>Subtotal</span>
+                                <span>{t('manageStudentsCreateInvoiceDialog:summary.subtotal')}</span>
                                 <span className="tabular-nums">{fmt(subtotal, currency)}</span>
                             </div>
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between text-success-700">
+                                    <span>
+                                        {t('manageStudentsCreateInvoiceDialog:summary.discount', {
+                                            defaultValue: 'Discount',
+                                        })}
+                                    </span>
+                                    <span className="tabular-nums">−{fmt(discountAmount, currency)}</span>
+                                </div>
+                            )}
 
                             {/* Tax: defaults to the institute's Invoice Settings, but editable
                                 (or removable) per invoice. */}
@@ -803,7 +924,9 @@ export function CreateInvoiceDialog({
                                         checked={taxEnabled}
                                         onCheckedChange={(checked) => setTaxEnabledOverride(checked === true)}
                                     />
-                                    <span>Apply {taxLabel}</span>
+                                    <span>
+                                        {t('manageStudentsCreateInvoiceDialog:summary.applyTax', { taxLabel })}
+                                    </span>
                                     {taxEnabled && (
                                         <span className="flex items-center gap-1">
                                             <MyInput
@@ -817,7 +940,10 @@ export function CreateInvoiceDialog({
                                                 onChangeFunction={(e) => setTaxRatePercentText(e.target.value)}
                                                 size="small"
                                                 className="w-14 text-right tabular-nums"
-                                                aria-label={`${taxLabel} rate percent`}
+                                                aria-label={t(
+                                                    'manageStudentsCreateInvoiceDialog:summary.taxRateAriaLabel',
+                                                    { taxLabel }
+                                                )}
                                                 min={0}
                                                 max={100}
                                                 step={0.01}
@@ -832,12 +958,17 @@ export function CreateInvoiceDialog({
                             </div>
                             {taxEnabled && taxIncluded && (
                                 <p className="text-caption text-neutral-500">
-                                    Incl. {taxRate}% {taxLabel} (prices already include tax)
+                                    {t('manageStudentsCreateInvoiceDialog:summary.taxIncludedNote', {
+                                        taxRate,
+                                        taxLabel,
+                                    })}
                                 </p>
                             )}
 
                             <div className="flex justify-between border-t border-primary-200 pt-1.5 font-semibold">
-                                <span className="text-neutral-700">Total</span>
+                                <span className="text-neutral-700">
+                                    {t('manageStudentsCreateInvoiceDialog:summary.total')}
+                                </span>
                                 <span className="text-primary-600 tabular-nums">{fmt(total, currency)}</span>
                             </div>
                         </div>
@@ -848,7 +979,7 @@ export function CreateInvoiceDialog({
                         <div className="flex items-center gap-2 rounded-md border border-info-200 bg-info-50 px-3 py-2">
                             <EnvelopeSimple size={14} className="shrink-0 text-info-600" weight="fill" />
                             <p className="text-caption text-info-700">
-                                Invoice email will be sent to the learner automatically after payment.
+                                {t('manageStudentsCreateInvoiceDialog:emailNotice')}
                             </p>
                         </div>
                     )}
@@ -861,7 +992,8 @@ export function CreateInvoiceDialog({
                             render={({ field: f }) => (
                                 <FormItem>
                                     <FormLabel className="text-caption text-neutral-600">
-                                        Due Date <span className="text-danger-500">*</span>
+                                        {t('manageStudentsCreateInvoiceDialog:form.dueDateLabel')}{' '}
+                                        <span className="text-danger-500">*</span>
                                     </FormLabel>
                                     <FormControl>
                                         <MyInput
@@ -878,7 +1010,7 @@ export function CreateInvoiceDialog({
                             )}
                         />
                         <SelectField
-                            label="Currency"
+                            label={t('manageStudentsCreateInvoiceDialog:form.currencyLabel')}
                             name="currency"
                             control={form.control}
                             options={CURRENCY_OPTIONS}
@@ -919,15 +1051,21 @@ export function CreateInvoiceDialog({
                     <div className="flex items-center justify-between gap-3 border-t border-neutral-200 px-6 py-4">
                         <MyButton buttonType="secondary" scale="medium" onClick={() => setStep('items')}>
                             <CaretLeft className="mr-1 size-4" />
-                            Back
+                            {t('manageStudentsCreateInvoiceDialog:actions.back')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             scale="medium"
                             onAsyncClick={handleCreate}
-                            loadingText={isEditing ? 'Saving…' : 'Creating…'}
+                            loadingText={
+                                isEditing
+                                    ? t('manageStudentsCreateInvoiceDialog:actions.saving')
+                                    : t('manageStudentsCreateInvoiceDialog:actions.creating')
+                            }
                         >
-                            {isEditing ? 'Save Changes' : 'Create Invoice'}
+                            {isEditing
+                                ? t('manageStudentsCreateInvoiceDialog:actions.saveChanges')
+                                : t('manageStudentsCreateInvoiceDialog:actions.createInvoice')}
                         </MyButton>
                     </div>
                 </>
@@ -936,15 +1074,15 @@ export function CreateInvoiceDialog({
                     {itemsContent}
                     <div className="flex items-center justify-end gap-3 border-t border-neutral-200 px-6 py-4">
                         <MyButton buttonType="secondary" scale="medium" onClick={handleClose}>
-                            Cancel
+                            {t('manageStudentsCreateInvoiceDialog:actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             scale="medium"
                             onAsyncClick={handleNext}
-                            loadingText="Loading preview…"
+                            loadingText={t('manageStudentsCreateInvoiceDialog:actions.loadingPreview')}
                         >
-                            Next: Review & Preview
+                            {t('manageStudentsCreateInvoiceDialog:actions.next')}
                         </MyButton>
                     </div>
                 </>
@@ -953,12 +1091,15 @@ export function CreateInvoiceDialog({
     );
 
     const heading = successResult
-        ? `Invoice — ${userName}`
+        ? t('manageStudentsCreateInvoiceDialog:heading.invoice', { userName })
         : step === 'review'
-          ? `Review Invoice — ${userName}`
+          ? t('manageStudentsCreateInvoiceDialog:heading.reviewInvoice', { userName })
           : isEditing
-            ? `Edit Invoice ${editInvoice?.invoice_number ?? ''} — ${userName}`
-            : `Create Invoice — ${userName}`;
+            ? t('manageStudentsCreateInvoiceDialog:heading.editInvoice', {
+                  invoiceNumber: editInvoice?.invoice_number ?? '',
+                  userName,
+              })
+            : t('manageStudentsCreateInvoiceDialog:heading.createInvoice', { userName });
 
     return (
         <MyDialog

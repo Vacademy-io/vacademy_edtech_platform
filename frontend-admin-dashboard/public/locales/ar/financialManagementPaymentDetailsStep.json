@@ -1,0 +1,64 @@
+{
+    "backToInstallments": "العودة إلى الأقساط",
+    "selectedInstallments_zero": "لا أقساط محددة ({{count}})",
+    "selectedInstallments_one": "قسط محدد ({{count}})",
+    "selectedInstallments_two": "قسطان محددان ({{count}})",
+    "selectedInstallments_few": "أقساط محددة ({{count}})",
+    "selectedInstallments_many": "قسطًا محددًا ({{count}})",
+    "selectedInstallments_other": "قسط محدد ({{count}})",
+    "paymentDetails": "تفاصيل الدفع",
+    "paymentModeLabel": "طريقة الدفع",
+    "transactionId": "رقم المعاملة",
+    "optional": "اختياري",
+    "amount": "المبلغ",
+    "amountExceedsDue": "المبلغ يتجاوز إجمالي المستحق. سيبقى الفائض غير مخصص.",
+    "remarksLabel": "ملاحظات",
+    "processing": "جارٍ المعالجة...",
+    "submitPayment": "إرسال الدفعة",
+    "paymentMode": {
+        "cash": "نقدًا",
+        "online": "عبر الإنترنت",
+        "upi": "UPI",
+        "card": "بطاقة",
+        "cheque": "شيك"
+    },
+    "placeholders": {
+        "transactionId": "مثال: TXN123456",
+        "remarks": "مثال: تم تحصيل النقد عند الكاونتر"
+    },
+    "table": {
+        "feeType": "نوع الرسوم",
+        "cpoPlan": "CPO / الخطة",
+        "expected": "المتوقع",
+        "adjustment": "التسوية",
+        "paid": "المدفوع",
+        "outstanding": "المتبقي",
+        "dueDate": "تاريخ الاستحقاق",
+        "status": "الحالة"
+    },
+    "adjustmentType": {
+        "concession": "تنازل",
+        "penalty": "غرامة"
+    },
+    "status": {
+        "overdue": "متأخر",
+        "partial": "جزئي",
+        "pending": "معلق"
+    },
+    "totals": {
+        "totalConcession": "إجمالي التنازلات",
+        "totalPenalty": "إجمالي الغرامات",
+        "totalOutstanding": "إجمالي المتبقي:"
+    },
+    "remarks": {
+        "modePrefix": "الطريقة",
+        "txnIdPrefix": "رقم المعاملة"
+    },
+    "errors": {
+        "instituteIdNotFound": "معرف المؤسسة غير موجود"
+    },
+    "toast": {
+        "paymentSubmitted": "تم إرسال الدفعة بنجاح",
+        "paymentFailed": "فشلت عملية الدفع"
+    }
+}

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import {
   searchPeople,
   openDirectConversation,
@@ -35,6 +36,7 @@ export function NewChatModal({
   onOpenChange,
   onConversationReady,
 }: NewChatModalProps) {
+  const { t } = useTranslation("chatFeatureA");
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<string | undefined>(undefined);
   const [people, setPeople] = useState<ChatPersonResponse[]>([]);
@@ -45,7 +47,7 @@ export function NewChatModal({
   // (TEACHER / ADMIN / STUDENT) stay fixed. Computed inside the component so
   // it reflects the current institute's configured terminology.
   const roleFilters: { label: string; value?: string }[] = [
-    { label: "Everyone", value: undefined },
+    { label: t("newChatModal.everyone"), value: undefined },
     {
       label: getTerminologyPlural(RoleTerms.Teacher, SystemTerms.Teacher),
       value: "TEACHER",
@@ -110,7 +112,7 @@ export function NewChatModal({
       onOpenChange(false);
     } catch (err) {
       console.error("Failed to start direct conversation:", err);
-      toast.error("Couldn't start the chat. Please try again.");
+      toast.error(t("newChatModal.startError"));
     } finally {
       setStartingId(null);
     }
@@ -120,7 +122,7 @@ export function NewChatModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>New message</DialogTitle>
+          <DialogTitle>{t("newChatModal.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="relative">
@@ -132,7 +134,7 @@ export function NewChatModal({
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search people by name…"
+            placeholder={t("newChatModal.searchPlaceholder")}
             className="ps-9"
           />
         </div>
@@ -167,7 +169,7 @@ export function NewChatModal({
             </div>
           ) : people.length === 0 ? (
             <p className="py-8 text-center text-caption text-muted-foreground">
-              No people found.
+              {t("newChatModal.empty")}
             </p>
           ) : (
             <ul className="flex flex-col py-1">
@@ -187,7 +189,7 @@ export function NewChatModal({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-body font-medium text-foreground">
-                        {person.fullName || person.email || "Member"}
+                        {person.fullName || person.email || t("common.memberFallback")}
                       </span>
                       <span className="block truncate text-caption text-muted-foreground">
                         {person.role}
@@ -202,7 +204,7 @@ export function NewChatModal({
                         disabled
                         className="pointer-events-none"
                       >
-                        Opening…
+                        {t("newChatModal.opening")}
                       </Button>
                     )}
                   </button>

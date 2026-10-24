@@ -1,0 +1,4 @@
+{
+    "tooltip": "Rubric was updated to v{{currentVersion}} since this evaluation (v{{evaluationVersion}})",
+    "badgeLabel": "Rubric updated since this evaluation"
+}

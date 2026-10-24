@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Trophy, Medal, Crown, Users, Buildings, Copy, ShareNetwork, CaretRight } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import {
@@ -16,12 +17,13 @@ import { cn } from '@/lib/utils';
 import { BASE_URL_LEARNER_DASHBOARD } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
-import { getBadgeIcon, BadgeVisual } from '@/routes/settings/-constants/badge-icon-map';
+import { BadgeVisual } from '@/routes/settings/-constants/badge-icon-map';
 import { isLibraryToken } from '@/routes/settings/-constants/badge-library';
 import {
     getBadgeStats,
     getCourseLeaderboardAdmin,
     getInstituteLeaderboardAdmin,
+    type BadgeStat,
     type LeaderboardEntry,
 } from '@/services/leaderboard';
 
@@ -40,17 +42,42 @@ function RankCell({ rank }: { rank: number | null }) {
     );
 }
 
+/**
+ * Collapse stats rows that share a `badgeId` (the server groups by the snapshot name/icon, so a
+ * badge renamed or re-skinned after some awards comes back as several rows and duplicate keys).
+ * Counts are summed; the last row's non-empty name/icon wins (the most recently written snapshot).
+ */
+export function aggregateBadgeStats(rows: BadgeStat[]): BadgeStat[] {
+    const byId = new Map<string, BadgeStat>();
+    for (const row of rows) {
+        const prev = byId.get(row.badgeId);
+        if (!prev) {
+            byId.set(row.badgeId, { ...row, count: Number(row.count) || 0 });
+            continue;
+        }
+        byId.set(row.badgeId, {
+            badgeId: row.badgeId,
+            badgeName: row.badgeName || prev.badgeName,
+            badgeIcon: row.badgeIcon || prev.badgeIcon,
+            count: prev.count + (Number(row.count) || 0),
+        });
+    }
+    return [...byId.values()].sort((a, b) => b.count - a.count);
+}
+
 function BadgesStatsPanel() {
+    const { t } = useTranslation('studyLibraryLeaderboardReports');
     const { data, isLoading } = useQuery({
         queryKey: ['badge-stats'],
         queryFn: getBadgeStats,
         staleTime: 5 * 60 * 1000,
     });
+    const badgeRows = useMemo(() => aggregateBadgeStats(data?.badges ?? []), [data]);
 
     if (isLoading) {
         return (
             <div className="rounded-lg border border-neutral-200 bg-white p-4 text-caption text-muted-foreground">
-                Loading badge stats…
+                {t('badgesStats.loading')}
             </div>
         );
     }
@@ -60,39 +87,40 @@ function BadgesStatsPanel() {
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
             <div className="mb-3 flex items-center gap-2">
                 <Trophy weight="fill" className="size-5 text-primary-500" />
-                <h3 className="text-subtitle font-semibold text-neutral-700">Badges Awarded</h3>
+                <h3 className="text-subtitle font-semibold text-neutral-700">{t('badgesStats.heading')}</h3>
             </div>
             <div className="mb-4 flex flex-wrap gap-3">
                 <div className="rounded-lg bg-primary-50 px-4 py-2">
                     <p className="text-h3 font-bold text-primary-600">{data.totalAwarded}</p>
-                    <p className="text-caption text-neutral-500">Total awarded</p>
+                    <p className="text-caption text-neutral-500">{t('badgesStats.totalAwarded')}</p>
                 </div>
                 <div className="rounded-lg bg-neutral-50 px-4 py-2">
                     <p className="text-h3 font-bold text-neutral-700">{data.learnersWithBadge}</p>
-                    <p className="text-caption text-neutral-500">Learners recognised</p>
+                    <p className="text-caption text-neutral-500">{t('badgesStats.learnersRecognised')}</p>
                 </div>
             </div>
-            {data.badges.length > 0 ? (
+            {badgeRows.length > 0 ? (
                 <div className="flex flex-col gap-2">
-                    {data.badges.map((b) => {
-                        const Icon = getBadgeIcon(b.badgeIcon || 'Trophy');
-                        return (
-                            <div key={b.badgeId} className="flex items-center gap-3">
-                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-50">
-                                    <Icon weight="fill" className="size-4 text-primary-500" />
-                                </div>
-                                <span className="flex-1 truncate text-body text-neutral-700">
-                                    {b.badgeName || b.badgeId}
-                                </span>
-                                <span className="text-caption font-semibold text-neutral-600">
-                                    {b.count}
-                                </span>
+                    {badgeRows.map((b) => (
+                        <div key={b.badgeId} className="flex items-center gap-3">
+                            <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-50">
+                                <BadgeVisual
+                                    icon={b.badgeIcon || 'Trophy'}
+                                    size={isLibraryToken(b.badgeIcon) ? 28 : 18}
+                                    className="text-primary-500"
+                                />
                             </div>
-                        );
-                    })}
+                            <span className="flex-1 truncate text-body text-neutral-700">
+                                {b.badgeName || b.badgeId}
+                            </span>
+                            <span className="text-caption font-semibold text-neutral-600">
+                                {b.count}
+                            </span>
+                        </div>
+                    ))}
                 </div>
             ) : (
-                <p className="text-caption italic text-muted-foreground">No badges awarded yet.</p>
+                <p className="text-caption italic text-muted-foreground">{t('badgesStats.noneAwarded')}</p>
             )}
         </div>
     );
@@ -150,13 +178,16 @@ function EntryBadgesDialog({
     entry: LeaderboardEntry | null;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('studyLibraryLeaderboardReports');
     return (
         <Dialog open={Boolean(entry)} onOpenChange={(v) => !v && onClose()}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Trophy weight="fill" className="size-5 text-warning-500" />
-                        {entry?.name ? `${entry.name}'s badges` : 'Badges'}
+                        {entry?.name
+                            ? t('badgesDialog.titleWithName', { name: entry.name })
+                            : t('badgesDialog.title')}
                     </DialogTitle>
                 </DialogHeader>
                 {entry && entry.badges?.length > 0 ? (
@@ -167,7 +198,7 @@ function EntryBadgesDialog({
                     </div>
                 ) : (
                     <p className="py-6 text-center text-caption text-muted-foreground">
-                        No badges earned yet.
+                        {t('badgesDialog.noneEarned')}
                     </p>
                 )}
             </DialogContent>
@@ -176,6 +207,7 @@ function EntryBadgesDialog({
 }
 
 function LeaderboardRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?: () => void }) {
+    const { t } = useTranslation('studyLibraryLeaderboardReports');
     const clickable = Boolean(onClick) && entry.badgeCount > 0;
     return (
         <div
@@ -192,7 +224,7 @@ function LeaderboardRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?:
                       }
                     : undefined
             }
-            title={clickable ? 'View badges' : undefined}
+            title={clickable ? t('leaderboardRow.viewBadges') : undefined}
             className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-neutral-50',
                 clickable && 'cursor-pointer'
@@ -206,7 +238,7 @@ function LeaderboardRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?:
             </span>
             <BadgeIcons entry={entry} />
             <span className="w-20 text-right text-caption font-semibold tabular-nums text-neutral-600">
-                {entry.points} pts
+                {t('leaderboardRow.points', { count: entry.points })}
             </span>
             {clickable && <CaretRight className="size-3.5 shrink-0 text-neutral-300" />}
         </div>
@@ -216,6 +248,7 @@ function LeaderboardRow({ entry, onClick }: { entry: LeaderboardEntry; onClick?:
 type LeaderboardView = 'institute' | 'course';
 
 export default function LeaderboardReports() {
+    const { t } = useTranslation('studyLibraryLeaderboardReports');
     const {
         instituteDetails,
         getCourseFromPackage,
@@ -303,12 +336,12 @@ export default function LeaderboardReports() {
     const handleCopy = () => {
         if (!shareUrl) return;
         navigator.clipboard.writeText(shareUrl);
-        toast.success('Public leaderboard link copied');
+        toast.success(t('toasts.linkCopied'));
     };
     const handleShare = () => {
         if (!shareUrl) return;
         if (typeof navigator !== 'undefined' && navigator.share) {
-            navigator.share({ title: 'Institute Leaderboard', url: shareUrl }).catch(() => {});
+            navigator.share({ title: t('share.dialogTitle'), url: shareUrl }).catch(() => {});
         } else {
             handleCopy();
         }
@@ -328,7 +361,7 @@ export default function LeaderboardReports() {
                     className="gap-1.5"
                 >
                     <Buildings className="size-4" />
-                    Institute-wide
+                    {t('viewToggle.instituteWide')}
                 </MyButton>
                 <MyButton
                     buttonType={!isInstitute ? 'primary' : 'secondary'}
@@ -337,7 +370,7 @@ export default function LeaderboardReports() {
                     className="gap-1.5"
                 >
                     <Crown className="size-4" />
-                    By course
+                    {t('viewToggle.byCourse')}
                 </MyButton>
             </div>
 
@@ -347,20 +380,20 @@ export default function LeaderboardReports() {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div>
                             <label className="mb-1 block text-caption font-medium text-neutral-700">
-                                Course
+                                {t('batchSelector.course')}
                             </label>
                             <SearchableSelect
                                 options={courseList.map((c) => ({ label: c.name, value: c.id }))}
                                 value={courseId}
                                 onChange={(v) => setCourseId(v)}
-                                placeholder="Select a course"
-                                searchPlaceholder="Search course..."
+                                placeholder={t('batchSelector.selectCourse')}
+                                searchPlaceholder={t('batchSelector.searchCourse')}
                                 triggerClassName="h-9 text-sm"
                             />
                         </div>
                         <div>
                             <label className="mb-1 block text-caption font-medium text-neutral-700">
-                                Session
+                                {t('batchSelector.session')}
                             </label>
                             <Select
                                 value={sessionId}
@@ -368,7 +401,7 @@ export default function LeaderboardReports() {
                                 disabled={!sessionList.length}
                             >
                                 <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue placeholder="Select a session" />
+                                    <SelectValue placeholder={t('batchSelector.selectSession')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {sessionList.map((s) => (
@@ -381,7 +414,7 @@ export default function LeaderboardReports() {
                         </div>
                         <div>
                             <label className="mb-1 block text-caption font-medium text-neutral-700">
-                                Level
+                                {t('batchSelector.level')}
                             </label>
                             <Select
                                 value={levelId}
@@ -389,7 +422,7 @@ export default function LeaderboardReports() {
                                 disabled={!levelList.length}
                             >
                                 <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue placeholder="Select a level" />
+                                    <SelectValue placeholder={t('batchSelector.selectLevel')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {levelList.map((l) => (
@@ -414,14 +447,18 @@ export default function LeaderboardReports() {
                             <Crown weight="fill" className="size-5 text-warning-500" />
                         )}
                         <h3 className="text-subtitle font-semibold text-neutral-700">
-                            {isInstitute ? 'Institute-wide Leaderboard' : 'Course Leaderboard'}
+                            {isInstitute
+                                ? t('leaderboardPanel.instituteWideHeading')
+                                : t('leaderboardPanel.courseHeading')}
                         </h3>
                     </div>
                     <div className="flex items-center gap-2">
                         {activeData && (
                             <span className="inline-flex items-center gap-1 text-caption text-muted-foreground">
                                 <Users className="size-4" />
-                                {activeData.totalLearners} learners
+                                {t('leaderboardPanel.learnersCount', {
+                                    count: activeData.totalLearners,
+                                })}
                             </span>
                         )}
                         {shareUrl && (
@@ -433,14 +470,14 @@ export default function LeaderboardReports() {
                                     className="gap-1.5"
                                 >
                                     <Copy className="size-4" />
-                                    Copy link
+                                    {t('leaderboardPanel.copyLink')}
                                 </MyButton>
                                 <MyButton
                                     buttonType="secondary"
                                     scale="small"
                                     layoutVariant="icon"
                                     onClick={handleShare}
-                                    aria-label="Share public leaderboard link"
+                                    aria-label={t('leaderboardPanel.shareAriaLabel')}
                                 >
                                     <ShareNetwork className="size-4" />
                                 </MyButton>
@@ -451,17 +488,17 @@ export default function LeaderboardReports() {
 
                 {!isInstitute && !packageSessionId ? (
                     <p className="py-6 text-center text-caption text-muted-foreground">
-                        Select a course, session and level to view its leaderboard.
+                        {t('leaderboardPanel.selectToView')}
                     </p>
                 ) : activeLoading ? (
                     <p className="py-6 text-center text-caption text-muted-foreground">
-                        Loading leaderboard…
+                        {t('leaderboardPanel.loading')}
                     </p>
                 ) : !activeData || activeData.entries.length === 0 ? (
                     <p className="py-6 text-center text-caption text-muted-foreground">
                         {isInstitute
-                            ? 'No learner activity recorded yet.'
-                            : 'No activity recorded for this batch yet.'}
+                            ? t('leaderboardPanel.noInstituteActivity')
+                            : t('leaderboardPanel.noBatchActivity')}
                     </p>
                 ) : (
                     <div className="flex flex-col gap-1">

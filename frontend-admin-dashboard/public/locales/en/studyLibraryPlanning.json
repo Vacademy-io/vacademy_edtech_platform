@@ -1,0 +1,8 @@
+{
+    "heading": "Plannings",
+    "actions": {
+        "create": "Create",
+        "viewAll": "View all"
+    },
+    "loading": "Loading plannings..."
+}

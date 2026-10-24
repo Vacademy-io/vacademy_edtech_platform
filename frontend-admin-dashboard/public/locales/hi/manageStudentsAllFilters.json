@@ -1,0 +1,36 @@
+{
+    "statuses": {
+        "title": "स्थिति"
+    },
+    "gender": {
+        "title": "लिंग"
+    },
+    "sessionExpiry": {
+        "titleSuffix": "समाप्ति",
+        "optionLabel": "{{days}} दिनों में समाप्त हो रहा है"
+    },
+    "paymentStatus": {
+        "title": "भुगतान स्थिति",
+        "paid": "भुगतान किया गया",
+        "failed": "विफल",
+        "paymentFailed": "भुगतान विफल"
+    },
+    "approvalStatus": {
+        "title": "अनुमोदन स्थिति",
+        "pendingForApproval": "अनुमोदन हेतु लंबित",
+        "invited": "आमंत्रित"
+    },
+    "cartStatus": {
+        "title": "कार्ट स्थिति",
+        "abandonedCart": "छोड़ा गया कार्ट"
+    },
+    "role": {
+        "title": "भूमिका"
+    },
+    "subOrg": {
+        "title": "सब-ऑर्ग"
+    },
+    "audience": {
+        "title": "ऑडियंस"
+    }
+}

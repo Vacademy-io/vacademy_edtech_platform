@@ -1,0 +1,7 @@
+{
+    "editDialogHeading": "Modifier {{term}}",
+    "deleteDialogHeading": "Supprimer {{term}}",
+    "cancel": "Annuler",
+    "confirmDelete": "Oui, j’en suis sûr",
+    "deleteConfirmMessage": "Voulez-vous vraiment supprimer le chapitre {{chapterName}} ?"
+}

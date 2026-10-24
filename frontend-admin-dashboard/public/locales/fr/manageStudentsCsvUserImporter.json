@@ -1,0 +1,68 @@
+{
+    "columns": {
+        "email": "E-mail",
+        "fullName": "Nom complet",
+        "mobileNumber": "Numéro de mobile",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "address": "Adresse",
+        "pinCode": "Code postal",
+        "paymentDate": "Date de paiement (jj/mm/aaaa)",
+        "transactionId": "ID de transaction",
+        "gender": "Genre",
+        "dateOfBirth": "Date de naissance",
+        "city": "Ville",
+        "region": "État/Région",
+        "linkedInstituteName": "Collège/École",
+        "fathersName": "Nom du père",
+        "mothersName": "Nom de la mère",
+        "fathersMobile": "Mobile du père",
+        "fathersEmail": "E-mail du père",
+        "mothersMobile": "Mobile de la mère",
+        "mothersEmail": "E-mail de la mère"
+    },
+    "template": {
+        "downloadTitle": "Télécharger le modèle",
+        "instructions": "Remplissez le modèle et importez-le à nouveau. Colonnes obligatoires :",
+        "optionalCount": "+ {{count}} facultatif",
+        "customFieldsIncluded_one": "(dont {{count}} champ personnalisé)",
+        "customFieldsIncluded_many": "(dont {{count}} champs personnalisés)",
+        "customFieldsIncluded_other": "(dont {{count}} champs personnalisés)",
+        "templateButton": "Modèle"
+    },
+    "picker": {
+        "title": "Choisir les colonnes du modèle",
+        "description": "Les colonnes obligatoires sont toujours incluses ; l'import accepte tout de même n'importe quel sous-ensemble.",
+        "clearOptional": "Effacer les facultatives",
+        "selectAll": "Tout sélectionner",
+        "required": "Obligatoire",
+        "columnsSelected_one": "{{count}} colonne",
+        "columnsSelected_many": "{{count}} colonnes",
+        "columnsSelected_other": "{{count}} colonnes",
+        "cancel": "Annuler",
+        "download": "Télécharger"
+    },
+    "dropzone": {
+        "dragDrop": "Glissez-déposez un fichier CSV ici",
+        "orBrowse": "ou cliquez pour parcourir"
+    },
+    "errors": {
+        "missingRequiredColumn": "Colonne obligatoire manquante : \"{{column}}\"",
+        "rowFieldRequired": "Ligne {{rowNum}} : {{field}} est obligatoire",
+        "rowUsernameSpaces": "Ligne {{rowNum}} : le nom d'utilisateur ne peut pas contenir d'espaces",
+        "rowInvalidPaymentDate": "Ligne {{rowNum}} : format de payment_date invalide \"{{value}}\"",
+        "notCsvFile": "Veuillez importer un fichier .csv"
+    },
+    "preview": {
+        "rowsDetected_one": "{{count}} ligne valide détectée",
+        "rowsDetected_many": "{{count}} lignes valides détectées",
+        "rowsDetected_other": "{{count}} lignes valides détectées",
+        "addLearners_one": "Ajouter {{count}} apprenant",
+        "addLearners_many": "Ajouter {{count}} apprenants",
+        "addLearners_other": "Ajouter {{count}} apprenants",
+        "customFieldsCount_one": "({{count}} champ personnalisé)",
+        "customFieldsCount_many": "({{count}} champs personnalisés)",
+        "customFieldsCount_other": "({{count}} champs personnalisés)",
+        "andMore": "…et {{count}} de plus"
+    }
+}

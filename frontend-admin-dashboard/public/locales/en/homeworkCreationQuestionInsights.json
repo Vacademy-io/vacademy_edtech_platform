@@ -1,0 +1,29 @@
+{
+    "question": {
+        "label": "Question ({{number}}.) ",
+        "correctAnswer": "Correct Answer:",
+        "explanation": "Explanation:",
+        "topCorrectResponses": "Top 3 quick correct responses",
+        "responseTime_one": "{{count}} sec",
+        "responseTime_other": "{{count}} sec"
+    },
+    "stats": {
+        "totalAttempts_one": "Total Attempt: {{count}} student",
+        "totalAttempts_other": "Total Attempt: {{count}} students",
+        "correctRespondents": "Correct Respondents: ",
+        "partiallyCorrectRespondents": "Partially Correct Respondents: ",
+        "wrongRespondents": "Wrong Respondents: ",
+        "skipped": "Skipped: ",
+        "notAvailable": "N/A",
+        "viewList": "View List"
+    },
+    "dialog": {
+        "correctRespondents": "Correct Respondents",
+        "partiallyCorrectRespondents": "Partially Correct Respondents",
+        "wrongRespondents": "Wrong Respondents",
+        "skippedRespondents": "Skipped Respondents"
+    },
+    "toasts": {
+        "exportPdfSuccess": "Student question insights data for PDF exported successfully"
+    }
+}

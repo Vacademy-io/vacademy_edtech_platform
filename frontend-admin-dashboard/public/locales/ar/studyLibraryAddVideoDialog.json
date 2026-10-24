@@ -1,0 +1,32 @@
+{
+    "validation": {
+        "urlRequired": "الرابط مطلوب",
+        "urlInvalid": "الرجاء إدخال رابط صالح",
+        "youtubeUrlInvalid": "الرجاء إدخال رابط يوتيوب صالح"
+    },
+    "defaults": {
+        "videoName": "فيديو يوتيوب"
+    },
+    "fields": {
+        "urlPlaceholder": "https://www.youtube.com/watch?v=..."
+    },
+    "preview": {
+        "thumbnailAlt": "صورة مصغرة للفيديو"
+    },
+    "toasts": {
+        "invalidYoutubeUrl": "رابط يوتيوب غير صالح",
+        "durationReadFailed": "تعذّرت قراءة مدة الفيديو من يوتيوب. الرجاء المحاولة مرة أخرى.",
+        "youtubeLoading": "لا يزال يوتيوب قيد التحميل. الرجاء الانتظار لحظة والمحاولة مرة أخرى.",
+        "updateSuccess": "تم تحديث رابط الفيديو بنجاح!",
+        "addSuccess": "تمت إضافة الفيديو بنجاح!",
+        "updateFailed": "فشل تحديث الرابط",
+        "addFailed": "فشلت إضافة الفيديو",
+        "reorderFailed": "تم إنشاء الشريحة لكن إعادة الترتيب فشلت"
+    },
+    "actions": {
+        "updatingLink": "جارٍ تحديث الرابط...",
+        "addingVideo": "جارٍ إضافة الفيديو...",
+        "updateLink": "تحديث رابط يوتيوب",
+        "addVideo": "إضافة فيديو يوتيوب"
+    }
+}

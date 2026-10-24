@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, PencilSimple, Trash, PhoneCall } from '@phosphor-icons/react';
+import { Plus, PencilSimple, Trash, GridNine } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -72,7 +72,7 @@ export function IvrBuilderCard() {
             <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div className="flex flex-col gap-1">
                     <CardTitle className="flex items-center gap-2">
-                        <PhoneCall className="text-primary-500" />
+                        <GridNine className="text-primary-500" />
                         Inbound call menus (IVR)
                     </CardTitle>
                     <CardDescription>
@@ -106,51 +106,66 @@ export function IvrBuilderCard() {
                     </div>
                 )}
 
-                {menus.map((menu) => (
-                    <div
-                        key={menu.id ?? menu.name}
-                        className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-4"
-                    >
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-subtitle font-semibold text-neutral-800">
-                                    {menu.name}
+                {menus.map((menu) => {
+                    const stepCount = menu.nodes?.length ?? 0;
+                    const isDefault = !menu.dialedNumber?.trim();
+                    return (
+                        <div
+                            key={menu.id ?? menu.name}
+                            className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                            <div className="flex min-w-0 items-start gap-3">
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-500">
+                                    <GridNine className="size-5" />
                                 </span>
-                                {menu.enabled === false && (
-                                    <span className="rounded-sm bg-neutral-100 px-2 py-0.5 text-caption text-neutral-500">
-                                        Disabled
+                                <div className="flex min-w-0 flex-col gap-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-subtitle font-semibold text-neutral-800">
+                                            {menu.name}
+                                        </span>
+                                        {menu.enabled === false && (
+                                            <span className="rounded-sm bg-neutral-100 px-2 py-0.5 text-caption text-neutral-500">
+                                                Disabled
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-caption text-neutral-500">
+                                        {isDefault
+                                            ? 'Default menu (all numbers)'
+                                            : `Number ${menu.dialedNumber}`}
+                                        {' · '}
+                                        {stepCount} {stepCount === 1 ? 'step' : 'steps'}
                                     </span>
-                                )}
+                                </div>
                             </div>
-                            <span className="text-caption text-neutral-500">
-                                {menu.dialedNumber?.trim()
-                                    ? `Number ${menu.dialedNumber}`
-                                    : 'Default menu (all numbers)'}
-                                {' · '}
-                                {menu.nodes?.length ?? 0}{' '}
-                                {(menu.nodes?.length ?? 0) === 1 ? 'step' : 'steps'}
-                            </span>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <MyButton
+                                    buttonType="secondary"
+                                    scale="small"
+                                    onClick={() => openEdit(menu)}
+                                >
+                                    <PencilSimple className="mr-1" /> Edit
+                                </MyButton>
+                                <MyButton
+                                    buttonType="secondary"
+                                    layoutVariant="icon"
+                                    scale="small"
+                                    onClick={() => setDeletingMenu(menu)}
+                                    aria-label={`Delete ${menu.name}`}
+                                >
+                                    <Trash className="text-danger-600" />
+                                </MyButton>
+                            </div>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                            <MyButton
-                                buttonType="secondary"
-                                layoutVariant="icon"
-                                scale="small"
-                                onClick={() => openEdit(menu)}
-                            >
-                                <PencilSimple />
-                            </MyButton>
-                            <MyButton
-                                buttonType="secondary"
-                                layoutVariant="icon"
-                                scale="small"
-                                onClick={() => setDeletingMenu(menu)}
-                            >
-                                <Trash className="text-danger-600" />
-                            </MyButton>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
+
+                {menus.length > 0 && (
+                    <p className="text-caption text-neutral-500">
+                        Numbers that aren’t set to a specific menu use the default menu (the one
+                        with no phone number).
+                    </p>
+                )}
             </CardContent>
 
             <IvrMenuEditor

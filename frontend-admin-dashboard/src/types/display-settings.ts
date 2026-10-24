@@ -1,3 +1,4 @@
+import type { SidebarCategory } from '@/types/layout-container/layout-container-types';
 // Types that define Admin/Teacher display settings configuration
 
 export type UserRoleForDisplaySettings = 'ADMIN' | 'TEACHER';
@@ -24,12 +25,13 @@ export interface SidebarTabConfig {
     // For custom tabs: which sidebar category (CRM/LMS/AI) it belongs to.
     // Built-in tabs derive their category from SidebarItemsData; this only applies
     // to user-added custom tabs whose id isn't in SidebarItemsData.
-    category?: 'CRM' | 'LMS' | 'AI';
+    category?: SidebarCategory;
 }
 
 // Dashboard widget identifiers. These are string literal ids that we can enforce in UI.
 // The list is derived from widgets present in `src/routes/dashboard/index.tsx`.
 export type DashboardWidgetId =
+    | 'assistantLaunchBar'
     | 'quickActions'
     | 'pendingActions'
     | 'kpiBand'
@@ -58,7 +60,8 @@ export type DashboardWidgetId =
     | 'topVles'
     | 'subOrgSeatCourses'
     | 'subOrgActivityDues'
-    | 'mentorshipStats';
+    | 'mentorshipStats'
+    | 'lmsConnectionHealth';
 
 export interface DashboardWidgetConfig {
     id: DashboardWidgetId;
@@ -85,6 +88,7 @@ export type CourseDetailsTabId =
     | 'LEARNER'
     | 'TEACHER'
     | 'ASSESSMENT'
+    | 'QUIZ_RESULTS'
     | 'LIVE_SESSION'
     | 'PLANNING'
     | 'ACTIVITY'
@@ -92,7 +96,9 @@ export type CourseDetailsTabId =
     | 'REPORTS'
     | 'CERTIFICATES'
     | 'DOWNLOADS'
-    | 'SETTINGS';
+    | 'SETTINGS'
+    | 'TUTOR_MODE'
+    | 'AI_KNOWLEDGE';
 
 export interface CourseDetailsTabConfig {
     id: CourseDetailsTabId;
@@ -154,12 +160,16 @@ export interface AssessmentActionSettings {
     showEditAssessment?: boolean;
     // "Delete Assessment" / "Delete Homework" in the card "…" menu.
     showDeleteAssessment?: boolean;
+    // Assessment folders: New folder, folder edit/copy link/delete, drag-and-drop and
+    // "Move to folder". Off still lets the role browse folders.
+    showManageFolders?: boolean;
 }
 
 export const DEFAULT_ASSESSMENT_ACTION_SETTINGS: AssessmentActionSettings = {
     showCreateAssessment: true,
     showEditAssessment: true,
     showDeleteAssessment: true,
+    showManageFolders: true,
 };
 
 // Stable identifiers for the student side-view tabs. Used as keys in the
@@ -183,6 +193,7 @@ export type StudentSideViewTabId =
     | 'application'
     | 'lead'
     | 'fullHistory'
+    | 'workflows'
     | 'parent'
     | 'onboarding';
 
@@ -204,6 +215,10 @@ export interface StudentSideViewSettings {
     applicationTab: boolean;
     leadTab: boolean;
     fullHistoryTab?: boolean;
+    // Workflows tab — the automations that ran for this person, with a Retry
+    // action per run. Optional for backward-compat with settings saved before
+    // this tab existed.
+    workflowsTab?: boolean;
     // Guardian tab — surfaces the linked guardian/children (parent-link feature).
     // Optional for backward-compat with settings saved before this tab existed.
     parentTab?: boolean;
@@ -211,6 +226,17 @@ export interface StudentSideViewSettings {
     // (ONBOARDING_SETTING feature). Optional for backward-compat with
     // settings saved before this tab existed.
     onboardingTab?: boolean;
+    /**
+     * The Resend control on each outbound row of the Notifications tab, which
+     * sends that message to the learner a second time. Not a tab toggle — the
+     * tab itself is `notificationTab` — so it is kept out of
+     * StudentSideViewVisibilityKey and rendered as its own option.
+     *
+     * Optional for backward-compat: an institute whose saved settings pre-date
+     * this flag falls through to the role's default (on for admin, off for
+     * teacher and custom roles).
+     */
+    allowResendMessage?: boolean;
     // Custom ordering by tab id. Lower numbers render first. Tabs missing
     // from the map fall back to the default order. Optional for
     // backward-compat with settings that pre-date this feature.
@@ -279,6 +305,7 @@ export type StudentSideViewVisibilityKey =
     | 'applicationTab'
     | 'leadTab'
     | 'fullHistoryTab'
+    | 'workflowsTab'
     | 'parentTab'
     | 'onboardingTab';
 
@@ -300,6 +327,14 @@ export interface LearnerManagementSettings {
     // Only meaningful when allowViewPassword is on — the card it lives in is
     // hidden otherwise.
     allowEditCredentials?: boolean;
+    // Lets the role PERMANENTLY delete an offline/manual payment or an invoice from the learner's
+    // payment tab and Manage Payments. OFF by default for every role, including admin — an institute
+    // opts in here. Absent (every settings blob saved before this flag) means OFF, and the server
+    // enforces the same rule, so hiding the button is not the only guard.
+    allowDeletePayments?: boolean;
+    // May this role apply admin discounts (manual enroll, bulk assign, admin invoice).
+    // Admin defaults to ON.
+    canApplyDiscounts?: boolean;
 }
 
 // What a custom header button links to.
@@ -380,6 +415,24 @@ export const DEFAULT_LIVE_CLASS_SCHEDULING_SETTINGS: LiveClassSchedulingSettings
     bulkScheduleEnabled: true,
     singleScheduleEnabled: true,
 };
+
+// Per-role actions on the live-class list (Live Sessions page).
+export interface LiveClassActionSettings {
+    // "Delete" in the "…" menu of each card on the Past tab. Deleting a past
+    // class takes its attendance, recordings and feedback out of the list, so it
+    // is role-dependent: ON for ADMIN, OFF for teachers and custom roles. Absent
+    // (every blob saved before this flag) falls through to the role's default,
+    // so read sites must resolve `?? isAdmin`, never `?? true`.
+    allowDeletePastSessions?: boolean;
+}
+
+// Per-role actions on the leads pages (CRM).
+export interface LeadActionSettings {
+    // "Add New Lead" on All Leads: pick a campaign type, then an audience, and
+    // fill that audience's form. OFF for every role, admin included, until an
+    // institute opts a role in, so read sites must resolve `=== true`.
+    showAddLead?: boolean;
+}
 
 // Per-role control over which roles this role can see/select in the Team tab —
 // in the role-type filter chips and the "Role Type" dropdown of the Invite
@@ -484,6 +537,57 @@ export type ListCustomFieldControls = Partial<
     Record<ListCustomFieldSurface, ListCustomFieldSurfaceControls>
 >;
 
+// Campaign (UTM) attribution filters on the same list surfaces. Which
+// dimensions can be offered lives in services/utm-list-filters
+// (UTM_FILTER_DIMENSIONS); this is the per-surface admin override.
+export type ListUtmFilterDimension =
+    | 'source'
+    | 'medium'
+    | 'campaign'
+    | 'content'
+    | 'term'
+    | 'source_type';
+
+export interface ListUtmFilterSurfaceControls {
+    // Explicit on/off for this surface. ABSENT = follow the institute's
+    // campaign-link (UTM) setting: the filters appear the moment that is
+    // switched on and vanish when it is switched off, with nothing to
+    // configure here. `false` hides them even while UTM is on (a role that
+    // never needs them); `true` still requires UTM to be on — without it
+    // there is nothing to filter by.
+    enabled?: boolean;
+    // Dimensions rendered as dropdowns. ABSENT = automatic: source, medium and
+    // campaign always; content, term and channel only once the institute's
+    // data actually holds a value for them. An explicit list pins exactly
+    // these (a dimension with no data still renders, empty).
+    dimensions?: ListUtmFilterDimension[];
+}
+
+export type ListUtmFilterControls = Partial<
+    Record<ListCustomFieldSurface, ListUtmFilterSurfaceControls>
+>;
+
+// The filters a list surface ships with, as opposed to custom fields and UTM
+// dimensions. Admins turn these off when a column means nothing to their
+// institute (no counsellors assigned, one audience, …).
+export type ListBuiltInFilter = 'counsellor' | 'campaignType' | 'audience';
+
+export const LIST_BUILT_IN_FILTERS: readonly ListBuiltInFilter[] = [
+    'counsellor',
+    'campaignType',
+    'audience',
+] as const;
+
+export interface ListBuiltInFilterSurfaceControls {
+    // Filters hidden on this surface. ABSENT or empty = all of them show, which
+    // is what every institute got before this existed.
+    hidden?: ListBuiltInFilter[];
+}
+
+export type ListBuiltInFilterControls = Partial<
+    Record<ListCustomFieldSurface, ListBuiltInFilterSurfaceControls>
+>;
+
 export interface DisplaySettingsData {
     // 1) Sidebar tabs and sub-tabs configuration and ordering
     sidebar: SidebarTabConfig[];
@@ -554,6 +658,12 @@ export interface DisplaySettingsData {
         // courses and the Copy-to-Edit / Submit-for-Review approval flow —
         // they can edit and publish published courses directly.
         directEditPublishedCourse?: boolean;
+        // When true (default — the long-standing behaviour), a non-admin's new
+        // DRAFT course must go through Submit for Review -> admin approval
+        // before it becomes ACTIVE. Set false per role to give that role a
+        // "Publish" button instead. Read sites test `!== false` so a saved
+        // blob that predates this key keeps requiring review.
+        requireCourseApproval?: boolean;
         // When true, Edit buttons on Subject / Module / Chapter rows in the
         // Outline & Content Structure tabs are visible regardless of course
         // status. Admin always sees these; this flag is for non-admin roles.
@@ -646,6 +756,18 @@ export interface DisplaySettingsData {
     //        CONTACTS → none
     listCustomFieldControls?: ListCustomFieldControls;
 
+    // 12e) Campaign (UTM) attribution filters per list surface — the same
+    //      surfaces as 12d. Institute-wide, stored on the ADMIN blob. Absent
+    //      surface entry = follow the UTM setting (see
+    //      ListUtmFilterSurfaceControls). Edited from the same "Manage
+    //      filters" popup / Display Settings card as the custom-field filters.
+    listUtmFilterControls?: ListUtmFilterControls;
+
+    // 12f) The built-in filters (counsellor, campaign type, audience) per list
+    //      surface. Absent = every one of them shows. Edited from the same
+    //      "Manage filters" popup as 12d and 12e.
+    listBuiltInFilterControls?: ListBuiltInFilterControls;
+
     // 13) Learner management permissions for admins/teachers
     learnerManagement?: LearnerManagementSettings;
 
@@ -660,6 +782,14 @@ export interface DisplaySettingsData {
     //      scheduling for specific roles even if it's institute-enabled.
     //      Both flags default to true so existing institutes are unaffected.
     liveClassScheduling?: LiveClassSchedulingSettings;
+
+    // 13b-ii) Live class list actions (Past tab delete). See
+    //         LiveClassActionSettings — ON for admin, OFF for other roles.
+    liveClassActions?: LiveClassActionSettings;
+
+    // 13b-iii) Lead page actions (All Leads → Add New Lead). See
+    //          LeadActionSettings — OFF for every role by default.
+    leadActions?: LeadActionSettings;
 
     // 13c) Team tab role-visibility controls. Restricts which roles the
     //      viewing role can see/select in the Team tab's role-type filter and
@@ -680,7 +810,7 @@ export interface DisplaySettingsData {
 
     // 14) Sidebar Category Configuration
     sidebarCategories?: Array<{
-        id: 'CRM' | 'LMS' | 'AI';
+        id: SidebarCategory;
         visible: boolean;
         locked?: boolean; // whether the category is locked
         default: boolean; // Is this the default category on load?

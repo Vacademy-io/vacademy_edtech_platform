@@ -44,7 +44,7 @@ public class LeadReportSummaryDTO {
         private Double conversionRate;     // % (0–100) — null when totalLeads == 0
         private Long respondedLeads;       // leads with at least one counsellor action
         private Double avgResponseMinutes; // mean (first-action - submitted_at) for responded leads
-        private Long tatMetCount;          // first-action ≤ submitted_at + tat_hours (null when TAT disabled)
+        private Long tatMetCount;          // first response ≤ submitted_at + TAT minutes (null when TAT disabled)
         private Double tatMetRate;         // % over responded leads (null when TAT disabled)
         private Long overdueLeads;         // leads currently TAT_OVERDUE or FOLLOW_UP_OVERDUE
     }

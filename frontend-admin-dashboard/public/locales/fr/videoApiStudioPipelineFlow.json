@@ -1,0 +1,13 @@
+{
+    "errors": {
+        "talentCutFromProduction": "Les talents ont été retirés de la production",
+        "scoreCutFromProduction": "La musique a été retirée de la production"
+    },
+    "hint": {
+        "clickAnyStageForDetails": "Cliquez sur une étape pour voir les détails"
+    },
+    "directorTicker": {
+        "label": "Réalisateur :",
+        "workingOn": "travail en cours sur {{stage}}…"
+    }
+}

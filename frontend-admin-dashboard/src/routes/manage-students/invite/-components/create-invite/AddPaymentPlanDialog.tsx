@@ -9,12 +9,16 @@ import { PaymentPlanCreator } from '@/routes/settings/-components/Payment/Paymen
 import { useQueryClient } from '@tanstack/react-query';
 import { buildCreateCPOPayload } from '@/routes/financial-management/fee-plans/-components/CreateCPODialog';
 import { useCreateCPO } from '@/routes/financial-management/fee-plans/-services/cpo-service';
+import { useTranslation } from 'react-i18next';
+import { splitPlansByType, type PaymentOption } from './-utils/helper';
+import { RegionalPricingDialog } from '@/routes/settings/-components/Payment/RegionalPricingDialog';
 
 interface PaymentPlansDialogProps {
     form: UseFormReturn<InviteLinkFormValues>;
 }
 
 const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
+    const { t } = useTranslation('manageStudentsAddPaymentPlanDialog');
     const queryClient = useQueryClient();
     const [editingPlan, setEditingPlan] = useState<PaymentPlan | null>(null);
     const [showPaymentPlanCreator, setShowPaymentPlanCreator] = useState(
@@ -23,12 +27,20 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
     const [featuresGlobal, setFeaturesGlobal] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [requireApproval, setRequireApproval] = useState(false);
+    // Option-level master switch for plan change. Carried here so an option created from
+    // the invite flow can opt into switching too, exactly as one created from Settings can.
+    const [planChangeAllowed, setPlanChangeAllowed] = useState(false);
+    // Regional pricing, saved with the option exactly as from Settings.
+    const [regionalPricingEnabled, setRegionalPricingEnabled] = useState(false);
+    const [regionalPricingCurrencies, setRegionalPricingCurrencies] = useState<string[]>([]);
+    // After creating an option with regional pricing on, its panel opens for country prices.
+    const [regionalPanel, setRegionalPanel] = useState<{ id: string; name: string } | null>(null);
     const instituteId = getInstituteId();
     const createCPOMutation = useCreateCPO();
 
     const handleError = (error: unknown, operation: string) => {
         console.error(`Error in ${operation}:`, error);
-        toast.error(`Error in ${operation}`);
+        toast.error(t('errors.generic', { operation }));
     };
 
     const handleClosePaymentPlanCreator = () => {
@@ -36,6 +48,9 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
         setShowPaymentPlanCreator(false);
         setEditingPlan(null);
         setRequireApproval(false);
+        setPlanChangeAllowed(false);
+        setRegionalPricingEnabled(false);
+        setRegionalPricingCurrencies([]);
     };
 
     const handleSavePaymentPlan = async (plan: PaymentPlan) => {
@@ -55,15 +70,25 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
                 // Refetch the invite's payment-option list so the new CPO mirror appears and
                 // can be selected for this invite.
                 await queryClient.invalidateQueries({ queryKey: ['GET_PAYMENT_DETAILS'] });
-                toast.success('Fee plan created — select it from the plans list');
+                toast.success(t('success.feePlanCreated'));
                 form.setValue('showAddPlanDialog', false);
                 setEditingPlan(null);
                 setShowPaymentPlanCreator(false);
                 setRequireApproval(false);
+        setPlanChangeAllowed(false);
+                setRegionalPricingEnabled(false);
+                setRegionalPricingCurrencies([]);
                 return;
             }
 
-            const apiPlans = transformLocalPlanToApiFormatArray(plan);
+            // A ONE_TIME option has one plan and no per-interval checkbox, so the option
+            // toggle IS that plan's flag. Mirrors PaymentSettings.handleSavePaymentPlan —
+            // without it a one-time option created here could never be a switch target.
+            const apiPlans = transformLocalPlanToApiFormatArray({
+                ...plan,
+                planChangeAllowed,
+                config: { ...plan.config, planChangeAllowed },
+            });
             const paymentOptionRequest = {
                 id: plan.id, // Use the plan ID directly (either existing or new)
                 name: plan.name,
@@ -72,6 +97,15 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
                 source_id: instituteId ?? '',
                 type: plan.type,
                 require_approval: requireApproval,
+                plan_change_allowed: planChangeAllowed,
+                ...(plan.type === PaymentPlans.SUBSCRIPTION || plan.type === PaymentPlans.UPFRONT
+                    ? {
+                          regional_pricing_enabled: regionalPricingEnabled,
+                          regional_pricing_currencies: regionalPricingEnabled
+                              ? regionalPricingCurrencies
+                              : [],
+                      }
+                    : {}),
                 payment_plans: apiPlans,
                 payment_option_metadata_json: JSON.stringify({
                     currency: plan.currency,
@@ -108,23 +142,41 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
                 }),
             };
 
-            await savePaymentOption(paymentOptionRequest);
-            if (plan.type === 'FREE') {
-                const freePlans = form.getValues('freePlans');
-                form.setValue('freePlans', [...freePlans, paymentOptionRequest]);
-            } else {
-                const paidPlans = form.getValues('paidPlans');
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                form.setValue('paidPlans', [...paidPlans, paymentOptionRequest]);
+            const saved = await savePaymentOption(paymentOptionRequest);
+            // Show the new plan immediately, in the picker's own shape (name, price,
+            // created date, creator), while the list refetches behind it. The server
+            // response is the source of truth: it carries the generated id, and the
+            // request object used to be pushed raw here and rendered as "Free for 0 days".
+            const { freePlans: newFree, paidPlans: newPaid } = splitPlansByType(
+                saved && saved.id ? [saved as unknown as PaymentOption] : []
+            );
+            if (newFree.length > 0) {
+                form.setValue('freePlans', [...form.getValues('freePlans'), ...newFree]);
+            }
+            if (newPaid.length > 0) {
+                form.setValue('paidPlans', [
+                    ...form.getValues('paidPlans'),
+                    // The form schema's price is a transformed string; the helper leaves it optional.
+                    ...newPaid.map((plan) => ({ ...plan, price: plan.price ?? '' })),
+                ]);
             }
             form.setValue('showAddPlanDialog', false);
             setEditingPlan(null);
             setShowPaymentPlanCreator(false);
             setRequireApproval(false);
+        setPlanChangeAllowed(false);
+            if (
+                regionalPricingEnabled &&
+                saved?.id &&
+                (plan.type === PaymentPlans.SUBSCRIPTION || plan.type === PaymentPlans.UPFRONT)
+            ) {
+                setRegionalPanel({ id: saved.id, name: saved.name || plan.name });
+            }
+            setRegionalPricingEnabled(false);
+            setRegionalPricingCurrencies([]);
             queryClient.invalidateQueries({ queryKey: ['GET_PAYMENT_DETAILS'] });
         } catch (error) {
-            handleError(error, 'save payment plan');
+            handleError(error, t('errors.operations.savePaymentPlan'));
         } finally {
             setIsSaving(false);
         }
@@ -148,7 +200,23 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
                 isSaving={isSaving}
                 requireApproval={requireApproval}
                 setRequireApproval={setRequireApproval}
+                planChangeAllowed={planChangeAllowed}
+                setPlanChangeAllowed={setPlanChangeAllowed}
+                regionalPricingEnabled={regionalPricingEnabled}
+                setRegionalPricingEnabled={setRegionalPricingEnabled}
+                regionalPricingCurrencies={regionalPricingCurrencies}
+                setRegionalPricingCurrencies={setRegionalPricingCurrencies}
             />
+            {regionalPanel && (
+                <RegionalPricingDialog
+                    open={!!regionalPanel}
+                    onOpenChange={(open) => {
+                        if (!open) setRegionalPanel(null);
+                    }}
+                    paymentOptionId={regionalPanel.id}
+                    paymentOptionName={regionalPanel.name}
+                />
+            )}
         </>
     );
 };

@@ -19,6 +19,7 @@
  */
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowsLeftRight, ChartBarHorizontal, Phone } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -47,6 +48,7 @@ export function DispositionsTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerDispositionsTab');
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId, audienceId };
 
     const query = useQuery({
@@ -113,8 +115,16 @@ export function DispositionsTab({
             0
         );
         return {
-            headers: ['Counsellor', ...statuses.map((s) => s.label || s.status_key), 'Total', 'Pending'],
-            rows: [...dataRows, ['TOTAL', ...footerCols, footerTotal, footerPending]],
+            headers: [
+                t('table.counsellor'),
+                ...statuses.map((s) => s.label || s.status_key),
+                t('table.total'),
+                t('table.pending'),
+            ],
+            rows: [
+                ...dataRows,
+                [t('table.totalRowLabel'), ...footerCols, footerTotal, footerPending],
+            ],
         };
     };
 
@@ -138,12 +148,15 @@ export function DispositionsTab({
         );
         return {
             headers: [
-                'Counsellor',
+                t('table.counsellor'),
                 ...statuses.map((s) => s.label || s.status_key),
-                'No status',
-                'Total leads',
+                t('table.noStatus'),
+                t('table.totalLeads'),
             ],
-            rows: [...dataRows, ['TOTAL', ...footerCols, footerNoStatus, footerTotal]],
+            rows: [
+                ...dataRows,
+                [t('table.totalRowLabel'), ...footerCols, footerNoStatus, footerTotal],
+            ],
         };
     };
 
@@ -158,8 +171,8 @@ export function DispositionsTab({
         );
         const footerTotal = footerCols.reduce((sum, n) => sum + n, 0);
         return {
-            headers: ['Counsellor', ...outcomeKeys.map(outcomeLabel), 'Total'],
-            rows: [...dataRows, ['TOTAL', ...footerCols, footerTotal]],
+            headers: [t('table.counsellor'), ...outcomeKeys.map(outcomeLabel), t('table.total')],
+            rows: [...dataRows, [t('table.totalRowLabel'), ...footerCols, footerTotal]],
         };
     };
 
@@ -167,7 +180,7 @@ export function DispositionsTab({
         <div className="flex flex-col gap-6">
             {/* ── Current status by counsellor (in-window cohort) ─────────── */}
             <ReportSection
-                title="Current status by counsellor"
+                title={t('sections.currentStatus.title')}
                 icon={<ChartBarHorizontal size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
@@ -178,7 +191,7 @@ export function DispositionsTab({
                 }
             >
                 {currentStatusRows.length === 0 || statuses.length === 0 ? (
-                    <EmptyHint message="No leads in this range." />
+                    <EmptyHint message={t('sections.currentStatus.emptyHint')} />
                 ) : (
                     <>
                         <div className="overflow-x-auto">
@@ -186,15 +199,15 @@ export function DispositionsTab({
                                 <thead>
                                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                         <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left">
-                                            Counsellor
+                                            {t('table.counsellor')}
                                         </th>
                                         {statuses.map((s) => (
                                             <StatusHeaderCell key={s.status_key} status={s} />
                                         ))}
                                         <th className="py-2 pl-3 text-right text-warning-600">
-                                            No status
+                                            {t('table.noStatus')}
                                         </th>
-                                        <th className="py-2 pl-3 text-right">Total</th>
+                                        <th className="py-2 ps-3 text-end">{t('table.total')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -231,9 +244,7 @@ export function DispositionsTab({
                             </table>
                         </div>
                         <p className="text-xs text-neutral-400">
-                            Leads received in the selected date range, by the status they hold
-                            right now. Total = all of the counsellor&apos;s leads from this range;
-                            No status = leads never given a status.
+                            {t('sections.currentStatus.description')}
                         </p>
                     </>
                 )}
@@ -241,7 +252,7 @@ export function DispositionsTab({
 
             {/* ── Status changes by counsellor ────────────────────────────── */}
             <ReportSection
-                title="Status changes by counsellor"
+                title={t('sections.statusChanges.title')}
                 icon={<ArrowsLeftRight size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
@@ -252,7 +263,7 @@ export function DispositionsTab({
                 }
             >
                 {statusRows.length === 0 || statuses.length === 0 ? (
-                    <EmptyHint message="No status changes in this range." />
+                    <EmptyHint message={t('sections.statusChanges.emptyHint')} />
                 ) : (
                     <>
                         <div className="overflow-x-auto">
@@ -260,14 +271,14 @@ export function DispositionsTab({
                                 <thead>
                                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                         <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left">
-                                            Counsellor
+                                            {t('table.counsellor')}
                                         </th>
                                         {statuses.map((s) => (
                                             <StatusHeaderCell key={s.status_key} status={s} />
                                         ))}
-                                        <th className="py-2 pl-3 text-right">Total</th>
+                                        <th className="py-2 ps-3 text-end">{t('table.total')}</th>
                                         <th className="py-2 pl-3 text-right text-warning-600">
-                                            Pending
+                                            {t('table.pending')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -305,9 +316,7 @@ export function DispositionsTab({
                             </table>
                         </div>
                         <p className="text-xs text-neutral-400">
-                            Each cell counts transitions into that status made by the counsellor in
-                            this range. Pending = assigned leads with no status change recorded
-                            at any time (never worked on).
+                            {t('sections.statusChanges.description')}
                         </p>
                     </>
                 )}
@@ -315,7 +324,7 @@ export function DispositionsTab({
 
             {/* ── Call outcomes by counsellor ─────────────────────────────── */}
             <ReportSection
-                title="Call outcomes by counsellor"
+                title={t('sections.callOutcomes.title')}
                 icon={<Phone size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
@@ -326,7 +335,7 @@ export function DispositionsTab({
                 }
             >
                 {outcomeRows.length === 0 || outcomeKeys.length === 0 ? (
-                    <EmptyHint message="No logged call outcomes in this range." />
+                    <EmptyHint message={t('sections.callOutcomes.emptyHint')} />
                 ) : (
                     <>
                         <div className="overflow-x-auto">
@@ -334,14 +343,14 @@ export function DispositionsTab({
                                 <thead>
                                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                         <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left">
-                                            Counsellor
+                                            {t('table.counsellor')}
                                         </th>
                                         {outcomeKeys.map((k) => (
                                             <th key={k} className="py-2 pl-3 text-right">
                                                 {outcomeLabel(k)}
                                             </th>
                                         ))}
-                                        <th className="py-2 pl-3 text-right">Total</th>
+                                        <th className="py-2 ps-3 text-end">{t('table.total')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -365,8 +374,7 @@ export function DispositionsTab({
                             </table>
                         </div>
                         <p className="text-xs text-neutral-400">
-                            Counts of logged call outcomes per counsellor, by your telephony call
-                            statuses.
+                            {t('sections.callOutcomes.description')}
                         </p>
                     </>
                 )}

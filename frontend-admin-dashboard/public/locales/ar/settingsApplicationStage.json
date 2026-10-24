@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "لا توجد مراحل تقديم بعد",
+        "description": "أنشئ مراحل لتحديد سير عملية القبول لديك",
+        "addFirstStage": "إضافة أول مرحلة"
+    },
+    "stageCard": {
+        "first": "الأولى",
+        "last": "الأخيرة",
+        "paymentOptionIdLabel": "معرّف خيار الدفع:"
+    },
+    "toast": {
+        "qrUploadSuccess": "تم رفع رمز QR بنجاح",
+        "qrUploadError": "فشل رفع رمز QR",
+        "stageAddedSuccess": "تمت إضافة مرحلة التقديم بنجاح",
+        "stageAddError": "فشلت إضافة المرحلة",
+        "stageNameRequired": "يرجى إدخال اسم المرحلة",
+        "sequenceInvalid": "يرجى إدخال رقم ترتيب صالح",
+        "paymentOptionRequired": "يرجى اختيار خيار الدفع"
+    },
+    "dialog": {
+        "heading": "إضافة مرحلة تقديم",
+        "cancel": "إلغاء",
+        "addStage": "إضافة مرحلة",
+        "adding": "جارٍ الإضافة…",
+        "stageName": {
+            "label": "اسم المرحلة",
+            "placeholder": "مثال: نموذج التقديم، الدفع"
+        },
+        "stageType": {
+            "label": "نوع المرحلة",
+            "placeholder": "اختر النوع",
+            "form": "نموذج",
+            "payment": "دفع"
+        },
+        "sequence": {
+            "label": "الترتيب",
+            "placeholder": "1"
+        },
+        "workflowType": {
+            "label": "نوع سير العمل",
+            "placeholder": "اختر نوع سير العمل"
+        },
+        "lastStage": "المرحلة الأخيرة",
+        "paymentSection": {
+            "heading": "إعدادات الدفع",
+            "paymentOption": {
+                "label": "خيار الدفع",
+                "loading": "جارٍ تحميل خيارات الدفع…",
+                "empty": "لم يتم العثور على خيارات دفع. يرجى إنشاء واحد في إعدادات الدفع أولاً.",
+                "placeholder": "اختر خيار الدفع"
+            },
+            "displayText": {
+                "label": "نص العرض",
+                "placeholder": "الرسالة المعروضة للمتقدمين قبل الدفع",
+                "defaultValue": "يرجى دفع رسوم التقديم للمتابعة."
+            },
+            "qrCode": {
+                "label": "رمز QR للدفع",
+                "previewAlt": "معاينة رمز QR",
+                "uploadCta": "انقر لرفع رمز QR",
+                "uploadHint": "PNG، JPG، SVG — بحد أقصى 5 ميجابايت",
+                "fileId": "معرّف الملف: {{fileId}}"
+            },
+            "upi": {
+                "vpaLabel": "معرّف UPI (VPA)",
+                "vpaPlaceholder": "مثال: school@oksbi",
+                "payeeLabel": "اسم المستفيد",
+                "payeePlaceholder": "مثال: Vacademy School"
+            }
+        }
+    },
+    "main": {
+        "title": "إعدادات التقديم",
+        "description": "حدد المراحل التي يمر بها المتقدمون خلال عملية القبول",
+        "addStage": "إضافة مرحلة"
+    }
+}

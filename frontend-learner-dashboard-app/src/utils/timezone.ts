@@ -1,5 +1,6 @@
 import { SessionDetails } from "@/routes/study-library/live-class/-types/types";
 import { fromZonedTime, formatInTimeZone } from "date-fns-tz";
+import { formatDate } from "@/lib/formatters";
 
 export const getUserTimezone = (): string => {
   try {
@@ -140,19 +141,17 @@ export const getTimezoneDisplayInfo = (sessionTimezone: string) => {
   const userTimezone = getUserTimezone();
 
   const sessionTzName =
-    now
-      .toLocaleDateString("en-US", {
-        timeZone: sessionTimezone,
-        timeZoneName: "short",
-      })
+    formatDate(now, {
+      timeZone: sessionTimezone,
+      timeZoneName: "short",
+    })
       .split(", ")[1] || sessionTimezone;
 
   const userTzName =
-    now
-      .toLocaleDateString("en-US", {
-        timeZone: userTimezone,
-        timeZoneName: "short",
-      })
+    formatDate(now, {
+      timeZone: userTimezone,
+      timeZoneName: "short",
+    })
       .split(", ")[1] || userTimezone;
 
   return {

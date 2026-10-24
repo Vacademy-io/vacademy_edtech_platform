@@ -1,0 +1,53 @@
+{
+    "title": "Engagement Engines",
+    "subtitle": "Per-objective AI copilots that decide who to message, when, and with what.",
+    "actions": {
+        "taskInbox": "Task inbox",
+        "newEngine": "New engine",
+        "createFirstEngine": "Create your first engine"
+    },
+    "error": "Could not load engines. Please refresh.",
+    "empty": {
+        "title": "No engines yet",
+        "description": "Create an engine for one objective — like re-engaging dormant {{term}} or a 14-day challenge. It drafts every message for you to review before sending."
+    },
+    "card": {
+        "noChannels": "No channels enabled",
+        "cadence": "every {{hours}}h",
+        "lastRun": "Last check-in {{when}}",
+        "stats": {
+            "members": "members",
+            "drafted": "drafted · 30d",
+            "completed": "completed · 30d",
+            "failed": "failed · 30d"
+        },
+        "hint": {
+            "templatesPending": "Approve a WhatsApp template to go live",
+            "dryRun": "Dry run: drafts are simulated, nothing is sent",
+            "draft": "Resolve the audience, then start a dry run or activate"
+        }
+    },
+    "toolbar": {
+        "search": "Search engines by name or objective",
+        "allChannels": "All channels",
+        "anyLanguage": "Any language",
+        "showArchived": "Show archived",
+        "cards": "Cards",
+        "table": "Table"
+    },
+    "filteredEmpty": {
+        "title": "No engines match these filters",
+        "clear": "Clear filters"
+    },
+    "table": {
+        "engine": "Engine",
+        "status": "Status",
+        "channels": "Channels",
+        "language": "Language",
+        "cadence": "Cadence",
+        "members": "Members",
+        "drafted": "Drafted · 30d",
+        "completed": "Completed · 30d",
+        "lastRun": "Last check-in"
+    }
+}

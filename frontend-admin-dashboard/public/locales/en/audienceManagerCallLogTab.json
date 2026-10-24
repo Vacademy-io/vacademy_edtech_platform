@@ -1,0 +1,196 @@
+{
+    "kpi": {
+        "totalCalls": "Total calls",
+        "connected": "Connected",
+        "talkTime": "Talk time",
+        "talkTimeUnit": "h : mm",
+        "uniqueLeads": "Unique leads",
+        "aiVsHuman": "AI vs human",
+        "aiVsHumanUnit": "AI / human"
+    },
+    "chips": {
+        "allCalls": "All calls",
+        "missedInbound": "Missed inbound",
+        "callbacksDue": "Callbacks due"
+    },
+    "filters": {
+        "leadName": "Lead name",
+        "leadNamePlaceholder": "Search name",
+        "number": "Number",
+        "numberPlaceholder": "Phone digits",
+        "direction": "Direction",
+        "directionOutbound": "Outbound",
+        "directionInbound": "Inbound",
+        "type": "Type",
+        "typeHuman": "Human",
+        "typeAi": "AI",
+        "provider": "Provider",
+        "status": "Status",
+        "disposition": "Disposition",
+        "all": "All",
+        "searchPlaceholder": "Search {{label}}…"
+    },
+    "providers": {
+        "exotel": "Exotel",
+        "aavtaarAi": "AI (Aavtaar)",
+        "airtel": "Airtel",
+        "vacademyAi": "AI (Vacademy agent)",
+        "plivo": "Vacademy Voice",
+        "manual": "Manual upload",
+        "mock": "AI (test)"
+    },
+    "table": {
+        "heading": "Calls",
+        "empty": "No calls match these filters.",
+        "columns": {
+            "time": "Time",
+            "lead": "Lead",
+            "direction": "Dir",
+            "type": "Type",
+            "status": "Status",
+            "health": "Health",
+            "healthTooltip": "Technical verdict from the AI voice agent",
+            "duration": "Duration",
+            "counsellor": "Counsellor",
+            "disposition": "Disposition",
+            "recording": "Recording",
+            "ai": "AI",
+            "leadStatus": "Lead status",
+            "scores": "AI scores",
+            "scoresTooltip": "Caller rating · Outcome rating · lead sentiment, from Call Intelligence",
+            "update": "Update",
+            "actions": "In-call actions",
+            "actionsTooltip": "WhatsApp sends, call-backs and transfers the agent made"
+        },
+        "openLeadProfile": "Open lead profile",
+        "viewLead": "View lead",
+        "ivrOptionChosen": "IVR option chosen"
+    },
+    "directionBadge": {
+        "in": "In",
+        "out": "Out"
+    },
+    "typeBadge": {
+        "ai": "AI",
+        "human": "Human"
+    },
+    "statusDetail": {
+        "whyEnded": "Why did this call end this way?",
+        "loading": "Loading details…",
+        "reasonPrefix": "Reason: {{reason}}",
+        "noDetail": "No further detail available.",
+        "reason": "Reason",
+        "provider": "Provider",
+        "attempted": "Attempted",
+        "answered": "Answered",
+        "duration": "Duration",
+        "cost": "Cost",
+        "viewRawResponse": "View raw provider response"
+    },
+    "disposition": {
+        "edit": "Edit",
+        "set": "Set"
+    },
+    "followUp": {
+        "titleCall": "Worth a manual call",
+        "titleCallLater": "Call back at the time they asked",
+        "titleSkip": "No manual call needed"
+    },
+    "recording": {
+        "loading": "Loading…",
+        "play": "Play"
+    },
+    "export": {
+        "csv": "CSV",
+        "excel": "Excel",
+        "successToast": "Exported {{format}}",
+        "errorToast": "Export failed. Please try again."
+    },
+    "dispositionDialog": {
+        "heading": "Set call disposition",
+        "save": "Save",
+        "outcome": "Outcome",
+        "noOutcomes": "No outcomes configured.",
+        "mapsToStatus": "→ status",
+        "callbackAt": "Call back at",
+        "notes": "Notes (optional)",
+        "notesPlaceholder": "Add a note",
+        "savedStatusUpdated": "Saved — lead status updated",
+        "saved": "Disposition saved",
+        "saveError": "Could not save the disposition."
+    },
+    "intelligenceDialog": {
+        "heading": "Transcript & AI intelligence",
+        "analyzeHeading": "Analyze this call?",
+        "analyzeConfirm": "Analyze"
+    },
+    "empty": {
+        "pickInstitute": "Pick an institute to view the call log."
+    },
+    "deployPending": {
+        "title": "The call dashboard isn't available on this server yet",
+        "description": "The telephony dashboard endpoints haven't been deployed to this environment. Check back after the next backend release."
+    },
+    "error": {
+        "loadFailed": "Couldn't load the call log."
+    },
+    "common": {
+        "retry": "Retry",
+        "leadFallback": "Lead"
+    },
+    "dispositionStrip": {
+        "label": "Outcomes",
+        "notSet": "Not set",
+        "clear": "Clear"
+    },
+    "scores": {
+        "caller": "Caller",
+        "outcome": "Outcome",
+        "callerTooltip": "How well the caller advanced their own objective (0–10)",
+        "outcomeTooltip": "How strong the outcome was from the lead's side (0–10)",
+        "sentiment": {
+            "positive": "Positive",
+            "neutral": "Neutral",
+            "negative": "Negative"
+        }
+    },
+    "update": {
+        "openFull": "Open the full analysis",
+        "viewAnalysis": "View analysis",
+        "inProgress": "Analysing…",
+        "failed": "Analysis failed",
+        "skipped": "Not analysed"
+    },
+    "actions": {
+        "sent": "WhatsApp sent ({{count}})",
+        "sentOf": "WhatsApp {{sent}}/{{total}} sent",
+        "callback": "Call-back",
+        "transferred": "Transferred"
+    },
+    "bulk": {
+        "selected": "{{count}} selected",
+        "clear": "Clear",
+        "selectPage": "Select all on this page",
+        "selectRow": "Select call",
+        "leadStatus": "Lead status",
+        "disposition": "Disposition",
+        "assignCounsellor": "Assign counsellor",
+        "addToCampaign": "Add to campaign",
+        "reanalyze": "Re-run analysis",
+        "done": "{{updated}} {{verb}}",
+        "partial": "{{updated}} {{verb}}, {{failed}} failed",
+        "error": "Bulk update failed. Please try again.",
+        "verbStatus": "lead statuses updated",
+        "verbDisposition": "dispositions set",
+        "verbAnalyze": "calls queued for analysis"
+    },
+    "bulkStatusDialog": {
+        "heading": "Set lead status for {{count}} leads",
+        "status": "Status",
+        "apply": "Apply",
+        "none": "No lead statuses configured."
+    },
+    "bulkDispositionDialog": {
+        "heading": "Set disposition for {{count}} calls"
+    }
+}

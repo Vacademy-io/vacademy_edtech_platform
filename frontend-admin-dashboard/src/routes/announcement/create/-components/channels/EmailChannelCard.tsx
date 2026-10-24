@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowSquareOut, EnvelopeSimple, PaperPlaneTilt } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ export function EmailChannelCard({
     showErrors,
 }: EmailChannelCardProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('announcementCreateEmailChannelCard');
     const err = (key: string) => (showErrors ? errors[key] : undefined);
 
     // The email card only renders once EMAIL is selected, so this is the right moment to fetch.
@@ -68,7 +70,7 @@ export function EmailChannelCard({
         <div className="space-y-4">
             <div className="space-y-1">
                 <div className="flex flex-wrap items-end justify-between gap-2">
-                    <Label className="text-caption font-semibold">Email template</Label>
+                    <Label className="text-caption font-semibold">{t('emailTemplate')}</Label>
                     <MyButton
                         buttonType="text"
                         scale="small"
@@ -76,7 +78,7 @@ export function EmailChannelCard({
                             navigate({ to: '/settings', search: { selectedTab: 'templates' } })
                         }
                     >
-                        Manage templates
+                        {t('manageTemplates')}
                         <ArrowSquareOut className="ml-1 size-4" />
                     </MyButton>
                 </div>
@@ -99,21 +101,19 @@ export function EmailChannelCard({
                         }
                         noneOption={{
                             value: WRITE_FROM_SCRATCH,
-                            label: 'Write from scratch — use the content above',
+                            label: t('writeFromScratch'),
                         }}
                         loading={templatesLoading || applying}
-                        placeholder="Search your email templates"
+                        placeholder={t('searchTemplates')}
                     />
                 )}
                 <FieldHint>
-                    {config.templateId
-                        ? 'Applying a template replaced the title and content on step 1. Edit them there if you need to.'
-                        : 'The subject and body come from the title and content on step 1.'}
+                    {config.templateId ? t('templateAppliedHint') : t('defaultContentHint')}
                 </FieldHint>
             </div>
 
             <div className="space-y-1">
-                <Label className="text-caption font-semibold">Send from</Label>
+                <Label className="text-caption font-semibold">{t('sendFrom')}</Label>
                 {sendersError ? (
                     <LoadFailure message={sendersError} onRetry={onReloadSenders} />
                 ) : sendersLoading ? (
@@ -121,8 +121,8 @@ export function EmailChannelCard({
                 ) : senders.length === 0 ? (
                     <EmptyState
                         Icon={EnvelopeSimple}
-                        title="No verified sender address"
-                        description="Email cannot go out until this institute has at least one verified sending address."
+                        title={t('noSenderTitle')}
+                        description={t('noSenderDescription')}
                         action={
                             <MyButton
                                 buttonType="secondary"
@@ -134,7 +134,7 @@ export function EmailChannelCard({
                                     })
                                 }
                             >
-                                Configure sending
+                                {t('configureSending')}
                             </MyButton>
                         }
                     />
@@ -144,7 +144,7 @@ export function EmailChannelCard({
                         onValueChange={(value) => onChange({ fromKey: value })}
                     >
                         <SelectTrigger className={cn(err('email.from') && 'border-danger-400')}>
-                            <SelectValue placeholder="Choose a sender address" />
+                            <SelectValue placeholder={t('chooseSender')} />
                         </SelectTrigger>
                         <SelectContent>
                             {senders.map((sender, index) => (
@@ -165,13 +165,13 @@ export function EmailChannelCard({
             </div>
 
             <div className="space-y-1">
-                <Label className="text-caption font-semibold">Subject</Label>
+                <Label className="text-caption font-semibold">{t('subject')}</Label>
                 <Input
                     value={config.subjectOverride}
                     onChange={(e) => onChange({ subjectOverride: e.target.value })}
-                    placeholder={announcementTitle || 'Uses the announcement title'}
+                    placeholder={announcementTitle || t('usesAnnouncementTitle')}
                 />
-                <FieldHint>Leave blank to reuse the announcement title.</FieldHint>
+                <FieldHint>{t('subjectHint')}</FieldHint>
             </div>
         </div>
     );

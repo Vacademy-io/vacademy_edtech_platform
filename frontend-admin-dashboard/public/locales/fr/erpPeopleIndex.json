@@ -1,0 +1,38 @@
+{
+    "navHeading": "Personnel",
+    "heading": "Employés",
+    "subheading": "Profils RH de tous ceux qui figurent sur votre paie — départements, postes et statut d'emploi.",
+    "addFromStaff": "Ajouter depuis le personnel",
+    "addEmployee": "Ajouter un employé",
+    "employee": "Employé",
+    "table": {
+        "code": "Code",
+        "name": "Nom",
+        "department": "Département",
+        "designation": "Poste",
+        "status": "Statut",
+        "type": "Type",
+        "joined": "Date d'entrée"
+    },
+    "filters": {
+        "status": "Statut",
+        "department": "Département",
+        "designation": "Poste",
+        "employmentType": "Type d'emploi"
+    },
+    "matchCount_one": "{{count}} employé correspond",
+    "matchCount_many": "{{count}} employés correspondent",
+    "matchCount_other": "{{count}} employés correspondent",
+    "clearFilters": "Effacer les filtres",
+    "errors": {
+        "load": "Impossible de charger les employés."
+    },
+    "empty": {
+        "noMatchTitle": "Aucun employé ne correspond à ces filtres",
+        "noMatchDescription": "Essayez d'en supprimer un.",
+        "noneTitle": "Aucun profil d'employé pour l'instant",
+        "noneDescription": "Il y a deux façons d'ajouter des personnes : créer un profil RH pour quelqu'un déjà dans votre équipe depuis Couverture du personnel (le plus rapide — cela réutilise son compte), ou ajouter un employé manuellement si vous avez son identifiant utilisateur sur la plateforme."
+    },
+    "openStaffCoverage": "Ouvrir Couverture du personnel",
+    "addEmployeeManually": "Ajouter un employé manuellement"
+}

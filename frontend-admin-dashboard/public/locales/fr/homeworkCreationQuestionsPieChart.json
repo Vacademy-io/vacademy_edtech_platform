@@ -1,0 +1,22 @@
+{
+    "labels": {
+        "createdOn": "Créé le :",
+        "startDateAndTime": "Date et heure de début :",
+        "endDateAndTime": "Date et heure de fin :",
+        "duration": "Durée :",
+        "totalParticipants": "Total des participants :"
+    },
+    "stats": {
+        "avgDuration": "Durée moy.",
+        "avgMarks": "Notes moy.",
+        "minutesValue": "{{value}} min"
+    },
+    "legend": {
+        "ongoing": "En cours",
+        "ongoingWithCount": "En cours ({{value}})",
+        "pending": "En attente",
+        "pendingWithCount": "En attente ({{value}})",
+        "attempted": "Tenté",
+        "attemptedWithCount": "Tenté ({{value}})"
+    }
+}

@@ -1,0 +1,121 @@
+{
+    "common": {
+        "home": "Accueil",
+        "logOut": "Déconnexion",
+        "poweredBy": "Propulsé par",
+        "notifications": "Notifications"
+    },
+    "playBottomNav": {
+        "labels": {
+            "learningCenter": "Apprendre",
+            "homework": "Tâches",
+            "assessmentCenter": "Tests",
+            "referral": "Parrainer",
+            "attendance": "Présence",
+            "planning": "Plan",
+            "subOrgLearners": "Orgs"
+        },
+        "more": "Plus",
+        "mainNavigation": "Navigation principale"
+    },
+    "sidebar": {
+        "tabs": {
+            "dashboard": "Tableau de bord",
+            "learningCenter": "Centre d'apprentissage",
+            "homework": "Devoirs",
+            "assessmentCentre": "Centre d'évaluation",
+            "referral": "Parrainage",
+            "attendance": "Présence",
+            "inAppMessages": "Messages intégrés",
+            "myMentors": "Mes mentors"
+        },
+        "mentorLabelWithName": "Mentor · {{name}}",
+        "allMentors": "Tous les mentors",
+        "chatWithMentorName": "Discussion · {{name}}",
+        "mentorFallbackName": "Mentor",
+        "hamburgerMenu": {
+            "viewProfileDetails": "Voir les détails du profil",
+            "myFiles": "Mes fichiers",
+            "downloads": "Téléchargements",
+            "myReports": "Mes rapports",
+            "onboarding": "Intégration",
+            "changePassword": "Changer le mot de passe",
+            "logOut": "Déconnexion",
+            "deleteAccount": "Supprimer le compte"
+        },
+        "logoAlt": "Logo",
+        "closeSidebar": "Fermer la barre latérale",
+        "appsAndPortals": "Applications et portails",
+        "webPortal": "Portail web",
+        "androidApp": "Application Android",
+        "iosApp": "Application iOS",
+        "windowsApp": "Application Windows",
+        "macApp": "Application Mac",
+        "openProfile": "Ouvrir le profil"
+    },
+    "logoutSidebar": {
+        "instituteLogoAlt": "Logo de l'établissement",
+        "profilePhotoAlt": "Photo de profil"
+    },
+    "navbar": {
+        "goBack": "Retour",
+        "instituteFallbackAlt": "Établissement",
+        "switchToRole": "Passer en tant que {{role}}",
+        "raiseQuery": "Poser une question"
+    },
+    "userMenu": {
+        "profileLabel": "Profil",
+        "openAccountMenu": "Ouvrir le menu du compte",
+        "switchToParentPortal": "Passer au portail parent",
+        "language": "Langue"
+    },
+    "notificationsBell": {
+        "ariaLabelWithCount_one": "{{count}} nouvelle notification",
+        "ariaLabelWithCount_other": "{{count}} nouvelles notifications",
+        "allCaughtUpTitle": "Tout est à jour",
+        "allCaughtUpDescription": "Les nouvelles notifications apparaîtront ici.",
+        "fallbackNotificationTitle": "Notification",
+        "viewAll": "Toutes les notifications",
+        "ariaLabelWithCount_many": "{{count}} nouvelles notifications"
+    },
+    "fullScreenLoader": {
+        "loadingFallback": "Chargement"
+    },
+    "filePreview": {
+        "attachmentAlt": "Pièce jointe"
+    },
+    "getAppBanner": {
+        "appLabelWithName": "Application {{name}}",
+        "appLabelGeneric": "notre application",
+        "getRegionLabel": "Obtenez {{appLabel}}",
+        "dismiss": "Fermer",
+        "googlePlay": "Disponible sur Google Play",
+        "appStore": "Disponible sur l'App Store",
+        "getButton": "Obtenir"
+    },
+    "priceWithMrp": {
+        "free": "Gratuit",
+        "percentOff": "{{percent}}% de réduction",
+        "mrpLabel": "M.R.P.",
+        "freeRibbon": "GRATUIT",
+        "percentOffRibbon": "{{percent}}% DE RÉDUCTION"
+    },
+    "sessionFilter": {
+        "clearFilter": "Effacer le filtre",
+        "filter": "Filtrer",
+        "showSessionsInNext": "Afficher les {{sessions}} dans les",
+        "presets": {
+            "oneDay": "1 jour",
+            "threeDays": "3 jours",
+            "sevenDays": "7 jours",
+            "fifteenDays": "15 jours"
+        },
+        "customRange": "Plage personnalisée",
+        "fromLabel": "Du",
+        "toLabel": "Au",
+        "applyRange": "Appliquer la plage",
+        "custom": "Personnalisé",
+        "fromDate": "Du {{date}}",
+        "untilDate": "Jusqu'au {{date}}"
+    }
+}

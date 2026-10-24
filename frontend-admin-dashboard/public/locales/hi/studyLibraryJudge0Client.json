@@ -1,0 +1,5 @@
+{
+    "httpError": "Judge0 HTTP {{status}}: {{statusText}}",
+    "compileError": "कंपाइल त्रुटि",
+    "noOutput": "(कोई आउटपुट नहीं)"
+}

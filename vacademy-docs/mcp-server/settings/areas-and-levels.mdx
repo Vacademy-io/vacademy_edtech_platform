@@ -1,0 +1,156 @@
+---
+title: "Areas and access levels"
+sidebarTitle: "Areas and levels"
+description: "Set each area to Off, View or Edit, and see exactly what each level lets an AI app do."
+icon: "sliders"
+---
+
+**What AI apps can do** in **Settings → MCP Server** shows one row per area of your institute. Each row has a level:
+
+| Level | What it means |
+|---|---|
+| **Off** | The AI app does not see this area at all. Its tools do not appear. |
+| **View** | The AI app can read this area. It cannot change anything. |
+| **Edit** | The AI app can read the area and make the changes listed in the row. Edit always includes View. |
+
+Areas that have nothing to change only offer **Off** and **View**.
+
+<Info>
+
+**Words used in the MCP docs**
+
+- **Area**: one row in **What AI apps can do**, such as Website or CRM: Leads.
+- **Level**: Off, View or Edit, set per area.
+- **Edit** (or **edit switch**): one change an area offers, with its own switch inside the open row.
+- **Turned on separately**: the settings page's badge for edits that no level or shortcut switches on. We also say **opt-in**.
+- **Admin portal**: your institute's own admin site, where **Settings → MCP Server** lives.
+</Info>
+
+## Open a row to see the details
+
+Click a row's name to open it. Inside you see:
+
+- what **View** shows, in one sentence;
+- each change the area offers, with a [risk badge](/mcp-server/settings/risk-levels) such as **Drafts only** or **Changes live**;
+- a switch per change, when the area has more than one.
+
+Choosing **Edit** turns on the area's edits **except** the ones marked **Turned on separately** (opt-in). Those stay off until you switch them on in the open row. See [Edits turned on separately](/mcp-server/settings/opt-in-features).
+
+If every change in an area is turned on separately (for example **Learners**), choosing **Edit** opens the row so you can pick the ones you want.
+
+## The two shortcuts
+
+At the top of the list:
+
+- **View only** sets every area to View and turns every change off, including the ones turned on separately.
+- **Turn everything on** sets every area to Edit with all its changes, **except** the ones turned on separately. Those keep whatever state they had.
+
+The line next to them counts how many areas are on and how many can make changes.
+
+## The areas
+
+### Who is connected
+
+Always on. Not a setting. The AI app can read the connected person's name and contact details, and your institute's name, logo and theme. It reveals nothing beyond the person's own identity.
+
+*Try:* "Who am I connected as?"
+
+### Institute stats
+
+**View:** your institute's profile (name, logo, theme, terminology), outstanding fees, classes live right now and active learner counts.
+
+*Try:* "How many active learners do we have, and what fees are outstanding?"
+
+### Website
+
+**View:** your websites, their pages and what each section shows, site traffic, lead-capture health, pre-publish checks, and the questions an AI asks before building a site.
+
+| Change | Badge | Notes |
+|---|---|---|
+| Build and edit pages | Drafts only | Compose pages, edit sections, set colours and fonts, translations, connect forms to lead campaigns. Every change is a draft. You publish it in Manage Pages. |
+| Import Figma designs | Drafts only | Turns a Figma design that the AI app read with its own Figma tools into a draft site. Saving also needs **Build and edit pages**. |
+| Set up folders, course tags and product pages | Adds to live data | Turned on separately. See [opt-in edits](/mcp-server/settings/opt-in-features). |
+| Publish and roll back | Changes live | Turned on separately. Needs **Build and edit pages** for the pre-publish check. |
+
+*Try:* "Audit our home page and list what to fix before we publish."
+
+### Lead forms
+
+**View:** your lead campaigns, their form fields, where each form is used on your websites, and the leads received.
+
+| Change | Badge | Notes |
+|---|---|---|
+| Create campaigns and add fields | Adds only | Creates campaigns, adds fields to forms, sends test leads. Never removes anything. |
+
+*Try:* "Which lead campaigns got the most leads this week?"
+
+### Automations
+
+**View:** your automations (workflows), each one's trigger or schedule, its steps, recent runs and their results, and the message templates an automation can use.
+
+| Change | Badge | Notes |
+|---|---|---|
+| Draft automations | Drafts only | Saves new automations as drafts. A draft never runs until you open it in the builder and publish it. Can also create new email and WhatsApp templates (WhatsApp templates go to Meta for approval). Published automations and existing templates cannot be changed. |
+
+*Try:* "Draft an automation that sends a WhatsApp reminder one day before each live class."
+
+### Blog
+
+**View:** your blog posts, drafts and published, their text and SEO fields, and which website pages show them.
+
+| Change | Badge | Notes |
+|---|---|---|
+| Draft posts | Drafts only | Saves posts as drafts in Manage Pages → Blog. A draft is never shown on your website until you publish it. Published posts cannot be changed from here. |
+
+### Courses
+
+**View:** courses with their chapters and slides, slide content, drip rules, invite links and prices, and a quality check before a course is submitted.
+
+| Change | Badge | Notes |
+|---|---|---|
+| Content (chapters, slides) | Drafts only | Builds and edits draft courses. Slides stay drafts unless you ask the AI app to publish them. It can also set a course's preview image, banner and intro video, on live courses too. |
+| Drip release rules | Not-live courses only | Sets drip rules on courses that are not live yet. Never changes your institute-wide drip switches. |
+| Invite links, pricing and enrolment forms | Changes live | Creates invite links and payment plans, and edits an invite's page and registration form. Invite edits apply at once, on live courses too. Payment plans are never edited or removed. |
+| Structure and depth | Changes live | Turned on separately. Regroups a course's levels after you confirm a preview. |
+
+*Try:* "Outline a 6-chapter beginner course on spoken English and save it as a draft."
+
+### Learners
+
+**View:** find learners by name, email or phone, and see their profile, their courses, each course's invites and the bulk-enrol CSV template.
+
+| Change | Badge | Notes |
+|---|---|---|
+| Enrol into courses | Changes live | Turned on separately. Preview first, then enrols after you confirm. Never removes anyone from a course. |
+| Edit learner details | Changes live | Turned on separately. Shows before and after, then applies after you confirm. Email and username can never be changed. |
+
+*Try:* "Find the learner with phone ending 4321 and show their courses."
+
+### Progress reports
+
+**View:** the data behind a learner's progress report (attendance, test scores, study time, course progress, assignments and doubts) and reports already generated, so the AI app can write the report for you. Read-only.
+
+*Try:* "Write a one-page progress report for Aarav for this term."
+
+## CRM areas
+
+The CRM areas bring your leads, calls, meetings and messages to the AI app. They show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called). They follow the same Off / View / Edit model, with three extra rules:
+
+- **Every CRM change is turned on separately.** Choosing **Edit** on a CRM area turns nothing on by itself. You switch on each change.
+- **Each person sees the leads their admin portal shows them.** A counsellor sees their own leads, or their team's if they manage one. An admin sees the whole institute. Some actions are for admins only.
+- **Bigger changes are previewed first.** Notes, logged calls and follow-ups apply straight away. Status changes made as an edit are previewed; a status logged with a call applies at once unless it starts an automation, in which case that part is previewed. Assignments, bulk changes, calls, messages and bookings show a preview first and wait for your "yes" in the chat. Calls and messages need a fresh confirmation each time, and each confirmation works once.
+
+| Area | View lets the AI app | Changes it can offer |
+|---|---|---|
+| **CRM: Leads** | Find leads, see a lead's details and history, list leads by status, owner or source, and build your "my day" list of follow-ups. Lists show phone numbers and emails partly hidden. | Log calls, notes and follow-ups; change status, tier and tags; assign leads to counsellors (admins and managers); add leads. |
+| **CRM: Calls** | See calls, transcripts, callbacks due, missed calls and the AI calling queue. | Place a call or an AI call to a lead; start AI calling campaigns (admins only). Marked **Calls or messages leads**. |
+| **CRM: Meetings** | See your meetings, your team's meetings and free slots. | Book a meeting (the lead receives the invite) and record how it went. Booking is marked **Calls or messages leads**. |
+| **CRM: Messages** | See message history, the inbox and approved templates. | Send an approved WhatsApp template or an email to one lead. Marked **Calls or messages leads**. |
+| **CRM: Reports** | Overview, sources, funnel, counsellor performance, follow-up ageing and other reports, custom reports and the live activity feed. | None. View only. |
+| **CRM: Payments** | A lead's dues, who is overdue, what falls due soon, converted leads who have not paid, failed checkouts; money collected (admins). | Send fee reminders for unpaid installments or pending invoices (admins only). Marked **Calls or messages leads**. |
+
+Every tool's actions and parameters are listed in the [tool reference](/mcp-server/tools/catalogue).
+
+<Warning>
+  CRM data includes names, phone numbers, notes and call transcripts. Whatever the AI app reads is sent to that app's provider. Turn CRM areas on only for roles that need them, and ask staff to use their company AI account. See [Security](/mcp-server/security/overview).
+</Warning>

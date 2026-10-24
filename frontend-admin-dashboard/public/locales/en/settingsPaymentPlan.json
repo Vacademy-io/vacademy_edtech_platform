@@ -1,0 +1,58 @@
+{
+    "step1": {
+        "planNameLabel": "Plan Name *",
+        "planNamePlaceholder": "Enter plan name",
+        "planCurrencyLabel": "Plan Currency",
+        "setAsDefault": "Set as default plan"
+    },
+    "units": {
+        "days": "Days",
+        "months": "Months"
+    },
+    "subscription": {
+        "title": "Subscription Plan Configuration",
+        "durationUnitLabel": "Duration Unit",
+        "durationUnitHint": "This unit will apply to all pricing intervals",
+        "pricingIntervals": "Pricing Intervals",
+        "addInterval": "Add Interval",
+        "intervalTitleLabel": "Title",
+        "durationLabel": "Duration ({{unit}})",
+        "priceLabel": "Price",
+        "featuresLabel": "Features",
+        "removeInterval": "Remove Interval",
+        "intervalPlanFallback": "{{value}} {{unit}} Plan",
+        "planChangeLabel": "Members can switch to this plan",
+        "planChangeHint": "(turn on plan switching for this option first)"
+    },
+    "donation": {
+        "title": "Donation Configuration",
+        "suggestedAmountsLabel": "Suggested Amounts ({{currency}})",
+        "suggestedAmountsPlaceholder": "10, 25, 50, 100",
+        "minimumAmountLabel": "Minimum Amount ({{currency}})",
+        "allowCustomAmounts": "Allow custom amounts"
+    },
+    "discounts": {
+        "title": "Apply Discounts to Plan",
+        "subtitle": "Set discounts for each plan interval or price tier",
+        "subscriptionIntervalColumn": "Subscription Interval",
+        "originalPriceColumn": "Original Price",
+        "discountTypeColumn": "Discount Type",
+        "discountAmountColumn": "Discount Amount",
+        "finalPriceColumn": "Final Price",
+        "planTypeColumn": "Plan Type",
+        "noDiscount": "No Discount",
+        "percentOff": "% Off",
+        "flatOff": "Flat Off",
+        "oneTimePayment": "One-Time Payment",
+        "save": "Save {{amount}}",
+        "noPricingInfo": "No pricing information available for this plan type."
+    },
+    "actions": {
+        "back": "Back",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "updatePlan": "Update Plan",
+        "next": "Next",
+        "updatePaymentPlan": "Update Payment Plan"
+    }
+}

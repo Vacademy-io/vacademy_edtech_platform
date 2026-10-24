@@ -1,4 +1,7 @@
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
+import type { TFunction } from 'i18next';
+
+const NS = 'videoApiStudioInputVideo';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -54,10 +57,16 @@ function headers(apiKey: string): Record<string, string> {
     };
 }
 
-/** Create a new input video record and start indexing. */
+/**
+ * Create a new input video record and start indexing. `t` is optional —
+ * real callers thread their bound `t` through so the thrown message (often
+ * surfaced verbatim via a toast's `err.message` fallback) is translated;
+ * older/untranslated call sites keep working with the English message.
+ */
 export async function createInputVideo(
     apiKey: string,
-    payload: CreateInputVideoPayload
+    payload: CreateInputVideoPayload,
+    t?: TFunction
 ): Promise<InputVideoRecord> {
     const resp = await fetch(`${BASE}/create`, {
         method: 'POST',
@@ -66,7 +75,11 @@ export async function createInputVideo(
     });
     if (!resp.ok) {
         const err = await resp.text();
-        throw new Error(`Create failed (${resp.status}): ${err}`);
+        throw new Error(
+            t
+                ? t(`${NS}:errors.createFailed`, { status: resp.status, detail: err })
+                : `Create failed (${resp.status}): ${err}`
+        );
     }
     return resp.json();
 }

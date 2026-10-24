@@ -1,0 +1,58 @@
+---
+title: "Rate limits and caching"
+description: "How many requests a key can make, and how fresh the data is."
+---
+
+## Rate limits
+
+| Limit | Applies to |
+|---|---|
+| 1,200 requests per minute per key | Every request, including `POST /leads` |
+| 30 per minute per key | `POST /leads` |
+| 5 per minute per key and visitor IP | `POST /leads`, when the visitor's IP is known (`X-Client-IP` from your server, or the network address of a browser call) |
+
+Limits are counted in fixed one-minute windows that reset on the clock minute. Over a limit, the request fails with `429 rate_limited`, a `Retry-After` header (seconds until the window resets) and `details.limit_per_minute`:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 17
+Cache-Control: no-store
+
+{"error": {"code": "rate_limited", "message": "Too many requests for this API key (limit 1200 per minute).", "request_id": "req_…", "details": {"limit_per_minute": 1200}}}
+```
+
+Requests that fail validation still count.
+
+### Staying under them
+
+- Cache on your side. With `next: { revalidate: 60 }`, a page costs at most one API call per minute per distinct URL, whatever your traffic.
+- At build time, `generateStaticParams` plus one `GET /courses/{id}` per course is fine for catalogues of a few hundred courses. For larger ones, pre-render the most visited courses and let the rest render on first visit.
+- Don't call the API from every visitor's browser; render on the server.
+
+## Caching
+
+Successful `GET` responses carry:
+
+```http
+Cache-Control: public, max-age=60
+Vary: Origin, X-API-Key, Authorization
+```
+
+How fresh the data is:
+
+| Data | Refreshed |
+|---|---|
+| Courses, prices, streams, site settings, learning paths | Every 60 seconds, in the background |
+| Course outlines (`/courses/{id}/outline`) | Every 5 minutes |
+| Images (`image_url` and others) | Permanent URLs |
+
+A change the institute makes in Vacademy (a new course, a price, a hidden course) usually reaches the API within a minute, and your site within a minute after that if you revalidate every 60 seconds. The API refreshes in the background: after a quiet spell, the first request can still get the previous data while the refresh runs, and the next one gets the new data. Use a longer `revalidate` if you prefer fewer calls over freshness.
+
+If images cannot be resolved for a moment, `image_url` (and other image fields) can be `null` on an otherwise complete response. They come back on a later refresh, so always render a fallback for a missing image.
+
+Other timings:
+
+- A revoked key stops working within 30 seconds.
+- A newly verified or removed website takes effect for browser calls within 60 seconds.
+
+`POST /leads` and every error response carry `Cache-Control: no-store`.

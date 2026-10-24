@@ -1,0 +1,45 @@
+{
+    "title": "ऑटोमेशन डायग्राम",
+    "nodeCount_one": "{{count}} नोड",
+    "nodeCount_other": "{{count}} नोड्स",
+    "connectionCount_one": "{{count}} कनेक्शन",
+    "connectionCount_other": "{{count}} कनेक्शन",
+    "emptyState": {
+        "title": "कोई वर्कफ़्लो डायग्राम उपलब्ध नहीं है",
+        "description": "इस वर्कफ़्लो में शायद कोई कॉन्फ़िगर किया हुआ नोड नहीं है"
+    },
+    "tip": {
+        "label": "सुझाव:",
+        "description": "डायग्राम में घूमने के लिए क्लिक करके खींचें। ज़ूम इन/आउट करने के लिए ज़ूम नियंत्रणों का उपयोग करें। किसी भी नोड का विवरण देखने के लिए उस पर क्लिक करें।"
+    },
+    "executions": {
+        "title": "एक्ज़ीक्यूशन",
+        "count_one": "{{count}} एक्ज़ीक्यूशन",
+        "count_other": "{{count}} एक्ज़ीक्यूशन"
+    },
+    "filters": {
+        "startDateTime": "प्रारंभ तिथि व समय",
+        "endDateTime": "समाप्ति तिथि व समय",
+        "search": "खोजें",
+        "reset": "रीसेट करें",
+        "timezoneNote": "समय अनुरोध में GMT/UTC के रूप में भेजा जाता है।"
+    },
+    "table": {
+        "started": "शुरू हुआ",
+        "completed": "पूर्ण हुआ",
+        "status": "स्थिति",
+        "idempotencyKey": "आइडेम्पोटेंसी कुंजी",
+        "loading": "एक्ज़ीक्यूशन लोड हो रहे हैं…",
+        "loadFailed": "एक्ज़ीक्यूशन लोड करने में विफल",
+        "empty": "चयनित सीमा के लिए कोई एक्ज़ीक्यूशन नहीं मिला।"
+    },
+    "pagination": {
+        "pageOf": "पृष्ठ {{page}} / {{total}}",
+        "previous": "पिछला",
+        "next": "अगला"
+    },
+    "nodeDetails": {
+        "description": "विवरण:",
+        "configuration": "कॉन्फ़िगरेशन विवरण:"
+    }
+}

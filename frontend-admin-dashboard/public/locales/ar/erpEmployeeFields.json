@@ -1,0 +1,18 @@
+{
+    "employmentType": {
+        "fullTime": "دوام كامل",
+        "partTime": "دوام جزئي",
+        "contract": "عقد",
+        "intern": "متدرب"
+    },
+    "employmentStatus": {
+        "active": "نشط",
+        "probation": "تحت التجربة",
+        "noticePeriod": "فترة الإشعار",
+        "onLeave": "في إجازة",
+        "terminated": "منتهي الخدمة",
+        "relieved": "مُعفى",
+        "absconding": "منقطع عن العمل"
+    },
+    "unchangedPlaceholder": "بدون تغيير"
+}

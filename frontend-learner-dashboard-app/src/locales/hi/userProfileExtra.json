@@ -1,0 +1,270 @@
+{
+  "common": {
+    "cancel": "रद्द करें",
+    "saving": "सहेजा जा रहा है...",
+    "saveCard": "कार्ड सहेजें"
+  },
+  "changePassword": {
+    "checkingPermissions": "अनुमतियाँ जांची जा रही हैं..."
+  },
+  "progressStats": {
+    "title": "प्रगति आंकड़े",
+    "loading": "लोड हो रहा है...",
+    "empty": "कोई आंकड़े उपलब्ध नहीं हैं।",
+    "strengths": "मजबूत पक्ष",
+    "weaknesses": "कमजोर पक्ष",
+    "showLess": "कम दिखाएं",
+    "viewMore": "और देखें ({{count}})"
+  },
+  "badgesRank": {
+    "title": "बैज और रैंक",
+    "viewAll": "सभी देखें",
+    "badgesEarned_one": "{{count}} बैज अर्जित किया",
+    "badgesEarned_other": "{{count}} बैज अर्जित किए",
+    "bestRank": "सर्वश्रेष्ठ रैंक",
+    "instituteRank": "संस्थान रैंक"
+  },
+  "accountDetails": {
+    "validation": {
+      "usernameMin": "यूज़रनेम कम से कम 3 अक्षर का होना चाहिए",
+      "usernameMax": "यूज़रनेम 50 अक्षर से कम होना चाहिए",
+      "usernameNoSpaces": "यूज़रनेम में स्पेस नहीं हो सकता",
+      "passwordMin": "नया पासवर्ड कम से कम 6 अक्षर का होना चाहिए",
+      "confirmPasswordRequired": "कृपया अपना पासवर्ड फिर से दर्ज करें",
+      "passwordsDontMatch": "पासवर्ड मेल नहीं खाते"
+    },
+    "toast": {
+      "loadUserError": "उपयोगकर्ता विवरण लोड नहीं हो सका",
+      "userIdMissing": "उपयोगकर्ता ID नहीं मिली। कृपया फिर से प्रयास करें।",
+      "updateSuccess": "खाता विवरण सफलतापूर्वक अपडेट हो गया!",
+      "usernameExists": "यह यूज़रनेम पहले से मौजूद है। कृपया कोई दूसरा यूज़रनेम चुनें।",
+      "updateError": "खाता विवरण अपडेट नहीं हो सका। कृपया फिर से प्रयास करें।"
+    },
+    "header": "खाता विवरण",
+    "usernameSection": "यूज़रनेम",
+    "usernameLabel": "यूज़रनेम*",
+    "usernamePlaceholder": "अपना यूज़रनेम दर्ज करें",
+    "currentUsername": "वर्तमान: {{username}}",
+    "passwordSection": "पासवर्ड बदलें",
+    "newPasswordLabel": "नया पासवर्ड*",
+    "newPasswordPlaceholder": "अपना नया पासवर्ड दर्ज करें",
+    "confirmPasswordLabel": "नए पासवर्ड की पुष्टि करें*",
+    "confirmPasswordPlaceholder": "अपने नए पासवर्ड की पुष्टि करें",
+    "passwordMinCharacters": "कम से कम 6 अक्षर",
+    "passwordsMatch": "पासवर्ड मेल खाते हैं",
+    "updating": "अपडेट हो रहा है...",
+    "updateDetails": "विवरण अपडेट करें"
+  },
+  "sessionExpiry": {
+    "accessDays": "एक्सेस के दिन ({{count}})"
+  },
+  "profileEdit": {
+    "header": "प्रोफ़ाइल संपादित करें",
+    "profileImageAlt": "प्रोफ़ाइल",
+    "allowedFileTypes": "अनुमत फ़ॉर्मेट *.jpeg, *.jpg, *.png, *.gif",
+    "uploadNew": "नई फ़ोटो अपलोड करें",
+    "removePhoto": "फ़ोटो हटाएं",
+    "sections": {
+      "generalDetails": "सामान्य विवरण",
+      "contactInformation": "संपर्क जानकारी",
+      "locationDetails": "स्थान विवरण",
+      "guardianDetails": "अभिभावक विवरण"
+    },
+    "fields": {
+      "fullName": "पूरा नाम*",
+      "fullNamePlaceholder": "अपना पूरा नाम दर्ज करें",
+      "gender": "लिंग*",
+      "genderPlaceholder": "लिंग चुनें",
+      "genderMale": "पुरुष",
+      "genderFemale": "महिला",
+      "genderOther": "अन्य",
+      "instituteName": "कॉलेज/स्कूल का नाम",
+      "instituteNamePlaceholder": "संस्थान का नाम दर्ज करें",
+      "mobileNumber": "मोबाइल नंबर*",
+      "mobileNumberPlaceholder": "मोबाइल नंबर दर्ज करें",
+      "email": "ईमेल*",
+      "emailPlaceholder": "ईमेल पता दर्ज करें",
+      "country": "देश",
+      "countryPlaceholder": "देश दर्ज करें",
+      "addressLine": "पता पंक्ति 1",
+      "addressLinePlaceholder": "पता दर्ज करें",
+      "city": "शहर/गांव",
+      "state": "राज्य",
+      "pincode": "पिन कोड",
+      "fatherName": "पिता का नाम",
+      "motherName": "माता का नाम",
+      "guardianEmail": "अभिभावक का ईमेल",
+      "guardianMobile": "अभिभावक का मोबाइल"
+    },
+    "saveChanges": "परिवर्तन सहेजें"
+  },
+  "enrollmentExpiry": {
+    "loading": "आपके नामांकन लोड हो रहे हैं...",
+    "error": "नामांकन समाप्ति विवरण लोड नहीं हो सका।",
+    "empty": "आपने अभी तक किसी भी {{courses}} में नामांकन नहीं लिया है।",
+    "enrolledFallbackTitle": "नामांकित {{course}}",
+    "expired": "समाप्त",
+    "expiresToday": "आज समाप्त हो रहा है",
+    "daysLeft_one": "{{count}} दिन शेष",
+    "daysLeft_other": "{{count}} दिन शेष",
+    "noExpiry": "कोई समाप्ति नहीं"
+  },
+  "billingDetailsForm": {
+    "validation": {
+      "nameRequired": "नाम आवश्यक है",
+      "invalidEmail": "एक मान्य ईमेल दर्ज करें"
+    },
+    "labels": {
+      "billingName": "बिलिंग नाम",
+      "billingEmail": "बिलिंग ईमेल",
+      "address": "पता",
+      "city": "शहर",
+      "state": "राज्य",
+      "postalCode": "पिन कोड",
+      "country": "देश"
+    },
+    "placeholders": {
+      "billingName": "खाते पर नाम",
+      "billingEmail": "billing@email.com",
+      "address": "सड़क का पता",
+      "country": "जैसे AU"
+    },
+    "toast": {
+      "success": "बिलिंग विवरण अपडेट हो गया",
+      "error": "बिलिंग विवरण अपडेट नहीं हो सका। कृपया फिर से प्रयास करें।"
+    },
+    "saveBillingDetails": "बिलिंग विवरण सहेजें"
+  },
+  "paymentBillingSection": {
+    "title": "भुगतान और बिलिंग",
+    "subscriptionsTitle": "सदस्यता और ऑटोपे",
+    "membershipTitle": "सदस्यता और एक्सेस",
+    "loadingPayment": "भुगतान विवरण लोड हो रहा है...",
+    "unavailable": "भुगतान विवरण अभी उपलब्ध नहीं हैं। कृपया बाद में फिर से प्रयास करें।",
+    "reason": {
+      "noCustomer": "अभी तक कोई सहेजा गया भुगतान तरीका नहीं है। आपके पहले कार्ड भुगतान के बाद यह यहां दिखाई देगा।",
+      "gatewayNotConfigured": "आपके संस्थान के लिए ऑनलाइन भुगतान कॉन्फ़िगर नहीं किया गया है।",
+      "managedAtCheckout": "आपका भुगतान तरीका चेकआउट पर प्रबंधित होता है और इसे यहां बदला नहीं जा सकता।"
+    },
+    "noCardOnFile": "कोई कार्ड सहेजा नहीं गया",
+    "defaultCardBrand": "कार्ड",
+    "expires": "{{month}}/{{year}} को समाप्त होगा",
+    "usedForRenewals": "सदस्यता नवीनीकरण के लिए उपयोग किया जाता है",
+    "updateCard": "कार्ड अपडेट करें",
+    "addCard": "कार्ड जोड़ें",
+    "billingDetailsLabel": "बिलिंग विवरण"
+  },
+  "subscriptionMandate": {
+    "loading": "सदस्यताएं लोड हो रही हैं...",
+    "error": "सदस्यताएं अभी उपलब्ध नहीं हैं। कृपया बाद में फिर से प्रयास करें।",
+    "empty": "आपकी कोई सक्रिय ऑटो-नवीनीकरण सदस्यता नहीं है।",
+    "defaultPlanName": "सदस्यता",
+    "trial": "ट्रायल",
+    "autopayOff": "ऑटोपे बंद है",
+    "autoRenewsOn": "{{date}} को स्वतः नवीनीकृत होगा",
+    "accessUntil": "{{date}} तक एक्सेस उपलब्ध",
+    "recurringSubscription": "आवर्ती सदस्यता",
+    "cancelAutopay": "ऑटोपे रद्द करें",
+    "toast": {
+      "cancelSuccessTitle": "ऑटोपे रद्द किया गया",
+      "cancelSuccessDescription": "आपका एक्सेस आपकी वर्तमान अवधि समाप्त होने तक बना रहेगा।",
+      "cancelErrorTitle": "ऑटोपे रद्द नहीं किया जा सका",
+      "cancelErrorDescription": "कृपया थोड़ी देर बाद फिर से प्रयास करें।",
+      "planChangeOrderFailed": "We couldn't create the payment order.",
+      "planChangeFailedTitle": "Couldn't change the plan",
+      "planChangeFailedDescription": "Please try again in a moment.",
+      "planChangePaidTitle": "Payment received",
+      "planChangePaidDescription": "Your new plan will be active shortly."
+    },
+    "dialog": {
+      "title": "क्या ऑटोपे रद्द करें?",
+      "descriptionPrefix": "इसके लिए ऑटो-नवीनीकरण",
+      "descriptionSuffix": "बंद हो जाएगा। आपका एक्सेस {{endDate}} तक बना रहेगा, और आपसे दोबारा शुल्क नहीं लिया जाएगा।",
+      "defaultPlanName": "इस सदस्यता",
+      "defaultEndDate": "आपकी वर्तमान अवधि की समाप्ति",
+      "keepAutopay": "ऑटोपे जारी रखें",
+      "cancelling": "रद्द किया जा रहा है..."
+    },
+    "changePlan": "Change plan",
+    "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
+    "planChangeCancelScheduled": "Cancel this change",
+    "planChangeAwaitingPayment": "Your move to {{plan}} is waiting for payment of {{amount}}.",
+    "planChangeAwaitingPaymentNoAmount": "Your move to {{plan}} is waiting for payment.",
+    "planChangeCompletePayment": "Complete payment",
+    "planChangeDiscard": "Discard this change"
+  },
+  "cardUpdate": {
+    "success": "आपका कार्ड अपडेट हो गया है",
+    "genericError": "कार्ड अपडेट नहीं हो सका। कृपया फिर से प्रयास करें।",
+    "stripe": {
+      "formNotReady": "भुगतान फ़ॉर्म तैयार नहीं है। कृपया पेज रीफ़्रेश करें।",
+      "cardFormNotFound": "कार्ड फ़ॉर्म नहीं मिला। कृपया पेज रीफ़्रेश करें।",
+      "verificationFailed": "कार्ड सत्यापन विफल हुआ",
+      "verificationRetry": "कार्ड सत्यापित नहीं हो सका। कृपया फिर से प्रयास करें।",
+      "note": "आपका नया कार्ड सदस्यता नवीनीकरण के लिए उपयोग किए जा रहे कार्ड की जगह लेगा। अभी कोई शुल्क नहीं लिया जाएगा।"
+    },
+    "eway": {
+      "incomplete": "कृपया पहले कार्ड विवरण पूरा करें"
+    }
+  },
+  "onboarding": {
+    "title": "ऑनबोर्डिंग",
+    "subtitle": "अपनी ऑनबोर्डिंग पूरी करने के लिए नीचे दिए गए चरण पूरे करें।",
+    "loadingStatus": "आपकी ऑनबोर्डिंग स्थिति लोड हो रही है...",
+    "loadError": "आपकी ऑनबोर्डिंग स्थिति लोड नहीं हो सकी। कृपया फिर से प्रयास करें।",
+    "retry": "पुनः प्रयास करें",
+    "empty": "अभी पूरा करने के लिए कुछ नहीं है।",
+    "onboardingFor": "{{name}} के लिए ऑनबोर्डिंग",
+    "flowComplete": "यह ऑनबोर्डिंग प्रक्रिया पूरी हो चुकी है। यहां और कुछ करने की आवश्यकता नहीं है।",
+    "handledByAdmin": "\"{{stepName}}\" को आपके स्कूल के {{admin}} द्वारा संभाला जा रहा है",
+    "handledByAdminHint": "आपको यहां कुछ करने की आवश्यकता नहीं है — पूरा होते ही आपको सूचित कर दिया जाएगा।",
+    "noActionNeeded": "इस चरण के लिए अभी आपकी ओर से किसी कार्रवाई की आवश्यकता नहीं है।",
+    "progress": "प्रगति"
+  },
+  "onboardingProgress": {
+    "status": {
+      "pending": "लंबित",
+      "inProgress": "प्रगति पर",
+      "completed": "पूर्ण",
+      "skipped": "छोड़ा गया"
+    },
+    "view": "देखें"
+  },
+  "onboardingStepForm": {
+    "subtitle": "जारी रखने के लिए कृपया नीचे विवरण भरें।",
+    "loadingForm": "फ़ॉर्म लोड हो रहा है...",
+    "loadError": "इस चरण का फ़ॉर्म लोड नहीं हो सका। कृपया बाद में फिर से प्रयास करें।",
+    "noFieldsConfigured": "इस चरण के लिए कोई फ़ील्ड कॉन्फ़िगर नहीं की गई है।",
+    "markAsComplete": "पूर्ण के रूप में चिह्नित करें",
+    "submitting": "सबमिट हो रहा है...",
+    "submit": "सबमिट करें",
+    "toast": {
+      "submittedTitle": "चरण सबमिट किया गया",
+      "submittedDescription": "{{stepName}} दर्ज कर लिया गया है।",
+      "errorTitle": "सबमिट नहीं हो सका",
+      "errorFallback": "यह चरण सबमिट करते समय कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।"
+    },
+    "defaultFieldLabel": "फ़ील्ड",
+    "defaultFieldPlaceholder": "मान",
+    "notFilledIn": "नहीं भरा गया",
+    "enterPlaceholder": "{{field}} दर्ज करें",
+    "validation": {
+      "fieldRequired": "{{field}} आवश्यक है",
+      "fieldRequiredDefaultField": "यह फ़ील्ड"
+    }
+  },
+  "submittedFormDialog": {
+    "loading": "सबमिट किया गया विवरण लोड हो रहा है...",
+    "error": "इस चरण के लिए जो सबमिट किया गया था वह लोड नहीं हो सका। कृपया बाद में फिर से प्रयास करें।",
+    "empty": "इस चरण में भरने के लिए कोई फ़ील्ड नहीं थी — इसे बस पूर्ण के रूप में चिह्नित किया गया था।",
+    "emptyValue": "—"
+  },
+  "onboardingDetails": {
+    "title": "आपके द्वारा दी गई जानकारी",
+    "loading": "आपकी जानकारी लोड हो रही है..."
+  },
+  "fieldValue": {
+    "yes": "हाँ",
+    "no": "नहीं"
+  }
+}

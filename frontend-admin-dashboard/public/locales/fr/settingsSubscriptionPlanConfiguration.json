@@ -1,0 +1,26 @@
+{
+    "title": "Configuration du plan d'abonnement",
+    "durationUnit": {
+        "label": "Unité de durée",
+        "days": "Jours",
+        "months": "Mois",
+        "hint": "Cette unité sera utilisée pour tous les intervalles de tarification ci-dessous"
+    },
+    "pricingIntervals": {
+        "heading": "Intervalles de tarification",
+        "addButton": "Ajouter un intervalle",
+        "interval": {
+            "titleLabel": "Titre",
+            "titlePlaceholder": "ex. Plan de base",
+            "durationLabel": "Durée ({{unit}})",
+            "priceLabel": "Prix",
+            "pricePlaceholder": "0",
+            "featuresHeading": "Fonctionnalités",
+            "addFeaturePlaceholder": "Ajouter une fonctionnalité",
+            "addFeatureButton": "Ajouter",
+            "removeButton": "Supprimer l'intervalle",
+            "planChangeLabel": "Members can switch to this plan",
+            "planChangeHint": "(turn on plan switching for this option first)"
+        }
+    }
+}

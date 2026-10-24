@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "columnLabel": "العمود {{position}}",
+        "invalidHeader": "يجب أن يكون العمود {{position}} هو '{{expected}}'، تم العثور على '{{found}}'",
+        "missingValue": "مفقود",
+        "duplicateHeader": "تم العثور على عنوان مكرر '{{header}}'. يجب أن تكون جميع العناوين بعد العمود الثالث فريدة.",
+        "missingStudent": "الطالب المحدد '{{name}}' (المعرف: {{id}}) مفقود من ملف CSV",
+        "extraStudent": "الطالب '{{name}}' (المعرف: {{id}}) لم يتم تحديده لإنشاء الشهادات"
+    },
+    "warnings": {
+        "dataTypeMismatch": "القيمة '{{value}}' في العمود '{{column}}' تبدو من نوع {{actualType}} لكن العمود غالبًا من نوع {{expectedType}}",
+        "emptyCell": "الحقل المطلوب '{{field}}' فارغ"
+    },
+    "format": {
+        "row": " (الصف {{row}})",
+        "inColumn": " في {{column}}"
+    }
+}

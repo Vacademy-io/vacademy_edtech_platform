@@ -1,5 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Trash, CalendarBlank, CalendarCheck, Plus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import {
@@ -11,11 +13,11 @@ import {
 } from '@/components/ui/select';
 import { MyButton } from '@/components/design-system/button';
 import {
+    buildTargetMetricLabel,
     deleteCounsellorTarget,
     fetchCounsellorTargets,
     fetchTargetProgress,
     upsertCounsellorTarget,
-    TARGET_METRIC_LABEL,
     TARGET_METRICS,
     type CounsellorTarget,
     type TargetMetric,
@@ -23,11 +25,11 @@ import {
 } from '../../-services/counsellor-target-services';
 import { TargetProgress } from './target-progress';
 
-const PERIOD_LABEL: Record<string, string> = {
-    WEEK: 'Weekly',
-    MONTH: 'Monthly',
-    CUSTOM: 'Custom',
-};
+const buildPeriodLabel = (t: TFunction): Record<string, string> => ({
+    WEEK: t('period.week'),
+    MONTH: t('period.month'),
+    CUSTOM: t('period.custom'),
+});
 
 /**
  * Per-counsellor Targets tab for the detail drawer: current week + month
@@ -43,6 +45,7 @@ export function CounsellorTargetsTab({
     instituteId: string;
     counsellorUserId: string;
 }) {
+    const { t } = useTranslation('counsellorsTargetsTab');
     const queryClient = useQueryClient();
     const ids = [counsellorUserId];
 
@@ -84,12 +87,12 @@ export function CounsellorTargetsTab({
             });
             queryClient.invalidateQueries({ queryKey: ['counsellor-target-progress-one'] });
             queryClient.invalidateQueries({ queryKey: ['counsellor-target-progress'] });
-            toast.success('Target removed');
+            toast.success(t('toast.removeSuccess'));
         },
         onError: (e) =>
             toast.error(
                 (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex ??
-                    'Could not remove target'
+                    t('toast.removeError')
             ),
     });
 
@@ -102,13 +105,13 @@ export function CounsellorTargetsTab({
             {/* Current progress */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <ProgressCard
-                    title="This week"
+                    title={t('progress.thisWeek')}
                     icon={<CalendarBlank size={14} />}
                     items={weekItems}
                     loading={weekQuery.isLoading}
                 />
                 <ProgressCard
-                    title="This month"
+                    title={t('progress.thisMonth')}
                     icon={<CalendarCheck size={14} />}
                     items={monthItems}
                     loading={monthQuery.isLoading}
@@ -121,15 +124,15 @@ export function CounsellorTargetsTab({
             {/* Configured targets */}
             <div>
                 <div className="mb-2 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                    Configured targets
+                    {t('configuredTargets.heading')}
                 </div>
                 {targetsQuery.isLoading ? (
                     <div className="rounded-md border border-neutral-200 bg-white p-4 text-caption text-neutral-400">
-                        Loading…
+                        {t('configuredTargets.loading')}
                     </div>
                 ) : targets.length === 0 ? (
                     <div className="rounded-md border border-dashed border-neutral-300 bg-white p-4 text-caption text-neutral-400">
-                        No targets set. Use “Set targets” on the counsellors list to add one.
+                        {t('configuredTargets.empty')}
                     </div>
                 ) : (
                     <ul className="divide-y divide-neutral-100 rounded-md border border-neutral-200 bg-white">
@@ -150,10 +153,10 @@ export function CounsellorTargetsTab({
     );
 }
 
-const PERIOD_OPTIONS: { key: TargetPeriodType; label: string }[] = [
-    { key: 'WEEK', label: 'Weekly (recurring)' },
-    { key: 'MONTH', label: 'Monthly (recurring)' },
-    { key: 'CUSTOM', label: 'Custom range' },
+const buildPeriodOptions = (t: TFunction): { key: TargetPeriodType; label: string }[] => [
+    { key: 'WEEK', label: t('periodOptions.week') },
+    { key: 'MONTH', label: t('periodOptions.month') },
+    { key: 'CUSTOM', label: t('periodOptions.custom') },
 ];
 
 /** Inline create/update form: set this counsellor's target for a metric + timeline. */
@@ -164,6 +167,9 @@ function AddTargetForm({
     instituteId: string;
     counsellorUserId: string;
 }) {
+    const { t } = useTranslation('counsellorsTargetsTab');
+    const { t: tMetrics } = useTranslation('counsellorsTargetMetrics');
+    const metricLabel = buildTargetMetricLabel(tMetrics);
     const queryClient = useQueryClient();
     const [metric, setMetric] = useState<TargetMetric>('CONVERSIONS');
     const [periodType, setPeriodType] = useState<TargetPeriodType>('MONTH');
@@ -190,12 +196,12 @@ function AddTargetForm({
             queryClient.invalidateQueries({ queryKey: ['counsellor-target-progress-one'] });
             queryClient.invalidateQueries({ queryKey: ['counsellor-target-progress'] });
             setValue('');
-            toast.success('Target saved');
+            toast.success(t('toast.saveSuccess'));
         },
         onError: (e) =>
             toast.error(
                 (e as { response?: { data?: { ex?: string } } })?.response?.data?.ex ??
-                    'Could not save target'
+                    t('toast.saveError')
             ),
     });
 
@@ -205,11 +211,11 @@ function AddTargetForm({
     return (
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
             <div className="mb-2 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                Add / update target
+                {t('form.heading')}
             </div>
             <div className="flex flex-wrap items-end gap-2">
                 <label className="flex flex-col gap-1">
-                    <span className="text-caption text-neutral-500">Metric</span>
+                    <span className="text-caption text-neutral-500">{t('form.metric')}</span>
                     <Select value={metric} onValueChange={(v) => setMetric(v as TargetMetric)}>
                         <SelectTrigger className="h-9 w-40 bg-white">
                             <SelectValue />
@@ -217,14 +223,14 @@ function AddTargetForm({
                         <SelectContent>
                             {TARGET_METRICS.map((m) => (
                                 <SelectItem key={m} value={m}>
-                                    {TARGET_METRIC_LABEL[m]}
+                                    {metricLabel[m]}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </label>
                 <label className="flex flex-col gap-1">
-                    <span className="text-caption text-neutral-500">Timeline</span>
+                    <span className="text-caption text-neutral-500">{t('form.timeline')}</span>
                     <Select
                         value={periodType}
                         onValueChange={(v) => setPeriodType(v as TargetPeriodType)}
@@ -233,7 +239,7 @@ function AddTargetForm({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {PERIOD_OPTIONS.map((p) => (
+                            {buildPeriodOptions(t).map((p) => (
                                 <SelectItem key={p.key} value={p.key}>
                                     {p.label}
                                 </SelectItem>
@@ -242,20 +248,20 @@ function AddTargetForm({
                     </Select>
                 </label>
                 <label className="flex flex-col gap-1">
-                    <span className="text-caption text-neutral-500">Target</span>
+                    <span className="text-caption text-neutral-500">{t('form.target')}</span>
                     <input
                         type="number"
                         min={0}
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
-                        placeholder="e.g. 50"
+                        placeholder={t('form.targetPlaceholder')}
                         className="h-9 w-24 rounded-md border border-neutral-300 px-2 text-body"
                     />
                 </label>
                 {periodType === 'CUSTOM' && (
                     <>
                         <label className="flex flex-col gap-1">
-                            <span className="text-caption text-neutral-500">From</span>
+                            <span className="text-caption text-neutral-500">{t('form.from')}</span>
                             <input
                                 type="date"
                                 value={from}
@@ -264,7 +270,7 @@ function AddTargetForm({
                             />
                         </label>
                         <label className="flex flex-col gap-1">
-                            <span className="text-caption text-neutral-500">To</span>
+                            <span className="text-caption text-neutral-500">{t('form.to')}</span>
                             <input
                                 type="date"
                                 value={to}
@@ -282,7 +288,7 @@ function AddTargetForm({
                     onClick={() => save.mutate()}
                 >
                     <Plus size={14} className="mr-1" />
-                    {save.isPending ? 'Saving…' : 'Save target'}
+                    {save.isPending ? t('form.saving') : t('form.save')}
                 </MyButton>
             </div>
         </div>
@@ -320,16 +326,18 @@ function TargetRow({
     onRemove: () => void;
     removing: boolean;
 }) {
+    const { t } = useTranslation('counsellorsTargetsTab');
+    const { t: tMetrics } = useTranslation('counsellorsTargetMetrics');
     const period =
         target.period_type === 'CUSTOM'
             ? `${target.period_start} → ${target.period_end}`
-            : PERIOD_LABEL[target.period_type];
+            : buildPeriodLabel(t)[target.period_type];
     return (
         <li className="flex items-center justify-between gap-3 px-3 py-2.5">
             <div className="min-w-0">
                 <div className="text-body font-medium text-neutral-900">
-                    {TARGET_METRIC_LABEL[target.metric]}
-                    <span className="ml-2 text-caption font-normal text-neutral-500">{period}</span>
+                    {buildTargetMetricLabel(tMetrics)[target.metric]}
+                    <span className="ms-2 text-caption font-normal text-neutral-500">{period}</span>
                 </div>
             </div>
             <div className="flex items-center gap-3">
@@ -340,8 +348,8 @@ function TargetRow({
                     type="button"
                     onClick={onRemove}
                     disabled={removing}
-                    title="Remove target"
-                    aria-label="Remove target"
+                    title={t('row.removeTarget')}
+                    aria-label={t('row.removeTarget')}
                     className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
                 >
                     <Trash size={16} />

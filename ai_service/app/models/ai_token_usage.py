@@ -124,6 +124,7 @@ class RequestType(str, enum.Enum):
     CALL_INTELLIGENCE = "call_intelligence"  # CRM call recording transcription + LLM analysis (per minute)
     TRANSLATION = "translation"      # Content/UI translation (i18n Phase 1) — parametric via ai_tool_pricing (V384)
     KNOWLEDGE_BASE = "knowledge_base"  # KB ingestion (per page), URL ingest, and grounded Q&A — parametric via ai_tool_pricing (V435)
+    CHATBOT = "chatbot"              # Automations chatbot flow AI_RESPONSE turn — token-metered (V501)
 
 
 class AiTokenUsage(Base):

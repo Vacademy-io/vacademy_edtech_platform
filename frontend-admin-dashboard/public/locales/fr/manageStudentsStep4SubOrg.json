@@ -1,0 +1,48 @@
+{
+    "adminList": {
+        "noAdmins": "Cette organisation n’a encore aucun administrateur enregistré.",
+        "unnamedAdmin": "Administrateur sans nom",
+        "noEmailOnRecord": "aucun e-mail enregistré"
+    },
+    "picker": {
+        "label": "Sous-organisation *",
+        "placeholder": "Sélectionner une organisation",
+        "memberCount_one": " · {{count}} membre",
+        "memberCount_many": " · {{count}} membres",
+        "memberCount_other": " · {{count}} membres",
+        "createNewOption": "+ Créer une nouvelle organisation",
+        "skipOption": "Ne pas associer d’organisation",
+        "emptyState": "Aucune organisation n’est encore inscrite dans ce lot — créez la première."
+    },
+    "skippedNotice": "Inscrit(e) comme {{learnerTerm}} ordinaire sans association à une organisation. Exécute l’automatisation d’inscription standard, pas celle des membres de sous-organisation.",
+    "adminInfo": {
+        "heading": "Administrateurs de l’organisation",
+        "contactLine": "Contact de l’organisation : {{email}}{{mobile}}"
+    },
+    "newOrgForm": {
+        "heading": "Détails de la nouvelle organisation",
+        "nameLabel": "Nom de l’organisation *",
+        "namePlaceholder": "ex. Green Valley Clinic",
+        "emailLabel": "E-mail",
+        "emailPlaceholder": "contact@organisation.com",
+        "phoneLabel": "Téléphone",
+        "phonePlaceholder": "Numéro de contact"
+    },
+    "role": {
+        "label": "Rôle au sein de l’organisation",
+        "staffOption": "Personnel — {{learnerTerm}} (par défaut)",
+        "adminOption": "Admin + {{learnerTerm}}",
+        "adminOnlyOption": "Admin uniquement",
+        "adminOnlyDescription": "Gère le registre de l’organisation sans accès aux cours. Les automatisations d’inscription des membres ne s’exécutent pas pour les membres admin uniquement.",
+        "adminDescription": "Obtient l’accès aux cours ET gère le registre de l’organisation — apparaîtra comme administrateur de l’organisation.",
+        "staffDescription": "Accès aux cours uniquement. Aucun droit d’administration sur l’organisation."
+    },
+    "emptyState": {
+        "heading": "Aucun {{batchTerm}} associé à une organisation n’est sélectionné"
+    },
+    "warningBanner": {
+        "message_one": "Ce lot est vendu à des organisations. Choisissez l’organisation que rejoint chaque {{learnerSingular}} sélectionné(e) et le rôle qu’il/elle y occupe. Le même choix s’applique à chaque {{learnerPlural}} de cette exécution.",
+        "message_many": "Ces lots sont vendus à des organisations. Choisissez l’organisation que rejoint chaque {{learnerSingular}} sélectionné(e) et le rôle qu’il/elle y occupe. Le même choix s’applique à chaque {{learnerPlural}} de cette exécution.",
+        "message_other": "Ces lots sont vendus à des organisations. Choisissez l’organisation que rejoint chaque {{learnerSingular}} sélectionné(e) et le rôle qu’il/elle y occupe. Le même choix s’applique à chaque {{learnerPlural}} de cette exécution."
+    }
+}

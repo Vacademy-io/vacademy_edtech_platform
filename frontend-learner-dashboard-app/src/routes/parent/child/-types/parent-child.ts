@@ -76,13 +76,27 @@ export interface IssuedCertificate {
 }
 
 export interface LearnerBadge {
-  // LearnerBadgeDTO (camelCase). Loosely typed — the badges tile only needs a few fields.
+  // Mirrors admin_core_service LearnerBadgeDTO (camelCase). Legacy field names
+  // (name/description/iconFileId/icon) are kept optional for older payloads.
   id?: string;
+  userId?: string;
+  instituteId?: string;
   badgeId?: string;
+  badgeName?: string | null;
+  badgeIcon?: string | null;
+  badgeDescription?: string | null;
+  /** Staff note shown to the learner/parent (manual awards only). */
+  reason?: string | null;
+  status?: string;
+  /** "MANUAL" (staff award) or "AUTO" (synced auto-unlock); absent on older servers = MANUAL. */
+  source?: string | null;
+  awardedByUserId?: string | null;
+  awardedAt?: string | null;
+  // Legacy / loose fields
   name?: string;
   description?: string;
   iconFileId?: string;
-  awardedAt?: string;
+  icon?: string;
   [k: string]: unknown;
 }
 

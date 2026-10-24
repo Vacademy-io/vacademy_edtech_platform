@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   CreditCard,
   CheckCircle,
@@ -59,6 +60,7 @@ export const Route = createFileRoute(
 // ── Page Component ────────────────────────────────────────────────────────────
 
 function AdmissionPaymentPage() {
+  const { t } = useTranslation("miscRoutesB");
   const { instituteId, applicantId, paymentOptionId } = Route.useParams();
 
   const razorpayRef = useRef<RazorpayCheckoutFormRef>(null);
@@ -108,18 +110,18 @@ function AdmissionPaymentPage() {
   // ── Pay handler ───────────────────────────────────────────────────────────
   const handlePay = async () => {
     if (!plan || !option) {
-      toast.error("No payment plan configured. Please contact the institute.");
+      toast.error(t("admissionPayment.toast.noPlan"));
       return;
     }
 
     // Validate email
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      setEmailError("Email is required.");
+      setEmailError(t("admissionPayment.toast.emailRequired"));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setEmailError("Please enter a valid email address.");
+      setEmailError(t("admissionPayment.toast.emailInvalid"));
       return;
     }
     setEmailError("");
@@ -149,9 +151,7 @@ function AdmissionPaymentPage() {
 
       if (!razorpayKeyId || !razorpayOrderId) {
         console.error("Missing Razorpay keys in response:", initiated);
-        toast.error(
-          "Could not retrieve payment details from the server. Please try again.",
-        );
+        toast.error(t("admissionPayment.toast.paymentDetailsError"));
         return;
       }
 
@@ -170,7 +170,9 @@ function AdmissionPaymentPage() {
           ?.response?.data?.ex ||
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ||
-        (err instanceof Error ? err.message : "Failed to initiate payment");
+        (err instanceof Error
+          ? err.message
+          : t("admissionPayment.toast.initiateFailed"));
       toast.error(msg);
     } finally {
       setIsPaying(false);
@@ -179,9 +181,7 @@ function AdmissionPaymentPage() {
 
   const handlePaymentSuccess = () => {
     setPaymentDone(true);
-    toast.success(
-      "Payment submitted! Your admission status will update shortly.",
-    );
+    toast.success(t("admissionPayment.toast.paymentSubmitted"));
   };
 
   // ── Loading state ─────────────────────────────────────────────────────────
@@ -204,11 +204,10 @@ function AdmissionPaymentPage() {
         <div className="bg-white rounded-2xl shadow-sm border p-8 w-full max-w-md text-center space-y-3">
           <WarningCircle className="w-10 h-10 text-amber-500 mx-auto" />
           <h1 className="text-lg font-semibold text-gray-900">
-            Payment Option Not Found
+            {t("admissionPayment.notFound.title")}
           </h1>
           <p className="text-sm text-gray-500">
-            This payment link appears to be invalid or the payment option is no
-            longer available. Please contact the institute for assistance.
+            {t("admissionPayment.notFound.description")}
           </p>
         </div>
       </div>
@@ -224,11 +223,10 @@ function AdmissionPaymentPage() {
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
           <h1 className="text-xl font-semibold text-gray-900">
-            Payment Submitted!
+            {t("admissionPayment.success.title")}
           </h1>
           <p className="text-sm text-gray-500">
-            Thank you. Your payment is being processed and your admission status
-            will be updated shortly.
+            {t("admissionPayment.success.description")}
           </p>
         </div>
       </div>
@@ -246,7 +244,7 @@ function AdmissionPaymentPage() {
           </div>
           <div>
             <h1 className="text-base font-semibold text-gray-900">
-              Admission Fee Payment
+              {t("admissionPayment.header.title")}
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">{option.name}</p>
           </div>
@@ -255,7 +253,7 @@ function AdmissionPaymentPage() {
         {/* Amount */}
         <div className="px-6 py-5 space-y-4">
           <div className="rounded-xl bg-orange-50 border border-orange-200 px-4 py-4">
-            <p className="text-xs text-gray-500 mb-1">Amount Due</p>
+            <p className="text-xs text-gray-500 mb-1">{t("admissionPayment.amountDue")}</p>
             <p className="text-3xl font-bold text-gray-900 flex items-center gap-1">
               {plan.currency === "INR" ? (
                 <CurrencyInr className="w-6 h-6" />
@@ -276,11 +274,11 @@ function AdmissionPaymentPage() {
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
               <Envelope className="w-3.5 h-3.5" />
-              Email Address
+              {t("admissionPayment.email.label")}
             </label>
             <Input
               type="email"
-              placeholder="Enter your email"
+              placeholder={t("admissionPayment.email.placeholder")}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -302,18 +300,18 @@ function AdmissionPaymentPage() {
             {isPaying ? (
               <>
                 <SpinnerGap className="w-4 h-4 animate-spin" />
-                Processing…
+                {t("admissionPayment.pay.processing")}
               </>
             ) : (
               <>
                 <CurrencyInr className="w-4 h-4" />
-                Pay Now
+                {t("admissionPayment.pay.cta")}
               </>
             )}
           </Button>
 
           <p className="text-center text-xs text-gray-400">
-            Secured by Razorpay · Your payment is encrypted and safe
+            {t("admissionPayment.secured")}
           </p>
         </div>
       </div>
@@ -332,8 +330,8 @@ function AdmissionPaymentPage() {
               toast.error(err);
             }
           }}
-          courseName={option.name || "Admission Fee"}
-          courseDescription="Payment for school admission"
+          courseName={option.name || t("admissionPayment.checkout.defaultTitle")}
+          courseDescription={t("admissionPayment.checkout.description")}
           userName=""
         />
       </div>

@@ -1,4 +1,5 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { MembershipExpiryTable } from './-components/MembershipExpiryTable';
 import { MembershipExpiryFilters } from './-components/MembershipExpiryFilters';
 import { MembershipExpiryAnalytics } from './-components/MembershipExpiryAnalytics';
@@ -6,7 +7,15 @@ import { LayoutContainer } from '@/components/common/layout-container/layout-con
 import { ActiveFiltersDisplay } from '@/components/common/filters/ActiveFiltersDisplay';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchMembershipExpiry, getMembershipExpiryQueryKey } from '@/services/membership-expiry';
+import {
+  fetchAllMembershipExpiry,
+  fetchMembershipExpiry,
+  getMembershipExpiryQueryKey,
+} from '@/services/membership-expiry';
+import { exportMembershipExpiryCsv } from './-utils/membership-expiry-csv';
+import { Button } from '@/components/ui/button';
+import { DownloadSimple, SpinnerGap } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import type { BatchForSession, PackageSessionFilter } from '@/types/payment-logs';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useMemo } from 'react';
@@ -18,6 +27,7 @@ export const Route = createLazyFileRoute('/membership-expiry/')({
 });
 
 function MembershipExpiryPage() {
+  const { t } = useTranslation('membershipExpiryIndexLazy');
   const [pageNo, setPageNo] = useState(0);
   const [pageSize] = useState(20);
 
@@ -77,7 +87,28 @@ function MembershipExpiryPage() {
     placeholderData: keepPreviousData,
   });
 
-  const handlePackageSessionFilterChange = (filter: PackageSessionFilter) => {
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Exports every row matching the current filters (date range + course/session),
+  // not just the visible page.
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await fetchAllMembershipExpiry(requestFilters);
+      if (rows.length === 0) {
+        toast.info(t('exportEmpty'));
+        return;
+      }
+      exportMembershipExpiryCsv(rows, { startDate, endDate });
+      toast.success(t('exportSuccess', { count: rows.length }));
+    } catch {
+      toast.error(t('exportFailed'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePackageSessionFilterChange =(filter: PackageSessionFilter) => {
     setPackageSessionFilter(filter);
     setPageNo(0);
   };
@@ -135,11 +166,27 @@ function MembershipExpiryPage() {
   return (
     <LayoutContainer>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Membership Expiry</h1>
-          <p className="text-muted-foreground">
-            Monitor and manage student membership expirations.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <p className="text-muted-foreground">
+              {t('subtitle')}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleExport}
+            disabled={isExporting || !data?.totalElements}
+          >
+            {isExporting ? (
+              <SpinnerGap size={16} className="animate-spin" />
+            ) : (
+              <DownloadSimple size={16} />
+            )}
+            {isExporting ? t('exporting') : t('exportCsv')}
+          </Button>
         </div>
 
         <MembershipExpiryAnalytics

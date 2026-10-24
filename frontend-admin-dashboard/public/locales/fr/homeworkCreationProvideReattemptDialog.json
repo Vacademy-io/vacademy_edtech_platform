@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "heading": "Autoriser une nouvelle tentative",
+        "confirmMessage": "Voulez-vous vraiment autoriser une nouvelle tentative pour le(s) participant(s) sélectionné(s) <highlight>{{name}}</highlight> ?"
+    },
+    "doneButton": "Terminé",
+    "toasts": {
+        "reattemptSuccess": "Une nouvelle tentative a été accordée au(x) participant(s) sélectionné(s)."
+    }
+}

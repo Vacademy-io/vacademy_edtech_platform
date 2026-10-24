@@ -1,0 +1,25 @@
+{
+    "toasts": {
+        "createdAndAutoPublished": "Slide created and auto-published for review",
+        "assignmentPublished": "Assignment slide published successfully",
+        "questionPublished": "Question slide published successfully",
+        "quizPublished": "Quiz slide published successfully",
+        "videoPublished": "Video slide published successfully",
+        "videoDataMissing": "Video slide data is missing",
+        "audioPublished": "Audio slide published successfully",
+        "audioDataMissing": "Audio slide data is missing",
+        "presentationPublished": "Presentation published successfully",
+        "slidePublished": "Slide published successfully",
+        "saveFailed": "Failed to save slide",
+        "alreadyUpToDate": "{{slideType}} is already up to date!"
+    },
+    "slideTypes": {
+        "codeEditor": "Code Editor",
+        "jupyterNotebook": "Jupyter Notebook",
+        "scratchProject": "Scratch Project",
+        "interactiveSlide": "Interactive Slide"
+    },
+    "confirm": {
+        "unsavedChanges": "You have unsaved changes in \"{{slideTitle}}\". Do you want to save them?"
+    }
+}

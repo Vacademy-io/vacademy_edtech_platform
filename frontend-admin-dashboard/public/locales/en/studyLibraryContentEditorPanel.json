@@ -1,0 +1,42 @@
+{
+    "emptyState": {
+        "selectPage": "Select a page to view its content"
+    },
+    "status": {
+        "pending": "Pending",
+        "generating": "Generating..."
+    },
+    "prompt": {
+        "heading": "AI Generation Prompt",
+        "noPromptAvailable": "No prompt available for this slide.",
+        "contentWillGenerate": "Content will be generated when you click \"Generate Page Content\""
+    },
+    "generating": {
+        "heading": "Generating Content",
+        "subtext": "AI is creating content for this page...",
+        "promptPreview": "Prompt: {{prompt}}..."
+    },
+    "code": {
+        "defaultComment": "// Start writing your code here"
+    },
+    "video": {
+        "scriptLabel": "Script",
+        "descriptionLabel": "Description",
+        "generationStatusLabel": "Video generation status:",
+        "scriptWillAppear": "The script will appear once generation completes.",
+        "noContentAvailable": "No content available"
+    },
+    "quiz": {
+        "questionOf": "Question {{current}} of {{total}}",
+        "explanationLabel": "Explanation:",
+        "defaultQuestion": "What is the main concept covered in this section?",
+        "defaultOptionA": "Option A",
+        "defaultOptionB": "Option B",
+        "defaultOptionC": "Option C",
+        "defaultOptionD": "Option D",
+        "defaultExplanation": "This is the explanation for the correct answer."
+    },
+    "assignment": {
+        "noContent": "No assignment content"
+    }
+}

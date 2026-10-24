@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CaretLeft,
   CaretRight,
@@ -59,15 +60,24 @@ function IconAction({
 
 /** Tools menu shown in the footer on phones, where the header has no room. */
 function MobileToolsMenu() {
+  const { t } = useTranslation("questionTest");
   const { settings, activeTool, toggleTool } = useLiveTestUi();
   const [open, setOpen] = useState(false);
 
   const items: Array<{ tool: ExamTool; label: string; Icon: typeof Stack }> = [];
   if (settings.calculator.enabled) {
-    items.push({ tool: "calculator", label: "Calculator", Icon: CalculatorIcon });
+    items.push({
+      tool: "calculator",
+      label: t("common.tools.calculator"),
+      Icon: CalculatorIcon,
+    });
   }
   if (settings.scratchpad.enabled) {
-    items.push({ tool: "scratchpad", label: "Scratchpad", Icon: PencilSimple });
+    items.push({
+      tool: "scratchpad",
+      label: t("common.tools.scratchpad"),
+      Icon: PencilSimple,
+    });
   }
   if (items.length === 0) return null;
 
@@ -88,7 +98,7 @@ function MobileToolsMenu() {
   return (
     <div className="relative flex-none">
       <IconAction
-        label="Tools"
+        label={t("footer.actions.tools")}
         active={open || activeTool !== null}
         onClick={() => setOpen((prev) => !prev)}
       >
@@ -98,7 +108,7 @@ function MobileToolsMenu() {
         <>
           <button
             type="button"
-            aria-label="Close tools menu"
+            aria-label={t("footer.actions.closeToolsMenu")}
             className="fixed inset-0 z-10 cursor-default"
             onClick={() => setOpen(false)}
           />
@@ -128,6 +138,7 @@ function MobileToolsMenu() {
 }
 
 export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
+  const { t } = useTranslation("questionTest");
   const { settings, isCompact } = useLiveTestUi();
   const immersiveActive = useLiveTestStore((s) => s.immersiveActive);
   const {
@@ -219,7 +230,10 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
     >
       <div className="flex flex-none items-center gap-2 md:gap-3">
         {isCompact && settings.questionPalette.enabled && (
-          <IconAction label="Question palette" onClick={onToggleSidebar}>
+          <IconAction
+            label={t("footer.actions.questionPalette")}
+            onClick={onToggleSidebar}
+          >
             <GridFour size={18} />
           </IconAction>
         )}
@@ -228,7 +242,11 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
         {showQuestionActions && isCompact && (
           <>
             <IconAction
-              label={isMarked ? "Unmark for review" : "Mark for review"}
+              label={
+                isMarked
+                  ? t("footer.markForReview.unmark")
+                  : t("footer.markForReview.mark")
+              }
               active={isMarked}
               disabled={!questionId}
               onClick={() => questionId && markForReview(questionId)}
@@ -236,7 +254,7 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
               <Flag size={18} weight={isMarked ? "fill" : "regular"} />
             </IconAction>
             <IconAction
-              label="Clear response"
+              label={t("footer.clearResponse.ariaLabel")}
               disabled={!questionId || !hasAnswer}
               onClick={() => questionId && clearResponse(questionId)}
             >
@@ -259,7 +277,9 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
               )}
             >
               <Flag size={17} weight={isMarked ? "fill" : "regular"} />
-              {isMarked ? "Marked for review" : "Mark for review"}
+              {isMarked
+                ? t("footer.markForReview.marked")
+                : t("footer.markForReview.mark")}
             </button>
             <button
               type="button"
@@ -268,7 +288,7 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
               className="flex h-10 items-center gap-2 rounded-lg px-3 text-body font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
             >
               <Eraser size={17} />
-              Clear
+              {t("footer.clearResponse.label")}
             </button>
           </>
         )}
@@ -285,11 +305,11 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
           type="button"
           onClick={handlePrevQuestion}
           disabled={currentIndex <= 0 || isTimeUp}
-          aria-label="Previous question"
+          aria-label={t("footer.nav.previousAriaLabel")}
           className="flex h-10 flex-none items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 text-body font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40 md:px-4"
         >
           <CaretLeft size={17} />
-          <span className="hidden md:inline">Previous</span>
+          <span className="hidden md:inline">{t("footer.nav.previous")}</span>
         </button>
 
         <button
@@ -298,7 +318,7 @@ export function Footer({ onToggleSidebar, evaluationType }: FooterProps) {
           disabled={isLastOfTest || isTimeUp}
           className="flex h-10 flex-none items-center gap-1.5 rounded-lg bg-primary-500 px-3 text-body font-semibold text-white transition-colors hover:bg-primary-400 disabled:cursor-not-allowed disabled:bg-primary-200 md:px-5"
         >
-          {hasAnswer ? "Save & Next" : "Next"}
+          {hasAnswer ? t("footer.nav.saveAndNext") : t("footer.nav.next")}
           <CaretRight size={17} />
         </button>
       </div>

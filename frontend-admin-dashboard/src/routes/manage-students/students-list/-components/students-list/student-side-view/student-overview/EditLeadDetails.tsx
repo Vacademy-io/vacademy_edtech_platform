@@ -6,12 +6,14 @@ import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, FormProvider } from 'react-hook-form';
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { UPDATE_LEAD_PROFILE } from '@/constants/urls';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     PencilSimple,
     UserCircle,
@@ -26,17 +28,18 @@ import {
 // lead doesn't have (no enrollment/student fields). Branch into it from the shared
 // sidebar when the selected row carries a `_response_id` (i.e. it's a lead).
 
-const EditLeadFormSchema = z.object({
-    full_name: z.string().min(1, 'This field is required'),
-    email: z.string().email('Invalid email address'),
-    contact_number: z.string().optional().or(z.literal('')),
-    guardian_name: z.string().optional(),
-    guardian_mobile: z.string().optional(),
-    guardian_email: z.string().email('Invalid email').optional().or(z.literal('')),
-    custom_fields: z.record(z.string()).optional(),
-});
+const buildEditLeadFormSchema = (t: TFunction) =>
+    z.object({
+        full_name: z.string().min(1, t('validation.required')),
+        email: z.string().email(t('validation.invalidEmail')),
+        contact_number: z.string().optional().or(z.literal('')),
+        guardian_name: z.string().optional(),
+        guardian_mobile: z.string().optional(),
+        guardian_email: z.string().email(t('validation.invalidEmailShort')).optional().or(z.literal('')),
+        custom_fields: z.record(z.string()).optional(),
+    });
 
-type EditLeadFormValues = z.infer<typeof EditLeadFormSchema>;
+type EditLeadFormValues = z.infer<ReturnType<typeof buildEditLeadFormSchema>>;
 
 interface LeadResponseField {
     id: string;
@@ -85,6 +88,7 @@ const PHONE_INPUT_OVERRIDE_CSS = `
 `;
 
 export const EditLeadDetails = () => {
+    const { t } = useTranslation('manageStudentsEditLeadDetails');
     const { selectedStudent, setSelectedStudent } = useStudentSidebar();
     const queryClient = useQueryClient();
     const [openDialog, setOpenDialog] = useState(false);
@@ -103,14 +107,17 @@ export const EditLeadDetails = () => {
     const digits = (s?: string | null) => (s ?? '').replace(/\D/g, '');
     const norm = (s?: string | null) => (s ?? '').trim().toLowerCase();
     const isIdentityMirror = (f: LeadResponseField): boolean => {
-        const t = (f.type ?? '').toLowerCase().trim();
+        const fieldType = (f.type ?? '').toLowerCase().trim();
         const n = (f.name ?? '').toLowerCase();
         const v = norm(f.rawValue);
         // Email
-        if (t === 'email' || /e-?mail/.test(n)) return true;
+        if (fieldType === 'email' || /e-?mail/.test(n)) return true;
         if (v && v === norm(selectedStudent?.email)) return true;
         // Phone / mobile
-        if (['phone', 'mobile', 'telephone'].includes(t) || /\bphone\b|\bmobile\b|\btelephone\b/.test(n))
+        if (
+            ['phone', 'mobile', 'telephone'].includes(fieldType) ||
+            /\bphone\b|\bmobile\b|\btelephone\b/.test(n)
+        )
             return true;
         if (digits(f.rawValue) && digits(f.rawValue) === digits(selectedStudent?.mobile_number))
             return true;
@@ -121,8 +128,10 @@ export const EditLeadDetails = () => {
     };
     const responseFields = allResponseFields.filter((f) => !isIdentityMirror(f));
 
+    const editLeadFormSchema = useMemo(() => buildEditLeadFormSchema(t), [t]);
+
     const form = useForm<EditLeadFormValues>({
-        resolver: zodResolver(EditLeadFormSchema),
+        resolver: zodResolver(editLeadFormSchema),
         defaultValues: {},
     });
 
@@ -170,7 +179,7 @@ export const EditLeadDetails = () => {
             return authenticatedAxiosInstance.put(UPDATE_LEAD_PROFILE(responseId || ''), payload);
         },
         onSuccess: (_data, values) => {
-            toast.success('Lead profile updated');
+            toast.success(t('toast.updateSuccess'));
             // Reflect the edit in the open sidebar immediately.
             if (selectedStudent) {
                 setSelectedStudent(
@@ -191,7 +200,7 @@ export const EditLeadDetails = () => {
             setOpenDialog(false);
         },
         onError: () => {
-            toast.error('Failed to update lead profile');
+            toast.error(t('toast.updateError'));
         },
     });
 
@@ -207,7 +216,7 @@ export const EditLeadDetails = () => {
                 scale="medium"
                 onClick={() => setOpenDialog(false)}
             >
-                Cancel
+                {t('cancel')}
             </MyButton>
             <MyButton
                 type="button"
@@ -216,7 +225,7 @@ export const EditLeadDetails = () => {
                 disable={mutation.isPending}
                 onClick={() => form.handleSubmit(onSubmit)()}
             >
-                {mutation.isPending ? 'Saving…' : 'Save Changes'}
+                {mutation.isPending ? t('saving') : t('saveChanges')}
             </MyButton>
         </div>
     );
@@ -226,11 +235,11 @@ export const EditLeadDetails = () => {
             trigger={
                 <MyButton buttonType="secondary" scale="medium">
                     <PencilSimple className="size-4" />
-                    Edit Details
+                    {t('trigger')}
                 </MyButton>
             }
             footer={footer}
-            heading="Edit Lead Profile"
+            heading={t('dialogHeading')}
             open={openDialog}
             onOpenChange={setOpenDialog}
             dialogWidth="max-w-2xl"
@@ -239,7 +248,11 @@ export const EditLeadDetails = () => {
                 <style dangerouslySetInnerHTML={{ __html: PHONE_INPUT_OVERRIDE_CSS }} />
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
                     {/* IDENTITY */}
-                    <FormCard icon={UserCircle} title="Identity" helper="Their name and basic info.">
+                    <FormCard
+                        icon={UserCircle}
+                        title={t('sections.identity.title')}
+                        helper={t('sections.identity.helper')}
+                    >
                         <FormField
                             control={form.control}
                             name="full_name"
@@ -247,10 +260,10 @@ export const EditLeadDetails = () => {
                                 <FormItem>
                                     <FormControl>
                                         <MyInput
-                                            label="Full Name"
+                                            label={t('fields.fullName.label')}
                                             required
                                             inputType="text"
-                                            inputPlaceholder="Full name"
+                                            inputPlaceholder={t('fields.fullName.placeholder')}
                                             input={field.value ?? ''}
                                             onChangeFunction={(e) => field.onChange(e.target.value)}
                                             error={form.formState.errors.full_name?.message}
@@ -262,7 +275,11 @@ export const EditLeadDetails = () => {
                     </FormCard>
 
                     {/* CONTACT */}
-                    <FormCard icon={Phone} title="Contact" helper="Primary channels for reach-out.">
+                    <FormCard
+                        icon={Phone}
+                        title={t('sections.contact.title')}
+                        helper={t('sections.contact.helper')}
+                    >
                         <FormField
                             control={form.control}
                             name="email"
@@ -270,10 +287,10 @@ export const EditLeadDetails = () => {
                                 <FormItem>
                                     <FormControl>
                                         <MyInput
-                                            label="Email"
+                                            label={t('fields.email.label')}
                                             required
                                             inputType="text"
-                                            inputPlaceholder="name@example.com"
+                                            inputPlaceholder={t('fields.email.placeholder')}
                                             input={field.value ?? ''}
                                             onChangeFunction={(e) => field.onChange(e.target.value)}
                                             error={form.formState.errors.email?.message}
@@ -290,8 +307,8 @@ export const EditLeadDetails = () => {
                                     <FormControl>
                                         <div className="elp-phone w-full">
                                             <PhoneInputField
-                                                label="Mobile Number"
-                                                placeholder="123 456 7890"
+                                                label={t('fields.mobile.label')}
+                                                placeholder={t('fields.mobile.placeholder')}
                                                 name="contact_number"
                                                 control={form.control}
                                                 required={false}
@@ -306,8 +323,8 @@ export const EditLeadDetails = () => {
                     {/* GUARDIAN */}
                     <FormCard
                         icon={UsersThree}
-                        title="Guardian"
-                        helper="Parent / guardian contact (optional)."
+                        title={t('sections.guardian.title')}
+                        helper={t('sections.guardian.helper')}
                     >
                         <FormField
                             control={form.control}
@@ -316,9 +333,9 @@ export const EditLeadDetails = () => {
                                 <FormItem>
                                     <FormControl>
                                         <MyInput
-                                            label="Guardian Name"
+                                            label={t('fields.guardianName.label')}
                                             inputType="text"
-                                            inputPlaceholder="Guardian name"
+                                            inputPlaceholder={t('fields.guardianName.placeholder')}
                                             input={field.value ?? ''}
                                             onChangeFunction={(e) => field.onChange(e.target.value)}
                                         />
@@ -328,8 +345,8 @@ export const EditLeadDetails = () => {
                         />
                         <div className="elp-phone w-full">
                             <PhoneInputField
-                                label="Guardian Mobile"
-                                placeholder="123 456 7890"
+                                label={t('fields.guardianMobile.label')}
+                                placeholder={t('fields.guardianMobile.placeholder')}
                                 name="guardian_mobile"
                                 control={form.control}
                                 required={false}
@@ -342,9 +359,9 @@ export const EditLeadDetails = () => {
                                 <FormItem>
                                     <FormControl>
                                         <MyInput
-                                            label="Guardian Email"
+                                            label={t('fields.guardianEmail.label')}
                                             inputType="text"
-                                            inputPlaceholder="guardian@example.com"
+                                            inputPlaceholder={t('fields.guardianEmail.placeholder')}
                                             input={field.value ?? ''}
                                             onChangeFunction={(e) => field.onChange(e.target.value)}
                                             error={form.formState.errors.guardian_email?.message}
@@ -359,8 +376,8 @@ export const EditLeadDetails = () => {
                     {responseFields.length > 0 && (
                         <FormCard
                             icon={SlidersHorizontal}
-                            title="Additional Details"
-                            helper="Answers captured on the lead form."
+                            title={t('sections.additional.title')}
+                            helper={t('sections.additional.helper')}
                         >
                             {responseFields.map((f) => (
                                 <FormField

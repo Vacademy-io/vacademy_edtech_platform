@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Slide } from '../-hooks/use-slides';
 import { useContentStore } from '../-stores/chapter-sidebar-store';
 import {
@@ -35,19 +36,21 @@ import { Badge } from '@/components/ui/badge';
 import { RichContentRenderer } from '@/routes/assessment/assessment-list/offline-entry/$assessmentId/-components/RichContentRenderer';
 import { useQuery } from '@tanstack/react-query';
 import { getSlideActivityStats } from '@/services/study-library/slide-operations/slide-activity-stats';
+import type { TFunction } from 'i18next';
 
-const QUESTION_TYPE_LABELS: Record<string, string> = {
-    MCQS: 'Single Choice',
-    MCQM: 'Multiple Choice',
-    TRUE_FALSE: 'True / False',
-    ONE_WORD: 'One Word',
-    LONG_ANSWER: 'Long Answer',
-    NUMERIC: 'Numeric',
-    CMCQS: 'Comprehension (Single)',
-    CMCQM: 'Comprehension (Multiple)',
-};
+const buildQuestionTypeLabels = (t: TFunction): Record<string, string> => ({
+    MCQS: t('questionTypes.mcqs'),
+    MCQM: t('questionTypes.mcqm'),
+    TRUE_FALSE: t('questionTypes.trueFalse'),
+    ONE_WORD: t('questionTypes.oneWord'),
+    LONG_ANSWER: t('questionTypes.longAnswer'),
+    NUMERIC: t('questionTypes.numeric'),
+    CMCQS: t('questionTypes.cmcqs'),
+    CMCQM: t('questionTypes.cmcqm'),
+});
 
 const ShareAssignmentLink = ({ slideId }: { slideId: string }) => {
+    const { t } = useTranslation('studyLibraryAssignmentPreview');
     const { instituteDetails } = useInstituteDetailsStore();
     const [copied, setCopied] = useState(false);
     const learnerBaseUrl = instituteDetails?.learner_portal_base_url || BASE_URL_LEARNER_DASHBOARD;
@@ -60,15 +63,15 @@ const ShareAssignmentLink = ({ slideId }: { slideId: string }) => {
             .writeText(assignmentLink)
             .then(() => {
                 setCopied(true);
-                toast.success('Link copied to clipboard');
+                toast.success(t('toasts.linkCopied'));
                 setTimeout(() => setCopied(false), 2000);
             })
-            .catch(() => toast.error('Failed to copy link'));
+            .catch(() => toast.error(t('toasts.copyFailed')));
     };
 
     return (
         <div className="flex flex-col gap-2">
-            <h1 className="font-semibold">Share Assignment</h1>
+            <h1 className="font-semibold">{t('shareAssignment.heading')}</h1>
             <div className="flex items-center gap-3">
                 <span className="max-w-sm truncate rounded-md border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-600">
                     {assignmentLink}
@@ -79,7 +82,7 @@ const ShareAssignmentLink = ({ slideId }: { slideId: string }) => {
                     buttonType="secondary"
                     layoutVariant="icon"
                     onClick={handleCopy}
-                    title="Copy link"
+                    title={t('shareAssignment.copyLinkTitle')}
                 >
                     {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
                 </MyButton>
@@ -89,6 +92,8 @@ const ShareAssignmentLink = ({ slideId }: { slideId: string }) => {
 };
 
 const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) => {
+    const { t } = useTranslation('studyLibraryAssignmentPreview');
+    const questionTypeLabels = buildQuestionTypeLabels(t);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const { setItems, setActiveItem, items } = useContentStore();
     const {
@@ -139,7 +144,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
             <FormProvider {...form}>
                 {/* Task Description */}
                 <div className="flex flex-col gap-6">
-                    <h1 className="-mb-5">Task Description</h1>
+                    <h1 className="-mb-5">{t('taskDescription.heading')}</h1>
                     <FormField
                         control={form.control}
                         name="taskDescription"
@@ -160,7 +165,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                 {/* Live Date Range */}
                 <div>
                     <div className="mb-3 flex items-center gap-3">
-                        <h1 className="font-semibold">Live Date Range</h1>
+                        <h1 className="font-semibold">{t('liveDateRange.heading')}</h1>
                         <FormField
                             control={form.control}
                             name="hasDateRange"
@@ -185,7 +190,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                     {form.watch('hasDateRange') && (
                         <>
                             <p className="text-caption text-neutral-500">
-                                Times are interpreted in your local timezone. Submissions before the start time are blocked; submissions after the end time are accepted but flagged as late.
+                                {t('liveDateRange.description')}
                             </p>
                             <div className="flex items-center gap-6">
                             <FormField
@@ -200,7 +205,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                                 onChangeFunction={field.onChange}
                                                 required
                                                 size="large"
-                                                label="Start Date & Time"
+                                                label={t('liveDateRange.startDateLabel')}
                                                 labelStyle="font-normal"
                                                 {...field}
                                                 className="w-full"
@@ -221,7 +226,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                                 onChangeFunction={field.onChange}
                                                 required
                                                 size="large"
-                                                label="End Date & Time"
+                                                label={t('liveDateRange.endDateLabel')}
                                                 labelStyle="font-normal"
                                                 {...field}
                                                 className="w-full"
@@ -244,8 +249,8 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                             <FormControl>
                                 <MyInput
                                     inputType="number"
-                                    label="Reattempt Count"
-                                    inputPlaceholder="Reattempt Count"
+                                    label={t('reattemptCount.label')}
+                                    inputPlaceholder={t('reattemptCount.label')}
                                     input={value}
                                     onChangeFunction={onChange}
                                     required={false}
@@ -286,11 +291,9 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                             <FormItem>
                                 <div className="flex flex-col gap-3">
                                     <div>
-                                        <h1 className="font-semibold">Allowed Submission File Types</h1>
+                                        <h1 className="font-semibold">{t('allowedFileTypes.heading')}</h1>
                                         <p className="text-sm text-neutral-500">
-                                            Choose which file types learners can upload, or select
-                                            All Files to accept any file (including formats like .sb3
-                                            PictoBlox/Scratch projects).
+                                            {t('allowedFileTypes.description')}
                                         </p>
                                     </div>
                                     <FormControl>
@@ -326,7 +329,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
 
                 {/* Marks Configuration */}
                 <div>
-                    <h1 className="mb-3 font-semibold">Marks</h1>
+                    <h1 className="mb-3 font-semibold">{t('marks.heading')}</h1>
                     <div className="flex items-center gap-6">
                         <FormField
                             control={form.control}
@@ -336,8 +339,8 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                     <FormControl>
                                         <MyInput
                                             inputType="number"
-                                            label="Total Marks"
-                                            inputPlaceholder="e.g. 100"
+                                            label={t('marks.totalMarksLabel')}
+                                            inputPlaceholder={t('marks.totalMarksPlaceholder')}
                                             input={value?.toString() ?? ''}
                                             onChangeFunction={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
                                             required={false}
@@ -364,8 +367,8 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                     <FormControl>
                                         <MyInput
                                             inputType="number"
-                                            label="Passing Marks (optional)"
-                                            inputPlaceholder="e.g. 40"
+                                            label={t('marks.passingMarksLabel')}
+                                            inputPlaceholder={t('marks.passingMarksPlaceholder')}
                                             input={value?.toString() ?? ''}
                                             onChangeFunction={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
                                             required={false}
@@ -392,7 +395,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
 
                 {/* Upload Question Paper */}
                 <div className="flex flex-wrap items-center justify-start gap-5">
-                    <h3>Upload Question Paper</h3>
+                    <h3>{t('uploadQuestionPaper.heading')}</h3>
                     <AlertDialog
                         open={isUploadFromDeviceDialogOpen}
                         onOpenChange={setIsUploadFromDeviceDialogOpen}
@@ -404,13 +407,13 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                 buttonType="secondary"
                                 className="font-thin"
                             >
-                                Upload from Device
+                                {t('uploadQuestionPaper.uploadFromDevice')}
                             </MyButton>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="p-0">
                             <div className="flex items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Upload Question Paper From Device
+                                    {t('uploadQuestionPaper.uploadFromDeviceDialogTitle')}
                                 </h1>
                                 <AlertDialogCancel
                                     className="border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -439,13 +442,13 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                 buttonType="secondary"
                                 className="font-thin"
                             >
-                                Create Manually
+                                {t('uploadQuestionPaper.createManually')}
                             </MyButton>
                         </AlertDialogTrigger>
                         <AlertDialogContent className="p-0">
                             <div className="flex items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Create Question Paper Manually
+                                    {t('uploadQuestionPaper.createManuallyDialogTitle')}
                                 </h1>
                                 <AlertDialogCancel
                                     className="border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -474,13 +477,13 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                 buttonType="secondary"
                                 className="font-thin"
                             >
-                                Choose Saved Paper
+                                {t('uploadQuestionPaper.chooseSavedPaper')}
                             </MyButton>
                         </DialogTrigger>
                         <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col items-start !gap-0 overflow-y-auto !p-0 [&>button]:hidden">{/* design-lint-ignore: vh/vw-based dialog height matches MyDialog primitive */}
                             <div className="flex h-14 w-full items-center justify-between rounded-md bg-primary-50">
                                 <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                                    Choose Saved Question Paper From List
+                                    {t('uploadQuestionPaper.chooseSavedPaperDialogTitle')}
                                 </h1>
                                 <DialogClose
                                     className="mr-4 !border-none bg-primary-50 shadow-none hover:bg-primary-50"
@@ -507,7 +510,9 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                             <h1 className="font-semibold text-primary-500">
-                                Questions ({adaptive_marking_for_each_question.length})
+                                {t('questionsList.heading', {
+                                    count: adaptive_marking_for_each_question.length,
+                                })}
                             </h1>
                         </div>
                         <div className="flex flex-col gap-4">
@@ -532,7 +537,7 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
                                                 variant="outline"
                                                 className="shrink-0 border-primary-200 bg-primary-50 text-xs text-primary-600"
                                             >
-                                                {QUESTION_TYPE_LABELS[question.questionType] ||
+                                                {questionTypeLabels[question.questionType] ||
                                                     question.questionType}
                                             </Badge>
                                         )}
@@ -567,9 +572,9 @@ const StudyLibraryAssignmentPreview = ({ activeItem }: { activeItem: Slide }) =>
 
                 {/* Responses */}
                 <div className="flex flex-col gap-4">
-                    <h1 className="font-semibold">Responses</h1>
+                    <h1 className="font-semibold">{t('responses.heading')}</h1>
                     <div className="flex flex-col gap-2 text-sm">
-                        <span>Total Participants: {totalParticipants}</span>
+                        <span>{t('responses.totalParticipants', { count: totalParticipants })}</span>
                     </div>
                 </div>
             </FormProvider>

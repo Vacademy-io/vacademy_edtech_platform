@@ -1,0 +1,29 @@
+{
+    "summary": {
+        "selectedBanner": "{{term}} sélectionné(s) — les {{learners}} seront inscrits dans toutes les sélections."
+    },
+    "search": {
+        "placeholder": "Rechercher {{coursesTerm}}, {{levelsTerm}}..."
+    },
+    "filters": {
+        "filterBy": "Filtrer par {{term}}",
+        "noneFound": "Aucun {{term}} trouvé",
+        "tagLabel": "{{term}} : {{value}}",
+        "clearAll": "Tout effacer"
+    },
+    "errors": {
+        "failedToLoad": "Échec du chargement des {{term}}.",
+        "tryAgain": "Veuillez réessayer."
+    },
+    "list": {
+        "batchCount": "{{count}} {{term}}",
+        "empty": {
+            "title": "Aucun {{term}} trouvé",
+            "subtitle": "Essayez d'ajuster votre recherche ou vos filtres."
+        }
+    },
+    "pagination": {
+        "showingRange": "Affichage de {{from}}–{{to}} sur {{total}}",
+        "pageOf": "{{current}} / {{total}}"
+    }
+}

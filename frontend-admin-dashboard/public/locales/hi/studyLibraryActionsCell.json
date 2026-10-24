@@ -1,0 +1,32 @@
+{
+    "notResolvedYet": "अभी तक हल नहीं हुआ",
+    "durationUnits": {
+        "days_one": "{{count}} दिन",
+        "days_other": "{{count}} दिन",
+        "hours_one": "{{count}} घं",
+        "hours_other": "{{count}} घं",
+        "minutes_one": "{{count}} मि",
+        "minutes_other": "{{count}} मि",
+        "seconds_one": "{{count}} से",
+        "seconds_other": "{{count}} से"
+    },
+    "viewDoubtDetails": "प्रश्न विवरण देखें",
+    "doubtDetails": "प्रश्न विवरण",
+    "doubtDescription": "प्रश्न विवरण",
+    "contentInformation": "सामग्री जानकारी",
+    "type": "प्रकार",
+    "title": "शीर्षक",
+    "location": "स्थान",
+    "assignTeacher": "शिक्षक नियुक्त करें",
+    "conversation": "बातचीत",
+    "conversationWithCount_one": "बातचीत ({{count}})",
+    "conversationWithCount_other": "बातचीत ({{count}})",
+    "anonymous": "अज्ञात",
+    "learner": "शिक्षार्थी",
+    "guest": "अतिथि",
+    "summary": "सारांश",
+    "resolveTime": "समाधान समय",
+    "statusLabel": "स्थिति: {{status}}",
+    "resolved": "हल हो गया",
+    "unresolved": "अनसुलझा"
+}

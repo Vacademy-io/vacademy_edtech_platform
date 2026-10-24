@@ -1,0 +1,14 @@
+{
+    "sectionTitle": "Qui reçoit ceci ?",
+    "sectionDescription": "Ajoutez une ou plusieurs audiences. Les chevauchements sont dédupliqués, donc personne ne le reçoit deux fois.",
+    "addAudience": "Ajouter une audience",
+    "quickAdd": {
+        "allLearners": "Tous les {{noun}}",
+        "allTeachers": "Tous les {{noun}}",
+        "specificBatches": "{{noun}} spécifiques",
+        "byTag": "Par étiquette",
+        "campaign": "Une campagne"
+    },
+    "emptyTitle": "Aucune audience pour l'instant",
+    "emptyDescription": "Choisissez l'un des raccourcis ci-dessus, ou ajoutez une audience et précisez qui elle cible."
+}

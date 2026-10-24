@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -155,6 +156,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
     onSave,
     editingSettings,
 }) => {
+    const { t } = useTranslation('settingsReferral');
     const [formData, setFormData] = useState<Partial<UnifiedReferralSettings>>({
         label: '',
         isDefault: false,
@@ -202,7 +204,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
         // 1. Validate Label
         if (!formData.label || formData.label.trim() === '') {
             setErrors({ label: true });
-            toast.error('Program Label is required');
+            toast.error(t('validation.labelRequired'));
             return;
         }
 
@@ -214,7 +216,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
         if (!hasRefereeReward && !hasReferrerRewards) {
             // Set error on the referrer tier section to visually indicate missing data
             setErrors({ referrerRewards: true });
-            toast.error('You must configure either a Referee Benefit or at least one Referrer Reward tier');
+            toast.error(t('validation.atLeastOneReward'));
             return;
         }
 
@@ -276,15 +278,15 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
     const getRewardTypeLabel = (type: string) => {
         switch (type) {
             case 'discount_percentage':
-                return 'Percentage Discount';
+                return t('rewardTypes.percentageDiscount');
             case 'discount_fixed':
-                return 'Fixed Discount';
+                return t('rewardTypes.fixedDiscount');
             case 'bonus_content':
-                return 'Bonus Content';
+                return t('rewardTypes.bonusContent');
             case 'free_days':
-                return 'Free Days';
+                return t('rewardTypes.freeDays');
             case 'points_system':
-                return 'Points System';
+                return t('rewardTypes.pointsSystem');
             default:
                 return type;
         }
@@ -313,12 +315,12 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <TrendingUp className="size-5" />
-                        {editingSettings ? 'Edit Referral Program' : 'Create Referral Program'}
+                        {editingSettings ? t('mainDialog.titleEdit') : t('mainDialog.titleCreate')}
                     </DialogTitle>
                     <DialogDescription>
                         {editingSettings
-                            ? 'Modify your referral program settings and rewards'
-                            : 'Set up a new referral program to encourage student referrals'}
+                            ? t('mainDialog.descriptionEdit')
+                            : t('mainDialog.descriptionCreate')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -326,7 +328,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                     {/* Program Label */}
                     <div className="space-y-2">
                         <Label>
-                            Program Label <span className="text-red-500">*</span>
+                            {t('mainDialog.programLabel')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             value={formData.label || ''}
@@ -335,7 +337,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                 // Clear the error as soon as the user starts typing
                                 if (errors.label) setErrors({ ...errors, label: false });
                             }}
-                            placeholder="Enter a name for your referral program"
+                            placeholder={t('mainDialog.programLabelPlaceholder')}
                             className={errors.label ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
                     </div>
@@ -346,10 +348,10 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
                                         <Gift className="size-5" />
-                                        Referee Benefits (One-time Reward)
+                                        {t('refereeSection.title')}
                                     </CardTitle>
                                     <p className="text-sm text-gray-600">
-                                        What new users get when they use a referral code
+                                        {t('refereeSection.subtitle')}
                                     </p>
                                 </div>
                                 {/* Only show Remove button if the reward exists */}
@@ -363,7 +365,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                         }
                                     >
                                         <Trash2 className="mr-2 size-4" />
-                                        Remove Benefit
+                                        {t('refereeSection.removeBenefit')}
                                     </Button>
                                 )}
                             </div>
@@ -380,7 +382,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-6 text-center">
                                     <Gift className="mb-2 size-8 text-gray-300" />
                                     <p className="mb-4 text-sm text-gray-500">
-                                        No referee benefits configured yet.
+                                        {t('refereeSection.emptyState')}
                                     </p>
                                     <Button
                                         variant="outline"
@@ -396,7 +398,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                         }
                                     >
                                         <Plus className="mr-2 size-4" />
-                                        Add Referee Benefit
+                                        {t('refereeSection.addBenefit')}
                                     </Button>
                                 </div>
                             )}
@@ -410,11 +412,10 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                 <div>
                                     <CardTitle className="flex items-center gap-2">
                                         <Users className="size-5" />
-                                        Referrer Rewards (Tiered)
+                                        {t('referrerSection.title')}
                                     </CardTitle>
                                     <p className="text-sm text-gray-600">
-                                        Rewards for referrers based on number of successful
-                                        referrals
+                                        {t('referrerSection.subtitle')}
                                     </p>
                                 </div>
                             </div>
@@ -432,8 +433,9 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                                             variant="secondary"
                                                             className="text-sm"
                                                         >
-                                                            {tier.referralCount} referral
-                                                            {tier.referralCount !== 1 ? 's' : ''}
+                                                            {t('referrerSection.referralCount', {
+                                                                count: tier.referralCount,
+                                                            })}
                                                         </Badge>
                                                         <span className="font-medium">
                                                             {tier.tierName}
@@ -476,11 +478,11 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                                             )}
                                                             
                                                             {tier.reward.type === 'free_days' && tier.reward.value && (
-                                                                `(${tier.reward.value} Days)`
+                                                                t('referrerSection.daysValue', { value: tier.reward.value })
                                                             )}
-                                                            
+
                                                             {tier.reward.type === 'points_system' && tier.reward.pointsPerReferral && (
-                                                                `(${tier.reward.pointsPerReferral} pts/referral)`
+                                                                t('referrerSection.pointsPerReferralValue', { value: tier.reward.pointsPerReferral })
                                                             )}
                                                         </span>
                                                     </span>
@@ -492,15 +494,14 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                 <div className="py-8 text-center text-gray-500">
                                     <Users className="mx-auto mb-4 size-16 text-gray-300" />
                                     <p className="mb-2 text-lg font-medium">
-                                        No reward tiers configured
+                                        {t('referrerSection.emptyTitle')}
                                     </p>
                                     <p className="mb-4 text-sm">
-                                        Create tiers to reward referrers based on their referral
-                                        count
+                                        {t('referrerSection.emptyDescription')}
                                     </p>
                                     <Button variant="outline" onClick={handleAddTier}>
                                         <Plus className="mr-2 size-4" />
-                                        Add Your First Tier
+                                        {t('referrerSection.addFirstTier')}
                                     </Button>
                                 </div>
                             )}
@@ -512,12 +513,12 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Settings className="size-5" />
-                                Program Settings
+                                {t('programSettings.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Reward Vesting Period (Days)</Label>
+                                <Label>{t('programSettings.vestingPeriodLabel')}</Label>
                                 <Input
                                     type="number"
                                     value={formData.payoutVestingDays || ''}
@@ -527,7 +528,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                             payoutVestingDays: parseInt(e.target.value) || 0,
                                         })
                                     }
-                                    placeholder="7"
+                                    placeholder={t('programSettings.vestingPeriodPlaceholder')}
                                     min="0"
                                     max="365"
                                 />
@@ -540,7 +541,7 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                         setFormData({ ...formData, allowCombineOffers: checked })
                                     }
                                 />
-                                <Label>Allow combining with other offers</Label>
+                                <Label>{t('programSettings.combineOffersLabel')}</Label>
                             </div>
 
                             <div className="space-y-2">
@@ -551,11 +552,10 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
                                             setFormData({ ...formData, isDefault: checked })
                                         }
                                     />
-                                    <Label>Set as default referral program</Label>
+                                    <Label>{t('programSettings.setDefaultLabel')}</Label>
                                 </div>
                                 <p className="ml-6 text-xs text-gray-600">
-                                    Default programs will be automatically selected for new
-                                    referrals
+                                    {t('programSettings.setDefaultHint')}
                                 </p>
                             </div>
                         </CardContent>
@@ -564,10 +564,10 @@ export const UnifiedReferralSettings: React.FC<UnifiedReferralSettingsProps> = (
 
                 <div className="flex justify-end gap-2 pt-4">
                     <MyButton buttonType="secondary" onClick={onClose}>
-                        Cancel
+                        {t('mainDialog.cancel')}
                     </MyButton>
                     <MyButton buttonType="primary" onClick={handleSave}>
-                        {editingSettings ? 'Update Program' : 'Create Program'}
+                        {editingSettings ? t('mainDialog.updateProgram') : t('mainDialog.createProgram')}
                     </MyButton>
                 </div>
 
@@ -596,6 +596,7 @@ interface RefereeRewardEditorProps {
 }
 
 const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onChange }) => {
+    const { t } = useTranslation('settingsReferral');
     // If no reward is provided, initialize with a default reward
     const currentReward = reward || {
         type: 'discount_percentage' as const,
@@ -618,7 +619,7 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
     return (
         <div className="space-y-4">
             <div className="space-y-2">
-                <Label>Reward Type</Label>
+                <Label>{t('refereeEditor.rewardTypeLabel')}</Label>
                 <Select
                     value={currentReward.type || 'discount_percentage'}
                     onValueChange={(value) =>
@@ -635,31 +636,31 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
                         <SelectItem value="discount_percentage">
                             <div className="flex items-center gap-2">
                                 <Percent className="size-4" />
-                                Percentage Discount
+                                {t('rewardTypeOptions.percentageDiscount')}
                             </div>
                         </SelectItem>
                         <SelectItem value="discount_fixed">
                             <div className="flex items-center gap-2">
                                 <DollarSign className="size-4" />
-                                Fixed Amount Discount
+                                {t('rewardTypeOptions.fixedAmountDiscount')}
                             </div>
                         </SelectItem>
                         <SelectItem value="bonus_content">
                             <div className="flex items-center gap-2">
                                 <Gift className="size-4" />
-                                Bonus Content
+                                {t('rewardTypeOptions.bonusContent')}
                             </div>
                         </SelectItem>
                         <SelectItem value="free_days">
                             <div className="flex items-center gap-2">
                                 <Calendar className="size-4" />
-                                Free Membership Days
+                                {t('rewardTypeOptions.freeMembershipDays')}
                             </div>
                         </SelectItem>
                         <SelectItem value="points_system">
                             <div className="flex items-center gap-2">
                                 <Star className="size-4" />
-                                Points System
+                                {t('rewardTypeOptions.pointsSystem')}
                             </div>
                         </SelectItem>
                     </SelectContent>
@@ -673,10 +674,10 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
                 <div className="space-y-2">
                     <Label>
                         {currentReward.type === 'discount_percentage'
-                            ? 'Discount Percentage'
+                            ? t('refereeEditor.discountPercentageLabel')
                             : currentReward.type === 'free_days'
-                              ? 'Number of Days'
-                              : 'Points Earned'}
+                              ? t('refereeEditor.numberOfDaysLabel')
+                              : t('refereeEditor.pointsEarnedLabel')}
                     </Label>
                     <div className="flex items-center gap-2">
                         <Input
@@ -685,7 +686,7 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
                             onChange={(e) =>
                                 onChange({ ...currentReward, value: parseInt(e.target.value) || 0 })
                             }
-                            placeholder="Enter value"
+                            placeholder={t('refereeEditor.valuePlaceholder')}
                             min="1"
                             max={
                                 currentReward.type === 'discount_percentage'
@@ -697,10 +698,10 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
                         />
                         <span className="text-sm text-gray-500">
                             {currentReward.type === 'discount_percentage'
-                                ? '%'
+                                ? t('refereeEditor.percentUnit')
                                 : currentReward.type === 'free_days'
-                                  ? 'days'
-                                  : 'points'}
+                                  ? t('refereeEditor.daysUnit')
+                                  : t('refereeEditor.pointsUnit')}
                         </span>
                     </div>
                 </div>
@@ -708,7 +709,7 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
 
             {currentReward.type === 'discount_fixed' && (
                 <div className="space-y-2">
-                    <Label>Discount Amount</Label>
+                    <Label>{t('refereeEditor.discountAmountLabel')}</Label>
                     <div className="flex items-center gap-2">
                         <Input
                             type="number"
@@ -716,7 +717,7 @@ const RefereeRewardEditor: React.FC<RefereeRewardEditorProps> = ({ reward, onCha
                             onChange={(e) =>
                                 onChange({ ...currentReward, value: parseInt(e.target.value) || 0 })
                             }
-                            placeholder="Enter amount"
+                            placeholder={t('refereeEditor.amountPlaceholder')}
                             min="1"
                         />
                         <Select
@@ -762,6 +763,7 @@ interface ContentEditorProps {
 }
 
 const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
+    const { t } = useTranslation('settingsReferral');
     const [contentType, setContentType] = useState<'pdf' | 'video' | 'audio' | 'course'>(
         content?.contentType || 'pdf'
     );
@@ -827,15 +829,15 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
     }, [contentType, contentOption, onChange]);
 
     const templateOptions = [
-        { value: 'template_1', label: 'Template 1' },
-        { value: 'template_2', label: 'Template 2' },
-        { value: 'template_3', label: 'Template 3' },
+        { value: 'template_1', label: t('contentEditor.template1') },
+        { value: 'template_2', label: t('contentEditor.template2') },
+        { value: 'template_3', label: t('contentEditor.template3') },
     ];
 
     return (
         <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
             <div className="space-y-2">
-                <Label>Content Type</Label>
+                <Label>{t('contentEditor.contentTypeLabel')}</Label>
                 <Select
                     value={contentType}
                     onValueChange={(value: 'pdf' | 'video' | 'audio' | 'course') =>
@@ -849,19 +851,19 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
                         <SelectItem value="pdf">
                             <div className="flex items-center gap-2">
                                 <FileText className="size-4" />
-                                PDF Document
+                                {t('contentEditor.pdfDocument')}
                             </div>
                         </SelectItem>
                         <SelectItem value="video">
                             <div className="flex items-center gap-2">
                                 <Video className="size-4" />
-                                Video
+                                {t('contentEditor.video')}
                             </div>
                         </SelectItem>
                         <SelectItem value="audio">
                             <div className="flex items-center gap-2">
                                 <Music className="size-4" />
-                                Audio
+                                {t('contentEditor.audio')}
                             </div>
                         </SelectItem>
                     </SelectContent>
@@ -869,7 +871,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
             </div>
 
             <div className="space-y-2">
-                <Label>Content Source</Label>
+                <Label>{t('contentEditor.contentSourceLabel')}</Label>
                 <Select
                     value={contentOption.type}
                     onValueChange={(value: 'upload' | 'link' | 'existing_course') =>
@@ -883,13 +885,13 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
                         <SelectItem value="upload">
                             <div className="flex items-center gap-2">
                                 <Upload className="size-4" />
-                                Upload File
+                                {t('contentEditor.uploadFile')}
                             </div>
                         </SelectItem>
                         <SelectItem value="link">
                             <div className="flex items-center gap-2">
                                 <Link2 className="size-4" />
-                                External Link
+                                {t('contentEditor.externalLink')}
                             </div>
                         </SelectItem>
                     </SelectContent>
@@ -899,13 +901,13 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
             {contentOption.type === 'upload' && (
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Upload File</Label>
+                        <Label>{t('contentEditor.uploadFileLabel')}</Label>
                         {contentOption.fileId ? (
                             <div className="flex items-center justify-between rounded-lg border bg-white p-3">
                                 <div className="flex items-center gap-2">
                                     <FileText className="size-4 text-green-600" />
                                     <span className="text-sm text-green-600">
-                                        File uploaded successfully
+                                        {t('contentEditor.uploadedSuccess')}
                                     </span>
                                 </div>
                                 <Button
@@ -914,7 +916,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={isUploading}
                                 >
-                                    Replace File
+                                    {t('contentEditor.replaceFile')}
                                 </Button>
                             </div>
                         ) : (
@@ -927,7 +929,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
                                     scale="large"
                                     type="button"
                                 >
-                                    Upload File
+                                    {t('contentEditor.uploadFile')}
                                 </MyButton>
                             </div>
                         )}
@@ -959,7 +961,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Select Template</Label>
+                        <Label>{t('contentEditor.selectTemplateLabel')}</Label>
                         <Select
                             value={contentOption.template || ''}
                             onValueChange={(value) =>
@@ -967,7 +969,7 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
                             }
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Choose a template" />
+                                <SelectValue placeholder={t('contentEditor.chooseTemplatePlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {templateOptions.map((template) => (
@@ -983,24 +985,24 @@ const ContentEditor: React.FC<ContentEditorProps> = ({ content, onChange }) => {
 
             {contentOption.type === 'link' && (
                 <div className="space-y-2">
-                    <Label>Content URL</Label>
+                    <Label>{t('contentEditor.contentUrlLabel')}</Label>
                     <Input
                         type="url"
                         value={contentOption.url || ''}
                         onChange={(e) =>
                             setContentOption({ ...contentOption, url: e.target.value })
                         }
-                        placeholder="https://example.com/content"
+                        placeholder={t('contentEditor.contentUrlPlaceholder')}
                     />
                 </div>
             )}
 
             <div className="space-y-2">
-                <Label>Content Title</Label>
+                <Label>{t('contentEditor.contentTitleLabel')}</Label>
                 <Input
                     value={contentOption.title}
                     onChange={(e) => setContentOption({ ...contentOption, title: e.target.value })}
-                    placeholder="e.g., Welcome Bonus Study Guide"
+                    placeholder={t('contentEditor.contentTitlePlaceholder')}
                 />
             </div>
 
@@ -1019,6 +1021,7 @@ interface DeliveryOptionsEditorProps {
 }
 
 const DeliveryOptionsEditor: React.FC<DeliveryOptionsEditorProps> = ({ delivery, onChange }) => {
+    const { t } = useTranslation('settingsReferral');
     const [previewTemplate, setPreviewTemplate] = React.useState<MessageTemplate | null>(null);
     const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
 
@@ -1074,7 +1077,7 @@ const DeliveryOptionsEditor: React.FC<DeliveryOptionsEditorProps> = ({ delivery,
     return (
         <div className="space-y-4">
             <div>
-                <Label>Delivery Methods</Label>
+                <Label>{t('deliveryOptions.deliveryMethodsLabel')}</Label>
                 <div className="mt-2 flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                         <Checkbox
@@ -1086,7 +1089,7 @@ const DeliveryOptionsEditor: React.FC<DeliveryOptionsEditorProps> = ({ delivery,
                         />
                         <Label htmlFor="email-delivery" className="flex items-center gap-2 text-sm">
                             <Mail className="size-4" />
-                            Email
+                            {t('deliveryOptions.email')}
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -1102,7 +1105,7 @@ const DeliveryOptionsEditor: React.FC<DeliveryOptionsEditorProps> = ({ delivery,
                             className="flex items-center gap-2 text-sm"
                         >
                             <MessageCircle className="size-4" />
-                            WhatsApp
+                            {t('deliveryOptions.whatsapp')}
                         </Label>
                     </div>
                 </div>
@@ -1132,7 +1135,7 @@ const DeliveryOptionsEditor: React.FC<DeliveryOptionsEditorProps> = ({ delivery,
                     onTemplateSelect={handleEmailTemplateSelect}
                     onTemplatePreview={handleEmailTemplatePreview}
                     onTemplateCreate={handleEmailTemplateCreate}
-                    placeholder="Select email template"
+                    placeholder={t('deliveryOptions.selectEmailTemplatePlaceholder')}
                 />
             )}
 
@@ -1159,7 +1162,7 @@ const DeliveryOptionsEditor: React.FC<DeliveryOptionsEditorProps> = ({ delivery,
                     onTemplateSelect={handleWhatsAppTemplateSelect}
                     onTemplatePreview={handleWhatsAppTemplatePreview}
                     onTemplateCreate={handleWhatsAppTemplateCreate}
-                    placeholder="Select WhatsApp template"
+                    placeholder={t('deliveryOptions.selectWhatsappTemplatePlaceholder')}
                 />
             )}
 
@@ -1188,6 +1191,7 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
     onSave,
     editingTier,
 }) => {
+    const { t } = useTranslation('settingsReferral');
     const [formData, setFormData] = useState<Partial<ReferrerTier>>({
         tierName: '',
         referralCount: 1,
@@ -1247,13 +1251,13 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
         if (!formData.tierName || formData.tierName.trim() === '') {
             newErrors.tierName = true;
             hasError = true;
-            toast.error('Tier Name is required');
+            toast.error(t('validation.tierNameRequired'));
         }
 
         // Validate Reward (Safety check, though UI usually prevents this from being null)
         if (!formData.reward) {
             hasError = true;
-            toast.error('Reward configuration is missing');
+            toast.error(t('validation.rewardMissing'));
         }
 
         setErrors(newErrors);
@@ -1294,19 +1298,19 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
             <DialogContent className="max-h-[85vh] w-[600px] overflow-y-auto ">
                 <DialogHeader>
                     <DialogTitle>
-                        {editingTier ? 'Edit Reward Tier' : 'Create Reward Tier'}
+                        {editingTier ? t('tierCreator.titleEdit') : t('tierCreator.titleCreate')}
                     </DialogTitle>
                     <DialogDescription>
                         {editingTier
-                            ? 'Modify the reward tier settings and benefits'
-                            : 'Create a new reward tier with specific benefits and requirements'}
+                            ? t('tierCreator.descriptionEdit')
+                            : t('tierCreator.descriptionCreate')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label className={errors.tierName ? "text-red-500" : ""}>
-                            Tier Name <span className="text-red-500">*</span>
+                            {t('tierCreator.tierNameLabel')} <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             value={formData.tierName || ''}
@@ -1315,13 +1319,13 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                 // Clear the error when the user starts typing
                                 if (errors.tierName) setErrors({ ...errors, tierName: false });
                             }}
-                            placeholder="e.g., First Referral, 10 Referrals"
+                            placeholder={t('tierCreator.tierNamePlaceholder')}
                             className={errors.tierName ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Referral Count Required</Label>
+                        <Label>{t('tierCreator.referralCountLabel')}</Label>
                         <Input
                             type="number"
                             value={
@@ -1359,20 +1363,20 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                             formData.reward.pointsPerReferral &&
                             formData.reward.pointsToReward && (
                                 <p className="text-xs text-gray-600">
-                                    Automatically calculated: {formData.reward.pointsToReward}{' '}
-                                    points ÷ {formData.reward.pointsPerReferral} points per referral
-                                    ={' '}
-                                    {Math.ceil(
-                                        formData.reward.pointsToReward /
-                                            formData.reward.pointsPerReferral
-                                    )}{' '}
-                                    referrals
+                                    {t('tierCreator.autoCalculated', {
+                                        pointsToReward: formData.reward.pointsToReward,
+                                        pointsPerReferral: formData.reward.pointsPerReferral,
+                                        referrals: Math.ceil(
+                                            formData.reward.pointsToReward /
+                                                formData.reward.pointsPerReferral
+                                        ),
+                                    })}
                                 </p>
                             )}
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Reward Type</Label>
+                        <Label>{t('tierCreator.rewardTypeLabel')}</Label>
                         <Select
                             value={formData.reward?.type || 'discount_percentage'}
                             onValueChange={(value) =>
@@ -1395,14 +1399,14 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="discount_percentage">
-                                    Percentage Discount
+                                    {t('rewardTypeOptions.percentageDiscount')}
                                 </SelectItem>
                                 <SelectItem value="discount_fixed">
-                                    Fixed Amount Discount
+                                    {t('rewardTypeOptions.fixedAmountDiscount')}
                                 </SelectItem>
-                                <SelectItem value="bonus_content">Bonus Content</SelectItem>
-                                <SelectItem value="free_days">Free Membership Days</SelectItem>
-                                <SelectItem value="points_system">Points System</SelectItem>
+                                <SelectItem value="bonus_content">{t('rewardTypeOptions.bonusContent')}</SelectItem>
+                                <SelectItem value="free_days">{t('rewardTypeOptions.freeMembershipDays')}</SelectItem>
+                                <SelectItem value="points_system">{t('rewardTypeOptions.pointsSystem')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -1413,8 +1417,8 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                         <div className="space-y-2">
                             <Label>
                                 {formData.reward.type === 'discount_percentage'
-                                    ? 'Discount Percentage'
-                                    : 'Number of Days'}
+                                    ? t('tierCreator.discountPercentageLabel')
+                                    : t('tierCreator.numberOfDaysLabel')}
                             </Label>
                             <div className="flex items-center gap-2">
                                 <Input
@@ -1429,7 +1433,7 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                             },
                                         })
                                     }
-                                    placeholder="Enter value"
+                                    placeholder={t('tierCreator.valuePlaceholder')}
                                     min="1"
                                     max={
                                         formData.reward.type === 'discount_percentage'
@@ -1438,7 +1442,7 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                     }
                                 />
                                 <span className="text-sm text-gray-500">
-                                    {formData.reward.type === 'discount_percentage' ? '%' : 'days'}
+                                    {formData.reward.type === 'discount_percentage' ? t('tierCreator.percentUnit') : t('tierCreator.daysUnit')}
                                 </span>
                             </div>
                         </div>
@@ -1446,7 +1450,7 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
 
                     {formData.reward?.type === 'discount_fixed' && (
                         <div className="space-y-2">
-                            <Label>Discount Amount</Label>
+                            <Label>{t('tierCreator.discountAmountLabel')}</Label>
                             <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
@@ -1460,7 +1464,7 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                             },
                                         })
                                     }
-                                    placeholder="Enter amount"
+                                    placeholder={t('tierCreator.amountPlaceholder')}
                                     min="1"
                                 />
                                 <Select
@@ -1509,7 +1513,7 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                     {formData.reward?.type === 'points_system' && (
                         <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
                             <div className="space-y-2">
-                                <Label>Points Per Referral</Label>
+                                <Label>{t('tierCreator.pointsPerReferralLabel')}</Label>
                                 <div className="flex items-center gap-2">
                                     <Input
                                         type="number"
@@ -1524,20 +1528,20 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                                 },
                                             })
                                         }
-                                        placeholder="e.g., 100"
+                                        placeholder={t('tierCreator.pointsPerReferralPlaceholder')}
                                         min="1"
                                     />
                                     <span className="text-sm text-gray-500">
-                                        points per referral
+                                        {t('tierCreator.pointsPerReferralUnit')}
                                     </span>
                                 </div>
                                 <p className="text-xs text-gray-600">
-                                    How many points the referrer earns for each successful referral
+                                    {t('tierCreator.pointsPerReferralHint')}
                                 </p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Points Required for Reward</Label>
+                                <Label>{t('tierCreator.pointsRequiredLabel')}</Label>
                                 <Input
                                     type="number"
                                     value={formData.reward.pointsToReward || ''}
@@ -1550,16 +1554,16 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                             },
                                         })
                                     }
-                                    placeholder="e.g., 1000"
+                                    placeholder={t('tierCreator.pointsRequiredPlaceholder')}
                                     min="1"
                                 />
                                 <p className="text-xs text-gray-600">
-                                    Total points needed to claim the reward
+                                    {t('tierCreator.pointsRequiredHint')}
                                 </p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Reward Type</Label>
+                                <Label>{t('tierCreator.rewardTypeLabel')}</Label>
                                 <Select
                                     value={formData.reward.pointsRewardType || 'discount_fixed'}
                                     onValueChange={(value) => {
@@ -1580,20 +1584,20 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="discount_percentage">
-                                            Percentage Discount
+                                            {t('rewardTypeOptions.percentageDiscount')}
                                         </SelectItem>
                                         <SelectItem value="discount_fixed">
-                                            Fixed Amount Discount
+                                            {t('rewardTypeOptions.fixedAmountDiscount')}
                                         </SelectItem>
                                         <SelectItem value="membership_days">
-                                            Free Membership Days
+                                            {t('rewardTypeOptions.freeMembershipDays')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Reward Value</Label>
+                                <Label>{t('tierCreator.rewardValueLabel')}</Label>
                                 <div className="flex items-center gap-2">
                                     <Input
                                         type="number"
@@ -1608,58 +1612,60 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
                                                 },
                                             })
                                         }
-                                        placeholder="Enter value"
+                                        placeholder={t('tierCreator.valuePlaceholder')}
                                         min="1"
                                     />
                                     <span className="text-sm text-gray-500">
                                         {formData.reward.pointsRewardType === 'discount_percentage'
-                                            ? '%'
+                                            ? t('tierCreator.percentUnit')
                                             : formData.reward.pointsRewardType ===
-                                                  'membership_days' && 'days'}
+                                                  'membership_days' && t('tierCreator.daysUnit')}
                                     </span>
                                 </div>
                             </div>
 
                             {/* Points System Summary */}
                             <div className="rounded border bg-white p-3">
-                                <h5 className="mb-2 text-sm font-medium">Points System Summary</h5>
+                                <h5 className="mb-2 text-sm font-medium">{t('pointsSummary.title')}</h5>
                                 <div className="space-y-1 text-xs text-gray-600">
                                     <div>
-                                        • Referrer earns{' '}
+                                        • {t('pointsSummary.earnsPrefix')}{' '}
                                         <strong>
-                                            {formData.reward.pointsPerReferral || 0} points
+                                            {formData.reward.pointsPerReferral || 0}{' '}
+                                            {t('pointsSummary.pointsUnit')}
                                         </strong>{' '}
-                                        per successful referral
+                                        {t('pointsSummary.perReferralSuffix')}
                                     </div>
                                     <div>
-                                        • Needs{' '}
+                                        • {t('pointsSummary.needsPrefix')}{' '}
                                         <strong>
-                                            {formData.reward.pointsToReward || 0} total points
+                                            {formData.reward.pointsToReward || 0}{' '}
+                                            {t('pointsSummary.totalPointsUnit')}
                                         </strong>{' '}
-                                        to claim reward
+                                        {t('pointsSummary.toClaimSuffix')}
                                     </div>
                                     <div>
-                                        • Requires approximately{' '}
+                                        • {t('pointsSummary.requiresPrefix')}{' '}
                                         <strong>
                                             {Math.ceil(
                                                 (formData.reward.pointsToReward || 0) /
                                                     (formData.reward.pointsPerReferral || 1)
                                             )}{' '}
-                                            referrals
+                                            {t('pointsSummary.referralsUnit')}
                                         </strong>{' '}
-                                        to earn reward
+                                        {t('pointsSummary.toEarnSuffix')}
                                     </div>
                                     <div>
-                                        • Reward:{' '}
+                                        • {t('pointsSummary.rewardPrefix')}{' '}
                                         <strong>
-                                            {formData.reward.pointsRewardValue || 0}
+                                            {formData.reward.pointsRewardValue || 0}{' '}
                                             {formData.reward.pointsRewardType ===
                                             'discount_percentage'
-                                                ? '% discount'
+                                                ? t('pointsSummary.percentDiscountSuffix')
                                                 : formData.reward.pointsRewardType ===
                                                     'membership_days'
-                                                  ? ' free days'
-                                                  : ' discount'}
+                                                  ? t('pointsSummary.freeDaysSuffix')
+                                                  : t('pointsSummary.discountSuffix')}
                                         </strong>
                                     </div>
                                 </div>
@@ -1670,10 +1676,10 @@ const ReferrerTierCreator: React.FC<ReferrerTierCreatorProps> = ({
 
                 <div className="flex justify-end gap-2 pt-4">
                     <MyButton buttonType="secondary" onClick={onClose}>
-                        Cancel
+                        {t('tierCreator.cancel')}
                     </MyButton>
                     <MyButton buttonType="primary" onClick={handleSave}>
-                        {editingTier ? 'Update Tier' : 'Create Tier'}
+                        {editingTier ? t('tierCreator.updateTier') : t('tierCreator.createTier')}
                     </MyButton>
                 </div>
             </DialogContent>

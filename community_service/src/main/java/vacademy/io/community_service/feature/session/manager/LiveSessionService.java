@@ -58,7 +58,7 @@ public class LiveSessionService {
     NotificationService notificationService;
 
     @Autowired
-    DeepSeekApiService deepSeekApiService;
+    LiveSessionSummaryAiService liveSessionSummaryAiService;
 
     @Autowired
     LiveSessionPersistenceService persistenceService;
@@ -1223,17 +1223,15 @@ public class LiveSessionService {
                 + "Here is the transcript:\n" + "---\n" + notifyPresentationRequestDto.getTranscript() + "\n"
                 + "---\n\n" + "JSON Output:";
 
-        // 2. Call the DeepSeek API
-        // Model: "deepseek/chat", maxTokens can be adjusted as needed.
-        DeepSeekResponse aiResponse = deepSeekApiService.getChatCompletion("google/gemini-2.5-flash-preview-05-20",
-                prompt, 10024);
+        // 2. Call the model: ai_service's 'live_session_summary' use case, falling back
+        // to the direct OpenRouter call when ai_service is not reachable.
+        String aiContent = liveSessionSummaryAiService.summarize(prompt);
 
-        if (aiResponse == null || aiResponse.getChoices() == null || aiResponse.getChoices().isEmpty()
-                || !StringUtils.hasText(aiResponse.getChoices().get(0).getMessage().getContent())) {
+        if (!StringUtils.hasText(aiContent)) {
             throw new RuntimeException("Failed to get a valid response from the AI service.");
         }
 
-        String jsonContent = aiResponse.getChoices().get(0).getMessage().getContent().trim();
+        String jsonContent = aiContent.trim();
         jsonContent = JsonUtils.extractAndSanitizeJson(jsonContent);
         ObjectMapper objectMapper = new ObjectMapper();
 

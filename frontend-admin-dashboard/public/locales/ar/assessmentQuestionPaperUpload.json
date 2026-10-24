@@ -1,0 +1,55 @@
+{
+    "formatGuide": {
+        "title": "تنسيق المستند المتوقع",
+        "description": "تتم قراءة كل سؤال من هذه العلامات، واحدة في كل سطر. الإجابة والشرح والوسوم اختيارية — يمكنك وسم كل سؤال بمادة/موضوع.",
+        "questionLabel": "السؤال:",
+        "optionsLabel": "الخيارات:",
+        "answerLabel": "الإجابة:",
+        "answerHint": "— حرف الخيار الصحيح (تعمل أيضًا Ans: (A))",
+        "explanationLabel": "الشرح:",
+        "tagsLabel": "الوسوم:",
+        "tagsHint": "— اختياري، مفصول بفواصل",
+        "variationsPart1": "تُقبل أيضًا اختلافات بسيطة — مثل",
+        "variationsPart2": "كخيارات، وسطر مفرد",
+        "variationsPart3": "لا تتطابق. يتم وضع علامة على الأسطر غير المطابقة بعد الرفع حتى تتمكن من إصلاحها أو تخطيها."
+    },
+    "docxHelp": {
+        "part1": "إذا واجهت مشكلة أثناء رفع ملف docx، يرجى تحويل ملفك إلى html",
+        "linkText": "هنا",
+        "part2": "وحاول إعادة الرفع.",
+        "step1": "الخطوة 1 - انتقل إلى هذا الموقع",
+        "step2": "الخطوة 2 - فعّل تضمين الصور",
+        "step3": "الخطوة 3 - نزّل ملف html بعد التحويل",
+        "imageAlt": "شعار"
+    },
+    "upload": {
+        "processing": "جارٍ المعالجة…",
+        "processingHint": "الخادم يقوم بتحليل مستندك. قد تستغرق الملفات الكبيرة حتى دقيقة."
+    },
+    "fields": {
+        "titleLabel": "العنوان",
+        "titlePlaceholder": "أدخل العنوان"
+    },
+    "buttons": {
+        "loading": "جارٍ التحميل...",
+        "preview": "معاينة",
+        "addQuestions": "إضافة أسئلة",
+        "done": "تم"
+    },
+    "toasts": {
+        "questionPaperAdded": "تمت إضافة ورقة الأسئلة بنجاح",
+        "incompleteQuestions": "بعض أسئلتك غير مكتملة أو تحتاج إلى انتباه!",
+        "addedAndSkipped_zero": "تمت إضافة {{count}} سؤال؛ تم تخطي {{skipped}} بسبب مشكلات.",
+        "addedAndSkipped_one": "تمت إضافة {{count}} سؤال؛ تم تخطي {{skipped}} بسبب مشكلات.",
+        "addedAndSkipped_two": "تمت إضافة {{count}} سؤالين؛ تم تخطي {{skipped}} بسبب مشكلات.",
+        "addedAndSkipped_few": "تمت إضافة {{count}} أسئلة؛ تم تخطي {{skipped}} بسبب مشكلات.",
+        "addedAndSkipped_many": "تمت إضافة {{count}} سؤالًا؛ تم تخطي {{skipped}} بسبب مشكلات.",
+        "addedAndSkipped_other": "تمت إضافة {{count}} سؤال؛ تم تخطي {{skipped}} بسبب مشكلات.",
+        "loadedAll_zero": "تم تحميل {{count}} سؤال بالكامل. {{flagged}} يحتاج إلى تعديل قبل أن تتمكن من الحفظ.",
+        "loadedAll_one": "تم تحميل {{count}} سؤال بالكامل. {{flagged}} يحتاج إلى تعديل قبل أن تتمكن من الحفظ.",
+        "loadedAll_two": "تم تحميل {{count}} سؤالين بالكامل. {{flagged}} يحتاج إلى تعديل قبل أن تتمكن من الحفظ.",
+        "loadedAll_few": "تم تحميل {{count}} أسئلة بالكامل. {{flagged}} يحتاج إلى تعديل قبل أن تتمكن من الحفظ.",
+        "loadedAll_many": "تم تحميل {{count}} سؤالًا بالكامل. {{flagged}} يحتاج إلى تعديل قبل أن تتمكن من الحفظ.",
+        "loadedAll_other": "تم تحميل {{count}} سؤال بالكامل. {{flagged}} يحتاج إلى تعديل قبل أن تتمكن من الحفظ."
+    }
+}

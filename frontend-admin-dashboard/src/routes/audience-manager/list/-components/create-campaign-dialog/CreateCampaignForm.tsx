@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { toast } from 'sonner';
 import { useAudienceCampaignForm } from '../../-hooks/useAudienceCampaignForm';
@@ -32,6 +33,10 @@ import { getCampaignCustomFieldsAsync } from '../../-utils/getCampaignCustomFiel
 import {
     convertExistingCustomFields,
     convertFieldsToPayload,
+    isDropdownFieldType,
+    nextFieldId,
+    retargetDependentFields,
+    savedFieldKeyOf,
 } from '../../-utils/campaignFormFields';
 import { useGetCampaignById } from '../../-hooks/useGetCampaignById';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
@@ -45,6 +50,30 @@ import {
     validatePostSubmitConfiguration,
     type AudiencePostSubmitConfiguration,
 } from '@/services/audience-post-submit-settings';
+import FormAppearanceEditor from '@/components/audience/FormAppearanceEditor';
+import FormTemplatePicker from '@/components/audience/FormTemplatePicker';
+import FormTextEditor from '@/components/audience/FormTextEditor';
+import { AUDIENCE_FORM_SETTINGS_QUERY_KEY } from '@/routes/settings/-components/AudienceFormSettings';
+import {
+    applyFormAppearance,
+    DEFAULT_FORM_APPEARANCE,
+    parseFormAppearance,
+    validateFormAppearance,
+} from '@/services/audience-form-appearance';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
+import CampaignTagsEditor from './CampaignTagsEditor';
+import {
+    campaignTagSummaryKey,
+    campaignTagsKey,
+    fetchCampaignTagSummary,
+    fetchCampaignTags,
+} from '../../-services/campaign-tags';
+import {
+    rowsFromTags,
+    tagsFromRows,
+    type TagRow,
+    type TagRowsError,
+} from '../../-utils/campaign-tags';
 
 const parseEmailsFromCsv = (value?: string | null) => {
     if (!value) return [];
@@ -108,6 +137,10 @@ const buildInitialFormValues = (
         // parse* tolerates a missing/legacy/unparsable blob and returns defaults,
         // so campaigns created before this feature still open with a full card.
         postSubmitConfiguration: parsePostSubmitConfiguration(campaign.setting_json),
+        // Same blob, different key. Also tolerant of a missing/legacy/unparsable
+        // setting_json, so campaigns created before this feature open on the
+        // shipped defaults rather than a blank card.
+        formAppearance: parseFormAppearance(campaign.setting_json),
         default_initial_score:
             typeof campaign.default_initial_score === 'number'
                 ? campaign.default_initial_score
@@ -122,9 +155,51 @@ const buildInitialFormValues = (
 interface CreateCampaignFormProps {
     onSuccess?: () => void;
     campaign?: CampaignItem | null;
+    /** Section to scroll to on open (0 = Basics) — used by the list detail tabs' Edit links. */
+    initialStep?: number;
 }
 
-export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSuccess, campaign }) => {
+/**
+ * The create / edit form is one page. These are its sections, indexed the way
+ * `initialStep` is; `fields` maps a validation error back to the section that
+ * shows it, so a failed save scrolls there.
+ */
+const FORM_SECTIONS: ReadonlyArray<{ key: string; fields: readonly string[] }> = [
+    {
+        key: 'basics',
+        fields: [
+            'campaign_name',
+            'campaign_type',
+            'campaign_objective',
+            'sub_org_id',
+            'description',
+            'start_date_local',
+            'end_date_local',
+            'status',
+        ],
+    },
+    { key: 'fields', fields: ['custom_fields'] },
+    { key: 'afterSubmit', fields: ['postSubmitConfiguration'] },
+    { key: 'appearance', fields: ['formAppearance'] },
+    { key: 'notify', fields: ['to_notify', 'send_respondent_email', 'default_initial_score'] },
+];
+const SECTION_BASICS = 0;
+const SECTION_AFTER_SUBMIT = 2;
+const SECTION_APPEARANCE = 3;
+
+export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({
+    onSuccess,
+    campaign,
+    initialStep,
+}) => {
+    const { t } = useTranslation('audienceManagerCreateCampaignForm');
+    const { campaignType: term } = useLeadTerminology();
+    const { t: tUpdateAudienceCampaign } = useTranslation(
+        'audienceManagerUseUpdateAudienceCampaign'
+    );
+    const { t: tCreateAudienceCampaign } = useTranslation(
+        'audienceManagerUseCreateAudienceCampaign'
+    );
     const { instituteDetails } = useInstituteDetailsStore();
     const isEditMode = Boolean(campaign);
     const editingCampaignId = useMemo(() => getCampaignIdentifier(campaign), [campaign]);
@@ -153,6 +228,10 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     );
     const multiEmailRef = useRef<MultiEmailInputHandle>(null);
     const [latestCampaignShareLink, setLatestCampaignShareLink] = useState<string | null>(null);
+    // Kept beside the link purely so the "share link ready" panel can offer a
+    // short URL: shortening is keyed on the campaign id, and the panel is handed
+    // a presetLink that carries no id of its own.
+    const [latestCampaignId, setLatestCampaignId] = useState<string | null>(null);
     const { form, handleDateChange, handleSubmit, handleReset, isSubmitting } =
         useAudienceCampaignForm(initialFormValues);
     const {
@@ -163,8 +242,63 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         getValues,
         formState: { errors },
     } = form;
-    const createCampaign = useCreateAudienceCampaign();
-    const updateCampaign = useUpdateAudienceCampaign();
+    const submitCount = form.formState.submitCount;
+
+    // ── Sections ──────────────────────────────────────────────
+    const sectionRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const scrollToSection = useCallback((index: number) => {
+        sectionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, []);
+    // After a failed save, scroll to the first section that has an error.
+    const handledSubmitRef = useRef(0);
+    useEffect(() => {
+        if (!submitCount || handledSubmitRef.current === submitCount) return;
+        const errorKeys = Object.keys(errors);
+        if (errorKeys.length === 0) return;
+        handledSubmitRef.current = submitCount;
+        const firstSection = FORM_SECTIONS.findIndex((s) =>
+            s.fields.some((f) => errorKeys.includes(f))
+        );
+        if (firstSection >= 0) scrollToSection(firstSection);
+    }, [submitCount, errors, scrollToSection]);
+    const createCampaign = useCreateAudienceCampaign(tCreateAudienceCampaign);
+    const updateCampaign = useUpdateAudienceCampaign(tUpdateAudienceCampaign);
+
+    // ── Tags ──────────────────────────────────────────────────
+    // Edit mode reads the list's saved tags from their own endpoint (the campaign GET used
+    // above is the public form endpoint and does not carry them). Until they have loaded,
+    // the save leaves the saved tags untouched by not sending `tags` at all.
+    const {
+        data: savedTags,
+        isLoading: isLoadingTags,
+        isError: tagsLoadFailed,
+    } = useQuery({
+        queryKey: campaignTagsKey(instituteDetails?.id || '', editingCampaignId),
+        queryFn: () => fetchCampaignTags(instituteDetails?.id || '', editingCampaignId),
+        enabled: isEditMode && !!instituteDetails?.id && !!editingCampaignId,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
+    const { data: tagSummary } = useQuery({
+        queryKey: campaignTagSummaryKey(instituteDetails?.id || ''),
+        queryFn: () => fetchCampaignTagSummary(instituteDetails?.id || ''),
+        enabled: !!instituteDetails?.id,
+        staleTime: 5 * 60 * 1000,
+    });
+    const tagsReady = !isEditMode || savedTags !== undefined;
+    const [tagRows, setTagRows] = useState<TagRow[]>(() => rowsFromTags(campaign?.tags));
+    const [tagsError, setTagsError] = useState<string | undefined>(undefined);
+    useEffect(() => {
+        if (savedTags) setTagRows(rowsFromTags(savedTags));
+    }, [savedTags]);
+    const handleTagRowsChange = (rows: TagRow[]) => {
+        setTagRows(rows);
+        setTagsError(undefined);
+    };
+    const tagsErrorMessage = (error: TagRowsError) =>
+        error.code === 'tooMany'
+            ? t('tags.errors.tooMany')
+            : t(`tags.errors.${error.code}`, { key: error.key });
 
     // Sub-org options for the optional Sub-Org picker. Reuses the same accessible-sub-orgs
     // endpoint as the rest of the app ({id = child-institute id, name}).
@@ -176,10 +310,10 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     });
     const subOrgDropdownOptions = useMemo(
         () => [
-            { value: '', label: 'None' },
+            { value: '', label: t('subOrg.noneOption') },
             ...(accessibleSubOrgs ?? []).map((so) => ({ value: so.id, label: so.name })),
         ],
-        [accessibleSubOrgs]
+        [accessibleSubOrgs, t]
     );
     const existingCustomFields = useMemo(
         () => convertExistingCustomFields(campaignData?.institute_custom_fields),
@@ -209,8 +343,10 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                 instituteDetails?.learner_portal_base_url
             );
             setLatestCampaignShareLink(shareLink);
+            setLatestCampaignId(editingCampaignId);
         } else if (!campaignData) {
             setLatestCampaignShareLink(null);
+            setLatestCampaignId(null);
         }
     }, [campaignData, editingCampaignId, instituteDetails?.learner_portal_base_url]);
 
@@ -260,7 +396,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             }
         } catch (error) {
             console.error('Upload failed:', error);
-            toast.error('Failed to upload campaign image');
+            toast.error(t('errors.uploadImageFailed'));
         } finally {
             const prev = getValues('uploadingStates');
             setValue('uploadingStates', { ...prev, campaign_image: false });
@@ -336,7 +472,9 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                         key: field.key,
                         order: index,
                         _id: field._id,
+                        fieldKey: field.fieldKey,
                         options: field.options,
+                        config: field.config,
                     };
                 });
 
@@ -362,10 +500,10 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         if (isLoadingCampaign) return;
 
         let cancelled = false;
-        fetchAudienceFormSettings().then((config) => {
+        fetchAudienceFormSettings().then((settings) => {
             if (cancelled) return;
-            initialCreateModePostSubmit.current = config;
-            setValue('postSubmitConfiguration', config, {
+            initialCreateModePostSubmit.current = settings.postSubmit;
+            setValue('postSubmitConfiguration', settings.postSubmit, {
                 shouldDirty: false,
                 shouldTouch: false,
             });
@@ -376,10 +514,26 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         };
     }, [isEditMode, isLoadingCampaign, setValue]);
 
-    // Custom fields array management
-    const { fields: customFieldsArray, move: moveCustomField } = useFieldArray({
+    // Institute feature switch for the Form Appearance card. Unlike the
+    // post-submit default above this is needed in edit mode too, so it is a
+    // query rather than a create-mode-only effect — and it shares the settings
+    // page's cache key, so flipping the switch there is reflected here without
+    // a reload. Defaults to hidden while it loads.
+    const { data: audienceFormSettings } = useQuery({
+        queryKey: AUDIENCE_FORM_SETTINGS_QUERY_KEY,
+        queryFn: fetchAudienceFormSettings,
+        staleTime: 5 * 60 * 1000,
+    });
+    const formAppearanceEnabled = audienceFormSettings?.formAppearanceEnabled === true;
+
+    // Custom fields array management. keyName: with the default ('id') RHF puts
+    // its own generated key on every row's `id`, and the handlers below wrote
+    // those rows back with setValue — replacing each field's real id on every
+    // delete / Required toggle / edit. CampaignCustomFieldsCard uses the same key.
+    useFieldArray({
         control,
         name: 'custom_fields',
+        keyName: '_rhfKey',
     });
     const customFields = getValues('custom_fields');
 
@@ -437,6 +591,8 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     }, [isEditMode, initialFormValues, getValues, setValue]);
 
     const handleFormReset = () => {
+        setTagRows(rowsFromTags(isEditMode ? savedTags : undefined));
+        setTagsError(undefined);
         if (isEditMode && existingCustomFields && existingCustomFields.length > 0) {
             // In edit mode, reset to original campaign data
             handleReset();
@@ -489,7 +645,9 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                                     key: field.key,
                                     order: index,
                                     _id: field._id,
+                                    fieldKey: field.fieldKey,
                                     options: field.options,
+                                    config: field.config,
                                 };
                             });
                         initialCreateModeCustomFields.current = normalized;
@@ -518,9 +676,12 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         });
     };
 
+    // The handlers below read the form value, not the field-array rows: those
+    // carry RHF's `_rhfKey`, which must not be written back into the value.
     const handleDeleteOpenField = (id: number) => {
+        const currentFields = getValues('custom_fields') ?? [];
         // Instead of removing the field, set its status to DELETED
-        const updatedFields = customFieldsArray.map((field, idx) => {
+        const updatedFields = currentFields.map((field, idx) => {
             if (idx === id) {
                 return {
                     ...field,
@@ -529,11 +690,19 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             }
             return field;
         });
-        setValue('custom_fields', updatedFields);
+        // Dropdowns that depended on the removed field become plain dropdowns again.
+        setValue(
+            'custom_fields',
+            retargetDependentFields(
+                updatedFields,
+                savedFieldKeyOf(currentFields[id], instituteDetails?.id ?? ''),
+                null
+            )
+        );
     };
 
     const toggleIsRequired = (id: number) => {
-        const updatedFields = customFieldsArray?.map((field, idx) =>
+        const updatedFields = (getValues('custom_fields') ?? []).map((field, idx) =>
             idx === id ? { ...field, isRequired: !field.isRequired } : field
         );
         setValue('custom_fields', updatedFields);
@@ -541,10 +710,23 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
     // Index-based to match toggleIsRequired/handleDeleteOpenField in this file.
     const patchFieldAt = (index: number, patch: Record<string, unknown>) => {
-        const updatedFields = customFieldsArray?.map((field, idx) =>
+        const currentFields = getValues('custom_fields') ?? [];
+        const updatedFields = currentFields.map((field, idx) =>
             idx === index ? { ...field, ...patch } : field
         );
-        setValue('custom_fields', updatedFields as typeof customFields);
+        // Dependent dropdowns store their parent's field_key. An unsaved parent is
+        // keyed from its label, so a rename moves them along; a parent that is no
+        // longer a dropdown releases them.
+        const instituteId = instituteDetails?.id ?? '';
+        const oldKey = savedFieldKeyOf(currentFields[index], instituteId);
+        const edited = updatedFields[index];
+        const newKey = isDropdownFieldType(edited?.type)
+            ? savedFieldKeyOf(edited, instituteId)
+            : null;
+        setValue(
+            'custom_fields',
+            retargetDependentFields(updatedFields, oldKey, newKey) as typeof customFields
+        );
     };
 
     /**
@@ -564,12 +746,19 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             isRequired: (config?.isRequired as boolean | undefined) ?? true,
             // The dialog only returns options for choice types, so switching away from one
             // clears them instead of leaving stale values to reappear.
-            options: options?.map((opt, i) => ({ id: String(i), value: opt.value })),
+            options: options?.map((opt, i) => ({
+                id: String(i),
+                value: opt.value,
+                ...(opt.parent ? { parent: opt.parent } : {}),
+            })),
+            // Always an object once the dialog has run, so "edited to nothing"
+            // is distinguishable from "never touched" on save.
+            config: config ?? {},
         });
 
     const handleAddGender = (type: string, name: string, oldKey: boolean) => {
         const newField = {
-            id: String(customFields.length),
+            id: nextFieldId(customFields),
             type,
             name,
             oldKey,
@@ -592,7 +781,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         const updatedFields = [
             ...customFields,
             {
-                id: String(customFields.length),
+                id: nextFieldId(customFields),
                 type,
                 name,
                 oldKey,
@@ -607,7 +796,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     // Handler for adding Phone Number (similar to handleAddGender)
     const handleAddPhoneNumber = (type: string, name: string, oldKey: boolean) => {
         const newField = {
-            id: String(customFields.length),
+            id: nextFieldId(customFields),
             type,
             name,
             oldKey,
@@ -653,7 +842,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             ...prevOptions,
             {
                 id: String(prevOptions.length),
-                value: `option ${prevOptions.length + 1}`,
+                value: t('customField.newOptionDefault', { number: prevOptions.length + 1 }),
                 disabled: true,
             },
         ]);
@@ -672,14 +861,18 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         const resolvedOptions = rawOptions?.map((opt) => ({
             id: String(opt.id),
             value: opt.value,
+            ...('parent' in opt && opt.parent ? { parent: opt.parent } : {}),
         }));
         const newField = {
-            id: String(customFields.length),
+            id: nextFieldId(customFields),
             type,
             name,
             oldKey,
             ...(resolvedOptions && { options: resolvedOptions }),
-            isRequired: true,
+            // Carried through so help text, file limits and the verification gate
+            // survive the save — the dialog collected them, this dropped them.
+            config: config ?? {},
+            isRequired: (config?.isRequired as boolean | undefined) ?? true,
             key: '',
             order: customFields.length,
         };
@@ -692,8 +885,22 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
 
     const onFormSubmit = handleSubmit(async (data: AudienceCampaignForm) => {
         if (!instituteDetails?.id) {
-            toast.error('Institute context unavailable. Please refresh and try again.');
+            toast.error(t('errors.instituteContextUnavailable'));
             return;
+        }
+
+        // Create only: a new campaign cannot start before today. This was the
+        // Start Date input's native `min`, which the form's `noValidate` now
+        // skips. Edit mode is exempt — a running campaign started in the past.
+        // Same UTC "today" as that `min`.
+        if (!isEditMode) {
+            const todayDateOnly = new Date().toISOString().split('T')[0] ?? '';
+            const startDateOnly = (data.start_date_local || '').split('T')[0] ?? '';
+            if (startDateOnly && startDateOnly < todayDateOnly) {
+                toast.error(t('errors.startDateInPast'));
+                scrollToSection(SECTION_BASICS);
+                return;
+            }
         }
 
         // A bad redirect/CTA link only fails on the public form, long after the
@@ -704,6 +911,32 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
         if (postSubmitError) {
             toast.error(postSubmitError);
             return;
+        }
+
+        // Same reasoning for the cover image — a broken src only shows itself on
+        // the public form, after the admin has closed this dialog.
+        const appearanceError = validateFormAppearance(
+            data.formAppearance ?? DEFAULT_FORM_APPEARANCE
+        );
+        if (appearanceError) {
+            toast.error(appearanceError);
+            return;
+        }
+
+        // Tags: validated here so the admin sees which one is wrong before the round-trip.
+        // Not sent while an edited list's saved tags are unknown (still loading / failed),
+        // which the backend reads as "leave them unchanged".
+        let tagsToSend: Record<string, string> | undefined;
+        if (tagsReady) {
+            const tagResult = tagsFromRows(tagRows);
+            if (tagResult.error) {
+                const message = tagsErrorMessage(tagResult.error);
+                setTagsError(message);
+                toast.error(message);
+                scrollToSection(SECTION_BASICS);
+                return;
+            }
+            tagsToSend = tagResult.tags;
         }
 
         // Flush any half-typed email in the Team Notifications box into the
@@ -717,12 +950,12 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             try {
                 const parsed = JSON.parse(data.institute_custom_fields);
                 if (parsed !== null && !Array.isArray(parsed)) {
-                    toast.error('Custom fields JSON must be an array.');
+                    toast.error(t('errors.customFieldsMustBeArray'));
                     return;
                 }
                 parsedCustomFields = parsed;
             } catch (error) {
-                toast.error('Custom fields must be valid JSON.');
+                toast.error(t('errors.customFieldsInvalidJson'));
                 console.error('Invalid custom fields JSON:', error);
                 return;
             }
@@ -776,10 +1009,15 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             send_respondent_email: Boolean(data.send_respondent_email),
             json_web_metadata: data.json_web_metadata?.trim() || '',
             // Merge into (not replace) the existing blob — setting_json also
-            // carries other per-campaign settings the backend writes.
-            setting_json: applyPostSubmitConfiguration(
-                campaignData?.setting_json,
-                data.postSubmitConfiguration ?? DEFAULT_POST_SUBMIT_CONFIGURATION
+            // carries other per-campaign settings the backend writes. Chained,
+            // because each helper spreads what it was given and overwrites only
+            // its own key.
+            setting_json: applyFormAppearance(
+                applyPostSubmitConfiguration(
+                    campaignData?.setting_json,
+                    data.postSubmitConfiguration ?? DEFAULT_POST_SUBMIT_CONFIGURATION
+                ),
+                data.formAppearance ?? DEFAULT_FORM_APPEARANCE
             ),
             created_by_user_id: userId,
             start_date_local: formatDateTimeForPayload(data.start_date_local, false),
@@ -790,6 +1028,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             sub_org_id: data.sub_org_id ? data.sub_org_id : undefined,
             institute_custom_fields:
                 allCustomFieldsPayload.length > 0 ? allCustomFieldsPayload : customFieldsToSend,
+            tags: tagsToSend,
         };
 
         try {
@@ -803,6 +1042,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                     instituteDetails?.learner_portal_base_url
                 );
                 setLatestCampaignShareLink(shareLink);
+                setLatestCampaignId(editingCampaignId);
                 onSuccess?.();
             } else {
                 const createdCampaign = await createCampaign.mutateAsync(payload);
@@ -813,6 +1053,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                         instituteDetails?.learner_portal_base_url
                     );
                     setLatestCampaignShareLink(shareLink);
+                    setLatestCampaignId(createdCampaignId);
                 }
                 handleFormReset();
                 onSuccess?.();
@@ -821,6 +1062,11 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
             console.error('Error saving campaign:', error);
             if (!isEditMode) {
                 setLatestCampaignShareLink(null);
+                // Cleared together with the link, always. The panel is guarded on
+                // the link alone, so a stale id is invisible today — but the two
+                // are one fact ("the campaign we just saved"), and letting them
+                // drift is how a later change ends up shortening the wrong one.
+                setLatestCampaignId(null);
             }
         }
     });
@@ -832,11 +1078,23 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     const isSaving = isSubmitting || createCampaign.isPending || updateCampaign.isPending;
     const primaryButtonLabel = isEditMode
         ? isSaving
-            ? 'Saving...'
-            : 'Save Changes'
+            ? t('actions.saving')
+            : t('actions.save')
         : isSaving
-          ? 'Creating...'
-          : `Create ${getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList)}`;
+          ? t('actions.creating')
+          : t('actions.create', {
+                term: getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList),
+            });
+
+    // Opened from an Edit link: scroll to that section once the form is on screen.
+    const scrolledToInitialRef = useRef(false);
+    const isFormReady = !(isEditMode && isLoadingCampaign);
+    useEffect(() => {
+        if (scrolledToInitialRef.current || !isFormReady || !initialStep) return;
+        scrolledToInitialRef.current = true;
+        const frame = requestAnimationFrame(() => scrollToSection(initialStep));
+        return () => cancelAnimationFrame(frame);
+    }, [isFormReady, initialStep, scrollToSection]);
 
     // Show loading state while fetching campaign data
     if (isEditMode && isLoadingCampaign) {
@@ -848,135 +1106,285 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
     }
 
     return (
-        <form onSubmit={onFormSubmit} className="w-full min-w-0 space-y-6 overflow-hidden">
+        // noValidate: zod owns validation. The browser's own checks (e.g. Start
+        // Date `min` = today on a campaign that started earlier) fire on inputs in
+        // collapsed cards, where Chrome cannot show its bubble — so Save
+        // silently did nothing.
+        <form
+            noValidate
+            onSubmit={onFormSubmit}
+            className="w-full min-w-0 space-y-6 overflow-hidden"
+        >
             {isStatusActive && latestCampaignShareLink && (
                 <div className="rounded-lg border border-primary-100 bg-primary-50 p-4">
-                    <p className="text-sm font-semibold text-primary-700">
-                        Campaign link ready to share
-                    </p>
+                    <p className="text-sm font-semibold text-primary-700">{t('shareLink.ready')}</p>
                     <CampaignLink
                         presetLink={latestCampaignShareLink}
+                        campaignId={latestCampaignId ?? undefined}
+                        enableShortLink
                         className="mt-2"
                         label={undefined}
                     />
                 </div>
             )}
-            {/* Campaign Name */}
-            <div>
-                <label className="block text-sm font-semibold text-neutral-700">
-                    Campaign Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                    type="text"
-                    placeholder="Enter campaign name"
-                    {...register('campaign_name')}
-                    className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-                {errors.campaign_name && (
-                    <span className="mt-1 block text-sm text-red-500">
-                        {errors.campaign_name.message as string}
-                    </span>
-                )}
-            </div>
-
-            {/* Campaign Image */}
-
-            {/* Campaign Type & Objective Row */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div
+                ref={(el) => {
+                    sectionRefs.current[0] = el;
+                }}
+                className="space-y-6"
+            >
+                {/* Campaign Name */}
                 <div>
                     <label className="block text-sm font-semibold text-neutral-700">
-                        Campaign Type <span className="text-red-500">*</span>
-                    </label>
-                    <div className="mt-2">
-                        <CampaignTypeDropdown
-                            value={watch('campaign_type')}
-                            error={errors.campaign_type?.message as string}
-                            onChange={(val) => {
-                                setValue('campaign_type', val, {
-                                    shouldValidate: true,
-                                    shouldDirty: true,
-                                });
-                            }}
-                        />
-                    </div>
-                </div>
-                {/* CampaignObjective */}
-                <div>
-                    <label className="block text-sm font-semibold text-neutral-700">
-                        Campaign Objective
-                        {/* <span className="text-red-500">*</span> */}
+                        {t('campaignName.label')} <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="text"
-                        placeholder="e.g., Engagement, Retention"
-                        {...register('campaign_objective')}
+                        placeholder={t('campaignName.placeholder')}
+                        {...register('campaign_name')}
                         className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                     />
-                    {/* {errors.campaign_objective && (
+                    {errors.campaign_name && (
+                        <span className="mt-1 block text-sm text-red-500">
+                            {errors.campaign_name.message as string}
+                        </span>
+                    )}
+                </div>
+
+                {/* Campaign Image */}
+
+                {/* Campaign Type & Objective Row */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {t('campaignType.label', { term })}{' '}
+                            <span className="text-red-500">*</span>
+                        </label>
+                        <div className="mt-2">
+                            <CampaignTypeDropdown
+                                value={watch('campaign_type')}
+                                error={errors.campaign_type?.message as string}
+                                onChange={(val) => {
+                                    setValue('campaign_type', val, {
+                                        shouldValidate: true,
+                                        shouldDirty: true,
+                                    });
+                                }}
+                            />
+                        </div>
+                    </div>
+                    {/* CampaignObjective */}
+                    <div>
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {t('campaignObjective.label')}
+                            {/* <span className="text-red-500">*</span> */}
+                        </label>
+                        <input
+                            type="text"
+                            placeholder={t('campaignObjective.placeholder')}
+                            {...register('campaign_objective')}
+                            className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        />
+                        {/* {errors.campaign_objective && (
                         <span className="mt-1 block text-sm text-red-500">
                             {errors.campaign_objective.message as string}
                         </span>
                     )} */}
-                </div>
-            </div>
-
-            {/* Sub-Org (optional) — only shown when the institute has sub-orgs */}
-            {subOrgDropdownOptions.length > 1 && (
-                <div>
-                    <label className="block text-sm font-semibold text-neutral-700">Sub-Org</label>
-                    <div className="mt-2">
-                        <StatusDropdown
-                            value={watch('sub_org_id') || ''}
-                            initialOptions={subOrgDropdownOptions}
-                            placeholder="Select sub-org (optional)"
-                            onChange={(val) => {
-                                setValue('sub_org_id', val, { shouldDirty: true });
-                            }}
-                        />
                     </div>
                 </div>
-            )}
 
-            {/* Emails & Share Analytics */}
-            <div className="  w-full  gap-2 rounded-lg border border-neutral-300 px-3 py-2">
-                <div className="flex flex-wrap gap-2">
+                {/* Sub-Org (optional) — only shown when the institute has sub-orgs */}
+                {subOrgDropdownOptions.length > 1 && (
+                    <div>
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {t('subOrg.label')}
+                        </label>
+                        <div className="mt-2">
+                            <StatusDropdown
+                                value={watch('sub_org_id') || ''}
+                                initialOptions={subOrgDropdownOptions}
+                                placeholder={t('subOrg.placeholder')}
+                                onChange={(val) => {
+                                    setValue('sub_org_id', val, { shouldDirty: true });
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Description */}
+                <div>
                     <label className="block text-sm font-semibold text-neutral-700">
-                        {' '}
-                        Team Notifications{' '}
+                        {t('description.label')}
                     </label>
-                    <TooltipProvider>
-                        <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
-                                    aria-label="Information about sharing campaign analytics"
-                                >
-                                    <Info className="size-4" weight="bold" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
-                                <p>
-                                    Enter email addresses of team members who should receive
-                                    campaign updates
-                                </p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    <textarea
+                        placeholder={t('description.placeholder')}
+                        rows={3}
+                        {...register('description')}
+                        className="mt-2 w-full resize-none rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    />
+                    {errors.description && (
+                        <span className="mt-1 block text-sm text-red-500">
+                            {errors.description.message as string}
+                        </span>
+                    )}
                 </div>
-                <MultiEmailInput
-                    ref={multiEmailRef}
-                    value={emails}
-                    onChange={setEmails}
-                    placeholder="Enter email addresses"
-                    error={errors?.to_notify?.message}
-                />
 
-                {/* Share Campaign Analytics */}
-                <div className="flex items-center justify-between gap-2 px-2 py-2">
+                {/* Start & End Date Row */}
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* Start Date */}
+                    <div>
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {t('startDate.label')} <span className="text-red-500">*</span>
+                        </label>
+                        <Controller
+                            name="start_date_local"
+                            control={control}
+                            render={({ field }) => {
+                                const rawValue = field.value as unknown;
+                                let dateValue = '';
+
+                                // Handle different input types (string date, Date object, or ISO string)
+                                if (typeof rawValue === 'string' && rawValue !== '') {
+                                    // If it's already in YYYY-MM-DD format, use it directly
+                                    if (rawValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                        dateValue = rawValue;
+                                    } else {
+                                        // If it's an ISO string, extract just the date part
+                                        const date = new Date(rawValue);
+                                        if (!Number.isNaN(date.getTime())) {
+                                            dateValue =
+                                                date.toISOString().split('T')[0] ||
+                                                date.toISOString().substring(0, 10);
+                                        }
+                                    }
+                                } else if (
+                                    rawValue &&
+                                    typeof rawValue === 'object' &&
+                                    typeof (rawValue as Date).toISOString === 'function'
+                                ) {
+                                    const isoString = (rawValue as Date).toISOString();
+                                    dateValue =
+                                        isoString.split('T')[0] || isoString.substring(0, 10);
+                                }
+
+                                // Set minimum date to today (date only)
+                                const today = new Date();
+                                const minDate =
+                                    today.toISOString().split('T')[0] ||
+                                    today.toISOString().substring(0, 10); // Format: YYYY-MM-DD
+
+                                return (
+                                    <input
+                                        type="date"
+                                        value={dateValue}
+                                        min={minDate}
+                                        onChange={(e) => {
+                                            const selectedDate = e.target.value; // Already in YYYY-MM-DD format
+                                            setValue('start_date_local', selectedDate, {
+                                                shouldValidate: true,
+                                                shouldDirty: true,
+                                            });
+                                        }}
+                                        className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                                    />
+                                );
+                            }}
+                        />
+                        {errors.start_date_local && (
+                            <span className="mt-1 block text-sm text-red-500">
+                                {errors.start_date_local.message as string}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* End Date */}
+                    <div>
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {t('endDate.label')} <span className="text-red-500">*</span>
+                        </label>
+                        <Controller
+                            name="end_date_local"
+                            control={control}
+                            render={({ field }) => {
+                                const rawValue = field.value as unknown;
+                                let dateValue = '';
+
+                                // Handle different input types (string date, Date object, or ISO string)
+                                if (typeof rawValue === 'string' && rawValue !== '') {
+                                    // If it's already in YYYY-MM-DD format, use it directly
+                                    if (rawValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                        dateValue = rawValue;
+                                    } else {
+                                        // If it's an ISO string, extract just the date part
+                                        const date = new Date(rawValue);
+                                        if (!Number.isNaN(date.getTime())) {
+                                            dateValue =
+                                                date.toISOString().split('T')[0] ||
+                                                date.toISOString().substring(0, 10);
+                                        }
+                                    }
+                                } else if (
+                                    rawValue &&
+                                    typeof rawValue === 'object' &&
+                                    typeof (rawValue as Date).toISOString === 'function'
+                                ) {
+                                    const isoString = (rawValue as Date).toISOString();
+                                    dateValue =
+                                        isoString.split('T')[0] || isoString.substring(0, 10);
+                                }
+
+                                // Compute minimum End Date = Start Date + 1 day (date only)
+                                const startDateValue = watch('start_date_local');
+                                let minEndDate: string;
+
+                                if (startDateValue) {
+                                    const start = new Date(startDateValue);
+                                    const nextDay = new Date(start);
+                                    nextDay.setDate(start.getDate() + 1); // Move to the next day
+                                    const nextDayIso = nextDay.toISOString();
+                                    minEndDate = (nextDayIso.split('T')[0] ||
+                                        nextDayIso.substring(0, 10)) as string; // Format: YYYY-MM-DD
+                                } else {
+                                    // Fallback: today + 1 day
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    const tomorrowIso = tomorrow.toISOString();
+                                    minEndDate = (tomorrowIso.split('T')[0] ||
+                                        tomorrowIso.substring(0, 10)) as string; // Format: YYYY-MM-DD
+                                }
+
+                                return (
+                                    <input
+                                        type="date"
+                                        value={dateValue}
+                                        min={minEndDate}
+                                        onChange={(e) => {
+                                            const selectedDate = e.target.value; // Already in YYYY-MM-DD format
+                                            setValue('end_date_local', selectedDate, {
+                                                shouldValidate: true,
+                                                shouldDirty: true,
+                                            });
+                                        }}
+                                        className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                                    />
+                                );
+                            }}
+                        />
+                        {errors.end_date_local && (
+                            <span className="mt-1 block text-sm text-red-500">
+                                {errors.end_date_local.message as string}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Status */}
+                <div>
                     <div className="flex items-center gap-2">
                         <label className="block text-sm font-semibold text-neutral-700">
-                            Share Campaign Analytics with Team Members
+                            {t('status.label')}
                         </label>
                         <TooltipProvider>
                             <Tooltip delayDuration={0}>
@@ -984,333 +1392,332 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({ onSucces
                                     <button
                                         type="button"
                                         className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
-                                        aria-label="Information about sharing campaign analytics"
+                                        aria-label={t('status.infoAriaLabel')}
                                     >
-                                        <Info className="size-4" weight="regular" />
+                                        <Info className="size-4" weight="bold" />
                                     </button>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
-                                    <p>
-                                        Allow team members to view campaign performance metrics and
-                                        reports
-                                    </p>
+                                    <p>{t('status.tooltip')}</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     </div>
-                    <Switch
-                        checked={watch('send_respondent_email')}
-                        onCheckedChange={(checked: boolean) =>
-                            setValue('send_respondent_email', checked)
-                        }
-                    />
+                    <div className="mt-2">
+                        <StatusDropdown
+                            value={watch('status')}
+                            error={errors.status?.message as string}
+                            onChange={(val) => {
+                                setValue('status', val, {
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                });
+                            }}
+                        />
+                    </div>
                 </div>
-            </div>
 
-            {/* Description */}
-            <div>
-                <label className="block text-sm font-semibold text-neutral-700">
-                    Campaign Description
-                </label>
-                <textarea
-                    placeholder="Describe the campaign's goals, target audience, and key messages"
-                    rows={3}
-                    {...register('description')}
-                    className="mt-2 w-full resize-none rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                {/* Tags — key/value labels reports can group this list's leads by */}
+                <CampaignTagsEditor
+                    rows={tagRows}
+                    onChange={handleTagRowsChange}
+                    suggestions={tagSummary}
+                    isLoading={isEditMode && isLoadingTags}
+                    loadFailed={isEditMode && tagsLoadFailed}
+                    error={tagsError}
                 />
-                {errors.description && (
-                    <span className="mt-1 block text-sm text-red-500">
-                        {errors.description.message as string}
-                    </span>
-                )}
             </div>
 
-            {/* Start & End Date Row */}
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {/* Start Date */}
-                <div>
-                    <label className="block text-sm font-semibold text-neutral-700">
-                        Start Date <span className="text-red-500">*</span>
-                    </label>
-                    <Controller
-                        name="start_date_local"
-                        control={control}
-                        render={({ field }) => {
-                            const rawValue = field.value as unknown;
-                            let dateValue = '';
-
-                            // Handle different input types (string date, Date object, or ISO string)
-                            if (typeof rawValue === 'string' && rawValue !== '') {
-                                // If it's already in YYYY-MM-DD format, use it directly
-                                if (rawValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                    dateValue = rawValue;
-                                } else {
-                                    // If it's an ISO string, extract just the date part
-                                    const date = new Date(rawValue);
-                                    if (!Number.isNaN(date.getTime())) {
-                                        dateValue =
-                                            date.toISOString().split('T')[0] ||
-                                            date.toISOString().substring(0, 10);
-                                    }
-                                }
-                            } else if (
-                                rawValue &&
-                                typeof rawValue === 'object' &&
-                                typeof (rawValue as Date).toISOString === 'function'
-                            ) {
-                                const isoString = (rawValue as Date).toISOString();
-                                dateValue = isoString.split('T')[0] || isoString.substring(0, 10);
-                            }
-
-                            // Set minimum date to today (date only)
-                            const today = new Date();
-                            const minDate =
-                                today.toISOString().split('T')[0] ||
-                                today.toISOString().substring(0, 10); // Format: YYYY-MM-DD
-
-                            return (
-                                <input
-                                    type="date"
-                                    value={dateValue}
-                                    min={minDate}
-                                    onChange={(e) => {
-                                        const selectedDate = e.target.value; // Already in YYYY-MM-DD format
-                                        setValue('start_date_local', selectedDate, {
-                                            shouldValidate: true,
-                                            shouldDirty: true,
-                                        });
-                                    }}
-                                    className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                                />
-                            );
-                        }}
+            <div
+                ref={(el) => {
+                    sectionRefs.current[4] = el;
+                }}
+                className="space-y-6"
+            >
+                {/* Emails & Share Analytics */}
+                <div className="  w-full  gap-2 rounded-lg border border-neutral-300 px-3 py-2">
+                    <div className="flex flex-wrap gap-2">
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {' '}
+                            {t('teamNotifications.label')}{' '}
+                        </label>
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
+                                        aria-label={t('teamNotifications.infoAriaLabel')}
+                                    >
+                                        <Info className="size-4" weight="bold" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
+                                    <p>{t('teamNotifications.tooltip')}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                    <MultiEmailInput
+                        ref={multiEmailRef}
+                        value={emails}
+                        onChange={setEmails}
+                        placeholder={t('teamNotifications.placeholder')}
+                        error={errors?.to_notify?.message}
                     />
-                    {errors.start_date_local && (
-                        <span className="mt-1 block text-sm text-red-500">
-                            {errors.start_date_local.message as string}
-                        </span>
-                    )}
+
+                    {/* Share Campaign Analytics */}
+                    <div className="flex items-center justify-between gap-2 p-2">
+                        <div className="flex items-center gap-2">
+                            <label className="block text-sm font-semibold text-neutral-700">
+                                {t('shareAnalytics.label')}
+                            </label>
+                            <TooltipProvider>
+                                <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
+                                            aria-label={t('shareAnalytics.infoAriaLabel')}
+                                        >
+                                            <Info className="size-4" weight="regular" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
+                                        <p>{t('shareAnalytics.tooltip')}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                        <Switch
+                            checked={watch('send_respondent_email')}
+                            onCheckedChange={(checked: boolean) =>
+                                setValue('send_respondent_email', checked)
+                            }
+                        />
+                    </div>
                 </div>
 
-                {/* End Date */}
+                {/* Initial Lead Score */}
                 <div>
-                    <label className="block text-sm font-semibold text-neutral-700">
-                        End Date <span className="text-red-500">*</span>
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <label className="block text-sm font-semibold text-neutral-700">
+                            {t('initialLeadScore.label')}
+                        </label>
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
+                                        aria-label={t('initialLeadScore.infoAriaLabel')}
+                                    >
+                                        <Info className="size-4" weight="bold" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
+                                    <p>{t('initialLeadScore.tooltip')}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                     <Controller
-                        name="end_date_local"
+                        name="default_initial_score"
                         control={control}
-                        render={({ field }) => {
-                            const rawValue = field.value as unknown;
-                            let dateValue = '';
-
-                            // Handle different input types (string date, Date object, or ISO string)
-                            if (typeof rawValue === 'string' && rawValue !== '') {
-                                // If it's already in YYYY-MM-DD format, use it directly
-                                if (rawValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                                    dateValue = rawValue;
-                                } else {
-                                    // If it's an ISO string, extract just the date part
-                                    const date = new Date(rawValue);
-                                    if (!Number.isNaN(date.getTime())) {
-                                        dateValue =
-                                            date.toISOString().split('T')[0] ||
-                                            date.toISOString().substring(0, 10);
-                                    }
-                                }
-                            } else if (
-                                rawValue &&
-                                typeof rawValue === 'object' &&
-                                typeof (rawValue as Date).toISOString === 'function'
-                            ) {
-                                const isoString = (rawValue as Date).toISOString();
-                                dateValue = isoString.split('T')[0] || isoString.substring(0, 10);
-                            }
-
-                            // Compute minimum End Date = Start Date + 1 day (date only)
-                            const startDateValue = watch('start_date_local');
-                            let minEndDate: string;
-
-                            if (startDateValue) {
-                                const start = new Date(startDateValue);
-                                const nextDay = new Date(start);
-                                nextDay.setDate(start.getDate() + 1); // Move to the next day
-                                const nextDayIso = nextDay.toISOString();
-                                minEndDate = (nextDayIso.split('T')[0] ||
-                                    nextDayIso.substring(0, 10)) as string; // Format: YYYY-MM-DD
-                            } else {
-                                // Fallback: today + 1 day
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                const tomorrowIso = tomorrow.toISOString();
-                                minEndDate = (tomorrowIso.split('T')[0] ||
-                                    tomorrowIso.substring(0, 10)) as string; // Format: YYYY-MM-DD
-                            }
-
-                            return (
-                                <input
-                                    type="date"
-                                    value={dateValue}
-                                    min={minEndDate}
-                                    onChange={(e) => {
-                                        const selectedDate = e.target.value; // Already in YYYY-MM-DD format
-                                        setValue('end_date_local', selectedDate, {
-                                            shouldValidate: true,
-                                            shouldDirty: true,
-                                        });
-                                    }}
-                                    className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                                />
-                            );
-                        }}
+                        render={({ field }) => (
+                            <input
+                                type="number"
+                                min={0}
+                                max={50}
+                                value={field.value ?? 20}
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                                className="mt-2 w-32 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                            />
+                        )}
                     />
-                    {errors.end_date_local && (
+                    {errors.default_initial_score && (
                         <span className="mt-1 block text-sm text-red-500">
-                            {errors.end_date_local.message as string}
+                            {errors.default_initial_score.message as string}
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* Status */}
-            <div>
-                <div className="flex items-center gap-2">
-                    <label className="block text-sm font-semibold text-neutral-700">Status</label>
-                    <TooltipProvider>
-                        <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
-                                    aria-label="Information about sharing campaign analytics"
-                                >
-                                    <Info className="size-4" weight="bold" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
-                                <p>
-                                    To share the campaign link with Learners, please ensure the
-                                    campaign status is set to Active.
-                                </p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <div className="mt-2">
-                    <StatusDropdown
-                        value={watch('status')}
-                        error={errors.status?.message as string}
-                        onChange={(val) => {
-                            setValue('status', val, {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                            });
-                        }}
-                    />
-                </div>
+            <div
+                ref={(el) => {
+                    sectionRefs.current[1] = el;
+                }}
+                className="space-y-6"
+            >
+                {/* Customize Campaign Form - Custom Fields Card */}
+                <CampaignCustomFieldsCard
+                    form={form}
+                    updateFieldOrders={updateFieldOrders}
+                    handleDeleteOpenField={handleDeleteOpenField}
+                    toggleIsRequired={toggleIsRequired}
+                    handleAddGender={handleAddGender}
+                    handleAddOpenFieldValues={handleAddOpenFieldValues}
+                    handleValueChange={handleValueChange}
+                    handleEditClick={handleEditClick}
+                    handleDeleteOptionField={handleDeleteOptionField}
+                    handleAddDropdownOptions={handleAddDropdownOptions}
+                    handleEditFieldAt={handleEditFieldAt}
+                    campaignId={editingCampaignId}
+                    handleCloseDialog={handleCloseDialog}
+                    handleAddPhoneNumber={handleAddPhoneNumber}
+                />
             </div>
 
-            {/* Initial Lead Score */}
-            <div>
-                <div className="flex items-center gap-2">
-                    <label className="block text-sm font-semibold text-neutral-700">
-                        Initial Lead Score
-                    </label>
-                    <TooltipProvider>
-                        <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600 focus:outline-none"
-                                    aria-label="Initial lead score info"
-                                >
-                                    <Info className="size-4" weight="bold" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs bg-neutral-800 text-xs text-white">
-                                <p>
-                                    A base score added to every lead captured through this campaign.
-                                    Final score = initial score + calculated score (capped at 100).
-                                </p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
+            <div
+                ref={(el) => {
+                    sectionRefs.current[2] = el;
+                }}
+                className="space-y-6"
+            >
+                {/* Post Submit Configuration — the thank-you screen / redirect the
+                respondent gets. Mirrors the enroll invite's Post Form Fill card. */}
                 <Controller
-                    name="default_initial_score"
+                    name="postSubmitConfiguration"
                     control={control}
                     render={({ field }) => (
-                        <input
-                            type="number"
-                            min={0}
-                            max={50}
-                            value={field.value ?? 20}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                            className="mt-2 w-32 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        <PostSubmitConfigurationEditor
+                            // `?? DEFAULT` guards the window between a form.reset()
+                            // and the async default landing — the editor is fully
+                            // controlled and would crash on an undefined value.
+                            value={field.value ?? DEFAULT_POST_SUBMIT_CONFIGURATION}
+                            onChange={field.onChange}
+                            // Collapsed like the other optional cards, unless the
+                            // admin came here from its Edit link.
+                            collapsible={initialStep !== SECTION_AFTER_SUBMIT}
+                            previewCampaignName={
+                                watch('campaign_name') ||
+                                t('postSubmit.previewCampaignNameFallback')
+                            }
+                            description={t('postSubmit.description')}
                         />
                     )}
                 />
-                {errors.default_initial_score && (
-                    <span className="mt-1 block text-sm text-red-500">
-                        {errors.default_initial_score.message as string}
-                    </span>
-                )}
             </div>
 
-            {/* Customize Campaign Form - Custom Fields Card */}
-            <CampaignCustomFieldsCard
-                form={form}
-                updateFieldOrders={updateFieldOrders}
-                handleDeleteOpenField={handleDeleteOpenField}
-                toggleIsRequired={toggleIsRequired}
-                handleAddGender={handleAddGender}
-                handleAddOpenFieldValues={handleAddOpenFieldValues}
-                handleValueChange={handleValueChange}
-                handleEditClick={handleEditClick}
-                handleDeleteOptionField={handleDeleteOptionField}
-                handleAddDropdownOptions={handleAddDropdownOptions}
-                handleEditFieldAt={handleEditFieldAt}
-                campaignId={editingCampaignId}
-                handleCloseDialog={handleCloseDialog}
-                handleAddPhoneNumber={handleAddPhoneNumber}
-            />
+            <div
+                ref={(el) => {
+                    sectionRefs.current[3] = el;
+                }}
+                className="space-y-6"
+            >
+                {/* Form Template — the whole-page look of the public form. Not
+                behind the Form Appearance institute switch: picking a look is
+                a per-campaign choice. Writes `formAppearance.template`. */}
+                <Controller
+                    name="formAppearance"
+                    control={control}
+                    render={({ field }) => (
+                        <FormTemplatePicker
+                            value={field.value ?? DEFAULT_FORM_APPEARANCE}
+                            onChange={field.onChange}
+                            title={t('formTemplate.title')}
+                            description={t('formTemplate.description')}
+                        />
+                    )}
+                />
 
-            {/* Post Submit Configuration — the thank-you screen / redirect the
-                respondent gets. Mirrors the enroll invite's Post Form Fill card. */}
-            <Controller
-                name="postSubmitConfiguration"
-                control={control}
-                render={({ field }) => (
-                    <PostSubmitConfigurationEditor
-                        // `?? DEFAULT` guards the window between a form.reset()
-                        // and the async default landing — the editor is fully
-                        // controlled and would crash on an undefined value.
-                        value={field.value ?? DEFAULT_POST_SUBMIT_CONFIGURATION}
-                        onChange={field.onChange}
-                        // Collapsed by default: this is an optional advanced
-                        // block, and the create form must look the way it
-                        // always did for admins who don't need it.
-                        collapsible
-                        previewCampaignName={watch('campaign_name') || 'Your Campaign'}
-                        description="What the respondent sees the moment this form is submitted. Prefilled from Settings → Lead Settings → Forms; changes here apply to this campaign only."
+                {/* Form Heading & Text — the page heading (defaults to this list's
+                name) and the form card's heading + sub-heading, with alignment.
+                Deliberately NOT behind the Form Appearance institute switch:
+                every campaign can reword its own form. Writes into the same
+                `formAppearance` value, so the save path is unchanged. */}
+                <Controller
+                    name="formAppearance"
+                    control={control}
+                    render={({ field }) => (
+                        <FormTextEditor
+                            value={field.value ?? DEFAULT_FORM_APPEARANCE}
+                            onChange={field.onChange}
+                            // Collapsed like the other optional cards, unless the
+                            // admin came here from its Edit link.
+                            collapsible={initialStep !== SECTION_APPEARANCE}
+                            previewCampaignName={
+                                watch('campaign_name') ||
+                                t('postSubmit.previewCampaignNameFallback')
+                            }
+                            previewCampaignDescription={watch('description') || ''}
+                            previewCampaignObjective={watch('campaign_objective') || ''}
+                            previewInstituteName={
+                                instituteDetails?.institute_name || 'Your Institute'
+                            }
+                            previewFields={(watch('custom_fields') || [])
+                                .filter((customField) => customField?.status !== 'DELETED')
+                                .map((customField) => ({
+                                    name: customField?.name || '',
+                                    required: Boolean(customField?.isRequired),
+                                }))}
+                            title={t('formText.title')}
+                            description={t('formText.description')}
+                        />
+                    )}
+                />
+
+                {/* Form Appearance — how the public response form looks while it is
+                being filled in. Next to the heading text, because it is about
+                the form itself, not what follows it. */}
+                {/* Hidden until an institute turns it on in Settings → Lead
+                Settings → Forms. A campaign that already has a saved
+                formAppearance keeps it either way — this hides the editor, it
+                does not clear the stored config. */}
+                {formAppearanceEnabled && (
+                    <Controller
+                        name="formAppearance"
+                        control={control}
+                        render={({ field }) => (
+                            <FormAppearanceEditor
+                                // `?? DEFAULT` guards the window between a form.reset()
+                                // and the value landing — the editor is fully controlled
+                                // and would crash on an undefined value.
+                                value={field.value ?? DEFAULT_FORM_APPEARANCE}
+                                onChange={field.onChange}
+                                // Collapsed by default: the create form must look the way
+                                // it always did for admins who don't need this.
+                                collapsible
+                                previewCampaignName={
+                                    watch('campaign_name') ||
+                                    t('postSubmit.previewCampaignNameFallback')
+                                }
+                                previewCampaignDescription={watch('description') || ''}
+                                previewCampaignObjective={watch('campaign_objective') || ''}
+                                previewInstituteName={
+                                    instituteDetails?.institute_name || 'Your Institute'
+                                }
+                                // The campaign's own fields, so the preview shows real
+                                // labels instead of placeholder rows. Deleted rows are
+                                // excluded because they are not sent to the API either.
+                                previewFields={(watch('custom_fields') || [])
+                                    .filter((field) => field?.status !== 'DELETED')
+                                    .map((field) => ({
+                                        name: field?.name || '',
+                                        required: Boolean(field?.isRequired),
+                                    }))}
+                                title={t('formAppearance.title')}
+                                description={t('formAppearance.description')}
+                            />
+                        )}
                     />
                 )}
-            />
+            </div>
 
             {/* Custom HTML Card */}
             {/* <CustomHTMLCard form={form} /> */}
 
             {/* Form Actions */}
-            <div className="flex items-center justify-end gap-3 border-t border-neutral-200 pt-6">
+            <div className="flex flex-wrap items-center gap-3 border-t border-neutral-200 pt-6">
                 <MyButton
                     type="button"
                     onClick={handleFormReset}
                     buttonType="secondary"
                     scale="medium"
                 >
-                    Reset
+                    {t('actions.reset')}
                 </MyButton>
+                <span className="flex-1" />
                 <MyButton type="submit" disabled={isSaving} buttonType="primary" scale="medium">
                     {primaryButtonLabel}
                 </MyButton>

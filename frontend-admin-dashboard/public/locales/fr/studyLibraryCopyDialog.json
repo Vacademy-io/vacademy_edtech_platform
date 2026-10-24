@@ -1,0 +1,17 @@
+{
+    "dialog": {
+        "heading": "Copier vers",
+        "submitLabel": "Copier",
+        "busyLabel": "Copie en cours…"
+    },
+    "toast": {
+        "copiedSuccess": "Diapositive copiée avec succès !",
+        "copiedToLocations_one": "Diapositive copiée vers {{count}} emplacement",
+        "copiedToLocations_many": "Diapositive copiée vers {{count}} d'emplacements",
+        "copiedToLocations_other": "Diapositive copiée vers {{count}} emplacements",
+        "copyFailed": "Échec de la copie de la diapositive",
+        "partialSuccess_one": "Copié vers {{count}} emplacement sur {{total}}. Réessayez pour le reste ci-dessous.",
+        "partialSuccess_many": "Copié vers {{count}} d'emplacements sur {{total}}. Réessayez pour le reste ci-dessous.",
+        "partialSuccess_other": "Copié vers {{count}} emplacements sur {{total}}. Réessayez pour le reste ci-dessous."
+    }
+}

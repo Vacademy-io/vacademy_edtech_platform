@@ -1,0 +1,18 @@
+{
+    "heading": "Recent Activity",
+    "viewAll": "All",
+    "loading": "Loading activity…",
+    "fallbackTitle": "Activity",
+    "empty": {
+        "title": "No recent activity",
+        "hint": "Notes, calls, and follow-ups will appear here."
+    },
+    "relativeTime": {
+        "minutesAgo_one": "{{count}}m ago",
+        "minutesAgo_other": "{{count}}m ago",
+        "hoursAgo_one": "{{count}}h ago",
+        "hoursAgo_other": "{{count}}h ago",
+        "daysAgo_one": "{{count}}d ago",
+        "daysAgo_other": "{{count}}d ago"
+    }
+}

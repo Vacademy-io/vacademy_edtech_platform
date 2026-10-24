@@ -1,0 +1,21 @@
+{
+    "allowedLanguages": {
+        "label": "Langages autorisés",
+        "runtimeNote": "Pyodide s'exécute dans le navigateur (Python). JS utilise eval natif. C/C++/Java/Go s'exécutent sur Judge0."
+    },
+    "sessionTimer": {
+        "label": "Minuteur de session (minutes)",
+        "placeholder": "Aucun minuteur",
+        "hint": "Vide = illimité. Soumission automatique à l'expiration."
+    },
+    "maxPoints": {
+        "label": "Points maximum",
+        "hint": "Note totale de cette question, répartie également entre les cas de test cachés (échantillons si aucun test caché n'existe)."
+    },
+    "cpuTime": {
+        "label": "Temps CPU par exécution (secondes)"
+    },
+    "memory": {
+        "label": "Mémoire (Ko)"
+    }
+}

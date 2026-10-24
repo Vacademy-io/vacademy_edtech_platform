@@ -32,7 +32,11 @@ public class EngagementReplyBrain {
     private final LLMService llmService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${engagement.brain.model:anthropic/claude-sonnet-4.5}")
+    /**
+     * Optional override. Blank (the default) lets the 'engagement' row in ai_model_defaults
+     * decide, which the super-admin portal edits.
+     */
+    @Value("${engagement.brain.model:}")
     private String brainModel;
 
     /** action = ANSWER | ESCALATE; reply is the drafted text (a suggestion when escalated). */
@@ -56,9 +60,12 @@ public class EngagementReplyBrain {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
-                    .model(brainModel)
+                    .model(brainModel == null || brainModel.isBlank() ? null : brainModel.trim())
                     .history(new ArrayList<>(history))
                     .build();
+            session.getContext().put(LLMService.CTX_USE_CASE, "engagement");
+            // Auto-replies are free by product decision (EngagementReplyResponder): never token-charged.
+            session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {

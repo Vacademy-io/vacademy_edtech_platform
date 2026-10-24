@@ -1,0 +1,451 @@
+{
+    "catalog": {
+        "tab": {
+            "all": "Tous les {{courses}}",
+            "inProgress": "En cours",
+            "completed": "Terminés",
+            "scrollStart": "Faire défiler les onglets en arrière",
+            "scrollEnd": "Faire défiler les onglets en avant"
+        },
+        "toast": {
+            "loadError": "Une erreur s'est produite lors du chargement des {{courses}}. Veuillez réessayer.",
+            "loadTabError": "Impossible de charger les {{courses}} de cet onglet. Veuillez réessayer.",
+            "loadFallbackError": "Impossible de charger les {{courses}}. Veuillez réessayer."
+        },
+        "search": {
+            "placeholder": "Rechercher des {{courses}}..."
+        },
+        "sort": {
+            "label": "Trier par :",
+            "ariaLabel": "Trier les {{courses}}",
+            "placeholder": "Ordre de tri",
+            "newest": "Plus récents d'abord",
+            "oldest": "Plus anciens d'abord",
+            "highestRated": "Les mieux notés",
+            "shortest": "Les plus courts d'abord"
+        },
+        "empty": {
+            "title": "Aucun {{courses}} trouvé",
+            "description": "Nous n'avons rien trouvé qui corresponde à votre recherche. Essayez d'autres mots-clés, ajustez vos filtres ou effacez-les pour voir tous les {{courses}} disponibles."
+        },
+        "results": {
+            "summary": "{{total}} {{courses}} • Page {{page}}/{{totalPages}} • {{showing}} affichés sur {{total}}"
+        },
+        "card": {
+            "untitledPackage": "Pack sans titre"
+        },
+        "customTab": {
+            "open": "Ouvrir",
+            "coursesCount": "{{count}} cours",
+            "productPagesEmpty": "Rien à afficher ici pour l'instant"
+        }
+    },
+    "filters": {
+        "title": "Filtres",
+        "clearAll": "Tout effacer",
+        "close": "Fermer",
+        "show": "Afficher",
+        "apply": "Appliquer les filtres",
+        "applyShort": "Appliquer",
+        "applyWithCount": "Appliquer ({{selected}})",
+        "appliedCount_one": "{{count}} filtre appliqué",
+        "appliedCount_many": "{{count}} filtres appliqués",
+        "appliedCount_other": "{{count}} filtres appliqués",
+        "noOptions": "Aucune option disponible",
+        "unavailable": "Indisponible",
+        "unnamedLevel": "{{level}} sans nom",
+        "unnamedSession": "{{session}} sans nom",
+        "unnamedInstructor": "{{instructor}} sans nom"
+    },
+    "catalogFilterWizard": {
+        "title": "Choisissez votre {{term}}",
+        "description": "Sélectionnez une ou plusieurs options ci-dessous — nous afficherons les cours correspondants.",
+        "stepOf": "Étape {{current}} sur {{total}}",
+        "next": "Suivant",
+        "back": "Retour",
+        "showCourses": "Afficher les cours",
+        "skip": "Ignorer, afficher tous les cours"
+    },
+    "pagination": {
+        "ariaLabel": "Pagination",
+        "previous": "Précédent",
+        "next": "Suivant"
+    },
+    "dialog": {
+        "close": "Fermer"
+    },
+    "enrollment": {
+        "success": {
+            "title": "Inscription réussie !",
+            "welcome": "Bienvenue dans {{courseTitle}} !",
+            "description": "Votre inscription au {{course}} a bien été enregistrée. Vous pouvez maintenant accéder à toutes les {{slides}} et commencer à apprendre.",
+            "exploreCourse": "Découvrir le {{course}}"
+        },
+        "pending": {
+            "title": "Demande d'inscription envoyée",
+            "heading": "Demande envoyée avec succès",
+            "nextTitle": "Que se passe-t-il ensuite ?",
+            "step1": "{{admin}} examinera votre demande d'inscription",
+            "step2": "Vous recevrez une notification une fois la demande approuvée",
+            "step3": "L'accès aux {{slides}} du {{course}} vous sera accordé"
+        }
+    },
+    "approval": {
+        "success": {
+            "srTitle": "Approbation réussie",
+            "srDescription": "Votre inscription a été approuvée et vous avez désormais accès au {{course}}",
+            "heading": "Approbation réussie !",
+            "readyTitle": "Prêt à apprendre !",
+            "readyMessage": "Vous pouvez maintenant accéder au contenu du {{course}} et commencer à apprendre.",
+            "startLearning": "Commencer à apprendre"
+        }
+    },
+    "payment": {
+        "success": {
+            "srTitle": "Paiement réussi",
+            "srDescription": "Votre paiement a été traité avec succès",
+            "heading": "Paiement réussi !",
+            "approvalTitle": "Approbation de {{admin}} requise",
+            "approvalStep1": "L'administrateur examinera votre demande d'inscription",
+            "approvalStep2": "Vous recevrez un e-mail de notification une fois la demande approuvée",
+            "approvalStep3": "L'accès au {{course}} sera accordé automatiquement",
+            "accessMessage": "Vous pouvez maintenant accéder au contenu du {{course}} et commencer à apprendre.",
+            "exploreCourse": "Découvrir le {{course}}"
+        },
+        "failed": {
+            "srTitle": "Échec du paiement",
+            "srDescription": "Votre paiement n'a pas pu être traité",
+            "heading": "Échec du paiement",
+            "description": "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
+            "nextTitle": "Que faire ensuite ?",
+            "step1": "Vérifiez votre moyen de paiement et réessayez",
+            "step2": "Contactez l'assistance si le problème persiste",
+            "step3": "Vous pouvez relancer le processus d'inscription",
+            "tryAgain": "Réessayer"
+        }
+    },
+    "hero": {
+        "resume": {
+            "eyebrow": "Reprenez là où vous en étiez",
+            "continue": "Continuer"
+        },
+        "catalogEyebrow": "Catalogue de {{course}}",
+        "title": "Explorer et découvrir",
+        "description": "Organisez, importez et suivez vos ressources pédagogiques en un seul endroit, sans effort.",
+        "createCourse": "Créer un {{course}}"
+    },
+    "card": {
+        "unknownInstructor": "{{instructor}} inconnu",
+        "cta": {
+            "review": "Revoir",
+            "continue": "Continuer",
+            "startLearning": "Commencer à apprendre",
+            "view": "Voir le {{course}}"
+        },
+        "tagsMore_one": "+{{count}} autre",
+        "tagsMore_many": "+{{count}} autres",
+        "tagsMore_other": "+{{count}} autres",
+        "status": {
+            "notStarted": "Non commencé",
+            "percentComplete": "{{percent}} % terminé",
+            "keepGoing": "Continuez comme ça !"
+        },
+        "nextSlide": "Suivant : {{title}}",
+        "overview": "Aperçu",
+        "overviewAriaLabel": "Voir l'aperçu du {{course}}"
+    },
+    "liveClass": {
+        "badge": {
+            "live": "EN DIRECT",
+            "liveNow": "EN DIRECT MAINTENANT",
+            "session": "SÉANCE",
+            "startingSoon": "DÉBUT IMMINENT",
+            "waitingRoom": "SALLE D'ATTENTE"
+        },
+        "button": {
+            "join": "Rejoindre",
+            "joinEarly": "Rejoindre en avance",
+            "joinLiveClass": "Rejoindre le cours en direct",
+            "joinSession": "Rejoindre la séance",
+            "joinWaitingRoom": "Rejoindre la salle d'attente",
+            "next": "Suivant",
+            "nextSessions": "{{sessions}} suivantes",
+            "notStarted": "Pas commencé",
+            "previous": "Précédent",
+            "previousSessions": "{{sessions}} précédentes",
+            "settingUp": "Configuration en cours…",
+            "today": "Aujourd'hui"
+        },
+        "calendar": {
+            "clickDayHint": "Cliquez sur un jour pour voir tous les {{liveSessions}}",
+            "dayNamesShort": [
+                "Dim",
+                "Lun",
+                "Mar",
+                "Mer",
+                "Jeu",
+                "Ven",
+                "Sam"
+            ],
+            "monthNames": [
+                "Janvier",
+                "Février",
+                "Mars",
+                "Avril",
+                "Mai",
+                "Juin",
+                "Juillet",
+                "Août",
+                "Septembre",
+                "Octobre",
+                "Novembre",
+                "Décembre"
+            ],
+            "moreCount": "+{{count}} de plus"
+        },
+        "countdown": {
+            "hours": "Heures",
+            "minutes": "Minutes",
+            "seconds": "Secondes"
+        },
+        "dayModal": {
+            "classesOn": "Cours du {{date}}",
+            "noneScheduled": "Aucun {{liveSessions}} prévu pour ce jour",
+            "pastSessions": "{{sessions}} passées",
+            "upcomingSessions": "{{sessions}} à venir"
+        },
+        "defaultClassCard": {
+            "defaultTitle": "{{session}} par défaut",
+            "description": "Il n'y a pas de {{liveSession}} en ce moment. Vous pouvez regarder cette {{session}}.",
+            "noLiveSession": "Aucun {{liveSession}}",
+            "viewSession": "Voir la {{session}}"
+        },
+        "disclaimer": {
+            "continue": "Continuer vers le cours",
+            "description": "Veuillez regarder cette courte vidéo.",
+            "iframeTitle": "Avertissement",
+            "title": "Avant de rejoindre"
+        },
+        "embed": {
+            "back": "← Retour",
+            "classReady": "{{liveClass}} est prêt",
+            "clickToJoinNewWindow": "Cliquez ci-dessous pour rejoindre le {{liveClass}} dans une nouvelle fenêtre.",
+            "clickToViewLive": "Cliquez ici pour voir le direct",
+            "errorLoadingSessionDetails": "Erreur lors du chargement des détails de la {{session}} : {{message}}",
+            "goToLogin": "Aller à la connexion",
+            "invalidYoutubeUrl": "Format d'URL YouTube invalide",
+            "loginRequired": "Connexion requise",
+            "loginRequiredDescription": "Veuillez vous connecter pour assister à cette {{session}}. Il s'agit d'une {{session}} privée qui nécessite une authentification.",
+            "noMeetingLink": "Aucun lien de réunion disponible pour cette {{session}}.",
+            "openingInNewTab": "Ouverture du lien de réunion dans un nouvel onglet...",
+            "rec": "Enr",
+            "recording": "Enregistrement",
+            "tapToJoin": "Appuyez ci-dessous pour rejoindre le {{liveClass}}.",
+            "toast": {
+                "classNotStarted": "Votre {{instructor}} n'a pas encore démarré ce {{liveClass}}. Veuillez patienter un instant et réessayer.",
+                "joinFailed": "Impossible de rejoindre le {{liveClass}}. Veuillez réessayer.",
+                "liveSessionStarted": "Un {{liveSession}} a commencé !"
+            },
+            "unsupportedSessionType": "Type de {{session}} non pris en charge : {{linkType}}"
+        },
+        "feedback": {
+            "backToLiveClasses": "Retour aux {{liveSessions}}",
+            "fieldRequired": "Ce champ est obligatoire",
+            "hopeFoundGeneric": "Nous espérons que cette {{session}} vous a été utile.",
+            "hopeFoundTitled": "Nous espérons que « {{title}} » vous a été utile.",
+            "instituteLogoAlt": "Logo de l'établissement",
+            "loadingForm": "Chargement du formulaire de retour…",
+            "rating": {
+                "excellent": "Excellent",
+                "fair": "Moyen",
+                "good": "Bien",
+                "poor": "Faible",
+                "starAriaLabel_one": "{{count}} étoile",
+                "starAriaLabel_other": "{{count}} étoiles",
+                "veryGood": "Très bien",
+                "starAriaLabel_many": "{{count}} étoiles"
+            },
+            "requiredBody": "Votre {{instructor}} a rendu le retour d'expérience obligatoire pour cette {{session}} — veuillez répondre à toutes les questions requises pour continuer.",
+            "requiredLabel": "Retour d'expérience requis.",
+            "responsePlaceholder": "Écrivez votre réponse ici…",
+            "responsesRecorded": "Vos réponses ont été enregistrées. Retour en cours…",
+            "sessionFeedbackTitle": "Retour sur la {{session}}",
+            "skip": "Passer",
+            "submitFeedback": "Envoyer le retour",
+            "submitting": "Envoi en cours…",
+            "thankYouTitle": "Merci pour votre retour !",
+            "thanksForAttending": "Merci d'avoir participé !"
+        },
+        "field": {
+            "duration": "Durée :",
+            "starts": "Début :"
+        },
+        "filter": {
+            "days_one": "{{count}} jour",
+            "days_other": "{{count}} jours",
+            "days_many": "{{count}} jours"
+        },
+        "loginForm": {
+            "continue": "Continuer",
+            "enterOtp": "Saisir le code OTP",
+            "findingUser": "Recherche de l'utilisateur...",
+            "findingUserDetails": "Recherche des informations utilisateur...",
+            "heading": "Connexion pour voir les séances",
+            "loadingUserDetails": "Chargement des informations utilisateur...",
+            "otpSentTo": "Nous avons envoyé un code à 6 chiffres à",
+            "quickLoginDescription": "Vous serez connecté directement sans vérification par e-mail.",
+            "quickLoginTitle": "Mode de connexion rapide",
+            "subtitle": "Saisissez votre nom d'utilisateur pour accéder au {{liveSession}}",
+            "toast": {
+                "emailServiceUnavailable": "Le service de messagerie est temporairement indisponible.",
+                "invalidUserData": "Données utilisateur invalides reçues",
+                "loggingIn": "Connexion en cours...",
+                "linkExpired": "Ce lien de connexion a expiré",
+                "linkExpiredDescription": "Demandez un nouveau lien, ou connectez-vous avec votre identifiant et votre mot de passe.",
+                "loginFailedLater": "Échec de la connexion. Veuillez réessayer plus tard.",
+                "loginFailedRetry": "Échec de la connexion. Veuillez réessayer.",
+                "loginSuccessTitle": "Connexion réussie ! Redirection...",
+                "otpIncomplete": "Veuillez saisir le code OTP complet à 6 chiffres",
+                "otpInvalid": "Code OTP invalide. Veuillez réessayer.",
+                "otpSendFailed": "Échec de l'envoi du code OTP",
+                "otpSent": "Nous avons envoyé un code OTP ! Veuillez vérifier votre e-mail.",
+                "otpVerified": "Code OTP vérifié avec succès !",
+                "studentDetailsFailed": "Échec de la récupération des informations de l'élève",
+                "tryAgain": "Veuillez réessayer",
+                "userLookupFailed": "Impossible de trouver l'utilisateur",
+                "userNotFound": "Utilisateur introuvable",
+                "welcome": "Bienvenue dans votre {{liveSession}}"
+            },
+            "usernameLabel": "Nom d'utilisateur",
+            "usernamePlaceholder": "Saisissez votre nom d'utilisateur",
+            "verifyAndContinue": "Vérifier et continuer",
+            "verifying": "Vérification en cours..."
+        },
+        "meta": {
+            "pageDescription": "{{liveClasses}} et séances à venir",
+            "pageTitle": "{{liveClasses}}"
+        },
+        "pagination": {
+            "pageOf": "Page {{page}} sur {{totalPages}}",
+            "viewingPage": "Affichage de la page {{page}}"
+        },
+        "pastSession": {
+            "activity": {
+                "attended": "Présent {{minutes}} min",
+                "chats": "{{count}} messages",
+                "handRaises": "{{count}} mains levées",
+                "pollVotes": "{{count}} votes de sondage",
+                "reactions": "{{count}} réactions"
+            },
+            "attendance": {
+                "absent": "Absent",
+                "notMarked": "Non renseigné",
+                "present": "Présent"
+            },
+            "materialFallback": "Support",
+            "materialsLabel": "Supports de cours",
+            "recording": {
+                "expired": "Enregistrement expiré",
+                "part": "Partie {{number}}",
+                "watch": "Voir l'enregistrement"
+            },
+            "toast": {
+                "materialOpenFailed": "Impossible d'ouvrir ce support."
+            }
+        },
+        "recordingDialog": {
+            "copy": "Copier",
+            "expiresAround": "Ce lien peut expirer aux alentours du {{date}}.",
+            "loading": "Chargement de l'enregistrement…",
+            "openRecording": "Ouvrir l'enregistrement",
+            "passcodeLabel": "Code d'accès :",
+            "toast": {
+                "loadFailed": "Échec du chargement de l'enregistrement.",
+                "passcodeCopied": "Code d'accès copié"
+            },
+            "unableToEmbed": "Impossible d'intégrer cette vidéo.",
+            "zoomCloudHosted": "Cet enregistrement est hébergé sur Zoom Cloud. Ouvrez-le dans un nouvel onglet pour le regarder."
+        },
+        "section": {
+            "adjustFilters": "Essayez d'ajuster vos filtres ou effacez-les pour voir tous les {{sessions}}",
+            "checkBackLater": "Revenez plus tard ou consultez les {{sessions}} à venir",
+            "classesWillShowUp": "Les cours apparaîtront ici une fois terminés.",
+            "foundCount_one": "{{count}} {{liveSessions}} trouvé",
+            "foundCount_other": "{{count}} {{liveSessions}} trouvés",
+            "liveSessionsHeading": "{{liveSessions}} - {{timezone}}",
+            "newSessionsWillAppear": "Les nouvelles {{sessions}} apparaîtront ici une fois programmées",
+            "noPastSessionsYet": "Aucune séance passée pour le moment",
+            "noUpcomingMatchFilters": "Aucune {{sessions}} à venir ne correspond à vos filtres",
+            "noUpcomingScheduled": "Aucune {{sessions}} à venir n'est programmée",
+            "noneAtTheMoment": "Aucun {{liveSessions}} pour le moment",
+            "noneFound": "Aucun {{liveSessions}} trouvé",
+            "pastSessionsSubtitle": "Cours déjà passés pour votre {{batch}}.",
+            "sessionCount_one": "{{count}} séance",
+            "sessionCount_other": "{{count}} séances",
+            "foundCount_many": "{{count}} {{liveSessions}} trouvés",
+            "sessionCount_many": "{{count}} séances"
+        },
+        "sessionSelection": {
+            "description": "Il y a {{count}} {{sessions}} actives en ce moment. Veuillez choisir celle que vous souhaitez rejoindre :",
+            "tipBody": "Vous ne pouvez rejoindre qu'une seule {{session}} à la fois. Choisissez la {{session}} à laquelle vous souhaitez assister.",
+            "tipLabel": "Astuce :",
+            "title": "Plusieurs séances actives"
+        },
+        "state": {
+            "errorLoadingPrefix": "Erreur lors du chargement des séances :",
+            "loadingSessions": "Chargement des séances..."
+        },
+        "tabs": {
+            "calendar": "Vue calendrier",
+            "list": "Vue liste"
+        },
+        "toast": {
+            "classEnded": "Ce {{liveClass}} est terminé",
+            "classNotStartedYet": "Le cours n'a pas encore commencé. Veuillez attendre l'ouverture de la salle d'attente.",
+            "markAttendanceFailed": "Échec de l'enregistrement de la présence",
+            "paymentRequired": "Cette {{session}} nécessite un paiement. Effectuez votre paiement pour rejoindre.",
+            "statusUndetermined": "Impossible de déterminer le statut de la {{session}}. Veuillez réessayer."
+        },
+        "usernameLogin": {
+            "footerHelp": "Besoin d'aide ? Contactez le support pour vous aider à accéder à votre {{liveSession}}."
+        },
+        "zoomSdk": {
+            "couldNotInit": "Impossible d'initialiser la réunion Zoom ({{code}}).",
+            "couldNotJoin": "Impossible de rejoindre la réunion Zoom ({{code}}).",
+            "couldNotLoad": "Nous n'avons pas pu charger ce {{liveClass}}. Veuillez actualiser ou contacter votre formateur.",
+            "couldNotLoadCheckConnection": "Impossible de charger la réunion Zoom. Vérifiez votre connexion et réessayez.",
+            "failedToLoad": "Échec du chargement de la réunion Zoom.",
+            "initError": "erreur d'initialisation",
+            "joinError": "erreur de connexion",
+            "joiningMeeting": "Connexion à la réunion…",
+            "notReadyToJoin": "Ce {{liveClass}} n'est pas encore prêt à être rejoint — il est peut-être encore en cours de préparation. Veuillez actualiser dans un instant, ou contacter votre formateur si le problème persiste.",
+            "openInZoomApp": "Ouvrir dans l'application Zoom",
+            "preparingMeeting": "Préparation de la réunion…",
+            "refreshOrRejoin": "Veuillez actualiser la page ou réessayer de rejoindre.",
+            "stillSettingUp": "Ce {{liveClass}} est encore en cours de configuration. Veuillez actualiser dans un instant."
+        },
+        "zoomSettingUpTooltip": "La réunion Zoom est encore en cours de configuration. Revenez d'ici peu."
+    },
+    "supportersSection": {
+        "headingPrefix": "Nos",
+        "headingHighlight": "partenaires"
+    },
+    "courseCatalogBanner": {
+        "alt": "Bannière du catalogue de {{course}}"
+    },
+    "instructorCta": {
+        "headingBefore": "Vous voulez créer votre propre",
+        "headingAfter": " ?",
+        "subtitle": "Partagez votre savoir avec le monde !",
+        "description": "Connectez-vous et commencez à créer vos propres {{courses}} que d'autres pourront explorer et grâce auxquels ils pourront apprendre.",
+        "login": "Connexion"
+    },
+    "legacyNav": {
+        "brandName": "Centre d'apprentissage",
+        "logoAlt": "Logo du centre d'apprentissage",
+        "userProfileAlt": "Profil utilisateur"
+    },
+    "studyCourseCatalog": {
+        "heading": "Catalogue d'étude {{course}}"
+    }
+}

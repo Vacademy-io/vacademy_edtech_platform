@@ -1,5 +1,27 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { TELEPHONY_CALL_OPTIONS } from '@/constants/urls';
+import { TELEPHONY_CALL_AVAILABILITY, TELEPHONY_CALL_OPTIONS } from '@/constants/urls';
+
+export interface CallAvailability {
+    /** The INSTITUTE has calling configured and switched on. */
+    enabled: boolean;
+    /** THIS user can originate (extension for Airtel, verified mobile for Exotel). */
+    callerReady: boolean;
+    /** Why they cannot — user-facing, null when they can. */
+    reason?: string | null;
+    providerType?: string | null;
+}
+
+/**
+ * GET /v1/telephony/calls/availability — always 200, so a page can ask "should I
+ * show a Call button" without firing a request that errors on every institute
+ * that does not call.
+ */
+export const fetchCallAvailability = async (instituteId: string): Promise<CallAvailability> => {
+    const { data } = await authenticatedAxiosInstance.get<CallAvailability>(
+        TELEPHONY_CALL_AVAILABILITY(instituteId)
+    );
+    return data;
+};
 
 export interface NumberChoice {
     id: string;

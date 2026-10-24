@@ -1,0 +1,76 @@
+{
+    "header": {
+        "applicationFormTitle": "استمارة الطلب",
+        "institutePlaceholder": "اسم المؤسسة",
+        "instituteLogoAlt": "شعار المؤسسة",
+        "pastePhoto": "الصق الصورة",
+        "dateLabel": "التاريخ:",
+        "academicYearLabel": "السنة الدراسية:"
+    },
+    "sections": {
+        "studentDetails": "بيانات الطالب",
+        "healthInformation": "المعلومات الصحية",
+        "academicInformation": "المعلومات الأكاديمية",
+        "fathersDetails": "بيانات الأب",
+        "mothersDetails": "بيانات الأم",
+        "guardianDetails": "بيانات ولي الأمر",
+        "emergencyContact": "جهة الاتصال في حالات الطوارئ",
+        "addressDetails": "بيانات العنوان"
+    },
+    "fields": {
+        "fullNameBirthCertificate": "الاسم الكامل (كما في شهادة الميلاد)",
+        "dateOfBirth": "تاريخ الميلاد",
+        "gender": "الجنس",
+        "nationality": "الجنسية",
+        "religion": "الديانة",
+        "category": "الفئة",
+        "bloodGroup": "فصيلة الدم",
+        "motherTongue": "اللغة الأم",
+        "languagesKnown": "اللغات المعروفة",
+        "idType": "نوع الهوية",
+        "idNumber": "رقم الهوية",
+        "medicalConditions": "الحالات الطبية / الحساسية",
+        "dietaryRestrictions": "القيود الغذائية",
+        "specialEducationNeeds": "احتياجات التعليم الخاص",
+        "physicallyChallenged": "ذوو الإعاقة الجسدية",
+        "applyingForClass": "الصف المتقدم إليه",
+        "preferredBoard": "المنهج المفضل",
+        "academicYear": "السنة الدراسية",
+        "previousSchoolName": "اسم المدرسة السابقة",
+        "previousSchoolBoard": "منهج المدرسة السابقة",
+        "lastClassAttended": "آخر صف تم الالتحاق به",
+        "lastExamResult": "نتيجة آخر امتحان",
+        "subjectsStudied": "المواد الدراسية",
+        "tcNumber": "رقم شهادة النقل",
+        "tcIssueDate": "تاريخ إصدار شهادة النقل",
+        "tcPending": "شهادة النقل معلّقة",
+        "name": "الاسم",
+        "mobile": "رقم الجوال",
+        "email": "البريد الإلكتروني",
+        "qualification": "المؤهل",
+        "occupation": "المهنة",
+        "annualIncome": "الدخل السنوي",
+        "relation": "صلة القرابة",
+        "relationship": "صلة القرابة",
+        "currentAddress": "العنوان الحالي",
+        "permanentAddress": "العنوان الدائم",
+        "sameAsCurrentAddress": "نفس العنوان الحالي"
+    },
+    "values": {
+        "yes": "نعم",
+        "no": "لا"
+    },
+    "signature": {
+        "roleParentGuardian": "ولي الأمر / الوصي",
+        "roleStudent": "الطالب",
+        "rolePrincipal": "المدير",
+        "label": "توقيع {{role}}"
+    },
+    "declaration": {
+        "title": "إقرار",
+        "text": "أُقر بأن جميع المعلومات المقدمة أعلاه صحيحة ودقيقة على حد علمي. وأتفهم أن أي معلومات غير صحيحة قد تؤدي إلى إلغاء الطلب / القبول."
+    },
+    "footer": {
+        "generatedOn": "هذا مستند تم إنشاؤه بواسطة الحاسوب. تم إنشاؤه بتاريخ {{date}}."
+    }
+}

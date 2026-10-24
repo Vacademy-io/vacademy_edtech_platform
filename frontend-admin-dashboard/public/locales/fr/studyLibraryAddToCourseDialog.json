@@ -1,0 +1,109 @@
+{
+    "dialog": {
+        "heading": "Ajouter au cours",
+        "cancel": "Annuler",
+        "createSlide": "Créer la diapositive",
+        "publishAssessment": "Publier l'évaluation",
+        "loading": {
+            "publishing": "Publication…",
+            "renderingPdf": "Génération du PDF…",
+            "adding": "Ajout en cours…"
+        }
+    },
+    "defaultTitle": {
+        "notes": "Notes de cours",
+        "assessment": "Évaluation"
+    },
+    "destinationLabel": {
+        "notesPdf": "Notes de cours → Diapositive PDF",
+        "notesDoc": "Notes de cours → Diapositive document",
+        "quiz": "Évaluation → Diapositive quiz",
+        "assessmentOnly": "Évaluation → Centre d'évaluation (aucune diapositive)",
+        "assessment": "Évaluation → Diapositive d'évaluation (liée)"
+    },
+    "questionCount_one": "{{count}} question",
+    "questionCount_many": "{{count}} questions",
+    "questionCount_other": "{{count}} questions",
+    "withoutMarkedAnswer": " · {{count}} sans réponse marquée",
+    "slideTitleLabel": "Titre de la diapositive",
+    "slideTitlePlaceholder": "Donnez un titre à la diapositive",
+    "addAs": "Ajouter en tant que",
+    "notesFormat": {
+        "docLabel": "Diapositive document",
+        "docHint": "Texte enrichi modifiable",
+        "pdfLabel": "Diapositive PDF",
+        "pdfHint": "Mise en page fixe"
+    },
+    "watermark": {
+        "label": "Ajouter le filigrane du logo de l'institut",
+        "noLogo": "(aucun logo défini)"
+    },
+    "assessmentMode": {
+        "quizLabel": "Diapositive quiz",
+        "quizHint": "Intègre les questions",
+        "assessmentLabel": "Diapositive d'évaluation",
+        "assessmentHintLinked": "Lie l'évaluation publiée",
+        "assessmentHintPublishThenLink": "Publie, puis la lie",
+        "assessmentHintPublishFirst": "Publier d'abord",
+        "onlyLabel": "Évaluation uniquement",
+        "onlyHint": "Centre d'évaluation · aucune diapositive"
+    },
+    "publishNote": "L'évaluation sera publiée (avec ses paramètres actuels) et liée en tant que diapositive d'évaluation planifiée.",
+    "assignToBatches": "Assigner à des groupes",
+    "selectBatchesPlaceholder": "Sélectionner des groupes",
+    "batchInfo_one": "Sera publié au Centre d'évaluation, accessible par {{count}} groupe. Aucune diapositive de cours n'est créée.",
+    "batchInfo_many": "Sera publié au Centre d'évaluation, accessible par {{count}} groupes. Aucune diapositive de cours n'est créée.",
+    "batchInfo_other": "Sera publié au Centre d'évaluation, accessible par {{count}} groupes. Aucune diapositive de cours n'est créée.",
+    "noBatchSelected": "Aucun groupe sélectionné — sera publié sans assignation ; associez des groupes plus tard depuis le Centre d'évaluation.",
+    "linkNeedsPublish": "Publiez l'évaluation (Créer une évaluation) avant de la lier en tant que diapositive d'évaluation.",
+    "scheduleAndMarking": "Planification et notation",
+    "saveAs": "Enregistrer en tant que",
+    "status": {
+        "draftLabel": "Brouillon",
+        "draftHint": "Masqué aux apprenants",
+        "publishedLabel": "Publié",
+        "publishedHint": "Visible par les apprenants"
+    },
+    "destination": "Destination",
+    "fields": {
+        "course": "Cours",
+        "selectCourse": "Sélectionner un cours",
+        "session": "Session",
+        "selectSession": "Sélectionner une session",
+        "level": "Niveau",
+        "selectLevel": "Sélectionner un niveau",
+        "subject": "Matière",
+        "selectSubject": "Sélectionner une matière",
+        "module": "Module",
+        "selectModule": "Sélectionner un module",
+        "chapter": "Chapitre",
+        "selectChapter": "Sélectionner un chapitre"
+    },
+    "pickChapter": "Choisissez un chapitre pour y ajouter cette diapositive.",
+    "addingToCourses_one": "Ajout à {{count}} cours",
+    "addingToCourses_many": "Ajout à {{count}} cours",
+    "addingToCourses_other": "Ajout à {{count}} cours",
+    "selectChapterAbove": "Sélectionnez un chapitre ci-dessus",
+    "addAnotherCourse": "Ajouter un autre cours",
+    "fromSelection": "depuis la sélection",
+    "removeDestination": "Supprimer la destination",
+    "preview": "Aperçu",
+    "noNotesContent": "_Aucun contenu de notes._",
+    "noQuestions": "Aucune question à ajouter.",
+    "untitledQuestion": "Question sans titre",
+    "searchPlaceholder": "Rechercher {{field}}…",
+    "noMatches": "Aucune correspondance",
+    "toast": {
+        "publishedToAssessmentCenter_one": "Publié au Centre d'évaluation ({{count}} groupe)",
+        "publishedToAssessmentCenter_many": "Publié au Centre d'évaluation ({{count}} groupes)",
+        "publishedToAssessmentCenter_other": "Publié au Centre d'évaluation ({{count}} groupes)",
+        "publishedUnassigned": "Publié (sans assignation) au Centre d'évaluation",
+        "couldNotPublish": "Impossible de publier l'évaluation.",
+        "addedPartial": "Ajouté à {{added}} ; {{failed}} en échec — réessayez le reste ci-dessous.",
+        "addedSuccess": "Ajouté à {{summary}}",
+        "chapterCount_one": "{{count}} chapitre",
+        "chapterCount_many": "{{count}} chapitres",
+        "chapterCount_other": "{{count}} chapitres",
+        "couldNotAdd": "Impossible d'ajouter au cours"
+    }
+}

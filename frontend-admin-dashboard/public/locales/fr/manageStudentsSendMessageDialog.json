@@ -1,0 +1,89 @@
+{
+    "dialogTitle": "Envoyer un message WhatsApp",
+    "dialogDescription": "Envoyez un modèle WhatsApp approuvé aux étudiants sélectionnés.",
+    "steps": {
+        "selectTemplate": "Sélectionner un modèle",
+        "mapVariables": "Associer les variables",
+        "reviewSend": "Vérifier et envoyer"
+    },
+    "systemFields": {
+        "fullName": "Nom complet",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "city": "Ville",
+        "region": "Région",
+        "gender": "Genre",
+        "enrollmentId": "ID d'inscription",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe"
+    },
+    "toasts": {
+        "loadTemplatesFailed": "Échec du chargement des modèles WhatsApp",
+        "selectTemplateFirst": "Sélectionnez d'abord un modèle WhatsApp.",
+        "noValidRecipients": "Aucun destinataire valide avec un numéro de mobile.",
+        "sendFailed": "Échec de l'envoi des messages WhatsApp. Veuillez réessayer.",
+        "partialSuccess": "Accepté pour {{accepted}} sur {{total}} — {{failed}} échoué(s). Voir la liste ci-dessous.",
+        "sendSuccess_one": "Message WhatsApp accepté pour {{count}} destinataire",
+        "sendSuccess_many": "Message WhatsApp accepté pour {{count}} de destinataires",
+        "sendSuccess_other": "Message WhatsApp accepté pour {{count}} destinataires",
+        "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    },
+    "templateStep": {
+        "templateLabel": "Modèle",
+        "loadingTemplates": "Chargement des modèles...",
+        "selectPlaceholder": "Sélectionner un modèle approuvé",
+        "emptyText": "Aucun modèle approuvé ne correspond à votre recherche.",
+        "noTemplatesFound": "Aucun modèle WhatsApp approuvé trouvé pour cet établissement.",
+        "languageCodeLabel": "Code de langue",
+        "templatePreviewLabel": "Aperçu du modèle",
+        "recipientsNotice_one": "{{count}} destinataire recevra ce message.",
+        "recipientsNotice_many": "{{count}} de destinataires recevront ce message.",
+        "recipientsNotice_other": "{{count}} destinataires recevront ce message.",
+        "skippedNotice_one": "({{count}} ignoré — pas de numéro de mobile)",
+        "skippedNotice_many": "({{count}} de destinataires ignorés — pas de numéro de mobile)",
+        "skippedNotice_other": "({{count}} ignorés — pas de numéro de mobile)"
+    },
+    "variableMappingStep": {
+        "noVariables": "Aucune variable à associer. Vous pouvez continuer.",
+        "mapHint": "Associez chaque variable du modèle à un champ étudiant, ou définissez une valeur fixe. Les valeurs sont résolues par étudiant lors de l'envoi.",
+        "columnVariable": "Variable",
+        "columnMappedField": "Champ associé",
+        "selectFieldPlaceholder": "Sélectionner un champ...",
+        "staticValueOption": "Valeur fixe…",
+        "staticValuePlaceholder": "ex. « Étudiant »",
+        "searchPlaceholder": "Rechercher un champ...",
+        "noMatch": "Aucun champ ne correspond à votre recherche.",
+        "credentialsLoading": "Récupération des identifiants... {{done}}/{{total}}",
+        "credentialsFailed": "Impossible de récupérer les identifiants. Fermez la fenêtre et réessayez.",
+        "credentialsMissing_one": "{{count}} étudiant n'a pas d'identifiant/mot de passe enregistré et sera ignoré.",
+        "credentialsMissing_other": "{{count}} étudiants n'ont pas d'identifiant/mot de passe enregistré et seront ignorés.",
+        "credentialsReady_one": "Identifiants prêts pour {{count}} étudiant.",
+        "credentialsReady_other": "Identifiants prêts pour {{count}} étudiants."
+    },
+    "reviewStep": {
+        "messagesSent": "Messages envoyés",
+        "sendCompleted": "Envoi terminé",
+        "recipientsLabel": "Destinataires",
+        "sentLabel": "Envoyés",
+        "failedLabel": "Échoués",
+        "stillProcessing": "Traitement toujours en cours en arrière-plan — les décomptes finaux apparaîtront dans l'historique des communications.",
+        "close": "Fermer",
+        "channelLabel": "WhatsApp",
+        "channelHeading": "Canal",
+        "templateLabel": "Modèle",
+        "selectedStudentsCount_one": "{{count}} étudiant sélectionné",
+        "selectedStudentsCount_many": "{{count}} d'étudiants sélectionnés",
+        "selectedStudentsCount_other": "{{count}} étudiants sélectionnés",
+        "variableMappingsLabel": "Associations de variables",
+        "staticValueLabel": "Fixe : « {{value}} »",
+        "sending": "Envoi en cours...",
+        "sendButton_one": "Envoyer à {{count}} étudiant",
+        "sendButton_many": "Envoyer à {{count}} d'étudiants",
+        "sendButton_other": "Envoyer à {{count}} étudiants",
+        "sampleFor": "exemple pour {{name}}"
+    },
+    "footer": {
+        "back": "Retour",
+        "next": "Suivant"
+    }
+}

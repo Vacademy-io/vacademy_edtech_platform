@@ -38,6 +38,8 @@ import {
 import AssessmentRegistrationCompleted from "./AssessmentRegistrationCompleted";
 import AssessmentClosedExpiredComponent from "./AssessmentClosedExpiredComponent";
 import { useNavigate } from "@tanstack/react-router";
+import { classifyRequestError } from "../-utils/request-error";
+import { useTranslation } from "react-i18next";
 
 const checkCloseTestTimeCondition = (serverTime: number, endDate: string) => {
   const registrationEndDate: number = new Date(Date.parse(endDate)).getTime();
@@ -85,6 +87,7 @@ const CheckEmailStatusAlertDialog = ({
   case3Status: boolean;
   serverTime: number;
 }) => {
+  const { t } = useTranslation("registrationA");
   const [
     isPrivateAssessmentAlreadyRegistered,
     setIsPrivateAssessmentAlreadyRegistered,
@@ -175,23 +178,41 @@ const CheckEmailStatusAlertDialog = ({
     onSuccess: () => {
       setIsOTPSent(true);
       startTimer();
-      toast.success("OTP sent successfully");
+      toast.success(t("checkEmailDialog.toast.otpSent"));
       setUserAlreadyRegistered(false);
     },
-    onError: async () => {
+    onError: async (error) => {
+      // Only the backend's own rejection (511 "User not found!") means the
+      // email is unknown. Offline / 5xx must not be read as "not registered"
+      // — that would log the learner out and dump them on the blank form.
+      const { kind } = classifyRequestError(error);
+      if (kind === "network" || kind === "server" || kind === "unknown") {
+        console.error("[register] request-otp failed:", error);
+        toast.error(t("checkEmailDialog.toast.otpSendFailedTitle"), {
+          description: t("checkEmailDialog.toast.otpSendFailedDescription"),
+          duration: 3000,
+        });
+        return;
+      }
       await removeTokensAndLogout();
-      toast.error("This email is not registered", {
-        description: "Please register yourself to attempt this assessment",
+      toast.error(t("checkEmailDialog.toast.notRegisteredTitle"), {
+        description: t("checkEmailDialog.toast.notRegisteredDescription"),
         duration: 3000,
       });
       setUserAlreadyRegistered(true);
       handleCloseAlertDialog();
+      // The email field is optional on the admin side (built-in fields can be
+      // removed per form). Only prefill it when it exists — injecting a
+      // half-formed `{ value }` object makes the form's render loop crash on
+      // `value.name`, and the route then shows "Assessment Expired".
       registrationForm.reset({
         ...registrationForm.getValues(),
-        email: {
-          ...registrationForm.getValues("email"),
-          value: form.getValues("email"),
-        },
+        ...(registrationForm.getValues("email") && {
+          email: {
+            ...registrationForm.getValues("email"),
+            value: form.getValues("email"),
+          },
+        }),
       });
     },
   });
@@ -211,19 +232,59 @@ const CheckEmailStatusAlertDialog = ({
       const userId = decodedData?.user;
       const assessmentId = registrationData.assessment_public_dto.assessment_id;
       const instituteId = registrationData.institute_id;
-      const getAllStudentDetails =
-        await handleGetStudentDetailsOfInstitute(instituteId);
-      const userDetails = getOpenRegistrationUserDetailsByEmail(
-        getAllStudentDetails,
-        email,
-      );
-      const psIds = userDetails?.package_session_id;
-      const getTestDetailsOfParticipants = await handleGetParticipantsTest(
-        assessmentId,
-        instituteId,
-        userId,
-        psIds,
-      );
+
+      // The OTP is already accepted at this point. If the follow-up lookups
+      // fail (network blip, backend hiccup) say so — a throw here would
+      // otherwise fall into onError and be reported as "Invalid OTP".
+      let getAllStudentDetails: unknown;
+      let getTestDetailsOfParticipants: {
+        is_already_registered: boolean;
+        remaining_attempts: number;
+      };
+      let userDetails: ReturnType<typeof getOpenRegistrationUserDetailsByEmail>;
+      try {
+        getAllStudentDetails =
+          await handleGetStudentDetailsOfInstitute(instituteId);
+        userDetails = getOpenRegistrationUserDetailsByEmail(
+          getAllStudentDetails,
+          email,
+        );
+        const psIds = userDetails?.package_session_id;
+        getTestDetailsOfParticipants = await handleGetParticipantsTest(
+          assessmentId,
+          instituteId,
+          userId,
+          psIds,
+        );
+      } catch (lookupError) {
+        console.error(
+          "[register] post-OTP registration lookup failed:",
+          lookupError,
+        );
+        toast.error(t("checkEmailDialog.toast.statusLookupFailedTitle"), {
+          description: t(
+            "checkEmailDialog.toast.statusLookupFailedDescription",
+          ),
+          duration: 4000,
+        });
+        return;
+      }
+      if (
+        !getTestDetailsOfParticipants ||
+        typeof getTestDetailsOfParticipants.is_already_registered !== "boolean"
+      ) {
+        console.error(
+          "[register] unexpected participant-status payload:",
+          getTestDetailsOfParticipants,
+        );
+        toast.error(t("checkEmailDialog.toast.statusLookupFailedTitle"), {
+          description: t(
+            "checkEmailDialog.toast.statusLookupFailedDescription",
+          ),
+          duration: 4000,
+        });
+        return;
+      }
       if (userDetails) {
         setParticipantsDto({
           username: userDetails.username,
@@ -259,29 +320,40 @@ const CheckEmailStatusAlertDialog = ({
         getTestDetailsOfParticipants.remaining_attempts === 0
       ) {
         toast.error(
-          "Your remaining attempts are over to attempt this assessment!",
+          t("checkEmailDialog.toast.attemptsOverTitle"),
           {
-            description: "Your attempts are over!",
+            description: t("checkEmailDialog.toast.attemptsOverDescription"),
             duration: 3000,
           },
         );
       } else {
+        // Same guard as gender/state/city below: the built-in email/name/phone
+        // fields can be removed from a form by the admin (Edzumo's coding
+        // challenges have none). Resetting a key that isn't in the form injects
+        // `{ value }` without `name`/`type`, and the form's render loop throws
+        // on `capitalise(value.name)` — surfacing as "Assessment Expired".
         registrationForm.reset((prevValues) => ({
           ...prevValues,
-          email: {
-            ...registrationForm.getValues("email"),
-            // Fall back to the just-verified email when the user exists in auth
-            // but isn't yet an institute learner (userDetails is null).
-            value: userDetails?.email || email,
-          },
-          full_name: {
-            ...registrationForm.getValues("full_name"),
-            value: userDetails?.full_name || "",
-          },
-          phone_number: {
-            ...registrationForm.getValues("phone_number"),
-            value: userDetails?.mobile_number || "",
-          },
+          ...(registrationForm.getValues("email") && {
+            email: {
+              ...registrationForm.getValues("email"),
+              // Fall back to the just-verified email when the user exists in auth
+              // but isn't yet an institute learner (userDetails is null).
+              value: userDetails?.email || email,
+            },
+          }),
+          ...(registrationForm.getValues("full_name") && {
+            full_name: {
+              ...registrationForm.getValues("full_name"),
+              value: userDetails?.full_name || "",
+            },
+          }),
+          ...(registrationForm.getValues("phone_number") && {
+            phone_number: {
+              ...registrationForm.getValues("phone_number"),
+              value: userDetails?.mobile_number || "",
+            },
+          }),
           ...(registrationForm.getValues("gender") && {
             gender: {
               ...registrationForm.getValues("gender"),
@@ -304,11 +376,30 @@ const CheckEmailStatusAlertDialog = ({
         handleCloseAlertDialog();
       }
     },
-    onError: () => {
-      toast.error("Invalid OTP", {
-        description: "Please try again",
-        duration: 3000,
-      });
+    onError: (error) => {
+      const { kind, message } = classifyRequestError(error);
+      console.error("[register] login-otp failed:", kind, error);
+      if (kind === "network" || kind === "server" || kind === "unknown") {
+        toast.error(t("checkEmailDialog.toast.verificationFailedTitle"), {
+          description: t("checkEmailDialog.toast.verificationFailedDescription"),
+          duration: 3000,
+        });
+        return;
+      }
+      // 510/511: the backend explained why ("OTP has expired. Please request a
+      // new one.") — show that sentence rather than a generic "Invalid OTP".
+      toast.error(
+        kind === "business" && message
+          ? t("checkEmailDialog.toast.otpExpiredOrInvalidTitle")
+          : t("checkEmailDialog.toast.invalidOtpTitle"),
+        {
+          description:
+            kind === "business" && message
+              ? message
+              : t("checkEmailDialog.toast.invalidOtpDescription"),
+          duration: 4000,
+        },
+      );
     },
   });
 
@@ -320,7 +411,7 @@ const CheckEmailStatusAlertDialog = ({
         otp: otpArray.join(""),
       });
     } else {
-      toast.error("Please fill all OTP fields");
+      toast.error(t("checkEmailDialog.toast.fillAllOtp"));
     }
   };
 
@@ -405,10 +496,10 @@ const CheckEmailStatusAlertDialog = ({
       <AlertDialogContent className="p-0 overflow-hidden border border-primary-100 shadow-2xl sm:max-w-reg-430 rounded-2xl">
         <div className="px-5 py-4 bg-gradient-to-r from-primary-50 to-white border-b border-primary-100">
           <h1 className="text-primary-600 font-semibold text-base">
-            Check Registration Status
+            {t("checkEmailDialog.title")}
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Verify your email to continue with assessment registration.
+            {t("checkEmailDialog.subtitle")}
           </p>
         </div>
         <FormProvider {...form}>
@@ -417,14 +508,14 @@ const CheckEmailStatusAlertDialog = ({
               <FormControl>
                 <MyInput
                   inputType="email"
-                  inputPlaceholder="Enter your email"
+                  inputPlaceholder={t("checkEmailDialog.emailPlaceholder")}
                   input={form.watch("email")}
                   onChangeFunction={(e) =>
                     form.setValue("email", e.target.value)
                   }
                   required={true}
                   size="large"
-                  label="Email"
+                  label={t("common.email")}
                   className="!max-w-full !w-full"
                 />
               </FormControl>
@@ -462,10 +553,10 @@ const CheckEmailStatusAlertDialog = ({
                 >
                   {timer > 0 ? (
                     <span className="!text-neutral-400">
-                      Resend OTP in {timer} seconds
+                      {t("checkEmailDialog.resendIn", { seconds: timer })}
                     </span>
                   ) : (
-                    "Resend OTP"
+                    t("common.resendOtp")
                   )}
                 </button>
               </>
@@ -481,7 +572,7 @@ const CheckEmailStatusAlertDialog = ({
                   disable={!isEmailValid || sendOtpMutation.isPending}
                   onClick={() => sendOtpMutation.mutate(email)}
                 >
-                  {sendOtpMutation.isPending ? "Sending OTP..." : "Send OTP"}
+                  {sendOtpMutation.isPending ? t("checkEmailDialog.sending") : t("checkEmailDialog.send")}
                 </MyButton>
               ) : (
                 <MyButton
@@ -493,7 +584,7 @@ const CheckEmailStatusAlertDialog = ({
                   disable={!isFormValid || verifyOtpMutation.isPending}
                   onClick={form.handleSubmit(onSubmit)}
                 >
-                  {verifyOtpMutation.isPending ? "Verifying..." : "Verify & Continue"}
+                  {verifyOtpMutation.isPending ? t("common.verifying") : t("checkEmailDialog.verify")}
                 </MyButton>
               )}
             </div>

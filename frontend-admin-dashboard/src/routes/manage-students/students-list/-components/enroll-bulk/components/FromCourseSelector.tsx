@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Select,
     SelectContent,
@@ -38,7 +39,8 @@ interface StudentRow {
 }
 
 export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Props) => {
-    const { getPackageWiseLevels } = useInstituteDetailsStore();
+    const { t } = useTranslation('manageStudentsFromCourseSelector');
+    const { getPackageWiseLevels, instituteDetails } = useInstituteDetailsStore();
     const packageGroups = getPackageWiseLevels();
 
     const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
@@ -53,19 +55,37 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
     const [loading, setLoading] = useState(false);
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
 
-    const levels =
-        packageGroups.find((g) => g.package_dto.id === selectedCourseId)?.level ?? [];
+    // Every batch of the course, not getPackageWiseLevels' one-per-level list — that
+    // keeps only the first session's batch per level, so a course running the same
+    // level in two sessions loaded learners from whichever batch happened to come first.
+    const batches = (instituteDetails?.batches_for_sessions ?? []).filter(
+        (b) => b.package_dto.id === selectedCourseId
+    );
+    const batchLabel = (b: (typeof batches)[number]) =>
+        [b.name?.trim() || b.level.level_name, b.session.session_name].filter(Boolean).join(' · ');
+
+    const selectCourse = (courseId: string) => {
+        setSelectedCourseId(courseId);
+        setStudents([]);
+        // A course with a single real batch has nothing to choose — pick it so "Load" is
+        // live. The INVITED placeholder batch every course carries doesn't count.
+        const realBatches = (instituteDetails?.batches_for_sessions ?? []).filter(
+            (b) => b.package_dto.id === courseId && b.status !== 'INVITED'
+        );
+        setSelectedPackageSessionId(realBatches.length === 1 ? realBatches[0]!.id : '');
+    };
 
     const handleSearch = async () => {
         if (!selectedPackageSessionId) {
-            toast.error('Please select a course level first');
+            toast.error(t('toasts.selectLevelFirst'));
             return;
         }
         setLoading(true);
         try {
             const response = await authenticatedAxiosInstance.post(
-                `${GET_STUDENTS}?instituteId=${instituteId}`,
+                GET_STUDENTS,
                 {
+                    institute_ids: [instituteId],
                     package_session_ids: [selectedPackageSessionId],
                     statuses: [statusFilter],
                 },
@@ -77,12 +97,12 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
                     user_id: s.user_id,
                     username: s.username,
                     email: s.email,
-                    name: s.name || s.username,
+                    name: s.full_name || s.username,
                 }))
             );
             setCheckedIds(new Set());
         } catch {
-            toast.error('Failed to load students from course');
+            toast.error(t('toasts.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -121,11 +141,11 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
             }));
 
         if (toAdd.length === 0) {
-            toast.info('All selected students are already in your list');
+            toast.info(t('toasts.alreadyInList'));
             return;
         }
         onAdd(toAdd);
-        toast.success(`Added ${toAdd.length} student${toAdd.length !== 1 ? 's' : ''}`);
+        toast.success(t('toasts.added', { count: toAdd.length }));
     };
 
     return (
@@ -133,19 +153,18 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
             {/* Source course picker */}
             <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <Label className="mb-1 text-xs text-neutral-500">Source {courseTerm}</Label>
-                    <Select
-                        value={selectedCourseId}
-                        onValueChange={(v) => {
-                            setSelectedCourseId(v);
-                            setSelectedPackageSessionId('');
-                            setStudents([]);
-                        }}
-                    >
+                    <Label className="mb-1 text-xs text-neutral-500">
+                        {t('labels.sourceCourse', { courseTerm })}
+                    </Label>
+                    <Select value={selectedCourseId} onValueChange={selectCourse}>
                         <SelectTrigger>
-                            <SelectValue placeholder={`Select ${courseTerm.toLowerCase()}`} />
+                            <SelectValue
+                                placeholder={t('placeholders.select', {
+                                    term: courseTerm.toLowerCase(),
+                                })}
+                            />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-popover-above-modal">
                             {packageGroups.map((g) => (
                                 <SelectItem key={g.package_dto.id} value={g.package_dto.id}>
                                     {g.package_dto.package_name}
@@ -165,30 +184,33 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
                         disabled={!selectedCourseId}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder={`Select ${levelTerm.toLowerCase()}`} />
+                            <SelectValue
+                                placeholder={t('placeholders.select', {
+                                    term: levelTerm.toLowerCase(),
+                                })}
+                            />
                         </SelectTrigger>
-                        <SelectContent>
-                            {levels.map((l) => (
-                                <SelectItem
-                                    key={l.package_session_id}
-                                    value={l.package_session_id}
-                                >
-                                    {l.level_dto.level_name}
+                        <SelectContent className="z-popover-above-modal">
+                            {batches.map((b) => (
+                                <SelectItem key={b.id} value={b.id}>
+                                    {batchLabel(b)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
                 <div>
-                    <Label className="mb-1 text-xs text-neutral-500">Status filter</Label>
+                    <Label className="mb-1 text-xs text-neutral-500">
+                        {t('labels.statusFilter')}
+                    </Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger>
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ACTIVE">Active</SelectItem>
-                            <SelectItem value="INACTIVE">Inactive</SelectItem>
-                            <SelectItem value="INVITED">Invited</SelectItem>
+                        <SelectContent className="z-popover-above-modal">
+                            <SelectItem value="ACTIVE">{t('status.active')}</SelectItem>
+                            <SelectItem value="INACTIVE">{t('status.inactive')}</SelectItem>
+                            <SelectItem value="INVITED">{t('status.invited')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -200,7 +222,7 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
                         onClick={handleSearch}
                         disable={!selectedPackageSessionId || loading}
                     >
-                        {loading ? 'Loading…' : `Load ${learnersTerm}`}
+                        {loading ? t('actions.loading') : t('actions.load', { learnersTerm })}
                     </MyButton>
                 </div>
             </div>
@@ -214,7 +236,10 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
                             onCheckedChange={toggleAll}
                         />
                         <span className="text-xs font-semibold text-neutral-500">
-                            {checkedIds.size}/{students.length} selected
+                            {t('list.selectedCount', {
+                                checked: checkedIds.size,
+                                total: students.length,
+                            })}
                         </span>
                         {checkedIds.size > 0 && (
                             <MyButton
@@ -223,11 +248,13 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
                                 layoutVariant="default"
                                 onClick={handleAdd}
                             >
-                                Add {checkedIds.size}{' '}
-                                {(checkedIds.size !== 1
-                                    ? learnersTerm
-                                    : learnerTerm
-                                ).toLowerCase()}
+                                {t('actions.add', {
+                                    count: checkedIds.size,
+                                    term: (checkedIds.size !== 1
+                                        ? learnersTerm
+                                        : learnerTerm
+                                    ).toLowerCase(),
+                                })}
                             </MyButton>
                         )}
                     </div>
@@ -256,8 +283,10 @@ export const FromCourseSelector = ({ instituteId, selectedLearners, onAdd }: Pro
             )}
             {students.length === 0 && !loading && selectedPackageSessionId && (
                 <p className="text-center text-sm text-neutral-400 py-6">
-                    No {learnersTerm.toLowerCase()} found. Click &quot;Load {learnersTerm}&quot; to
-                    search.
+                    {t('list.empty', {
+                        learnersTerm: learnersTerm.toLowerCase(),
+                        loadLabel: t('actions.load', { learnersTerm }),
+                    })}
                 </p>
             )}
         </div>

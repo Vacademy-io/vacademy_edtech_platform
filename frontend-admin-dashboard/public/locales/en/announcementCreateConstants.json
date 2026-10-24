@@ -1,0 +1,79 @@
+{
+    "modes": {
+        "SYSTEM_ALERT": {
+            "label": "System Alert",
+            "description": "Appears in the notification centre with a priority and optional expiry."
+        },
+        "DASHBOARD_PIN": {
+            "label": "Dashboard Pin",
+            "description": "Pinned to the dashboard for a defined time window."
+        },
+        "APP_OVERLAY": {
+            "label": "App Overlay",
+            "description": "Full-screen message shown the next time the app is opened."
+        },
+        "DM": {
+            "label": "Direct Message",
+            "description": "Lands in the inbox as a message. Replies can be allowed."
+        },
+        "STREAM": {
+            "label": "Stream",
+            "description": "Posts to a batch or class discussion stream."
+        },
+        "RESOURCES": {
+            "label": "Resources",
+            "description": "Files the announcement into a resources folder."
+        },
+        "COMMUNITY": {
+            "label": "Community",
+            "description": "Posts to a community feed."
+        },
+        "TASKS": {
+            "label": "Tasks",
+            "description": "Creates a task with a go-live time and deadline."
+        }
+    },
+    "mediums": {
+        "PUSH_NOTIFICATION": {
+            "label": "Push notification",
+            "description": "Mobile and web push. Free, instant, best for short nudges."
+        },
+        "EMAIL": {
+            "label": "Email",
+            "description": "Rich HTML email from one of your verified sender addresses."
+        },
+        "WHATSAPP": {
+            "label": "WhatsApp",
+            "description": "Sent through an approved WhatsApp Business template."
+        }
+    },
+    "presets": {
+        "GENERAL": {
+            "label": "General Announcement",
+            "description": "General updates and information"
+        },
+        "PINNED": {
+            "label": "Pinned Update",
+            "description": "Important updates pinned on top"
+        }
+    },
+    "whatsappValues": {
+        "RECIPIENT_NAME": "Recipient's name",
+        "RECIPIENT_FULL_NAME": "Full name",
+        "RECIPIENT_USERNAME": "Username",
+        "RECIPIENT_EMAIL": "Email address",
+        "RECIPIENT_PHONE": "Mobile number",
+        "RECIPIENT_ID": "User id",
+        "ANNOUNCEMENT_TITLE": "Announcement title",
+        "ANNOUNCEMENT_CONTENT": "Announcement content",
+        "SENDER_NAME": "Sender name",
+        "CURRENT_DATE": "Today's date",
+        "CURRENT_TIME": "Current time",
+        "CUSTOM": "Custom text…"
+    },
+    "cronPresets": {
+        "DAILY_9": "Every day, 9:00 AM",
+        "MON_9": "Every Monday, 9:00 AM",
+        "HOURLY": "Every hour"
+    }
+}

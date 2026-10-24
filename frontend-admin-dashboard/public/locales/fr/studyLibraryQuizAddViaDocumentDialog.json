@@ -1,0 +1,24 @@
+{
+    "title": "Téléverser un document",
+    "errors": {
+        "noFileSelected": "Veuillez d'abord sélectionner un fichier.",
+        "noQuestionsFound": "Aucune question trouvée. Assurez-vous que votre document utilise le format requis indiqué ci-dessus.",
+        "parseFailed": "Échec de l'analyse du document. Veuillez réessayer."
+    },
+    "requiredFormat": {
+        "heading": "Format de document requis",
+        "sectionHeader": "en-tête de section",
+        "questionSample": "(1.) Texte de la question…",
+        "optionSample": "(a.) Texte de l'option…",
+        "correctAnswer": "réponse correcte",
+        "explanation": "explication"
+    },
+    "dropZone": {
+        "clickToSelect": "Cliquer pour sélectionner un fichier",
+        "supportedFormats": "Prend en charge les fichiers .docx et .html"
+    },
+    "parsingProgress": "Analyse du document… {{progress}} %",
+    "cancel": "Annuler",
+    "processing": "Traitement…",
+    "parseAndPreview": "Analyser et prévisualiser"
+}

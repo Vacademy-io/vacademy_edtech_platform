@@ -6,6 +6,7 @@ import { InitStudyLibraryProvider } from '@/providers/study-library/init-study-l
 import { createLazyFileRoute, getRouteApi } from '@tanstack/react-router';
 import { CaretLeft } from '@phosphor-icons/react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
@@ -16,13 +17,16 @@ export const Route = createLazyFileRoute('/study-library/courses/course-details/
 });
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryCourseDetailsIndex');
     const { setNavHeading } = useNavHeadingStore();
     const { courseId } = routeApi.useSearch();
 
     const heading = (
         <div className="flex items-center gap-4">
             <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-            <div>{getTerminology(ContentTerms.Course, SystemTerms.Course)} Details</div>
+            <div>
+                {t('detailsHeading', { term: getTerminology(ContentTerms.Course, SystemTerms.Course) })}
+            </div>
         </div>
     );
 

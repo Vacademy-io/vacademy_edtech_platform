@@ -1,0 +1,115 @@
+{
+    "navHeading": "Follow-ups",
+    "heading": {
+        "team": "Follow-ups",
+        "mine": "My Follow-ups",
+        "blurb": "Manage and track all your counselling follow-ups in one place."
+    },
+    "subline": {
+        "teamAllCaughtUp": "Team is all caught up",
+        "selfAllCaughtUp": "You're all caught up",
+        "tasksDueToday_admin_one": "Team has {{count, number}} task due today",
+        "tasksDueToday_admin_other": "Team has {{count, number}} tasks due today",
+        "tasksDueToday_user_one": "You have {{count, number}} task due today",
+        "tasksDueToday_user_other": "You have {{count, number}} tasks due today",
+        "overdueSuffix_one": " · {{count, number}} overdue",
+        "overdueSuffix_other": " · {{count, number}} overdue"
+    },
+    "tabs": {
+        "list": "List",
+        "calendar": "Calendar"
+    },
+    "showing": {
+        "prefix": "Showing",
+        "suffix_one": "follow-up",
+        "suffix_other": "follow-ups",
+        "suffix_overdue_one": "overdue follow-up",
+        "suffix_overdue_other": "overdue follow-ups",
+        "suffix_today_one": "due today follow-up",
+        "suffix_today_other": "due today follow-ups",
+        "suffix_upcoming_one": "upcoming follow-up",
+        "suffix_upcoming_other": "upcoming follow-ups",
+        "suffix_completed_one": "completed follow-ups",
+        "suffix_completed_other": "completed follow-ups"
+    },
+    "table": {
+        "actionHeader": "Action"
+    },
+    "callReasons": {
+        "noSubmissionId": "Lead has no submission id",
+        "noPhone": "Lead has no phone on file",
+        "callInProgress": "Another call is starting…"
+    },
+    "errors": {
+        "loadFailedTitle": "Couldn't load follow-ups",
+        "loadFailedDescription": "Something went wrong fetching follow-ups. Try again."
+    },
+    "empty": {
+        "title": {
+            "teamAllCaughtUp": "No pending follow-ups across the team",
+            "selfAllCaughtUp": "All caught up",
+            "noOverdue": "No overdue follow-ups",
+            "nothingToday": "Nothing due today",
+            "noUpcoming": "No upcoming follow-ups in the next 7 days",
+            "default": "No follow-ups",
+            "noMatches": "No follow-ups match your search"
+        },
+        "description": {
+            "overdueNudge_one": "You have {{count, number}} overdue task — switch to \"Pending\" above.",
+            "overdueNudge_other": "You have {{count, number}} overdue tasks — switch to \"Pending\" above.",
+            "upcomingNudge": "Switch to \"Upcoming\" above to see what's due next.",
+            "teamAllCaughtUp": "The team is all caught up on follow-ups for this view.",
+            "selfAllCaughtUp": "You have no pending follow-ups in this view.",
+            "noMatches": "Nothing matched “{{query}}”. Clear the search to see the whole queue."
+        }
+    },
+    "search": {
+        "placeholder": "Search name, phone or email…"
+    },
+    "export": {
+        "action": "Export",
+        "running": "Exporting…",
+        "failed": "Could not export the follow-ups. Please try again.",
+        "columns": {
+            "name": "Lead name",
+            "email": "Email",
+            "phone": "Phone",
+            "source": "Source",
+            "status": "Status",
+            "dueAt": "Due at",
+            "leadOwner": "Lead owner",
+            "interestLevel": "Interest level",
+            "followUpNote": "Follow-up note",
+            "studentResponse": "Student response",
+            "followUpMode": "Follow-up mode",
+            "nextAction": "Next action"
+        },
+        "progress": "Exporting follow-ups… {{done}} of {{total}}",
+        "done_one": "Exported {{count}} follow-up",
+        "done_other": "Exported {{count, number}} follow-ups",
+        "alreadyRunning": "An export is already running — it will download when it finishes.",
+        "truncated_other": "Exported the first {{count, number}} follow-ups. Narrow the filter to get the rest.",
+        "partial_other": "The export stopped early. Downloaded the {{count, number}} follow-ups it had — try again for the rest.",
+        "truncated_one": "Exported the first {{count, number}} follow-ups. Narrow the filter to get the rest.",
+        "partial_one": "The export stopped early. Downloaded the {{count, number}} follow-ups it had — try again for the rest."
+    },
+    "filters": {
+        "campaignType": "All {{term}}",
+        "audience": "All {{term}}",
+        "audienceUntitled": "Untitled audience",
+        "interestLevel": "All interest levels"
+    },
+    "completedRange": {
+        "preset_one": "Today",
+        "preset_other": "Last {{count}} days",
+        "custom": "Custom range",
+        "from": "From date",
+        "to": "To date",
+        "allTime": "All time"
+    },
+    "dueRange": {
+        "from": "Due from",
+        "to": "Due to",
+        "clear": "Clear due dates"
+    }
+}

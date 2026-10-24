@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { VariableMapping, VariableMappingSource } from '@/types/chatbot-flow/chatbot-flow-types';
 import { CustomFieldOption, fetchInstituteCustomFields } from '../-services/chatbot-flow-api';
 import { getInstituteId } from '@/constants/helper';
@@ -9,27 +11,31 @@ import { getInstituteId } from '@/constants/helper';
  * the JSON key on the admin-core-service `UserDTO` snake_case serialization,
  * which is what the notification_service receives from `/internal/user/by-phone`.
  */
-const SYSTEM_FIELD_OPTIONS: Array<{ key: string; label: string }> = [
-    { key: 'full_name', label: 'Full Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'mobile_number', label: 'Mobile Number' },
-    { key: 'username', label: 'Username' },
-    { key: 'id', label: 'User ID' },
-    { key: 'date_of_birth', label: 'Date of Birth' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'address_line', label: 'Address' },
-    { key: 'city', label: 'City' },
-    { key: 'region', label: 'Region / State' },
-    { key: 'pin_code', label: 'Pin Code' },
-];
+function buildSystemFieldOptions(t: TFunction): Array<{ key: string; label: string }> {
+    return [
+        { key: 'full_name', label: t('systemFields.fullName') },
+        { key: 'email', label: t('systemFields.email') },
+        { key: 'mobile_number', label: t('systemFields.mobileNumber') },
+        { key: 'username', label: t('systemFields.username') },
+        { key: 'id', label: t('systemFields.userId') },
+        { key: 'date_of_birth', label: t('systemFields.dateOfBirth') },
+        { key: 'gender', label: t('systemFields.gender') },
+        { key: 'address_line', label: t('systemFields.address') },
+        { key: 'city', label: t('systemFields.city') },
+        { key: 'region', label: t('systemFields.region') },
+        { key: 'pin_code', label: t('systemFields.pinCode') },
+    ];
+}
 
-const SOURCE_OPTIONS: Array<{ value: VariableMappingSource; label: string }> = [
-    { value: 'SYSTEM_FIELD', label: 'System Field' },
-    { value: 'CUSTOM_FIELD', label: 'Custom Field' },
-    { value: 'SESSION', label: 'Session Variable' },
-    { value: 'CONTEXT', label: 'Context (phone, instituteId, …)' },
-    { value: 'FIXED', label: 'Fixed Value' },
-];
+function buildSourceOptions(t: TFunction): Array<{ value: VariableMappingSource; label: string }> {
+    return [
+        { value: 'SYSTEM_FIELD', label: t('sources.systemField') },
+        { value: 'CUSTOM_FIELD', label: t('sources.customField') },
+        { value: 'SESSION', label: t('sources.session') },
+        { value: 'CONTEXT', label: t('sources.context') },
+        { value: 'FIXED', label: t('sources.fixed') },
+    ];
+}
 
 // Cache shared across mounts so switching nodes doesn't re-fetch every time.
 let customFieldCache: { instituteId: string; data: CustomFieldOption[] } | null = null;
@@ -40,6 +46,9 @@ interface VariableMappingEditorProps {
 }
 
 export function VariableMappingEditor({ variables, onChange }: VariableMappingEditorProps) {
+    const { t } = useTranslation('automationVariableMappingEditor');
+    const SYSTEM_FIELD_OPTIONS = buildSystemFieldOptions(t);
+    const SOURCE_OPTIONS = buildSourceOptions(t);
     const instituteId = getInstituteId() || '';
     const [customFields, setCustomFields] = useState<CustomFieldOption[]>(
         customFieldCache?.instituteId === instituteId && customFieldCache.data.length > 0
@@ -53,7 +62,7 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
 
     const loadCustomFields = useCallback(async () => {
         if (!instituteId) {
-            setLoadError('No instituteId available');
+            setLoadError(t('noInstituteId'));
             return;
         }
         // Only treat the cache as warm when it has actual data — empty/failed
@@ -75,12 +84,12 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
         } catch (e) {
             // eslint-disable-next-line no-console
             console.error('[VariableMappingEditor] Failed to load custom fields:', e);
-            setLoadError(e instanceof Error ? e.message : 'Failed to load custom fields');
+            setLoadError(e instanceof Error ? e.message : t('loadCustomFieldsFailed'));
             setCustomFields([]);
         } finally {
             setLoadingCustom(false);
         }
-    }, [instituteId]);
+    }, [instituteId, t]);
 
     useEffect(() => {
         if (needsCustomFields) loadCustomFields();
@@ -103,8 +112,7 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
         <div className="space-y-2">
             {variables.length === 0 && (
                 <p className="text-xs italic text-gray-400">
-                    No mappings yet. Add one to resolve a {'{{placeholder}}'} from user data with a
-                    fallback default.
+                    {t('emptyState', { placeholder: '{{placeholder}}' })}
                 </p>
             )}
 
@@ -116,14 +124,14 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                             type="text"
                             value={v.name}
                             onChange={(e) => updateRow(idx, { name: e.target.value })}
-                            placeholder="placeholderName"
+                            placeholder={t('placeholderName')}
                             className="flex-1 rounded border px-1.5 py-1 font-mono text-xs"
                         />
                         <span className="shrink-0 text-xs text-gray-400">{`}}`}</span>
                         <button
                             onClick={() => removeRow(idx)}
                             className="p-1 text-red-500 hover:text-red-700"
-                            title="Remove"
+                            title={t('remove')}
                         >
                             <Trash size={14} />
                         </button>
@@ -152,7 +160,7 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                             onChange={(e) => updateRow(idx, { field: e.target.value })}
                             className="w-full rounded border px-1.5 py-1 text-xs"
                         >
-                            <option value="">— Select system field —</option>
+                            <option value="">{t('selectSystemField')}</option>
                             {SYSTEM_FIELD_OPTIONS.map((o) => (
                                 <option key={o.key} value={o.key}>
                                     {o.label}
@@ -169,11 +177,11 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                                 className="w-full rounded border px-1.5 py-1 text-xs"
                             >
                                 <option value="">
-                                    {loadingCustom ? 'Loading…' : '— Select custom field —'}
+                                    {loadingCustom ? t('loadingCustomFields') : t('selectCustomField')}
                                 </option>
                                 {customFields.map((cf) => (
                                     <option key={cf.id} value={cf.fieldName}>
-                                        {cf.fieldName} ({cf.fieldType})
+                                        {t('customFieldOption', { name: cf.fieldName, type: cf.fieldType })}
                                     </option>
                                 ))}
                             </select>
@@ -181,8 +189,8 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                                 <div className="space-y-1">
                                     <p className="text-[10px] text-gray-400">
                                         {loadError
-                                            ? `Error: ${loadError}`
-                                            : 'No custom fields found for this institute.'}
+                                            ? t('loadError', { message: loadError })
+                                            : t('noCustomFieldsFound')}
                                     </p>
                                     <button
                                         type="button"
@@ -192,7 +200,7 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                                         }}
                                         className="text-[10px] text-blue-600 hover:text-blue-800"
                                     >
-                                        Retry
+                                        {t('retry')}
                                     </button>
                                 </div>
                             )}
@@ -206,10 +214,10 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                             onChange={(e) => updateRow(idx, { field: e.target.value })}
                             placeholder={
                                 v.source === 'FIXED'
-                                    ? 'Literal value'
+                                    ? t('fieldPlaceholder.fixed')
                                     : v.source === 'CONTEXT'
-                                      ? 'phone | instituteId | userId | messageText'
-                                      : 'session variable key'
+                                      ? t('fieldPlaceholder.context')
+                                      : t('fieldPlaceholder.session')
                             }
                             className="w-full rounded border px-1.5 py-1 font-mono text-xs"
                         />
@@ -219,7 +227,7 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                         type="text"
                         value={v.defaultValue}
                         onChange={(e) => updateRow(idx, { defaultValue: e.target.value })}
-                        placeholder="Default (used when value is missing)"
+                        placeholder={t('defaultValuePlaceholder')}
                         className="w-full rounded border px-1.5 py-1 text-xs"
                     />
                 </div>
@@ -229,7 +237,7 @@ export function VariableMappingEditor({ variables, onChange }: VariableMappingEd
                 onClick={addRow}
                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
             >
-                <Plus size={12} /> Add Variable
+                <Plus size={12} /> {t('addVariable')}
             </button>
         </div>
     );

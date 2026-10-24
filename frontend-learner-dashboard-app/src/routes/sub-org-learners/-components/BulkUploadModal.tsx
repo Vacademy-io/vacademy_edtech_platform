@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { UploadSimple, DownloadSimple, FileXls, CheckCircle, XCircle, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { useTranslation } from 'react-i18next';
 import { AdminMappings, InstituteCustomField, AddMemberRequest, addMember } from '@/services/sub-organization-learner-management';
 
 // Members uploaded here are always staff. The backend models staff as the LEARNER
@@ -38,6 +39,7 @@ export function BulkUploadModal({
   instituteCustomFields,
   onUploadComplete,
 }: BulkUploadModalProps) {
+  const { t } = useTranslation('registrationB');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -126,7 +128,7 @@ export function BulkUploadModal({
 
     // Download the file
     XLSX.writeFile(wb, 'staff_bulk_upload_template.xlsx');
-    toast.success('Sample template downloaded successfully');
+    toast.success(t('subOrgLearners.bulkUpload.toast.templateDownloaded'));
   };
 
   const validateEmail = (email: string): boolean => {
@@ -160,11 +162,14 @@ export function BulkUploadModal({
 
           resolve(jsonData);
         } catch (error) {
-          reject(new Error('Failed to parse file. Please ensure it is a valid Excel or CSV file.'));
+          reject(
+            new Error(t('subOrgLearners.bulkUpload.toast.parseFailed'))
+          );
         }
       };
 
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () =>
+        reject(new Error(t('subOrgLearners.bulkUpload.toast.readFailed')));
       reader.readAsBinaryString(file);
     });
   };
@@ -320,11 +325,12 @@ export function BulkUploadModal({
       const rowNumber = i + 2; // +2 because row 1 is header, and arrays are 0-indexed
 
       // Extract email and name for result tracking (case-insensitive)
-      const email = getRowValueMultiple(row, ['Email', 'email']) || 'Unknown';
+      const unknownValue = t('subOrgLearners.bulkUpload.unknownValue');
+      const email = getRowValueMultiple(row, ['Email', 'email']) || unknownValue;
       const firstName = getRowValueMultiple(row, ['First Name', 'first name', 'FirstName', 'firstname']);
       const lastName = getRowValueMultiple(row, ['Last Name', 'last name', 'LastName', 'lastname']);
       const nameField = getRowValueMultiple(row, ['name', 'Name', 'full name', 'Full Name', 'fullname', 'FullName']);
-      const fullName = nameField || `${firstName} ${lastName}`.trim() || 'Unknown';
+      const fullName = nameField || `${firstName} ${lastName}`.trim() || unknownValue;
 
       try {
         const memberData = mapRowToMemberData(row);
@@ -335,7 +341,7 @@ export function BulkUploadModal({
             email,
             fullName,
             status: 'error',
-            message: 'Invalid data: Email and Name are required. Please check the format.',
+            message: t('subOrgLearners.bulkUpload.result.invalidData'),
           });
           continue;
         }
@@ -348,13 +354,13 @@ export function BulkUploadModal({
           email,
           fullName,
           status: 'success',
-          message: 'Successfully added',
+          message: t('subOrgLearners.bulkUpload.result.success'),
         });
       } catch (error: unknown) {
-        const errorMessage = 
-          (error as { response?: { data?: { ex?: string; message?: string } } })?.response?.data?.ex || 
-          (error as { response?: { data?: { ex?: string; message?: string } } })?.response?.data?.message || 
-          'Failed to add staff';
+        const errorMessage =
+          (error as { response?: { data?: { ex?: string; message?: string } } })?.response?.data?.ex ||
+          (error as { response?: { data?: { ex?: string; message?: string } } })?.response?.data?.message ||
+          t('subOrgLearners.addStaff.toast.addFailed');
         
         results.push({
           rowNumber,
@@ -381,12 +387,16 @@ export function BulkUploadModal({
     const errorCount = results.filter(r => r.status === 'error').length;
 
     if (successCount > 0) {
-      toast.success(`Successfully added ${successCount} staff member(s)`);
+      toast.success(
+        t('subOrgLearners.bulkUpload.toast.addedSuccess', { count: successCount })
+      );
       onUploadComplete();
     }
-    
+
     if (errorCount > 0) {
-      toast.error(`Failed to add ${errorCount} staff member(s). Check the results below.`);
+      toast.error(
+        t('subOrgLearners.bulkUpload.toast.addedFailedCount', { count: errorCount })
+      );
     }
   };
 
@@ -413,21 +423,25 @@ export function BulkUploadModal({
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     
     if (!validTypes.includes(file.type) && !['xlsx', 'xls', 'csv'].includes(fileExtension || '')) {
-      toast.error('Please upload a valid Excel (.xlsx, .xls) or CSV file');
+      toast.error(t('subOrgLearners.bulkUpload.toast.invalidFileType'));
       return;
     }
 
     try {
       const rows = await parseFile(file);
-      
+
       if (rows.length === 0) {
-        toast.error('The file appears to be empty');
+        toast.error(t('subOrgLearners.bulkUpload.toast.emptyFile'));
         return;
       }
 
       await processUpload(rows);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to process file');
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('subOrgLearners.bulkUpload.toast.processFailed')
+      );
     }
   };
 
@@ -484,30 +498,32 @@ export function BulkUploadModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileXls className="w-5 h-5" />
-            Bulk Upload Staff
+            {t('subOrgLearners.bulkUpload.dialogTitle')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 pt-2">
           {/* Instructions */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <h4 className="font-medium text-blue-900 mb-1 text-sm">Instructions</h4>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
+            <h4 className="font-medium text-blue-900 text-sm">
+              {t('subOrgLearners.bulkUpload.instructionsTitle')}
+            </h4>
             <ol className="text-xs text-blue-800 list-decimal list-inside space-y-0.5">
-              <li>Download the sample template to see the required format</li>
-              <li>Fill in staff details (fields marked with * are mandatory)</li>
-              <li>Save your file and upload it below</li>
-              <li>Each row will be processed individually</li>
+              <li>{t('subOrgLearners.bulkUpload.steps.step1')}</li>
+              <li>{t('subOrgLearners.bulkUpload.steps.step2')}</li>
+              <li>{t('subOrgLearners.bulkUpload.steps.step3')}</li>
+              <li>{t('subOrgLearners.bulkUpload.steps.step4')}</li>
             </ol>
           </div>
 
           {/* Download Template Button */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-stack">
             <Button variant="outline" size="sm" onClick={downloadSampleSheet} className="w-full sm:w-auto">
               <DownloadSimple className="w-4 h-4 me-2" />
-              Download Sample Template
+              {t('subOrgLearners.bulkUpload.downloadButton')}
             </Button>
             <p className="text-xs text-gray-500">
-              Excel template with all required fields
+              {t('subOrgLearners.bulkUpload.downloadHint')}
             </p>
           </div>
 
@@ -536,32 +552,35 @@ export function BulkUploadModal({
               <div className="space-y-3">
                 <SpinnerGap className="w-8 h-8 text-primary-500 mx-auto animate-spin" />
                 <p className="text-gray-600 text-sm">
-                  Processing {processedRows} of {totalRows} staff...
+                  {t('subOrgLearners.bulkUpload.processingLabel', {
+                    processed: processedRows,
+                    total: totalRows,
+                  })}
                 </p>
                 <Progress value={uploadProgress} className="w-full" />
               </div>
             ) : isDragging ? (
-              <div className="py-4">
-                <UploadSimple className="w-10 h-10 text-primary-500 mx-auto mb-2" />
+              <div className="py-4 space-y-2">
+                <UploadSimple className="w-10 h-10 text-primary-500 mx-auto" />
                 <p className="text-primary-600 font-medium">
-                  Drop your file here
+                  {t('subOrgLearners.bulkUpload.dropHere')}
                 </p>
               </div>
             ) : (
               <>
                 <UploadSimple className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-gray-600 text-sm mb-2">
-                  Drag and drop your file here, or
+                  {t('subOrgLearners.bulkUpload.dragDropPrompt')}
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  Browse Files
+                  {t('subOrgLearners.bulkUpload.browseButton')}
                 </Button>
                 <p className="text-xs text-gray-500 mt-2">
-                  Supports .xlsx, .xls, and .csv files
+                  {t('subOrgLearners.bulkUpload.supportsHint')}
                 </p>
               </>
             )}
@@ -571,18 +590,20 @@ export function BulkUploadModal({
           {uploadResults.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="font-medium text-gray-900 text-sm">Upload Results</h4>
+                <h4 className="font-medium text-gray-900 text-sm">
+                  {t('subOrgLearners.bulkUpload.resultsTitle')}
+                </h4>
                 <div className="flex gap-2">
                   {successCount > 0 && (
                     <Badge variant="default" className="bg-green-100 text-green-800">
                       <CheckCircle className="w-3 h-3 me-1" />
-                      {successCount} Success
+                      {t('subOrgLearners.bulkUpload.resultsSuccessBadge', { count: successCount })}
                     </Badge>
                   )}
                   {errorCount > 0 && (
                     <Badge variant="destructive" className="bg-red-100 text-red-800">
                       <XCircle className="w-3 h-3 me-1" />
-                      {errorCount} Failed
+                      {t('subOrgLearners.bulkUpload.resultsFailedBadge', { count: errorCount })}
                     </Badge>
                   )}
                 </div>
@@ -606,7 +627,10 @@ export function BulkUploadModal({
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate text-sm">
-                          Row {result.rowNumber}: {result.fullName}
+                          {t('subOrgLearners.bulkUpload.resultRowLabel', {
+                            rowNumber: result.rowNumber,
+                            fullName: result.fullName,
+                          })}
                         </p>
                         <p className="text-xs text-gray-600 truncate">{result.email}</p>
                         <p
@@ -628,7 +652,9 @@ export function BulkUploadModal({
         {/* Footer */}
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={handleClose} disabled={isUploading}>
-            {uploadResults.length > 0 ? 'Close' : 'Cancel'}
+            {uploadResults.length > 0
+              ? t('subOrgLearners.bulkUpload.closeButton')
+              : t('common.cancel')}
           </Button>
         </div>
       </DialogContent>

@@ -1,0 +1,176 @@
+{
+    "weekdays": {
+        "mon": "Lun",
+        "monShort": "L",
+        "tue": "Mar",
+        "tueShort": "M",
+        "wed": "Mer",
+        "wedShort": "M",
+        "thu": "Jeu",
+        "thuShort": "J",
+        "fri": "Ven",
+        "friShort": "V",
+        "sat": "Sam",
+        "satShort": "S",
+        "sun": "Dim",
+        "sunShort": "D"
+    },
+    "schedulePicker": {
+        "heading": "Étape 3 — Définir la planification",
+        "howOften": "À quelle fréquence doit-il s'exécuter ?",
+        "frequency": {
+            "daily": { "label": "Quotidien", "desc": "Chaque jour" },
+            "weekly": { "label": "Hebdomadaire", "desc": "Choisir des jours précis" },
+            "monthly": { "label": "Mensuel", "desc": "Une fois par mois" },
+            "interval": { "label": "Répétitif", "desc": "Toutes les X minutes" },
+            "custom": { "label": "Personnalisé", "desc": "Expression cron" }
+        },
+        "atWhatTime": "À quelle heure ?",
+        "onWhichDays": "Quels jours ?",
+        "presets": {
+            "weekdays": "Jours ouvrés",
+            "weekends": "Week-ends",
+            "monWedFri": "Lun, mer, ven",
+            "tueThu": "Mar, jeu",
+            "everyDay": "Tous les jours"
+        },
+        "onWhichDayOfMonth": "Quel jour du mois ?",
+        "runEvery": "Exécuter toutes les",
+        "minutes": "minutes",
+        "intervalPresets": {
+            "min15": "15 min",
+            "min30": "30 min",
+            "hour1": "1 heure",
+            "hours2": "2 heures",
+            "hours6": "6 heures",
+            "hours12": "12 heures"
+        },
+        "cronLabel": "Expression cron (format Quartz)",
+        "cronPlaceholder": "0 0 9 * * ?",
+        "cronHint": "Format : sec min h jour mois jour-semaine. Ex. \"0 0 9 * * ?\" = tous les jours à 9 h",
+        "summary": {
+            "daily": "S'exécute chaque jour à {{time}}",
+            "selectAtLeastOneDay": "Sélectionnez au moins un jour",
+            "weekdaysOnly": "S'exécute les jours ouvrés (lun-ven) à {{time}}",
+            "customDays": "S'exécute tous les {{days}} à {{time}}",
+            "monthly": "S'exécute le {{day}} de chaque mois à {{time}}",
+            "interval_one": "S'exécute toutes les {{count}} minute",
+            "interval_many": "S'exécute toutes les {{count}} minutes",
+            "interval_other": "S'exécute toutes les {{count}} minutes",
+            "customPlaceholder": "Entrez une expression cron"
+        },
+        "timezone": "Fuseau horaire",
+        "timezones": {
+            "kolkata": "Asie/Calcutta (IST)",
+            "utc": "UTC",
+            "newYork": "Amérique/New_York (EST)",
+            "london": "Europe/Londres (GMT)",
+            "dubai": "Asie/Dubaï (GST)"
+        },
+        "startDate": "Date de début",
+        "endDate": "Date de fin (facultatif)"
+    },
+    "setup": {
+        "title": "Créer un nouveau workflow",
+        "orManual": "ou configurez-le manuellement",
+        "optional": "(facultatif)",
+        "back": "Retour",
+        "step1": {
+            "heading": "Comment devrions-nous appeler ce workflow ?",
+            "subheading": "Donnez-lui un nom qui décrit son objectif.",
+            "nameLabel": "Nom du workflow",
+            "namePlaceholder": "ex. E-mail de bienvenue après inscription",
+            "descriptionLabel": "Description",
+            "descriptionPlaceholder": "Décrivez brièvement ce que fait ce workflow",
+            "next": "Suivant : choisir le type de déclencheur"
+        },
+        "step2": {
+            "heading": "Quand ce workflow doit-il s'exécuter ?",
+            "subheading": "Choisissez ce qui déclenche le workflow — un événement ou une planification.",
+            "eventDriven": {
+                "title": "Quand quelque chose se produit",
+                "desc": "S'exécute lorsqu'un étudiant s'inscrit, remplit un formulaire, un paiement échoue, etc."
+            },
+            "scheduled": {
+                "title": "Selon une planification",
+                "desc": "S'exécute à heures fixes — quotidien, hebdomadaire, mensuel ou personnalisé."
+            },
+            "nextEvent": "Suivant : choisir l'événement",
+            "nextSchedule": "Suivant : définir la planification",
+            "triggerNodeName": "Déclencheur : {{event}}"
+        },
+        "step3": {
+            "eventHeading": "Quel événement doit déclencher ce workflow ?",
+            "eventSubheading": "Choisissez l'événement, puis limitez-le éventuellement à une entité spécifique.",
+            "selectEventLabel": "Sélectionner un événement",
+            "selectEventPlaceholder": "-- Sélectionner un événement --",
+            "generalCategory": "Général",
+            "scopeHeading": "Portée (facultatif)",
+            "scopeHint": "Choisissez un(e) {{type}} spécifique ou laissez sur « Tous » pour se déclencher à chaque fois.",
+            "triggerDescriptionLabel": "Description du déclencheur",
+            "triggerDescriptionPlaceholder": "ex. Envoyer un e-mail de bienvenue lors de l'inscription d'un nouvel étudiant",
+            "scheduleHeading": "Configurer la planification",
+            "scheduleSubheading": "Choisissez la fréquence et le moment d'exécution de ce workflow.",
+            "next": "Suivant : construire le workflow"
+        },
+        "steps": {
+            "name": "Nom",
+            "triggerType": "Type de déclencheur",
+            "eventSetup": "Configuration de l'événement",
+            "schedule": "Planification",
+            "buildWorkflow": "Construire le workflow"
+        }
+    },
+    "triggerSummary": {
+        "allOf": "tous les {{type}}s",
+        "selectedCount_one": "{{count}} sélectionné(e)…",
+        "selectedCount_many": "{{count}} sélectionné(e)s…",
+        "selectedCount_other": "{{count}} sélectionné(e)s…",
+        "noLongerExists": "{{id}} — n'existe plus"
+    },
+    "configSummary": {
+        "eventTrigger": "Déclencheur d'événement",
+        "schedule": "Planification",
+        "editSetup": "Modifier la configuration",
+        "everyMinutes_one": "Toutes les {{count}} min",
+        "everyMinutes_many": "Toutes les {{count}} min",
+        "everyMinutes_other": "Toutes les {{count}} min",
+        "starts": "Début : {{date}}",
+        "ends": "Fin : {{date}}"
+    },
+    "canvas": {
+        "namePlaceholder": "Nom du workflow...",
+        "eventDriven": "Basé sur un événement",
+        "scheduled": "Planifié",
+        "wizard": "Assistant",
+        "testRun": "Test",
+        "testRunning": "Exécution...",
+        "saveDraft": "Enregistrer le brouillon",
+        "publish": "Publier",
+        "dismiss": "Ignorer",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Décrivez ce que fait ce workflow...",
+        "nodesUnit_one": "nœud",
+        "nodesUnit_many": "nœuds",
+        "nodesUnit_other": "nœuds",
+        "connectionsUnit_one": "connexion",
+        "connectionsUnit_many": "connexions",
+        "connectionsUnit_other": "connexions",
+        "emptyHint": "Cliquez sur un nœud pour le configurer, ou faites glisser des nœuds depuis la palette de gauche pour construire votre workflow.",
+        "testRunResultsHeading": "Résultats du test (exécution à blanc)",
+        "testRunFailedAlert": "Le test a échoué. Consultez la console pour plus de détails."
+    },
+    "validation": {
+        "nameRequired": "Le nom du workflow est requis",
+        "addNode": "Ajoutez au moins un nœud",
+        "addNodeBeforeTest": "Ajoutez au moins un nœud avant de tester",
+        "selectTriggerEvent": "Sélectionnez un événement déclencheur pour les workflows basés sur un événement",
+        "enterCron": "Entrez une expression cron pour les workflows planifiés",
+        "nodesNotConnected_one": "{{count}} nœud non connecté : {{names}}",
+        "nodesNotConnected_many": "{{count}} nœuds non connectés : {{names}}",
+        "nodesNotConnected_other": "{{count}} nœuds non connectés : {{names}}",
+        "genericValidationError": "Erreur de validation",
+        "unknownError": "Erreur inconnue",
+        "saveFailed": "Échec de l'enregistrement : {{message}}"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "actions": {
+        "close": "Close"
+    },
+    "viewer": {
+        "allQuestions": "All Questions",
+        "selectedQuestions": "Selected Questions"
+    },
+    "copyConfirm": {
+        "title": "Alert",
+        "message": "Are you sure you want to copy selected text?",
+        "no": "No",
+        "yes": "Yes"
+    }
+}

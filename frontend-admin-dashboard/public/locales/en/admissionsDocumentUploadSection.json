@@ -1,0 +1,12 @@
+{
+    "requiredDocuments": "Required Documents",
+    "supportedFormats": "Supported: JPG, PNG, PDF (Max 2MB)",
+    "upload": "Upload",
+    "documents": {
+        "photo": "Passport Size Photo",
+        "birthCert": "Birth Certificate",
+        "aadhar": "Aadhaar Card",
+        "tc": "Transfer Certificate",
+        "reportCard": "Previous Report Card"
+    }
+}

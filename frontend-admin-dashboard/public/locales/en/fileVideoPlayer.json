@@ -1,0 +1,22 @@
+{
+    "unsupportedFormat": "Your browser does not support the video tag or the video format.",
+    "controls": {
+        "play": "Play",
+        "pause": "Pause",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "fullScreen": "Full screen",
+        "exitFullScreen": "Exit full screen",
+        "moreOptions": "More options",
+        "rewindSeconds_one": "Rewind {{count}} second",
+        "rewindSeconds_other": "Rewind {{count}} seconds",
+        "forwardSeconds_one": "Forward {{count}} second",
+        "forwardSeconds_other": "Forward {{count}} seconds"
+    },
+    "menu": {
+        "playbackSpeed": "Playback speed",
+        "normalSpeed": "Normal",
+        "pictureInPicture": "Picture-in-picture",
+        "download": "Download"
+    }
+}

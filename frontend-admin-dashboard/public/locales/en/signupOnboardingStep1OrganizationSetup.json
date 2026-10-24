@@ -1,0 +1,12 @@
+{
+    "heading": "Share your organization details",
+    "logoAlt": "logo",
+    "instituteNameLabel": "Institute Name",
+    "instituteNamePlaceholder": "Institute Name",
+    "instituteTypeLabel": "Institute Type",
+    "continue": "Continue",
+    "schema": {
+        "instituteNameRequired": "Institute Name is required",
+        "instituteTypeRequired": "Select institute type"
+    }
+}

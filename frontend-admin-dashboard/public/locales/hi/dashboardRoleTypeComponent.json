@@ -1,0 +1,14 @@
+{
+    "dialog": {
+        "triggerButton": "उपयोगकर्ता प्रबंधित करें",
+        "title": "भूमिका प्रकार के उपयोगकर्ताओं का प्रबंधन करें"
+    },
+    "tabs": {
+        "instituteUsers": "संस्थान के उपयोगकर्ता",
+        "invites": "आमंत्रण"
+    },
+    "filters": {
+        "roleTypeLabel": "भूमिका प्रकार",
+        "statusLabel": "स्थिति"
+    }
+}

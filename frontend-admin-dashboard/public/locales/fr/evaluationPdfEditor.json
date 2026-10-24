@@ -1,0 +1,123 @@
+{
+    "upload": {
+        "heading": "Importer la copie",
+        "dropzone": "Glissez-déposez un fichier PDF ici, ou cliquez pour en choisir un"
+    },
+    "errors": {
+        "invalidFileType": "Type de fichier invalide. Veuillez importer un fichier PDF.",
+        "noPdfFile": "Aucun fichier PDF disponible pour l'annotation.",
+        "canvasContext": "Impossible d'obtenir un contexte 2D pour faire pivoter cette page.",
+        "generatingPdf": "Génération du PDF en cours, veuillez patienter...",
+        "generatePdfFailed": "Échec de la génération du PDF annoté. Veuillez réessayer.",
+        "fullscreenBlocked": "Votre navigateur n'a pas autorisé le mode plein écran ici.",
+        "awardMarksBeforeSubmit": "Veuillez attribuer des points avant de soumettre.",
+        "draftSaveFailed": "Impossible d'enregistrer le brouillon. Veuillez réessayer.",
+        "submitFailedTitle": "Évaluation non soumise",
+        "submitFailedRescued": "{{reason}} Rien n'a été enregistré pour cette copie — votre correction est conservée comme brouillon, vous pouvez donc réessayer.",
+        "submitFailedNotRescued": "{{reason}} Rien n'a été enregistré — votre correction est toujours à l'écran, veuillez réessayer."
+    },
+    "confirmLeave": "Les modifications que vous avez apportées risquent de ne pas être enregistrées. Voulez-vous vraiment quitter cette page ?",
+    "toasts": {
+        "draftSavedTitle": "Brouillon enregistré",
+        "draftSavedDesc": "Vous pouvez quitter en toute sécurité et reprendre cette évaluation plus tard.",
+        "draftRestoredTitle": "Brouillon restauré",
+        "draftRestoredDesc": "Nous avons chargé votre progression enregistrée. Reprenez là où vous vous étiez arrêté.",
+        "annotationsCleared": "Toutes les annotations ont été effacées",
+        "rotateWarning": "Les marques existantes sur cette page peuvent se déplacer — vérifiez leur position après la rotation.",
+        "evaluationSubmittedTitle": "Évaluation soumise",
+        "evaluationSubmittedDesc": "L'évaluation de la copie a été terminée et soumise."
+    },
+    "toolHelp": {
+        "select": "Sélectionnez, déplacez ou redimensionnez n'importe quelle annotation sur la page.",
+        "pen": "Cliquez, puis dessinez à main levée sur la page. Ajustez la couleur et l'épaisseur depuis le contrôle Trait juste à côté.",
+        "tick": "Cliquez, puis cliquez n'importe où sur la page pour apposer une coche verte — cliquez à nouveau pour en apposer d'autres.",
+        "cross": "Cliquez, puis cliquez n'importe où sur la page pour apposer une croix rouge — cliquez à nouveau pour en apposer d'autres.",
+        "text": "Cliquez, puis cliquez sur la page pour ajouter une zone de commentaire et commencer à saisir du texte.",
+        "box": "Cliquez, puis cliquez n'importe où sur la page pour dessiner un rectangle centré à cet endroit.",
+        "circle": "Cliquez, puis cliquez n'importe où sur la page pour dessiner un cercle centré à cet endroit.",
+        "delete": "Supprimer la ou les annotations sélectionnées (ou appuyez sur Retour arrière/Suppr)."
+    },
+    "controlHelp": {
+        "strokeColour": { "label": "Trait et couleur", "description": "Ajustez l'épaisseur/la couleur du stylo — s'applique aussi à la sélection en cours." },
+        "marksNumber": { "label": "Nombre de points", "description": "Insérez une note numérique (0–9, fractions, décimales)." },
+        "upload": { "label": "Importer", "description": "Chargez une copie PDF déjà évaluée depuis votre appareil et poursuivez dessus." },
+        "download": { "label": "Télécharger", "description": "Téléchargez la copie annotée." },
+        "reset": { "label": "Réinitialiser", "description": "Effacez toutes les annotations de chaque page." },
+        "undo": { "label": "Annuler", "description": "Annulez la dernière modification sur cette page (barre inférieure)." },
+        "redo": { "label": "Rétablir", "description": "Rétablissez la dernière modification annulée (barre inférieure)." },
+        "pageNavigation": { "label": "Navigation entre pages", "description": "Passez à la page précédente ou suivante (barre inférieure)." },
+        "rotate": { "label": "Pivoter", "description": "Faites pivoter un scan de travers ou à l'envers pour le lire à l'endroit (barre inférieure)." },
+        "zoom": { "label": "Zoom", "description": "Zoomez, dézoomez, ou ajustez la page à la largeur (barre inférieure)." },
+        "fullscreen": { "label": "Plein écran", "description": "Masquez l'interface du navigateur pour une vue agrandie de la copie. Échap pour quitter." },
+        "submit": { "label": "Soumettre", "description": "Soumettez l'évaluation — les points et les commentaires sont requis." }
+    },
+    "penSwatches": {
+        "green": "Vert",
+        "red": "Rouge",
+        "blue": "Bleu",
+        "black": "Noir"
+    },
+    "toolbar": {
+        "scrollLeft": "Faire défiler la barre d'outils vers la gauche",
+        "scrollRight": "Faire défiler la barre d'outils vers la droite",
+        "strokeThicknessColour": "Épaisseur et couleur du trait",
+        "thickness": "Épaisseur",
+        "colour": "Couleur",
+        "insertMarksNumber": "Insérer un nombre de points",
+        "moreActions": "Plus d'actions",
+        "more": "Plus",
+        "uploadEvaluatedPdf": "Importer une copie PDF évaluée",
+        "downloadAnnotatedPdf": "Télécharger le PDF annoté",
+        "resetAnnotations": "Réinitialiser les annotations",
+        "toolGuide": "Guide des outils"
+    },
+    "resetDialog": {
+        "title": "Réinitialiser les annotations ?",
+        "description": "Cela supprime toutes vos marques et annotations de chaque page de cette copie. Cette action est irréversible.",
+        "cancel": "Annuler",
+        "confirm": "Réinitialiser les annotations"
+    },
+    "submitDialog": {
+        "title": "Confirmer la soumission",
+        "description": "Voulez-vous vraiment soumettre cette évaluation ? Cette action est irréversible.",
+        "cancel": "Annuler",
+        "confirm": "Continuer"
+    },
+    "header": {
+        "title": "Évaluation de la copie",
+        "rotatedBadge": "Pivotée de {{degrees}}°",
+        "openGradingPanel": "Ouvrir le panneau de notation",
+        "grade": "Noter"
+    },
+    "helpDialog": {
+        "annotationTools": "Outils d'annotation",
+        "controls": "Contrôles"
+    },
+    "gradingPanel": {
+        "gradingLabel": "Notation",
+        "heading": "Évaluation",
+        "closePanel": "Fermer le panneau d'évaluation",
+        "closePanelTitle": "Fermer le panneau"
+    },
+    "footer": {
+        "submitEvaluation": "Soumettre l'évaluation",
+        "saveDraft": "Enregistrer le brouillon",
+        "savingDraft": "Enregistrement du brouillon…",
+        "draftSavedHint": "Brouillon enregistré à {{time}} · reprenez à tout moment",
+        "awardMarksHint": "Attribuez des points pour soumettre, ou enregistrez un brouillon pour terminer plus tard."
+    },
+    "bottomBar": {
+        "undo": "Annuler",
+        "redo": "Rétablir",
+        "previousPage": "Page précédente",
+        "nextPage": "Page suivante",
+        "zoomOut": "Zoom arrière",
+        "fitPageToWidth": "Ajuster la page à la largeur",
+        "zoomIn": "Zoom avant",
+        "rotateLeft": "Faire pivoter la page à gauche",
+        "rotateRight": "Faire pivoter la page à droite",
+        "exitFullscreen": "Quitter le plein écran",
+        "enterFullscreen": "Passer en plein écran",
+        "fullscreenTitleEnter": "Plein écran — plus d'espace pour lire la copie"
+    }
+}
