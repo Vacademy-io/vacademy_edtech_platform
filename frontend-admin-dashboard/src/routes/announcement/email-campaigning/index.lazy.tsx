@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import {
     ArrowLeft,
     CheckCircle,
+    Copy,
     DeviceMobile,
     EnvelopeSimple,
     Eye,
@@ -13,6 +14,7 @@ import {
     ListChecks,
     LockSimple,
     PaperPlaneTilt,
+    UsersThree,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
@@ -48,6 +50,9 @@ import {
     validateEmailCampaign,
 } from './-utils/validation';
 import { buildEmailCampaignPayload, interpretApiError } from './-utils/payload';
+import { parseKeep } from '../-utils/campaign';
+import { RecipientPreviewDialog } from '../-components/RecipientPreviewDialog';
+import { TestSendDialog } from '../-components/TestSendDialog';
 import type { EmailSectionId, FieldErrors } from './-types';
 
 export const Route = createLazyFileRoute('/announcement/email-campaigning/')({
@@ -61,13 +66,31 @@ export const Route = createLazyFileRoute('/announcement/email-campaigning/')({
 });
 
 /**
- * `?id=<announcementId>` means we are editing an already scheduled campaign. Keying on it gives
+ * `?id=<announcementId>` means we are editing an already scheduled campaign;
+ * `?duplicateFrom=<announcementId>&keep=…` starts a new one prefilled from it. Keying on them gives
  * each campaign — and the blank create form — fresh state, so leaving an edit for the sidebar's
  * "Email Campaigning" link never shows the edited campaign's values in a new one.
  */
 function EmailCampaigningRoute() {
-    const search = useSearch({ strict: false }) as { id?: string };
-    return <EmailCampaigningPage key={search.id ?? 'new'} editingId={search.id} />;
+    const search = useSearch({ strict: false }) as {
+        id?: string;
+        duplicateFrom?: string;
+        keep?: string;
+    };
+    const duplicateFrom = search.id ? undefined : search.duplicateFrom;
+    const key = search.id
+        ? `edit-${search.id}`
+        : duplicateFrom
+          ? `copy-${duplicateFrom}-${search.keep ?? ''}`
+          : 'new';
+    return (
+        <EmailCampaigningPage
+            key={key}
+            editingId={search.id}
+            duplicateFrom={duplicateFrom}
+            keep={search.keep}
+        />
+    );
 }
 
 const SECTION_ID: Record<EmailSectionId, string> = {
@@ -77,14 +100,28 @@ const SECTION_ID: Record<EmailSectionId, string> = {
     settings: 'email-campaign-settings',
 };
 
-function EmailCampaigningPage({ editingId }: { editingId?: string }) {
+function EmailCampaigningPage({
+    editingId,
+    duplicateFrom,
+    keep,
+}: {
+    editingId?: string;
+    duplicateFrom?: string;
+    keep?: string;
+}) {
     const { t } = useTranslation('announcementEmailCampaigningIndex');
     const { t: tValidation } = useTranslation('announcementValidation');
+    const { t: tTools } = useTranslation('announcementCampaignTools');
     const { setNavHeading } = useNavHeadingStore();
     const navigate = useNavigate();
     const isEditing = Boolean(editingId);
+    const isDuplicating = !isEditing && Boolean(duplicateFrom);
+    const loadsSource = isEditing || isDuplicating;
 
-    const draft = useEmailCampaignDraft(editingId);
+    const draft = useEmailCampaignDraft(
+        editingId,
+        duplicateFrom ? { fromId: duplicateFrom, keep: parseKeep(keep) } : undefined
+    );
 
     const [contentView, setContentView] = useState<ContentView>('editor');
     const [submitting, setSubmitting] = useState(false);
@@ -94,6 +131,8 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
     const [reviewOpen, setReviewOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [railDevice, setRailDevice] = useState<'desktop' | 'mobile'>('desktop');
+    const [recipientPreviewOpen, setRecipientPreviewOpen] = useState(false);
+    const [testSendOpen, setTestSendOpen] = useState(false);
 
     useEffect(() => {
         setNavHeading(isEditing ? t('page.navHeadingEdit') : t('page.navHeadingCreate'));
@@ -163,6 +202,27 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
         const sender = draft.senders.find((s) => senderKey(s) === draft.draft.fromKey);
         return sender ? `${sender.name} <${sender.email}>` : '';
     }, [draft.senders, draft.draft.fromKey]);
+
+    /** The email exactly as the form would send it, for a test to a few addresses. */
+    const buildTestPayload = () => {
+        const payload = buildEmailCampaignPayload({
+            draft: draft.draft,
+            batchById: draft.batchById,
+            tagNameById: draft.tagNameById,
+            senders: draft.senders,
+            createdBy: getUserId(),
+            createdByName: getUserName(),
+            createdByRole: draft.primaryRole,
+        });
+        return {
+            // The backend needs a title; an untitled draft can still be tested.
+            title: payload.title || draft.draft.subject.trim() || tTools('testSend.untitled'),
+            content: payload.content,
+            emailMedium: payload.mediums[0],
+            createdByName: payload.createdByName,
+        };
+    };
+    const testBlockedReason = !draft.contentText.trim() ? tTools('testSend.needContent') : null;
 
     const locked = draft.prefill.locked;
     const formDisabled = locked || submitting;
@@ -244,8 +304,8 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
             ? t('actions.sendCampaign')
             : t('actions.scheduleCampaign');
 
-    // ------------------------------------------------------------------ edit-mode states
-    if (isEditing && draft.prefill.loading) {
+    // ------------------------------------------------------------------ edit / duplicate states
+    if (loadsSource && draft.prefill.loading) {
         return (
             <div className="flex min-h-full flex-1 flex-col px-4 py-6 sm:px-6">
                 <div className="mx-auto w-full max-w-7xl space-y-6" aria-busy>
@@ -267,7 +327,7 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
         );
     }
 
-    if (isEditing && draft.prefill.error) {
+    if (loadsSource && draft.prefill.error) {
         return (
             <div className="flex min-h-full flex-1 flex-col px-4 py-6 sm:px-6">
                 <div className="mx-auto w-full max-w-3xl space-y-4">
@@ -329,7 +389,11 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
                             </span>
                             <div className="min-w-0">
                                 <h1 className="text-h3 font-semibold text-foreground sm:text-h2">
-                                    {isEditing ? t('page.titleEdit') : t('page.titleCreate')}
+                                    {isEditing
+                                        ? t('page.titleEdit')
+                                        : isDuplicating
+                                          ? tTools('duplicate.pageTitle')
+                                          : t('page.titleCreate')}
                                 </h1>
                                 <p className="text-caption text-muted-foreground">
                                     {t('page.subtitle', {
@@ -354,6 +418,20 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
                             </div>
                         )}
                     </div>
+
+                    {isDuplicating && (
+                        <div
+                            role="status"
+                            className="flex items-start gap-2 rounded-md border border-info-400 bg-info-50 p-3 text-caption text-info-600"
+                        >
+                            <Copy className="mt-0.5 size-4 shrink-0" weight="fill" />
+                            <span>
+                                {tTools('duplicate.banner', {
+                                    title: draft.prefill.sourceTitle ?? '',
+                                })}
+                            </span>
+                        </div>
+                    )}
 
                     {locked && (
                         <div
@@ -600,6 +678,24 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
                     </p>
                     <div className="ms-auto flex flex-wrap items-center justify-end gap-3">
                         <MyButton
+                            buttonType="text"
+                            scale="medium"
+                            onClick={() => setRecipientPreviewOpen(true)}
+                            disable={submitting}
+                        >
+                            <UsersThree className="me-1 size-4" />
+                            {tTools('actions.previewRecipients')}
+                        </MyButton>
+                        <MyButton
+                            buttonType="secondary"
+                            scale="medium"
+                            onClick={() => setTestSendOpen(true)}
+                            disable={submitting}
+                        >
+                            <EnvelopeSimple className="me-1 size-4" />
+                            {tTools('actions.sendTest')}
+                        </MyButton>
+                        <MyButton
                             buttonType="secondary"
                             scale="medium"
                             onClick={() => setReviewOpen(true)}
@@ -648,6 +744,20 @@ function EmailCampaigningPage({ editingId }: { editingId?: string }) {
             >
                 {reviewBody}
             </MyDialog>
+
+            <RecipientPreviewDialog
+                open={recipientPreviewOpen}
+                onOpenChange={setRecipientPreviewOpen}
+                source={{ kind: 'draft', recipients }}
+                title={draft.draft.title}
+            />
+
+            <TestSendDialog
+                open={testSendOpen}
+                onOpenChange={setTestSendOpen}
+                buildPayload={buildTestPayload}
+                blockedReason={testBlockedReason}
+            />
 
             <EmailPreviewDialog
                 open={previewOpen}

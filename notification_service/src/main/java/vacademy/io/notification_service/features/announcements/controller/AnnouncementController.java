@@ -13,6 +13,7 @@ import vacademy.io.notification_service.features.announcements.dto.*;
 import vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus;
 import vacademy.io.notification_service.features.announcements.enums.ModeType;
 import vacademy.io.notification_service.features.announcements.security.AnnouncementAccessGuard;
+import vacademy.io.notification_service.features.announcements.service.AnnouncementDeliveryService;
 import vacademy.io.notification_service.features.announcements.service.AnnouncementService;
 import vacademy.io.notification_service.features.announcements.service.EmailConfigurationService;
 
@@ -33,6 +34,7 @@ public class AnnouncementController {
 
     private final AnnouncementService announcementService;
     private final EmailConfigurationService emailConfigurationService;
+    private final AnnouncementDeliveryService deliveryService;
     // Everything except creation is an admin-dashboard call and checks its caller; creation
     // stays open for the services that POST announcements without a user token.
     private final AnnouncementAccessGuard accessGuard;
@@ -511,6 +513,62 @@ public class AnnouncementController {
             log.error("Error delivering announcement: {}", announcementId, e);
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Failed to deliver announcement", "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Who an unsaved announcement would reach — the create / edit forms call this with the
+     * recipients they would submit. Nothing is saved or sent.
+     */
+    @PostMapping("/recipients/preview")
+    public ResponseEntity<RecipientPreviewResponse> previewRecipients(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody RecipientPreviewRequest request) {
+        accessGuard.requireStaff(user, clientId, request.getInstituteId());
+        try {
+            return ResponseEntity.ok(announcementService.previewRecipients(request));
+        } catch (Exception e) {
+            log.error("Error previewing recipients for institute: {}", request.getInstituteId(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Who a saved (e.g. scheduled) announcement would reach if it were delivered now. Unlike
+     * {@code /{id}/recipients}, which lists messages already created by a send.
+     */
+    @GetMapping("/{announcementId}/recipients/preview")
+    public ResponseEntity<RecipientPreviewResponse> previewAnnouncementRecipients(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @PathVariable String announcementId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        accessGuard.requireStaffForAnnouncement(user, clientId, announcementId);
+        try {
+            return ResponseEntity.ok(announcementService.previewRecipients(announcementId, page, size));
+        } catch (Exception e) {
+            log.error("Error previewing recipients for announcement: {}", announcementId, e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Send the announcement's email to a few test addresses (max 10). Works for drafts and saved
+     * announcements alike; nothing is persisted and the real audience is not contacted.
+     */
+    @PostMapping("/test-send")
+    public ResponseEntity<TestSendAnnouncementResponse> testSendAnnouncement(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestHeader(value = "clientId", required = false) String clientId,
+            @Valid @RequestBody TestSendAnnouncementRequest request) {
+        accessGuard.requireStaff(user, clientId, request.getInstituteId());
+        try {
+            return ResponseEntity.ok(deliveryService.sendTestEmails(request));
+        } catch (Exception e) {
+            log.error("Error sending test announcement for institute: {}", request.getInstituteId(), e);
+            return ResponseEntity.badRequest().build();
         }
     }
 
