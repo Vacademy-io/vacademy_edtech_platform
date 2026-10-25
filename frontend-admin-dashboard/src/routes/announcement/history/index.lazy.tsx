@@ -8,12 +8,15 @@ import type { ColumnDef } from '@tanstack/react-table';
 import {
     CheckCircle,
     ClockCounterClockwise,
+    Copy,
     DotsThreeVertical,
     MagnifyingGlass,
     Megaphone,
     PaperPlaneRight,
+    PencilSimple,
     Plus,
     Trash,
+    UsersThree,
     XCircle,
 } from '@phosphor-icons/react';
 import { AnnouncementService } from '@/services/announcement';
@@ -69,6 +72,9 @@ import {
 } from './-components/primitives';
 import { AnnouncementDetailsDialog } from './-components/AnnouncementDetailsDialog';
 import { DeliveryStatsDialog } from './-components/DeliveryStatsDialog';
+import { DuplicateCampaignDialog } from '../-components/DuplicateCampaignDialog';
+import { RecipientPreviewDialog } from '../-components/RecipientPreviewDialog';
+import { isEditableBeforeSend, isEmailCampaign, isUndelivered } from '../-utils/campaign';
 
 export const Route = createLazyFileRoute('/announcement/history/')({
     component: () => (
@@ -154,6 +160,9 @@ function AnnouncementHistoryPage() {
     const [rejectFor, setRejectFor] = useState<Announcement | null>(null);
     const [rejectReason, setRejectReason] = useState('');
     const [deleteFor, setDeleteFor] = useState<Announcement | null>(null);
+    const [duplicateFor, setDuplicateFor] = useState<Announcement | null>(null);
+    const [recipientsFor, setRecipientsFor] = useState<Announcement | null>(null);
+    const { t: tTools } = useTranslation('announcementCampaignTools');
 
     // The list API has no title search, so it filters the loaded page.
     const rows = useMemo(() => {
@@ -325,7 +334,15 @@ function AnnouncementHistoryPage() {
                     const canReview = a.status === 'PENDING_APPROVAL' && admin;
                     const canDeliver =
                         a.status === 'SCHEDULED' || a.scheduling?.scheduleType === 'ONE_TIME';
-                    const hasMenu = canReview || canDeliver || admin;
+                    const emailCampaign = isEmailCampaign(
+                        (a.modes ?? []).map((m) => m.modeType),
+                        (a.mediums ?? []).map((m) => m.mediumType)
+                    );
+                    const canEdit =
+                        emailCampaign && isEditableBeforeSend(a.status, a.scheduling?.startDate);
+                    const canPreviewRecipients = isUndelivered(a.status);
+                    const hasCampaignActions = emailCampaign || canPreviewRecipients;
+                    const hasMenu = canReview || canDeliver || admin || hasCampaignActions;
                     return (
                         <div className="flex items-center gap-2">
                             <MyButton
@@ -358,6 +375,35 @@ function AnnouncementHistoryPage() {
                                         </MyButton>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
+                                        {canEdit && (
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    navigate({
+                                                        to: '/announcement/email-campaigning',
+                                                        search: { id: a.id },
+                                                    })
+                                                }
+                                            >
+                                                <PencilSimple className="mr-2 size-4" />
+                                                {tTools('actions.edit')}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {emailCampaign && (
+                                            <DropdownMenuItem onClick={() => setDuplicateFor(a)}>
+                                                <Copy className="mr-2 size-4" />
+                                                {tTools('actions.duplicate')}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {canPreviewRecipients && (
+                                            <DropdownMenuItem onClick={() => setRecipientsFor(a)}>
+                                                <UsersThree className="mr-2 size-4" />
+                                                {tTools('actions.previewRecipients')}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {hasCampaignActions &&
+                                            (canReview || canDeliver || admin) && (
+                                                <DropdownMenuSeparator />
+                                            )}
                                         {canReview && (
                                             <DropdownMenuItem onClick={() => onApprove(a)}>
                                                 <CheckCircle className="mr-2 size-4 text-success-600" />
@@ -398,7 +444,7 @@ function AnnouncementHistoryPage() {
         ],
         // onApprove/onDeliverNow only close over stable setters + refetch
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [t, admin, describe]
+        [t, tTools, admin, describe]
     );
 
     const totalPages = data?.totalPages ?? 0;
@@ -624,6 +670,18 @@ function AnnouncementHistoryPage() {
                 onOpenStats={setStatsFor}
             />
             <DeliveryStatsDialog announcement={statsFor} onClose={() => setStatsFor(null)} />
+
+            <DuplicateCampaignDialog
+                campaign={duplicateFor}
+                onClose={() => setDuplicateFor(null)}
+            />
+
+            <RecipientPreviewDialog
+                open={!!recipientsFor}
+                onOpenChange={(open) => !open && setRecipientsFor(null)}
+                source={recipientsFor ? { kind: 'saved', announcementId: recipientsFor.id } : null}
+                title={recipientsFor?.title}
+            />
 
             <MyDialog
                 heading={t('rejectDialog.title')}

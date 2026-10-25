@@ -84,6 +84,40 @@ export interface AnnouncementRecipientsPage {
     size: number;
 }
 
+// POST /announcements/recipients/preview and GET /announcements/{id}/recipients/preview —
+// who an announcement resolves to before anything is sent.
+export interface RecipientPreviewUser {
+    userId: string;
+    fullName: string | null;
+    email: string | null;
+    mobileNumber: string | null;
+}
+
+export interface RecipientPreviewPage {
+    totalCount: number;
+    page: number;
+    size: number;
+    totalPages: number;
+    users: RecipientPreviewUser[];
+}
+
+export interface TestSendRequest {
+    title: string;
+    content: CreateAnnouncementRequest['content'];
+    /** The EMAIL medium the announcement would go out with (subject, sender, preview text). */
+    emailMedium?: CreateAnnouncementRequest['mediums'][number];
+    createdByName?: string;
+    emails: string[];
+}
+
+export interface TestSendResult {
+    email: string;
+    sent: boolean;
+    /** The address belongs to a user, so name placeholders were filled with that user's values. */
+    matchedUser: boolean;
+    error: string | null;
+}
+
 export const AnnouncementService = {
     create: async (
         payload: Omit<CreateAnnouncementRequest, 'instituteId'> & { instituteId?: string }
@@ -205,6 +239,41 @@ export const AnnouncementService = {
         const { data } = await authenticatedAxiosInstance.get(
             `${BASE}/announcements/${announcementId}/recipients?${search.toString()}`
         );
+        return data;
+    },
+
+    previewRecipients: async (params: {
+        recipients: CreateAnnouncementRequest['recipients'];
+        exclusions?: CreateAnnouncementRequest['recipients'];
+        page: number;
+        size: number;
+    }): Promise<RecipientPreviewPage> => {
+        const instituteId = getInstituteId();
+        if (!instituteId) throw new Error('Missing instituteId');
+        const { data } = await authenticatedAxiosInstance.post(
+            `${BASE}/announcements/recipients/preview`,
+            { ...params, instituteId }
+        );
+        return data;
+    },
+
+    previewAnnouncementRecipients: async (
+        announcementId: string,
+        params: { page: number; size: number }
+    ): Promise<RecipientPreviewPage> => {
+        const { data } = await authenticatedAxiosInstance.get(
+            `${BASE}/announcements/${announcementId}/recipients/preview?page=${params.page}&size=${params.size}`
+        );
+        return data;
+    },
+
+    testSend: async (payload: TestSendRequest): Promise<{ results: TestSendResult[] }> => {
+        const instituteId = getInstituteId();
+        if (!instituteId) throw new Error('Missing instituteId');
+        const { data } = await authenticatedAxiosInstance.post(`${BASE}/announcements/test-send`, {
+            ...payload,
+            instituteId,
+        });
         return data;
     },
 

@@ -11,6 +11,8 @@ import org.springframework.util.StringUtils;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
+import vacademy.io.notification_service.features.announcements.dto.TestSendAnnouncementRequest;
+import vacademy.io.notification_service.features.announcements.dto.TestSendAnnouncementResponse;
 import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.entity.AnnouncementMedium;
 import vacademy.io.notification_service.features.announcements.entity.RecipientMessage;
@@ -38,6 +40,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -402,6 +405,95 @@ public class AnnouncementDeliveryService {
                 "Average rate: {:.1f} emails/second", 
                 announcement.getId(), totalSuccess, totalRecipients, totalSuccess, totalFailed, 
                 totalTimeSeconds, averageRate);
+    }
+
+    /** Shown in place of {{password}} on a test send — a real password must never reach a test inbox. */
+    private static final String TEST_PASSWORD_PLACEHOLDER = "********";
+
+    /**
+     * Send an announcement's email to a few addresses before the real send. Placeholders resolve
+     * the same way delivery resolves them; an address that belongs to a user gets that user's
+     * values, any other address gets the address itself as its name. Nothing is persisted, no
+     * recipient_messages rows are created and unsubscribe preferences are not consulted, because
+     * the admin is sending to themselves.
+     */
+    public TestSendAnnouncementResponse sendTestEmails(TestSendAnnouncementRequest request) {
+        Map<String, Object> config = request.getEmailMedium() != null && request.getEmailMedium().getConfig() != null
+                ? request.getEmailMedium().getConfig()
+                : Map.of();
+        String configuredSubject = (String) config.get("subject");
+        String subject = "[Test] " + (StringUtils.hasText(configuredSubject) ? configuredSubject : request.getTitle());
+        String fromEmail = (String) config.get("fromEmail");
+        String fromName = (String) config.get("fromName");
+        String emailType = determineEmailType((String) config.get("emailType"));
+        String previewText = (String) config.get("previewText");
+        String html = request.getContent().getContent();
+
+        // Transient — only feeds processHtmlVariables, never saved.
+        Announcement announcement = new Announcement();
+        announcement.setId("test-send");
+        announcement.setTitle(request.getTitle());
+        announcement.setInstituteId(request.getInstituteId());
+        announcement.setCreatedByName(request.getCreatedByName());
+
+        String instituteEmail = null;
+        if (html != null && html.contains("{{institute_email}}")) {
+            try {
+                InstituteInfoDTO info = instituteInternalService.getInstituteByInstituteId(request.getInstituteId());
+                instituteEmail = info != null ? info.getEmail() : null;
+            } catch (Exception ex) {
+                log.warn("Test send: failed to resolve institute email for {}: {}", request.getInstituteId(), ex.getMessage());
+            }
+        }
+
+        List<TestSendAnnouncementResponse.Result> results = new ArrayList<>();
+        for (String rawEmail : request.getEmails().stream().map(String::trim).distinct().toList()) {
+            User user = authServiceClient.getUserByEmail(rawEmail);
+            boolean matchedUser = user != null;
+            if (user == null) {
+                user = new User();
+                user.setId("test-recipient");
+                user.setEmail(rawEmail);
+            }
+            RecipientMessage message = new RecipientMessage();
+            message.setUserId(user.getId());
+            message.setUserName(rawEmail);
+
+            try {
+                String body = processHtmlVariables(html, message, announcement, Map.of(user.getId(), user),
+                        Map.of(user.getId(), TEST_PASSWORD_PLACEHOLDER), instituteEmail);
+                getEmailRateLimiter().acquire();
+                // No userId: the admin is testing on their own inbox, so the matched user's
+                // unsubscribe preference must not silently swallow the test.
+                UnifiedSendResponse response = unifiedSendService.routeSync(UnifiedSendRequest.builder()
+                        .instituteId(request.getInstituteId())
+                        .channel("EMAIL")
+                        .recipients(List.of(UnifiedSendRequest.Recipient.builder()
+                                .email(rawEmail).build()))
+                        .options(UnifiedSendRequest.SendOptions.builder()
+                                .emailSubject(subject)
+                                .emailBody(body)
+                                .emailType(emailType)
+                                .fromEmail(fromEmail)
+                                .fromName(fromName)
+                                .previewText(previewText)
+                                .source("announcement-test-send")
+                                .build())
+                        .build());
+                UnifiedSendResponse.RecipientResult outcome = response != null && response.getResults() != null
+                        && !response.getResults().isEmpty() ? response.getResults().get(0) : null;
+                boolean sent = outcome != null && outcome.isSuccess();
+                String error = outcome == null ? "No result from email sender" : (sent ? null : outcome.getError());
+                results.add(new TestSendAnnouncementResponse.Result(rawEmail, sent, matchedUser, error));
+            } catch (Exception e) {
+                String detailed = extractSmtpDetails(e);
+                log.warn("Test send to {} failed: {}", rawEmail, detailed);
+                results.add(new TestSendAnnouncementResponse.Result(rawEmail, false, matchedUser, detailed));
+            }
+        }
+        log.info("Test send for institute {}: {} of {} sent", request.getInstituteId(),
+                results.stream().filter(TestSendAnnouncementResponse.Result::isSent).count(), results.size());
+        return new TestSendAnnouncementResponse(results);
     }
 
     /**

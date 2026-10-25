@@ -10,11 +10,13 @@ import {
     CalendarDots,
     CaretLeft,
     CaretRight,
+    Copy,
     Check,
     PencilSimple,
     Plus,
     Stamp,
     Trash,
+    UsersThree,
     X,
 } from '@phosphor-icons/react';
 import { AnnouncementService, type ModeType } from '@/services/announcement';
@@ -35,6 +37,9 @@ import { cn } from '@/lib/utils';
 import { isUserAdmin } from '@/utils/userDetails';
 import { buildModeMeta } from '../create/-utils/constants';
 import { AnnouncementStatusChip, EnumChips, modeTone } from '../history/-components/primitives';
+import { DuplicateCampaignDialog } from '../-components/DuplicateCampaignDialog';
+import { RecipientPreviewDialog } from '../-components/RecipientPreviewDialog';
+import { isEmailCampaign } from '../-utils/campaign';
 
 type Announcement = {
     id: string;
@@ -155,6 +160,9 @@ function AnnouncementSchedulePage() {
     const [deleteFor, setDeleteFor] = useState<Announcement | null>(null);
     const [deleting, setDeleting] = useState(false);
 
+    const [duplicateFor, setDuplicateFor] = useState<Announcement | null>(null);
+    const [recipientsFor, setRecipientsFor] = useState<Announcement | null>(null);
+
     const onDelete = async () => {
         if (!deleteFor) return;
         setDeleting(true);
@@ -215,6 +223,14 @@ function AnnouncementSchedulePage() {
             search: { id: a.id },
         });
     };
+
+    // The email form rewrites modes/mediums to its own (SYSTEM_ALERT + EMAIL), so editing or
+    // copying any other announcement through it would drop its other channels.
+    const isCampaign = (a: Announcement) =>
+        isEmailCampaign(
+            (a.modes ?? []).map((m) => m.modeType),
+            a.mediumTypes ?? []
+        );
 
     // An announcement is editable as long as it has not already been delivered or cancelled
     const isEditable = (a: Announcement) => {
@@ -396,11 +412,26 @@ function AnnouncementSchedulePage() {
                     onReject={(a) => setRejectFor(a)}
                     onEdit={goToEdit}
                     onDelete={(a) => setDeleteFor(a)}
+                    onDuplicate={(a) => setDuplicateFor(a)}
+                    onPreviewRecipients={(a) => setRecipientsFor(a)}
                     canEdit={isEditable}
+                    isCampaign={isCampaign}
                     admin={admin}
                     loading={isLoading}
                 />
             )}
+
+            <DuplicateCampaignDialog
+                campaign={duplicateFor}
+                onClose={() => setDuplicateFor(null)}
+            />
+
+            <RecipientPreviewDialog
+                open={!!recipientsFor}
+                onOpenChange={(open) => !open && setRecipientsFor(null)}
+                source={recipientsFor ? { kind: 'saved', announcementId: recipientsFor.id } : null}
+                title={recipientsFor?.title}
+            />
 
             <p className="text-caption text-neutral-500">
                 {t('showingRange', { range: formatRange(range.from, range.to) })}
@@ -582,7 +613,10 @@ function Agenda(props: {
     onReject: (a: Announcement) => void;
     onEdit: (a: Announcement) => void;
     onDelete: (a: Announcement) => void;
+    onDuplicate: (a: Announcement) => void;
+    onPreviewRecipients: (a: Announcement) => void;
     canEdit: (a: Announcement) => boolean;
+    isCampaign: (a: Announcement) => boolean;
     admin: boolean;
     loading: boolean;
 }) {
@@ -596,7 +630,10 @@ function Agenda(props: {
         onReject,
         onEdit,
         onDelete,
+        onDuplicate,
+        onPreviewRecipients,
         canEdit,
+        isCampaign,
         admin,
         loading,
     } = props;
@@ -700,7 +737,10 @@ function Agenda(props: {
                                         onReject={onReject}
                                         onEdit={onEdit}
                                         onDelete={onDelete}
+                                        onDuplicate={onDuplicate}
+                                        onPreviewRecipients={onPreviewRecipients}
                                         canEdit={canEdit(a)}
+                                        isCampaign={isCampaign(a)}
                                         admin={admin}
                                     />
                                 ))
@@ -841,7 +881,10 @@ function EventCard({
     onReject,
     onEdit,
     onDelete,
+    onDuplicate,
+    onPreviewRecipients,
     canEdit,
+    isCampaign,
     admin,
 }: {
     a: Announcement;
@@ -849,10 +892,15 @@ function EventCard({
     onReject: (a: Announcement) => void;
     onEdit: (a: Announcement) => void;
     onDelete: (a: Announcement) => void;
+    onDuplicate: (a: Announcement) => void;
+    onPreviewRecipients: (a: Announcement) => void;
     canEdit: boolean;
+    /** Email-only campaign: the only kind the email form can edit or copy without loss. */
+    isCampaign: boolean;
     admin: boolean;
 }) {
     const { t } = useTranslation('announcementScheduleIndex');
+    const { t: tTools } = useTranslation('announcementCampaignTools');
     const tone = modeTone(a.modes?.[0]?.modeType);
     // Prefer external-channel badges (EMAIL / WHATSAPP / PUSH_NOTIFICATION) since those are
     // what the recipient actually experiences. Fall back to the in-app mode for announcements
@@ -883,61 +931,83 @@ function EventCard({
             <p className="break-words text-caption text-neutral-500">
                 {renderSchedule(t, a.scheduling)}
             </p>
-            {(canEdit || canReview) && (
-                <div className="flex flex-wrap items-center gap-1 pt-0.5">
-                    {canEdit && (
+            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                <MyButton
+                    buttonType="secondary"
+                    scale="small"
+                    layoutVariant="icon"
+                    onClick={() => onPreviewRecipients(a)}
+                    aria-label={tTools('actions.previewRecipients')}
+                    title={tTools('actions.previewRecipients')}
+                    className="bg-white"
+                >
+                    <UsersThree className="size-3.5" />
+                </MyButton>
+                {isCampaign && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        layoutVariant="icon"
+                        onClick={() => onDuplicate(a)}
+                        aria-label={tTools('actions.duplicate')}
+                        title={tTools('actions.duplicate')}
+                        className="bg-white"
+                    >
+                        <Copy className="size-3.5" />
+                    </MyButton>
+                )}
+                {canEdit && isCampaign && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        layoutVariant="icon"
+                        onClick={() => onEdit(a)}
+                        aria-label={t('actions.edit')}
+                        title={t('actions.edit')}
+                        className="bg-white"
+                    >
+                        <PencilSimple className="size-3.5" />
+                    </MyButton>
+                )}
+                {canEdit && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        layoutVariant="icon"
+                        onClick={() => onDelete(a)}
+                        aria-label={t('actions.delete')}
+                        title={t('actions.delete')}
+                        className="bg-white !text-danger-600"
+                    >
+                        <Trash className="size-3.5" />
+                    </MyButton>
+                )}
+                {canReview && (
+                    <>
                         <MyButton
-                            buttonType="secondary"
+                            buttonType="primary"
                             scale="small"
                             layoutVariant="icon"
-                            onClick={() => onEdit(a)}
-                            aria-label={t('actions.edit')}
-                            title={t('actions.edit')}
-                            className="bg-white"
+                            onClick={() => onApprove(a)}
+                            aria-label={t('actions.approve')}
+                            title={t('actions.approve')}
                         >
-                            <PencilSimple className="size-3.5" />
+                            <Check className="size-3.5" weight="bold" />
                         </MyButton>
-                    )}
-                    {canEdit && (
                         <MyButton
                             buttonType="secondary"
                             scale="small"
                             layoutVariant="icon"
-                            onClick={() => onDelete(a)}
-                            aria-label={t('actions.delete')}
-                            title={t('actions.delete')}
+                            onClick={() => onReject(a)}
+                            aria-label={t('actions.reject')}
+                            title={t('actions.reject')}
                             className="bg-white !text-danger-600"
                         >
-                            <Trash className="size-3.5" />
+                            <X className="size-3.5" weight="bold" />
                         </MyButton>
-                    )}
-                    {canReview && (
-                        <>
-                            <MyButton
-                                buttonType="primary"
-                                scale="small"
-                                layoutVariant="icon"
-                                onClick={() => onApprove(a)}
-                                aria-label={t('actions.approve')}
-                                title={t('actions.approve')}
-                            >
-                                <Check className="size-3.5" weight="bold" />
-                            </MyButton>
-                            <MyButton
-                                buttonType="secondary"
-                                scale="small"
-                                layoutVariant="icon"
-                                onClick={() => onReject(a)}
-                                aria-label={t('actions.reject')}
-                                title={t('actions.reject')}
-                                className="bg-white !text-danger-600"
-                            >
-                                <X className="size-3.5" weight="bold" />
-                            </MyButton>
-                        </>
-                    )}
-                </div>
-            )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }

@@ -4,10 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
     CheckCircle,
+    EnvelopeSimple,
     Eye,
     ListChecks,
     Megaphone,
     PaperPlaneTilt,
+    UsersThree,
     WarningCircle,
 } from '@phosphor-icons/react';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
@@ -41,6 +43,8 @@ import {
 import { mergeErrors, validateAll } from './-utils/validation';
 import { buildCreatePayload, expandRecipients, interpretApiError } from './-utils/payload';
 import type { FieldErrors, FormSectionId } from './-types';
+import { RecipientPreviewDialog } from '../-components/RecipientPreviewDialog';
+import { TestSendDialog } from '../-components/TestSendDialog';
 
 export const Route = createLazyFileRoute('/announcement/create/')({
     component: () => (
@@ -68,6 +72,7 @@ function CreateAnnouncementPage() {
     const { t } = useTranslation('announcementCreateIndex');
     const { t: tValidation } = useTranslation('announcementValidation');
     const { t: tPayload } = useTranslation('announcementPayload');
+    const { t: tTools } = useTranslation('announcementCampaignTools');
     const { t: tConstants } = useTranslation('announcementCreateConstants');
     const { t: tDelivery } = useTranslation('announcementDeliveryStep');
     const { setNavHeading } = useNavHeadingStore();
@@ -295,6 +300,51 @@ function CreateAnnouncementPage() {
         [draft.rules, draft.batchById, tagNameById]
     );
 
+    const buildPayload = () =>
+        buildCreatePayload({
+            title: draft.title,
+            htmlContent: draft.htmlContent,
+            previewText: draft.previewText,
+            createdBy: getUserId(),
+            createdByName: getUserName(),
+            createdByRole: draft.primaryRole,
+            rules: draft.rules,
+            batchById: draft.batchById,
+            tagNameById,
+            modes: draft.modes,
+            modeSettings: draft.modeSettings,
+            mediums: draft.mediums,
+            push: draft.push,
+            email: draft.email,
+            emailSenders: draft.emailSenders,
+            whatsapp: draft.whatsapp,
+            selectedWaTemplate: draft.selectedWaTemplate,
+            scheduleType: draft.scheduleType,
+            timezone: draft.timezone,
+            oneTimeStart: draft.oneTimeStart,
+            cronExpression: draft.cronExpression,
+        });
+
+    const [recipientPreviewOpen, setRecipientPreviewOpen] = useState(false);
+    const [testSendOpen, setTestSendOpen] = useState(false);
+
+    // A test only covers the email channel; WhatsApp / push / in-app are not sent.
+    const emailSelected = draft.mediums.includes('EMAIL');
+    const buildTestPayload = () => {
+        const payload = buildPayload();
+        return {
+            title: payload.title || tTools('testSend.untitled'),
+            content: payload.content,
+            emailMedium: payload.mediums.find((m) => m.mediumType === 'EMAIL'),
+            createdByName: payload.createdByName,
+        };
+    };
+    const testBlockedReason = !emailSelected
+        ? tTools('testSend.needEmailChannel')
+        : !draft.htmlContent.replace(/<[^>]*>/g, '').trim()
+          ? tTools('testSend.needContent')
+          : null;
+
     const handleCreate = async () => {
         setAttempted(true);
         setServerErrors({});
@@ -311,29 +361,7 @@ function CreateAnnouncementPage() {
 
         setSubmitting(true);
         try {
-            const payload = buildCreatePayload({
-                title: draft.title,
-                htmlContent: draft.htmlContent,
-                previewText: draft.previewText,
-                createdBy: getUserId(),
-                createdByName: getUserName(),
-                createdByRole: draft.primaryRole,
-                rules: draft.rules,
-                batchById: draft.batchById,
-                tagNameById,
-                modes: draft.modes,
-                modeSettings: draft.modeSettings,
-                mediums: draft.mediums,
-                push: draft.push,
-                email: draft.email,
-                emailSenders: draft.emailSenders,
-                whatsapp: draft.whatsapp,
-                selectedWaTemplate: draft.selectedWaTemplate,
-                scheduleType: draft.scheduleType,
-                timezone: draft.timezone,
-                oneTimeStart: draft.oneTimeStart,
-                cronExpression: draft.cronExpression,
-            });
+            const payload = buildPayload();
 
             await AnnouncementService.create(payload);
             toast.success(
@@ -646,6 +674,26 @@ function CreateAnnouncementPage() {
                     </p>
                     <div className="ms-auto flex flex-wrap items-center justify-end gap-3">
                         <MyButton
+                            buttonType="text"
+                            scale="medium"
+                            onClick={() => setRecipientPreviewOpen(true)}
+                            disable={submitting}
+                        >
+                            <UsersThree className="mr-1 size-4" />
+                            {tTools('actions.previewRecipients')}
+                        </MyButton>
+                        {emailSelected && (
+                            <MyButton
+                                buttonType="secondary"
+                                scale="medium"
+                                onClick={() => setTestSendOpen(true)}
+                                disable={submitting}
+                            >
+                                <EnvelopeSimple className="mr-1 size-4" />
+                                {tTools('actions.sendTest')}
+                            </MyButton>
+                        )}
+                        <MyButton
                             buttonType="secondary"
                             scale="medium"
                             onClick={() => setReviewOpen(true)}
@@ -704,6 +752,20 @@ function CreateAnnouncementPage() {
             >
                 {reviewBody}
             </MyDialog>
+
+            <RecipientPreviewDialog
+                open={recipientPreviewOpen}
+                onOpenChange={setRecipientPreviewOpen}
+                source={{ kind: 'draft', recipients: recipientsPreview }}
+                title={draft.title}
+            />
+
+            <TestSendDialog
+                open={testSendOpen}
+                onOpenChange={setTestSendOpen}
+                buildPayload={buildTestPayload}
+                blockedReason={testBlockedReason}
+            />
         </div>
     );
 }

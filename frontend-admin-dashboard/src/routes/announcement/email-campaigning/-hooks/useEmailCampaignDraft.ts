@@ -28,6 +28,7 @@ import { errorText, hydrateCampaign } from '../-utils/payload';
 import { senderKey, stripHtml } from '../-utils/validation';
 import type { BatchOption, EmailCampaignDraft, EmailPriority, ScheduleType } from '../-types';
 import { LOCKED_STATUSES } from '../-types';
+import type { DuplicatePart } from '../../-utils/campaign';
 
 /** Same key the Create Announcement page uses, so the chosen sender follows the admin around. */
 const SENDER_STORAGE_KEY = 'selectedFromEmail';
@@ -40,10 +41,19 @@ export interface PrefillState {
     status: string | null;
     /** The backend will refuse an update for these statuses — say so before the user edits. */
     locked: boolean;
+    /** Title of the campaign being duplicated; null when not duplicating or not loaded yet. */
+    sourceTitle: string | null;
 }
 
-export function useEmailCampaignDraft(editingId?: string) {
+/** Start a new campaign from an existing one, copying only `keep`. */
+export interface DuplicateSource {
+    fromId: string;
+    keep: DuplicatePart[];
+}
+
+export function useEmailCampaignDraft(editingId?: string, duplicate?: DuplicateSource) {
     const { t } = useTranslation('announcementEmailCampaigningIndex');
+    const { t: tCopy } = useTranslation('announcementCampaignTools');
     const instituteId = getInstituteId() || '';
     const primaryRole = useMemo(
         () => getUserRoleForInstitute(instituteId) || 'UNKNOWN',
@@ -364,33 +374,44 @@ export function useEmailCampaignDraft(editingId?: string) {
         };
     }, [selectedTagKey]);
 
-    // ---------------------------------------------------------------- edit-mode prefill
+    // ---------------------------------------------------------------- edit / duplicate prefill
+    const sourceId = editingId ?? duplicate?.fromId;
+    const keepKey = duplicate?.keep.join(',') ?? '';
     const [prefill, setPrefill] = useState<PrefillState>({
-        loading: Boolean(editingId),
+        loading: Boolean(sourceId),
         error: null,
         notFound: false,
         status: null,
         locked: false,
+        sourceTitle: null,
     });
     const [prefillNonce, setPrefillNonce] = useState(0);
 
     useEffect(() => {
-        if (!editingId) {
-            setPrefill({
-                loading: false,
-                error: null,
-                notFound: false,
-                status: null,
-                locked: false,
-            });
+        const idle: PrefillState = {
+            loading: false,
+            error: null,
+            notFound: false,
+            status: null,
+            locked: false,
+            sourceTitle: null,
+        };
+        if (!sourceId) {
+            setPrefill(idle);
             return;
         }
         let cancelled = false;
-        setPrefill({ loading: true, error: null, notFound: false, status: null, locked: false });
-        AnnouncementService.getById(editingId)
+        setPrefill({ ...idle, loading: true });
+        AnnouncementService.getById(sourceId)
             .then((raw) => {
                 if (cancelled) return;
                 const { draft, status } = hydrateCampaign(raw, customFieldsRef.current);
+                if (!editingId && duplicate) {
+                    applyDuplicate(draft, duplicate.keep);
+                    // A copy is a new campaign: it is never locked by the source's status.
+                    setPrefill({ ...idle, sourceTitle: draft.title ?? '' });
+                    return;
+                }
                 setTitle(draft.title ?? '');
                 setSubject(draft.subject ?? '');
                 setPreviewText(draft.previewText ?? '');
@@ -407,27 +428,50 @@ export function useEmailCampaignDraft(editingId?: string) {
                 const locked =
                     !!status &&
                     (LOCKED_STATUSES as readonly string[]).includes(status.toUpperCase());
-                setPrefill({ loading: false, error: null, notFound: false, status, locked });
+                setPrefill({ ...idle, status, locked });
             })
             .catch((err) => {
                 if (cancelled) return;
                 const status = (err as { response?: { status?: number } })?.response?.status;
                 setPrefill({
-                    loading: false,
+                    ...idle,
                     error:
                         status === 404
                             ? t('prefill.notFound')
                             : errorText(err, t('prefill.failed')),
                     notFound: status === 404,
-                    status: null,
-                    locked: false,
                 });
             });
         return () => {
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editingId, prefillNonce]);
+    }, [sourceId, keepKey, prefillNonce]);
+
+    /**
+     * Copy only the chosen parts into the blank form. The title is always carried (as a copy) so
+     * the two campaigns can be told apart; the send time never is — the original's slot is
+     * either taken or already past, so the admin picks a new one.
+     */
+    const applyDuplicate = (source: Partial<EmailCampaignDraft>, keep: DuplicatePart[]) => {
+        setTitle(source.title ? tCopy('duplicate.copyTitle', { title: source.title }) : '');
+        if (keep.includes('content')) {
+            setSubject(source.subject ?? '');
+            setPreviewText(source.previewText ?? '');
+            setHtmlContent(source.htmlContent ?? '');
+            setTemplateName(source.templateName ?? '');
+        }
+        if (keep.includes('recipients')) {
+            setRules(source.rules ?? []);
+        }
+        if (keep.includes('settings')) {
+            if (source.fromKey) setFromKey(source.fromKey);
+            if (source.priority) setPriority(source.priority);
+            if (source.scheduleType) setScheduleType(source.scheduleType);
+            if (source.timezone) setTimezone(source.timezone);
+            if (source.cronExpression) setCronExpression(source.cronExpression);
+        }
+    };
 
     // ---------------------------------------------------------------- reset after create
     const resetDraft = useCallback(() => {

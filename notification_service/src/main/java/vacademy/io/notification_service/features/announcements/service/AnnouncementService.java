@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.common.auth.entity.User;
+import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
 import vacademy.io.notification_service.features.announcements.dto.*;
 import vacademy.io.notification_service.features.announcements.entity.*;
 import vacademy.io.notification_service.features.announcements.enums.*;
@@ -50,6 +52,8 @@ public class AnnouncementService {
     private final AnnouncementSchedulingService schedulingService;
     private final AnnouncementProcessingService processingService;
     private final InstituteAnnouncementSettingsService instituteSettingsService;
+    private final RecipientResolutionService recipientResolutionService;
+    private final AuthServiceClient authServiceClient;
 
     @Transactional
     public AnnouncementResponse createAnnouncement(CreateAnnouncementRequest request) {
@@ -168,6 +172,59 @@ public class AnnouncementService {
     public Page<AnnouncementCalendarItem> getPastAnnouncements(String instituteId, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable) {
         return announcementRepository.findPastAnnouncements(instituteId, fromDate, toDate, pageable)
                 .map(this::mapToCalendarItem);
+    }
+
+    /**
+     * Who an unsaved announcement would reach, one page at a time. Recipients are packed the way
+     * a save packs them and resolved by the same service delivery uses, so the count matches.
+     */
+    public RecipientPreviewResponse previewRecipients(RecipientPreviewRequest request) {
+        List<AnnouncementRecipient> rows = new ArrayList<>(
+                buildRecipientEntities(null, request.getRecipients(), false));
+        rows.addAll(buildRecipientEntities(null, request.getExclusions(), true));
+        List<String> userIds = recipientResolutionService.resolveUserIds(
+                request.getInstituteId(), "recipient preview", rows);
+        return toPreviewPage(userIds, request.getPage(), request.getSize());
+    }
+
+    /** Who a saved announcement would reach if it were delivered now. */
+    public RecipientPreviewResponse previewRecipients(String announcementId, int page, int size) {
+        List<String> userIds = recipientResolutionService.resolveRecipientsToUsers(announcementId);
+        return toPreviewPage(userIds, page, Math.min(Math.max(size, 1), 100));
+    }
+
+    private RecipientPreviewResponse toPreviewPage(List<String> userIds, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int from = Math.min(safePage * size, userIds.size());
+        int to = Math.min(from + size, userIds.size());
+        List<String> pageIds = userIds.subList(from, to);
+
+        // Contact details only for the visible page; ids auth no longer knows still show up.
+        Map<String, User> byId = new HashMap<>();
+        if (!pageIds.isEmpty()) {
+            for (User user : authServiceClient.getUsersByIdsInBatches(new ArrayList<>(pageIds), 100)) {
+                byId.put(user.getId(), user);
+            }
+        }
+        List<RecipientPreviewResponse.PreviewUser> users = pageIds.stream()
+                .map(id -> {
+                    User user = byId.get(id);
+                    return RecipientPreviewResponse.PreviewUser.builder()
+                            .userId(id)
+                            .fullName(user != null ? user.getFullName() : null)
+                            .email(user != null ? user.getEmail() : null)
+                            .mobileNumber(user != null ? user.getMobileNumber() : null)
+                            .build();
+                })
+                .toList();
+
+        return RecipientPreviewResponse.builder()
+                .totalCount(userIds.size())
+                .page(safePage)
+                .size(size)
+                .totalPages((userIds.size() + size - 1) / size)
+                .users(users)
+                .build();
     }
 
     /**
@@ -406,63 +463,78 @@ public class AnnouncementService {
 
     private void saveRecipients(String announcementId, List<CreateAnnouncementRequest.RecipientRequest> recipients, boolean isExclusion) {
         if (recipients != null && !recipients.isEmpty()) {
-            com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            List<AnnouncementRecipient> recipientEntities = recipients.stream()
-                    .map(r -> {
-                        AnnouncementRecipient recipient = new AnnouncementRecipient();
-                        recipient.setAnnouncementId(announcementId);
-                        recipient.setRecipientType(RecipientType.valueOf(r.getRecipientType()));
-                        
-                        // Handle CUSTOM_FIELD_FILTER type - store filters as JSON
-                        if ("CUSTOM_FIELD_FILTER".equals(r.getRecipientType())) {
-                            try {
-                                // Store filters as JSON in recipientName field
-                                if (r.getCustomFieldFilters() == null || r.getCustomFieldFilters().isEmpty()) {
-                                    log.warn("CUSTOM_FIELD_FILTER recipient has no filters provided");
-                                    recipient.setRecipientName("ERROR");
-                                } else {
-                                    String filtersJson = objectMapper.writeValueAsString(r.getCustomFieldFilters());
-                                    log.info("Serialized {} filters to JSON for CUSTOM_FIELD_FILTER: {}",
-                                            r.getCustomFieldFilters().size(), filtersJson);
-                                    recipient.setRecipientName(filtersJson);
-                                }
-                                // Use a placeholder ID or empty for CUSTOM_FIELD_FILTER
-                                String recipientId = isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER";
-                                recipient.setRecipientId(recipientId);
-                            } catch (Exception e) {
-                                log.error("Error serializing filters for CUSTOM_FIELD_FILTER recipient", e);
-                                recipient.setRecipientId(isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER");
-                                recipient.setRecipientName("ERROR");
-                            }
-                        } else {
-                            // For inclusions, store exclusions as JSON in recipientName if present
-                            if (!isExclusion && r.getExclusions() != null && !r.getExclusions().isEmpty()) {
-                                try {
-                                    String exclusionsJson = objectMapper.writeValueAsString(r.getExclusions());
-                                    recipient.setRecipientName(exclusionsJson);
-                                    log.info("SUCCESS: Stored {} exclusions as JSON for recipient {}: {}", r.getExclusions().size(), r.getRecipientId(), exclusionsJson);
-                                } catch (Exception e) {
-                                    log.error("Error serializing exclusions for recipient {}", r.getRecipientId(), e);
-                                    recipient.setRecipientName(r.getRecipientName());
-                                }
-                            } else {
-                                recipient.setRecipientName(r.getRecipientName());
-                                log.debug("No exclusions for recipient {}, stored name: {}", r.getRecipientId(), r.getRecipientName());
-                            }
-
-                            // For other types and exclusions, prefix the recipientId with "EXCLUDE:"
-                            String recipientId = isExclusion ? "EXCLUDE:" + r.getRecipientId() : r.getRecipientId();
-                            recipient.setRecipientId(recipientId);
-                        }
-                        return recipient;
-                    })
-                    .collect(Collectors.toList());
+            List<AnnouncementRecipient> recipientEntities = buildRecipientEntities(announcementId, recipients, isExclusion);
             recipientRepository.saveAll(recipientEntities);
             log.debug("Saved {} {} for announcement: {}",
                     recipientEntities.size(),
                     isExclusion ? "exclusions" : "recipients",
                     announcementId);
         }
+    }
+
+    /**
+     * Recipient rows exactly as {@link #saveRecipients} stores them (filters and per-row exclusions
+     * packed into recipientName, "EXCLUDE:" prefix), without saving — the recipient preview resolves
+     * an unsaved draft from these so it counts the same people the real send would.
+     */
+    private List<AnnouncementRecipient> buildRecipientEntities(String announcementId,
+                                                               List<CreateAnnouncementRequest.RecipientRequest> recipients,
+                                                               boolean isExclusion) {
+        if (recipients == null || recipients.isEmpty()) {
+            return new ArrayList<>();
+        }
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        List<AnnouncementRecipient> recipientEntities = recipients.stream()
+                .map(r -> {
+                    AnnouncementRecipient recipient = new AnnouncementRecipient();
+                    recipient.setAnnouncementId(announcementId);
+                    recipient.setRecipientType(RecipientType.valueOf(r.getRecipientType()));
+                    
+                    // Handle CUSTOM_FIELD_FILTER type - store filters as JSON
+                    if ("CUSTOM_FIELD_FILTER".equals(r.getRecipientType())) {
+                        try {
+                            // Store filters as JSON in recipientName field
+                            if (r.getCustomFieldFilters() == null || r.getCustomFieldFilters().isEmpty()) {
+                                log.warn("CUSTOM_FIELD_FILTER recipient has no filters provided");
+                                recipient.setRecipientName("ERROR");
+                            } else {
+                                String filtersJson = objectMapper.writeValueAsString(r.getCustomFieldFilters());
+                                log.info("Serialized {} filters to JSON for CUSTOM_FIELD_FILTER: {}",
+                                        r.getCustomFieldFilters().size(), filtersJson);
+                                recipient.setRecipientName(filtersJson);
+                            }
+                            // Use a placeholder ID or empty for CUSTOM_FIELD_FILTER
+                            String recipientId = isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER";
+                            recipient.setRecipientId(recipientId);
+                        } catch (Exception e) {
+                            log.error("Error serializing filters for CUSTOM_FIELD_FILTER recipient", e);
+                            recipient.setRecipientId(isExclusion ? "EXCLUDE:CUSTOM_FIELD_FILTER" : "CUSTOM_FIELD_FILTER");
+                            recipient.setRecipientName("ERROR");
+                        }
+                    } else {
+                        // For inclusions, store exclusions as JSON in recipientName if present
+                        if (!isExclusion && r.getExclusions() != null && !r.getExclusions().isEmpty()) {
+                            try {
+                                String exclusionsJson = objectMapper.writeValueAsString(r.getExclusions());
+                                recipient.setRecipientName(exclusionsJson);
+                                log.info("SUCCESS: Stored {} exclusions as JSON for recipient {}: {}", r.getExclusions().size(), r.getRecipientId(), exclusionsJson);
+                            } catch (Exception e) {
+                                log.error("Error serializing exclusions for recipient {}", r.getRecipientId(), e);
+                                recipient.setRecipientName(r.getRecipientName());
+                            }
+                        } else {
+                            recipient.setRecipientName(r.getRecipientName());
+                            log.debug("No exclusions for recipient {}, stored name: {}", r.getRecipientId(), r.getRecipientName());
+                        }
+
+                        // For other types and exclusions, prefix the recipientId with "EXCLUDE:"
+                        String recipientId = isExclusion ? "EXCLUDE:" + r.getRecipientId() : r.getRecipientId();
+                        recipient.setRecipientId(recipientId);
+                    }
+                    return recipient;
+                })
+                .collect(Collectors.toList());
+        return recipientEntities;
     }
 
     private void saveModes(String announcementId, List<CreateAnnouncementRequest.ModeRequest> modes) {
