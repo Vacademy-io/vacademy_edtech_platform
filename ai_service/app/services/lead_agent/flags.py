@@ -20,7 +20,9 @@ from typing import Any, FrozenSet, Union
 logger = logging.getLogger(__name__)
 
 ALL_INSTITUTES = "*"
-DEFAULT_MODEL = "z-ai/glm-5.3-flash"
+# Empty = the model registry decides (use case "lead_agent": model_selection / ai_model_defaults,
+# which degrades to the platform GLM default). The setting can pin one model to try first.
+DEFAULT_MODEL = ""
 DEFAULT_MAX_CONCURRENCY = 3
 
 ENABLED_KEY = "lead_agent.enabled"
@@ -128,8 +130,7 @@ def available(institute_id: str | None) -> bool:
 
 
 def model() -> str:
-    value = str(_platform(MODEL_KEY, DEFAULT_MODEL) or "").strip()
-    return value or DEFAULT_MODEL
+    return str(_platform(MODEL_KEY, DEFAULT_MODEL) or "").strip()
 
 
 def max_concurrency() -> int:
