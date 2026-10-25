@@ -595,6 +595,12 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
                 subItemId: 'lead-list-leads',
             },
             {
+                subItem: sidebarT('sidebar:leadAgent'),
+                subItemLink: '/audience-manager/lead-agent',
+                subItemId: 'lead-agent',
+                adminOnly: true,
+            },
+            {
                 subItem: sidebarT('sidebar:recentLeads'),
                 subItemLink: '/audience-manager/recent-leads',
                 subItemId: 'recent-leads',

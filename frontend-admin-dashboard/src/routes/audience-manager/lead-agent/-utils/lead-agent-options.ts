@@ -1,0 +1,221 @@
+/**
+ * Labels, presets and defaults for the Lead Agent screens. Keys match the engine
+ * (LEAD_AGENT_BUILD_SPEC.md §2.1); labels are what admins read.
+ */
+import { FALLBACK_TIMEZONE, getBrowserTimezone } from '@/utils/timezone';
+import type {
+    AgentBrief,
+    AgentGate,
+    AgentMode,
+    AgentWindow,
+    CandidateStatus,
+    MinContact,
+    ProductKey,
+    SourceKey,
+} from '../-types';
+
+export const PRODUCT_OPTIONS: { value: ProductKey; label: string }[] = [
+    { value: 'complete_vacademy', label: 'Complete Vacademy' },
+    { value: 'crm', label: 'CRM' },
+    { value: 'lms', label: 'LMS' },
+    { value: 'ai_calling', label: 'AI calling' },
+];
+
+export const SOURCE_OPTIONS: { value: SourceKey; label: string; hint: string }[] = [
+    {
+        value: 'organisation_search',
+        label: 'Organisation search',
+        hint: 'Web search for organisations in your industries and markets.',
+    },
+    { value: 'maps', label: 'Google Maps', hint: 'Map listings, often with the owner’s mobile.' },
+    { value: 'hiring', label: 'Hiring posts', hint: 'Organisations hiring the roles you list.' },
+    { value: 'keyword', label: 'Keyword posts', hint: 'Pages that use your keywords.' },
+    {
+        value: 'software_request',
+        label: 'Software requests',
+        hint: 'People asking for software like yours.',
+    },
+    { value: 'new_centre', label: 'New centres', hint: 'Organisations opening a new branch.' },
+];
+
+export const ALL_SOURCES: SourceKey[] = SOURCE_OPTIONS.map((s) => s.value);
+
+/** Common kinds to leave out; admins can type their own too. */
+export const EXCLUDE_PRESETS = ['Schools & playschools', 'Colleges & universities'];
+
+export const MODE_OPTIONS: { value: AgentMode; label: string; note: string }[] = [
+    {
+        value: 'LOCAL',
+        label: 'Local extension',
+        note: 'Uses the Chrome extension on your team’s computers, fewer credits.',
+    },
+    {
+        value: 'REMOTE',
+        label: 'Server',
+        note: 'Runs on Vacademy servers, more credits.',
+    },
+    {
+        value: 'AUTO',
+        label: 'Auto',
+        note: 'Uses the extension when one is online, otherwise the servers.',
+    },
+];
+
+export const MODE_LABEL: Record<AgentMode, string> = {
+    LOCAL: 'Local extension',
+    REMOTE: 'Server',
+    AUTO: 'Auto',
+};
+
+export type GatePresetKey = 'strict' | 'balanced' | 'volume';
+export const GATE_PRESETS: {
+    value: GatePresetKey;
+    label: string;
+    auto: number;
+    review: number;
+}[] = [
+    { value: 'strict', label: 'Strict', auto: 80, review: 55 },
+    { value: 'balanced', label: 'Balanced', auto: 70, review: 45 },
+    { value: 'volume', label: 'Volume', auto: 60, review: 40 },
+];
+
+export const presetFor = (auto: number, review: number): GatePresetKey | 'custom' =>
+    GATE_PRESETS.find((p) => p.auto === auto && p.review === review)?.value ?? 'custom';
+
+export const MIN_CONTACT_OPTIONS: { value: MinContact; label: string; hint: string }[] = [
+    { value: 'direct', label: 'Direct', hint: 'A decision maker’s own number or email.' },
+    {
+        value: 'likely',
+        label: 'Likely',
+        hint: 'A desk line with a name to ask for.',
+    },
+    { value: 'general', label: 'General', hint: 'Any public number or email.' },
+];
+
+export const CONTACT_QUALITY_LABEL: Record<string, string> = {
+    direct: 'Direct',
+    likely: 'Likely',
+    general: 'General',
+    none: 'No contact',
+};
+
+/** ISO weekdays, 1 = Monday. */
+export const WEEKDAYS: { value: number; label: string }[] = [
+    { value: 1, label: 'Mon' },
+    { value: 2, label: 'Tue' },
+    { value: 3, label: 'Wed' },
+    { value: 4, label: 'Thu' },
+    { value: 5, label: 'Fri' },
+    { value: 6, label: 'Sat' },
+    { value: 7, label: 'Sun' },
+];
+
+export const DEFAULT_GATE: AgentGate = {
+    auto_score: 70,
+    review_score: 45,
+    min_contact: 'likely',
+    require_intent: false,
+};
+
+/** The spec default window (09:30–19:00, Mon–Sat), in the admin's own time zone. */
+export const DEFAULT_WINDOW = (): AgentWindow => ({
+    tz: getBrowserTimezone(FALLBACK_TIMEZONE),
+    start: '09:30',
+    end: '19:00',
+    days: [1, 2, 3, 4, 5, 6],
+});
+
+export const emptyBrief = (): AgentBrief => ({
+    products: ['complete_vacademy'],
+    description: '',
+    industries: [],
+    buyer_roles: [],
+    hiring_roles: [],
+    keywords: [],
+    must_have: [],
+    deal_breakers: [],
+    exclude: [],
+    sources: [...ALL_SOURCES],
+    find_contacts: true,
+});
+
+export const REJECT_REASONS = [
+    'Not our market',
+    'Too big',
+    'Too small',
+    'Already a customer',
+    'Competitor',
+    'Wrong contact',
+    'Other',
+];
+
+/** Statuses shown under "In progress". */
+export const IN_PROGRESS_STATUSES: CandidateStatus[] = [
+    'DISCOVERED',
+    'FETCHING',
+    'READY',
+    'RESEARCHING',
+    'APPROVED',
+];
+
+export const CANDIDATE_STATUS_LABEL: Record<CandidateStatus, string> = {
+    DISCOVERED: 'Found',
+    FETCHING: 'Reading website',
+    READY: 'Ready to research',
+    RESEARCHING: 'Researching',
+    REVIEW: 'Waiting for review',
+    APPROVED: 'Approved, waiting to deliver',
+    DELIVERED: 'Delivered',
+    REJECTED: 'Rejected',
+    SKIPPED: 'Skipped',
+    FAILED: 'Failed',
+};
+
+const PLATFORM_NAMES: Record<string, string> = {
+    appx: 'Appx',
+    classplus: 'Classplus',
+    teachmint: 'Teachmint',
+    graphy: 'Graphy',
+    edmingle: 'Edmingle',
+    spayee: 'Spayee',
+    leadsquared: 'LeadSquared',
+    meritto: 'Meritto',
+    npf: 'Meritto',
+    extraaedge: 'ExtraaEdge',
+    zoho: 'Zoho',
+    hubspot: 'HubSpot',
+    wati: 'WATI',
+    interakt: 'Interakt',
+    aisensy: 'AiSensy',
+};
+
+const humanize = (s: string) => {
+    const spaced = s.replace(/[_:-]+/g, ' ').trim();
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+};
+
+const plural = (role: string) => (/s$/i.test(role) ? role : `${role}s`);
+
+/** "competitor_platform:appx" → "Uses Appx", "enterprise" → "Very large", "hiring:telecaller" → "Hiring telecallers". */
+export function flagLabel(flag: string): string {
+    const [kind = '', rest = ''] = flag.split(/:(.*)/s);
+    const key = kind.toLowerCase();
+    if (key === 'competitor_platform' || key === 'platform' || key === 'uses') {
+        return `Uses ${PLATFORM_NAMES[rest.toLowerCase()] ?? humanize(rest)}`;
+    }
+    if (key === 'hiring' && rest) return `Hiring ${plural(rest.replace(/_/g, ' '))}`;
+    if (key === 'enterprise' || key === 'very_large' || key === 'large') return 'Very large';
+    if (key === 'micro' || key === 'single_tutor') return 'Very small';
+    if (key === 'no_contact') return 'No contact found';
+    if (key === 'general_contact_only') return 'Only a general contact';
+    if (key === 'dead_site' || key === 'parked') return 'Site looks dead';
+    if (key === 'outside_market') return 'Outside your markets';
+    if (key === 'known_lead' || key === 'existing_lead') return 'Already in your leads';
+    return humanize(flag);
+}
+
+/** Flags that should read as a warning (risk), the rest as neutral. */
+export const isRiskFlag = (flag: string) =>
+    /^(competitor|platform|uses|enterprise|very_large|large|no_contact|dead|parked|outside|known|existing|micro|single)/i.test(
+        flag
+    );

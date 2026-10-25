@@ -145,6 +145,7 @@ import { Route as AudienceManagerOnboardingIndexRouteImport } from "./routes/aud
 import { Route as AudienceManagerListIndexRouteImport } from "./routes/audience-manager/list/index"
 import { Route as AudienceManagerLeadLookupIndexRouteImport } from "./routes/audience-manager/lead-lookup/index"
 import { Route as AudienceManagerLeadBoardIndexRouteImport } from "./routes/audience-manager/lead-board/index"
+import { Route as AudienceManagerLeadAgentIndexRouteImport } from "./routes/audience-manager/lead-agent/index"
 import { Route as AudienceManagerFollowUpsIndexRouteImport } from "./routes/audience-manager/follow-ups/index"
 import { Route as AudienceManagerCallLogIndexRouteImport } from "./routes/audience-manager/call-log/index"
 import { Route as AudienceManagerAiIntelligenceIndexRouteImport } from "./routes/audience-manager/ai-intelligence/index"
@@ -214,6 +215,7 @@ import { Route as ErpComplianceChallansIndexRouteImport } from "./routes/erp/com
 import { Route as ErpAttendanceSetupIndexRouteImport } from "./routes/erp/attendance/setup/index"
 import { Route as ErpAttendanceRegularizationsIndexRouteImport } from "./routes/erp/attendance/regularizations/index"
 import { Route as AudienceManagerListCampaignUsersIndexRouteImport } from "./routes/audience-manager/list/campaign-users/index"
+import { Route as AudienceManagerLeadAgentAgentIdIndexRouteImport } from "./routes/audience-manager/lead-agent/$agentId/index"
 import { Route as AssessmentExportAssessmentIdIndexRouteImport } from "./routes/assessment/export/$assessmentId/index"
 import { Route as AiCenterAiToolsVsmartUploadIndexRouteImport } from "./routes/ai-center/ai-tools/vsmart-upload/index"
 import { Route as AiCenterAiToolsVsmartSorterIndexRouteImport } from "./routes/ai-center/ai-tools/vsmart-sorter/index"
@@ -1289,6 +1291,16 @@ const AudienceManagerLeadBoardIndexRoute =
       (d) => d.Route,
     ),
   )
+const AudienceManagerLeadAgentIndexRoute =
+  AudienceManagerLeadAgentIndexRouteImport.update({
+    id: "/audience-manager/lead-agent/",
+    path: "/audience-manager/lead-agent/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/lead-agent/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerFollowUpsIndexRoute =
   AudienceManagerFollowUpsIndexRouteImport.update({
     id: "/audience-manager/follow-ups/",
@@ -1820,6 +1832,16 @@ const AudienceManagerListCampaignUsersIndexRoute =
     path: "/audience-manager/list/campaign-users/",
     getParentRoute: () => rootRouteImport,
   } as any)
+const AudienceManagerLeadAgentAgentIdIndexRoute =
+  AudienceManagerLeadAgentAgentIdIndexRouteImport.update({
+    id: "/audience-manager/lead-agent/$agentId/",
+    path: "/audience-manager/lead-agent/$agentId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/audience-manager/lead-agent/$agentId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AssessmentExportAssessmentIdIndexRoute =
   AssessmentExportAssessmentIdIndexRouteImport.update({
     id: "/assessment/export/$assessmentId/",
@@ -2259,6 +2281,7 @@ export interface FileRoutesByFullPath {
   "/audience-manager/ai-intelligence/": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log/": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups/": typeof AudienceManagerFollowUpsIndexRoute
+  "/audience-manager/lead-agent/": typeof AudienceManagerLeadAgentIndexRoute
   "/audience-manager/lead-board/": typeof AudienceManagerLeadBoardIndexRoute
   "/audience-manager/lead-lookup/": typeof AudienceManagerLeadLookupIndexRoute
   "/audience-manager/list/": typeof AudienceManagerListIndexRoute
@@ -2357,6 +2380,7 @@ export interface FileRoutesByFullPath {
   "/ai-center/ai-tools/vsmart-sorter/": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload/": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
+  "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
   "/erp/attendance/regularizations/": typeof ErpAttendanceRegularizationsIndexRoute
   "/erp/attendance/setup/": typeof ErpAttendanceSetupIndexRoute
@@ -2506,6 +2530,7 @@ export interface FileRoutesByTo {
   "/audience-manager/ai-intelligence": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups": typeof AudienceManagerFollowUpsIndexRoute
+  "/audience-manager/lead-agent": typeof AudienceManagerLeadAgentIndexRoute
   "/audience-manager/lead-board": typeof AudienceManagerLeadBoardIndexRoute
   "/audience-manager/lead-lookup": typeof AudienceManagerLeadLookupIndexRoute
   "/audience-manager/list": typeof AudienceManagerListIndexRoute
@@ -2604,6 +2629,7 @@ export interface FileRoutesByTo {
   "/ai-center/ai-tools/vsmart-sorter": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId": typeof AssessmentExportAssessmentIdIndexRoute
+  "/audience-manager/lead-agent/$agentId": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users": typeof AudienceManagerListCampaignUsersIndexRoute
   "/erp/attendance/regularizations": typeof ErpAttendanceRegularizationsIndexRoute
   "/erp/attendance/setup": typeof ErpAttendanceSetupIndexRoute
@@ -2755,6 +2781,7 @@ export interface FileRoutesById {
   "/audience-manager/ai-intelligence/": typeof AudienceManagerAiIntelligenceIndexRoute
   "/audience-manager/call-log/": typeof AudienceManagerCallLogIndexRoute
   "/audience-manager/follow-ups/": typeof AudienceManagerFollowUpsIndexRoute
+  "/audience-manager/lead-agent/": typeof AudienceManagerLeadAgentIndexRoute
   "/audience-manager/lead-board/": typeof AudienceManagerLeadBoardIndexRoute
   "/audience-manager/lead-lookup/": typeof AudienceManagerLeadLookupIndexRoute
   "/audience-manager/list/": typeof AudienceManagerListIndexRoute
@@ -2853,6 +2880,7 @@ export interface FileRoutesById {
   "/ai-center/ai-tools/vsmart-sorter/": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload/": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
+  "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
   "/erp/attendance/regularizations/": typeof ErpAttendanceRegularizationsIndexRoute
   "/erp/attendance/setup/": typeof ErpAttendanceSetupIndexRoute
@@ -3005,6 +3033,7 @@ export interface FileRouteTypes {
     | "/audience-manager/ai-intelligence/"
     | "/audience-manager/call-log/"
     | "/audience-manager/follow-ups/"
+    | "/audience-manager/lead-agent/"
     | "/audience-manager/lead-board/"
     | "/audience-manager/lead-lookup/"
     | "/audience-manager/list/"
@@ -3103,6 +3132,7 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter/"
     | "/ai-center/ai-tools/vsmart-upload/"
     | "/assessment/export/$assessmentId/"
+    | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
     | "/erp/attendance/regularizations/"
     | "/erp/attendance/setup/"
@@ -3252,6 +3282,7 @@ export interface FileRouteTypes {
     | "/audience-manager/ai-intelligence"
     | "/audience-manager/call-log"
     | "/audience-manager/follow-ups"
+    | "/audience-manager/lead-agent"
     | "/audience-manager/lead-board"
     | "/audience-manager/lead-lookup"
     | "/audience-manager/list"
@@ -3350,6 +3381,7 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter"
     | "/ai-center/ai-tools/vsmart-upload"
     | "/assessment/export/$assessmentId"
+    | "/audience-manager/lead-agent/$agentId"
     | "/audience-manager/list/campaign-users"
     | "/erp/attendance/regularizations"
     | "/erp/attendance/setup"
@@ -3500,6 +3532,7 @@ export interface FileRouteTypes {
     | "/audience-manager/ai-intelligence/"
     | "/audience-manager/call-log/"
     | "/audience-manager/follow-ups/"
+    | "/audience-manager/lead-agent/"
     | "/audience-manager/lead-board/"
     | "/audience-manager/lead-lookup/"
     | "/audience-manager/list/"
@@ -3598,6 +3631,7 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter/"
     | "/ai-center/ai-tools/vsmart-upload/"
     | "/assessment/export/$assessmentId/"
+    | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
     | "/erp/attendance/regularizations/"
     | "/erp/attendance/setup/"
@@ -3748,6 +3782,7 @@ export interface RootRouteChildren {
   AudienceManagerAiIntelligenceIndexRoute: typeof AudienceManagerAiIntelligenceIndexRoute
   AudienceManagerCallLogIndexRoute: typeof AudienceManagerCallLogIndexRoute
   AudienceManagerFollowUpsIndexRoute: typeof AudienceManagerFollowUpsIndexRoute
+  AudienceManagerLeadAgentIndexRoute: typeof AudienceManagerLeadAgentIndexRoute
   AudienceManagerLeadBoardIndexRoute: typeof AudienceManagerLeadBoardIndexRoute
   AudienceManagerLeadLookupIndexRoute: typeof AudienceManagerLeadLookupIndexRoute
   AudienceManagerListIndexRoute: typeof AudienceManagerListIndexRoute
@@ -3846,6 +3881,7 @@ export interface RootRouteChildren {
   AiCenterAiToolsVsmartSorterIndexRoute: typeof AiCenterAiToolsVsmartSorterIndexRoute
   AiCenterAiToolsVsmartUploadIndexRoute: typeof AiCenterAiToolsVsmartUploadIndexRoute
   AssessmentExportAssessmentIdIndexRoute: typeof AssessmentExportAssessmentIdIndexRoute
+  AudienceManagerLeadAgentAgentIdIndexRoute: typeof AudienceManagerLeadAgentAgentIdIndexRoute
   AudienceManagerListCampaignUsersIndexRoute: typeof AudienceManagerListCampaignUsersIndexRoute
   ErpAttendanceRegularizationsIndexRoute: typeof ErpAttendanceRegularizationsIndexRoute
   ErpAttendanceSetupIndexRoute: typeof ErpAttendanceSetupIndexRoute
@@ -4871,6 +4907,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AudienceManagerLeadBoardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/audience-manager/lead-agent/": {
+      id: "/audience-manager/lead-agent/"
+      path: "/audience-manager/lead-agent"
+      fullPath: "/audience-manager/lead-agent/"
+      preLoaderRoute: typeof AudienceManagerLeadAgentIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/follow-ups/": {
       id: "/audience-manager/follow-ups/"
       path: "/audience-manager/follow-ups"
@@ -5354,6 +5397,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AudienceManagerListCampaignUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/audience-manager/lead-agent/$agentId/": {
+      id: "/audience-manager/lead-agent/$agentId/"
+      path: "/audience-manager/lead-agent/$agentId"
+      fullPath: "/audience-manager/lead-agent/$agentId/"
+      preLoaderRoute: typeof AudienceManagerLeadAgentAgentIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/assessment/export/$assessmentId/": {
       id: "/assessment/export/$assessmentId/"
       path: "/assessment/export/$assessmentId"
@@ -5739,6 +5789,7 @@ const rootRouteChildren: RootRouteChildren = {
     AudienceManagerAiIntelligenceIndexRoute,
   AudienceManagerCallLogIndexRoute: AudienceManagerCallLogIndexRoute,
   AudienceManagerFollowUpsIndexRoute: AudienceManagerFollowUpsIndexRoute,
+  AudienceManagerLeadAgentIndexRoute: AudienceManagerLeadAgentIndexRoute,
   AudienceManagerLeadBoardIndexRoute: AudienceManagerLeadBoardIndexRoute,
   AudienceManagerLeadLookupIndexRoute: AudienceManagerLeadLookupIndexRoute,
   AudienceManagerListIndexRoute: AudienceManagerListIndexRoute,
@@ -5857,6 +5908,8 @@ const rootRouteChildren: RootRouteChildren = {
   AiCenterAiToolsVsmartUploadIndexRoute: AiCenterAiToolsVsmartUploadIndexRoute,
   AssessmentExportAssessmentIdIndexRoute:
     AssessmentExportAssessmentIdIndexRoute,
+  AudienceManagerLeadAgentAgentIdIndexRoute:
+    AudienceManagerLeadAgentAgentIdIndexRoute,
   AudienceManagerListCampaignUsersIndexRoute:
     AudienceManagerListCampaignUsersIndexRoute,
   ErpAttendanceRegularizationsIndexRoute:

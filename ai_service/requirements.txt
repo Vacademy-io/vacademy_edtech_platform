@@ -12,6 +12,10 @@ edge-tts
 moviepy==1.0.3
 playwright==1.49.1
 beautifulsoup4==4.12.3
+# Lead Agent engine (app/services/lead_agent/engine): phone parsing for contacts, and registered
+# domains from tldextract's bundled public-suffix snapshot (never fetched at runtime).
+phonenumbers==9.0.41
+tldextract==5.4.0
 google-cloud-texttospeech>=2.17.0
 faster-whisper
 python-jose[cryptography]==3.3.0

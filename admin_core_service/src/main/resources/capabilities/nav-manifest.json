@@ -657,10 +657,21 @@
           }
         },
         {
+          "id": "lead-agent",
+          "label": "Lead Agent",
+          "route": "/audience-manager/lead-agent",
+          "order": 2,
+          "admin_only": true,
+          "default_visible": {
+            "ADMIN": true,
+            "TEACHER": false
+          }
+        },
+        {
           "id": "recent-leads",
           "label": "Recent Leads",
           "route": "/audience-manager/recent-leads",
-          "order": 2,
+          "order": 3,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -671,7 +682,7 @@
           "id": "lead-board",
           "label": "Lead Board",
           "route": "/audience-manager/lead-board",
-          "order": 3,
+          "order": 4,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -682,7 +693,7 @@
           "id": "follow-ups",
           "label": "Follow-ups",
           "route": "/audience-manager/follow-ups",
-          "order": 4,
+          "order": 5,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -693,7 +704,7 @@
           "id": "call-log",
           "label": "Call Log",
           "route": "/audience-manager/call-log",
-          "order": 5,
+          "order": 6,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -704,7 +715,7 @@
           "id": "lead-lookup",
           "label": "Check Lead",
           "route": "/audience-manager/lead-lookup",
-          "order": 6,
+          "order": 7,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -715,7 +726,7 @@
           "id": "onboarding",
           "label": "Onboarding",
           "route": "/audience-manager/onboarding",
-          "order": 7,
+          "order": 8,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -726,7 +737,7 @@
           "id": "ai-intelligence",
           "label": "AI Intelligence",
           "route": "/audience-manager/ai-intelligence",
-          "order": 8,
+          "order": 9,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -737,7 +748,7 @@
           "id": "counsellors",
           "label": "Counsellors",
           "route": "/counsellors",
-          "order": 9,
+          "order": 10,
           "admin_only": false,
           "default_visible": {
             "ADMIN": false,
@@ -748,7 +759,7 @@
           "id": "sales-dashboard",
           "label": "Sales Dashboard",
           "route": "/sales-dashboard",
-          "order": 10,
+          "order": 11,
           "admin_only": false,
           "default_visible": {
             "ADMIN": false,
@@ -759,7 +770,7 @@
           "id": "lead-reports",
           "label": "Reports",
           "route": "/audience-manager/reports",
-          "order": 11,
+          "order": 12,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,
@@ -770,7 +781,7 @@
           "id": "utm-campaigns",
           "label": "Campaigns (UTM)",
           "route": "/audience-manager/reports?tab=utm",
-          "order": 12,
+          "order": 13,
           "admin_only": false,
           "default_visible": {
             "ADMIN": true,

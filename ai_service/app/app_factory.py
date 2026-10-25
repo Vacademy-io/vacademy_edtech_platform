@@ -47,6 +47,7 @@ from .routers.mathpix import router as mathpix_router
 from .routers.knowledge_base import router as knowledge_base_router
 from .routers.course_knowledge import router as course_knowledge_router
 from .routers.course_knowledge_links import router as course_knowledge_links_router
+from .routers.lead_agent import router as lead_agent_router
 from .routers.kb_paper import router as kb_paper_router
 from .routers.kb_companion import router as kb_companion_router
 from .site_assistant.router import router as site_assistant_router
@@ -212,6 +213,13 @@ async def _lifespan(app: FastAPI):
         start_course_knowledge_worker()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("course knowledge worker startup skipped: %s", exc)
+    # Lead Agent loops (scheduler, research pool, server fetcher): idle while
+    # lead_agent.enabled is off. Lazy import so a module issue can't block app boot.
+    try:
+        from .services.lead_agent.scheduler import start_lead_agent_workers
+        start_lead_agent_workers()
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("lead agent workers startup skipped: %s", exc)
 
     # MCP: the Streamable HTTP session manager needs a task group alive for the
     # whole app lifetime. Mounting the SDK's ASGI app bypasses its own lifespan,
@@ -222,6 +230,7 @@ async def _lifespan(app: FastAPI):
             yield
         finally:
             await _stop_course_knowledge_worker(_logger)
+            await _stop_lead_agent_workers(_logger)
         return
 
     try:
@@ -258,6 +267,7 @@ async def _lifespan(app: FastAPI):
             yield
     finally:
         await _stop_course_knowledge_worker(_logger)
+        await _stop_lead_agent_workers(_logger)
 
 
 async def _stop_course_knowledge_worker(logger: logging.Logger) -> None:
@@ -268,6 +278,15 @@ async def _stop_course_knowledge_worker(logger: logging.Logger) -> None:
         await stop_course_knowledge_worker()
     except Exception as exc:  # noqa: BLE001
         logger.warning("course knowledge worker shutdown skipped: %s", exc)
+
+
+async def _stop_lead_agent_workers(logger: logging.Logger) -> None:
+    """Shutdown: cancel the Lead Agent loops (a crash here must not block shutdown)."""
+    try:
+        from .services.lead_agent.scheduler import stop_lead_agent_workers
+        await stop_lead_agent_workers()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("lead agent workers shutdown skipped: %s", exc)
 
 
 def create_app() -> FastAPI:
@@ -426,6 +445,8 @@ def create_app() -> FastAPI:
     # Both routers declare /course-knowledge/v1; every route checks its own flag.
     app.include_router(course_knowledge_router, prefix=settings.api_base_path)
     app.include_router(course_knowledge_links_router, prefix=settings.api_base_path)
+    # Lead Agent (admin_core V612 tables): admin API + Chrome extension protocol.
+    app.include_router(lead_agent_router, prefix=settings.api_base_path)
     # Question papers generated from a knowledge base (V436). Shares the
     # /knowledge-base/v1 prefix and the same Caller auth dependency.
     app.include_router(kb_paper_router, prefix=settings.api_base_path)

@@ -28,6 +28,12 @@ public enum LeadJourneyActionType {
      * campaign_name). Logged on the lead the enquiry repeats.
      */
     REATTEMPT,
+    /**
+     * The Lead Agent found this organisation on the public web and delivered it into the list;
+     * the description is its evidence (quotes with source URLs). A system event, so it never
+     * counts as a counsellor response (metadata: external_id = lead_candidate id, source_id).
+     */
+    LEAD_AGENT_RESEARCH,
 
     // ── Curation ─────────────────────────────────────────────────────────────
     /** An admin soft-deleted this lead (metadata: scope, campaign_name, deleted_by). */

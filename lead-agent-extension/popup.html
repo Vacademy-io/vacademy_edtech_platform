@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vacademy Lead Agent</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="top">
+      <img src="icons/icon48.png" alt="" width="24" height="24" />
+      <h1>Vacademy Lead Agent</h1>
+      <span id="version" class="muted small"></span>
+    </header>
+
+    <!-- Not connected -->
+    <section id="view-connect" hidden>
+      <p id="disconnected-note" class="note warn" hidden></p>
+      <p>Connect this browser to your Vacademy Lead Agent. It then reads the organisation websites the agent asks for, while Chrome is open.</p>
+      <label for="code">Pairing code</label>
+      <input id="code" type="text" autocomplete="off" spellcheck="false" placeholder="Paste the code from the dashboard" />
+      <details>
+        <summary>Advanced</summary>
+        <label for="api-base">API address</label>
+        <input id="api-base" type="url" spellcheck="false" />
+      </details>
+      <button id="connect" class="primary">Connect</button>
+      <p id="connect-error" class="note error" hidden></p>
+      <p class="muted small">Open Lead Agent → Extension in the Vacademy dashboard to get a code, or click Connect there with this extension installed.</p>
+    </section>
+
+    <!-- Needs site access -->
+    <section id="view-access" hidden>
+      <p class="who"><strong class="institute"></strong><br /><span class="muted user"></span></p>
+      <p>To read organisation websites, the extension needs your permission to open web pages. It only opens the pages the Lead Agent asks for, without your cookies, and never reads your tabs.</p>
+      <button id="allow" class="primary">Allow reading websites</button>
+      <p id="access-error" class="note error" hidden></p>
+      <button id="disconnect-2" class="link">Disconnect</button>
+    </section>
+
+    <!-- Connected -->
+    <section id="view-connected" hidden>
+      <p class="who"><strong class="institute"></strong><br /><span class="muted user"></span></p>
+      <div class="row">
+        <span id="state-pill" class="pill"></span>
+        <button id="toggle" class="secondary"></button>
+      </div>
+      <p id="server-paused" class="note" hidden>The Lead Agent is paused in the dashboard, so there is nothing to read right now.</p>
+      <p id="backoff" class="note warn" hidden></p>
+      <dl class="stats">
+        <dt>Pages today</dt>
+        <dd id="pages"></dd>
+        <dt>Pages that failed</dt>
+        <dd id="failed"></dd>
+        <dt>Last run</dt>
+        <dd id="last-run"></dd>
+        <dt>Last error</dt>
+        <dd id="last-error"></dd>
+      </dl>
+      <div class="row">
+        <button id="run-now" class="secondary">Run now</button>
+        <button id="disconnect" class="link">Disconnect</button>
+      </div>
+      <p class="muted small">Works only while Chrome is open. At most <span id="cap"></span> pages a day.</p>
+    </section>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

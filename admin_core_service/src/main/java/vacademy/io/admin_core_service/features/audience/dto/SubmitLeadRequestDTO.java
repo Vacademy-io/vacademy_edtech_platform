@@ -51,5 +51,12 @@ public class SubmitLeadRequestDTO {
     // public form cannot claim to have been entered by a counsellor.
     @JsonIgnore
     private String createdByUserId;
+
+    // Server-set only (@JsonIgnore): skip the built-in respondent confirmation email
+    // ("thank you for your response") and its respondentEmailRequests workflow entry, for
+    // leads that never filled a form (Lead Agent intake). Workflows and the to_notify admin
+    // alert are unaffected. Default false keeps every other path unchanged.
+    @JsonIgnore
+    private boolean suppressRespondentEmail;
 }
 

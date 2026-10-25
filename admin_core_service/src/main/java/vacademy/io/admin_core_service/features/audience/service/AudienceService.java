@@ -1510,6 +1510,9 @@ public class AudienceService {
                 logger.info("No email on lead for audience {} — synthesized placeholder {} from name+phone",
                         requestDTO.getAudienceId(), userDTO.getEmail());
             }
+            // No "thank you for your response" mail to a placeholder address, nor to a lead the
+            // caller says never filled a form (Lead Agent intake). Workflows still fire.
+            final boolean skipRespondentEmail = emailSynthesized || requestDTO.isSuppressRespondentEmail();
 
             // A lead with no email, no phone AND no name has no identity to key the
             // auth user on — reject with an actionable message (the generic sentinel
@@ -1700,16 +1703,20 @@ public class AudienceService {
                     contextData.put("phone", savedResponse.getParentMobile());
                     contextData.put("parentMobile", savedResponse.getParentMobile());
                     contextData.put("campaignName", audience.getCampaignName());
+                    // Lets a condition node branch on where the lead came from, e.g.
+                    // #ctx['sourceType'] == 'LEAD_AGENT' for cold leads found by the Lead Agent.
+                    contextData.put("sourceType", savedResponse.getSourceType());
+                    contextData.put("sourceId", savedResponse.getSourceId());
                     // The SEND_EMAIL node sends one email per respondentEmailRequests
                     // entry (the flag alone doesn't gate it) — suppress the entry for
                     // synthesized placeholder addresses, which are non-deliverable and
                     // would bounce. Same contract as the form-webhook path.
                     boolean wantRespondentEmail = audience.getSendRespondentEmail() == null
                             || audience.getSendRespondentEmail();
-                    contextData.put("sendRespondentEmail", !emailSynthesized && wantRespondentEmail);
+                    contextData.put("sendRespondentEmail", !skipRespondentEmail && wantRespondentEmail);
 
                     List<Map<String, Object>> respondentEmailRequests = new ArrayList<>();
-                    if (!emailSynthesized) {
+                    if (!skipRespondentEmail) {
                         Map<String, Object> respondentEmailRequest = new HashMap<>();
                         respondentEmailRequest.put("to", userForNotification.getEmail());
                         respondentEmailRequest.put("subject", respondentEmailSubject);
@@ -1751,7 +1758,7 @@ public class AudienceService {
 
                 // 5. Send notification to respondent (if enabled; never to a synthesized
                 // placeholder address — non-deliverable by design, would bounce on SES)
-                if (!emailSynthesized
+                if (!skipRespondentEmail
                         && (audience.getSendRespondentEmail() == null || audience.getSendRespondentEmail())) {
                     logger.info("Sending notification to respondent: {}", userForNotification.getEmail());
 

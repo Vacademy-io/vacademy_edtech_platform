@@ -211,6 +211,10 @@ class Settings(BaseSettings):
     # need real photos of named entities (people, places, brands, events).
     serper_api_keys: str = ""
 
+    # Parallel Search API (api.parallel.ai/v1/search) for the Lead Agent's buying-signal,
+    # keyword and decision-maker searches. Env: PARALLEL_API_KEY.
+    parallel_api_key: str = ""
+
     # Render Worker (dedicated Hetzner server for video rendering)
     render_server_url: str = os.getenv("RENDER_SERVER_URL", "")
     render_server_key: str = os.getenv("RENDER_SERVER_KEY", "")

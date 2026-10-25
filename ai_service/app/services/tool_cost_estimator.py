@@ -432,6 +432,26 @@ DEFAULT_TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "unit_field": "flat",
         "params": {"fixed_price": True},
     },
+    # ---- Lead Agent (admin_core V612) -------------------------------------
+    # ONE fixed-price charge per lead delivered into a lead list (idempotency key
+    # lead_agent:{candidate_id}); rejected leads are free. Local = the pages were
+    # read by the institute's Chrome extension, remote = by our servers. 'flat'
+    # because the ai_tool_pricing unit_field CHECK has no 'leads'. Provisional
+    # prices; the live rate is the ai_tool_pricing row - this must mirror V612.
+    "lead_agent_lead_local": {
+        "request_type": "agent",
+        "flat_base_credits": Decimal("2"),
+        "per_unit_credits": Decimal("0"),
+        "unit_field": "flat",
+        "params": {"fixed_price": True},
+    },
+    "lead_agent_lead_remote": {
+        "request_type": "agent",
+        "flat_base_credits": Decimal("4"),
+        "per_unit_credits": Decimal("0"),
+        "unit_field": "flat",
+        "params": {"fixed_price": True},
+    },
     # ---- Question papers from a knowledge base (V441) -----------------------
     # request_type 'assessment' is already in the ai_token_usage CHECK — reusing
     # it avoids another DROP+ADD of that constraint (the V325/V435 trap).
