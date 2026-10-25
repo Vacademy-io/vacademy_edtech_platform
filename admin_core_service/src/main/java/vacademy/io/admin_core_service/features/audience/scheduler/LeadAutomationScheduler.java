@@ -196,6 +196,9 @@ public class LeadAutomationScheduler {
         if (emission == null) return false;
 
         String dedupKey = c.getLeadId() + "|" + counselorId + "|" + cycleAnchorEpoch + "|" + emission.stageLabel;
+        // Already claimed (the scan read the stored key): the conditional UPDATE below would match
+        // no row. Skipping it saves one round trip per waiting lead per scan, ~3.3M a day.
+        if (dedupKey.equals(c.getTatReminderDedupKey())) return false;
 
         // Atomic claim — returns 1 only if this stage+cycle hasn't been emitted yet (replica-safe).
         int claimed = audienceResponseRepository.claimTatReminderStage(

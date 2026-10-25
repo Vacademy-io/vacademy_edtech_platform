@@ -23,6 +23,8 @@ public interface LeadSlaCandidate {
     String getCounselorId();
     String getTatReminderStage();
     Integer getTatReminderCount();
+    /** Last stage+cycle claimed for this lead; equal to the computed key means nothing new to emit. */
+    String getTatReminderDedupKey();
     String getTatReminderAssigneeId();
     /** Most recent response event on this lead; null if never responded (still on the TAT clock). */
     Timestamp getLastCounselorActionAt();

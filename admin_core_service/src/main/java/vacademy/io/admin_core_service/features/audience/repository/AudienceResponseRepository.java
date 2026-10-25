@@ -2773,6 +2773,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                    COALESCE(lu.user_id, ulp.assigned_counselor_id) AS counselorId,
                                    ar.tat_reminder_stage AS tatReminderStage,
                                    ar.tat_reminder_count AS tatReminderCount,
+                                   ar.tat_reminder_dedup_key AS tatReminderDedupKey,
                                    ar.tat_reminder_assignee_id AS tatReminderAssigneeId,
                                    ar.tat_due_override_at AS tatDueOverrideAt,
                                    (SELECT MAX(te.created_at) FROM timeline_event te
@@ -2834,6 +2835,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                    COALESCE(lu.user_id, ulp.assigned_counselor_id) AS counselorId,
                                    ar.tat_reminder_stage AS tatReminderStage,
                                    ar.tat_reminder_count AS tatReminderCount,
+                                   ar.tat_reminder_dedup_key AS tatReminderDedupKey,
                                    ar.tat_reminder_assignee_id AS tatReminderAssigneeId,
                                    ar.tat_due_override_at AS tatDueOverrideAt,
                                    CAST(NULL AS timestamp) AS lastCounselorActionAt
