@@ -123,6 +123,18 @@ def test_a_news_story_is_not_taken_for_the_organisations_website():
     assert match_supplied_name("BKT Tyres", [story, own], set()).url == own.url
     park = SearchResult(query="q", rank=1, title="Adani Logistics Park", url="https://adanilogisticspark.com/", snippet="")
     assert match_supplied_name("Mahindra Logistics", [park], set()) is None  # a sector word is not a name
+    guru = SearchResult(query="q", rank=1, title="HomeGuru World - tutors in Gurgaon", url="https://homeguruworld.com/",
+                        snippet="")
+    assert match_supplied_name("Pathways World School Gurgaon", [guru], set()) is None  # not its first word
+
+
+def test_a_framework_never_competes():
+    lead = _lead([("fit_1", "Our 40,000 sq ft warehouse at Pithampur")])
+    site_seller = {**BRIEF, "offer": {**SOLAR, "competitor_kinds": ["website"]}}
+    nextjs = [{"key": "nextjs", "name": "Next.js", "kind": "framework", "competitor": False, "evidence": "x", "url": SITE}]
+    wix = [{"key": "wix", "name": "Wix", "kind": "website", "competitor": False, "evidence": "x", "url": SITE}]
+    assert score_lead(lead, site_seller, nextjs, {}, today=TODAY)["risk"] == 0
+    assert score_lead(lead, site_seller, wix, {}, today=TODAY)["risk"] == 40
 
 
 def test_education_checks_only_for_education_offers():

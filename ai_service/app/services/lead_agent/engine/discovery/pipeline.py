@@ -108,6 +108,12 @@ def _name_tokens(name: str) -> set[str]:
     return {w for w in words if len(w) >= 3 and w not in _GENERIC_NAME_WORDS}
 
 
+def _lead_token(name: str) -> str | None:
+    """The name's first distinctive word ('pathways' in 'Pathways World School Gurgaon')."""
+    return next((w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) >= 3 and w not in _GENERIC_NAME_WORDS),
+                None)
+
+
 def _name_key(name: str) -> str:
     tokens = _name_tokens(name)
     return " ".join(sorted(tokens)) if tokens else " ".join(name.lower().split())
@@ -122,8 +128,8 @@ def _article_like(url: str) -> bool:
 
 def match_supplied_name(name: str, results: list[SearchResult], taken: set[str],
                         near: str | list[str] | None = None) -> SearchResult | None:
-    """The first result on a usable domain whose title or domain shares a distinctive word with the name.
-    With `near` (a city or state), the result must also mention that place, so a same-name organisation
+    """The first result on a usable domain whose title or domain has the name's first distinctive word
+    (a later one alone is too weak: "world" took homeguruworld.com for Pathways World School). With `near` (a city or state), the result must also mention that place, so a same-name organisation
     elsewhere is not taken for the one in the job post."""
     tokens = _name_tokens(name)
     if not tokens:
@@ -134,7 +140,7 @@ def match_supplied_name(name: str, results: list[SearchResult], taken: set[str],
         if is_excluded(domain) or domain in taken:
             continue
         haystack = f"{result.title.lower()} {domain}"
-        if not any(token in haystack for token in tokens):
+        if _lead_token(name) not in haystack:
             continue
         if _article_like(result.url) and not any(token in (domain or "") for token in tokens):
             continue  # a story about the organisation on someone else's site, not its own website

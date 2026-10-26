@@ -110,6 +110,20 @@ def test_pdf_is_not_html(la_db):
     assert _get(la_db, "SELECT access FROM lead_org_page")[0][0] == "not_html"
 
 
+def test_follow_up_pages_get_a_full_window(la_db):
+    # In AUTO the home page alone may wait 5 minutes for an extension; its follow-up pages then wait
+    # again, so the candidate's window restarts when they are queued (2026-10-26: 40 of 176 dropped).
+    agent, cand, _ = _scheduled(la_db)
+    with la_db() as db:
+        db.execute(text("UPDATE lead_candidate SET fetch_deadline = now() + interval '1 minute'"))
+        db.commit()
+    [home] = _claim(la_db)
+    out = fetcher.ingest_page_result(home, HOME_HTML, 200, None, "text/html", "SERVER")
+    assert out["enqueued"] >= 1
+    left = _get(la_db, "SELECT extract(epoch FROM fetch_deadline - now()) FROM lead_candidate")[0][0]
+    assert left > (store.FETCH_DEADLINE_MINUTES - 1) * 60
+
+
 def test_deadline_rules(la_db):
     agent, cand, _ = _scheduled(la_db, mode="LOCAL")
     with la_db() as db:  # no extension ever took the home page: keep waiting, spend nothing

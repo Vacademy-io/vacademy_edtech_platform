@@ -334,8 +334,9 @@ class ProductProfile(BaseModel):
     )
     competitor_kinds: Annotated[list[CompetitorKind], _known(COMPETITOR_KIND_KEYS), _clip_list(6)] = Field(
         default_factory=list,
-        description="Only if what is sold is software: which of lms, crm, whatsapp, chat, payments, website compete "
-        "with it. Empty otherwise.",
+        description="Only if what is sold is software: which of lms, crm, whatsapp, chat, payments, website (website "
+        "builders) do the SAME job as it, so a prospect using one would have to switch. An LMS does not compete with "
+        "website builders, and not with a CRM unless it includes one. Empty otherwise.",
     )
     education: bool = Field(default=False, description="True only if most buyers are education providers.")
     discovery_question: Text160 = Field(

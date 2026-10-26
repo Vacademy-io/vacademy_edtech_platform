@@ -136,7 +136,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
     counter = SearchCounter(agent["id"], day)
     ctx = llm.CallContext(institute_id=agent["institute_id"], agent_id=agent["id"], day=day)
 
-    known, suppressed = await asyncio.to_thread(_known_and_suppressed, agent)
+    known, suppressed, known_names = await asyncio.to_thread(_known_and_suppressed, agent)
     skip = known | suppressed
     guided = planner.guided_request(agent)
     exclude = plan.get("exclude") or engine_api.leave_out(guided)
@@ -178,6 +178,12 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
         for c in outcome.included:
             if not c.domain or not c.website or c.domain in skip:
                 continue
+            key = engine_api.name_key(c.name or "")
+            if key and key in known_names:
+                # Same organisation under another domain: one job post resolved to three
+                # "Pathfinder School" sites over three rounds (2026-10-26).
+                continue
+            known_names.add(key)
             detail = dict(c.detail or {})
             cid = await asyncio.to_thread(
                 _create, agent, domain=c.domain, name=c.name, website=c.website, source=candidate_source(c),
@@ -263,8 +269,9 @@ def _signal_query_set(sources, industries, places, plan) -> Set[str]:
 def _known_and_suppressed(agent) -> tuple:
     with ladb.session() as db:
         known = store.known_domains(db, agent["id"])
+        names = {engine_api.name_key(n) for n in store.known_names(db, agent["id"])}
         supp = store.suppressed(db, agent["institute_id"]).get("DOMAIN", set())
-    return known, set(supp)
+    return known, set(supp), names
 
 
 def _create(agent, *, domain: str, name: str, website: str, source: str, discovery: dict,

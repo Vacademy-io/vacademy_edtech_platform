@@ -92,6 +92,9 @@ def test_long_suggested_lists_keep_their_first_items(client):
     saved = r.json()["brief"]
     assert saved["buyer_roles"] == [f"Role {i}" for i in range(10)] and len(saved["hiring_roles"]) == 6
     assert saved["keywords"][:2] == ["need lms", "kw 0"] and len(saved["keywords"]) == 10
+    r = client.put(f"{BASE}/agents/{r.json()['id']}",
+                   json={"brief": {**BRIEF, "hiring_roles": ["hiring telecaller", "Hiring faculty for coaching institute"]}})
+    assert r.json()["brief"]["hiring_roles"] == ["telecaller", "faculty"]  # roles, not job-post phrases
 
 
 def test_an_offer_is_saved_with_keys_and_an_older_brief_reads_back_with_one(client):

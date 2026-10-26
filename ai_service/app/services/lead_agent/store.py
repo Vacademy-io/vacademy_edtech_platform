@@ -463,6 +463,15 @@ def known_domains(db: Session, agent_id: str) -> Set[str]:
     return {r[0] for r in rows}
 
 
+def known_names(db: Session, agent_id: str) -> List[str]:
+    """Names of the organisations already on the agent (any status), for name-level dedupe."""
+    rows = db.execute(text(
+        "SELECT DISTINCT o.name FROM lead_candidate c JOIN lead_org o ON o.id = c.org_id "
+        "WHERE c.agent_id = :a AND o.name IS NOT NULL"
+    ), {"a": agent_id}).fetchall()
+    return [r[0] for r in rows]
+
+
 def backlog(db: Session, agent_id: str) -> int:
     return int(db.execute(text(
         "SELECT COUNT(*) FROM lead_candidate WHERE agent_id = :a AND status = ANY(CAST(:s AS VARCHAR[]))"

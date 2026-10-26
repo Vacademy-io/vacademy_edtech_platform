@@ -143,6 +143,12 @@ class Brief(BaseModel):
     def _medium(cls, v: List[str]) -> List[str]:
         return _clean_list(v, 160)
 
+    @field_validator("hiring_roles")
+    @classmethod
+    def _roles(cls, v: List[str]) -> List[str]:
+        """Roles, not job-post phrases: the AI suggests 'hiring telecaller', and the searches add 'hiring'."""
+        return _clean_list([engine_api.role_from_phrase(r) or r for r in v], 60)
+
     @model_validator(mode="after")
     def _sold(self) -> "Brief":
         if self.offer is None and not self.products:

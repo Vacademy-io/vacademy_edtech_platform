@@ -5,6 +5,7 @@ finding nothing it already has."""
 from __future__ import annotations
 
 import asyncio
+import sys
 import re
 
 import pytest
@@ -99,6 +100,19 @@ def test_a_round_creates_candidates_and_moves_the_cursor(la_db, fakes):
     assert out2["created"] == 0
     assert any(p == 2 for _q, p in fakes.queries)
     assert len(_rows(la_db, "SELECT id FROM lead_candidate")) == 3
+
+
+def test_the_same_organisation_on_another_domain_is_not_added_twice(la_db, fakes, monkeypatch):
+    agent = make_world(la_db, mode="REMOTE", plan=PLAN)
+    asyncio.run(discovery.run_round(agent, agent["plan_json"], 10))
+    monkeypatch.setattr(sys.modules[__name__], "ORG_RESULTS",
+                        [("Pulse Academy | NEET coaching Indore", "https://pulseacademy-indore.in/"),
+                         ("Zenith Classes | JEE", "https://zenithclasses.in/")])
+    with la_db() as db:
+        agent = store.get_agent(db, agent["id"])
+    asyncio.run(discovery.run_round(agent, agent["plan_json"], 10))
+    domains = {r[0] for r in _rows(la_db, "SELECT o.domain FROM lead_candidate c JOIN lead_org o ON o.id = c.org_id")}
+    assert "zenithclasses.in" in domains and "pulseacademy-indore.in" not in domains
 
 
 def test_round_limit_per_day(la_db, fakes):

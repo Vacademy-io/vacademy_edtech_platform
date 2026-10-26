@@ -155,6 +155,12 @@ def ingest_page_result(task: Dict[str, Any], html: Optional[str], status_code: O
                                           page_type=page_type, mode=task["mode"]):
                         enqueued += 1
                         known.add(url)
+            if enqueued:
+                # The follow-up pages get their own full window: in AUTO each waits up to
+                # store.AUTO_REMOTE_AFTER_S for an extension, so the home page's window (often
+                # half used by that same wait) cut them off (2026-10-26: 40 of 176 pages dropped).
+                store.set_candidate(db, task["candidate_id"], expect=["FETCHING"],
+                                    fetch_deadline=pacing.now_utc() + timedelta(minutes=store.FETCH_DEADLINE_MINUTES))
         ready = maybe_ready(db, task["candidate_id"])
     return {"page": page, "enqueued": enqueued, "ready": ready}
 

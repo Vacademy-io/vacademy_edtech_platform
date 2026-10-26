@@ -108,7 +108,8 @@ VENDORS: tuple[Vendor, ...] = (
            generator=("shopify",)),
     Vendor("webflow", "Webflow", "website", False, hosts=("webflow.com", "website-files.com", "webflow.io"),
            tokens=("data-wf-site", "data-wf-page"), generator=("webflow",)),
-    Vendor("nextjs", "Next.js", "website", False, tokens=("_next/static", "__next_data__"), generator=("next.js",)),
+    # A framework, not a product anyone sells against: never a competitor, whatever the offer.
+    Vendor("nextjs", "Next.js", "framework", False, tokens=("_next/static", "__next_data__"), generator=("next.js",)),
 )
 VENDORS_BY_KEY = {v.key: v for v in VENDORS}
 

@@ -99,6 +99,16 @@ def discover(**kwargs):
     return _m("discovery.pipeline").discover(**kwargs)
 
 
+def role_from_phrase(phrase: str) -> str:
+    """'hiring telecaller' -> 'telecaller' (engine.research.catalogue)."""
+    return _m("research.catalogue").role_from_phrase(phrase)
+
+
+def name_key(name: str) -> str:
+    """An organisation name without generic words, for telling the same organisation apart."""
+    return _m("discovery.pipeline")._name_key(name)
+
+
 def signal_queries(sources, industries, places, per_industry, hiring_roles):
     return _m("discovery.sources").signal_queries(sources, industries, places, per_industry, hiring_roles)
 
