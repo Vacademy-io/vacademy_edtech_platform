@@ -308,6 +308,19 @@ public class WorkflowEngineService {
                                     "node.type", nodeType, "layer", "2-workflow-engine"));
                 }
 
+                // is_end_node terminates ONLY this branch — not the entire workflow.
+                // Other paths already on the execution stack (from multi-goto fan-out
+                // or diamond DAGs) will still run. The handler above has already
+                // executed for this node, so any final side-effects (e.g. a closing
+                // SEND_EMAIL or UPDATE_RECORD) are honored before the path ends.
+                // To stop a whole workflow run, every terminal leaf must be marked
+                // is_end_node = true.
+                if (Boolean.TRUE.equals(current.getIsEndNode())) {
+                    log.info("Node {} has is_end_node=true — terminating this path (other branches, if any, continue)",
+                            current.getId());
+                    continue;
+                }
+
                 // Evaluate routing to find next nodes and push them to stack
                 List<String> nextNodeIds = evaluateRoutingNextNodeIds(effectiveConfig, ctx);
                 log.info("Routing evaluation for node {} returned: {}", current.getId(), nextNodeIds);
