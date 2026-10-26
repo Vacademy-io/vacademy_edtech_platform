@@ -90,12 +90,14 @@ export const formatSubmitted = (iso: string | undefined | null): string => {
 export const recentLeadName = (lead: RecentLeadDetail) =>
     lead.user?.full_name || lead.user?.email || lead.user?.mobile_number || 'Unknown lead';
 export const recentLeadEmail = (lead: RecentLeadDetail) => lead.user?.email || '-';
-// Prefer the linked user's number, else the phone the lead submitted (parent_mobile).
-// Many imported/ad leads have only parent_mobile populated — without this fallback the
-// phone shows '-', which hides the whole phone cell AND the row's Call / AI-call buttons
-// (both live behind `showPhone` in lead-table).
+// Phone is the exception: prefer the number submitted with THIS enquiry (parent_mobile),
+// else the linked user's. An auth user is matched by email, so a repeat enquiry with the
+// same email but a new phone (or a shared filler email) joins a user whose mobile is the
+// FIRST submission's — possibly another institute's. Reading the user first printed that
+// number on every row, while the side view, Check Lead and click-to-call
+// (CallLifecycleTxOps.resolveSubject) all use parent_mobile first.
 export const recentLeadPhone = (lead: RecentLeadDetail) =>
-    lead.user?.mobile_number || lead.parent_mobile || '-';
+    lead.parent_mobile || lead.user?.mobile_number || '-';
 export const recentLeadAudience = (lead: RecentLeadDetail) =>
     lead.campaign_name || lead.source_audience_name || '-';
 export const recentLeadCampaignType = (lead: RecentLeadDetail) => lead.campaign_type || '-';
@@ -210,7 +212,10 @@ export const mapCampaignRowToStudent = (row: CampaignUserTable): StudentTable =>
         full_name: (row.full_name as string) || u.full_name || '',
         email: (row.email as string) || u.email || '',
         username: u.username ?? null,
-        mobile_number: (row.phone_number as string) || u.mobile_number || '',
+        // Auth user's number first: EditLeadDetails seeds Contact number from this and
+        // saves it onto the auth user, so it must stay the user's own (row.phone_number
+        // prefers this enquiry's parent_mobile for display).
+        mobile_number: u.mobile_number || (row.phone_number as string) || '',
         gender: u.gender || '',
         region: u.region ?? null,
         city: u.city || '',

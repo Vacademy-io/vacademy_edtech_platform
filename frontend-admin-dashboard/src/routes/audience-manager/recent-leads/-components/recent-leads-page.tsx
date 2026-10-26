@@ -1368,7 +1368,7 @@ const RecentLeadsContent = ({
             if (selectedExportCols.has('email'))
                 row.push(csvSafe(u.email || lead.parent_email || '-'));
             if (selectedExportCols.has('mobile'))
-                row.push(csvSafe(u.mobile_number || lead.parent_mobile || '-'));
+                row.push(csvSafe(lead.parent_mobile || u.mobile_number || '-'));
             if (selectedExportCols.has('audience')) row.push(csvSafe(displayAudience(lead)));
             if (selectedExportCols.has('campaign_type'))
                 row.push(csvSafe(lead.campaign_type ?? ''));
