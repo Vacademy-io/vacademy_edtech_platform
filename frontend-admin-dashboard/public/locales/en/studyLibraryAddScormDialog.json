@@ -36,7 +36,10 @@
         "reorderFailed": "Slide created but reordering failed",
         "waitForUpload": "Please wait for the SCORM package upload to complete",
         "createSuccess": "SCORM slide created successfully!",
-        "createFailed": "Failed to create SCORM slide"
+        "createFailed": "Failed to create SCORM slide",
+        "compatibilityFixed": "We adjusted this package so learner progress is tracked correctly.",
+        "noCompletionStatus": "This package never reports completion, so learners will stay at 0%. Ask the author to re-export it with SCORM completion tracking.",
+        "completionOnly": "This package reports only completion, so learners will see 0% until they finish it."
     },
     "actions": {
         "creatingSlide": "Creating slide...",

@@ -66,6 +66,9 @@ interface ScormUploadResponse {
     launch_path: string;
     original_file_id: string;
     scorm_version: string;
+    // Package bugs the server repaired, and progress-tracking warnings
+    compatibility_fixes?: string[];
+    compatibility_warnings?: string[];
 }
 
 export const AddScormDialog = ({ openState }: { openState?: (open: boolean) => void }) => {
@@ -155,6 +158,14 @@ export const AddScormDialog = ({ openState }: { openState?: (open: boolean) => v
                 t('toasts.uploadSuccessDetected', { version: result.scorm_version })
             );
             toast.success(t('toasts.uploadParseSuccess'));
+            if (result.compatibility_fixes?.length) {
+                toast.info(t('toasts.compatibilityFixed'), { duration: 8000 });
+            }
+            if (result.compatibility_warnings?.includes('NO_COMPLETION_STATUS')) {
+                toast.warning(t('toasts.noCompletionStatus'), { duration: 12000 });
+            } else if (result.compatibility_warnings?.includes('COMPLETION_ONLY')) {
+                toast.warning(t('toasts.completionOnly'), { duration: 12000 });
+            }
         } catch (err) {
             console.error('SCORM upload failed:', err);
             const message = getScormUploadErrorMessage(err, t);
