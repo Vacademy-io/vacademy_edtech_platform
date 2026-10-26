@@ -109,8 +109,9 @@ export interface RecentLeadsRequest {
     lead_status_id?: string;
     /** Status keys to EXCLUDE, comma separated. Mutually exclusive with lead_status_id. */
     lead_status_exclude_id?: string;
-    /** EXCLUDE = hide enquiries flagged as duplicates; ONLY = just those. Omitted = no filter. */
-    duplicate_filter?: 'EXCLUDE' | 'ONLY';
+    /** EXCLUDE = hide enquiries flagged as duplicates; ONLY = just those; INCLUDE = list them
+     *  too, even with "Show duplicates only in Duplicate Leads" on. Omitted = that setting. */
+    duplicate_filter?: 'EXCLUDE' | 'ONLY' | 'INCLUDE';
     /** Follow-ups page: only leads carrying an OPEN, scheduled follow-up… */
     follow_up_pending?: boolean;
     /** …and, optionally, only those whose follow-up falls in this window. The caller sends

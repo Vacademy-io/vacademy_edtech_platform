@@ -60,6 +60,11 @@
         "workedWithin": {
             "placeholder": "Worked within",
             "any": "Worked: any time"
+        },
+        "duplicates": {
+            "all": "Duplicates: all",
+            "only": "Only duplicates",
+            "exclude": "Hide duplicates"
         }
     },
     "toolbar": {
@@ -98,7 +103,9 @@
         "calledWithin": "Called: {{window}}",
         "workedWithin": "Worked: {{window}}",
         "pinnedTitle": "Pinned by this tab — it cannot be removed here",
-        "statusExcluded": "Status is not: {{statuses}}"
+        "statusExcluded": "Status is not: {{statuses}}",
+        "duplicatesOnly": "Only duplicates",
+        "duplicatesExcluded": "Duplicates hidden"
     },
     "search": {
         "placeholder": "Search leads",

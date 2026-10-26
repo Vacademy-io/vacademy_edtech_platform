@@ -60,6 +60,11 @@
         "workedWithin": {
             "placeholder": null,
             "any": null
+        },
+        "duplicates": {
+            "all": "डुप्लिकेट: सभी",
+            "only": "केवल डुप्लिकेट",
+            "exclude": "डुप्लिकेट छिपाएँ"
         }
     },
     "toolbar": {
@@ -98,7 +103,9 @@
         "calledWithin": null,
         "workedWithin": null,
         "pinnedTitle": "यह फ़िल्टर इस टैब का है — इसे यहाँ से हटाया नहीं जा सकता",
-        "statusExcluded": "स्टेटस नहीं है: {{statuses}}"
+        "statusExcluded": "स्टेटस नहीं है: {{statuses}}",
+        "duplicatesOnly": "केवल डुप्लिकेट",
+        "duplicatesExcluded": "डुप्लिकेट छिपे हुए"
     },
     "search": {
         "placeholder": "लीड्स खोजें",
