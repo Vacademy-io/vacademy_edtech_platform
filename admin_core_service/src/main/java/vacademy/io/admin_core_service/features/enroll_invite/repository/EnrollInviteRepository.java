@@ -282,4 +282,23 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
 
     @Query("SELECT ei FROM EnrollInvite ei WHERE ei.instituteId = :instituteId")
     List<EnrollInvite> findByInstituteId(@Param("instituteId") String instituteId);
+
+    /**
+     * The live invite a learner most recently enrolled through at the institute: what a
+     * member's personal referral link should open. Empty when they have none (e.g. added
+     * by an admin without a plan), in which case no link can be built for them.
+     */
+    @Query(value = """
+        SELECT ei.* FROM user_plan up
+        JOIN enroll_invite ei ON ei.id = up.enroll_invite_id
+        WHERE up.user_id = :userId
+          AND ei.institute_id = :instituteId
+          AND ei.status = 'ACTIVE'
+          AND ei.invite_code IS NOT NULL AND ei.invite_code <> ''
+        ORDER BY up.created_at DESC
+        LIMIT 1
+    """, nativeQuery = true)
+    Optional<EnrollInvite> findLatestActiveInviteForLearner(
+            @Param("userId") String userId,
+            @Param("instituteId") String instituteId);
 }

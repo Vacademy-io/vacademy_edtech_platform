@@ -45,32 +45,42 @@ public class ReferralLinkService {
 
     /**
      * Creates a referral code for up to {@code limit} ACTIVE members of the institute who
-     * have none. Idempotent: call again until {@code remaining} is 0.
+     * have none. The stored link opens {@code enrollInviteId} when given, else the invite the
+     * member last enrolled through. A member with neither is skipped ({@code no_invite}): a
+     * link with an empty invite code opens "Enroll Invite Not Found". Idempotent: call again
+     * until {@code remaining} is 0.
      */
     public Map<String, Integer> backfill(String instituteId, String enrollInviteId, Integer limit) {
         int max = limit == null || limit <= 0 ? MAX_BATCH : Math.min(limit, MAX_BATCH);
-        String inviteCode = resolveInvite(enrollInviteId, instituteId).map(EnrollInvite::getInviteCode).orElse(null);
+        Optional<EnrollInvite> chosen = resolveInvite(enrollInviteId, instituteId);
         List<String> members = mappingRepository.findDistinctUserIdsByInstituteAndStatus(
                 instituteId, List.of("ACTIVE"));
         int existing = 0;
         int created = 0;
         int remaining = 0;
+        int noInvite = 0;
         for (String userId : members) {
             if (couponCodeService.hasExistingCouponCode(userId, CouponSourceType.USER)) {
                 existing++;
             } else if (created < max) {
-                learnerCouponService.generateCouponCodeForLearner(userId, instituteId, inviteCode);
+                Optional<EnrollInvite> invite = inviteFor(userId, instituteId, chosen);
+                if (invite.isEmpty()) {
+                    noInvite++;
+                    continue;
+                }
+                learnerCouponService.generateCouponCodeForLearner(userId, instituteId, invite.get().getInviteCode());
                 created++;
             } else {
                 remaining++;
             }
         }
-        log.info("Referral backfill for institute {}: {} created, {} already had a code, {} remaining",
-                instituteId, created, existing, remaining);
+        log.info("Referral backfill for institute {}: {} created, {} already had a code, {} without an invite, "
+                + "{} remaining", instituteId, created, existing, noInvite, remaining);
         Map<String, Integer> result = new LinkedHashMap<>();
         result.put("members", members.size());
         result.put("created", created);
         result.put("existing", existing);
+        result.put("no_invite", noInvite);
         result.put("remaining", remaining);
         return result;
     }
@@ -78,8 +88,10 @@ public class ReferralLinkService {
     /**
      * {@code userId -> {referral_code, short_referral_link, referral_link}} for members of the
      * institute. With an enroll invite the link opens THAT invite (the trial a friend should
-     * join); without one it is the member's stored link, which opens whichever invite they
-     * enrolled through. Users with no code who cannot get one are left out.
+     * join); without one, the invite the member last enrolled through. The member's stored
+     * short link is deliberately not used: older ones were built with an empty invite code and
+     * open "Enroll Invite Not Found". Members with no usable invite or code are left out, so
+     * the sender keeps the placeholder as before.
      */
     public Map<String, Map<String, String>> linksFor(String instituteId, Collection<String> userIds,
                                                      String enrollInviteId) {
@@ -95,29 +107,25 @@ public class ReferralLinkService {
         Map<String, Map<String, String>> out = new LinkedHashMap<>();
         for (String userId : members) {
             try {
+                Optional<EnrollInvite> memberInvite = inviteFor(userId, instituteId, invite);
+                if (memberInvite.isEmpty()) {
+                    continue;
+                }
                 Optional<CouponCode> coupon = couponCodeService.getCouponCodeBySource(userId, SOURCE_USER);
                 if (coupon.isEmpty()) {
                     learnerCouponService.generateCouponCodeForLearner(userId, instituteId,
-                            invite.map(EnrollInvite::getInviteCode).orElse(null));
+                            memberInvite.get().getInviteCode());
                     coupon = couponCodeService.getCouponCodeBySource(userId, SOURCE_USER);
                 }
                 if (coupon.isEmpty()) {
                     continue;
                 }
-                String longLink;
-                String shortLink;
-                if (invite.isPresent()) {
-                    longLink = learnerInvitationLinkService.generateLearnerInvitationResponseLink(
-                            instituteId, invite.get(), userId);
-                    String code = shortUrlManagementService.createShortUrl(longLink, "REFERRAL_LINK",
-                            userId + "_" + invite.get().getId(), instituteId);
-                    shortLink = code != null ? shortUrlManagementService.getAbsoluteShortUrl(instituteId, code) : longLink;
-                } else {
-                    longLink = learnerInvitationLinkService.generateLearnerInvitationResponseLink(
-                            instituteId, null, userId);
-                    String code = couponCodeService.getOrGenerateShortUrl(coupon.get(), instituteId);
-                    shortLink = code != null ? shortUrlManagementService.getAbsoluteShortUrl(instituteId, code) : longLink;
-                }
+                String longLink = learnerInvitationLinkService.generateLearnerInvitationResponseLink(
+                        instituteId, memberInvite.get(), userId);
+                String code = shortUrlManagementService.createShortUrl(longLink, "REFERRAL_LINK",
+                        userId + "_" + memberInvite.get().getId(), instituteId);
+                String shortLink = code != null
+                        ? shortUrlManagementService.getAbsoluteShortUrl(instituteId, code) : longLink;
                 Map<String, String> link = new LinkedHashMap<>();
                 link.put("referral_code", coupon.get().getCode());
                 link.put("short_referral_link", shortLink);
@@ -128,6 +136,11 @@ public class ReferralLinkService {
             }
         }
         return out;
+    }
+
+    /** The admin's chosen invite, else the one the member last enrolled through at the institute. */
+    private Optional<EnrollInvite> inviteFor(String userId, String instituteId, Optional<EnrollInvite> chosen) {
+        return chosen.isPresent() ? chosen : enrollInviteRepository.findLatestActiveInviteForLearner(userId, instituteId);
     }
 
     private Optional<EnrollInvite> resolveInvite(String enrollInviteId, String instituteId) {

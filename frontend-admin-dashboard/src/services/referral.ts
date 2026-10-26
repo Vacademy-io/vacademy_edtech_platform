@@ -264,13 +264,28 @@ export const convertToApiFormat = (settings: UnifiedReferralSettings): ReferralO
     }
 
     // 3. Safely convert referrer rewards (fallback to empty array if undefined)
+    // Per-referral rewards (discounts, points) form a ladder: a tier applies from its count
+    // up to the next tier's count, and the last one applies to every referral after that.
+    // Saving min = max = count rewarded only the exact Nth referral, so a "5% per referral"
+    // programme paid out once. One-off milestone rewards (content, free days) keep the
+    // exact count so they are not re-sent on every later referral.
+    const perReferral = new Set(['discount_percentage', 'discount_fixed', 'points_system']);
+    const tierCounts = (settings.referrerRewards || [])
+        .map((tier: ReferrerTier) => tier.referralCount)
+        .sort((a, b) => a - b);
+    const nextCount = (count: number) => tierCounts.find((c) => c > count);
     const referrerTiers = (settings.referrerRewards || []).map((tier: ReferrerTier) => {
         const benefit = convertRewardToBenefit(tier.reward);
+        const next = nextCount(tier.referralCount);
         return {
             tierName: tier.tierName,
             referralRange: {
                 min: tier.referralCount,
-                max: tier.referralCount,
+                max: perReferral.has(tier.reward.type)
+                    ? next !== undefined
+                        ? next - 1
+                        : null
+                    : tier.referralCount,
             },
             vestingDays: settings.payoutVestingDays || 7,
             benefits: [benefit],
