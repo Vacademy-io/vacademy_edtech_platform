@@ -404,12 +404,12 @@ public class LearnerTrackingService {
      * reads that row — while still inflating the chapter rollup, which sums
      * across all of them.
      *
-     * Graded and self-reporting types are refused outright rather than mapped.
-     * Completion there is earned, not declared: a quiz, question, assignment or
-     * assessment completes by submission and SCORM reports its own status, so a
-     * "mark as complete" button would be claiming a score the learner has not
-     * got. Mainstream players draw the same line — Udemy and Coursera let you
-     * tick a lecture or a reading, never a graded item.
+     * Graded types are refused outright rather than mapped. Completion there is
+     * earned, not declared: a quiz, question, assignment or assessment completes
+     * by submission, so a "mark as complete" button would be claiming a score
+     * the learner has not got. SCORM is allowed: many packages are plain reading
+     * screens that never report completion, and the package's own report still
+     * counts — un-marking falls back to whatever it last sent.
      */
     private String percentageOperationForSlideType(String slideType) {
         if (SlideTypeEnum.VIDEO.name().equals(slideType) || SlideTypeEnum.HTML_VIDEO.name().equals(slideType)) {
@@ -420,6 +420,9 @@ public class LearnerTrackingService {
         }
         if (SlideTypeEnum.DOCUMENT.name().equals(slideType)) {
             return LearnerOperationEnum.PERCENTAGE_DOCUMENT_COMPLETED.name();
+        }
+        if (SlideTypeEnum.SCORM.name().equals(slideType)) {
+            return LearnerOperationEnum.PERCENTAGE_SCORM_COMPLETED.name();
         }
         throw new InvalidRequestException(
                 "Slide type " + slideType + " cannot be marked complete by hand; it completes on submission.");

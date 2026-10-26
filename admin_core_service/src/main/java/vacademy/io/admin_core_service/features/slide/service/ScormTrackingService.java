@@ -139,7 +139,7 @@ public class ScormTrackingService {
      * Returns null when the package hasn't reported enough to derive any
      * percentage yet — caller should skip the cascade rather than write 0.
      */
-    Double computeScormCompletionPercentage(ScormLearnerProgress progress) {
+    public static Double computeScormCompletionPercentage(ScormLearnerProgress progress) {
         String completion = progress.getCompletionStatus();
         boolean lockedComplete = "completed".equalsIgnoreCase(completion)
                 || "passed".equalsIgnoreCase(completion);
