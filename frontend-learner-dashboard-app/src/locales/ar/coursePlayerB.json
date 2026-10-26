@@ -243,7 +243,8 @@
         },
         "copied": "تم النسخ!",
         "copyLink": "نسخ الرابط",
-        "shareWhatsapp": "مشاركة عبر واتساب"
+        "shareWhatsapp": "مشاركة عبر واتساب",
+        "share": "مشاركة"
     },
     "testimonial": {
         "ratedOutOf5": "التقييم {{stars}} من 5",

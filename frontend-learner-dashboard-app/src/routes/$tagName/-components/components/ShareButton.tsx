@@ -15,6 +15,8 @@ interface ShareButtonProps {
     className?: string;
     // Controls icon size and button padding for catalogue vs details page
     size?: "sm" | "md";
+    /** "icon": the round icon on cards; "button": an outlined "Share" button. */
+    variant?: "icon" | "button";
 }
 
 export const ShareButton: React.FC<ShareButtonProps> = ({
@@ -24,6 +26,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     title,
     className = "",
     size = "sm",
+    variant = "icon",
 }) => {
     const { t } = useTranslation("coursePlayerB");
     const [open, setOpen] = useState(false);
@@ -75,17 +78,31 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     return (
         <Popover open={open} onOpenChange={handleOpen}>
             <PopoverTrigger asChild>
-                <button
-                    className={`flex items-center justify-center rounded-catalogue-md bg-white/90 backdrop-blur-sm shadow-sm border border-white/20 hover:bg-white transition-colors ${btnSize} ${className}`}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={t("shareButton.ariaLabel")}
-                >
-                    {loading ? (
-                        <SpinnerGap className={`${iconSize} animate-spin text-gray-500`} />
-                    ) : (
-                        <ShareNetwork className={`${iconSize} text-gray-600`} />
-                    )}
-                </button>
+                {variant === "button" ? (
+                    <button
+                        className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-catalogue-md border border-catalogue-border bg-catalogue-bg px-3 text-sm font-medium text-catalogue-text-secondary transition-colors hover:border-primary-500 hover:text-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${className}`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {loading ? (
+                            <SpinnerGap className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                            <ShareNetwork className="h-4 w-4" aria-hidden />
+                        )}
+                        {t("shareButton.share", "Share")}
+                    </button>
+                ) : (
+                    <button
+                        className={`flex items-center justify-center rounded-catalogue-md bg-white/90 backdrop-blur-sm shadow-sm border border-white/20 hover:bg-white transition-colors ${btnSize} ${className}`}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={t("shareButton.ariaLabel")}
+                    >
+                        {loading ? (
+                            <SpinnerGap className={`${iconSize} animate-spin text-gray-500`} />
+                        ) : (
+                            <ShareNetwork className={`${iconSize} text-gray-600`} />
+                        )}
+                    </button>
+                )}
             </PopoverTrigger>
             <PopoverContent
                 className="w-48 p-2"

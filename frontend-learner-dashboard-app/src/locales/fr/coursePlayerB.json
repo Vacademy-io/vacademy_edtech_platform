@@ -231,7 +231,8 @@
         },
         "copied": "Copié !",
         "copyLink": "Copier le lien",
-        "shareWhatsapp": "Partager sur WhatsApp"
+        "shareWhatsapp": "Partager sur WhatsApp",
+        "share": "Partager"
     },
     "testimonial": {
         "ratedOutOf5": "Noté {{stars}} sur 5",
