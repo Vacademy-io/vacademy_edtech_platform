@@ -1,0 +1,37 @@
+{
+    "unassigned": "No counsellor",
+    "column": {
+        "convertedLeads": "Converted leads",
+        "enrolments": "Enrolments",
+        "counsellor": "Counsellor",
+        "share": "Share",
+        "lead": "Lead",
+        "phone": "Phone",
+        "email": "Email",
+        "course": "Course",
+        "enrolledAt": "Enrolled on",
+        "enrolmentStatus": "Enrolment status",
+        "campaign": "Campaign",
+        "source": "Source"
+    },
+    "kpi": {
+        "convertedSub": "Leads enrolled into a course in this range",
+        "enrolmentsSub": "A lead enrolled into two courses counts twice",
+        "counsellors": "Counsellors credited"
+    },
+    "byCounsellor": {
+        "title": "Conversions by counsellor",
+        "rowHint": "Click to show this counsellor's leads below"
+    },
+    "leads": {
+        "title": "Converted leads",
+        "filteredBy": "Counsellor: {{name}}",
+        "clearFilter": "Show all counsellors",
+        "truncated": "Showing the latest {{count}} enrolments. Narrow the date range to see the rest.",
+        "showMore": "Show more ({{shown}} of {{total}})",
+        "footnote": "A conversion is a lead's enrolment into a course whose \"count enrolment as conversion\" setting is on, dated by the enrolment. Invited, pending and deleted enrolments are not counted."
+    },
+    "empty": {
+        "noConversions": "No conversions in this range."
+    }
+}

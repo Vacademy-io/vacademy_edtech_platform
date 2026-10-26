@@ -52,6 +52,7 @@ import { ManagerTab } from './manager-tab';
 import { ActivityTab } from './activity-tab';
 import { FollowupsTab } from './followups-tab';
 import { CounsellorsTab } from './counsellors-tab';
+import { ConversionsTab } from './conversions-tab';
 import { RevenueTab } from './revenue-tab';
 import { CohortTab } from './cohort-tab';
 import { ForecastTab } from './forecast-tab';
@@ -347,6 +348,9 @@ export function LeadReportsPage() {
                 </TabsContent>
                 <TabsContent value="counsellors">
                     <CounsellorsTab {...tabProps} />
+                </TabsContent>
+                <TabsContent value="conversions">
+                    <ConversionsTab {...tabProps} />
                 </TabsContent>
                 <TabsContent value="manager">
                     <ManagerTab {...tabProps} />

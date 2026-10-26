@@ -17,6 +17,7 @@ export const REPORT_TABS = [
     'activity',
     'followups',
     'counsellors',
+    'conversions',
     'manager',
     'revenue',
     'cohort',
