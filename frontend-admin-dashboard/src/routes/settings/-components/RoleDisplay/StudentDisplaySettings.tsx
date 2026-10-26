@@ -65,8 +65,11 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { useQuery } from '@tanstack/react-query';
 import { getInstituteId } from '@/constants/helper';
 import { getAllProductPages } from '@/routes/manage-pages/product-pages/-services/product-pages-service';
-import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
-import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     fetchStudentDisplaySettingsForEdit,
     saveStudentDisplaySettings,
@@ -1167,6 +1170,41 @@ export default function StudentDisplaySettings(): JSX.Element {
                             }
                         />
                         <Label className="text-xs">{t('courseDetails.hideAuthorName')}</Label>
+                    </div>
+
+                    {/* Hide the whole Course Overview / Course Progress cards on the
+                        course-details page. Named with the institute's Course term. */}
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={settings.courseDetails.hideOverviewCard ?? false}
+                            onCheckedChange={(v) =>
+                                update('courseDetails', {
+                                    ...settings.courseDetails,
+                                    hideOverviewCard: v,
+                                })
+                            }
+                        />
+                        <Label className="text-xs">
+                            {t('courseDetails.hideOverviewCard', {
+                                course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                            })}
+                        </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={settings.courseDetails.hideProgressCard ?? false}
+                            onCheckedChange={(v) =>
+                                update('courseDetails', {
+                                    ...settings.courseDetails,
+                                    hideProgressCard: v,
+                                })
+                            }
+                        />
+                        <Label className="text-xs">
+                            {t('courseDetails.hideProgressCard', {
+                                course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                            })}
+                        </Label>
                     </div>
 
                     {/* Off (default): the course page still shows the first author with

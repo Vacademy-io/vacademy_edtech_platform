@@ -168,6 +168,8 @@ export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
         outlineMode: 'expanded',
         ratingsAndReviewsVisible: true,
         hideAuthorName: false,
+        hideOverviewCard: false,
+        hideProgressCard: false,
         // Full teacher roster is opt-in; the first author always shows.
         showInstructors: false,
         showCourseConfiguration: true,

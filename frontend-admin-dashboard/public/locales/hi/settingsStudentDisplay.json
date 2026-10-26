@@ -117,6 +117,8 @@
         "selectMode": "मोड चुनें",
         "ratingsReviewsVisible": "रेटिंग और समीक्षाएं दृश्यमान",
         "hideAuthorName": "लेखक का नाम छिपाएं (कोर्स विवरण पेज)",
+        "hideOverviewCard": "{{course}} ओवरव्यू कार्ड छिपाएं (विवरण पेज)",
+        "hideProgressCard": "{{course}} प्रोग्रेस कार्ड छिपाएं (विवरण पेज)",
         "showTeachers": "शिक्षक दिखाएं (कोर्स विवरण पेज)",
         "showCourseConfiguration": "कोर्स कॉन्फ़िगरेशन दिखाएं",
         "hideTags": "शीर्षक के ऊपर कोर्स टैग (ENGLISH, E-LEARNING…) छिपाएं",

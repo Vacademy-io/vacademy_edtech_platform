@@ -419,6 +419,8 @@ export const CourseDetailsPage = () => {
     hideTags,
     overviewVisible,
     hideAuthorName,
+    hideOverviewCard,
+    hideProgressCard,
     showInstructors,
     enrolledLayout,
     chapterOpensFirstSlide: chapterOpensFirstSlideSetting,
@@ -703,6 +705,8 @@ export const CourseDetailsPage = () => {
                     slideCountQuery={slideCountQuery}
                     overviewVisible={overviewVisible}
                     hideAuthorName={hideAuthorName}
+                    hideOverviewCard={hideOverviewCard}
+                    hideProgressCard={hideProgressCard}
                     processedSlideCounts={processedSlideCounts}
                     moduleStats={moduleStats}
                     currentSubjects={getSubjectDetails(

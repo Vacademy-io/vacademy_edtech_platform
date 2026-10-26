@@ -247,6 +247,12 @@ function mergeWithDefaults(
       hideAuthorName:
         incoming?.courseDetails?.hideAuthorName ??
         d.courseDetails.hideAuthorName,
+      hideOverviewCard:
+        incoming?.courseDetails?.hideOverviewCard ??
+        d.courseDetails.hideOverviewCard,
+      hideProgressCard:
+        incoming?.courseDetails?.hideProgressCard ??
+        d.courseDetails.hideProgressCard,
       showInstructors:
         incoming?.courseDetails?.showInstructors ??
         d.courseDetails.showInstructors,

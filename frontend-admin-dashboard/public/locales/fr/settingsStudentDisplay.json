@@ -117,6 +117,8 @@
         "selectMode": "Sélectionner le mode",
         "ratingsReviewsVisible": "Notes et avis visibles",
         "hideAuthorName": "Masquer le nom de l'auteur (page des détails du cours)",
+        "hideOverviewCard": "Masquer la carte Aperçu {{course}} (page de détails)",
+        "hideProgressCard": "Masquer la carte Progression {{course}} (page de détails)",
         "showTeachers": "Afficher les enseignants (page des détails du cours)",
         "showCourseConfiguration": "Afficher la configuration du cours",
         "hideTags": "Masquer les étiquettes du cours (ENGLISH, E-LEARNING…) au-dessus du titre",
