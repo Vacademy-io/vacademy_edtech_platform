@@ -8,11 +8,13 @@ import {
     DEFAULT_GATE,
     DEFAULT_WINDOW,
     emptyBrief,
+    LIST_LIMITS,
     MAX_COMPETITORS,
     MAX_FIT_SIGNALS,
 } from './lead-agent-options';
 
 const textList = z.array(z.string().trim().min(1));
+const limitedList = (max: number) => textList.max(max, `Keep up to ${max}; remove some`);
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 /** A link with or without the scheme; https:// is added on save. */
 const WEBSITE = /^(https?:\/\/)?[^\s/]+\.[^\s]+$/i;
@@ -81,12 +83,12 @@ export const agentFormSchema = z
             )
             .min(1, 'Add at least one industry')
             .max(6, 'Up to 6 industries'),
-        buyer_roles: textList,
-        hiring_roles: textList,
-        keywords: textList,
-        must_have: textList,
-        deal_breakers: textList,
-        exclude: textList,
+        buyer_roles: limitedList(LIST_LIMITS.buyer_roles),
+        hiring_roles: limitedList(LIST_LIMITS.hiring_roles),
+        keywords: limitedList(LIST_LIMITS.keywords),
+        must_have: limitedList(LIST_LIMITS.must_have),
+        deal_breakers: limitedList(LIST_LIMITS.deal_breakers),
+        exclude: limitedList(LIST_LIMITS.exclude),
         fit_signals: z
             .array(
                 z.object({

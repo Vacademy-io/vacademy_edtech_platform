@@ -46,6 +46,7 @@ import {
     COMPETITOR_KIND_OPTIONS,
     EXCLUDE_PRESETS,
     FIT_WEIGHT_OPTIONS,
+    LIST_LIMITS,
     GATE_PRESETS,
     MAX_COMPETITORS,
     MAX_FIT_SIGNALS,
@@ -121,17 +122,23 @@ export function BasicsSection({
         form.setValue('industries', industries, opts);
         form.setValue(
             'buyer_roles',
-            dedupe([...v.buyer_roles, ...flat('buyer_roles')]).slice(0, 30),
+            dedupe([...v.buyer_roles, ...flat('buyer_roles')]).slice(0, LIST_LIMITS.buyer_roles),
             opts
         );
         form.setValue(
             'hiring_roles',
-            dedupe([...v.hiring_roles, ...flat('hiring_phrases')]).slice(0, 30),
+            dedupe([...v.hiring_roles, ...flat('hiring_phrases')]).slice(
+                0,
+                LIST_LIMITS.hiring_roles
+            ),
             opts
         );
         form.setValue(
             'keywords',
-            dedupe([...v.keywords, ...res.keywords, ...flat('need_phrases')]).slice(0, 30),
+            dedupe([...v.keywords, ...res.keywords, ...flat('need_phrases')]).slice(
+                0,
+                LIST_LIMITS.keywords
+            ),
             opts
         );
         // The offer fields are only filled where the admin has not written anything yet.
@@ -622,6 +629,7 @@ function ChipField({
                         placeholder={placeholder}
                         presets={presets}
                         ariaLabel={label}
+                        max={LIST_LIMITS[name]}
                     />
                     <FormMessage />
                 </FormItem>

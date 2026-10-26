@@ -38,6 +38,16 @@ export const FIT_WEIGHT_OPTIONS: { value: FitWeight; label: string }[] = [
 export const MAX_FIT_SIGNALS = 8;
 export const MAX_COMPETITORS = 10;
 
+/** Server limits for the brief's lists (ai_service models.LIST_LIMITS). */
+export const LIST_LIMITS = {
+    buyer_roles: 10,
+    hiring_roles: 6,
+    keywords: 10,
+    must_have: 10,
+    deal_breakers: 10,
+    exclude: 5,
+} as const;
+
 export const SOURCE_OPTIONS: { value: SourceKey; label: string; hint: string }[] = [
     {
         value: 'organisation_search',

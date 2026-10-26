@@ -544,8 +544,16 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
     if (isObject(data)) {
         const detail = data.detail;
         if (typeof detail === 'string' && detail.trim()) return detail;
-        if (Array.isArray(detail) && isObject(detail[0]) && typeof detail[0].msg === 'string')
-            return detail[0].msg;
+        if (Array.isArray(detail) && isObject(detail[0]) && typeof detail[0].msg === 'string') {
+            // FastAPI validation error: name the field ("brief → buyer roles: …").
+            const loc = Array.isArray(detail[0].loc)
+                ? detail[0].loc
+                      .filter((p: unknown) => typeof p === 'string' && p !== 'body')
+                      .map((p: string) => p.replace(/_/g, ' '))
+                      .join(' → ')
+                : '';
+            return loc ? `${loc}: ${detail[0].msg}` : detail[0].msg;
+        }
         if (typeof data.message === 'string' && data.message.trim()) return data.message;
     }
     if (typeof data === 'string' && data.trim() && data.length < 300) return data;

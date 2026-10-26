@@ -84,6 +84,16 @@ def test_create_validation(client, over):
     assert client.post(f"{BASE}/agents", json=body(**over)).status_code == 422
 
 
+def test_long_suggested_lists_keep_their_first_items(client):
+    brief = {**BRIEF, "buyer_roles": [f"Role {i}" for i in range(16)], "hiring_roles": [f"job {i}" for i in range(9)],
+             "keywords": ["need lms", "Need  LMS"] + [f"kw {i}" for i in range(14)]}
+    r = client.post(f"{BASE}/agents", json=body(brief=brief))
+    assert r.status_code == 201, r.text
+    saved = r.json()["brief"]
+    assert saved["buyer_roles"] == [f"Role {i}" for i in range(10)] and len(saved["hiring_roles"]) == 6
+    assert saved["keywords"][:2] == ["need lms", "kw 0"] and len(saved["keywords"]) == 10
+
+
 def test_an_offer_is_saved_with_keys_and_an_older_brief_reads_back_with_one(client):
     offer = {"name": " Rooftop  solar ", "seller": "SunGrid",
              "fit_signals": [{"label": "Owns a warehouse", "description": "Runs its own warehouse.", "weight": 3},

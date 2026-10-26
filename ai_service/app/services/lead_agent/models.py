@@ -97,21 +97,41 @@ class Offer(BaseModel):
         return self
 
 
+# Brief lists longer than this keep their first items (Brief._first_ones); the form uses the same limits.
+LIST_LIMITS = {"buyer_roles": 10, "hiring_roles": 6, "keywords": 10, "must_have": 10, "deal_breakers": 10, "exclude": 5}
+
+
 class Brief(BaseModel):
     model_config = ConfigDict(extra="ignore")
     products: List[ProductKey] = Field(default_factory=list, max_length=5)
     offer: Optional[Offer] = None
     description: str = Field(default="", max_length=3000)
     industries: List[Industry] = Field(min_length=1, max_length=6)
-    buyer_roles: List[str] = Field(default_factory=list, max_length=10)
-    hiring_roles: List[str] = Field(default_factory=list, max_length=6)
-    keywords: List[str] = Field(default_factory=list, max_length=10)
-    must_have: List[str] = Field(default_factory=list, max_length=10)
-    deal_breakers: List[str] = Field(default_factory=list, max_length=10)
-    exclude: List[str] = Field(default_factory=list, max_length=5)
+    buyer_roles: List[str] = Field(default_factory=list, max_length=LIST_LIMITS["buyer_roles"])
+    hiring_roles: List[str] = Field(default_factory=list, max_length=LIST_LIMITS["hiring_roles"])
+    keywords: List[str] = Field(default_factory=list, max_length=LIST_LIMITS["keywords"])
+    must_have: List[str] = Field(default_factory=list, max_length=LIST_LIMITS["must_have"])
+    deal_breakers: List[str] = Field(default_factory=list, max_length=LIST_LIMITS["deal_breakers"])
+    exclude: List[str] = Field(default_factory=list, max_length=LIST_LIMITS["exclude"])
     sources: List[SourceKey] = Field(default_factory=lambda: ["organisation_search", "maps", "hiring", "keyword",
                                                                "software_request", "new_centre"], min_length=1)
     find_contacts: bool = True
+
+    @field_validator("buyer_roles", "hiring_roles", "keywords", "exclude", "must_have", "deal_breakers", mode="before")
+    @classmethod
+    def _first_ones(cls, v: Any, info) -> Any:
+        """Keep the first N instead of refusing the brief: an AI suggestion merges roles and phrases
+        from every industry (16 buyer roles for 6 industries, 2026-10-26)."""
+        if not isinstance(v, list):
+            return v
+        limit = LIST_LIMITS[info.field_name]
+        seen, out = set(), []
+        for item in v:
+            key = " ".join(str(item).split()).lower()
+            if key and key not in seen:
+                seen.add(key)
+                out.append(item)
+        return out[:limit]
 
     @field_validator("buyer_roles", "hiring_roles", "keywords", "exclude")
     @classmethod
