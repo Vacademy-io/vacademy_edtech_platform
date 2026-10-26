@@ -186,7 +186,9 @@ public class DefaultInviteResolver {
 
         if (activePlans.isEmpty()) {
             throw new VacademyException(
-                    "No active PaymentPlan found for PaymentOption=" + paymentOption.getId());
+                    "No active PaymentPlan found for PaymentOption=" + paymentOption.getId()
+                            + " (\"" + paymentOption.getName() + "\"). Add a price to it in Settings > Payment,"
+                            + " or pick another payment option on this course's invite link.");
         }
 
         // Prefer a plan tagged DEFAULT if multiple exist

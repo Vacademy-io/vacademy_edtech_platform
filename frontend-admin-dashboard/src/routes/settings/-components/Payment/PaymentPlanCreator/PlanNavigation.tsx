@@ -39,6 +39,11 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
         if (currentStep === 1) {
             return planName && planType;
         }
+        // A subscription with no interval saves as an option with no plan, which every
+        // enrolment through it then fails on.
+        if (planType === PaymentPlans.SUBSCRIPTION) {
+            return hasCustomIntervals;
+        }
 
         return true;
     };
@@ -106,7 +111,7 @@ export const PlanNavigation: React.FC<PlanNavigationProps> = ({
                     <Button
                         onClick={onSave}
                         className="bg-primary-400 text-white hover:bg-primary-500"
-                        disabled={!planName || !planType || isSaving}
+                        disabled={!canProceed() || !planName || !planType || isSaving}
                     >
                         {getButtonText()}
                     </Button>

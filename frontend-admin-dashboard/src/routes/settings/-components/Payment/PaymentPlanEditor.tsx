@@ -247,6 +247,9 @@ export const PaymentPlanEditor: React.FC<PaymentPlanEditorProps> = ({
     const unitLabel = (unit: 'days' | 'months'): string =>
         unit === 'days' ? t('units.days') : t('units.months');
 
+    const hasSubscriptionIntervals =
+        (planData.config?.subscription?.customIntervals?.length ?? 0) > 0;
+
     const handleSave = () => {
         if (!planData.name || !planData.type) {
             return;
@@ -256,6 +259,11 @@ export const PaymentPlanEditor: React.FC<PaymentPlanEditorProps> = ({
             planData.config?.free?.accessType === 'limited' &&
             (!planData.config?.free?.validityDays || planData.config.free.validityDays <= 0)
         ) {
+            return;
+        }
+        // Removing every interval would resend no plans, and the backend retires the
+        // stored ones — leaving the option unable to enrol anyone.
+        if (planData.type === PaymentPlans.SUBSCRIPTION && !hasSubscriptionIntervals) {
             return;
         }
 
@@ -1340,6 +1348,9 @@ export const PaymentPlanEditor: React.FC<PaymentPlanEditorProps> = ({
                                     planData.config?.free?.accessType === 'limited' &&
                                     (!planData.config?.free?.validityDays ||
                                         planData.config.free.validityDays <= 0)) ||
+                                (currentStep === 2 &&
+                                    planData.type === PaymentPlans.SUBSCRIPTION &&
+                                    !hasSubscriptionIntervals) ||
                                 isSaving
                             }
                             className="bg-primary-400 text-white hover:bg-primary-500"
@@ -1360,7 +1371,13 @@ export const PaymentPlanEditor: React.FC<PaymentPlanEditorProps> = ({
                         <Button
                             onClick={handleSave}
                             className="bg-primary-400 text-white hover:bg-primary-500"
-                            disabled={!planData.name || !planData.type || isSaving}
+                            disabled={
+                                !planData.name ||
+                                !planData.type ||
+                                (planData.type === PaymentPlans.SUBSCRIPTION &&
+                                    !hasSubscriptionIntervals) ||
+                                isSaving
+                            }
                         >
                             {isSaving ? (
                                 <>
