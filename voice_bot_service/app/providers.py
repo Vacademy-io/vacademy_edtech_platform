@@ -1258,6 +1258,16 @@ def _navana_seq_routing(cls):
                             self._nv_text.pop(seq, None)
                         continue
                     pcm = bytes(message)
+                    _target = get_settings().navana_level_target_db
+                    if _target is not None:
+                        # One chunk is one whole sentence on Navana — the unit
+                        # the level is matched over (English renders ~18 dB
+                        # quieter than Hindi; voice_eq.match_speech_level).
+                        try:
+                            from .voice_eq import match_speech_level
+                            pcm = match_speech_level(pcm, self._output_sample_rate, _target)
+                        except Exception:
+                            logger.exception("navana: level match failed — playing it as rendered")
                     if last and seq in self._nv_text and len(pcm) >= 8:
                         # Still held at the sentence's last chunk — always, for
                         # Navana's one-chunk sentences: the text goes 60 % into it.

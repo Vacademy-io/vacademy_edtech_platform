@@ -1468,6 +1468,15 @@ def install_tts_cache(tts, *, engine: str, model: str, voice: str, pace,
                     cache.note_hit_for_agent(key, agent_id, agent_name,
                                              institute_id)
                     logger.info("tts-cache: HIT {}ms {!r}", entry.duration_ms, norm[:48])
+                    if engine_l == "navana" and s.navana_level_target_db is not None:
+                        # The same level match as Navana's live audio: entries
+                        # stored before it are at the model's own level, and
+                        # it leaves a sentence already at the target alone.
+                        try:
+                            from .voice_eq import match_speech_level
+                            blob = match_speech_level(blob, SAMPLE_RATE, s.navana_level_target_db)
+                        except Exception:
+                            logger.exception("tts-cache: level match failed — serving as stored")
 
                     # Emit the turn brackets ONLY if the base class is not already
                     # doing it, or the caller hears two of everything.

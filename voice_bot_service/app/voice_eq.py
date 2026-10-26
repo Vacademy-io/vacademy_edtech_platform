@@ -120,6 +120,46 @@ class TelephoneEQ:
         return np.clip(y, -32768, 32767).astype(np.int16).tobytes()
 
 
+def match_speech_level(pcm: bytes, sample_rate: int, target_db: float = -19.0,
+                       max_gain_db: float = 20.0, min_gain_db: float = -6.0,
+                       peak_db: float = -1.0) -> bytes:
+    """Bring ONE sentence of 16-bit mono speech to a common loudness.
+
+    Navana renders each language with its own model, and they do not agree on
+    level: the same voice (ipsita) measured -35.6 dBFS active-speech RMS / -23.8
+    dBFS peak in English against -16.9 / -0.4 in Hindi (2026-10-26). Pitch was
+    the same (~230 Hz); callers heard "English low, Hindi high" (call 3beed75a)
+    — the voice jumped when the call switched language.
+
+    Whole sentences only (a 20 ms slice has no level to speak of). Active speech
+    = the 20 ms frames above a tenth of the loudest one, so pauses do not drag
+    the measurement down. The gain is clamped and never pushes the peak past
+    `peak_db`, and it is idempotent: a sentence already at the target is left
+    as it is, so audio normalised before it was cached comes back unchanged.
+    """
+    import numpy as np
+
+    if not pcm or sample_rate <= 0:
+        return pcm
+    x = np.frombuffer(pcm[:len(pcm) // 2 * 2], dtype=np.int16).astype(np.float64)
+    n = max(1, int(sample_rate * 0.02))
+    if x.size < n * 5:                  # under 0.1 s: too short to judge
+        return pcm
+    frames = x[:x.size // n * n].reshape(-1, n)
+    rms = np.sqrt((frames ** 2).mean(axis=1))
+    loud = rms[rms > rms.max() * 0.1]
+    if loud.size == 0 or rms.max() < 1.0:
+        return pcm
+    level_db = 20 * math.log10(math.sqrt(float((loud ** 2).mean())) / 32768.0)
+    gain_db = max(min_gain_db, min(max_gain_db, target_db - level_db))
+    peak = float(np.abs(x).max()) / 32768.0
+    gain_db = min(gain_db, peak_db - 20 * math.log10(peak))
+    if abs(gain_db) < 0.5:
+        return pcm
+    y = x * (10 ** (gain_db / 20.0))
+    return np.clip(y, -32768, 32767).astype(np.int16).tobytes()
+
+
 def build_voice_eq(settings) -> TelephoneEQ | None:
     """The per-call EQ, or None when disabled/unavailable (then nothing changes)."""
     if not getattr(settings, "voice_eq_enabled", False):

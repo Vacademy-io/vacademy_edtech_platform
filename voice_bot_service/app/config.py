@@ -550,6 +550,12 @@ class Settings:
     # quieter. Measured peak after makeup: -4.5 dBFS.
     voice_eq_makeup_db: float = field(
         default_factory=lambda: float(_env("VOICE_EQ_MAKEUP_DB", "2.0")))
+    # Every Navana sentence is brought to this active-speech level (dBFS) before
+    # it plays — its English model renders ~18 dB quieter than its Hindi one
+    # (voice_eq.match_speech_level). Empty / "off" = leave Navana's level alone.
+    navana_level_target_db: float | None = field(
+        default_factory=lambda: (None if _env("NAVANA_LEVEL_TARGET_DB", "-19").strip().lower()
+                                 in ("", "off", "none") else float(_env("NAVANA_LEVEL_TARGET_DB", "-19"))))
     filler_phrases: tuple = field(
         default_factory=lambda: tuple(
             p.strip() for p in _env("FILLER_PHRASES", "Hmm…").split(",") if p.strip()
