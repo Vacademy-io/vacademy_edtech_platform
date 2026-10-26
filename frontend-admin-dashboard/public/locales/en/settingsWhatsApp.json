@@ -55,5 +55,14 @@
     },
     "info": {
         "note": "<0>Note:</0> Switching the active provider instantly routes all outgoing WhatsApp messages through the selected provider. Make sure the same message templates exist on the new provider before switching. Inbound messages (user replies) are handled automatically via the smart fallback system."
+    },
+    "setupGuide": {
+        "title": "Client setup guide",
+        "description": "A one-page PDF that lists everything an institute needs from Meta before WhatsApp can be connected. Preview it, then download or copy the link to share with the client.",
+        "download": "Download PDF",
+        "copyLink": "Copy link",
+        "linkCopied": "Guide link copied",
+        "copyFailed": "Could not copy the link",
+        "preview": "Preview"
     }
 }

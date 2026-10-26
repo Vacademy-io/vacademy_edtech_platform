@@ -19,6 +19,7 @@ import {
     type CredentialField,
 } from '@/services/whatsapp-provider-service';
 import { WebhookSetup } from './WebhookSetup';
+import { SetupGuideCard } from './SetupGuideCard';
 import { noAutofillProps } from '@/lib/no-autofill';
 
 type Props = { isTab?: boolean };
@@ -155,6 +156,8 @@ export default function WhatsAppSettings({ isTab = false }: Props) {
                     <p className="text-sm text-gray-600">{t('header.subtitle')}</p>
                 </div>
             )}
+
+            <SetupGuideCard />
 
             {error && (
                 <Alert variant="destructive">

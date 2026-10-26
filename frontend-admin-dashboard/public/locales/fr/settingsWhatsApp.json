@@ -55,5 +55,14 @@
     },
     "info": {
         "note": "<0>Remarque :</0> Changer de fournisseur actif achemine instantanément tous les messages WhatsApp sortants via le fournisseur sélectionné. Assurez-vous que les mêmes modèles de message existent chez le nouveau fournisseur avant de basculer. Les messages entrants (réponses des utilisateurs) sont gérés automatiquement via le système de repli intelligent."
+    },
+    "setupGuide": {
+        "title": "Guide de configuration client",
+        "description": "Un PDF d'une page qui liste tout ce dont l'établissement a besoin côté Meta avant de connecter WhatsApp. Prévisualisez-le, puis téléchargez-le ou copiez le lien pour le partager avec le client.",
+        "download": "Télécharger le PDF",
+        "copyLink": "Copier le lien",
+        "linkCopied": "Lien du guide copié",
+        "copyFailed": "Impossible de copier le lien",
+        "preview": "Aperçu"
     }
 }
