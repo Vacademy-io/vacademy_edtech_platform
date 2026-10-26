@@ -106,9 +106,10 @@ class SuperAdminBilledEstimateTest {
                 rows.add(new Object[]{"voice_call_out", 1.0, 0.0});
                 rows.add(new Object[]{"ai_call_out", 5.0, 0.0});
             } else if (sql.contains("GROUP BY 1")) {
-                Object[] s = new Object[24];
+                Object[] s = new Object[25];
                 java.util.Arrays.fill(s, 0L);
                 s[0] = "navana"; s[1] = 1L; s[2] = 77L;
+                s[24] = "";                          // the call's LLM model (none recorded)
                 s[7] = aiPending ? 3L : 0L;          // AI-leg pending pulses
                 s[8] = voicePending ? 3L : 0L;       // voice-leg pending pulses
                 s[21] = ((voiceLedger == null ? 0d : ((Number) voiceLedger).doubleValue())

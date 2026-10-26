@@ -284,17 +284,44 @@ public class SuperAdminCallService {
      */
     private Map<String, Double> breakdown(Map<String, Double> card, String ttsModel,
                                           double minutes, int seconds, Integer ttsChars) {
-        return breakdown(card, ttsModel, minutes, seconds, ttsChars, null);
+        return breakdown(card, ttsModel, minutes, seconds, ttsChars, null, null);
     }
 
     /** LLM rupees from the call's own tokens, or null when it reported none or the card lacks the rates. */
     static Double llmFromTokens(Map<String, Double> card, long[] usage) {
+        return llmFromTokens(card, usage, null);
+    }
+
+    /**
+     * The same, at the rates of the model the call talked on (diagnostics.llm.vendor,
+     * e.g. "sarvam/gemma4"): {@code <component>@<vendor>} rows (V613) when the card has all
+     * three, else the plain rows (Gemini 2.5 Flash, V542) — so a model without its own
+     * rates, and every call before them, prices as it always did.
+     */
+    static Double llmFromTokens(Map<String, Double> card, long[] usage, String llmVendor) {
         if (usage == null) return null;
-        Double in = card.get("llm_in_per_mtok"), cached = card.get("llm_cached_per_mtok"),
-                out = card.get("llm_out_per_mtok");
+        String at = llmVendor == null || llmVendor.isBlank() ? "" : "@" + llmVendor.trim().toLowerCase();
+        if (!at.isEmpty() && !(card.containsKey("llm_in_per_mtok" + at)
+                && card.containsKey("llm_cached_per_mtok" + at) && card.containsKey("llm_out_per_mtok" + at))) {
+            at = "";
+        }
+        Double in = card.get("llm_in_per_mtok" + at), cached = card.get("llm_cached_per_mtok" + at),
+                out = card.get("llm_out_per_mtok" + at);
         if (in == null || cached == null || out == null) return null;
         long prompt = usage[0], hit = Math.min(usage[1], usage[0]), completion = usage[2];
         return ((prompt - hit) * in + hit * cached + completion * out) / 1_000_000d;
+    }
+
+    /** diagnostics.llm.vendor ("sarvam/gemma4"), or null. */
+    private String llmVendor(String diagnosticsJson) {
+        if (diagnosticsJson == null || diagnosticsJson.isBlank()) return null;
+        try {
+            com.fasterxml.jackson.databind.JsonNode v =
+                    DIAG_MAPPER.readTree(diagnosticsJson).path("llm").path("vendor");
+            return v.isTextual() ? v.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** diagnostics.infra.llmUsage → {promptTokens, cachedTokens, completionTokens}, or null. */
@@ -313,7 +340,7 @@ public class SuperAdminCallService {
 
     private Map<String, Double> breakdown(Map<String, Double> card, String ttsModel,
                                           double minutes, int seconds, Integer ttsChars,
-                                          long[] llmUsage) {
+                                          long[] llmUsage, String llmVendor) {
         String engine = (ttsModel == null || ttsModel.isBlank()) ? "sarvam" : ttsModel.trim().toLowerCase();
         double billedMinutes = seconds <= 0 ? 0 : ((seconds + 29) / 30) / 2.0;
         Map<String, Double> b = new LinkedHashMap<>();
@@ -333,7 +360,7 @@ public class SuperAdminCallService {
                 : ttsPerMin * minutes));
         // The call's own tokens when it reported them (V542); the per-minute
         // average only for calls that did not.
-        Double llm = llmFromTokens(card, llmUsage);
+        Double llm = llmFromTokens(card, llmUsage, llmVendor);
         b.put("llm", round(llm != null ? llm : card.getOrDefault("llm", 0d) * minutes));
         return b;
     }
@@ -552,7 +579,7 @@ public class SuperAdminCallService {
             String tts = (String) r[6];
             Integer ttsChars = diagInt((String) r[18], "chars");
             Map<String, Double> b = breakdown(card, tts, minutes, secs, ttsChars,
-                    llmUsage((String) r[18]));
+                    llmUsage((String) r[18]), llmVendor((String) r[18]));
             double cost = round(b.values().stream().mapToDouble(Double::doubleValue).sum());
             // Per leg: the ledger where that leg has been charged; the pulse
             // reconstruction only for a leg still pending (billing runs after the
@@ -643,7 +670,8 @@ public class SuperAdminCallService {
     /**
      * Totals for the filtered set. Aggregated in SQL per TTS engine, because the
      * TTS rate differs per engine and summing a blended average would quietly
-     * misprice any institute running a mix.
+     * misprice any institute running a mix — and per LLM model ([24]), for the same
+     * reason: the token rates differ per model (V613).
      */
     @Transactional(readOnly = true)
     public SuperAdminCallSummaryDTO summary(String instituteId, String from, String to,
@@ -696,8 +724,9 @@ public class SuperAdminCallService {
                        -- [23] inbound voice-leg pulses still to be charged
                        COALESCE(sum(led.voice_credits), 0) + COALESCE(sum(led.ai_credits), 0),
                        count(*) FILTER (WHERE led.voice_credits IS NOT NULL OR led.ai_credits IS NOT NULL),
-                """ + pulsesWhere(VOICE_PENDING_SQL + " AND COALESCE(r.direction, '') ILIKE 'INBOUND'") + "\n"
-                + fromWithLedger() + " GROUP BY 1");
+                """ + pulsesWhere(VOICE_PENDING_SQL + " AND COALESCE(r.direction, '') ILIKE 'INBOUND'") + ",\n"
+                + "       COALESCE(r.diagnostics->'llm'->>'vendor', '') AS llm_vendor\n"
+                + fromWithLedger() + " GROUP BY 1, 25");
         bind(q, instituteId, from, to, health, disposition, agentId);
         q.setParameter("pulse", Math.max(1, pulseSeconds));
 
@@ -753,7 +782,7 @@ public class SuperAdminCallService {
             b.put("tts", round(measuredChars / CHARS_PER_CALL_MINUTE * ttsPerMin
                                + unmeasuredMins * ttsPerMin));
             Double tokenLlm = llmFromTokens(card, new long[]{((Number) r[17]).longValue(),
-                    ((Number) r[18]).longValue(), ((Number) r[19]).longValue()});
+                    ((Number) r[18]).longValue(), ((Number) r[19]).longValue()}, (String) r[24]);
             double untokenedMins = ((Number) r[20]).longValue() / 60.0;
             b.put("llm", round(tokenLlm != null
                     ? tokenLlm + card.getOrDefault("llm", 0d) * untokenedMins

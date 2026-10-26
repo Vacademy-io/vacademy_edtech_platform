@@ -51,6 +51,9 @@ class SuperAdminCallSqlShapeTest {
             String unbound = BIND.matcher(s).replaceAll("");
             assertFalse(unbound.contains(":"), () -> "bare ':' (use chr(58) or CAST) in: " + s);
         }
+        // The totals price LLM tokens per model (V613), so they group by it too.
+        assertTrue(calls.stream().anyMatch(s -> s.contains("GROUP BY 1, 25")
+                && s.contains("r.diagnostics->'llm'->>'vendor'")), "summary groups by the LLM model");
         // The list and the summary decide "which legs are still estimated" with the SAME
         // predicates, or a row and the total it rolls into disagree.
         List<String> ledgered = calls.stream().filter(s -> s.contains("credit_transactions")).toList();
