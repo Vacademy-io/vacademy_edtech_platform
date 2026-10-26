@@ -142,12 +142,30 @@ def mid_reply_action(text: str, extra_backchannels: frozenset = frozenset(),
     if not ws or len(ws) > max_words:
         return INTERRUPT
     vocab = _BACKCHANNEL_WORDS | extra_backchannels
-    for w in ws:
-        if w in _NEGATION_WORDS:
-            return INTERRUPT
-        if w not in vocab:
-            return INTERRUPT
-    return ABSORB
+    # Negation first, and on the PARTS: "hell no" must never be rescued by a join.
+    if any(w in _NEGATION_WORDS for w in ws):
+        return INTERRUPT
+    if all(w in vocab for w in ws):
+        return ABSORB
+    # STT sometimes delivers one word as fragments — "Hell o", "hel lo", "ha an".
+    # None of the pieces is a word we know, but the whole is. Call 13b4ba2d
+    # (2026-09-15) lost its entire opening to this: the caller said hello over the
+    # first second of it, INTERRUPT_ON_VAD cancelled it as designed, and a clean
+    # "hello" would then have ABSORBED here and the carry-on cue would have resumed
+    # the opening. "Hell o" fell through to INTERRUPT instead, the model was told
+    # the opening had already been said, and it went straight to the next script
+    # line. The caller: "बीच से start हो गया यार".
+    #
+    # Only the whole utterance is joined, and only after the negation check above,
+    # so two real words can never be glued into a third that happens to be an ack.
+    if len(ws) >= 2 and _joined(ws) in vocab:
+        return ABSORB
+    return INTERRUPT
+
+
+def _joined(ws: list) -> str:
+    """The utterance as one token, for a word STT cut into pieces."""
+    return "".join(ws)
 
 
 # ── carrier announcements ──────────────────────────────────────────────────
@@ -522,7 +540,10 @@ def is_audio_check(text: str, max_words: int = 3) -> bool:
     ws = _words(text)
     if not ws or len(ws) > max_words:
         return False
-    return any(w in _AUDIO_CHECK_WORDS for w in ws)
+    # The join mirrors mid_reply_action: "Hel lo?" is the same line-check as
+    # "hello?", and the audio-check counter that stops a bad line after two of
+    # them has to see it as one — see the note there (call 13b4ba2d).
+    return any(w in _AUDIO_CHECK_WORDS for w in ws) or _joined(ws) in _AUDIO_CHECK_WORDS
 
 
 def suppresses_opening(text: str, min_words: int = 4) -> bool:
