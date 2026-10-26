@@ -55,6 +55,7 @@ import {
     type EnrolledCourseLayout,
     type FeedbackTrigger,
     type StudentDashboardWidgetConfig,
+    type StudentProfileSettings,
     RETIRED_WIDGET_IDS,
     WIDGET_LABELS,
 } from '@/types/student-display-settings';
@@ -105,6 +106,17 @@ function getStudentDisplaySections(t: TFunction): SettingsSectionGroup[] {
         },
     ];
 }
+
+// Profile-tab cards an admin can hide one by one; labels are profilePage.<key>.
+const PROFILE_CARD_TOGGLES = [
+    'hideProgressStats',
+    'hideBadgesRank',
+    'hideLanguage',
+    'hideAcademicJourney',
+    'hideContactLocation',
+    'hideGuardianInfo',
+    'hideTermsCard',
+] as const satisfies ReadonlyArray<keyof StudentProfileSettings>;
 
 export default function StudentDisplaySettings(): JSX.Element {
     const { t } = useTranslation('settingsStudentDisplay');
@@ -996,6 +1008,22 @@ export default function StudentDisplaySettings(): JSX.Element {
                             {t('profilePage.showMembershipStatus')}
                         </Label>
                     </div>
+                    {PROFILE_CARD_TOGGLES.map((key) => (
+                        <div key={key} className="flex items-center gap-2">
+                            <Switch
+                                checked={settings.profile[key] ?? false}
+                                onCheckedChange={(v) =>
+                                    update('profile', {
+                                        ...settings.profile,
+                                        [key]: v,
+                                    })
+                                }
+                            />
+                            <Label className="text-xs">
+                                {t(`profilePage.${key}`)}
+                            </Label>
+                        </div>
+                    ))}
                 </div>
             </Card>
 

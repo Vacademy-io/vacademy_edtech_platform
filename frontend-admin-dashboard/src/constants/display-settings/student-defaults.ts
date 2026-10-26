@@ -156,6 +156,13 @@ export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
     profile: {
         // Hidden by default; admins can enable it in Student Display settings.
         showMembershipStatus: false,
+        hideProgressStats: false,
+        hideBadgesRank: false,
+        hideLanguage: false,
+        hideAcademicJourney: false,
+        hideContactLocation: false,
+        hideGuardianInfo: false,
+        hideTermsCard: false,
     },
     courseDetails: {
         tabs: [
