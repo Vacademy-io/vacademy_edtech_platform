@@ -94,8 +94,12 @@ export const RecentLeadsSearchSchema = z.object({
     statusExclude: looseString.optional(),
     /** Route-owned duplicate filter: 'exclude' hides enquiries flagged as duplicates of a lead
      *  they repeat (so a repeat does not add to the count), 'only' lists just them (a
-     *  Duplicate Leads tab). Absent = no filter. */
+     *  Duplicate Leads tab), 'include' lists them with the rest even when Lead Settings keeps
+     *  duplicates on the Duplicate Leads tab (All Leads). Absent = no filter. */
     duplicates: looseString.optional(),
+    /** The user's Duplicates filter ('only' | 'exclude'), offered only where the list shows
+     *  duplicates (see `duplicates`). Absent = every enquiry. */
+    duplicateView: looseString.optional(),
     lock: looseString.optional(),
     calledFrom: looseString.optional(),
     calledTo: looseString.optional(),

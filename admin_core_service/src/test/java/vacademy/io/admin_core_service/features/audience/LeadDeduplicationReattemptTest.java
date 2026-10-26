@@ -179,6 +179,32 @@ class LeadDeduplicationReattemptTest {
         assertEquals("ONLY", normalize.invoke(null, "ONLY"));
         assertEquals(null, normalize.invoke(null, "all"));
         assertEquals(null, normalize.invoke(null, (Object) null));
+        // INCLUDE is not a SQL filter value; the list resolves it to "no filter".
+        assertEquals(null, normalize.invoke(null, "include"));
+    }
+
+    @Test
+    void routeIncludeShowsDuplicatesEvenWhenSettingHidesThem() throws Exception {
+        Class<?> svc = vacademy.io.admin_core_service.features.audience.service.AudienceService.class;
+        java.lang.reflect.Method resolve = svc.getDeclaredMethod("resolveListDuplicateFilter", String.class,
+                java.util.function.BooleanSupplier.class);
+        java.lang.reflect.Method includes = svc.getDeclaredMethod("includesDuplicates", String.class);
+        resolve.setAccessible(true);
+        includes.setAccessible(true);
+        java.util.function.BooleanSupplier tabOnlyOn = () -> true;
+        java.util.function.BooleanSupplier tabOnlyOff = () -> false;
+        // All Leads with duplicates=include: every enquiry, whatever the setting says.
+        assertEquals(null, resolve.invoke(null, " Include ", tabOnlyOn));
+        assertEquals(null, resolve.invoke(null, "include", tabOnlyOff));
+        // Unchanged: the route's exclude / only win, and any other value falls back to the setting.
+        assertEquals("EXCLUDE", resolve.invoke(null, "exclude", tabOnlyOff));
+        assertEquals("ONLY", resolve.invoke(null, "only", tabOnlyOn));
+        assertEquals("EXCLUDE", resolve.invoke(null, null, tabOnlyOn));
+        assertEquals("EXCLUDE", resolve.invoke(null, "all", tabOnlyOn));
+        assertEquals(null, resolve.invoke(null, null, tabOnlyOff));
+        assertEquals(true, includes.invoke(null, "INCLUDE"));
+        assertEquals(false, includes.invoke(null, "exclude"));
+        assertEquals(false, includes.invoke(null, (Object) null));
     }
 
     @Test

@@ -61,6 +61,11 @@
         "workedWithin": {
             "placeholder": null,
             "any": null
+        },
+        "duplicates": {
+            "all": "Doublons : tous",
+            "only": "Doublons uniquement",
+            "exclude": "Masquer les doublons"
         }
     },
     "toolbar": {
@@ -99,7 +104,9 @@
         "calledWithin": null,
         "workedWithin": null,
         "pinnedTitle": "Épinglé par cet onglet — impossible de le retirer ici",
-        "statusExcluded": "Statut différent de : {{statuses}}"
+        "statusExcluded": "Statut différent de : {{statuses}}",
+        "duplicatesOnly": "Doublons uniquement",
+        "duplicatesExcluded": "Doublons masqués"
     },
     "search": {
         "placeholder": "Rechercher des prospects",

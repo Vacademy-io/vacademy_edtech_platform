@@ -582,7 +582,8 @@ const CampaignUsersContent = ({
                 submittedAt,
                 full_name: user.full_name || user.name || lead.parent_name || null,
                 email: user.email || lead.parent_email || null,
-                phone_number: user.mobile_number || lead.parent_mobile || null,
+                // This enquiry's own number first — see recentLeadPhone.
+                phone_number: lead.parent_mobile || user.mobile_number || null,
                 opted_out_from: lead.source_audience_name || null,
                 _user_id: user.id || lead.user_id || null,
                 _user: user,

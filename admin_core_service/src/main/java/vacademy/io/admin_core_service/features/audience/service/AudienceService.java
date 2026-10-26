@@ -2352,6 +2352,23 @@ public class AudienceService {
         return "EXCLUDE".equals(value) || "ONLY".equals(value) ? value : null;
     }
 
+    /** Route duplicates=include: list duplicate enquiries alongside the rest (All Leads). */
+    static boolean includesDuplicates(String duplicateFilter) {
+        return StringUtils.hasText(duplicateFilter) && "INCLUDE".equals(duplicateFilter.trim().toUpperCase());
+    }
+
+    /**
+     * Cross-audience list filter: the route's EXCLUDE / ONLY as sent; INCLUDE = no filter even
+     * with "Show duplicates only in Duplicate Leads" on; anything else falls back to that
+     * setting (EXCLUDE when on).
+     */
+    static String resolveListDuplicateFilter(String duplicateFilter, java.util.function.BooleanSupplier duplicatesTabOnly) {
+        String explicit = normalizeDuplicateFilter(duplicateFilter);
+        if (explicit != null) return explicit;
+        if (includesDuplicates(duplicateFilter)) return null;
+        return duplicatesTabOnly.getAsBoolean() ? "EXCLUDE" : null;
+    }
+
     /** Readable channel name for a lead's source_type, for reattempt journey and bell text. */
     static String reattemptSourceLabel(String sourceType) {
         if (!StringUtils.hasText(sourceType)) return null;
@@ -3711,11 +3728,8 @@ public class AudienceService {
                 && !filterDTO.getInstituteId().isBlank()) {
             // The route's duplicates= wins. With none, "Show duplicates only in Duplicate
             // Leads" (Lead Settings) hides them here; off = no filter, as before.
-            String duplicateFilter = normalizeDuplicateFilter(filterDTO.getDuplicateFilter());
-            if (duplicateFilter == null
-                    && leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId())) {
-                duplicateFilter = "EXCLUDE";
-            }
+            String duplicateFilter = resolveListDuplicateFilter(filterDTO.getDuplicateFilter(),
+                    () -> leadDeduplicationService.duplicatesTabOnly(filterDTO.getInstituteId()));
             Page<AudienceResponse> all = audienceResponseRepository.findInstituteLeadsWithFilters(
                     filterDTO.getInstituteId(),
                     filterDTO.getLeadStatusId(),
@@ -3752,7 +3766,8 @@ public class AudienceService {
                     filterDTO.getActivityFromLocal(),
                     filterDTO.getActivityToLocal(),
                     pageable);
-            return mapResponsesToLeadDetails(all, filterDTO.getInstituteId());
+            return mapResponsesToLeadDetails(all, filterDTO.getInstituteId(),
+                    !includesDuplicates(filterDTO.getDuplicateFilter()));
         }
 
         Page<AudienceResponse> responses = audienceResponseRepository.findLeadsWithFilters(
@@ -3806,7 +3821,8 @@ public class AudienceService {
             campaignInstituteId = audienceRepository.findById(filterDTO.getAudienceId())
                     .map(Audience::getInstituteId).orElse(null);
         }
-        return mapResponsesToLeadDetails(responses, campaignInstituteId);
+        return mapResponsesToLeadDetails(responses, campaignInstituteId,
+                !includesDuplicates(filterDTO.getDuplicateFilter()));
     }
 
     /**
@@ -3870,7 +3886,12 @@ public class AudienceService {
         return null;
     }
 
-    private Page<LeadDetailDTO> mapResponsesToLeadDetails(Page<AudienceResponse> responses, String instituteId) {
+    /**
+     * @param badgeRepeatedLeads false when the list shows duplicate enquiries as their own
+     *        rows (route duplicates=include), so the lead they repeat is not badged as well
+     */
+    private Page<LeadDetailDTO> mapResponsesToLeadDetails(Page<AudienceResponse> responses, String instituteId,
+                                                          boolean badgeRepeatedLeads) {
         List<AudienceResponse> content = responses.getContent();
 
         // Batch fetch UserDTOs
@@ -3968,7 +3989,7 @@ public class AudienceService {
                 .collect(Collectors.toSet());
         // Live duplicates per lead, only with "Show duplicates only in Duplicate Leads" on: the
         // lists hide duplicates then, so the lead they repeat carries the badge instead.
-        final Map<String, Integer> duplicateCountByResponseId = responseIds.isEmpty()
+        final Map<String, Integer> duplicateCountByResponseId = responseIds.isEmpty() || !badgeRepeatedLeads
                 || !leadDeduplicationService.duplicatesTabOnly(instituteId) ? Collections.emptyMap()
                 : audienceResponseRepository.countActiveDuplicatesOf(responseIds).stream()
                         .filter(r -> r.getPrimaryResponseId() != null && r.getDuplicateCount() != null)

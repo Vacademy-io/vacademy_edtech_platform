@@ -64,6 +64,11 @@
         "workedWithin": {
             "placeholder": null,
             "any": null
+        },
+        "duplicates": {
+            "all": "المكررة: الكل",
+            "only": "المكررة فقط",
+            "exclude": "إخفاء المكررة"
         }
     },
     "toolbar": {
@@ -102,7 +107,9 @@
         "calledWithin": null,
         "workedWithin": null,
         "pinnedTitle": "مثبَّت بواسطة هذا التبويب — لا يمكن إزالته من هنا",
-        "statusExcluded": "الحالة ليست: {{statuses}}"
+        "statusExcluded": "الحالة ليست: {{statuses}}",
+        "duplicatesOnly": "المكررة فقط",
+        "duplicatesExcluded": "المكررة مخفية"
     },
     "search": {
         "placeholder": "البحث عن العملاء المحتملين",

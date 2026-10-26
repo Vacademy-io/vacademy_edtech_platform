@@ -16,6 +16,7 @@ import {
     ChartLineUp,
     CheckCircle,
     Clock,
+    CopySimple,
     DownloadSimple,
     Flame,
     Folders,
@@ -57,6 +58,7 @@ import { StudentSidebar } from '@/routes/manage-students/students-list/-componen
 import { StudentSidebarProvider } from '@/routes/manage-students/students-list/-providers/student-sidebar-provider';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { useLeadSettings } from '@/hooks/use-lead-settings';
+import { useLeadDedupSettings } from '@/hooks/use-lead-dedup-settings';
 import { useLeadProfiles, fetchBatchProfiles } from '@/hooks/use-lead-profiles';
 import { useLatestNotesBatch, fetchLatestNotesBatch } from '@/hooks/use-latest-notes-batch';
 import {
@@ -193,12 +195,17 @@ const buildSlaOptions = (t: TFunction): { value: string; label: string; helper?:
     { value: 'FOLLOW_UP_OVERDUE', label: t('slaOptions.followUpMissed') },
 ];
 /** `duplicates` URL value → the API's duplicate_filter; anything else = no filter. */
-const toDuplicateFilter = (value: string | undefined): 'EXCLUDE' | 'ONLY' | undefined => {
+const toDuplicateFilter = (
+    value: string | undefined
+): 'EXCLUDE' | 'ONLY' | 'INCLUDE' | undefined => {
     const v = value?.trim().toLowerCase();
     if (v === 'exclude') return 'EXCLUDE';
     if (v === 'only') return 'ONLY';
+    if (v === 'include') return 'INCLUDE';
     return undefined;
 };
+/** Sentinel for "no Duplicates filter" — the Select can't hold an empty value. */
+const DUPLICATE_VIEW_ALL = 'all';
 
 const SEARCH_DEBOUNCE_MS = 500;
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -359,7 +366,27 @@ const RecentLeadsContent = ({
     // Route-owned like `lock`: a sidebar sub-tab says whether duplicate enquiries count
     // (`duplicates=exclude` on All Leads) or are the whole list (`duplicates=only`).
     const duplicatesRef = useRef(urlSearch.duplicates);
-    const duplicateFilter = toDuplicateFilter(duplicatesRef.current);
+    const routeDuplicateFilter = toDuplicateFilter(duplicatesRef.current);
+    // The user's Duplicates filter is offered only where the list shows duplicate enquiries:
+    // the route says `include`, or says nothing while Lead Settings marks duplicates and does
+    // not keep them on the Duplicate Leads tab (the backend's default). So it never fights a
+    // tab's own duplicates=, and institutes that mark no duplicates see no new control.
+    const { settings: dedupSettings, isLoading: dedupSettingsLoading } = useLeadDedupSettings();
+    const reattemptSettings = dedupSettings.repeatLead.reattempt;
+    const listShowsDuplicates =
+        routeDuplicateFilter === 'INCLUDE' ||
+        (routeDuplicateFilter === undefined &&
+            !dedupSettingsLoading &&
+            dedupSettings.enabled &&
+            dedupSettings.action === 'ALLOW_REASSIGN' &&
+            reattemptSettings.markDuplicate &&
+            !reattemptSettings.duplicatesTabOnly);
+    const [duplicateView, setDuplicateView] = useState<string>(urlSearch.duplicateView ?? '');
+    const duplicateViewFilter = listShowsDuplicates ? toDuplicateFilter(duplicateView) : undefined;
+    const duplicateFilter =
+        duplicateViewFilter === 'ONLY' || duplicateViewFilter === 'EXCLUDE'
+            ? duplicateViewFilter
+            : routeDuplicateFilter;
     // Captured once: the component remounts on an external navigation, so the search at
     // mount IS the tab's intent even after the user has since narrowed things down.
     const pinnedEntryRef = useRef<Record<string, string | undefined>>({
@@ -585,6 +612,7 @@ const RecentLeadsContent = ({
             // Carried through untouched: the route owns it, not the user.
             lock: lockRef.current || undefined,
             duplicates: duplicatesRef.current || undefined,
+            duplicateView: duplicateView || undefined,
             status: leadStatusFilters.length > 0 ? leadStatusFilters.join(',') : undefined,
             statusExclude: statusExclude ? '1' : undefined,
             tier: tierFilters.length > 0 ? tierFilters.join(',') : undefined,
@@ -621,6 +649,7 @@ const RecentLeadsContent = ({
         void navigate({ search: nextSearch, replace: true });
     }, [
         navigate,
+        duplicateView,
         leadStatusFilters,
         statusExclude,
         tierFilters,
@@ -1134,6 +1163,7 @@ const RecentLeadsContent = ({
         setSlaFilters(clearedOrList('sla'));
         setCounsellorFilters(clearedOrList('counsellor'));
         setSourceFilter(clearedOr('source', ''));
+        setDuplicateView('');
         setCallHistoryFilter(clearedOr('called', ''));
         setCallCountValue(
             isLocked('calledCount') && pinnedEntryRef.current.calledCount
@@ -1220,6 +1250,7 @@ const RecentLeadsContent = ({
         slaFilters.length > 0 ||
         counsellorFilters.length > 0 ||
         !!sourceFilter ||
+        !!duplicateViewFilter ||
         !!callHistoryFilter ||
         !!calledWindow ||
         !!workedWindow ||
@@ -1368,7 +1399,7 @@ const RecentLeadsContent = ({
             if (selectedExportCols.has('email'))
                 row.push(csvSafe(u.email || lead.parent_email || '-'));
             if (selectedExportCols.has('mobile'))
-                row.push(csvSafe(u.mobile_number || lead.parent_mobile || '-'));
+                row.push(csvSafe(lead.parent_mobile || u.mobile_number || '-'));
             if (selectedExportCols.has('audience')) row.push(csvSafe(displayAudience(lead)));
             if (selectedExportCols.has('campaign_type'))
                 row.push(csvSafe(lead.campaign_type ?? ''));
@@ -1586,6 +1617,18 @@ const RecentLeadsContent = ({
             onRemove: () => {
                 setPage(0);
                 setSourceFilter('');
+            },
+        });
+    if (duplicateViewFilter)
+        chips.push({
+            label:
+                duplicateViewFilter === 'ONLY'
+                    ? t('chips.duplicatesOnly')
+                    : t('chips.duplicatesExcluded'),
+            param: 'duplicateView',
+            onRemove: () => {
+                setPage(0);
+                setDuplicateView('');
             },
         });
     customFieldFiltersPayload.forEach((f) => {
@@ -2039,7 +2082,8 @@ const RecentLeadsContent = ({
                         activeCount={
                             counsellorFilters.length +
                             campaignTypeFilters.length +
-                            audienceFilters.length
+                            audienceFilters.length +
+                            (duplicateViewFilter ? 1 : 0)
                         }
                     >
                         {showOps && (
@@ -2074,6 +2118,32 @@ const RecentLeadsContent = ({
                             locked={isLocked('audience')}
                             widthClass="w-44"
                         />
+                        {/* With the source filters above, lists duplicates source-wise. */}
+                        {listShowsDuplicates && (
+                            <Select
+                                value={duplicateViewFilter?.toLowerCase() ?? DUPLICATE_VIEW_ALL}
+                                onValueChange={(v) => {
+                                    setPage(0);
+                                    setDuplicateView(v === DUPLICATE_VIEW_ALL ? '' : v);
+                                }}
+                            >
+                                <SelectTrigger className="h-10 w-44">
+                                    <CopySimple className="mr-1.5 size-4 shrink-0 text-neutral-400" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={DUPLICATE_VIEW_ALL}>
+                                        {t('filters.duplicates.all')}
+                                    </SelectItem>
+                                    <SelectItem value="only">
+                                        {t('filters.duplicates.only')}
+                                    </SelectItem>
+                                    <SelectItem value="exclude">
+                                        {t('filters.duplicates.exclude')}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
                     </LeadFilterSection>
                     <LeadFilterSection
                         title={t('filtersPanel.sections.activity', { defaultValue: 'Activity' })}
