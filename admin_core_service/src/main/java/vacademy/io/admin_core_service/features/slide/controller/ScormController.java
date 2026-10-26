@@ -32,8 +32,11 @@ public class ScormController {
                                                                                                                     // now
                                                                                                                     // or
                                                                                                                     // required?
-        ScormSlide slide = scormService.uploadScormPackage(file);
-        return ResponseEntity.ok(mapToDTO(slide));
+        ScormService.UploadResult result = scormService.uploadScormPackage(file);
+        ScormSlideDTO dto = mapToDTO(result.slide());
+        dto.setCompatibilityFixes(result.compatibility().fixes());
+        dto.setCompatibilityWarnings(result.compatibility().warnings());
+        return ResponseEntity.ok(dto);
     }
 
     /**
