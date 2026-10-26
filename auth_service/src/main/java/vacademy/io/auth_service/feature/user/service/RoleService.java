@@ -6,6 +6,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.auth_service.feature.user.audit.RoleStatusAuditClient;
 import vacademy.io.auth_service.feature.user.dto.ModifyUserRolesDTO;
 import vacademy.io.auth_service.feature.user.dto.UserRoleFilterDTO;
 import vacademy.io.common.auth.dto.PagedUserWithRolesResponse;
@@ -28,6 +29,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -329,6 +331,9 @@ public class RoleService {
 
     public String updateUserRoleStatusByInstituteIdAndUserId(String newStatus, String instituteId, List<String> userIds,
             CustomUserDetails user) {
+        Map<String, RoleStatusAuditClient.RoleRowState> before = roleStatusAuditClient != null
+                ? roleStatusAuditClient.snapshot(instituteId, userIds)
+                : Map.of();
         if (UserRoleStatus.DISABLED.name().equals(newStatus)) {
             // Pause only live roles. Deleted/cancelled rows keep their status, so a later
             // "Enable access" cannot bring back a role the admin removed.
@@ -347,6 +352,11 @@ public class RoleService {
         }
         // Enable/disable is idempotent: repeating it (double click, retry) is not an error.
         evictCachedIdentities(instituteId, userIds);
+        // The update queries above commit on their own, so the change is final here.
+        if (roleStatusAuditClient != null && !before.isEmpty()) {
+            roleStatusAuditClient.record(user, instituteId, newStatus, before,
+                    roleStatusAuditClient.snapshot(instituteId, userIds));
+        }
         return "Status updated successfully";
     }
 
@@ -357,6 +367,10 @@ public class RoleService {
     // this service by hand) is unchanged.
     @Autowired(required = false)
     private CacheManager cacheManager;
+
+    // Same reason: optional, so services built by hand in tests record nothing.
+    @Autowired(required = false)
+    private RoleStatusAuditClient roleStatusAuditClient;
 
     /**
      * Drops the cached caller identity ({@code username_instituteId}) that

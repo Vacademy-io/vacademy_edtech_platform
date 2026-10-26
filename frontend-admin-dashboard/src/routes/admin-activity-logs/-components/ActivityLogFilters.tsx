@@ -80,6 +80,9 @@ const RESOURCE_GROUPS: { group: string; options: MultiSelectOption[] }[] = [
             { value: 'INSTITUTE_SETTING', label: 'Settings' },
             { value: 'LEARNER_BADGE', label: 'Learner badge' },
             { value: 'STUDENT_REPORT', label: 'Progress report' },
+            // Reported by auth_service (Teams / learner delete, disable, enable,
+            // cancel invite), through the same internal endpoint as ASSESSMENT.
+            { value: 'MEMBER_ACCESS', label: 'Member access' },
             // Reported by assessment_service through the internal audit endpoint,
             // not by an @Auditable annotation, so the contract test does not see it.
             { value: 'ASSESSMENT', label: 'Assessment' },
@@ -207,6 +210,8 @@ const ACTIVITY_OPTIONS: MultiSelectOption[] = [
     { value: 'ADD_EXPIRY', label: 'Expiry changed' },
     { value: 'UPDATE_STATUS', label: 'Learner status changed' },
     { value: 'ACCESS_CHANGE', label: 'Access changed' },
+    { value: 'DISABLE_ACCESS', label: 'Access disabled' },
+    { value: 'ENABLE_ACCESS', label: 'Access enabled' },
     { value: 'SHARE_CREDENTIALS', label: 'Credentials shared' },
     { value: 'EXPORT_CREDENTIALS', label: 'Credentials exported' },
     { value: 'DEACTIVATE', label: 'Deactivated (record)' },
