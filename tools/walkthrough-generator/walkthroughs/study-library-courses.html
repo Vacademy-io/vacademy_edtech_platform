@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Find &amp; create courses — walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --brand:#F5A700; --brand-bright:#FFB81C; --brand-deep:#C77D00; --brand-soft:#FFF6E6; --brand-soft-border:#FCE3B0;
+    --ok:#15803D; --ok-soft:#DCFCE7;
+    --rail:#13294B; --rail-ink:#FFFFFF; --ink:#1B2333; --ink-2:#475467; --ink-3:#98A2B3;
+    --line:#EAECF0; --line-2:#F1F3F6; --wash:#F8F9FB; --wash-2:#FBFCFE; --page-bg:#FBFAF6;
+    --ff-display:'Plus Jakarta Sans', system-ui, sans-serif; --ff-ui:'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--ff-ui);background:var(--page-bg);color:var(--ink);-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;align-items:center;height:100dvh;overflow:hidden;padding:12px 14px 0}
+  .brandstrip{width:100%;max-width:980px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;padding:0 4px}
+  .brandstrip .left{display:flex;align-items:center;gap:11px;min-width:0}
+  .brand-badge{width:34px;height:34px;border-radius:9px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    font-family:var(--ff-display);font-weight:800;font-size:13px;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-deep));box-shadow:0 2px 6px rgba(0,0,0,.10)}
+  .brand-name{font-family:var(--ff-display);font-weight:700;font-size:16px}
+  .brand-tag{font-size:12.5px;color:var(--ink-3);font-weight:500;white-space:nowrap}
+  .framewrap{width:100%;display:flex;justify-content:center;align-items:flex-start;flex:0 0 auto}
+  .browser{width:980px;flex:0 0 auto;background:#fff;border-radius:18px;overflow:hidden;border:1px solid var(--line);
+    box-shadow:0 18px 50px -18px rgba(16,24,40,.30);transform-origin:top center}
+  .topbar{height:46px;background:var(--wash);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 16px}
+  .dots{display:flex;gap:7px}.dots i{width:11px;height:11px;border-radius:50%;display:block}
+  .dots .r{background:#FF5F57}.dots .a{background:#FEBC2E}.dots .g{background:#28C840}
+  .addr{flex:1;height:27px;background:#fff;border:1px solid var(--line);border-radius:14px;display:flex;align-items:center;gap:7px;padding:0 12px;font-size:12.5px;color:var(--ink-2);max-width:560px}
+  .app{display:flex;height:600px;position:relative;overflow:hidden}
+  .rail{width:62px;flex:0 0 62px;background:var(--rail);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px}
+  .rail .rtop{margin-bottom:8px;color:var(--rail-ink);opacity:.9}
+  .ritem{width:50px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;border-radius:11px;color:var(--rail-ink);opacity:.82;font-size:9.5px;font-weight:600}
+  .ritem svg{width:20px;height:20px}
+  .ritem.active{background:#fff;color:var(--rail);opacity:1}
+  .rail .rbottom{margin-top:auto}
+  .sidebar{width:204px;flex:0 0 204px;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column}
+  .sb-org{display:flex;align-items:center;gap:10px;padding:15px 14px;border-bottom:1px solid var(--line-2)}
+  .sb-orglogo{width:30px;height:30px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;font-family:var(--ff-display);background:linear-gradient(135deg,var(--brand),var(--brand-deep))}
+  .sb-orgname{font-family:var(--ff-display);font-weight:700;font-size:14px}
+  .sb-nav{padding:10px 10px;flex:1}
+  .nav-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink-2);margin-bottom:2px}
+  .nav-row svg{width:17px;height:17px;opacity:.8}
+  .nav-row .chev{margin-left:auto;width:12px;height:12px;opacity:.5}
+  .nav-row.active{background:var(--brand);color:#fff}.nav-row.active svg{opacity:1}
+  .panel{flex:1;min-width:0;background:var(--wash-2);display:flex;flex-direction:column;overflow:hidden}
+  .panel-top{height:50px;flex:0 0 50px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:13px;padding:0 18px;background:#fff}
+  .pt-burger{width:18px;height:18px;color:var(--ink-3)}
+  .pt-divider{width:1px;height:18px;background:var(--line)}
+  .pt-title{font-family:var(--ff-display);font-weight:700;font-size:15px}
+  .pt-right{margin-left:auto;display:flex;align-items:center;gap:13px}
+  .credits{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#7C3AED;background:#F5F0FF;border:1px solid #E9DDFF;border-radius:14px;padding:5px 11px}
+  .credits svg{width:13px;height:13px}
+  .pt-bell{width:18px;height:18px;color:var(--ink-3)}
+  .pt-ava{width:26px;height:26px;border-radius:50%;background:#1466B8;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800}
+  .panel-body{flex:1;overflow:hidden;padding:22px 24px;position:relative}
+  .ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+  .ph h1{font-family:var(--ff-display);font-size:20px;font-weight:800}
+  .ph p{margin-top:4px;color:var(--ink-3);font-size:13px}
+  .btn-primary{background:#1466B8;color:#fff;border:none;font-family:var(--ff-ui);font-weight:700;font-size:13.5px;padding:11px 20px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.10)}
+  .tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .tab{padding:8px 2px;font-size:13.5px;font-weight:600;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--brand-deep);border-bottom-color:var(--brand)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+  .kpi .l{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.3px}
+  .kpi .v{font-family:var(--ff-display);font-weight:800;font-size:28px;margin-top:10px}
+  .kpi .s{font-size:12px;color:var(--ink-2);margin-top:4px}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--ink-3);gap:8px}
+  .empty .ic{width:54px;height:54px;border-radius:50%;background:var(--wash-2);display:flex;align-items:center;justify-content:center}
+  .empty .ic svg{width:26px;height:26px;color:var(--ink-3)}
+  .cursor{position:absolute;top:0;left:0;width:23px;height:23px;z-index:90;pointer-events:none;
+    transition:left .7s cubic-bezier(.5,.05,.2,1),top .7s cubic-bezier(.5,.05,.2,1);filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
+  .cursor.tap{animation:tap .3s ease}@keyframes tap{45%{transform:scale(.8)}100%{transform:scale(1)}}
+  .ripple{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--brand);opacity:.5;z-index:85;transform:translate(-50%,-50%) scale(0);pointer-events:none}
+  .ripple.go{animation:rip .55s ease-out forwards}@keyframes rip{to{transform:translate(-50%,-50%) scale(3.4);opacity:0}}
+  .glow{position:absolute;border:2px solid var(--brand);border-radius:12px;opacity:0;z-index:60;pointer-events:none;box-shadow:0 0 0 4px var(--brand-soft);transition:opacity .3s}
+  .glow.on{opacity:1}
+  .stage{display:none}.stage.on{display:block;animation:stagein .45s ease}@keyframes stagein{from{opacity:0}to{opacity:1}}
+  .caption{width:100%;max-width:980px;text-align:center;margin-top:10px;min-height:24px;font-size:15px;color:var(--ink-2);font-weight:500;padding:0 8px;flex:0 0 auto}
+  .caption b{color:var(--ink);font-weight:700}
+  .player{width:100vw;margin-top:auto;flex:0 0 auto;background:#fff;border-top:1px solid var(--line);padding:11px 22px;display:flex;align-items:center;gap:16px}
+  .pbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+  .pbtn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .pbtn svg{width:17px;height:17px}.pbtn.pulse{animation:pulse 1.4s ease infinite}@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--brand-soft)}50%{box-shadow:0 0 0 7px transparent}}
+  .timeline{flex:1;height:30px;display:flex;align-items:center;cursor:pointer}
+  .track{position:relative;width:100%;height:6px;background:var(--line);border-radius:4px}
+  .fill{position:absolute;left:0;top:0;height:100%;width:0;background:var(--brand);border-radius:4px}
+  .tick{position:absolute;top:50%;transform:translate(-50%,-50%);width:2px;height:11px;background:#fff;border-radius:1px}
+  .plabel{font-size:12.5px;font-weight:600;color:var(--ink-2);min-width:96px;text-align:right}
+  .ptime{font-size:12px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:78px;text-align:right}
+  @media (max-width:720px){.ptime,.plabel,.brand-tag{display:none}}
+  @media (prefers-reduced-motion:reduce){.cursor{display:none!important}}
+</style>
+</head>
+<body>
+  <div class="brandstrip">
+    <div class="left"><div class="brand-badge" id="brandBadge">DL</div><div class="brand-name" id="brandName">Distance Learning Demo</div></div>
+    <div class="brand-tag">Find &amp; create courses · walkthrough</div>
+  </div>
+  <div class="framewrap" id="framewrap">
+    <div class="browser" id="browser">
+      <div class="topbar"><div class="dots"><i class="r"></i><i class="a"></i><i class="g"></i></div>
+        <div class="addr"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-url>dash.vacademy.io/dashboard</span></div>
+      </div>
+      <div id="scenes"></div>
+    </div>
+  </div>
+  <div class="caption" id="caption"></div>
+  <div class="player">
+    <button class="pbtn primary" id="playBtn"><svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="pbtn" id="restartBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg></button>
+    <div class="timeline" id="timeline"><div class="track"><div class="fill" id="fill"></div><div id="ticks"></div></div></div>
+    <div class="plabel" id="plabel">Step 1 of 3</div>
+    <div class="ptime" id="ptime">0:00 / 0:00</div>
+  </div>
+<script>
+window.BRAND = window.BRAND || { name:"Distance Learning Demo", logo:"", url:"dash.vacademy.io" };
+var IC = {
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+  crm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  lms:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.5 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg>',
+  ai:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></svg>',
+  recent:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2-5.6"/><path d="M3 4v3h3"/><path d="M12 8v4l3 2"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 10v9h5v-5h4v5h5v-9"/></svg>',
+  books:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5v14a2 2 0 0 1 2-2h8V3H6a2 2 0 0 0-2 2Z"/><path d="M20 17V3h-2"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>',
+  burger:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
+};
+function rail(active){
+  function it(k,ic,l){return '<div class="ritem'+(active===k?' active':'')+'">'+ic+'<span>'+l+'</span></div>';}
+  return '<div class="rail"><div class="rtop">'+IC.search+'</div>'+it('crm',IC.crm,'CRM')+it('lms',IC.lms,'LMS')+it('ai',IC.ai,'AI')+it('recent',IC.recent,'Recent')+'<div class="rbottom">'+it('set',IC.gear,'Settings')+'</div></div>';
+}
+function crmSidebar(){
+  return '<div class="sidebar"><div class="sb-org"><div class="sb-orglogo"><span data-org-initials>DL</span></div><div class="sb-orgname" data-org>Distance Learning Demo</div></div>'
+   +'<div class="sb-nav">'
+   +'<div class="nav-row active">'+IC.home+'<span>Dashboard</span></div>'
+   +'<div class="nav-row">'+IC.crm+'<span>Manage Institute</span></div>'
+   +'<div class="nav-row">'+IC.crm+'<span>Manage Contacts</span></div>'
+   +'</div></div>';
+}
+function lmsSidebar(){
+  var rows=['Courses','Course Creation','Live Sessions','Learning Reports','Doubt Management','Assessments and Tests','Question Banks and Papers'];
+  var html='';rows.forEach(function(r,i){html+='<div class="nav-row'+(i===0?' active':'')+'">'+IC.books+'<span>'+r+'</span></div>';});
+  return '<div class="sidebar"><div class="sb-org"><div class="sb-orglogo"><span data-org-initials>DL</span></div><div class="sb-orgname" data-org>Distance Learning Demo</div></div><div class="sb-nav">'+html+'</div></div>';
+}
+function ptop(title){
+  return '<div class="panel-top"><span class="pt-burger">'+IC.burger+'</span><span class="pt-divider"></span><span class="pt-title">'+title+'</span>'
+   +'<div class="pt-right"><div class="credits">'+IC.spark+'<span>AI Credits: 100.0</span></div><span class="pt-bell">'+IC.bell+'</span><span class="pt-ava">A</span></div></div>';
+}
+function dashPanel(){
+  return '<div class="panel">'+ptop('Dashboard')+'<div class="panel-body">'
+   +'<div style="font-family:var(--ff-display);font-weight:800;font-size:24px;margin-bottom:4px">Good morning, <span style="color:var(--brand)">Admin!</span></div>'
+   +'<div style="font-size:13.5px;color:var(--ink-2);margin-bottom:20px">Here\'s how <span data-org>Distance Learning Demo</span> is doing today.</div>'
+   +'<div class="kpi-grid"><div class="kpi"><div class="l">TOTAL LEARNERS</div><div class="v">0</div><div class="s">Enrolled across batches</div></div>'
+   +'<div class="kpi"><div class="l">TOTAL COURSES</div><div class="v">0</div><div class="s">Active courses</div></div>'
+   +'<div class="kpi"><div class="l">TEAM MEMBERS</div><div class="v">1</div><div class="s">Admins, teachers &amp; staff</div></div></div>'
+   +'</div></div>';
+}
+function coursesPanel(){
+  return '<div class="panel">'+ptop('Explore Courses')+'<div class="panel-body">'
+   +'<div class="ph"><div><h1>Explore Courses</h1><p>Effortlessly organize, upload, and track educational resources in one place.</p></div>'
+   +'<button class="btn-primary" data-create>Create Course</button></div>'
+   +'<div class="tabs"><div class="tab active">All Courses</div><div class="tab">Authored Courses</div><div class="tab">Course Approval</div></div>'
+   +'<div class="empty"><div class="ic">'+IC.books+'</div><div style="font-weight:600;color:var(--ink-2)">No courses yet</div><div style="font-size:13px">Create your first course to get started.</div></div>'
+   +'</div></div>';
+}
+document.getElementById('scenes').innerHTML =
+  '<div class="stage" data-stage="dash"><div class="app">'+rail('crm')+crmSidebar()+dashPanel()+'</div></div>'
++ '<div class="stage" data-stage="courses"><div class="app">'+rail('lms')+lmsSidebar()+coursesPanel()+'</div></div>';
+
+function applyBrand(){
+  var b=window.BRAND||{},name=b.name||'Distance Learning Demo';
+  var ini=name.trim().split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase()||'DL';
+  document.getElementById('brandName').textContent=name;
+  var badge=document.getElementById('brandBadge');
+  if(b.logo){var im=new Image();im.onerror=function(){badge.textContent=ini;};im.src=b.logo;badge.innerHTML='';badge.appendChild(im);}else badge.textContent=ini;
+  document.querySelectorAll('[data-org]').forEach(function(e){e.textContent=name;});
+  document.querySelectorAll('[data-org-initials]').forEach(function(e){e.textContent=ini;});
+}
+applyBrand();
+
+var framewrap=document.getElementById('framewrap'),browser=document.getElementById('browser');
+function fitFrame(){var natW=982,natH=browser.offsetHeight||668;
+  var avH=window.innerHeight-(document.querySelector('.brandstrip').offsetHeight)-(document.getElementById('caption').offsetHeight||24)-(document.querySelector('.player').offsetHeight||60)-44;
+  var s=Math.min(1,(window.innerWidth-24)/natW,avH/natH);s=Math.max(s,.35);
+  browser.style.transform=s<1?'scale('+s+')':'';framewrap.style.height=Math.ceil(natH*s)+'px';}
+window.addEventListener('resize',fitFrame);window.addEventListener('load',fitFrame);
+
+function Engine(stage){var self=this;this.stage=stage;this.timers=[];this.onDone=null;
+  var app=stage.querySelector('.app');this.app=app;
+  var cur=document.createElement('div');cur.className='cursor';
+  cur.innerHTML='<svg viewBox="0 0 24 24" width="23" height="23"><path d="M5 3l5.5 16 2.2-6.4L19 10.5 5 3z" fill="#fff" stroke="rgba(0,0,0,.35)" stroke-width="1" stroke-linejoin="round"/></svg>';
+  app.appendChild(cur);this.cur=cur;
+  var glow=document.createElement('div');glow.className='glow';app.appendChild(glow);this.glow=glow;
+  this.at=function(ms,fn){this.timers.push(setTimeout(fn,ms));};
+  function rel(el){var ar=app.getBoundingClientRect(),r=el.getBoundingClientRect(),k=ar.width/app.offsetWidth||1;
+    return {x:(r.left-ar.left)/k,y:(r.top-ar.top)/k,w:r.width/k,h:r.height/k};}
+  this.moveTo=function(sel){var el=typeof sel==='string'?stage.querySelector(sel):sel;if(!el)return;var p=rel(el);cur.style.left=(p.x+p.w/2)+'px';cur.style.top=(p.y+p.h/2)+'px';};
+  this.tap=function(sel){var el=typeof sel==='string'?stage.querySelector(sel):sel;cur.classList.remove('tap');void cur.offsetWidth;cur.classList.add('tap');
+    var rp=document.createElement('div');rp.className='ripple';rp.style.left=cur.style.left;rp.style.top=cur.style.top;app.appendChild(rp);void rp.offsetWidth;rp.classList.add('go');setTimeout(function(){rp.remove();},600);};
+  this.highlight=function(sel){var el=typeof sel==='string'?stage.querySelector(sel):sel;if(!el){glow.classList.remove('on');return;}var p=rel(el);
+    glow.style.left=(p.x-5)+'px';glow.style.top=(p.y-5)+'px';glow.style.width=(p.w+10)+'px';glow.style.height=(p.h+10)+'px';glow.classList.add('on');};
+  this.clearGlow=function(){glow.classList.remove('on');};
+  this.clear=function(){this.timers.forEach(clearTimeout);this.timers=[];};
+  this.reset=function(){this.clear();cur.style.transition='none';cur.style.left='-40px';cur.style.top='-40px';void cur.offsetWidth;cur.style.transition='';glow.classList.remove('on');};
+  this.setOnDone=function(fn){this.onDone=fn;};
+  this.runScene=function(key,fresh){this.clear();if(fresh)this.reset();var f=SCENES[key];this.timers.push(setTimeout(function(){f(self);},30));this.at(DUR[key],function(){if(self.onDone)self.onDone();});};
+}
+var DUR={'1':4200,'2':4200,'3':4200};
+var SCENES={
+  '1':function(e){e.at(500,function(){e.moveTo('.ritem.active');});e.at(1600,function(){var r=e.stage.querySelectorAll('.ritem')[2];e.moveTo(r);e.highlight(r);});e.at(2600,function(){e.tap(e.stage.querySelectorAll('.ritem')[2]);});},
+  '2':function(e){e.clearGlow();e.at(500,function(){e.moveTo('.nav-row.active');e.highlight('.nav-row.active');});e.at(2200,function(){e.clearGlow();e.moveTo('[data-create]');});},
+  '3':function(e){e.at(400,function(){e.moveTo('[data-create]');e.highlight('[data-create]');});e.at(1700,function(){e.tap('[data-create]');});}
+};
+var stageDash=document.querySelector('[data-stage="dash"]'),stageCourses=document.querySelector('[data-stage="courses"]');
+var eDash=new Engine(stageDash),eCourses=new Engine(stageCourses);
+var SCENE_LIST=[{key:'1',eng:eDash,url:'/dashboard'},{key:'2',eng:eCourses,url:'/study-library/courses'},{key:'3',eng:eCourses,url:'/study-library/courses'}];
+var CAPS=['Open the <b>LMS</b> section from the rail.','Go to <b>Courses</b> — your course library.','Click <b>Create Course</b> to build your first course.'];
+var TOTAL=SCENE_LIST.reduce(function(a,s){return a+DUR[s.key];},0),bounds=[];(function(){var a=0;SCENE_LIST.forEach(function(s){bounds.push({start:a,end:a+DUR[s.key]});a+=DUR[s.key];});})();
+var cur=0,playing=false,raf=null,segStart=0,before=0;
+var fill=document.getElementById('fill'),plabel=document.getElementById('plabel'),ptime=document.getElementById('ptime'),caption=document.getElementById('caption'),
+    playIcon=document.getElementById('playIcon'),playBtn=document.getElementById('playBtn'),restartBtn=document.getElementById('restartBtn'),timeline=document.getElementById('timeline'),ticks=document.getElementById('ticks');
+bounds.slice(0,-1).forEach(function(b){var t=document.createElement('div');t.className='tick';t.style.left=(b.end/TOTAL*100)+'%';ticks.appendChild(t);});
+function fmt(ms){ms=Math.max(0,ms);var s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function showStage(st){[stageDash,stageCourses].forEach(function(s){s.style.display=(s===st)?'block':'none';s.classList.toggle('on',s===st);});}
+function setAddr(p){document.querySelectorAll('[data-url]').forEach(function(e){e.textContent=(window.BRAND.url||'dash.vacademy.io')+p;});}
+function loop(){var t=before+(performance.now()-segStart);if(t>TOTAL)t=TOTAL;fill.style.width=(t/TOTAL*100)+'%';ptime.textContent=fmt(t)+' / '+fmt(TOTAL);raf=requestAnimationFrame(loop);}
+function playScene(i,fresh){cur=i;var m=SCENE_LIST[i];showStage(m.eng.stage);setAddr(m.url);
+  caption.style.opacity=0;setTimeout(function(){caption.innerHTML=CAPS[i];caption.style.opacity=1;},110);
+  plabel.textContent='Step '+(i+1)+' of '+SCENE_LIST.length;before=bounds[i].start;segStart=performance.now();
+  m.eng.setOnDone(function(){if(i+1<SCENE_LIST.length){var nx=SCENE_LIST[i+1],same=(nx.eng===m.eng);if(!same)m.eng.clear();playScene(i+1,!same);}else finish();});
+  m.eng.runScene(m.key,fresh);}
+function startLoop(){cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);}
+function play(){if(playing)return;playing=true;playIcon.innerHTML='<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>';restartBtn.classList.remove('pulse');segStart=performance.now();
+  if(cur>=SCENE_LIST.length-1&&parseFloat(fill.style.width||'0')>=100){restart();return;}playScene(cur,true);startLoop();}
+function pause(){if(!playing)return;playing=false;playIcon.innerHTML='<path d="M8 5v14l11-7z"/>';SCENE_LIST[cur].eng.clear();cancelAnimationFrame(raf);before=Math.min(before+(performance.now()-segStart),TOTAL);}
+function finish(){playing=false;playIcon.innerHTML='<path d="M8 5v14l11-7z"/>';cancelAnimationFrame(raf);fill.style.width='100%';ptime.textContent=fmt(TOTAL)+' / '+fmt(TOTAL);plabel.textContent='Finished · replay anytime';restartBtn.classList.add('pulse');}
+function restart(){[eDash,eCourses].forEach(function(e){e.clear();e.reset();});cur=0;fill.style.width='0';before=0;playing=true;playIcon.innerHTML='<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>';playScene(0,true);startLoop();}
+function seek(fr){fr=Math.max(0,Math.min(.999,fr));var tg=fr*TOTAL,idx=0;for(var i=0;i<bounds.length;i++){if(tg>=bounds[i].start&&tg<bounds[i].end){idx=i;break;}}
+  [eDash,eCourses].forEach(function(e){e.clear();e.reset();});cur=idx;playing=true;playIcon.innerHTML='<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>';playScene(idx,true);startLoop();}
+playBtn.addEventListener('click',function(){if(playing)pause();else play();});
+restartBtn.addEventListener('click',restart);
+timeline.addEventListener('click',function(ev){var r=timeline.getBoundingClientRect();seek((ev.clientX-r.left)/r.width);});
+var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+fitFrame();showStage(stageDash);setAddr('/dashboard');caption.innerHTML=CAPS[0];ptime.textContent='0:00 / '+fmt(TOTAL);
+if(!reduce){setTimeout(function(){fitFrame();play();},400);}
+</script>
+</body>
+</html>

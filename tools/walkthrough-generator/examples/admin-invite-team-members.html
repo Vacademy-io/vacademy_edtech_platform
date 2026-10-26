@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Invite team members — walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --brand:#F5A700; --brand-bright:#FFB81C; --brand-deep:#C77D00;
+    --brand-soft:#FFF6E6; --brand-soft-border:#F6E2B8;
+    --ok:#15803D; --ok-soft:#DCFCE7;
+    --rail:#F5A700; --ink:#1F2430; --ink-2:#5A6172; --ink-3:#8A91A1;
+    --line:#ECEEF2; --line-2:#E2E5EB; --wash:#F7F8FA; --wash-2:#F1F3F6;
+    --page-bg:#FBFBFD;
+    --ff-display:'Plus Jakarta Sans', system-ui, sans-serif;
+    --ff-ui:'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--ff-ui); color:var(--ink); background:var(--page-bg);
+    height:100dvh; overflow:hidden; display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* Brand strip */
+  .brand-strip{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 18px;gap:12px;flex:0 0 auto}
+  .brand-l{display:flex;align-items:center;gap:10px}
+  .brand-badge{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;color:#fff;font-family:var(--ff-display);font-weight:700;font-size:13px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-deep));overflow:hidden}
+  .brand-badge img{width:100%;height:100%;object-fit:contain}
+  .brand-name{font-family:var(--ff-display);font-weight:700;font-size:15px}
+  .brand-tag{color:var(--ink-3);font-size:12.5px}
+  /* Frame wrapper (centers the scaled browser) */
+  .wrap{flex:1 1 auto;display:flex;justify-content:center;align-items:flex-start;overflow:hidden}
+  .browser{width:980px;background:#fff;border:1px solid var(--line-2);border-radius:18px;
+    box-shadow:0 24px 60px -28px rgba(20,24,40,.30);overflow:hidden}
+  .topbar{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);
+    background:var(--wash)}
+  .dots{display:flex;gap:7px}
+  .dots i{width:11px;height:11px;border-radius:50%;display:block}
+  .dots i:nth-child(1){background:#FF5F57}.dots i:nth-child(2){background:#FEBC2E}.dots i:nth-child(3){background:#28C840}
+  .addr{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line-2);
+    border-radius:999px;padding:6px 12px;color:var(--ink-2);font-size:12.5px}
+  .addr svg{flex:0 0 auto}
+  /* App area */
+  .app{position:relative;display:flex;height:600px;background:#fff}
+  .rail{width:62px;flex:0 0 auto;background:var(--rail);display:flex;flex-direction:column;
+    align-items:center;gap:4px;padding:12px 0}
+  .rail .ri{width:46px;padding:8px 0;border-radius:10px;display:flex;flex-direction:column;align-items:center;
+    gap:4px;color:#fff;opacity:.85;font-size:9px;font-weight:600}
+  .rail .ri.active{background:#fff;color:var(--brand-deep);opacity:1}
+  .rail .ri svg{width:18px;height:18px}
+  .sidebar{width:210px;flex:0 0 auto;border-right:1px solid var(--line);padding:12px 10px;background:#fff}
+  .org{display:flex;align-items:center;gap:9px;padding:6px 8px 12px}
+  .org .ob{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand-deep));
+    color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:var(--ff-display)}
+  .org .on{font-weight:600;font-size:13px}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav a{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;color:var(--ink-2);
+    font-size:13px;font-weight:500;cursor:default}
+  .nav a svg{width:16px;height:16px;opacity:.8}
+  .nav a.active{background:var(--brand);color:#fff}
+  .nav a.active svg{opacity:1}
+  .panel{flex:1;padding:22px 24px;overflow:hidden;position:relative;background:var(--page-bg)}
+  .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .ph h1{font-family:var(--ff-display);font-size:19px;margin:0;font-weight:700}
+  .ph p{margin:2px 0 0;color:var(--ink-3);font-size:12.5px}
+  .btn{border:0;border-radius:10px;padding:9px 15px;font-family:var(--ff-ui);font-weight:600;font-size:13px;
+    cursor:default;display:inline-flex;align-items:center;gap:7px}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.ghost{background:#fff;border:1px solid var(--line-2);color:var(--ink-2)}
+  /* KPI cards (dashboard) */
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+  .kpi .v{font-family:var(--ff-display);font-size:24px;font-weight:700}
+  .kpi .l{color:var(--ink-3);font-size:12px;margin-top:2px}
+  .panel-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{ text-align:left;color:var(--ink-3);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:11px 8px;border-bottom:1px solid var(--line);color:var(--ink)}
+  .who{display:flex;align-items:center;gap:10px}
+  .av{width:30px;height:30px;border-radius:50%;background:var(--wash-2);display:flex;align-items:center;
+    justify-content:center;font-weight:600;font-size:12px;color:var(--ink-2)}
+  .pill{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;background:var(--brand-soft);
+    color:var(--brand-deep)}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  tr.fresh{animation:rowin .5s ease}
+  @keyframes rowin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  /* Modal */
+  .scrim{position:absolute;inset:0;background:rgba(20,24,40,.28);opacity:0;pointer-events:none;
+    transition:opacity .25s ease}
+  .scrim.show{opacity:1}
+  .modal{position:absolute;top:26px;left:50%;width:430px;transform:transl(-50%) translateY(-8px) scale(.98);
+    margin-left:-215px;background:#fff;border-radius:16px;border:1px solid var(--line-2);
+    box-shadow:0 30px 70px -30px rgba(20,24,40,.5);padding:20px;opacity:0;pointer-events:none;
+    transition:opacity .28s ease, transform .28s ease}
+  .modal.show{opacity:1;transform:translateY(0) scale(1)}
+  .modal h3{font-family:var(--ff-display);margin:0 0 3px;font-size:16px}
+  .modal .sub{color:var(--ink-3);font-size:12px;margin-bottom:14px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:5px}
+  .input{height:38px;border:1px solid var(--line-2);border-radius:9px;display:flex;align-items:center;
+    padding:0 11px;font-size:13px;color:var(--ink);background:#fff}
+  .input.focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .input .txt{white-space:pre}
+  .caret{display:none;width:1.5px;height:16px;background:var(--ink);margin-left:1px;animation:blink 1s step-end infinite}
+  .input.focus .caret{display:inline-block}
+  @keyframes blink{50%{opacity:0}}
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:3px}
+  .role{border:1px solid var(--line-2);border-radius:10px;padding:10px 11px;display:flex;align-items:center;
+    gap:8px;font-size:13px;font-weight:600}
+  .role .tick{margin-left:auto;width:17px;height:17px;border-radius:50%;border:1.5px solid var(--line-2);
+    display:flex;align-items:center;justify-content:center}
+  .role.sel{border-color:var(--brand);background:var(--brand-soft)}
+  .role.sel .tick{background:var(--brand);border-color:var(--brand)}
+  .role.sel .tick svg{display:block}
+  .role .tick svg{display:none;width:11px;height:11px}
+  .modal .actions{display:flex;justify-content:flex-end;gap:9px;margin-top:16px}
+  /* Toast */
+  .toast{position:absolute;right:18px;bottom:18px;background:var(--ink);color:#fff;border-radius:11px;
+    padding:11px 14px;font-size:13px;display:flex;align-items:center;gap:9px;opacity:0;transform:translateY(8px);
+    transition:opacity .3s ease,transform .3s ease;box-shadow:0 16px 40px -16px rgba(0,0,0,.5)}
+  .toast.show{opacity:1;transform:none}
+  .toast .dot{width:20px;height:20px;border-radius:50%;background:var(--ok);display:flex;align-items:center;justify-content:center}
+  .toast .dot svg{width:12px;height:12px}
+  /* Ghost cursor */
+  .cursor{position:absolute;left:0;top:0;width:22px;height:22px;z-index:50;pointer-events:none;
+    transition:left .7s cubic-bezier(.5,.05,.2,1), top .7s cubic-bezier(.5,.05,.2,1);
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+  .cursor.tap{animation:taps .3s ease}
+  @keyframes taps{40%{transform:scale(.8)}100%{transform:scale(1)}}
+  .ripple{position:absolute;width:16px;height:16px;border-radius:50%;border:2px solid var(--brand);
+    transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:49}
+  .ripple.go{animation:rip .55s ease-out}
+  @keyframes rip{from{opacity:.7;width:6px;height:6px}to{opacity:0;width:46px;height:46px}}
+  /* Stages */
+  .stage{display:none}
+  .stage.on{display:block;animation:stagein .45s ease}
+  @keyframes stagein{from{opacity:0}to{opacity:1}}
+  /* Caption */
+  .cap{flex:0 0 auto;text-align:center;padding:12px 18px 4px;color:var(--ink-2);font-size:14px;min-height:22px}
+  .cap b{color:var(--ink);font-weight:600}
+  /* Player */
+  .player{flex:0 0 auto;margin-top:auto;display:flex;align-items:center;gap:12px;padding:12px 20px 16px;max-width:1000px;width:100%;margin-left:auto;margin-right:auto}
+  .pbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line-2);background:#fff;display:flex;
+    align-items:center;justify-content:center;cursor:pointer;color:var(--ink);flex:0 0 auto}
+  .pbtn:hover{background:var(--wash)}
+  .pbtn.restart.pulse{animation:pulse 1.2s ease infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--brand-soft)}50%{box-shadow:0 0 0 6px var(--brand-soft)}}
+  .pbtn svg{width:15px;height:15px}
+  .timeline{flex:1;height:6px;background:var(--wash-2);border-radius:999px;position:relative;cursor:pointer}
+  .fill{position:absolute;left:0;top:0;bottom:0;background:var(--brand);border-radius:999px;width:0}
+  .tick{position:absolute;top:-2px;width:2px;height:10px;background:#fff;border-radius:1px;transform:translateX(-1px)}
+  .ptxt{font-size:12px;color:var(--ink-3);flex:0 0 auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+  @media (max-width:560px){ .ptxt{display:none} .brand-tag{display:none} }
+</style>
+</head>
+<body>
+  <div class="brand-strip">
+    <div class="brand-l">
+      <div class="brand-badge" id="brandBadge">CT</div>
+      <div class="brand-name" id="brandName">CPO Test</div>
+    </div>
+    <div class="brand-tag">Invite team members · walkthrough</div>
+  </div>
+
+  <div class="wrap" id="wrap">
+    <div class="browser" id="browser">
+      <div class="topbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="addr">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="#8A91A1" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#8A91A1" stroke-width="2"/></svg>
+          <span id="addr">dash.vacademy.io/dashboard</span>
+        </div>
+      </div>
+      <div class="app" id="app">
+        <!-- Rail -->
+        <div class="rail">
+          <div class="ri active"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>CRM</div>
+          <div class="ri"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v4H4zM4 11h16v8H4z"/></svg>LMS</div>
+          <div class="ri"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 5 5 .5-4 3.5 1.3 5L12 13l-4.3 3 1.3-5-4-3.5 5-.5z"/></svg>AI</div>
+        </div>
+        <!-- Sidebar -->
+        <div class="sidebar">
+          <div class="org"><div class="ob" data-org-badge>CT</div><div class="on" data-org>CPO Test</div></div>
+          <div class="nav">
+            <a><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+            <a id="navTeams"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="8" r="3"/><path d="M3 19a6 6 0 0 1 12 0z"/><circle cx="17" cy="9" r="2.2"/><path d="M15 19a4.5 4.5 0 0 1 6 0z"/></svg>Manage Institute</a>
+            <a><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h16v14H4z" opacity=".25"/><path d="M4 5h16v4H4z"/></svg>Manage Contacts</a>
+            <a><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9" opacity=".3"/><path d="M12 7v5l3 2"/></svg>Settings</a>
+          </div>
+        </div>
+        <!-- Panel: stages render here -->
+        <div class="panel" id="panel">
+
+          <!-- STAGE: dashboard -->
+          <div class="stage" data-stage="dashboard" id="stage-dashboard">
+            <div class="ph"><div><h1>Dashboard</h1><p>Welcome back — here's your institute at a glance.</p></div></div>
+            <div class="kpis">
+              <div class="kpi"><div class="v">1,240</div><div class="l">Learners</div></div>
+              <div class="kpi"><div class="v">38</div><div class="l">Courses</div></div>
+              <div class="kpi"><div class="v">₹4.2L</div><div class="l">Revenue this month</div></div>
+            </div>
+            <div class="panel-card">
+              <div class="ph" style="margin:0"><div><h1 style="font-size:15px">Recent activity</h1></div></div>
+              <div style="color:var(--ink-3);font-size:12.5px;margin-top:8px">5 new enrolments · 2 fee payments · 1 live class scheduled</div>
+            </div>
+          </div>
+
+          <!-- STAGE: teams -->
+          <div class="stage" data-stage="teams" id="stage-teams">
+            <div class="ph">
+              <div><h1 data-org-title>Team members</h1><p>Admins, teachers and counsellors at <span data-org>CPO Test</span>.</p></div>
+              <button class="btn primary" id="inviteBtn">+ Invite users</button>
+            </div>
+            <div class="panel-card">
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+                <tbody id="teamRows">
+                  <tr><td><div class="who"><div class="av">RK</div>Rahul Kapoor</div></td><td>rahul@cpotest.edu</td><td><span class="pill">Admin</span></td><td><span class="pill ok">Active</span></td></tr>
+                  <tr><td><div class="who"><div class="av">SN</div>Sneha Nair</div></td><td>sneha@cpotest.edu</td><td><span class="pill">Teacher</span></td><td><span class="pill ok">Active</span></td></tr>
+                  <tr><td><div class="who"><div class="av">AM</div>Arjun Mehta</div></td><td>arjun@cpotest.edu</td><td><span class="pill">Counsellor</span></td><td><span class="pill ok">Active</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Modal -->
+            <div class="scrim" id="scrim"></div>
+            <div class="modal" id="modal">
+              <h3>Invite a team member</h3>
+              <div class="sub">They'll get an email to join your institute.</div>
+              <div class="field">
+                <label>Full name</label>
+                <div class="input" id="nameField"><span class="txt" id="nameTxt"></span><span class="caret"></span></div>
+              </div>
+              <div class="field">
+                <label>Email address</label>
+                <div class="input" id="emailField"><span class="txt" id="emailTxt"></span><span class="caret"></span></div>
+              </div>
+              <div class="field">
+                <label>Role</label>
+                <div class="roles">
+                  <div class="role" id="roleTeacher">Teacher <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></span></div>
+                  <div class="role" id="roleCounsellor">Counsellor <span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></span></div>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn ghost">Cancel</button>
+                <button class="btn primary" id="sendBtn">Send invite</button>
+              </div>
+            </div>
+
+            <!-- Toast -->
+            <div class="toast" id="toast"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></div>Invite sent to Priya Sharma</div>
+          </div>
+
+        </div>
+
+        <!-- ghost cursor + ripple live in the app so they scale with the frame -->
+        <div class="ripple" id="ripple"></div>
+        <svg class="cursor" id="cursor" viewBox="0 0 24 24" fill="var(--ink)"><path d="M5 3l15 9-6 1.4 3.4 6.1-2.6 1.4-3.4-6.1L5 19z" stroke="#fff" stroke-width="1.2"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" id="cap"></div>
+
+  <div class="player">
+    <button class="pbtn" id="playBtn" aria-label="Play / pause">
+      <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="pbtn restart" id="restartBtn" aria-label="Restart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    </button>
+    <div class="timeline" id="timeline"><div class="fill" id="fill"></div></div>
+    <div class="ptxt" id="ptxt">Step 1 of 6 · 0:00 / 0:00</div>
+  </div>
+
+<script>
+  window.BRAND = window.BRAND || { name:"CPO Test", logo:"", url:"dash.vacademy.io" };
+
+  (function(){
+    "use strict";
+    var app = document.getElementById('app');
+    var browser = document.getElementById('browser');
+    var wrap = document.getElementById('wrap');
+    var cursor = document.getElementById('cursor');
+    var ripple = document.getElementById('ripple');
+    var capEl = document.getElementById('cap');
+    var fill = document.getElementById('fill');
+    var ptxt = document.getElementById('ptxt');
+    var timeline = document.getElementById('timeline');
+    var playBtn = document.getElementById('playBtn');
+    var playIcon = document.getElementById('playIcon');
+    var restartBtn = document.getElementById('restartBtn');
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- Branding -------------------------------------------------------
+    function applyBrand(){
+      var b = window.BRAND || {};
+      var name = b.name || "CPO Test";
+      var initials = name.trim().split(/\s+/).map(function(w){return w[0]}).join('').slice(0,2).toUpperCase();
+      document.getElementById('brandName').textContent = name;
+      var badge = document.getElementById('brandBadge');
+      if(b.logo){ var img=new Image(); img.onerror=function(){badge.textContent=initials}; img.src=b.logo; badge.innerHTML=''; badge.appendChild(img); }
+      else badge.textContent = initials;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-org]'), function(e){ e.textContent = name; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-org-badge]'), function(e){ e.textContent = initials; });
+    }
+    function setAddr(path){ document.getElementById('addr').textContent = (window.BRAND.url||'dash.vacademy.io') + path; }
+
+    // ---- Scale-to-fit ---------------------------------------------------
+    var K = 1;
+    function fitFrame(){
+      var dW = browser.offsetWidth, dH = browser.offsetHeight;
+      var availW = wrap.clientWidth - 8;
+      var others = document.querySelector('.brand-strip').offsetHeight + capEl.offsetHeight + document.querySelector('.player').offsetHeight + 18;
+      var availH = window.innerHeight - others;
+      var s = Math.min(1, availW/dW, availH/dH);
+      browser.style.transformOrigin = 'top center';
+      browser.style.transform = 'scale(' + s + ')';
+      wrap.style.height = (dH*s) + 'px';
+      K = s;
+    }
+
+    // ---- Ghost cursor ---------------------------------------------------
+    function center(el){
+      var ar = app.getBoundingClientRect();
+      var r = el.getBoundingClientRect();
+      var k = ar.width / app.offsetWidth; // live scale factor
+      return { x:(r.left - ar.left)/k + (r.width/k)/2, y:(r.top - ar.top)/k + (r.height/k)/2 };
+    }
+    function moveTo(el){ if(!el) return; var p=center(el); cursor.style.left=p.x+'px'; cursor.style.top=p.y+'px'; }
+    function tap(el){
+      if(!el) return; var p=center(el);
+      ripple.style.left=p.x+'px'; ripple.style.top=p.y+'px';
+      ripple.classList.remove('go'); void ripple.offsetWidth; ripple.classList.add('go');
+      cursor.classList.remove('tap'); void cursor.offsetWidth; cursor.classList.add('tap');
+    }
+
+    // ---- UI helpers (teams stage) --------------------------------------
+    var modal=document.getElementById('modal'), scrim=document.getElementById('scrim');
+    var nameField=document.getElementById('nameField'), emailField=document.getElementById('emailField');
+    var nameTxt=document.getElementById('nameTxt'), emailTxt=document.getElementById('emailTxt');
+    var roleTeacher=document.getElementById('roleTeacher'), toast=document.getElementById('toast');
+    var inviteBtn=document.getElementById('inviteBtn'), sendBtn=document.getElementById('sendBtn');
+    var teamRows=document.getElementById('teamRows');
+    var NAME="Priya Sharma", EMAIL="priya@cpotest.edu";
+
+    var typer=null;
+    function stopType(){ if(typer){clearInterval(typer);typer=null;} }
+    function typeInto(field, txtEl, full, opts){
+      stopType(); field.classList.add('focus'); txtEl.textContent='';
+      if(opts && opts.instant){ txtEl.textContent=full; return; }
+      var i=0; typer=setInterval(function(){ i++; txtEl.textContent=full.slice(0,i); if(i>=full.length){clearInterval(typer);typer=null;} }, 55);
+    }
+    function blur(field){ field.classList.remove('focus'); }
+
+    // Force the teams-stage DOM to the STARTING state of step `i` (idempotent → seek support)
+    function rebuildTeams(i){
+      stopType();
+      // modal open from step 4 onward (step 3's start = closed; it opens during the step)
+      var open = i>=4;
+      modal.classList.toggle('show', open); scrim.classList.toggle('show', open);
+      // fields filled from step 5 onward
+      if(i>=5){ nameTxt.textContent=NAME; emailTxt.textContent=EMAIL; } else { nameTxt.textContent=''; emailTxt.textContent=''; }
+      nameField.classList.remove('focus'); emailField.classList.remove('focus');
+      // role selected from step 6 onward
+      roleTeacher.classList.toggle('sel', i>=6);
+      // result (toast + new row) only after the final step
+      toast.classList.remove('show');
+      var extra=document.getElementById('freshRow'); if(extra) extra.remove();
+    }
+    function addResultRow(){
+      if(document.getElementById('freshRow')) return;
+      var tr=document.createElement('tr'); tr.className='fresh'; tr.id='freshRow';
+      tr.innerHTML='<td><div class="who"><div class="av">PS</div>Priya Sharma</div></td><td>'+EMAIL+'</td><td><span class="pill">Teacher</span></td><td><span class="pill" style="background:var(--brand-soft);color:var(--brand-deep)">Invited</span></td>';
+      teamRows.appendChild(tr);
+    }
+
+    // ---- Stages & steps -------------------------------------------------
+    var stages = {
+      dashboard: document.getElementById('stage-dashboard'),
+      teams: document.getElementById('stage-teams')
+    };
+    function showStage(name){
+      Object.keys(stages).forEach(function(k){
+        var on = (k===name);
+        if(on && !stages[k].classList.contains('on')){ stages[k].classList.add('on'); }
+        else if(!on){ stages[k].classList.remove('on'); }
+        stages[k].style.display = on ? 'block' : 'none';
+      });
+    }
+
+    function q(id){ return document.getElementById(id); }
+
+    // Each step: stage, path, caption, dur(ms), build(i) [start state], play(at) [choreography]
+    var STEPS = [
+      { stage:'dashboard', path:'/dashboard', dur:3200,
+        cap:'Open <b>Manage Institute</b> from the sidebar',
+        build:function(){ moveTo(q('navTeams')); },
+        play:function(at){ at(500,function(){moveTo(q('navTeams'));}); at(1500,function(){tap(q('navTeams'));}); navTeamsActive(true); }
+      },
+      { stage:'teams', path:'/manage-institute/teams', dur:3000,
+        cap:'Your <b>team members</b> live here',
+        build:function(){ rebuildTeams(2); moveTo(q('inviteBtn')); },
+        play:function(at){ at(700,function(){moveTo(q('inviteBtn'));}); }
+      },
+      { stage:'teams', path:'/manage-institute/teams', dur:2600,
+        cap:'Click <b>Invite users</b>',
+        build:function(){ rebuildTeams(3); moveTo(q('inviteBtn')); },
+        play:function(at){ at(300,function(){moveTo(q('inviteBtn'));}); at(900,function(){tap(q('inviteBtn'));}); at(1150,function(){modal.classList.add('show');scrim.classList.add('show');}); }
+      },
+      { stage:'teams', path:'/manage-institute/teams', dur:5200,
+        cap:"Enter their <b>name and email</b>",
+        build:function(){ rebuildTeams(4); moveTo(q('nameField')); },
+        play:function(at){
+          at(300,function(){moveTo(q('nameField'));});
+          at(800,function(){tap(q('nameField'));});
+          at(1000,function(){typeInto(nameField,nameTxt,NAME);});
+          at(2900,function(){blur(nameField);moveTo(q('emailField'));});
+          at(3400,function(){tap(q('emailField'));});
+          at(3600,function(){typeInto(emailField,emailTxt,EMAIL);});
+        }
+      },
+      { stage:'teams', path:'/manage-institute/teams', dur:3200,
+        cap:'Pick their <b>role</b>',
+        build:function(){ rebuildTeams(5); blur(nameField); blur(emailField); moveTo(q('roleTeacher')); },
+        play:function(at){ at(500,function(){moveTo(q('roleTeacher'));}); at(1200,function(){tap(q('roleTeacher'));}); at(1400,function(){roleTeacher.classList.add('sel');}); }
+      },
+      { stage:'teams', path:'/manage-institute/teams', dur:4200,
+        cap:'Send the <b>invite</b> — done!',
+        build:function(){ rebuildTeams(6); moveTo(q('sendBtn')); },
+        play:function(at){
+          at(500,function(){moveTo(q('sendBtn'));});
+          at(1300,function(){tap(q('sendBtn'));});
+          at(1600,function(){ modal.classList.remove('show'); scrim.classList.remove('show'); addResultRow(); });
+          at(2100,function(){ toast.classList.add('show'); });
+        }
+      }
+    ];
+    function navTeamsActive(on){ q('navTeams').classList.toggle('active', on); }
+
+    var TOTAL = STEPS.reduce(function(a,s){return a+s.dur;},0);
+    var cum=[0]; STEPS.forEach(function(s){ cum.push(cum[cum.length-1]+s.dur); });
+
+    // ticks
+    STEPS.forEach(function(s,i){ if(i===0) return; var t=document.createElement('div'); t.className='tick'; t.style.left=(cum[i]/TOTAL*100)+'%'; timeline.appendChild(t); });
+
+    // ---- Player ---------------------------------------------------------
+    var idx=0, timers=[], raf=null, playing=false, segStart=0, segElapsed=0;
+    function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+    function atFactory(){ return function(ms,fn){ timers.push(setTimeout(fn, ms)); }; }
+    function fmt(ms){ var s=Math.max(0,Math.round(ms/1000)); return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2); }
+    function setLabel(elapsed){ ptxt.innerHTML='Step '+(idx+1)+' of '+STEPS.length+' · '+fmt(elapsed)+' / '+fmt(TOTAL); }
+
+    function enterStep(i){
+      idx=i; var step=STEPS[i];
+      showStage(step.stage);
+      setAddr(step.path);
+      navTeamsActive(step.stage==='teams');
+      capEl.innerHTML=step.cap;
+      step.build(i);               // idempotent start state (enables seek)
+      clearTimers();
+      if(!reduce){ step.play(atFactory()); }
+      segStart = performance.now() - 0;
+      segElapsed = 0;
+      // schedule advance
+      timers.push(setTimeout(function(){ if(i+1<STEPS.length){ enterStep(i+1); } else { finish(); } }, step.dur));
+    }
+
+    function loop(now){
+      if(!playing) return;
+      var base = cum[idx];
+      var within = Math.min(STEPS[idx].dur, now - segStart);
+      var elapsed = base + within;
+      fill.style.width = (elapsed/TOTAL*100)+'%';
+      setLabel(elapsed);
+      raf = requestAnimationFrame(loop);
+    }
+
+    function play(){
+      playing=true; playIcon.innerHTML='<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
+      segStart = performance.now();
+      raf=requestAnimationFrame(loop);
+    }
+    function pause(){
+      playing=false; playIcon.innerHTML='<path d="M8 5v14l11-7z"/>';
+      clearTimers(); stopType(); if(raf) cancelAnimationFrame(raf);
+      // freeze advance: capture how far we are, then reschedule on resume
+      pausedWithin = performance.now() - segStart;
+    }
+    var pausedWithin=0;
+    function resume(){
+      // replay current step fresh for a clean continuation
+      playing=true; playIcon.innerHTML='<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>';
+      enterStep(idx);
+      segStart=performance.now();
+      raf=requestAnimationFrame(loop);
+    }
+    function finish(){
+      playing=false; clearTimers(); if(raf) cancelAnimationFrame(raf);
+      fill.style.width='100%'; idx=STEPS.length-1; setLabel(TOTAL);
+      ptxt.textContent='Finished · replay anytime';
+      playIcon.innerHTML='<path d="M8 5v14l11-7z"/>';
+      restartBtn.classList.add('pulse');
+    }
+    function restart(){
+      restartBtn.classList.remove('pulse');
+      clearTimers(); if(raf) cancelAnimationFrame(raf);
+      navTeamsActive(false);
+      enterStep(0); play();
+    }
+    function seek(frac){
+      var target = frac*TOTAL; var i=0;
+      for(var j=0;j<STEPS.length;j++){ if(target>=cum[j] && target<cum[j+1]){ i=j; break; } i=j; }
+      restartBtn.classList.remove('pulse');
+      clearTimers(); if(raf) cancelAnimationFrame(raf);
+      enterStep(i); play();
+    }
+
+    playBtn.addEventListener('click', function(){ if(playing) pause(); else resume(); });
+    restartBtn.addEventListener('click', restart);
+    timeline.addEventListener('click', function(e){ var r=timeline.getBoundingClientRect(); seek(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))); });
+    window.addEventListener('resize', fitFrame);
+    window.addEventListener('load', fitFrame);
+
+    // ---- Boot -----------------------------------------------------------
+    applyBrand();
+    if(reduce){
+      showStage('teams'); setAddr('/manage-institute/teams'); idx=STEPS.length-1;
+      rebuildTeams(6); addResultRow(); toast.classList.add('show');
+      capEl.innerHTML=STEPS[STEPS.length-1].cap; fill.style.width='100%'; setLabel(TOTAL);
+      fitFrame();
+    } else {
+      enterStep(0);
+      setTimeout(function(){ fitFrame(); play(); }, 400);
+    }
+  })();
+</script>
+</body>
+</html>

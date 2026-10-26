@@ -1,0 +1,23 @@
+[
+  {
+    "slug": "admin-how-to-configure-student-display-settings",
+    "ok": false,
+    "attempts": 5,
+    "frames": 5,
+    "why": "no success match /saved|updated|success/"
+  },
+  {
+    "slug": "admin-how-to-configure-notification-settings",
+    "ok": false,
+    "attempts": 5,
+    "frames": 5,
+    "why": "no success match /saved|updated|success/"
+  },
+  {
+    "slug": "admin-how-to-configure-lms-settings",
+    "ok": false,
+    "attempts": 5,
+    "frames": 5,
+    "why": "no success match /saved|updated|success/"
+  }
+]

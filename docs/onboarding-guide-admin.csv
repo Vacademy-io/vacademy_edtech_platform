@@ -1,0 +1,317 @@
+Module,Video Title,Navigation Flow,Priority,Description
+Getting Started,How to navigate the admin dashboard,Dashboard,Must-have,Tour of the main navigation: sidebar / top bar / search / quick actions.
+Getting Started,How to invite team members,Settings > Teams > Invite Member,Must-have,Send invites to admins / teachers / counsellors so they can join the institute.
+Getting Started,How to set up your institute name and logo,Settings > Institute Settings,Must-have,First-time setup of institute identity.
+Getting Started,How to set your time zone and currency,Settings > Institute Settings > Locale,Should-have,Configure default time zone and currency for the institute.
+Getting Started,How to enable dark mode,Profile > Preferences > Appearance,Nice-to-have,Switch the admin UI to dark mode.
+Settings - Branding,How to set up white-label branding,Settings > White Label,Must-have,Apply your brand identity across the platform.
+Settings - Branding,How to upload your institute logo,Settings > White Label > Logo,Must-have,Replace the default logo with your own.
+Settings - Branding,How to set theme primary color,Settings > White Label > Theme,Should-have,Switch the primary accent color used across the dashboard.
+Settings - Branding,How to set up a custom domain,Settings > White Label > Domain Routing,Should-have,Map a custom domain (yourinstitute.com) to your Vacademy tenant.
+Settings - Branding,How to upload favicon and email logo,Settings > White Label > Assets,Nice-to-have,Brand the tabs / system emails with your own assets.
+Settings - Roles & Permissions,How to create a custom role,Settings > Roles > Create Role,Must-have,Define a new role (e.g. Branch Admin / Counsellor Lead).
+Settings - Roles & Permissions,How to assign permissions to a role,Settings > Roles > [Role] > Permissions,Must-have,Configure what each role can see and do.
+Settings - Roles & Permissions,How to assign roles to team members,Settings > Roles > [Role] > Members,Must-have,Place team members into the appropriate role.
+Settings - Roles & Permissions,How to set up team hierarchy,Settings > Teams > Hierarchy,Should-have,Build the org tree (HQ → branches → teams).
+Settings - Roles & Permissions,How to configure role display settings,Settings > Display Settings > Roles,Should-have,Pick which sidebar items / KPIs each role sees.
+Settings - Roles & Permissions,How to control side-view tab visibility per role,Settings > Display Settings > Side View,Should-have,Hide tabs from learner-profile drawer for specific roles.
+Settings - Custom Fields,How to add a custom field,Settings > Custom Fields > Add Field,Must-have,Add a configurable field shown on forms / profiles / lists.
+Settings - Custom Fields,How to group custom fields into a section,Settings > Custom Fields > Field Groups,Should-have,Group related fields so they render together.
+Settings - Custom Fields,How to control field visibility per location,Settings > Custom Fields > [Field] > Visibility,Should-have,Show / hide a field per surface (learner list / admission form / lead profile).
+Settings - Custom Fields,How to make a field required or optional,Settings > Custom Fields > [Field] > Required,Should-have,Toggle the required flag on a custom field.
+Settings - Naming,How to rename course / level / session terms,Settings > Naming > Content Terms,Must-have,Use your institute's own vocabulary (e.g. Programme / Batch).
+Settings - Naming,How to rename learner / teacher / counsellor terms,Settings > Naming > Role Terms,Should-have,Switch learner-facing labels (e.g. Student / Trainee).
+Settings - Naming,How to rename system terminology,Settings > Naming > System Terms,Should-have,Override generic system labels institute-wide.
+Settings - Payments,How to connect Razorpay,Settings > Payment Gateways > Razorpay,Must-have,Connect Razorpay as your payment gateway.
+Settings - Payments,How to connect Stripe,Settings > Payment Gateways > Stripe,Must-have,Connect Stripe as your payment gateway.
+Settings - Payments,How to connect Cashfree,Settings > Payment Gateways > Cashfree,Should-have,Connect Cashfree as an additional gateway.
+Settings - Payments,How to connect eWay,Settings > Payment Gateways > eWay,Nice-to-have,Connect eWay (Australia / New Zealand) as a gateway.
+Settings - Payments,How to set the default payment gateway,Settings > Payment Gateways > Default,Must-have,Pick which gateway processes new payments by default.
+Settings - Payments,How to set up tax / GST,Settings > Invoice > Tax Settings,Must-have,Configure tax rates applied to invoices.
+Settings - Payments,How to design an invoice template,Settings > Invoice > Templates,Should-have,Customize how invoices look (header / footer / line items).
+Settings - Payments,How to set up payment reminders,Settings > Notifications > Payment Reminders,Should-have,Auto-remind learners about pending dues.
+Settings - Payments,How to enable test mode on a gateway,Settings > Payment Gateways > Test Mode,Nice-to-have,Run transactions in sandbox mode for verification.
+Settings - Communication,How to connect Wati WhatsApp,Settings > WhatsApp Settings > Wati,Must-have,Connect Wati as your WhatsApp provider.
+Settings - Communication,How to connect Meta WhatsApp Business API,Settings > WhatsApp Settings > Meta,Must-have,Connect Meta directly as your WhatsApp provider.
+Settings - Communication,How to manage Meta-approved WhatsApp templates,Settings > WhatsApp > Templates,Must-have,Author / submit / sync Meta-approved templates.
+Settings - Communication,How to set up custom SMTP for email,Settings > Email Settings > SMTP,Must-have,Send email from your own domain.
+Settings - Communication,How to connect SendGrid,Settings > Email Settings > SendGrid,Should-have,Use SendGrid as your email provider.
+Settings - Communication,How to set up an SMS provider,Settings > SMS Settings,Should-have,Connect an SMS gateway.
+Settings - Communication,How to test your email setup,Settings > Email Settings > Test Send,Should-have,Send a test email to verify your configuration.
+Settings - Telephony,How to connect Exotel,Settings > Telephony > Exotel,Must-have,Connect Exotel for click-to-call and recording.
+Settings - Telephony,How to configure inbound call routing,Settings > Telephony > Inbound Routing,Should-have,Decide what happens when leads call your business number.
+Settings - Telephony,How to set up IVR,Settings > Telephony > IVR,Should-have,Build a press-1-press-2 menu for incoming calls.
+Settings - Telephony,How to enable call recording,Settings > Telephony > Recording,Should-have,Auto-record calls for quality and training.
+Settings - Telephony,How to set up voicemail fallback,Settings > Telephony > Voicemail,Nice-to-have,Route unanswered calls to a voicemail.
+Settings - Live Sessions,How to connect Zoom OAuth,Settings > Integrations > Zoom,Must-have,Authorize Zoom so live sessions can be created with your account.
+Settings - Live Sessions,How to set up BigBlueButton,Settings > Integrations > BigBlueButton,Should-have,Use the built-in BBB stack for live classes.
+Settings - Live Sessions,How to auto-sync Zoom recordings,Settings > Integrations > Zoom > Recording Sync,Should-have,Pull Zoom recordings into the platform automatically.
+Settings - Live Sessions,How to auto-sync Zoom attendance,Settings > Integrations > Zoom > Attendance Sync,Should-have,Capture Zoom attendance automatically.
+Settings - Ad Platforms,How to connect Facebook Lead Ads,Settings > Integrations > Meta Lead Ads,Must-have,Auto-import leads from Facebook / Instagram lead forms.
+Settings - Ad Platforms,How to set up a form webhook,Settings > Integrations > Webhooks > Form,Should-have,Push leads from any web form into the platform.
+Settings - Ad Platforms,How to set up an ad-platform webhook,Settings > Integrations > Webhooks > Ad Platform,Should-have,Connect a third-party ad source via webhook.
+Settings - AI,How to configure AI settings,Settings > AI Settings,Must-have,Pick default AI provider / model / behaviour.
+Settings - AI,How to bring your own model keys (BYOK),Settings > AI Settings > BYOK,Should-have,Use your own OpenAI / Anthropic / Gemini key to skip Vacademy credits.
+Settings - AI,How to monitor AI credit usage,Settings > AI Credits,Must-have,Track how many credits each feature is consuming.
+Settings - AI,How to top up AI credits,Settings > AI Credits > Buy Credits,Should-have,Purchase additional Vacademy AI credits.
+Settings - Lead Configuration,How to set up custom lead statuses,Settings > Leads > Statuses,Must-have,Define your own lead pipeline stages.
+Settings - Lead Configuration,How to define lead status transitions,Settings > Leads > Statuses > Transitions,Should-have,Control which stages can move to which.
+Settings - Lead Configuration,How to set up lead tiers (HOT / WARM / COLD),Settings > Leads > Tiers,Must-have,Tag leads by intent strength.
+Settings - Lead Configuration,How to configure lead scoring rules,Settings > Leads > Scoring,Must-have,Auto-score leads based on signals.
+Settings - Lead Configuration,How to set up Lead SLA,Settings > Leads > SLA,Must-have,Define how quickly leads must be contacted.
+Settings - Lead Configuration,How to configure SLA reminder windows,Settings > Leads > SLA > Reminder Windows,Should-have,Set how many escalations and at what intervals.
+Settings - Counsellor Pools,How to create a counsellor pool,Settings > Leads > Pools > Create Pool,Must-have,Group counsellors so leads route across the team.
+Settings - Counsellor Pools,How to add counsellors to a pool,Settings > Leads > Pools > [Pool] > Members,Must-have,Pick which team members belong to a pool.
+Settings - Counsellor Pools,How to set up round-robin distribution,Settings > Leads > Pools > [Pool] > Round Robin,Must-have,Auto-rotate new leads across the pool fairly.
+Settings - Counsellor Pools,How to set up sticky-per-lead assignment,Settings > Leads > Pools > [Pool] > Sticky,Should-have,Keep the same counsellor for the same lead.
+Settings - Counsellor Pools,How to set up region-based routing,Settings > Leads > Pools > [Pool] > Region,Should-have,Route leads based on lead's region.
+Settings - Counsellor Pools,How to configure pool working hours / shifts,Settings > Leads > Pools > [Pool] > Schedule,Should-have,Restrict assignment to active counsellors only.
+Settings - Counsellor Pools,How to bulk re-assign leads when a counsellor goes inactive,Settings > Leads > Pools > Bulk Reassign,Should-have,Redistribute leads when someone leaves the team.
+Settings - Memberships,How to create a membership plan,Settings > Memberships > Create Plan,Should-have,Define a subscription with billing cycle.
+Settings - Memberships,How to set a membership price,Settings > Memberships > [Plan] > Pricing,Should-have,Configure recurring price and currency.
+Settings - Coupons,How to create a coupon code,Settings > Coupons > Create Coupon,Must-have,Issue a discount code.
+Settings - Coupons,How to set coupon expiry and usage limits,Settings > Coupons > [Coupon] > Rules,Should-have,Cap how many times the code can be used.
+Settings - Certificates,How to design a certificate template,Settings > Certificates > Create Template,Should-have,Use the visual editor to design completion certificates.
+Settings - Certificates,How to auto-issue certificates on course completion,Settings > Certificates > Auto-Issue,Should-have,Mint certificates automatically when learners complete a course.
+Settings - Referral,How to set up a referral program,Settings > Referral,Should-have,Reward learners for bringing in friends.
+Settings - Referral,How to set referral rewards,Settings > Referral > Rewards,Should-have,Define cash / credit / discount on a successful referral.
+Settings - Sub-Org,How to create a sub-organization,Settings > Sub-Org > Create,Should-have,Add a child branch under the main institute.
+Settings - Sub-Org,How to add admins to a sub-org,Settings > Sub-Org > [Sub-Org] > Members,Should-have,Give sub-org admins their own scope.
+Settings - Sub-Org,How to switch between sub-organizations,Dashboard > Org Switcher,Should-have,Move between sub-orgs from the top bar.
+Settings - Activity Logs,How to view admin activity logs,Admin Activity Logs,Must-have,Full audit trail of admin actions.
+Settings - Activity Logs,How to filter activity logs by user,Admin Activity Logs > Filters > User,Should-have,Drill into one team member's actions.
+Settings - Activity Logs,How to set log retention policy,Settings > Activity Logs > Retention,Nice-to-have,Configure how long audit trails are kept.
+LMS - Course Setup,How to create a course,Courses > Create Course,Must-have,Set up a new course with name / description / category.
+LMS - Course Setup,How to set a course thumbnail,Courses > [Course] > Settings > Thumbnail,Should-have,Upload a cover image for the course card.
+LMS - Course Setup,How to set course pricing,Courses > [Course] > Pricing,Must-have,Configure the price and payment plan.
+LMS - Course Setup,How to add course prerequisites,Courses > [Course] > Prerequisites,Should-have,Require learners to complete other courses first.
+LMS - Course Setup,How to add course faculty,Courses > [Course] > Faculty,Should-have,Tag instructors that teach this course.
+LMS - Course Setup,How to publish or unpublish a course,Courses > [Course] > Publish,Must-have,Toggle whether learners can see this course.
+LMS - Course Setup,How to clone a course,Courses > [Course] > Clone,Should-have,Duplicate a course for a new batch.
+LMS - Course Setup,How to archive a course,Courses > [Course] > Archive,Nice-to-have,Hide an old course without deleting it.
+LMS - Course Setup,How to create a course bundle,Courses > Bundles > Create Bundle,Should-have,Sell multiple courses together as one offering.
+LMS - Course Setup,How to create a level,Courses > [Course] > Create Level,Must-have,Add a level (e.g. Beginner / Advanced).
+LMS - Course Setup,How to create a session,Courses > [Course] > [Level] > Create Session,Must-have,Create a session (May 2026 batch) inside a level.
+LMS - Course Setup,How to add a subject,Courses > [Session] > Add Subject,Must-have,Add a subject inside a session.
+LMS - Course Setup,How to add a module,Courses > [Subject] > Add Module,Must-have,Break a subject into modules.
+LMS - Course Setup,How to add a chapter,Courses > [Module] > Add Chapter,Must-have,Add chapters inside a module.
+LMS - Course Setup,How to reorder modules and chapters,Courses > [Subject] > Reorder,Should-have,Drag-and-drop to change the structure.
+LMS - Course Setup,How to set drip conditions on chapters,Courses > [Course] > Drip Conditions,Should-have,Unlock chapters based on time or completion.
+LMS - Course Setup,How to set time-based chapter unlock,Courses > [Course] > Drip > Time,Should-have,Release chapters on a fixed schedule.
+LMS - Content,How to add a PDF slide,Courses > [Chapter] > Add Slide > PDF,Must-have,Upload a PDF as a slide.
+LMS - Content,How to add a video slide,Courses > [Chapter] > Add Slide > Video,Must-have,Upload or link a video lecture as a slide.
+LMS - Content,How to add a document slide,Courses > [Chapter] > Add Slide > Document,Should-have,Add a doc / spreadsheet / presentation as a slide.
+LMS - Content,How to add a quiz slide,Courses > [Chapter] > Add Slide > Quiz,Must-have,Insert a quick quiz inline within course flow.
+LMS - Content,How to add a coding question slide,Courses > [Chapter] > Add Slide > Coding,Should-have,Add a coding problem that learners can run and submit.
+LMS - Content,How to add a presentation slide,Courses > [Chapter] > Add Slide > Presentation,Should-have,Use slides as in-class presentations.
+LMS - Content,How to upload supplementary materials,Courses > [Chapter] > Materials,Should-have,Attach extra resources to a chapter.
+LMS - Content,How to reorder slides within a chapter,Courses > [Chapter] > Reorder Slides,Should-have,Change the order learners see slides.
+LMS - Content,How to preview a slide as a learner,Courses > [Slide] > Preview,Nice-to-have,See what the learner sees.
+LMS - Live Sessions,How to schedule a live session,Live Sessions > Create Session,Must-have,Pick date / time / provider for a live class.
+LMS - Live Sessions,How to create a recurring live session,Live Sessions > Create > Recurring,Should-have,Set a weekly / daily repeat.
+LMS - Live Sessions,How to enable session recording,Live Sessions > [Session] > Recording,Should-have,Auto-record sessions to the learner library.
+LMS - Live Sessions,How to track session attendance,Live Sessions > [Session] > Attendance,Must-have,View who joined / left and total watch time.
+LMS - Live Sessions,How to send pre-session reminders,Live Sessions > [Session] > Reminders,Should-have,Trigger WhatsApp / email reminders before the session starts.
+LMS - Live Sessions,How to let learners book a session slot,Live Sessions > Booking,Should-have,Open self-service slot booking to learners.
+LMS - Question Bank,How to add a question to the question bank,Question Bank > Add Question,Must-have,Save a question for reuse across assessments.
+LMS - Question Bank,How to import questions from a file,Question Bank > Import,Must-have,Bulk add questions from CSV / Word / PDF.
+LMS - Question Bank,How to tag a question by topic,Question Bank > [Question] > Tags,Should-have,Categorise questions for easy lookup.
+LMS - Question Bank,How to set question difficulty,Question Bank > [Question] > Difficulty,Should-have,Mark questions easy / medium / hard.
+LMS - Question Bank,How to organise questions into sections,Question Bank > Sections,Should-have,Group questions by section for sectioned assessments.
+LMS - Question Bank,How to search the question bank,Question Bank > Search,Must-have,Find a question quickly by content / tag / type.
+LMS - Question Bank,How to archive a question,Question Bank > [Question] > Archive,Nice-to-have,Retire old questions without deleting them.
+LMS - Assessments,How to create an assessment,Assessments > Create Assessment,Must-have,Set up a new assessment with name / type / instructions.
+LMS - Assessments,How to add questions manually,Assessments > [Assessment] > Add Question,Must-have,Add MCQ / subjective / numerical / coding questions.
+LMS - Assessments,How to import questions from question bank,Assessments > [Assessment] > Import from Bank,Must-have,Reuse questions from your saved bank.
+LMS - Assessments,How to generate questions from a topic with AI,AI Center > VSmart > Topic Questions,Should-have,Auto-generate a question set from a topic prompt.
+LMS - Assessments,How to upload questions from a document,AI Center > VSmart > Extract,Should-have,Let AI extract questions from a PDF.
+LMS - Assessments,How to set assessment duration,Assessments > [Assessment] > Duration,Must-have,Configure the time limit for an attempt.
+LMS - Assessments,How to set assessment instructions,Assessments > [Assessment] > Instructions,Should-have,Tell learners how to attempt the assessment.
+LMS - Assessments,How to enable negative marking,Assessments > [Assessment] > Negative Marking,Should-have,Deduct marks for wrong answers.
+LMS - Assessments,How to assign assessment to a batch,Assessments > [Assessment] > Assign,Must-have,Choose which course / batch sees the assessment.
+LMS - Assessments,How to enable proctoring,Assessments > [Assessment] > Proctoring,Must-have,Turn on camera / fullscreen / anti-cheating signals.
+LMS - Assessments,How to schedule an assessment window,Assessments > [Assessment] > Schedule,Must-have,Set the live window during which learners can attempt.
+LMS - Assessments,How to create a sectioned assessment,Assessments > Create > Sections,Should-have,Build an assessment with multiple sections.
+LMS - Assessments,How to create a practice test,Assessments > Create > Practice,Should-have,Offer a no-stakes practice attempt.
+LMS - Assessments,How to create a mock test,Assessments > Create > Mock,Should-have,Simulate the real assessment under timed conditions.
+LMS - Assessments,How to create a homework assignment,Assessments > Create > Homework,Should-have,Set out-of-class assignments.
+LMS - Assessments,How to bulk import assessments,Assessments > Bulk Import,Nice-to-have,Bulk create many assessments at once.
+LMS - Assessments,How to clone an assessment,Assessments > [Assessment] > Clone,Should-have,Duplicate an assessment to reuse the structure.
+LMS - Grading,How to grade subjective answers,Assessments > [Assessment] > Grade,Must-have,Score open-ended answers by hand.
+LMS - Grading,How to use AI to evaluate handwritten papers,AI Center > VSmart > Feedback,Should-have,Scan handwritten answer sheets and let AI grade them.
+LMS - Grading,How to view assessment results,Assessments > [Assessment] > Results,Must-have,See the score table for all attempts.
+LMS - Grading,How to publish results to learners,Assessments > [Assessment] > Publish Results,Must-have,Control when scores become visible.
+LMS - Grading,How to handle re-evaluation requests,Assessments > [Assessment] > Re-eval Requests,Should-have,Process learner requests for re-grading.
+LMS - Grading,How to view individual response analysis,Assessments > [Assessment] > [Learner] > Responses,Must-have,Drill into one learner's answers.
+LMS - Grading,How to export all responses to CSV,Assessments > [Assessment] > Export Responses,Should-have,Download response data for offline analysis.
+LMS - Analytics,How to view assessment analytics,Assessments > [Assessment] > Analytics,Must-have,Question-wise difficulty / score distribution / attempt rate.
+LMS - Analytics,How to view question-wise insights,Assessments > [Assessment] > Insights,Should-have,Identify which questions need rework.
+LMS - Analytics,How to view learner insights,Learner Insights,Must-have,See progress / engagement / risk across all learners.
+LMS - Analytics,How to generate a learner analysis report,Learner Insights > Generate Report,Should-have,Deep-dive AI analysis on one learner.
+LMS - Analytics,How to view course completion analytics,Learner Insights > Course Reports,Should-have,Track how many learners finish each course.
+LMS - Analytics,How to view batch performance,Learner Insights > Batch Analytics,Should-have,Compare performance across batches.
+LMS - Analytics,How to view cohort comparison,Learner Insights > Cohort Compare,Nice-to-have,Compare two cohorts side by side.
+LMS - Materials,How to upload learning materials,Manage Content > Upload,Must-have,Add a learning resource to a folder.
+LMS - Materials,How to organise materials in folders,Manage Content > Folders,Should-have,Create / move / nest folders for materials.
+LMS - Materials,How to share materials with a course,Manage Content > [File] > Share,Should-have,Make a file available inside a course.
+LMS - Materials,How to bulk upload files,Manage Content > Bulk Upload,Should-have,Drag-and-drop multiple files at once.
+LMS - Doubts,How to view all student doubts,Doubts,Must-have,See open questions across courses.
+LMS - Doubts,How to assign a doubt to an instructor,Doubts > [Doubt] > Assign,Must-have,Route a doubt to the right teacher.
+LMS - Doubts,How to reply to a doubt,Doubts > [Doubt] > Reply,Must-have,Send a written / video / audio response.
+LMS - Doubts,How to attach files to a doubt reply,Doubts > [Doubt] > Reply > Attach,Should-have,Include a PDF / image / diagram in your reply.
+LMS - Doubts,How to set SLA for doubt resolution,Settings > Doubts > SLA,Should-have,Define max response time.
+LMS - Doubts,How to mark doubts as resolved,Doubts > [Doubt] > Resolve,Must-have,Close out a doubt thread.
+LMS - Doubts,How to view doubt analytics,Doubts > Analytics,Nice-to-have,See average response time / counts per instructor.
+LMS - Coding,How to set up Judge0 for code execution,Settings > Integrations > Judge0,Should-have,Connect Judge0 so coding submissions can run.
+LMS - Coding,How to create a coding question,Question Bank > Coding > Add,Should-have,Author a coding problem.
+LMS - Coding,How to add test cases to a coding question,Question Bank > Coding > [Question] > Test Cases,Should-have,Define what passing looks like.
+LMS - Coding,How to add starter code,Question Bank > Coding > [Question] > Starter Code,Should-have,Give learners a scaffold to start from.
+LMS - Coding,How to set time and memory limits,Question Bank > Coding > [Question] > Limits,Should-have,Constrain how much compute a submission can use.
+LMS - Coding,How to view coding submissions,Assessments > [Assessment] > Submissions > Coding,Should-have,Inspect a learner's code and run output.
+LMS - Certificates,How to issue a certificate to a learner,Manage Learners > [Learner] > Certificates > Issue,Should-have,Hand out a one-off certificate.
+LMS - Certificates,How to bulk issue certificates,Manage Learners > Certificates > Bulk Issue,Nice-to-have,Issue certificates to a whole batch at once.
+AI Tools - VSmart,How to create a question paper from a document,AI Center > VSmart > Question Paper,Must-have,Upload a chapter and get a question paper.
+AI Tools - VSmart,How to digitise a scanned question paper,AI Center > VSmart > Paper Digitiser,Must-have,Convert a scanned paper into editable digital questions.
+AI Tools - VSmart,How to organise your question bank with AI,AI Center > VSmart > Bank Organiser,Should-have,Auto-tag and categorise questions by topic and difficulty.
+AI Tools - VSmart,How to generate questions from a topic,AI Center > VSmart > Topic Questions,Must-have,Type a topic and get questions.
+AI Tools - VSmart,How to use the AI Lesson Planner,AI Center > VSmart > Lesson Planner,Should-have,Generate a structured lesson plan from a topic.
+AI Tools - VSmart,How to use the AI Lecture Coach,AI Center > VSmart > Lecture Coach,Nice-to-have,Get AI feedback on a recorded lecture.
+AI Tools - VSmart,How to use the AI Course Creator,AI Center > VSmart > Course Creator,Should-have,Describe a course and AI builds the full outline.
+AI Tools - VSmart,How to use VSmart Chat,AI Center > VSmart > Chat,Should-have,Have a conversation with AI about your content.
+AI Tools - VSmart,How to use VSmart Image,AI Center > VSmart > Image,Nice-to-have,AI image processing tool.
+AI Tools - VSmart,How to use VSmart Audio,AI Center > VSmart > Audio,Nice-to-have,AI audio processing / speech-to-text.
+AI Tools - VSmart,How to use VSmart Prompt for custom AI tasks,AI Center > VSmart > Prompt,Nice-to-have,Run a custom prompt against your data.
+AI Tools - VSmart,How to use VSmart Sorter,AI Center > VSmart > Sorter,Nice-to-have,Auto-sort questions by topic and taxonomy.
+AI Tools - VSmart,How to use VSmart Extract,AI Center > VSmart > Extract,Should-have,Extract questions / content from any document.
+AI Tools - VSmart,How to use VSmart Feedback for evaluation,AI Center > VSmart > Feedback,Must-have,Evaluate answer sheets with AI.
+AI Tools - Vimotion,How to create a video from a prompt,Vimotion > Create > Prompt,Should-have,Type a topic and get an AI-narrated video.
+AI Tools - Vimotion,How to create a video from a slide deck,Vimotion > Create > Deck,Should-have,Upload slides and get a narrated explainer video.
+AI Tools - Vimotion,How to edit a Vimotion video,Vimotion > [Video] > Editor,Should-have,Adjust captions / voiceover / scenes.
+AI Tools - Vimotion,How to set up a brand kit for videos,Vimotion > Brand Kits,Should-have,Apply your brand fonts / colors to all videos.
+AI Tools - Vimotion,How to generate API keys for Vimotion,Vimotion > API Keys,Nice-to-have,Generate videos programmatically.
+AI Tools - Vimotion,How to embed a Vimotion video in a course,Courses > [Chapter] > Add Slide > Vimotion,Should-have,Insert an AI video into your course content.
+AI Tools - Instructor Copilot,How to start an Instructor Copilot session,Instructor Copilot > Start Session,Should-have,Record a live lecture for AI processing.
+AI Tools - Instructor Copilot,How to generate notes from a lecture,Instructor Copilot > [Session] > Notes,Should-have,Auto-produce lecture notes.
+AI Tools - Instructor Copilot,How to generate a quiz from a lecture,Instructor Copilot > [Session] > Quiz,Should-have,Auto-produce a quick quiz from what was taught.
+AI Tools - Instructor Copilot,How to generate homework from a lecture,Instructor Copilot > [Session] > Homework,Should-have,Auto-produce an out-of-class assignment.
+CRM - Lead Capture,How to create an audience form,Audience Manager > Create Form,Must-have,Build a custom lead-capture form.
+CRM - Lead Capture,How to add fields to a form,Audience Manager > [Form] > Fields,Must-have,Configure what info you collect.
+CRM - Lead Capture,How to add custom fields to a form,Audience Manager > [Form] > Custom Fields,Should-have,Use institute-specific fields on a form.
+CRM - Lead Capture,How to embed a form on your website,Audience Manager > [Form] > Embed,Must-have,Get a snippet to paste on any web page.
+CRM - Lead Capture,How to share a form via link,Audience Manager > [Form] > Share Link,Must-have,Send a one-tap link by WhatsApp / email.
+CRM - Lead Capture,How to set form thank-you page,Audience Manager > [Form] > Thank You,Should-have,Customize what learners see after submitting.
+CRM - Lead Capture,How to clone an audience form,Audience Manager > [Form] > Clone,Should-have,Duplicate a form to reuse it.
+CRM - Lead Capture,How to set up form webhooks,Audience Manager > [Form] > Webhooks,Should-have,Push form submissions to an external system.
+CRM - Lead Capture,How to create a lead-capture campaign,Audience Manager > Campaigns > Create,Must-have,Group leads under a tracked campaign.
+CRM - Lead Capture,How to import leads from CSV,Audience Manager > Bulk Import,Must-have,Upload a spreadsheet of leads.
+CRM - Lead Management,How to view recent leads,Audience Manager > Recent Leads,Must-have,See the newest leads across all campaigns.
+CRM - Lead Management,How to filter and search leads,Audience Manager > Filters,Must-have,Slice leads by source / tier / score / counsellor.
+CRM - Lead Management,How to open a lead's full profile,Audience Manager > [Lead] > Open Profile,Must-have,See the 17-tab side drawer.
+CRM - Lead Management,How to expand to the full-screen profile overlay,Audience Manager > [Lead] > Expand,Should-have,Launch the 90vw lead overlay.
+CRM - Lead Management,How to edit lead details,Audience Manager > [Lead] > Edit,Must-have,Update name / contact / address / custom fields.
+CRM - Lead Management,How to merge duplicate leads,Audience Manager > [Lead] > Merge Duplicate,Should-have,Combine duplicate records.
+CRM - Lead Management,How to mark a lead as Lost,Audience Manager > [Lead] > Status > Lost,Must-have,Close out a lead that won't convert.
+CRM - Lead Management,How to mark a lead as Converted,Audience Manager > [Lead] > Status > Convert,Must-have,Move a converted lead into a learner record.
+CRM - Lead Management,How to opt out a lead from communications,Audience Manager > [Lead] > Opt-out,Should-have,Honor unsubscribe preferences.
+CRM - Lead Management,How to view a lead's activity timeline,Audience Manager > [Lead] > Activity Timeline,Must-have,See every touchpoint in chronological order.
+CRM - Lead Management,How to add a note to a lead,Audience Manager > [Lead] > Activity > Add Note,Must-have,Log call summary / meeting outcome.
+CRM - Lead Management,How to bulk update lead status,Audience Manager > Bulk > Update Status,Should-have,Mark many leads at once.
+CRM - Lead Management,How to export leads to CSV,Audience Manager > Export,Should-have,Download leads for offline analysis.
+CRM - Lead Management,How to view a lead's score history,Audience Manager > [Lead] > Score History,Should-have,Track how a lead's score has evolved.
+CRM - Follow-ups,How to schedule a follow-up,Audience Manager > [Lead] > Follow-ups > Add,Must-have,Set a reminder to call / message a lead later.
+CRM - Follow-ups,How to view all pending follow-ups,Audience Manager > Follow-ups,Must-have,Manage your daily follow-up workload.
+CRM - Follow-ups,How to close a follow-up,Audience Manager > [Lead] > Follow-ups > Close,Must-have,Mark a follow-up done.
+CRM - Follow-ups,How to view SLA breach reports,Audience Manager > Reports > SLA,Should-have,Identify leads with overdue follow-ups.
+CRM - Counsellor Assignment,How to assign a lead to yourself or a teammate,Audience Manager > [Lead] > Assign Counsellor,Must-have,Take ownership or hand off a lead.
+CRM - Counsellor Assignment,How to re-assign a lead's counsellor,Audience Manager > [Lead] > Assign Counsellor > Change,Should-have,Move a lead to a different counsellor.
+CRM - Communication,How to send an email to a lead,Audience Manager > [Lead] > Send Email,Must-have,Compose and send a one-off email.
+CRM - Communication,How to send a WhatsApp to a lead,Audience Manager > [Lead] > Send WhatsApp,Must-have,Send via a Meta-approved WhatsApp template.
+CRM - Communication,How to send an SMS to a lead,Audience Manager > [Lead] > Send SMS,Should-have,Send a single-channel SMS.
+CRM - Communication,How to create an email template,Settings > Templates > Email > Create,Must-have,Save reusable email designs with merge fields.
+CRM - Communication,How to create a WhatsApp template,Settings > WhatsApp > Templates > Create,Must-have,Author and submit a Meta-approved WhatsApp template.
+CRM - Communication,How to view email open and click rates,Audience Manager > Reports > Email,Should-have,Track inbox performance.
+CRM - Communication,How to view bounced emails,Reports > Email > Bounces,Should-have,Manage your sender reputation.
+CRM - Communication,How to access the WhatsApp inbox,Communication > WhatsApp Inbox,Must-have,Reply to live WhatsApp conversations.
+CRM - Communication,How to handle a live WhatsApp conversation,Communication > WhatsApp Inbox > [Conversation],Must-have,Two-way chat with a lead in WhatsApp.
+CRM - Communication,How to broadcast a message to a segment,Communication > Broadcast > Create,Should-have,Send the same message to many leads.
+CRM - Telephony,How to make a click-to-call,Audience Manager > [Lead] > Call,Must-have,Trigger an Exotel call to a lead.
+CRM - Telephony,How to view call logs,Communication > Call Logs,Must-have,See every call attempted / completed.
+CRM - Telephony,How to listen to a recorded call,Communication > Call Logs > [Call] > Play,Must-have,Play back a recorded conversation.
+CRM - Telephony,How to handle inbound calls,Communication > Inbound Calls,Should-have,Manage incoming calls routed to your team.
+CRM - Telephony,How to view talk-time analytics,Communication > Calls > Analytics,Should-have,Monitor productive call time across the team.
+CRM - Workflows,How to create a workflow,Workflow > Create Workflow,Must-have,Build a multi-step automation in the visual editor.
+CRM - Workflows,How to choose a trigger,Workflow > [Workflow] > Trigger,Must-have,Pick what event starts the workflow.
+CRM - Workflows,How to add a Send Email node,Workflow > [Workflow] > Add Node > Send Email,Must-have,Send an automated email.
+CRM - Workflows,How to add a Send WhatsApp node,Workflow > [Workflow] > Add Node > Send WhatsApp,Must-have,Send an automated WhatsApp.
+CRM - Workflows,How to add a Wait / Delay node,Workflow > [Workflow] > Add Node > Wait,Must-have,Pause the workflow for hours / days.
+CRM - Workflows,How to add a Condition node,Workflow > [Workflow] > Add Node > Condition,Must-have,Branch a workflow on lead attributes.
+CRM - Workflows,How to add an Action node,Workflow > [Workflow] > Add Node > Action,Should-have,Run a custom business action.
+CRM - Workflows,How to schedule a workflow,Workflow > [Workflow] > Schedule,Should-have,Run a workflow on a cron-style schedule.
+CRM - Workflows,How to monitor workflow executions,Workflow > [Workflow] > Executions,Should-have,See real-time runs / failures / retries.
+CRM - Workflows,How to use a workflow template,Workflow > Templates,Must-have,Start from a pre-built nurture / reminder flow.
+CRM - Workflows,How to test a workflow before publishing,Workflow > [Workflow] > Test Run,Should-have,Dry-run a workflow on a sample lead.
+CRM - Workflows,How to pause or stop a workflow,Workflow > [Workflow] > Pause,Should-have,Halt a workflow without deleting it.
+CRM - Campaigns & Reports,How to view campaign performance,Audience Manager > Campaigns > [Campaign],Must-have,See conversion / counts / source ROI per campaign.
+CRM - Campaigns & Reports,How to view source-wise lead reports,Audience Manager > Reports > Sources,Should-have,Compare lead quality across sources.
+CRM - Campaigns & Reports,How to view counsellor performance,Settings > Leads > Pools > Performance,Must-have,Calls made / leads converted per counsellor.
+CRM - Campaigns & Reports,How to view conversion funnel,Audience Manager > Reports > Funnel,Should-have,Where leads drop off in your pipeline.
+CRM - Campaigns & Reports,How to export campaign reports,Audience Manager > Reports > Export,Nice-to-have,Download for offline analysis.
+Admissions,How to view all enquiries,Admissions > Enquiries,Must-have,See top-of-funnel enquiry submissions.
+Admissions,How to convert an enquiry to an application,Admissions > [Enquiry] > Convert,Must-have,Move an enquiry into the application pipeline.
+Admissions,How to create an admission form,Admissions > Forms > Create,Must-have,Build the application form for a program.
+Admissions,How to view application status,Admissions > [Application] > Status,Must-have,Drill into each applicant's stage.
+Admissions,How to manage applicant communication,Admissions > [Application] > Communication,Must-have,Email / WhatsApp / SMS an applicant.
+Admissions,How to bulk import applicants,Admissions > Bulk Import,Should-have,Upload many applicants from CSV.
+Admissions,How to assign an applicant to a counsellor,Admissions > [Application] > Assign,Must-have,Take ownership of an applicant.
+Admissions,How to track applicant documents,Admissions > [Application] > Documents,Should-have,See which documents are submitted / pending.
+Admissions,How to set application stages,Settings > Admissions > Stages,Should-have,Configure the stages an applicant moves through.
+Manage Learners,How to enroll a learner manually,Manage Learners > Enroll Manually,Must-have,Add a single learner and assign them to a course.
+Manage Learners,How to bulk enroll learners from CSV,Manage Learners > Bulk Enroll,Must-have,Upload a spreadsheet to enroll many learners at once.
+Manage Learners,How to send a learner invite link,Manage Learners > Invite > Create,Must-have,Generate a shareable invite with payment / form options.
+Manage Learners,How to view a learner's full profile,Manage Learners > [Learner],Must-have,Open the 17-tab learner side view.
+Manage Learners,How to expand to the full-screen profile overlay,Manage Learners > [Learner] > Expand,Should-have,Open the 90vw full-screen profile.
+Manage Learners,How to edit a learner's details,Manage Learners > [Learner] > Edit Details,Must-have,Update name / contact / address / parent / custom fields.
+Manage Learners,How to upload a learner's profile photo,Manage Learners > [Learner] > Edit > Photo,Should-have,Add a photo to the learner profile.
+Manage Learners,How to view a learner's course progress,Manage Learners > [Learner] > Progress,Must-have,Track chapter / slide / assessment completion.
+Manage Learners,How to view a learner's test history,Manage Learners > [Learner] > Tests,Must-have,See past attempts and scores.
+Manage Learners,How to view a learner's payment history,Manage Learners > [Learner] > Payment History,Must-have,See invoices / installments / pending dues.
+Manage Learners,How to view a learner's communication history,Manage Learners > [Learner] > Notifications,Should-have,Inspect every message / call to this learner.
+Manage Learners,How to view a learner's files,Manage Learners > [Learner] > Files,Should-have,Upload / download / organise the learner's documents.
+Manage Learners,How to add tags to a learner,Manage Learners > [Learner] > Tagging,Should-have,Label learners for filtering and segmentation.
+Manage Learners,How to grant portal access credentials,Manage Learners > [Learner] > Portal Access,Must-have,Share login credentials so the learner can sign in.
+Manage Learners,How to send a password reset to a learner,Manage Learners > [Learner] > Portal Access > Reset,Should-have,Help a learner recover their login.
+Manage Learners,How to deroll a learner from a course,Manage Learners > [Learner] > Enroll-Deroll > Cancel,Must-have,End a learner's enrollment.
+Manage Learners,How to view a learner's lead profile (CRM view),Manage Learners > [Learner] > Lead Profile,Should-have,See CRM data on a learner who started as a lead.
+Manage Learners,How to view the full learner history,Manage Learners > [Learner] > Full History,Should-have,Cross-functional timeline of every event.
+Manage Learners,How to assign a counsellor to a learner,Manage Learners > [Learner] > Assign Counsellor,Should-have,Pick who owns this relationship.
+Manage Learners,How to initiate a deep-dive learner report,Manage Learners > [Learner] > Reports > Initiate,Should-have,Trigger an AI analysis on one learner.
+Manage Learners,How to view a learner's enrollment & deroll history,Manage Learners > [Learner] > Enroll-Deroll,Should-have,Audit course memberships over time.
+Manage Learners,How to view a learner's membership status,Manage Learners > [Learner] > Membership,Should-have,Track active subscriptions per learner.
+Manage Learners,How to view sub-org affiliation of a learner,Manage Learners > [Learner] > Sub-Org,Nice-to-have,See which sub-org a learner belongs to.
+Manage Contacts,How to view all contacts,Manage Contacts > All Contacts,Must-have,See every contact (lead + learner) in one place.
+Manage Contacts,How to filter contacts by tier,Manage Contacts > Filters > Tier,Should-have,Show only HOT / WARM / COLD leads.
+Manage Contacts,How to filter contacts by source,Manage Contacts > Filters > Source,Should-have,Slice contacts by where they came from.
+Manage Contacts,How to bulk import contacts,Manage Contacts > Bulk Import,Must-have,Upload contacts from CSV with mapping.
+Manage Contacts,How to add tags to contacts,Manage Contacts > [Contact] > Tags,Should-have,Label contacts for segmentation.
+Manage Contacts,How to open the full profile overlay,Manage Contacts > [Row] > Expand,Should-have,Launch the 90vw full-screen profile.
+Manage Contacts,How to link a contact to a learner,Manage Contacts > [Contact] > Link Learner,Nice-to-have,Connect a contact record to an enrolled learner.
+Payments & Fees,How to create a fee plan,Settings > Fee Management > Create Plan,Must-have,Define course fees with installment structure.
+Payments & Fees,How to add installments to a fee plan,Settings > Fee Management > [Plan] > Installments,Must-have,Break fees into payment tranches.
+Payments & Fees,How to set late fee rules,Settings > Fee Management > Late Fees,Should-have,Auto-apply late fees on overdue installments.
+Payments & Fees,How to create an invoice for a learner,Manage Learners > [Learner] > Payment History > Create Invoice,Must-have,Generate a one-off invoice on demand.
+Payments & Fees,How to edit CPO installments per learner,Manage Learners > [Learner] > Payment History > Installments,Should-have,Adjust amounts / due dates for one learner.
+Payments & Fees,How to send a payment link to a learner,Manage Learners > [Learner] > Payment History > Send Link,Must-have,One-tap payment link via WhatsApp / email.
+Payments & Fees,How to record a manual / cash payment,Manage Payments > Record Payment,Should-have,Log a payment received outside the gateway.
+Payments & Fees,How to view payment logs,Manage Payments > Payment Logs,Must-have,Search and filter every transaction.
+Payments & Fees,How to handle a refund,Manage Payments > [Payment] > Refund,Should-have,Initiate a refund through the gateway.
+Payments & Fees,How to download a payment report,Manage Payments > Reports > Export,Should-have,Get CSV of payments for accounting.
+Payments & Fees,How to reconcile payments,Manage Payments > Reconciliation,Nice-to-have,Match platform records to bank statements.
+Reports & Dashboards,How to use the main admin dashboard,Dashboard,Must-have,KPIs / quick actions / recent activity at a glance.
+Reports & Dashboards,How to view real-time activity,Dashboard > Real-time,Should-have,See who is active right now.
+Reports & Dashboards,How to view today's activity,Dashboard > Activity,Should-have,Daily / hourly engagement charts.
+Reports & Dashboards,How to view finance summary,Dashboard > Finance Summary,Must-have,Revenue / collections / pending dues.
+Reports & Dashboards,How to view assessment dashboards,Assessments > Dashboard,Should-have,Roll-up of attempts / averages / completion.
+Reports & Dashboards,How to schedule a recurring report,Reports > Scheduled Reports > Create,Nice-to-have,Auto-email reports on a schedule.
+Drip & Notifications,How to create notification templates,Settings > Notification Templates > Create,Should-have,Customize system notification copy.
+Drip & Notifications,How to enable or disable notification channels,Settings > Notifications > Channels,Should-have,Pick which channels (email / WhatsApp / SMS / push) deliver alerts.
+Drip & Notifications,How to set up announcement broadcasts,Communication > Announcements > Create,Should-have,Broadcast a message to all learners.

@@ -1,0 +1,78 @@
+Module,Video Title,Navigation Flow,Priority,Description
+Getting Started,How to sign up,Learner App > Sign Up,Must-have,Create your account using email or phone.
+Getting Started,How to verify your email and phone,Learner App > Sign Up > Verify,Must-have,Complete OTP verification to activate your account.
+Getting Started,How to complete your profile,Learner App > Profile > Edit,Must-have,Fill in name / photo / date of birth / address.
+Getting Started,How to navigate your dashboard,Learner App > Dashboard,Must-have,Tour the home screen: courses / live classes / streak / XP.
+Getting Started,How to install the learner mobile app,App Store / Play Store > Search Vacademy > Install,Must-have,Get the iOS / Android app on your phone.
+Getting Started,How to set notification preferences for the first time,Learner App > Profile > Notifications,Should-have,Pick which alerts you want from the platform.
+Getting Started,How to switch the app language,Learner App > Profile > Language,Nice-to-have,Use the app in your preferred language.
+Courses,How to access your courses,Learner App > Dashboard > My Courses,Must-have,Open the list of courses you are enrolled in.
+Courses,How to start a chapter,Learner App > Courses > [Course] > [Chapter] > Start,Must-have,Begin a chapter and view its slides.
+Courses,How to mark a slide complete,Learner App > Courses > [Chapter] > [Slide] > Mark Complete,Must-have,Track progress slide by slide.
+Courses,How to download course PDFs and notes,Learner App > Courses > [Chapter] > Materials > Download,Should-have,Save reading material for offline access.
+Courses,How to enable offline access on mobile,Learner App > Settings > Offline > Download,Should-have,Pre-download chapters for offline study.
+Courses,How to track your overall course progress,Learner App > Dashboard > Continue Learning,Must-have,See completion percentage and what to do next.
+Courses,How to bookmark a slide,Learner App > Courses > [Slide] > Bookmark,Should-have,Save important slides for quick access later.
+Courses,How to use the streak counter and XP,Learner App > Dashboard > Streak,Should-have,Maintain a daily streak and earn XP for completing chapters.
+Courses,How to view your achievements / badges,Learner App > Dashboard > Achievements,Should-have,Track milestones you have unlocked.
+Courses,How to view course faculty / instructors,Learner App > Courses > [Course] > Faculty,Nice-to-have,See who teaches your course.
+Courses,How to view course announcements,Learner App > Courses > [Course] > Announcements,Should-have,Read latest updates from your instructor.
+Live Sessions,How to view scheduled live sessions,Learner App > Live Sessions > Upcoming,Must-have,See your calendar of live classes.
+Live Sessions,How to join a live session,Learner App > Live Sessions > [Session] > Join,Must-have,Enter a live class at the scheduled time.
+Live Sessions,How to access session recordings,Learner App > Live Sessions > Past > [Session] > Watch,Must-have,Re-watch a recorded class.
+Live Sessions,How to view your attendance,Learner App > Live Sessions > Attendance,Should-have,Check your attendance percentage per session.
+Live Sessions,How to book a session slot,Learner App > Live Sessions > Book Slot,Should-have,Reserve a slot for office hours / 1:1 sessions.
+Assessments,How to take an assessment,Learner App > Assessments > [Assessment] > Start,Must-have,Begin a timed assessment.
+Assessments,How to view your assessment scores,Learner App > Assessments > [Assessment] > Result,Must-have,See your total score and pass / fail status.
+Assessments,How to view the marks breakdown,Learner App > Assessments > [Assessment] > Marks Breakdown,Must-have,See marks per question and per section.
+Assessments,How to view your response analysis,Learner App > Assessments > [Assessment] > Response Breakdown,Should-have,Compare your answers vs the correct ones.
+Assessments,How to request re-evaluation,Learner App > Assessments > [Assessment] > Request Re-eval,Should-have,Ask an instructor to re-check your grading.
+Assessments,How to attempt a practice test,Learner App > Assessments > Practice,Should-have,Take a no-stakes practice attempt.
+Assessments,How to attempt a mock test,Learner App > Assessments > Mock,Should-have,Simulate the real assessment under timed conditions.
+Assessments,How to view your overall test history,Learner App > Assessments > History,Should-have,See all past attempts in one place.
+Coding,How to attempt a coding question,Learner App > Courses > [Coding Slide] > Run Code,Should-have,Write code in the in-app editor and run it against test cases.
+Coding,How to view your coding submission history,Learner App > Coding > Submissions,Nice-to-have,See past attempts and pass / fail results.
+Doubts,How to ask a doubt on a chapter,Learner App > Courses > [Chapter] > Ask a Doubt,Must-have,Submit a question to your instructor.
+Doubts,How to view replies to your doubts,Learner App > Doubts > [Doubt] > Replies,Must-have,Check instructor responses.
+Doubts,How to attach an image or PDF to a doubt,Learner App > Doubts > New > Attach,Should-have,Include a photo of your work with your question.
+Doubts,How to chat with the AI tutor,Learner App > AI Tutor > Ask,Should-have,Get instant AI-powered answers to your questions.
+Doubts,How to view your doubt history,Learner App > Doubts > History,Should-have,See all your past doubts and resolutions.
+Payments,How to view your invoices,Learner App > My Payments > Invoices,Must-have,See all your invoices in one place.
+Payments,How to make a fee payment,Learner App > My Payments > [Invoice] > Pay,Must-have,Pay an invoice using UPI / card / netbanking.
+Payments,How to use a coupon code at checkout,Learner App > My Payments > Checkout > Apply Coupon,Should-have,Apply a discount before paying.
+Payments,How to view your payment history,Learner App > My Payments > History,Must-have,See all completed and pending payments.
+Payments,How to download a payment receipt,Learner App > My Payments > [Invoice] > Download Receipt,Must-have,Get a printable receipt.
+Payments,How to view upcoming installments,Learner App > My Payments > Upcoming,Should-have,See what's due next and when.
+Payments,How to set up auto-pay for installments,Learner App > My Payments > Auto-Pay,Nice-to-have,Schedule automatic payment of installments.
+Profile,How to update your profile,Learner App > Profile > Edit,Must-have,Change your name / photo / details.
+Profile,How to upload a profile picture,Learner App > Profile > Upload Photo,Must-have,Add a profile photo.
+Profile,How to change your password,Learner App > Profile > Security > Change Password,Must-have,Update your account password.
+Profile,How to enable two-factor authentication,Learner App > Profile > Security > 2FA,Should-have,Add an extra security step at login.
+Profile,How to manage notification preferences,Learner App > Profile > Notifications,Should-have,Pick which alerts you want to receive.
+Profile,How to enable privacy screen on mobile,Learner App > Profile > Privacy > Privacy Screen,Should-have,Block screenshots and screen recording.
+Profile,How to view your parent / guardian details,Learner App > Profile > Family,Nice-to-have,Manage parent / guardian contact info.
+Profile,How to add additional contact info,Learner App > Profile > Contact,Should-have,Add backup phone / email.
+Notifications,How to view your notifications,Learner App > Notifications,Must-have,See system / course / payment / message alerts.
+Notifications,How to mark notifications as read,Learner App > Notifications > Mark Read,Should-have,Clear out the unread queue.
+Notifications,How to filter notifications by type,Learner App > Notifications > Filter,Should-have,Show only payment / message / class alerts.
+Files,How to access your files,Learner App > My Files,Should-have,Open files shared by your institute or saved by you.
+Files,How to organize your files into folders,Learner App > My Files > Folders,Should-have,Create folders to keep materials tidy.
+Files,How to download a shared file,Learner App > My Files > [File] > Download,Should-have,Save a shared file to your device.
+Reports,How to view your performance report,Learner App > My Reports,Should-have,See progress / scores / attendance over time.
+Reports,How to share a report with your parent,Learner App > My Reports > Share,Should-have,Send a snapshot to a parent or guardian.
+Reports,How to view subject-wise insights,Learner App > My Reports > Subjects,Should-have,Drill into how you are doing in each subject.
+Reports,How to view your test rank in the cohort,Learner App > My Reports > Rank,Nice-to-have,Compare your performance with peers anonymously.
+Membership,How to view your active membership,Learner App > Profile > Membership,Should-have,See your subscription plan and renewal date.
+Membership,How to renew or upgrade your plan,Learner App > Profile > Membership > Upgrade,Should-have,Move to a higher tier or extend your current plan.
+Membership,How to cancel your subscription,Learner App > Profile > Membership > Cancel,Should-have,End your active subscription.
+Certificates,How to download your certificate,Learner App > My Certificates > [Certificate] > Download,Should-have,Save and share your completion certificates.
+Certificates,How to share a certificate to LinkedIn,Learner App > My Certificates > [Certificate] > Share,Nice-to-have,Post your achievement on LinkedIn.
+Community,How to join a discussion thread,Learner App > Community > [Thread] > Join,Nice-to-have,Participate in cohort discussions.
+Community,How to follow other learners,Learner App > Community > Profile > Follow,Nice-to-have,Build a learning network inside your cohort.
+Community,How to ask a question in the community,Learner App > Community > New Question,Nice-to-have,Post a question to peers.
+Mobile App,How to update the app over the air,Learner App > Settings > About > Check for Updates,Should-have,Pull the latest version without going to the store.
+Mobile App,How to enable dark mode,Learner App > Profile > Appearance > Dark Mode,Nice-to-have,Switch to dark theme.
+Mobile App,How to clear app cache,Learner App > Settings > Storage > Clear Cache,Nice-to-have,Free up space on your device.
+Mobile App,How to submit feedback / report a bug,Learner App > Profile > Help > Report,Nice-to-have,Send feedback or report issues.
+Help & Support,How to contact your institute,Learner App > Help > Contact Institute,Must-have,Reach your institute admin team for support.
+Help & Support,How to view FAQs,Learner App > Help > FAQ,Should-have,Browse the help center for common questions.

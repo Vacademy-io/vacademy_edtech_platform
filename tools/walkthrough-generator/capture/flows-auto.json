@@ -1,0 +1,3890 @@
+[
+  {
+    "slug": "admin-how-to-navigate-the-admin-dashboard",
+    "side": "admin",
+    "title": "How to navigate the admin dashboard",
+    "flow": "Dashboard",
+    "description": "Tour of the main navigation: sidebar / top bar / search / quick actions.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-invite-team-members",
+    "side": "admin",
+    "title": "How to invite team members",
+    "flow": "Settings > Teams > Invite Member",
+    "description": "Send invites to admins / teachers / counsellors so they can join the institute.",
+    "route": "/manage-institute/teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-your-institute-name-and-logo",
+    "side": "admin",
+    "title": "How to set up your institute name and logo",
+    "flow": "Settings > Institute Settings",
+    "description": "First-time setup of institute identity.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-set-your-time-zone-and-currency",
+    "side": "admin",
+    "title": "How to set your time zone and currency",
+    "flow": "Settings > Institute Settings > Locale",
+    "description": "Configure default time zone and currency for the institute.",
+    "route": "/manage-institute/teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-enable-dark-mode",
+    "side": "admin",
+    "title": "How to enable dark mode",
+    "flow": "Profile > Preferences > Appearance",
+    "description": "Switch the admin UI to dark mode.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-white-label-branding",
+    "side": "admin",
+    "title": "How to set up white-label branding",
+    "flow": "Settings > White Label",
+    "description": "Apply your brand identity across the platform.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-upload-your-institute-logo",
+    "side": "admin",
+    "title": "How to upload your institute logo",
+    "flow": "Settings > White Label > Logo",
+    "description": "Replace the default logo with your own.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-set-theme-primary-color",
+    "side": "admin",
+    "title": "How to set theme primary color",
+    "flow": "Settings > White Label > Theme",
+    "description": "Switch the primary accent color used across the dashboard.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-set-up-a-custom-domain",
+    "side": "admin",
+    "title": "How to set up a custom domain",
+    "flow": "Settings > White Label > Domain Routing",
+    "description": "Map a custom domain (yourinstitute.com) to your Vacademy tenant.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-upload-favicon-and-email-logo",
+    "side": "admin",
+    "title": "How to upload favicon and email logo",
+    "flow": "Settings > White Label > Assets",
+    "description": "Brand the tabs / system emails with your own assets.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-create-a-custom-role",
+    "side": "admin",
+    "title": "How to create a custom role",
+    "flow": "Settings > Roles > Create Role",
+    "description": "Define a new role (e.g. Branch Admin / Counsellor Lead).",
+    "route": "/settings",
+    "tab": "roleDisplay"
+  },
+  {
+    "slug": "admin-how-to-assign-permissions-to-a-role",
+    "side": "admin",
+    "title": "How to assign permissions to a role",
+    "flow": "Settings > Roles > [Role] > Permissions",
+    "description": "Configure what each role can see and do.",
+    "route": "/settings",
+    "tab": "roleDisplay"
+  },
+  {
+    "slug": "admin-how-to-assign-roles-to-team-members",
+    "side": "admin",
+    "title": "How to assign roles to team members",
+    "flow": "Settings > Roles > [Role] > Members",
+    "description": "Place team members into the appropriate role.",
+    "route": "/settings",
+    "tab": "roleDisplay"
+  },
+  {
+    "slug": "admin-how-to-set-up-team-hierarchy",
+    "side": "admin",
+    "title": "How to set up team hierarchy",
+    "flow": "Settings > Teams > Hierarchy",
+    "description": "Build the org tree (HQ → branches → teams).",
+    "route": "/manage-institute/teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-configure-role-display-settings",
+    "side": "admin",
+    "title": "How to configure role display settings",
+    "flow": "Settings > Display Settings > Roles",
+    "description": "Pick which sidebar items / KPIs each role sees.",
+    "route": "/settings",
+    "tab": "roleDisplay"
+  },
+  {
+    "slug": "admin-how-to-control-side-view-tab-visibility-per-role",
+    "side": "admin",
+    "title": "How to control side-view tab visibility per role",
+    "flow": "Settings > Display Settings > Side View",
+    "description": "Hide tabs from learner-profile drawer for specific roles.",
+    "route": "/settings",
+    "tab": "roleDisplay"
+  },
+  {
+    "slug": "admin-how-to-add-a-custom-field",
+    "side": "admin",
+    "title": "How to add a custom field",
+    "flow": "Settings > Custom Fields > Add Field",
+    "description": "Add a configurable field shown on forms / profiles / lists.",
+    "route": "/settings",
+    "tab": "customFields"
+  },
+  {
+    "slug": "admin-how-to-group-custom-fields-into-a-section",
+    "side": "admin",
+    "title": "How to group custom fields into a section",
+    "flow": "Settings > Custom Fields > Field Groups",
+    "description": "Group related fields so they render together.",
+    "route": "/settings",
+    "tab": "customFields"
+  },
+  {
+    "slug": "admin-how-to-control-field-visibility-per-location",
+    "side": "admin",
+    "title": "How to control field visibility per location",
+    "flow": "Settings > Custom Fields > [Field] > Visibility",
+    "description": "Show / hide a field per surface (learner list / admission form / lead profile).",
+    "route": "/settings",
+    "tab": "customFields"
+  },
+  {
+    "slug": "admin-how-to-make-a-field-required-or-optional",
+    "side": "admin",
+    "title": "How to make a field required or optional",
+    "flow": "Settings > Custom Fields > [Field] > Required",
+    "description": "Toggle the required flag on a custom field.",
+    "route": "/settings",
+    "tab": "customFields"
+  },
+  {
+    "slug": "admin-how-to-rename-course-level-session-terms",
+    "side": "admin",
+    "title": "How to rename course / level / session terms",
+    "flow": "Settings > Naming > Content Terms",
+    "description": "Use your institute's own vocabulary (e.g. Programme / Batch).",
+    "route": "/settings",
+    "tab": "naming"
+  },
+  {
+    "slug": "admin-how-to-rename-learner-teacher-counsellor-terms",
+    "side": "admin",
+    "title": "How to rename learner / teacher / counsellor terms",
+    "flow": "Settings > Naming > Role Terms",
+    "description": "Switch learner-facing labels (e.g. Student / Trainee).",
+    "route": "/settings",
+    "tab": "naming"
+  },
+  {
+    "slug": "admin-how-to-rename-system-terminology",
+    "side": "admin",
+    "title": "How to rename system terminology",
+    "flow": "Settings > Naming > System Terms",
+    "description": "Override generic system labels institute-wide.",
+    "route": "/settings",
+    "tab": "naming"
+  },
+  {
+    "slug": "admin-how-to-connect-razorpay",
+    "side": "admin",
+    "title": "How to connect Razorpay",
+    "flow": "Settings > Payment Gateways > Razorpay",
+    "description": "Connect Razorpay as your payment gateway.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-connect-stripe",
+    "side": "admin",
+    "title": "How to connect Stripe",
+    "flow": "Settings > Payment Gateways > Stripe",
+    "description": "Connect Stripe as your payment gateway.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-connect-cashfree",
+    "side": "admin",
+    "title": "How to connect Cashfree",
+    "flow": "Settings > Payment Gateways > Cashfree",
+    "description": "Connect Cashfree as an additional gateway.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-connect-eway",
+    "side": "admin",
+    "title": "How to connect eWay",
+    "flow": "Settings > Payment Gateways > eWay",
+    "description": "Connect eWay (Australia / New Zealand) as a gateway.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-set-the-default-payment-gateway",
+    "side": "admin",
+    "title": "How to set the default payment gateway",
+    "flow": "Settings > Payment Gateways > Default",
+    "description": "Pick which gateway processes new payments by default.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-set-up-tax-gst",
+    "side": "admin",
+    "title": "How to set up tax / GST",
+    "flow": "Settings > Invoice > Tax Settings",
+    "description": "Configure tax rates applied to invoices.",
+    "route": "/settings",
+    "tab": "invoice"
+  },
+  {
+    "slug": "admin-how-to-design-an-invoice-template",
+    "side": "admin",
+    "title": "How to design an invoice template",
+    "flow": "Settings > Invoice > Templates",
+    "description": "Customize how invoices look (header / footer / line items).",
+    "route": "/settings",
+    "tab": "invoice"
+  },
+  {
+    "slug": "admin-how-to-set-up-payment-reminders",
+    "side": "admin",
+    "title": "How to set up payment reminders",
+    "flow": "Settings > Notifications > Payment Reminders",
+    "description": "Auto-remind learners about pending dues.",
+    "route": "/settings",
+    "tab": "payment"
+  },
+  {
+    "slug": "admin-how-to-enable-test-mode-on-a-gateway",
+    "side": "admin",
+    "title": "How to enable test mode on a gateway",
+    "flow": "Settings > Payment Gateways > Test Mode",
+    "description": "Run transactions in sandbox mode for verification.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-connect-wati-whatsapp",
+    "side": "admin",
+    "title": "How to connect Wati WhatsApp",
+    "flow": "Settings > WhatsApp Settings > Wati",
+    "description": "Connect Wati as your WhatsApp provider.",
+    "route": "/settings",
+    "tab": "whatsapp"
+  },
+  {
+    "slug": "admin-how-to-connect-meta-whatsapp-business-api",
+    "side": "admin",
+    "title": "How to connect Meta WhatsApp Business API",
+    "flow": "Settings > WhatsApp Settings > Meta",
+    "description": "Connect Meta directly as your WhatsApp provider.",
+    "route": "/settings",
+    "tab": "whatsapp"
+  },
+  {
+    "slug": "admin-how-to-manage-meta-approved-whatsapp-templates",
+    "side": "admin",
+    "title": "How to manage Meta-approved WhatsApp templates",
+    "flow": "Settings > WhatsApp > Templates",
+    "description": "Author / submit / sync Meta-approved templates.",
+    "route": "/settings",
+    "tab": "templates"
+  },
+  {
+    "slug": "admin-how-to-set-up-custom-smtp-for-email",
+    "side": "admin",
+    "title": "How to set up custom SMTP for email",
+    "flow": "Settings > Email Settings > SMTP",
+    "description": "Send email from your own domain.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-connect-sendgrid",
+    "side": "admin",
+    "title": "How to connect SendGrid",
+    "flow": "Settings > Email Settings > SendGrid",
+    "description": "Use SendGrid as your email provider.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-an-sms-provider",
+    "side": "admin",
+    "title": "How to set up an SMS provider",
+    "flow": "Settings > SMS Settings",
+    "description": "Connect an SMS gateway.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-test-your-email-setup",
+    "side": "admin",
+    "title": "How to test your email setup",
+    "flow": "Settings > Email Settings > Test Send",
+    "description": "Send a test email to verify your configuration.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-connect-exotel",
+    "side": "admin",
+    "title": "How to connect Exotel",
+    "flow": "Settings > Telephony > Exotel",
+    "description": "Connect Exotel for click-to-call and recording.",
+    "route": "/settings",
+    "tab": "telephony"
+  },
+  {
+    "slug": "admin-how-to-configure-inbound-call-routing",
+    "side": "admin",
+    "title": "How to configure inbound call routing",
+    "flow": "Settings > Telephony > Inbound Routing",
+    "description": "Decide what happens when leads call your business number.",
+    "route": "/settings",
+    "tab": "telephony"
+  },
+  {
+    "slug": "admin-how-to-set-up-ivr",
+    "side": "admin",
+    "title": "How to set up IVR",
+    "flow": "Settings > Telephony > IVR",
+    "description": "Build a press-1-press-2 menu for incoming calls.",
+    "route": "/settings",
+    "tab": "telephony"
+  },
+  {
+    "slug": "admin-how-to-enable-call-recording",
+    "side": "admin",
+    "title": "How to enable call recording",
+    "flow": "Settings > Telephony > Recording",
+    "description": "Auto-record calls for quality and training.",
+    "route": "/settings",
+    "tab": "telephony"
+  },
+  {
+    "slug": "admin-how-to-set-up-voicemail-fallback",
+    "side": "admin",
+    "title": "How to set up voicemail fallback",
+    "flow": "Settings > Telephony > Voicemail",
+    "description": "Route unanswered calls to a voicemail.",
+    "route": "/settings",
+    "tab": "telephony"
+  },
+  {
+    "slug": "admin-how-to-connect-zoom-oauth",
+    "side": "admin",
+    "title": "How to connect Zoom OAuth",
+    "flow": "Settings > Integrations > Zoom",
+    "description": "Authorize Zoom so live sessions can be created with your account.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-set-up-bigbluebutton",
+    "side": "admin",
+    "title": "How to set up BigBlueButton",
+    "flow": "Settings > Integrations > BigBlueButton",
+    "description": "Use the built-in BBB stack for live classes.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-auto-sync-zoom-recordings",
+    "side": "admin",
+    "title": "How to auto-sync Zoom recordings",
+    "flow": "Settings > Integrations > Zoom > Recording Sync",
+    "description": "Pull Zoom recordings into the platform automatically.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-auto-sync-zoom-attendance",
+    "side": "admin",
+    "title": "How to auto-sync Zoom attendance",
+    "flow": "Settings > Integrations > Zoom > Attendance Sync",
+    "description": "Capture Zoom attendance automatically.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-connect-facebook-lead-ads",
+    "side": "admin",
+    "title": "How to connect Facebook Lead Ads",
+    "flow": "Settings > Integrations > Meta Lead Ads",
+    "description": "Auto-import leads from Facebook / Instagram lead forms.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-a-form-webhook",
+    "side": "admin",
+    "title": "How to set up a form webhook",
+    "flow": "Settings > Integrations > Webhooks > Form",
+    "description": "Push leads from any web form into the platform.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-set-up-an-ad-platform-webhook",
+    "side": "admin",
+    "title": "How to set up an ad-platform webhook",
+    "flow": "Settings > Integrations > Webhooks > Ad Platform",
+    "description": "Connect a third-party ad source via webhook.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-configure-ai-settings",
+    "side": "admin",
+    "title": "How to configure AI settings",
+    "flow": "Settings > AI Settings",
+    "description": "Pick default AI provider / model / behaviour.",
+    "route": "/settings",
+    "tab": "aiSettings"
+  },
+  {
+    "slug": "admin-how-to-bring-your-own-model-keys-byok",
+    "side": "admin",
+    "title": "How to bring your own model keys (BYOK)",
+    "flow": "Settings > AI Settings > BYOK",
+    "description": "Use your own OpenAI / Anthropic / Gemini key to skip Vacademy credits.",
+    "route": "/settings",
+    "tab": "aiSettings"
+  },
+  {
+    "slug": "admin-how-to-monitor-ai-credit-usage",
+    "side": "admin",
+    "title": "How to monitor AI credit usage",
+    "flow": "Settings > AI Credits",
+    "description": "Track how many credits each feature is consuming.",
+    "route": "/settings",
+    "tab": "aiSettings"
+  },
+  {
+    "slug": "admin-how-to-top-up-ai-credits",
+    "side": "admin",
+    "title": "How to top up AI credits",
+    "flow": "Settings > AI Credits > Buy Credits",
+    "description": "Purchase additional Vacademy AI credits.",
+    "route": "/settings",
+    "tab": "aiSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-custom-lead-statuses",
+    "side": "admin",
+    "title": "How to set up custom lead statuses",
+    "flow": "Settings > Leads > Statuses",
+    "description": "Define your own lead pipeline stages.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-define-lead-status-transitions",
+    "side": "admin",
+    "title": "How to define lead status transitions",
+    "flow": "Settings > Leads > Statuses > Transitions",
+    "description": "Control which stages can move to which.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-lead-tiers-hot-warm-cold",
+    "side": "admin",
+    "title": "How to set up lead tiers (HOT / WARM / COLD)",
+    "flow": "Settings > Leads > Tiers",
+    "description": "Tag leads by intent strength.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-configure-lead-scoring-rules",
+    "side": "admin",
+    "title": "How to configure lead scoring rules",
+    "flow": "Settings > Leads > Scoring",
+    "description": "Auto-score leads based on signals.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-lead-sla",
+    "side": "admin",
+    "title": "How to set up Lead SLA",
+    "flow": "Settings > Leads > SLA",
+    "description": "Define how quickly leads must be contacted.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-configure-sla-reminder-windows",
+    "side": "admin",
+    "title": "How to configure SLA reminder windows",
+    "flow": "Settings > Leads > SLA > Reminder Windows",
+    "description": "Set how many escalations and at what intervals.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-create-a-counsellor-pool",
+    "side": "admin",
+    "title": "How to create a counsellor pool",
+    "flow": "Settings > Leads > Pools > Create Pool",
+    "description": "Group counsellors so leads route across the team.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-add-counsellors-to-a-pool",
+    "side": "admin",
+    "title": "How to add counsellors to a pool",
+    "flow": "Settings > Leads > Pools > [Pool] > Members",
+    "description": "Pick which team members belong to a pool.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-round-robin-distribution",
+    "side": "admin",
+    "title": "How to set up round-robin distribution",
+    "flow": "Settings > Leads > Pools > [Pool] > Round Robin",
+    "description": "Auto-rotate new leads across the pool fairly.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-sticky-per-lead-assignment",
+    "side": "admin",
+    "title": "How to set up sticky-per-lead assignment",
+    "flow": "Settings > Leads > Pools > [Pool] > Sticky",
+    "description": "Keep the same counsellor for the same lead.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-set-up-region-based-routing",
+    "side": "admin",
+    "title": "How to set up region-based routing",
+    "flow": "Settings > Leads > Pools > [Pool] > Region",
+    "description": "Route leads based on lead's region.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-configure-pool-working-hours-shifts",
+    "side": "admin",
+    "title": "How to configure pool working hours / shifts",
+    "flow": "Settings > Leads > Pools > [Pool] > Schedule",
+    "description": "Restrict assignment to active counsellors only.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-bulk-re-assign-leads-when-a-counsellor-goes-inactive",
+    "side": "admin",
+    "title": "How to bulk re-assign leads when a counsellor goes inactive",
+    "flow": "Settings > Leads > Pools > Bulk Reassign",
+    "description": "Redistribute leads when someone leaves the team.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-create-a-membership-plan",
+    "side": "admin",
+    "title": "How to create a membership plan",
+    "flow": "Settings > Memberships > Create Plan",
+    "description": "Define a subscription with billing cycle.",
+    "route": "/membership-stats",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-a-membership-price",
+    "side": "admin",
+    "title": "How to set a membership price",
+    "flow": "Settings > Memberships > [Plan] > Pricing",
+    "description": "Configure recurring price and currency.",
+    "route": "/settings",
+    "tab": "payment"
+  },
+  {
+    "slug": "admin-how-to-create-a-coupon-code",
+    "side": "admin",
+    "title": "How to create a coupon code",
+    "flow": "Settings > Coupons > Create Coupon",
+    "description": "Issue a discount code.",
+    "route": "/settings",
+    "tab": "coupons"
+  },
+  {
+    "slug": "admin-how-to-set-coupon-expiry-and-usage-limits",
+    "side": "admin",
+    "title": "How to set coupon expiry and usage limits",
+    "flow": "Settings > Coupons > [Coupon] > Rules",
+    "description": "Cap how many times the code can be used.",
+    "route": "/settings",
+    "tab": "coupons"
+  },
+  {
+    "slug": "admin-how-to-design-a-certificate-template",
+    "side": "admin",
+    "title": "How to design a certificate template",
+    "flow": "Settings > Certificates > Create Template",
+    "description": "Use the visual editor to design completion certificates.",
+    "route": "/settings",
+    "tab": "certificates"
+  },
+  {
+    "slug": "admin-how-to-auto-issue-certificates-on-course-completion",
+    "side": "admin",
+    "title": "How to auto-issue certificates on course completion",
+    "flow": "Settings > Certificates > Auto-Issue",
+    "description": "Mint certificates automatically when learners complete a course.",
+    "route": "/settings",
+    "tab": "certificates"
+  },
+  {
+    "slug": "admin-how-to-set-up-a-referral-program",
+    "side": "admin",
+    "title": "How to set up a referral program",
+    "flow": "Settings > Referral",
+    "description": "Reward learners for bringing in friends.",
+    "route": "/settings",
+    "tab": "referral"
+  },
+  {
+    "slug": "admin-how-to-set-referral-rewards",
+    "side": "admin",
+    "title": "How to set referral rewards",
+    "flow": "Settings > Referral > Rewards",
+    "description": "Define cash / credit / discount on a successful referral.",
+    "route": "/settings",
+    "tab": "referral"
+  },
+  {
+    "slug": "admin-how-to-create-a-sub-organization",
+    "side": "admin",
+    "title": "How to create a sub-organization",
+    "flow": "Settings > Sub-Org > Create",
+    "description": "Add a child branch under the main institute.",
+    "route": "/manage-custom-teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-admins-to-a-sub-org",
+    "side": "admin",
+    "title": "How to add admins to a sub-org",
+    "flow": "Settings > Sub-Org > [Sub-Org] > Members",
+    "description": "Give sub-org admins their own scope.",
+    "route": "/manage-custom-teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-switch-between-sub-organizations",
+    "side": "admin",
+    "title": "How to switch between sub-organizations",
+    "flow": "Dashboard > Org Switcher",
+    "description": "Move between sub-orgs from the top bar.",
+    "route": "/manage-custom-teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-admin-activity-logs",
+    "side": "admin",
+    "title": "How to view admin activity logs",
+    "flow": "Admin Activity Logs",
+    "description": "Full audit trail of admin actions.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-filter-activity-logs-by-user",
+    "side": "admin",
+    "title": "How to filter activity logs by user",
+    "flow": "Admin Activity Logs > Filters > User",
+    "description": "Drill into one team member's actions.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-log-retention-policy",
+    "side": "admin",
+    "title": "How to set log retention policy",
+    "flow": "Settings > Activity Logs > Retention",
+    "description": "Configure how long audit trails are kept.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-course",
+    "side": "admin",
+    "title": "How to create a course",
+    "flow": "Courses > Create Course",
+    "description": "Set up a new course with name / description / category.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-a-course-thumbnail",
+    "side": "admin",
+    "title": "How to set a course thumbnail",
+    "flow": "Courses > [Course] > Settings > Thumbnail",
+    "description": "Upload a cover image for the course card.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-course-pricing",
+    "side": "admin",
+    "title": "How to set course pricing",
+    "flow": "Courses > [Course] > Pricing",
+    "description": "Configure the price and payment plan.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-course-prerequisites",
+    "side": "admin",
+    "title": "How to add course prerequisites",
+    "flow": "Courses > [Course] > Prerequisites",
+    "description": "Require learners to complete other courses first.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-course-faculty",
+    "side": "admin",
+    "title": "How to add course faculty",
+    "flow": "Courses > [Course] > Faculty",
+    "description": "Tag instructors that teach this course.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-publish-or-unpublish-a-course",
+    "side": "admin",
+    "title": "How to publish or unpublish a course",
+    "flow": "Courses > [Course] > Publish",
+    "description": "Toggle whether learners can see this course.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-clone-a-course",
+    "side": "admin",
+    "title": "How to clone a course",
+    "flow": "Courses > [Course] > Clone",
+    "description": "Duplicate a course for a new batch.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-archive-a-course",
+    "side": "admin",
+    "title": "How to archive a course",
+    "flow": "Courses > [Course] > Archive",
+    "description": "Hide an old course without deleting it.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-course-bundle",
+    "side": "admin",
+    "title": "How to create a course bundle",
+    "flow": "Courses > Bundles > Create Bundle",
+    "description": "Sell multiple courses together as one offering.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-level",
+    "side": "admin",
+    "title": "How to create a level",
+    "flow": "Courses > [Course] > Create Level",
+    "description": "Add a level (e.g. Beginner / Advanced).",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-session",
+    "side": "admin",
+    "title": "How to create a session",
+    "flow": "Courses > [Course] > [Level] > Create Session",
+    "description": "Create a session (May 2026 batch) inside a level.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-subject",
+    "side": "admin",
+    "title": "How to add a subject",
+    "flow": "Courses > [Session] > Add Subject",
+    "description": "Add a subject inside a session.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-module",
+    "side": "admin",
+    "title": "How to add a module",
+    "flow": "Courses > [Subject] > Add Module",
+    "description": "Break a subject into modules.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-chapter",
+    "side": "admin",
+    "title": "How to add a chapter",
+    "flow": "Courses > [Module] > Add Chapter",
+    "description": "Add chapters inside a module.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-reorder-modules-and-chapters",
+    "side": "admin",
+    "title": "How to reorder modules and chapters",
+    "flow": "Courses > [Subject] > Reorder",
+    "description": "Drag-and-drop to change the structure.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-drip-conditions-on-chapters",
+    "side": "admin",
+    "title": "How to set drip conditions on chapters",
+    "flow": "Courses > [Course] > Drip Conditions",
+    "description": "Unlock chapters based on time or completion.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-time-based-chapter-unlock",
+    "side": "admin",
+    "title": "How to set time-based chapter unlock",
+    "flow": "Courses > [Course] > Drip > Time",
+    "description": "Release chapters on a fixed schedule.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-pdf-slide",
+    "side": "admin",
+    "title": "How to add a PDF slide",
+    "flow": "Courses > [Chapter] > Add Slide > PDF",
+    "description": "Upload a PDF as a slide.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-video-slide",
+    "side": "admin",
+    "title": "How to add a video slide",
+    "flow": "Courses > [Chapter] > Add Slide > Video",
+    "description": "Upload or link a video lecture as a slide.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-document-slide",
+    "side": "admin",
+    "title": "How to add a document slide",
+    "flow": "Courses > [Chapter] > Add Slide > Document",
+    "description": "Add a doc / spreadsheet / presentation as a slide.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-quiz-slide",
+    "side": "admin",
+    "title": "How to add a quiz slide",
+    "flow": "Courses > [Chapter] > Add Slide > Quiz",
+    "description": "Insert a quick quiz inline within course flow.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-coding-question-slide",
+    "side": "admin",
+    "title": "How to add a coding question slide",
+    "flow": "Courses > [Chapter] > Add Slide > Coding",
+    "description": "Add a coding problem that learners can run and submit.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-presentation-slide",
+    "side": "admin",
+    "title": "How to add a presentation slide",
+    "flow": "Courses > [Chapter] > Add Slide > Presentation",
+    "description": "Use slides as in-class presentations.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-upload-supplementary-materials",
+    "side": "admin",
+    "title": "How to upload supplementary materials",
+    "flow": "Courses > [Chapter] > Materials",
+    "description": "Attach extra resources to a chapter.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-reorder-slides-within-a-chapter",
+    "side": "admin",
+    "title": "How to reorder slides within a chapter",
+    "flow": "Courses > [Chapter] > Reorder Slides",
+    "description": "Change the order learners see slides.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-preview-a-slide-as-a-learner",
+    "side": "admin",
+    "title": "How to preview a slide as a learner",
+    "flow": "Courses > [Slide] > Preview",
+    "description": "See what the learner sees.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-schedule-a-live-session",
+    "side": "admin",
+    "title": "How to schedule a live session",
+    "flow": "Live Sessions > Create Session",
+    "description": "Pick date / time / provider for a live class.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-recurring-live-session",
+    "side": "admin",
+    "title": "How to create a recurring live session",
+    "flow": "Live Sessions > Create > Recurring",
+    "description": "Set a weekly / daily repeat.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-enable-session-recording",
+    "side": "admin",
+    "title": "How to enable session recording",
+    "flow": "Live Sessions > [Session] > Recording",
+    "description": "Auto-record sessions to the learner library.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-track-session-attendance",
+    "side": "admin",
+    "title": "How to track session attendance",
+    "flow": "Live Sessions > [Session] > Attendance",
+    "description": "View who joined / left and total watch time.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-pre-session-reminders",
+    "side": "admin",
+    "title": "How to send pre-session reminders",
+    "flow": "Live Sessions > [Session] > Reminders",
+    "description": "Trigger WhatsApp / email reminders before the session starts.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-let-learners-book-a-session-slot",
+    "side": "admin",
+    "title": "How to let learners book a session slot",
+    "flow": "Live Sessions > Booking",
+    "description": "Open self-service slot booking to learners.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-question-to-the-question-bank",
+    "side": "admin",
+    "title": "How to add a question to the question bank",
+    "flow": "Question Bank > Add Question",
+    "description": "Save a question for reuse across assessments.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-import-questions-from-a-file",
+    "side": "admin",
+    "title": "How to import questions from a file",
+    "flow": "Question Bank > Import",
+    "description": "Bulk add questions from CSV / Word / PDF.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-tag-a-question-by-topic",
+    "side": "admin",
+    "title": "How to tag a question by topic",
+    "flow": "Question Bank > [Question] > Tags",
+    "description": "Categorise questions for easy lookup.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-question-difficulty",
+    "side": "admin",
+    "title": "How to set question difficulty",
+    "flow": "Question Bank > [Question] > Difficulty",
+    "description": "Mark questions easy / medium / hard.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-organise-questions-into-sections",
+    "side": "admin",
+    "title": "How to organise questions into sections",
+    "flow": "Question Bank > Sections",
+    "description": "Group questions by section for sectioned assessments.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-search-the-question-bank",
+    "side": "admin",
+    "title": "How to search the question bank",
+    "flow": "Question Bank > Search",
+    "description": "Find a question quickly by content / tag / type.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-archive-a-question",
+    "side": "admin",
+    "title": "How to archive a question",
+    "flow": "Question Bank > [Question] > Archive",
+    "description": "Retire old questions without deleting them.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-an-assessment",
+    "side": "admin",
+    "title": "How to create an assessment",
+    "flow": "Assessments > Create Assessment",
+    "description": "Set up a new assessment with name / type / instructions.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-questions-manually",
+    "side": "admin",
+    "title": "How to add questions manually",
+    "flow": "Assessments > [Assessment] > Add Question",
+    "description": "Add MCQ / subjective / numerical / coding questions.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-import-questions-from-question-bank",
+    "side": "admin",
+    "title": "How to import questions from question bank",
+    "flow": "Assessments > [Assessment] > Import from Bank",
+    "description": "Reuse questions from your saved bank.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-questions-from-a-topic-with-ai",
+    "side": "admin",
+    "title": "How to generate questions from a topic with AI",
+    "flow": "AI Center > VSmart > Topic Questions",
+    "description": "Auto-generate a question set from a topic prompt.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-upload-questions-from-a-document",
+    "side": "admin",
+    "title": "How to upload questions from a document",
+    "flow": "AI Center > VSmart > Extract",
+    "description": "Let AI extract questions from a PDF.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-assessment-duration",
+    "side": "admin",
+    "title": "How to set assessment duration",
+    "flow": "Assessments > [Assessment] > Duration",
+    "description": "Configure the time limit for an attempt.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-assessment-instructions",
+    "side": "admin",
+    "title": "How to set assessment instructions",
+    "flow": "Assessments > [Assessment] > Instructions",
+    "description": "Tell learners how to attempt the assessment.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-enable-negative-marking",
+    "side": "admin",
+    "title": "How to enable negative marking",
+    "flow": "Assessments > [Assessment] > Negative Marking",
+    "description": "Deduct marks for wrong answers.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-assign-assessment-to-a-batch",
+    "side": "admin",
+    "title": "How to assign assessment to a batch",
+    "flow": "Assessments > [Assessment] > Assign",
+    "description": "Choose which course / batch sees the assessment.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-enable-proctoring",
+    "side": "admin",
+    "title": "How to enable proctoring",
+    "flow": "Assessments > [Assessment] > Proctoring",
+    "description": "Turn on camera / fullscreen / anti-cheating signals.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-schedule-an-assessment-window",
+    "side": "admin",
+    "title": "How to schedule an assessment window",
+    "flow": "Assessments > [Assessment] > Schedule",
+    "description": "Set the live window during which learners can attempt.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-sectioned-assessment",
+    "side": "admin",
+    "title": "How to create a sectioned assessment",
+    "flow": "Assessments > Create > Sections",
+    "description": "Build an assessment with multiple sections.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-practice-test",
+    "side": "admin",
+    "title": "How to create a practice test",
+    "flow": "Assessments > Create > Practice",
+    "description": "Offer a no-stakes practice attempt.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-mock-test",
+    "side": "admin",
+    "title": "How to create a mock test",
+    "flow": "Assessments > Create > Mock",
+    "description": "Simulate the real assessment under timed conditions.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-homework-assignment",
+    "side": "admin",
+    "title": "How to create a homework assignment",
+    "flow": "Assessments > Create > Homework",
+    "description": "Set out-of-class assignments.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-import-assessments",
+    "side": "admin",
+    "title": "How to bulk import assessments",
+    "flow": "Assessments > Bulk Import",
+    "description": "Bulk create many assessments at once.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-clone-an-assessment",
+    "side": "admin",
+    "title": "How to clone an assessment",
+    "flow": "Assessments > [Assessment] > Clone",
+    "description": "Duplicate an assessment to reuse the structure.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-grade-subjective-answers",
+    "side": "admin",
+    "title": "How to grade subjective answers",
+    "flow": "Assessments > [Assessment] > Grade",
+    "description": "Score open-ended answers by hand.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-ai-to-evaluate-handwritten-papers",
+    "side": "admin",
+    "title": "How to use AI to evaluate handwritten papers",
+    "flow": "AI Center > VSmart > Feedback",
+    "description": "Scan handwritten answer sheets and let AI grade them.",
+    "route": "/assessment/evaluation-ai",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-assessment-results",
+    "side": "admin",
+    "title": "How to view assessment results",
+    "flow": "Assessments > [Assessment] > Results",
+    "description": "See the score table for all attempts.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-publish-results-to-learners",
+    "side": "admin",
+    "title": "How to publish results to learners",
+    "flow": "Assessments > [Assessment] > Publish Results",
+    "description": "Control when scores become visible.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-handle-re-evaluation-requests",
+    "side": "admin",
+    "title": "How to handle re-evaluation requests",
+    "flow": "Assessments > [Assessment] > Re-eval Requests",
+    "description": "Process learner requests for re-grading.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-individual-response-analysis",
+    "side": "admin",
+    "title": "How to view individual response analysis",
+    "flow": "Assessments > [Assessment] > [Learner] > Responses",
+    "description": "Drill into one learner's answers.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-export-all-responses-to-csv",
+    "side": "admin",
+    "title": "How to export all responses to CSV",
+    "flow": "Assessments > [Assessment] > Export Responses",
+    "description": "Download response data for offline analysis.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-assessment-analytics",
+    "side": "admin",
+    "title": "How to view assessment analytics",
+    "flow": "Assessments > [Assessment] > Analytics",
+    "description": "Question-wise difficulty / score distribution / attempt rate.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-question-wise-insights",
+    "side": "admin",
+    "title": "How to view question-wise insights",
+    "flow": "Assessments > [Assessment] > Insights",
+    "description": "Identify which questions need rework.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-learner-insights",
+    "side": "admin",
+    "title": "How to view learner insights",
+    "flow": "Learner Insights",
+    "description": "See progress / engagement / risk across all learners.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-a-learner-analysis-report",
+    "side": "admin",
+    "title": "How to generate a learner analysis report",
+    "flow": "Learner Insights > Generate Report",
+    "description": "Deep-dive AI analysis on one learner.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-course-completion-analytics",
+    "side": "admin",
+    "title": "How to view course completion analytics",
+    "flow": "Learner Insights > Course Reports",
+    "description": "Track how many learners finish each course.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-batch-performance",
+    "side": "admin",
+    "title": "How to view batch performance",
+    "flow": "Learner Insights > Batch Analytics",
+    "description": "Compare performance across batches.",
+    "route": "/manage-institute/batches",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-cohort-comparison",
+    "side": "admin",
+    "title": "How to view cohort comparison",
+    "flow": "Learner Insights > Cohort Compare",
+    "description": "Compare two cohorts side by side.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-upload-learning-materials",
+    "side": "admin",
+    "title": "How to upload learning materials",
+    "flow": "Manage Content > Upload",
+    "description": "Add a learning resource to a folder.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-organise-materials-in-folders",
+    "side": "admin",
+    "title": "How to organise materials in folders",
+    "flow": "Manage Content > Folders",
+    "description": "Create / move / nest folders for materials.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-share-materials-with-a-course",
+    "side": "admin",
+    "title": "How to share materials with a course",
+    "flow": "Manage Content > [File] > Share",
+    "description": "Make a file available inside a course.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-upload-files",
+    "side": "admin",
+    "title": "How to bulk upload files",
+    "flow": "Manage Content > Bulk Upload",
+    "description": "Drag-and-drop multiple files at once.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-all-student-doubts",
+    "side": "admin",
+    "title": "How to view all student doubts",
+    "flow": "Doubts",
+    "description": "See open questions across courses.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-assign-a-doubt-to-an-instructor",
+    "side": "admin",
+    "title": "How to assign a doubt to an instructor",
+    "flow": "Doubts > [Doubt] > Assign",
+    "description": "Route a doubt to the right teacher.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-reply-to-a-doubt",
+    "side": "admin",
+    "title": "How to reply to a doubt",
+    "flow": "Doubts > [Doubt] > Reply",
+    "description": "Send a written / video / audio response.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-attach-files-to-a-doubt-reply",
+    "side": "admin",
+    "title": "How to attach files to a doubt reply",
+    "flow": "Doubts > [Doubt] > Reply > Attach",
+    "description": "Include a PDF / image / diagram in your reply.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-sla-for-doubt-resolution",
+    "side": "admin",
+    "title": "How to set SLA for doubt resolution",
+    "flow": "Settings > Doubts > SLA",
+    "description": "Define max response time.",
+    "route": "/settings",
+    "tab": "doubtManagement"
+  },
+  {
+    "slug": "admin-how-to-mark-doubts-as-resolved",
+    "side": "admin",
+    "title": "How to mark doubts as resolved",
+    "flow": "Doubts > [Doubt] > Resolve",
+    "description": "Close out a doubt thread.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-doubt-analytics",
+    "side": "admin",
+    "title": "How to view doubt analytics",
+    "flow": "Doubts > Analytics",
+    "description": "See average response time / counts per instructor.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-judge0-for-code-execution",
+    "side": "admin",
+    "title": "How to set up Judge0 for code execution",
+    "flow": "Settings > Integrations > Judge0",
+    "description": "Connect Judge0 so coding submissions can run.",
+    "route": "/settings",
+    "tab": "integrations"
+  },
+  {
+    "slug": "admin-how-to-create-a-coding-question",
+    "side": "admin",
+    "title": "How to create a coding question",
+    "flow": "Question Bank > Coding > Add",
+    "description": "Author a coding problem.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-test-cases-to-a-coding-question",
+    "side": "admin",
+    "title": "How to add test cases to a coding question",
+    "flow": "Question Bank > Coding > [Question] > Test Cases",
+    "description": "Define what passing looks like.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-starter-code",
+    "side": "admin",
+    "title": "How to add starter code",
+    "flow": "Question Bank > Coding > [Question] > Starter Code",
+    "description": "Give learners a scaffold to start from.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-time-and-memory-limits",
+    "side": "admin",
+    "title": "How to set time and memory limits",
+    "flow": "Question Bank > Coding > [Question] > Limits",
+    "description": "Constrain how much compute a submission can use.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-coding-submissions",
+    "side": "admin",
+    "title": "How to view coding submissions",
+    "flow": "Assessments > [Assessment] > Submissions > Coding",
+    "description": "Inspect a learner's code and run output.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-issue-a-certificate-to-a-learner",
+    "side": "admin",
+    "title": "How to issue a certificate to a learner",
+    "flow": "Manage Learners > [Learner] > Certificates > Issue",
+    "description": "Hand out a one-off certificate.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-issue-certificates",
+    "side": "admin",
+    "title": "How to bulk issue certificates",
+    "flow": "Manage Learners > Certificates > Bulk Issue",
+    "description": "Issue certificates to a whole batch at once.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-question-paper-from-a-document",
+    "side": "admin",
+    "title": "How to create a question paper from a document",
+    "flow": "AI Center > VSmart > Question Paper",
+    "description": "Upload a chapter and get a question paper.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-digitise-a-scanned-question-paper",
+    "side": "admin",
+    "title": "How to digitise a scanned question paper",
+    "flow": "AI Center > VSmart > Paper Digitiser",
+    "description": "Convert a scanned paper into editable digital questions.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-organise-your-question-bank-with-ai",
+    "side": "admin",
+    "title": "How to organise your question bank with AI",
+    "flow": "AI Center > VSmart > Bank Organiser",
+    "description": "Auto-tag and categorise questions by topic and difficulty.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-questions-from-a-topic",
+    "side": "admin",
+    "title": "How to generate questions from a topic",
+    "flow": "AI Center > VSmart > Topic Questions",
+    "description": "Type a topic and get questions.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-the-ai-lesson-planner",
+    "side": "admin",
+    "title": "How to use the AI Lesson Planner",
+    "flow": "AI Center > VSmart > Lesson Planner",
+    "description": "Generate a structured lesson plan from a topic.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-the-ai-lecture-coach",
+    "side": "admin",
+    "title": "How to use the AI Lecture Coach",
+    "flow": "AI Center > VSmart > Lecture Coach",
+    "description": "Get AI feedback on a recorded lecture.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-the-ai-course-creator",
+    "side": "admin",
+    "title": "How to use the AI Course Creator",
+    "flow": "AI Center > VSmart > Course Creator",
+    "description": "Describe a course and AI builds the full outline.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-chat",
+    "side": "admin",
+    "title": "How to use VSmart Chat",
+    "flow": "AI Center > VSmart > Chat",
+    "description": "Have a conversation with AI about your content.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-image",
+    "side": "admin",
+    "title": "How to use VSmart Image",
+    "flow": "AI Center > VSmart > Image",
+    "description": "AI image processing tool.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-audio",
+    "side": "admin",
+    "title": "How to use VSmart Audio",
+    "flow": "AI Center > VSmart > Audio",
+    "description": "AI audio processing / speech-to-text.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-prompt-for-custom-ai-tasks",
+    "side": "admin",
+    "title": "How to use VSmart Prompt for custom AI tasks",
+    "flow": "AI Center > VSmart > Prompt",
+    "description": "Run a custom prompt against your data.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-sorter",
+    "side": "admin",
+    "title": "How to use VSmart Sorter",
+    "flow": "AI Center > VSmart > Sorter",
+    "description": "Auto-sort questions by topic and taxonomy.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-extract",
+    "side": "admin",
+    "title": "How to use VSmart Extract",
+    "flow": "AI Center > VSmart > Extract",
+    "description": "Extract questions / content from any document.",
+    "route": "/ai-center",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-vsmart-feedback-for-evaluation",
+    "side": "admin",
+    "title": "How to use VSmart Feedback for evaluation",
+    "flow": "AI Center > VSmart > Feedback",
+    "description": "Evaluate answer sheets with AI.",
+    "route": "/assessment/evaluation-ai",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-video-from-a-prompt",
+    "side": "admin",
+    "title": "How to create a video from a prompt",
+    "flow": "Vimotion > Create > Prompt",
+    "description": "Type a topic and get an AI-narrated video.",
+    "route": "/vim",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-video-from-a-slide-deck",
+    "side": "admin",
+    "title": "How to create a video from a slide deck",
+    "flow": "Vimotion > Create > Deck",
+    "description": "Upload slides and get a narrated explainer video.",
+    "route": "/vim",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-edit-a-vimotion-video",
+    "side": "admin",
+    "title": "How to edit a Vimotion video",
+    "flow": "Vimotion > [Video] > Editor",
+    "description": "Adjust captions / voiceover / scenes.",
+    "route": "/vim",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-a-brand-kit-for-videos",
+    "side": "admin",
+    "title": "How to set up a brand kit for videos",
+    "flow": "Vimotion > Brand Kits",
+    "description": "Apply your brand fonts / colors to all videos.",
+    "route": "/vim",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-api-keys-for-vimotion",
+    "side": "admin",
+    "title": "How to generate API keys for Vimotion",
+    "flow": "Vimotion > API Keys",
+    "description": "Generate videos programmatically.",
+    "route": "/vim",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-embed-a-vimotion-video-in-a-course",
+    "side": "admin",
+    "title": "How to embed a Vimotion video in a course",
+    "flow": "Courses > [Chapter] > Add Slide > Vimotion",
+    "description": "Insert an AI video into your course content.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-start-an-instructor-copilot-session",
+    "side": "admin",
+    "title": "How to start an Instructor Copilot session",
+    "flow": "Instructor Copilot > Start Session",
+    "description": "Record a live lecture for AI processing.",
+    "route": "/study-library/ai-copilot",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-notes-from-a-lecture",
+    "side": "admin",
+    "title": "How to generate notes from a lecture",
+    "flow": "Instructor Copilot > [Session] > Notes",
+    "description": "Auto-produce lecture notes.",
+    "route": "/study-library/ai-copilot",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-a-quiz-from-a-lecture",
+    "side": "admin",
+    "title": "How to generate a quiz from a lecture",
+    "flow": "Instructor Copilot > [Session] > Quiz",
+    "description": "Auto-produce a quick quiz from what was taught.",
+    "route": "/study-library/ai-copilot",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-generate-homework-from-a-lecture",
+    "side": "admin",
+    "title": "How to generate homework from a lecture",
+    "flow": "Instructor Copilot > [Session] > Homework",
+    "description": "Auto-produce an out-of-class assignment.",
+    "route": "/study-library/ai-copilot",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-an-audience-form",
+    "side": "admin",
+    "title": "How to create an audience form",
+    "flow": "Audience Manager > Create Form",
+    "description": "Build a custom lead-capture form.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-fields-to-a-form",
+    "side": "admin",
+    "title": "How to add fields to a form",
+    "flow": "Audience Manager > [Form] > Fields",
+    "description": "Configure what info you collect.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-custom-fields-to-a-form",
+    "side": "admin",
+    "title": "How to add custom fields to a form",
+    "flow": "Audience Manager > [Form] > Custom Fields",
+    "description": "Use institute-specific fields on a form.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-embed-a-form-on-your-website",
+    "side": "admin",
+    "title": "How to embed a form on your website",
+    "flow": "Audience Manager > [Form] > Embed",
+    "description": "Get a snippet to paste on any web page.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-share-a-form-via-link",
+    "side": "admin",
+    "title": "How to share a form via link",
+    "flow": "Audience Manager > [Form] > Share Link",
+    "description": "Send a one-tap link by WhatsApp / email.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-form-thank-you-page",
+    "side": "admin",
+    "title": "How to set form thank-you page",
+    "flow": "Audience Manager > [Form] > Thank You",
+    "description": "Customize what learners see after submitting.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-clone-an-audience-form",
+    "side": "admin",
+    "title": "How to clone an audience form",
+    "flow": "Audience Manager > [Form] > Clone",
+    "description": "Duplicate a form to reuse it.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-form-webhooks",
+    "side": "admin",
+    "title": "How to set up form webhooks",
+    "flow": "Audience Manager > [Form] > Webhooks",
+    "description": "Push form submissions to an external system.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-lead-capture-campaign",
+    "side": "admin",
+    "title": "How to create a lead-capture campaign",
+    "flow": "Audience Manager > Campaigns > Create",
+    "description": "Group leads under a tracked campaign.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-import-leads-from-csv",
+    "side": "admin",
+    "title": "How to import leads from CSV",
+    "flow": "Audience Manager > Bulk Import",
+    "description": "Upload a spreadsheet of leads.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-recent-leads",
+    "side": "admin",
+    "title": "How to view recent leads",
+    "flow": "Audience Manager > Recent Leads",
+    "description": "See the newest leads across all campaigns.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-filter-and-search-leads",
+    "side": "admin",
+    "title": "How to filter and search leads",
+    "flow": "Audience Manager > Filters",
+    "description": "Slice leads by source / tier / score / counsellor.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-open-a-lead-s-full-profile",
+    "side": "admin",
+    "title": "How to open a lead's full profile",
+    "flow": "Audience Manager > [Lead] > Open Profile",
+    "description": "See the 17-tab side drawer.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-expand-to-the-full-screen-profile-overlay",
+    "side": "admin",
+    "title": "How to expand to the full-screen profile overlay",
+    "flow": "Audience Manager > [Lead] > Expand",
+    "description": "Launch the 90vw lead overlay.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-edit-lead-details",
+    "side": "admin",
+    "title": "How to edit lead details",
+    "flow": "Audience Manager > [Lead] > Edit",
+    "description": "Update name / contact / address / custom fields.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-merge-duplicate-leads",
+    "side": "admin",
+    "title": "How to merge duplicate leads",
+    "flow": "Audience Manager > [Lead] > Merge Duplicate",
+    "description": "Combine duplicate records.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-mark-a-lead-as-lost",
+    "side": "admin",
+    "title": "How to mark a lead as Lost",
+    "flow": "Audience Manager > [Lead] > Status > Lost",
+    "description": "Close out a lead that won't convert.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-mark-a-lead-as-converted",
+    "side": "admin",
+    "title": "How to mark a lead as Converted",
+    "flow": "Audience Manager > [Lead] > Status > Convert",
+    "description": "Move a converted lead into a learner record.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-opt-out-a-lead-from-communications",
+    "side": "admin",
+    "title": "How to opt out a lead from communications",
+    "flow": "Audience Manager > [Lead] > Opt-out",
+    "description": "Honor unsubscribe preferences.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-lead-s-activity-timeline",
+    "side": "admin",
+    "title": "How to view a lead's activity timeline",
+    "flow": "Audience Manager > [Lead] > Activity Timeline",
+    "description": "See every touchpoint in chronological order.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-note-to-a-lead",
+    "side": "admin",
+    "title": "How to add a note to a lead",
+    "flow": "Audience Manager > [Lead] > Activity > Add Note",
+    "description": "Log call summary / meeting outcome.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-update-lead-status",
+    "side": "admin",
+    "title": "How to bulk update lead status",
+    "flow": "Audience Manager > Bulk > Update Status",
+    "description": "Mark many leads at once.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-export-leads-to-csv",
+    "side": "admin",
+    "title": "How to export leads to CSV",
+    "flow": "Audience Manager > Export",
+    "description": "Download leads for offline analysis.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-lead-s-score-history",
+    "side": "admin",
+    "title": "How to view a lead's score history",
+    "flow": "Audience Manager > [Lead] > Score History",
+    "description": "Track how a lead's score has evolved.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-schedule-a-follow-up",
+    "side": "admin",
+    "title": "How to schedule a follow-up",
+    "flow": "Audience Manager > [Lead] > Follow-ups > Add",
+    "description": "Set a reminder to call / message a lead later.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-all-pending-follow-ups",
+    "side": "admin",
+    "title": "How to view all pending follow-ups",
+    "flow": "Audience Manager > Follow-ups",
+    "description": "Manage your daily follow-up workload.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-close-a-follow-up",
+    "side": "admin",
+    "title": "How to close a follow-up",
+    "flow": "Audience Manager > [Lead] > Follow-ups > Close",
+    "description": "Mark a follow-up done.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-sla-breach-reports",
+    "side": "admin",
+    "title": "How to view SLA breach reports",
+    "flow": "Audience Manager > Reports > SLA",
+    "description": "Identify leads with overdue follow-ups.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-assign-a-lead-to-yourself-or-a-teammate",
+    "side": "admin",
+    "title": "How to assign a lead to yourself or a teammate",
+    "flow": "Audience Manager > [Lead] > Assign Counsellor",
+    "description": "Take ownership or hand off a lead.",
+    "route": "/manage-institute/teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-re-assign-a-lead-s-counsellor",
+    "side": "admin",
+    "title": "How to re-assign a lead's counsellor",
+    "flow": "Audience Manager > [Lead] > Assign Counsellor > Change",
+    "description": "Move a lead to a different counsellor.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-an-email-to-a-lead",
+    "side": "admin",
+    "title": "How to send an email to a lead",
+    "flow": "Audience Manager > [Lead] > Send Email",
+    "description": "Compose and send a one-off email.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-a-whatsapp-to-a-lead",
+    "side": "admin",
+    "title": "How to send a WhatsApp to a lead",
+    "flow": "Audience Manager > [Lead] > Send WhatsApp",
+    "description": "Send via a Meta-approved WhatsApp template.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-an-sms-to-a-lead",
+    "side": "admin",
+    "title": "How to send an SMS to a lead",
+    "flow": "Audience Manager > [Lead] > Send SMS",
+    "description": "Send a single-channel SMS.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-an-email-template",
+    "side": "admin",
+    "title": "How to create an email template",
+    "flow": "Settings > Templates > Email > Create",
+    "description": "Save reusable email designs with merge fields.",
+    "route": "/settings",
+    "tab": "templates"
+  },
+  {
+    "slug": "admin-how-to-create-a-whatsapp-template",
+    "side": "admin",
+    "title": "How to create a WhatsApp template",
+    "flow": "Settings > WhatsApp > Templates > Create",
+    "description": "Author and submit a Meta-approved WhatsApp template.",
+    "route": "/settings",
+    "tab": "templates"
+  },
+  {
+    "slug": "admin-how-to-view-email-open-and-click-rates",
+    "side": "admin",
+    "title": "How to view email open and click rates",
+    "flow": "Audience Manager > Reports > Email",
+    "description": "Track inbox performance.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-bounced-emails",
+    "side": "admin",
+    "title": "How to view bounced emails",
+    "flow": "Reports > Email > Bounces",
+    "description": "Manage your sender reputation.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-access-the-whatsapp-inbox",
+    "side": "admin",
+    "title": "How to access the WhatsApp inbox",
+    "flow": "Communication > WhatsApp Inbox",
+    "description": "Reply to live WhatsApp conversations.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-handle-a-live-whatsapp-conversation",
+    "side": "admin",
+    "title": "How to handle a live WhatsApp conversation",
+    "flow": "Communication > WhatsApp Inbox > [Conversation]",
+    "description": "Two-way chat with a lead in WhatsApp.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-broadcast-a-message-to-a-segment",
+    "side": "admin",
+    "title": "How to broadcast a message to a segment",
+    "flow": "Communication > Broadcast > Create",
+    "description": "Send the same message to many leads.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-make-a-click-to-call",
+    "side": "admin",
+    "title": "How to make a click-to-call",
+    "flow": "Audience Manager > [Lead] > Call",
+    "description": "Trigger an Exotel call to a lead.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-call-logs",
+    "side": "admin",
+    "title": "How to view call logs",
+    "flow": "Communication > Call Logs",
+    "description": "See every call attempted / completed.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-listen-to-a-recorded-call",
+    "side": "admin",
+    "title": "How to listen to a recorded call",
+    "flow": "Communication > Call Logs > [Call] > Play",
+    "description": "Play back a recorded conversation.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-handle-inbound-calls",
+    "side": "admin",
+    "title": "How to handle inbound calls",
+    "flow": "Communication > Inbound Calls",
+    "description": "Manage incoming calls routed to your team.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-talk-time-analytics",
+    "side": "admin",
+    "title": "How to view talk-time analytics",
+    "flow": "Communication > Calls > Analytics",
+    "description": "Monitor productive call time across the team.",
+    "route": "/communication/inbox",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-workflow",
+    "side": "admin",
+    "title": "How to create a workflow",
+    "flow": "Workflow > Create Workflow",
+    "description": "Build a multi-step automation in the visual editor.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-choose-a-trigger",
+    "side": "admin",
+    "title": "How to choose a trigger",
+    "flow": "Workflow > [Workflow] > Trigger",
+    "description": "Pick what event starts the workflow.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-send-email-node",
+    "side": "admin",
+    "title": "How to add a Send Email node",
+    "flow": "Workflow > [Workflow] > Add Node > Send Email",
+    "description": "Send an automated email.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-send-whatsapp-node",
+    "side": "admin",
+    "title": "How to add a Send WhatsApp node",
+    "flow": "Workflow > [Workflow] > Add Node > Send WhatsApp",
+    "description": "Send an automated WhatsApp.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-wait-delay-node",
+    "side": "admin",
+    "title": "How to add a Wait / Delay node",
+    "flow": "Workflow > [Workflow] > Add Node > Wait",
+    "description": "Pause the workflow for hours / days.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-a-condition-node",
+    "side": "admin",
+    "title": "How to add a Condition node",
+    "flow": "Workflow > [Workflow] > Add Node > Condition",
+    "description": "Branch a workflow on lead attributes.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-an-action-node",
+    "side": "admin",
+    "title": "How to add an Action node",
+    "flow": "Workflow > [Workflow] > Add Node > Action",
+    "description": "Run a custom business action.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-schedule-a-workflow",
+    "side": "admin",
+    "title": "How to schedule a workflow",
+    "flow": "Workflow > [Workflow] > Schedule",
+    "description": "Run a workflow on a cron-style schedule.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-monitor-workflow-executions",
+    "side": "admin",
+    "title": "How to monitor workflow executions",
+    "flow": "Workflow > [Workflow] > Executions",
+    "description": "See real-time runs / failures / retries.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-a-workflow-template",
+    "side": "admin",
+    "title": "How to use a workflow template",
+    "flow": "Workflow > Templates",
+    "description": "Start from a pre-built nurture / reminder flow.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-test-a-workflow-before-publishing",
+    "side": "admin",
+    "title": "How to test a workflow before publishing",
+    "flow": "Workflow > [Workflow] > Test Run",
+    "description": "Dry-run a workflow on a sample lead.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-pause-or-stop-a-workflow",
+    "side": "admin",
+    "title": "How to pause or stop a workflow",
+    "flow": "Workflow > [Workflow] > Pause",
+    "description": "Halt a workflow without deleting it.",
+    "route": "/workflow/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-campaign-performance",
+    "side": "admin",
+    "title": "How to view campaign performance",
+    "flow": "Audience Manager > Campaigns > [Campaign]",
+    "description": "See conversion / counts / source ROI per campaign.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-source-wise-lead-reports",
+    "side": "admin",
+    "title": "How to view source-wise lead reports",
+    "flow": "Audience Manager > Reports > Sources",
+    "description": "Compare lead quality across sources.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-counsellor-performance",
+    "side": "admin",
+    "title": "How to view counsellor performance",
+    "flow": "Settings > Leads > Pools > Performance",
+    "description": "Calls made / leads converted per counsellor.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-view-conversion-funnel",
+    "side": "admin",
+    "title": "How to view conversion funnel",
+    "flow": "Audience Manager > Reports > Funnel",
+    "description": "Where leads drop off in your pipeline.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-export-campaign-reports",
+    "side": "admin",
+    "title": "How to export campaign reports",
+    "flow": "Audience Manager > Reports > Export",
+    "description": "Download for offline analysis.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-all-enquiries",
+    "side": "admin",
+    "title": "How to view all enquiries",
+    "flow": "Admissions > Enquiries",
+    "description": "See top-of-funnel enquiry submissions.",
+    "route": "/admissions/enquiries",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-convert-an-enquiry-to-an-application",
+    "side": "admin",
+    "title": "How to convert an enquiry to an application",
+    "flow": "Admissions > [Enquiry] > Convert",
+    "description": "Move an enquiry into the application pipeline.",
+    "route": "/admissions/enquiries",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-an-admission-form",
+    "side": "admin",
+    "title": "How to create an admission form",
+    "flow": "Admissions > Forms > Create",
+    "description": "Build the application form for a program.",
+    "route": "/admissions/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-application-status",
+    "side": "admin",
+    "title": "How to view application status",
+    "flow": "Admissions > [Application] > Status",
+    "description": "Drill into each applicant's stage.",
+    "route": "/admissions/application",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-manage-applicant-communication",
+    "side": "admin",
+    "title": "How to manage applicant communication",
+    "flow": "Admissions > [Application] > Communication",
+    "description": "Email / WhatsApp / SMS an applicant.",
+    "route": "/admissions/application",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-import-applicants",
+    "side": "admin",
+    "title": "How to bulk import applicants",
+    "flow": "Admissions > Bulk Import",
+    "description": "Upload many applicants from CSV.",
+    "route": "/admissions/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-assign-an-applicant-to-a-counsellor",
+    "side": "admin",
+    "title": "How to assign an applicant to a counsellor",
+    "flow": "Admissions > [Application] > Assign",
+    "description": "Take ownership of an applicant.",
+    "route": "/admissions/application",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-track-applicant-documents",
+    "side": "admin",
+    "title": "How to track applicant documents",
+    "flow": "Admissions > [Application] > Documents",
+    "description": "See which documents are submitted / pending.",
+    "route": "/admissions/application",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-application-stages",
+    "side": "admin",
+    "title": "How to set application stages",
+    "flow": "Settings > Admissions > Stages",
+    "description": "Configure the stages an applicant moves through.",
+    "route": "/admissions/application",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-enroll-a-learner-manually",
+    "side": "admin",
+    "title": "How to enroll a learner manually",
+    "flow": "Manage Learners > Enroll Manually",
+    "description": "Add a single learner and assign them to a course.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-enroll-learners-from-csv",
+    "side": "admin",
+    "title": "How to bulk enroll learners from CSV",
+    "flow": "Manage Learners > Bulk Enroll",
+    "description": "Upload a spreadsheet to enroll many learners at once.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-a-learner-invite-link",
+    "side": "admin",
+    "title": "How to send a learner invite link",
+    "flow": "Manage Learners > Invite > Create",
+    "description": "Generate a shareable invite with payment / form options.",
+    "route": "/manage-students/invite",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-full-profile",
+    "side": "admin",
+    "title": "How to view a learner's full profile",
+    "flow": "Manage Learners > [Learner]",
+    "description": "Open the 17-tab learner side view.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-expand-to-the-full-screen-profile-overlay-2",
+    "side": "admin",
+    "title": "How to expand to the full-screen profile overlay",
+    "flow": "Manage Learners > [Learner] > Expand",
+    "description": "Open the 90vw full-screen profile.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-edit-a-learner-s-details",
+    "side": "admin",
+    "title": "How to edit a learner's details",
+    "flow": "Manage Learners > [Learner] > Edit Details",
+    "description": "Update name / contact / address / parent / custom fields.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-upload-a-learner-s-profile-photo",
+    "side": "admin",
+    "title": "How to upload a learner's profile photo",
+    "flow": "Manage Learners > [Learner] > Edit > Photo",
+    "description": "Add a photo to the learner profile.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-course-progress",
+    "side": "admin",
+    "title": "How to view a learner's course progress",
+    "flow": "Manage Learners > [Learner] > Progress",
+    "description": "Track chapter / slide / assessment completion.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-test-history",
+    "side": "admin",
+    "title": "How to view a learner's test history",
+    "flow": "Manage Learners > [Learner] > Tests",
+    "description": "See past attempts and scores.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-payment-history",
+    "side": "admin",
+    "title": "How to view a learner's payment history",
+    "flow": "Manage Learners > [Learner] > Payment History",
+    "description": "See invoices / installments / pending dues.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-communication-history",
+    "side": "admin",
+    "title": "How to view a learner's communication history",
+    "flow": "Manage Learners > [Learner] > Notifications",
+    "description": "Inspect every message / call to this learner.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-files",
+    "side": "admin",
+    "title": "How to view a learner's files",
+    "flow": "Manage Learners > [Learner] > Files",
+    "description": "Upload / download / organise the learner's documents.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-tags-to-a-learner",
+    "side": "admin",
+    "title": "How to add tags to a learner",
+    "flow": "Manage Learners > [Learner] > Tagging",
+    "description": "Label learners for filtering and segmentation.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-grant-portal-access-credentials",
+    "side": "admin",
+    "title": "How to grant portal access credentials",
+    "flow": "Manage Learners > [Learner] > Portal Access",
+    "description": "Share login credentials so the learner can sign in.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-a-password-reset-to-a-learner",
+    "side": "admin",
+    "title": "How to send a password reset to a learner",
+    "flow": "Manage Learners > [Learner] > Portal Access > Reset",
+    "description": "Help a learner recover their login.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-deroll-a-learner-from-a-course",
+    "side": "admin",
+    "title": "How to deroll a learner from a course",
+    "flow": "Manage Learners > [Learner] > Enroll-Deroll > Cancel",
+    "description": "End a learner's enrollment.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-lead-profile-crm-view",
+    "side": "admin",
+    "title": "How to view a learner's lead profile (CRM view)",
+    "flow": "Manage Learners > [Learner] > Lead Profile",
+    "description": "See CRM data on a learner who started as a lead.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-the-full-learner-history",
+    "side": "admin",
+    "title": "How to view the full learner history",
+    "flow": "Manage Learners > [Learner] > Full History",
+    "description": "Cross-functional timeline of every event.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-assign-a-counsellor-to-a-learner",
+    "side": "admin",
+    "title": "How to assign a counsellor to a learner",
+    "flow": "Manage Learners > [Learner] > Assign Counsellor",
+    "description": "Pick who owns this relationship.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-initiate-a-deep-dive-learner-report",
+    "side": "admin",
+    "title": "How to initiate a deep-dive learner report",
+    "flow": "Manage Learners > [Learner] > Reports > Initiate",
+    "description": "Trigger an AI analysis on one learner.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-enrollment-and-deroll-history",
+    "side": "admin",
+    "title": "How to view a learner's enrollment & deroll history",
+    "flow": "Manage Learners > [Learner] > Enroll-Deroll",
+    "description": "Audit course memberships over time.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-a-learner-s-membership-status",
+    "side": "admin",
+    "title": "How to view a learner's membership status",
+    "flow": "Manage Learners > [Learner] > Membership",
+    "description": "Track active subscriptions per learner.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-sub-org-affiliation-of-a-learner",
+    "side": "admin",
+    "title": "How to view sub-org affiliation of a learner",
+    "flow": "Manage Learners > [Learner] > Sub-Org",
+    "description": "See which sub-org a learner belongs to.",
+    "route": "/manage-custom-teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-all-contacts",
+    "side": "admin",
+    "title": "How to view all contacts",
+    "flow": "Manage Contacts > All Contacts",
+    "description": "See every contact (lead + learner) in one place.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-filter-contacts-by-tier",
+    "side": "admin",
+    "title": "How to filter contacts by tier",
+    "flow": "Manage Contacts > Filters > Tier",
+    "description": "Show only HOT / WARM / COLD leads.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-filter-contacts-by-source",
+    "side": "admin",
+    "title": "How to filter contacts by source",
+    "flow": "Manage Contacts > Filters > Source",
+    "description": "Slice contacts by where they came from.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-bulk-import-contacts",
+    "side": "admin",
+    "title": "How to bulk import contacts",
+    "flow": "Manage Contacts > Bulk Import",
+    "description": "Upload contacts from CSV with mapping.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-tags-to-contacts",
+    "side": "admin",
+    "title": "How to add tags to contacts",
+    "flow": "Manage Contacts > [Contact] > Tags",
+    "description": "Label contacts for segmentation.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-open-the-full-profile-overlay",
+    "side": "admin",
+    "title": "How to open the full profile overlay",
+    "flow": "Manage Contacts > [Row] > Expand",
+    "description": "Launch the 90vw full-screen profile.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-link-a-contact-to-a-learner",
+    "side": "admin",
+    "title": "How to link a contact to a learner",
+    "flow": "Manage Contacts > [Contact] > Link Learner",
+    "description": "Connect a contact record to an enrolled learner.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-a-fee-plan",
+    "side": "admin",
+    "title": "How to create a fee plan",
+    "flow": "Settings > Fee Management > Create Plan",
+    "description": "Define course fees with installment structure.",
+    "route": "/settings",
+    "tab": "payment"
+  },
+  {
+    "slug": "admin-how-to-add-installments-to-a-fee-plan",
+    "side": "admin",
+    "title": "How to add installments to a fee plan",
+    "flow": "Settings > Fee Management > [Plan] > Installments",
+    "description": "Break fees into payment tranches.",
+    "route": "/settings",
+    "tab": "payment"
+  },
+  {
+    "slug": "admin-how-to-set-late-fee-rules",
+    "side": "admin",
+    "title": "How to set late fee rules",
+    "flow": "Settings > Fee Management > Late Fees",
+    "description": "Auto-apply late fees on overdue installments.",
+    "route": "/settings/fee-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-an-invoice-for-a-learner",
+    "side": "admin",
+    "title": "How to create an invoice for a learner",
+    "flow": "Manage Learners > [Learner] > Payment History > Create Invoice",
+    "description": "Generate a one-off invoice on demand.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-edit-cpo-installments-per-learner",
+    "side": "admin",
+    "title": "How to edit CPO installments per learner",
+    "flow": "Manage Learners > [Learner] > Payment History > Installments",
+    "description": "Adjust amounts / due dates for one learner.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-send-a-payment-link-to-a-learner",
+    "side": "admin",
+    "title": "How to send a payment link to a learner",
+    "flow": "Manage Learners > [Learner] > Payment History > Send Link",
+    "description": "One-tap payment link via WhatsApp / email.",
+    "route": "/manage-students/students-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-record-a-manual-cash-payment",
+    "side": "admin",
+    "title": "How to record a manual / cash payment",
+    "flow": "Manage Payments > Record Payment",
+    "description": "Log a payment received outside the gateway.",
+    "route": "/manage-payments",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-payment-logs",
+    "side": "admin",
+    "title": "How to view payment logs",
+    "flow": "Manage Payments > Payment Logs",
+    "description": "Search and filter every transaction.",
+    "route": "/manage-payments",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-handle-a-refund",
+    "side": "admin",
+    "title": "How to handle a refund",
+    "flow": "Manage Payments > [Payment] > Refund",
+    "description": "Initiate a refund through the gateway.",
+    "route": "/manage-payments",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-download-a-payment-report",
+    "side": "admin",
+    "title": "How to download a payment report",
+    "flow": "Manage Payments > Reports > Export",
+    "description": "Get CSV of payments for accounting.",
+    "route": "/manage-payments",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-reconcile-payments",
+    "side": "admin",
+    "title": "How to reconcile payments",
+    "flow": "Manage Payments > Reconciliation",
+    "description": "Match platform records to bank statements.",
+    "route": "/manage-payments",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-the-main-admin-dashboard",
+    "side": "admin",
+    "title": "How to use the main admin dashboard",
+    "flow": "Dashboard",
+    "description": "KPIs / quick actions / recent activity at a glance.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-real-time-activity",
+    "side": "admin",
+    "title": "How to view real-time activity",
+    "flow": "Dashboard > Real-time",
+    "description": "See who is active right now.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-today-s-activity",
+    "side": "admin",
+    "title": "How to view today's activity",
+    "flow": "Dashboard > Activity",
+    "description": "Daily / hourly engagement charts.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-finance-summary",
+    "side": "admin",
+    "title": "How to view finance summary",
+    "flow": "Dashboard > Finance Summary",
+    "description": "Revenue / collections / pending dues.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-assessment-dashboards",
+    "side": "admin",
+    "title": "How to view assessment dashboards",
+    "flow": "Assessments > Dashboard",
+    "description": "Roll-up of attempts / averages / completion.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-schedule-a-recurring-report",
+    "side": "admin",
+    "title": "How to schedule a recurring report",
+    "flow": "Reports > Scheduled Reports > Create",
+    "description": "Auto-email reports on a schedule.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-notification-templates",
+    "side": "admin",
+    "title": "How to create notification templates",
+    "flow": "Settings > Notification Templates > Create",
+    "description": "Customize system notification copy.",
+    "route": "/settings",
+    "tab": "notification"
+  },
+  {
+    "slug": "admin-how-to-enable-or-disable-notification-channels",
+    "side": "admin",
+    "title": "How to enable or disable notification channels",
+    "flow": "Settings > Notifications > Channels",
+    "description": "Pick which channels (email / WhatsApp / SMS / push) deliver alerts.",
+    "route": "/settings",
+    "tab": "notification"
+  },
+  {
+    "slug": "admin-how-to-set-up-announcement-broadcasts",
+    "side": "admin",
+    "title": "How to set up announcement broadcasts",
+    "flow": "Communication > Announcements > Create",
+    "description": "Broadcast a message to all learners.",
+    "route": "/announcement/create",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-your-institute",
+    "side": "admin",
+    "title": "How to set up your institute",
+    "flow": "Settings > Institute Settings > Branding > Roles > Invite Team",
+    "description": "One-time foundational setup — institute name & logo / theme color / time zone / invite your first team members / assign roles. Covers everything you do once before anyone else logs in.",
+    "route": "/settings",
+    "tab": "whiteLabel"
+  },
+  {
+    "slug": "admin-how-to-connect-your-payment-gateway",
+    "side": "admin",
+    "title": "How to connect your payment gateway",
+    "flow": "Settings > Payment Gateways > Razorpay/Stripe > Tax/GST > Invoice Template",
+    "description": "Connect Razorpay or Stripe / set up GST or tax / pick your default gateway / design your invoice header & footer. Get ready to collect money.",
+    "route": "/settings",
+    "tab": "paymentGateways"
+  },
+  {
+    "slug": "admin-how-to-connect-your-communication-channels",
+    "side": "admin",
+    "title": "How to connect your communication channels",
+    "flow": "Settings > WhatsApp > Wati/Meta > Email SMTP > Exotel Telephony",
+    "description": "Connect WhatsApp via Wati or Meta / connect SMTP for email / connect Exotel for click-to-call. Get all your outbound channels live.",
+    "route": "/settings",
+    "tab": "whatsapp"
+  },
+  {
+    "slug": "admin-how-to-create-your-first-course-end-to-end",
+    "side": "admin",
+    "title": "How to create your first course end-to-end",
+    "flow": "Courses > Create Course > Add Level > Add Session > Add Subject > Add Module > Add Chapter > Publish",
+    "description": "Walk through the full course structure: course → level → session → subject → module → chapter → publish. The single most important admin flow.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-add-content-to-a-course-pdf-video-quiz-coding",
+    "side": "admin",
+    "title": "How to add content to a course (PDF / video / quiz / coding)",
+    "flow": "Courses > [Chapter] > Add Slide > PDF + Video + Quiz + Coding",
+    "description": "Show how to add each major slide type (PDF / video lecture / quiz / coding problem) and how to reorder them. One video covers all slide types.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-drip-rules-and-pricing-for-a-course",
+    "side": "admin",
+    "title": "How to set drip rules and pricing for a course",
+    "flow": "Courses > [Course] > Drip Conditions + Pricing + Bundles",
+    "description": "Control when chapters unlock (time / completion) and set the price or installment plan for the course.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-run-your-first-live-class",
+    "side": "admin",
+    "title": "How to run your first live class",
+    "flow": "Live Sessions > Create > Connect Zoom > Schedule > Recording > Attendance > Auto-Notes",
+    "description": "Schedule a live session / authorize Zoom / record automatically / track attendance / auto-generate notes & quiz from the recording with Instructor Copilot.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-and-run-an-assessment",
+    "side": "admin",
+    "title": "How to create and run an assessment",
+    "flow": "Assessments > Create > Add Questions > Set Duration > Enable Proctoring > Assign > Schedule > Publish Results",
+    "description": "Complete assessment lifecycle: create / add questions from bank or AI / set timer / turn on proctoring / assign to a batch / schedule window / grade subjective answers / publish results.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-ai-to-create-a-question-paper",
+    "side": "admin",
+    "title": "How to use AI to create a question paper",
+    "flow": "AI Center > VSmart > Question Paper from Document / Topic Questions / Paper Digitiser",
+    "description": "Three AI ways to make a paper: upload a document → AI extracts questions / type a topic → AI generates questions / scan a handwritten paper → AI digitises it.",
+    "route": "/assessment/question-papers",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-ai-to-evaluate-handwritten-papers-2",
+    "side": "admin",
+    "title": "How to use AI to evaluate handwritten papers",
+    "flow": "AI Center > VSmart Feedback > Upload Sheets > Review > Publish",
+    "description": "Scan handwritten answer sheets / AI grades them / you review and adjust / publish results back to learners.",
+    "route": "/assessment/evaluation-ai",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-an-ai-explainer-video-with-vimotion",
+    "side": "admin",
+    "title": "How to create an AI explainer video with Vimotion",
+    "flow": "Vimotion > Create > Prompt or Deck > Edit > Embed in Course",
+    "description": "Generate an AI-narrated explainer video from a prompt or slide deck / edit captions and voiceover / embed it into a course chapter.",
+    "route": "/vim",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-capture-leads-from-your-website-and-ads",
+    "side": "admin",
+    "title": "How to capture leads from your website and ads",
+    "flow": "Audience Manager > Create Form > Embed/Share > Connect Meta Lead Ads > Bulk Import",
+    "description": "Three ways to capture leads: build a custom form and embed on your website / share via link or WhatsApp / connect Facebook Lead Ads for auto-import / bulk import a CSV of leads.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-your-lead-pipeline",
+    "side": "admin",
+    "title": "How to set up your lead pipeline",
+    "flow": "Settings > Leads > Statuses + Tiers + Scoring + SLA",
+    "description": "Configure custom lead statuses (your pipeline) / set up HOT/WARM/COLD tiers / configure lead scoring rules / set SLA so leads can't be ignored.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-distribute-leads-across-your-counsellor-team",
+    "side": "admin",
+    "title": "How to distribute leads across your counsellor team",
+    "flow": "Settings > Leads > Pools > Create Pool > Add Members > Round Robin > Region/Schedule",
+    "description": "Create a counsellor pool / add members / configure round-robin or region-based routing / set working-hour shifts.",
+    "route": "/settings",
+    "tab": "leadSettings"
+  },
+  {
+    "slug": "admin-how-to-work-a-lead-day-in-the-life",
+    "side": "admin",
+    "title": "How to work a lead day-in-the-life",
+    "flow": "Audience Manager > [Lead] > View Profile > Add Note > Schedule Follow-up > WhatsApp/Email > Call > Update Status > Convert",
+    "description": "The counsellor's daily workflow: open a lead / read profile + timeline / log a note / schedule follow-up / send WhatsApp or email / make a call (Exotel) / update status / mark as Converted.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-the-full-screen-lead-profile-overlay",
+    "side": "admin",
+    "title": "How to use the full-screen lead profile overlay",
+    "flow": "Audience Manager > [Lead] > Expand Icon > Section Nav",
+    "description": "Open the 90vw full-screen profile / use the left nav to jump between sections / faster for deep review than the drawer.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-create-email-and-whatsapp-templates",
+    "side": "admin",
+    "title": "How to create email and WhatsApp templates",
+    "flow": "Settings > Templates > Email + WhatsApp > Submit Meta-approved",
+    "description": "Create a reusable email template with merge fields / submit a Meta-approved WhatsApp template / use them in workflows.",
+    "route": "/settings",
+    "tab": "templates"
+  },
+  {
+    "slug": "admin-how-to-build-a-lead-nurture-workflow",
+    "side": "admin",
+    "title": "How to build a lead nurture workflow",
+    "flow": "Workflow > Create > Trigger > Send Email > Wait > Condition > Send WhatsApp > Schedule > Monitor",
+    "description": "Build a multi-step automation in the visual editor: pick a trigger / send an email / wait 2 days / branch on lead score / send WhatsApp / schedule the workflow / monitor executions.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-read-your-crm-reports",
+    "side": "admin",
+    "title": "How to read your CRM reports",
+    "flow": "Audience Manager > Reports > Conversion Funnel + Source ROI + Counsellor Performance",
+    "description": "Where leads are dropping off in the funnel / which sources are giving the best ROI / how each counsellor is performing.",
+    "route": "/audience-manager/list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-process-applications-and-enquiries",
+    "side": "admin",
+    "title": "How to process applications and enquiries",
+    "flow": "Admissions > Enquiries > Convert > Application > Assign Counsellor > Documents > Status > Communication",
+    "description": "End-to-end admissions flow: enquiry comes in / convert to application / assign to counsellor / track document submission / track status / communicate with the applicant.",
+    "route": "/admissions/enquiries",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-enroll-learners-and-onboard-them",
+    "side": "admin",
+    "title": "How to enroll learners and onboard them",
+    "flow": "Manage Learners > Bulk Enroll/Invite > Portal Access > Welcome Email > Track",
+    "description": "Bulk enroll from CSV or send invite links / grant portal access credentials / trigger the welcome flow / verify they logged in.",
+    "route": "/manage-students/invite",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-manage-a-learner-s-full-profile",
+    "side": "admin",
+    "title": "How to manage a learner's full profile",
+    "flow": "Manage Learners > [Learner] > Overview + Progress + Tests + Payment + Communication + Files + Edit",
+    "description": "Tour every tab of the learner side drawer: overview / progress / test history / payment history / communications / files / how to edit details.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-handle-fees-from-setup-to-collection",
+    "side": "admin",
+    "title": "How to handle fees from setup to collection",
+    "flow": "Settings > Fee Management > Plan + Installments > Create Invoice > Payment Link > Track > Refund",
+    "description": "Full payment lifecycle: set up a fee plan with installments / create an invoice for a learner / send a payment link via WhatsApp / track payment in logs / handle a refund.",
+    "route": "/settings",
+    "tab": "invoice"
+  },
+  {
+    "slug": "admin-how-to-create-and-apply-coupon-codes",
+    "side": "admin",
+    "title": "How to create and apply coupon codes",
+    "flow": "Settings > Coupons > Create > Expiry/Limit > Apply at Checkout",
+    "description": "Issue a discount code / set expiry and usage limit / apply it on a learner's invoice. Useful for scholarship / promo / season-specific discounts.",
+    "route": "/settings",
+    "tab": "coupons"
+  },
+  {
+    "slug": "admin-how-to-manage-student-doubts",
+    "side": "admin",
+    "title": "How to manage student doubts",
+    "flow": "Doubts > View > Assign to Instructor > Reply > Mark Resolved + SLA Config",
+    "description": "How instructors handle the doubts queue: view incoming doubts / assign to the right instructor / reply with text or attachments / mark resolved / how to configure SLA so doubts don't get stuck.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-read-your-admin-dashboard-and-learner-insights",
+    "side": "admin",
+    "title": "How to read your admin dashboard and learner insights",
+    "flow": "Dashboard > KPIs + Finance Summary > Learner Insights > Reports",
+    "description": "Tour the admin dashboard / understand the KPI widgets / drill into Finance Summary / use Learner Insights to spot at-risk learners / generate a deep-dive report on one learner.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-view-assessment-analytics-2",
+    "side": "admin",
+    "title": "How to view assessment analytics",
+    "flow": "Assessments > [Assessment] > Analytics + Insights > Export",
+    "description": "Question-wise difficulty / score distribution / attempt rate / identifying which questions need rework / export to CSV.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-set-up-sub-organizations-and-switch-between-them",
+    "side": "admin",
+    "title": "How to set up sub-organizations and switch between them",
+    "flow": "Settings > Sub-Org > Create > Add Admins > Org Switcher",
+    "description": "Set up a child branch under your main institute / give it its own admins / switch between sub-orgs from the top bar. Only needed for multi-branch institutes.",
+    "route": "/manage-custom-teams",
+    "tab": null
+  },
+  {
+    "slug": "admin-how-to-use-admin-activity-logs",
+    "side": "admin",
+    "title": "How to use admin activity logs",
+    "flow": "Admin Activity Logs > Filter > Export",
+    "description": "Full audit trail of admin actions / filter by user or action / export for compliance reviews.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-sign-up",
+    "side": "learner",
+    "title": "How to sign up",
+    "flow": "Learner App > Sign Up",
+    "description": "Create your account using email or phone.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-verify-your-email-and-phone",
+    "side": "learner",
+    "title": "How to verify your email and phone",
+    "flow": "Learner App > Sign Up > Verify",
+    "description": "Complete OTP verification to activate your account.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-complete-your-profile",
+    "side": "learner",
+    "title": "How to complete your profile",
+    "flow": "Learner App > Profile > Edit",
+    "description": "Fill in name / photo / date of birth / address.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-navigate-your-dashboard",
+    "side": "learner",
+    "title": "How to navigate your dashboard",
+    "flow": "Learner App > Dashboard",
+    "description": "Tour the home screen: courses / live classes / streak / XP.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-install-the-learner-mobile-app",
+    "side": "learner",
+    "title": "How to install the learner mobile app",
+    "flow": "App Store / Play Store > Search Vacademy > Install",
+    "description": "Get the iOS / Android app on your phone.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-set-notification-preferences-for-the-first-time",
+    "side": "learner",
+    "title": "How to set notification preferences for the first time",
+    "flow": "Learner App > Profile > Notifications",
+    "description": "Pick which alerts you want from the platform.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-switch-the-app-language",
+    "side": "learner",
+    "title": "How to switch the app language",
+    "flow": "Learner App > Profile > Language",
+    "description": "Use the app in your preferred language.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-access-your-courses",
+    "side": "learner",
+    "title": "How to access your courses",
+    "flow": "Learner App > Dashboard > My Courses",
+    "description": "Open the list of courses you are enrolled in.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-start-a-chapter",
+    "side": "learner",
+    "title": "How to start a chapter",
+    "flow": "Learner App > Courses > [Course] > [Chapter] > Start",
+    "description": "Begin a chapter and view its slides.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-mark-a-slide-complete",
+    "side": "learner",
+    "title": "How to mark a slide complete",
+    "flow": "Learner App > Courses > [Chapter] > [Slide] > Mark Complete",
+    "description": "Track progress slide by slide.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-download-course-pdfs-and-notes",
+    "side": "learner",
+    "title": "How to download course PDFs and notes",
+    "flow": "Learner App > Courses > [Chapter] > Materials > Download",
+    "description": "Save reading material for offline access.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-enable-offline-access-on-mobile",
+    "side": "learner",
+    "title": "How to enable offline access on mobile",
+    "flow": "Learner App > Settings > Offline > Download",
+    "description": "Pre-download chapters for offline study.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-track-your-overall-course-progress",
+    "side": "learner",
+    "title": "How to track your overall course progress",
+    "flow": "Learner App > Dashboard > Continue Learning",
+    "description": "See completion percentage and what to do next.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-bookmark-a-slide",
+    "side": "learner",
+    "title": "How to bookmark a slide",
+    "flow": "Learner App > Courses > [Slide] > Bookmark",
+    "description": "Save important slides for quick access later.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-use-the-streak-counter-and-xp",
+    "side": "learner",
+    "title": "How to use the streak counter and XP",
+    "flow": "Learner App > Dashboard > Streak",
+    "description": "Maintain a daily streak and earn XP for completing chapters.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-achievements-badges",
+    "side": "learner",
+    "title": "How to view your achievements / badges",
+    "flow": "Learner App > Dashboard > Achievements",
+    "description": "Track milestones you have unlocked.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-course-faculty-instructors",
+    "side": "learner",
+    "title": "How to view course faculty / instructors",
+    "flow": "Learner App > Courses > [Course] > Faculty",
+    "description": "See who teaches your course.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-course-announcements",
+    "side": "learner",
+    "title": "How to view course announcements",
+    "flow": "Learner App > Courses > [Course] > Announcements",
+    "description": "Read latest updates from your instructor.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-scheduled-live-sessions",
+    "side": "learner",
+    "title": "How to view scheduled live sessions",
+    "flow": "Learner App > Live Sessions > Upcoming",
+    "description": "See your calendar of live classes.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-join-a-live-session",
+    "side": "learner",
+    "title": "How to join a live session",
+    "flow": "Learner App > Live Sessions > [Session] > Join",
+    "description": "Enter a live class at the scheduled time.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-access-session-recordings",
+    "side": "learner",
+    "title": "How to access session recordings",
+    "flow": "Learner App > Live Sessions > Past > [Session] > Watch",
+    "description": "Re-watch a recorded class.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-attendance",
+    "side": "learner",
+    "title": "How to view your attendance",
+    "flow": "Learner App > Live Sessions > Attendance",
+    "description": "Check your attendance percentage per session.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-book-a-session-slot",
+    "side": "learner",
+    "title": "How to book a session slot",
+    "flow": "Learner App > Live Sessions > Book Slot",
+    "description": "Reserve a slot for office hours / 1:1 sessions.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-take-an-assessment",
+    "side": "learner",
+    "title": "How to take an assessment",
+    "flow": "Learner App > Assessments > [Assessment] > Start",
+    "description": "Begin a timed assessment.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-assessment-scores",
+    "side": "learner",
+    "title": "How to view your assessment scores",
+    "flow": "Learner App > Assessments > [Assessment] > Result",
+    "description": "See your total score and pass / fail status.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-the-marks-breakdown",
+    "side": "learner",
+    "title": "How to view the marks breakdown",
+    "flow": "Learner App > Assessments > [Assessment] > Marks Breakdown",
+    "description": "See marks per question and per section.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-response-analysis",
+    "side": "learner",
+    "title": "How to view your response analysis",
+    "flow": "Learner App > Assessments > [Assessment] > Response Breakdown",
+    "description": "Compare your answers vs the correct ones.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-request-re-evaluation",
+    "side": "learner",
+    "title": "How to request re-evaluation",
+    "flow": "Learner App > Assessments > [Assessment] > Request Re-eval",
+    "description": "Ask an instructor to re-check your grading.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-attempt-a-practice-test",
+    "side": "learner",
+    "title": "How to attempt a practice test",
+    "flow": "Learner App > Assessments > Practice",
+    "description": "Take a no-stakes practice attempt.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-attempt-a-mock-test",
+    "side": "learner",
+    "title": "How to attempt a mock test",
+    "flow": "Learner App > Assessments > Mock",
+    "description": "Simulate the real assessment under timed conditions.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-overall-test-history",
+    "side": "learner",
+    "title": "How to view your overall test history",
+    "flow": "Learner App > Assessments > History",
+    "description": "See all past attempts in one place.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-attempt-a-coding-question",
+    "side": "learner",
+    "title": "How to attempt a coding question",
+    "flow": "Learner App > Courses > [Coding Slide] > Run Code",
+    "description": "Write code in the in-app editor and run it against test cases.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-coding-submission-history",
+    "side": "learner",
+    "title": "How to view your coding submission history",
+    "flow": "Learner App > Coding > Submissions",
+    "description": "See past attempts and pass / fail results.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-ask-a-doubt-on-a-chapter",
+    "side": "learner",
+    "title": "How to ask a doubt on a chapter",
+    "flow": "Learner App > Courses > [Chapter] > Ask a Doubt",
+    "description": "Submit a question to your instructor.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-replies-to-your-doubts",
+    "side": "learner",
+    "title": "How to view replies to your doubts",
+    "flow": "Learner App > Doubts > [Doubt] > Replies",
+    "description": "Check instructor responses.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-attach-an-image-or-pdf-to-a-doubt",
+    "side": "learner",
+    "title": "How to attach an image or PDF to a doubt",
+    "flow": "Learner App > Doubts > New > Attach",
+    "description": "Include a photo of your work with your question.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-chat-with-the-ai-tutor",
+    "side": "learner",
+    "title": "How to chat with the AI tutor",
+    "flow": "Learner App > AI Tutor > Ask",
+    "description": "Get instant AI-powered answers to your questions.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-doubt-history",
+    "side": "learner",
+    "title": "How to view your doubt history",
+    "flow": "Learner App > Doubts > History",
+    "description": "See all your past doubts and resolutions.",
+    "route": "/study-library/doubt-management",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-invoices",
+    "side": "learner",
+    "title": "How to view your invoices",
+    "flow": "Learner App > My Payments > Invoices",
+    "description": "See all your invoices in one place.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-make-a-fee-payment",
+    "side": "learner",
+    "title": "How to make a fee payment",
+    "flow": "Learner App > My Payments > [Invoice] > Pay",
+    "description": "Pay an invoice using UPI / card / netbanking.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-use-a-coupon-code-at-checkout",
+    "side": "learner",
+    "title": "How to use a coupon code at checkout",
+    "flow": "Learner App > My Payments > Checkout > Apply Coupon",
+    "description": "Apply a discount before paying.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-payment-history",
+    "side": "learner",
+    "title": "How to view your payment history",
+    "flow": "Learner App > My Payments > History",
+    "description": "See all completed and pending payments.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-download-a-payment-receipt",
+    "side": "learner",
+    "title": "How to download a payment receipt",
+    "flow": "Learner App > My Payments > [Invoice] > Download Receipt",
+    "description": "Get a printable receipt.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-upcoming-installments",
+    "side": "learner",
+    "title": "How to view upcoming installments",
+    "flow": "Learner App > My Payments > Upcoming",
+    "description": "See what's due next and when.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-set-up-auto-pay-for-installments",
+    "side": "learner",
+    "title": "How to set up auto-pay for installments",
+    "flow": "Learner App > My Payments > Auto-Pay",
+    "description": "Schedule automatic payment of installments.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-update-your-profile",
+    "side": "learner",
+    "title": "How to update your profile",
+    "flow": "Learner App > Profile > Edit",
+    "description": "Change your name / photo / details.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-upload-a-profile-picture",
+    "side": "learner",
+    "title": "How to upload a profile picture",
+    "flow": "Learner App > Profile > Upload Photo",
+    "description": "Add a profile photo.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-change-your-password",
+    "side": "learner",
+    "title": "How to change your password",
+    "flow": "Learner App > Profile > Security > Change Password",
+    "description": "Update your account password.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-enable-two-factor-authentication",
+    "side": "learner",
+    "title": "How to enable two-factor authentication",
+    "flow": "Learner App > Profile > Security > 2FA",
+    "description": "Add an extra security step at login.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-manage-notification-preferences",
+    "side": "learner",
+    "title": "How to manage notification preferences",
+    "flow": "Learner App > Profile > Notifications",
+    "description": "Pick which alerts you want to receive.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-enable-privacy-screen-on-mobile",
+    "side": "learner",
+    "title": "How to enable privacy screen on mobile",
+    "flow": "Learner App > Profile > Privacy > Privacy Screen",
+    "description": "Block screenshots and screen recording.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-parent-guardian-details",
+    "side": "learner",
+    "title": "How to view your parent / guardian details",
+    "flow": "Learner App > Profile > Family",
+    "description": "Manage parent / guardian contact info.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-add-additional-contact-info",
+    "side": "learner",
+    "title": "How to add additional contact info",
+    "flow": "Learner App > Profile > Contact",
+    "description": "Add backup phone / email.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-notifications",
+    "side": "learner",
+    "title": "How to view your notifications",
+    "flow": "Learner App > Notifications",
+    "description": "See system / course / payment / message alerts.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-mark-notifications-as-read",
+    "side": "learner",
+    "title": "How to mark notifications as read",
+    "flow": "Learner App > Notifications > Mark Read",
+    "description": "Clear out the unread queue.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-filter-notifications-by-type",
+    "side": "learner",
+    "title": "How to filter notifications by type",
+    "flow": "Learner App > Notifications > Filter",
+    "description": "Show only payment / message / class alerts.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-access-your-files",
+    "side": "learner",
+    "title": "How to access your files",
+    "flow": "Learner App > My Files",
+    "description": "Open files shared by your institute or saved by you.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-organize-your-files-into-folders",
+    "side": "learner",
+    "title": "How to organize your files into folders",
+    "flow": "Learner App > My Files > Folders",
+    "description": "Create folders to keep materials tidy.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-download-a-shared-file",
+    "side": "learner",
+    "title": "How to download a shared file",
+    "flow": "Learner App > My Files > [File] > Download",
+    "description": "Save a shared file to your device.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-performance-report",
+    "side": "learner",
+    "title": "How to view your performance report",
+    "flow": "Learner App > My Reports",
+    "description": "See progress / scores / attendance over time.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-share-a-report-with-your-parent",
+    "side": "learner",
+    "title": "How to share a report with your parent",
+    "flow": "Learner App > My Reports > Share",
+    "description": "Send a snapshot to a parent or guardian.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-subject-wise-insights",
+    "side": "learner",
+    "title": "How to view subject-wise insights",
+    "flow": "Learner App > My Reports > Subjects",
+    "description": "Drill into how you are doing in each subject.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-test-rank-in-the-cohort",
+    "side": "learner",
+    "title": "How to view your test rank in the cohort",
+    "flow": "Learner App > My Reports > Rank",
+    "description": "Compare your performance with peers anonymously.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-active-membership",
+    "side": "learner",
+    "title": "How to view your active membership",
+    "flow": "Learner App > Profile > Membership",
+    "description": "See your subscription plan and renewal date.",
+    "route": "/membership-stats",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-renew-or-upgrade-your-plan",
+    "side": "learner",
+    "title": "How to renew or upgrade your plan",
+    "flow": "Learner App > Profile > Membership > Upgrade",
+    "description": "Move to a higher tier or extend your current plan.",
+    "route": "/membership-stats",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-cancel-your-subscription",
+    "side": "learner",
+    "title": "How to cancel your subscription",
+    "flow": "Learner App > Profile > Membership > Cancel",
+    "description": "End your active subscription.",
+    "route": "/membership-stats",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-download-your-certificate",
+    "side": "learner",
+    "title": "How to download your certificate",
+    "flow": "Learner App > My Certificates > [Certificate] > Download",
+    "description": "Save and share your completion certificates.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-share-a-certificate-to-linkedin",
+    "side": "learner",
+    "title": "How to share a certificate to LinkedIn",
+    "flow": "Learner App > My Certificates > [Certificate] > Share",
+    "description": "Post your achievement on LinkedIn.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-join-a-discussion-thread",
+    "side": "learner",
+    "title": "How to join a discussion thread",
+    "flow": "Learner App > Community > [Thread] > Join",
+    "description": "Participate in cohort discussions.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-follow-other-learners",
+    "side": "learner",
+    "title": "How to follow other learners",
+    "flow": "Learner App > Community > Profile > Follow",
+    "description": "Build a learning network inside your cohort.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-ask-a-question-in-the-community",
+    "side": "learner",
+    "title": "How to ask a question in the community",
+    "flow": "Learner App > Community > New Question",
+    "description": "Post a question to peers.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-update-the-app-over-the-air",
+    "side": "learner",
+    "title": "How to update the app over the air",
+    "flow": "Learner App > Settings > About > Check for Updates",
+    "description": "Pull the latest version without going to the store.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-enable-dark-mode",
+    "side": "learner",
+    "title": "How to enable dark mode",
+    "flow": "Learner App > Profile > Appearance > Dark Mode",
+    "description": "Switch to dark theme.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-clear-app-cache",
+    "side": "learner",
+    "title": "How to clear app cache",
+    "flow": "Learner App > Settings > Storage > Clear Cache",
+    "description": "Free up space on your device.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-submit-feedback-report-a-bug",
+    "side": "learner",
+    "title": "How to submit feedback / report a bug",
+    "flow": "Learner App > Profile > Help > Report",
+    "description": "Send feedback or report issues.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-contact-your-institute",
+    "side": "learner",
+    "title": "How to contact your institute",
+    "flow": "Learner App > Help > Contact Institute",
+    "description": "Reach your institute admin team for support.",
+    "route": "/manage-contacts",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-faqs",
+    "side": "learner",
+    "title": "How to view FAQs",
+    "flow": "Learner App > Help > FAQ",
+    "description": "Browse the help center for common questions.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-sign-up-and-complete-your-profile",
+    "side": "learner",
+    "title": "How to sign up and complete your profile",
+    "flow": "Sign Up > Verify OTP > Profile > Edit > Upload Photo > Personal Details",
+    "description": "Sign up with email or phone / verify OTP / fill in name & photo & details. The very first thing every new learner does.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-navigate-your-dashboard-2",
+    "side": "learner",
+    "title": "How to navigate your dashboard",
+    "flow": "Dashboard > My Courses + Live Classes + Streak + Notifications + Achievements",
+    "description": "Tour the home screen so learners know where everything lives: courses / live class calendar / streak counter / notifications / achievements.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-take-your-first-course",
+    "side": "learner",
+    "title": "How to take your first course",
+    "flow": "My Courses > [Course] > [Chapter] > Slide > Mark Complete > Download PDF > Offline Access",
+    "description": "The core learner flow: open a course / start a chapter / view slides / mark complete / download materials / enable offline access for travel or low-signal.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-join-and-follow-up-on-a-live-class",
+    "side": "learner",
+    "title": "How to join and follow up on a live class",
+    "flow": "Live Sessions > Upcoming > Join > Past > Watch Recording > Attendance",
+    "description": "View your schedule of live classes / join one at the right time / re-watch the recording afterwards / check your attendance percentage.",
+    "route": "/study-library/live-session",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-take-an-assessment-2",
+    "side": "learner",
+    "title": "How to take an assessment",
+    "flow": "Assessments > [Assessment] > Start > Attempt > Submit > Result > Marks Breakdown > Response Analysis",
+    "description": "The complete assessment flow: start a timed test / attempt questions / submit / see your score / view marks per section / review your answers vs correct ones.",
+    "route": "/assessment/assessment-list",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-ask-a-doubt-and-use-the-ai-tutor",
+    "side": "learner",
+    "title": "How to ask a doubt and use the AI tutor",
+    "flow": "Courses > [Chapter] > Ask Doubt > Attach Photo > AI Tutor > Replies",
+    "description": "Two ways to get help: ask your instructor a doubt with a photo of your work / OR use the AI Tutor for instant 24/7 answers.",
+    "route": "/study-library/courses",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-make-a-payment",
+    "side": "learner",
+    "title": "How to make a payment",
+    "flow": "My Payments > Invoices > [Invoice] > Pay > UPI/Card/Netbanking > Receipt > History",
+    "description": "Pay an invoice using UPI / card / netbanking / download the receipt / view your payment history. Covers everything about money in the app.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-update-your-profile-and-notification-settings",
+    "side": "learner",
+    "title": "How to update your profile and notification settings",
+    "flow": "Profile > Edit > Photo + Password + 2FA + Notifications + Privacy Screen",
+    "description": "Manage your account: update details / change password / enable two-factor auth / pick which notifications you want / turn on privacy screen on mobile.",
+    "route": "/dashboard",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-use-the-mobile-app-like-a-pro",
+    "side": "learner",
+    "title": "How to use the mobile app like a pro",
+    "flow": "Install > Offline Download > Dark Mode > OTA Updates",
+    "description": "Install on iOS or Android / pre-download chapters for offline study / switch to dark mode / pull the latest app version without going to the store.",
+    "route": "/settings",
+    "tab": null
+  },
+  {
+    "slug": "learner-how-to-view-your-reports-and-certificates",
+    "side": "learner",
+    "title": "How to view your reports and certificates",
+    "flow": "My Reports > Performance + Subjects > My Certificates > Download > Share to LinkedIn",
+    "description": "Track your performance over time / drill into subject-wise insights / download your completion certificates / share achievements on LinkedIn.",
+    "route": "/dashboard",
+    "tab": null
+  }
+]

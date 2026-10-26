@@ -1,0 +1,15 @@
+{
+  "name": "vacademy-walkthrough-generator",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Generates animated HTML walkthrough videos for Vacademy flows (CSV -> prompts; guarded Playwright screenshot capture).",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "inspect-login": "node capture/inspect-login.mjs",
+    "capture": "node capture/capture.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

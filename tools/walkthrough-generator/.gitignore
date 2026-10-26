@@ -1,0 +1,12 @@
+# Generated output (prompts, flows, screenshots, html) — regenerable
+out/
+screenshots/
+capture/_inspect/
+
+# Secrets / local config for the capture stage — NEVER commit
+.env
+.env.*
+auth-state.json
+
+# Node
+node_modules/
