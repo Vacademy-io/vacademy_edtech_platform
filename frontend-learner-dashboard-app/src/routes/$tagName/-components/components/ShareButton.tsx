@@ -17,7 +17,17 @@ interface ShareButtonProps {
     size?: "sm" | "md";
     /** "icon": the round icon on cards; "button": an outlined "Share" button. */
     variant?: "icon" | "button";
+    /** A random 6-character code ("k7m2px") instead of a slug of the title. */
+    randomCode?: boolean;
 }
+
+// Lowercase, without the look-alikes 0/o, 1/l/i. media-service keeps a lowercase a-z0-9
+// hint as the code itself (and adds a suffix only if it is taken).
+const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
+const randomShortCode = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(6));
+    return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
+};
 
 export const ShareButton: React.FC<ShareButtonProps> = ({
     packageSessionId,
@@ -27,6 +37,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
     className = "",
     size = "sm",
     variant = "icon",
+    randomCode = false,
 }) => {
     const { t } = useTranslation("coursePlayerB");
     const [open, setOpen] = useState(false);
@@ -43,7 +54,8 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
                 sourceId: packageSessionId,
                 destinationUrl,
                 instituteId,
-                shortCode: title || null, // used as hint for slug-based short code
+                // used as hint for slug-based short code
+                shortCode: randomCode ? randomShortCode() : title || null,
             });
             setShortUrl(res.data.absoluteUrl);
         } catch {

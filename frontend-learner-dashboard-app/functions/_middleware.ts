@@ -116,6 +116,8 @@ interface PageSeo {
   title?: string;
   description?: string;
   ogImage?: string;
+  /** A ready-to-use image URL (already the right type and size): skips the branding-image proxy. */
+  ogImageDirect?: string;
 }
 
 interface CataloguePage {
@@ -344,6 +346,96 @@ async function resolveCataloguePage(
     }
   }
   return null;
+}
+
+/** Course ids as the site routes them: a uuid, or digits (RootMountedSegment). */
+const COURSE_ID_SEGMENT =
+  /^(?:\d+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/**
+ * `source` resized by Cloudflare Image Transformations to a 1200px JPEG, or "" when the
+ * host's zone does not have them on (or does not allow the media origin). Covers are
+ * often 1-3 MB PNGs and WhatsApp drops a preview image that large; resized they are
+ * ~100-250 KB. Checked with a cached HEAD, so a zone without transformations simply
+ * keeps the full-size image.
+ */
+async function resizedImageUrl(origin: string, source: string): Promise<string> {
+  const resized = `${origin}/cdn-cgi/image/width=1200,quality=75,format=jpeg/${source}`;
+  try {
+    const res = await fetch(resized, {
+      method: "HEAD",
+      cf: { cacheTtl: 86400, cacheEverything: true },
+    } as RequestInit);
+    return res.ok && (res.headers.get("content-type") || "").startsWith("image/") ? resized : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Plain text of stored HTML, for a description tag. */
+const htmlToText = (html: string): string =>
+  html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * A course details page: "/{courseId}" on a root-mounted host, "/{tag}/{courseId}"
+ * elsewhere. A shared course link then unfurls with the course's own name and
+ * cover (the image its page shows first) instead of the institute card.
+ */
+async function resolveCourseSeo(
+  backendBase: string,
+  branding: DomainRoutingResponse,
+  segs: string[],
+  origin: string
+): Promise<PageSeo | null> {
+  const courseId =
+    segs.length === 1 && nonEmpty(branding.rootCatalogueTag)
+      ? segs[0]
+      : segs.length === 2
+        ? segs[1]
+        : "";
+  if (!courseId || !COURSE_ID_SEGMENT.test(courseId)) return null;
+  try {
+    const url =
+      `${backendBase}/admin-core-service/open/v1/learner-study-library/course-init` +
+      `?instituteId=${encodeURIComponent(branding.instituteId)}&courseId=${encodeURIComponent(courseId)}`;
+    const res = await fetch(url, {
+      headers: { accept: "application/json" },
+      cf: { cacheTtl: 300, cacheEverything: true },
+    } as RequestInit);
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{
+      course?: {
+        package_name?: string;
+        course_preview_image_media_id?: string;
+        thumbnail_file_id?: string;
+        course_banner_media_id?: string;
+        about_the_course?: string;
+        course_html_description?: string;
+      };
+    }>;
+    const course = Array.isArray(data) ? data[0]?.course : undefined;
+    const title = nonEmpty(course?.package_name);
+    if (!course || !title) return null;
+    const coverId =
+      nonEmpty(course.course_preview_image_media_id) ||
+      nonEmpty(course.thumbnail_file_id) ||
+      nonEmpty(course.course_banner_media_id);
+    const about = htmlToText(course.about_the_course || course.course_html_description || "");
+    const cover = coverId ? await resolveLogoUrl(coverId, backendBase) : "";
+    return {
+      title,
+      description: about ? about.slice(0, 200) : nonEmpty(branding.instituteName),
+      ogImage: cover,
+      ogImageDirect: cover ? (await resizedImageUrl(origin, cover)) || undefined : undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -865,7 +957,10 @@ export const onRequest: PagesFunction = async (context) => {
   const resolved = looksLikeCatalogue
     ? await resolveCataloguePage(backendBase, branding, segs)
     : null;
-  const pageSeo = resolved ? pageSeoOf(resolved.page, resolved.post) : null;
+  // Not a page: maybe a course details page, which has no catalogue page entry.
+  const courseSeo =
+    !resolved && looksLikeCatalogue ? await resolveCourseSeo(backendBase, branding, segs, url.origin) : null;
+  const pageSeo = resolved ? pageSeoOf(resolved.page, resolved.post) : courseSeo;
   const post = resolved?.post;
 
   // The request's site language: ?lang= when the site offers it and has
@@ -908,9 +1003,9 @@ export const onRequest: PagesFunction = async (context) => {
   // Page-level OG image (stored as a full public URL) wins over the logo;
   // both go through the same-origin proxy for the content-type fix.
   const ogImageSource = pageSeo?.ogImage || ogImage;
-  const ogImageProxied = ogImageSource
-    ? `${url.origin}/branding-image?u=${encodeURIComponent(ogImageSource)}`
-    : "";
+  const ogImageProxied =
+    pageSeo?.ogImageDirect ||
+    (ogImageSource ? `${url.origin}/branding-image?u=${encodeURIComponent(ogImageSource)}` : "");
 
   // Build OG meta tags
   const ogTags = [
@@ -922,8 +1017,8 @@ export const onRequest: PagesFunction = async (context) => {
     post && nonEmpty(post.published_at)
       ? `<meta property="article:published_time" content="${escapeHtml(post.published_at!)}" />`
       : "",
-    // Twitter card — a post with a cover gets the large card.
-    `<meta name="twitter:card" content="${post && ogImageProxied ? "summary_large_image" : "summary"}" />`,
+    // Twitter card — a post or a course with a cover gets the large card.
+    `<meta name="twitter:card" content="${(post || courseSeo) && ogImageProxied ? "summary_large_image" : "summary"}" />`,
     `<meta name="twitter:title" content="${title}" />`,
     `<meta name="twitter:description" content="${description}" />`,
     ogImageProxied ? `<meta name="twitter:image" content="${escapeHtml(ogImageProxied)}" />` : "",
