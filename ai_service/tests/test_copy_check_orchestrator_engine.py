@@ -95,6 +95,7 @@ def env(monkeypatch):
         is_configured = True
 
         async def submit_and_wait(self, pdf_url, **kwargs):
+            state["ocr_url"] = pdf_url
             if state["render_error"]:
                 raise state["render_error"]
             return {"pages": []}
@@ -114,7 +115,12 @@ def env(monkeypatch):
 
     async def fake_render_upload(pdf_url, layout_map, verdicts, attempt_id):
         state["rendered"] = [dict(v) for v in verdicts]
+        state["rendered_url"] = pdf_url
         return "checked-copy-1"
+
+    async def fake_straighten(pdf_url, llm, model, **kwargs):
+        state["straightened_from"] = pdf_url
+        return SimpleNamespace(pdf_url=state.get("upright_url") or pdf_url)
 
     snapshot = RubricSnapshot(rubric_version=4, fixed_rubric={"q1": RUBRIC, "q2": RUBRIC, "q3": RUBRIC})
     monkeypatch.setattr(orchestrator, "load_snapshot", lambda db, assessment_id: snapshot)
@@ -129,6 +135,7 @@ def env(monkeypatch):
         locate_answers=fake_locate, pages_for_question=lambda *a: None,
         paper_order=lambda qs: [q["question_id"] for q in qs]))
     monkeypatch.setattr(orchestrator, "annotator", SimpleNamespace(render_and_upload=fake_render_upload))
+    monkeypatch.setattr(orchestrator, "orientation", SimpleNamespace(straighten_copy=fake_straighten))
     monkeypatch.setattr(orchestrator, "record_tool_billing", lambda **kw: state["billed"].append(kw))
     monkeypatch.setattr(orchestrator, "cancellation", SimpleNamespace(
         Cancelled=_Cancelled, check=lambda *a: None, is_cancelled=lambda *a: False, cleanup=lambda *a, **k: None))
@@ -157,6 +164,21 @@ def test_plain_copy_unchanged_flow_with_criteria_max(env):
     assert complete["evaluated_file_id"] == "checked-copy-1"
     assert _posts(env, "failed") == []
     assert env["billed"][0]["tool_params"] == {"num_questions": 3}
+
+
+def test_upright_copy_is_what_ocr_and_the_checked_copy_use(env):
+    env["upright_url"] = "https://media/upright-copy.pdf"
+    _run(_payload())
+    assert env["straightened_from"] == "https://media/copy.pdf"
+    assert env["ocr_url"] == env["rendered_url"] == "https://media/upright-copy.pdf"
+    assert ("progress", "ORIENTATION_CHECK") in [(k, p.get("step")) for k, p in env["posts"]]
+
+
+def test_orientation_can_be_switched_off(env, monkeypatch):
+    monkeypatch.setattr(orchestrator, "ORIENTATION_ENABLED", False)
+    env["upright_url"] = "https://media/upright-copy.pdf"
+    _run(_payload())
+    assert "straightened_from" not in env and env["ocr_url"] == "https://media/copy.pdf"
 
 
 def test_exam_context_reaches_the_grader(env):
