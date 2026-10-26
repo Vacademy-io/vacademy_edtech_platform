@@ -20,8 +20,8 @@ interface SessionInfoProps {
   logoHeightPx?: number | null;
   /** institute_domain_routing.hide_institute_name — logos that embed the name. */
   hideInstituteName?: boolean | null;
-  /** Frosted panel styling for when the page renders a hero background. */
-  glass?: boolean;
+  /** Admin-uploaded session cover, shown whole in this column. */
+  coverImageUrl?: string;
 }
 
 export default function SessionInfo({
@@ -34,7 +34,7 @@ export default function SessionInfo({
   logoWidthPx,
   logoHeightPx,
   hideInstituteName,
-  glass,
+  coverImageUrl,
 }: SessionInfoProps) {
   const { t } = useTranslation("registrationA");
   // Mirrors InstituteBrandingComponent: an explicit width/height from
@@ -95,12 +95,7 @@ export default function SessionInfo({
   const convertedStartTime = getConvertedStartTime();
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-6 h-full w-full lg:w-1/2 lg:max-w-reg-560 items-center",
-        glass && "rounded-2xl bg-white/90 backdrop-blur-md shadow-xl p-5 sm:p-8"
-      )}
-    >
+    <div className="flex flex-col gap-6 h-full w-full lg:w-1/2 lg:max-w-reg-560 items-center">
       {/* Institute Branding */}
       <div className="flex items-center gap-3">
         {instituteLogoUrl ? (
@@ -145,7 +140,17 @@ export default function SessionInfo({
         <CountdownTimer startTime={convertedStartTime} />
       )}
 
-      {/* Description Card or Illustration */}
+      {/* Session cover, uncropped */}
+      {coverImageUrl && (
+        <img
+          src={coverImageUrl}
+          alt={sessionTitle || ""}
+          className="w-auto max-w-full h-auto max-h-96 object-contain rounded-2xl shadow-sm"
+        />
+      )}
+
+      {/* Description Card or Illustration (the illustration only fills the
+          slot when there is no cover) */}
       {sessionDetails?.descriptionHtml &&
       sessionDetails.descriptionHtml.trim() !== "" ? (
         <Card className="w-full border-primary-100/60 shadow-sm">
@@ -158,7 +163,7 @@ export default function SessionInfo({
             />
           </CardContent>
         </Card>
-      ) : (
+      ) : coverImageUrl ? null : (
         <div className="w-full flex items-center justify-center py-2">
           <img
             src={RegistrationLogo}
