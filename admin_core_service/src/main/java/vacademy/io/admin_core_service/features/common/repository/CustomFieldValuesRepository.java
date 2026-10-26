@@ -215,7 +215,7 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
                   AND cfv.value IS NOT NULL
                   AND cfv.value <> ''
                   AND opt.v <> ''
-                  AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                  AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                 ORDER BY opt.v ASC
             """, countQuery = """
                 SELECT COUNT(DISTINCT opt.v)
@@ -231,7 +231,7 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
                   AND cfv.value IS NOT NULL
                   AND cfv.value <> ''
                   AND opt.v <> ''
-                  AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                  AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
             """, nativeQuery = true)
     Page<String> findDistinctStudentCustomFieldValues(
             @Param("instituteId") String instituteId,
@@ -264,7 +264,7 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
                       AND opt.v <> ''
-                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                     UNION
                     SELECT DISTINCT opt.v AS value
                     FROM custom_field_values cfv
@@ -280,7 +280,7 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
                       AND opt.v <> ''
-                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                 ) combined
                 ORDER BY value ASC
             """, countQuery = """
@@ -298,7 +298,7 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
                       AND opt.v <> ''
-                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                     UNION
                     SELECT DISTINCT opt.v AS value
                     FROM custom_field_values cfv
@@ -314,7 +314,7 @@ public interface CustomFieldValuesRepository extends JpaRepository<CustomFieldVa
                       AND cfv.value IS NOT NULL
                       AND cfv.value <> ''
                       AND opt.v <> ''
-                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                      AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                 ) combined
             """, nativeQuery = true)
     Page<String> findDistinctContactCustomFieldValues(

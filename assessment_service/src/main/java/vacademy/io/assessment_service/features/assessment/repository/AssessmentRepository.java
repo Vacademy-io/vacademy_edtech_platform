@@ -103,7 +103,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id\s
             LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id\s
             LEFT JOIN public.assessment_user_access aua ON a.id = aua.assessment_id\s
-            WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%')))\s
+            WHERE (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))\s
             AND (:checkBatches IS NULL OR abr.batch_id IN :batchIds)\s
             AND (:checkSubjects IS NULL OR aim.subject_id IN :subjectsIds)\s
             AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds)\s
@@ -115,7 +115,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes)\s
             AND a.status <> 'DELETED'\s
             AND a.evaluation_type = 'MANUAL'\s
-            and (:userRole IS NULL OR :userRole = '' OR LOWER(aim.comma_separated_evaluation_roles) LIKE LOWER(CONCAT('%', :userRole, '%')))\s
+            and (CAST(:userRole AS text) IS NULL OR :userRole = '' OR LOWER(aim.comma_separated_evaluation_roles) LIKE LOWER(CONCAT('%', CAST(:userRole AS text), '%')))\s
             GROUP BY a.id, aim.subject_id, aim.assessment_url)
             union (
             SELECT DISTINCT a.id, a.name, a.play_mode, a.evaluation_type, a.submission_type, a.duration,\s
@@ -129,7 +129,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id\s
             LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id\s
             LEFT JOIN public.assessment_user_access aua ON a.id = aua.assessment_id\s
-            WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%')))\s
+            WHERE (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))\s
             AND (:checkBatches IS NULL OR abr.batch_id IN :batchIds)\s
             AND (:checkSubjects IS NULL OR aim.subject_id IN :subjectsIds)\s
             AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds)\s
@@ -142,7 +142,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
             AND a.status <> 'DELETED'\s
             AND a.evaluation_type = 'MANUAL'\s
             AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes)
-            and (:userId IS NULL OR :userId = '' OR LOWER(aim.comma_separated_evaluation_user_ids) LIKE LOWER(CONCAT('%', :userId, '%')))\s
+            and (CAST(:userId AS text) IS NULL OR :userId = '' OR LOWER(aim.comma_separated_evaluation_user_ids) LIKE LOWER(CONCAT('%', CAST(:userId AS text), '%')))\s
             GROUP BY a.id, aim.subject_id, aim.assessment_url
             )
             )
@@ -160,7 +160,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                     LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id\s
                     LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id\s
                     LEFT JOIN public.assessment_user_access aua ON a.id = aua.assessment_id\s
-                    WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%')))\s
+                    WHERE (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))\s
                     AND (:checkBatches IS NULL OR abr.batch_id IN :batchIds)\s
                     AND (:checkSubjects IS NULL OR aim.subject_id IN :subjectsIds)\s
                     AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds)\s
@@ -172,7 +172,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                     AND (:assessmentModes IS NULL OR a.play_mode IN :assessmentModes)\s
                     AND a.status <> 'DELETED'\s
                     AND a.evaluation_type = 'MANUAL'\s
-                    and (:userRole IS NULL OR :userRole = '' OR LOWER(aim.comma_separated_evaluation_roles) LIKE LOWER(CONCAT('%', :userRole, '%')))\s
+                    and (CAST(:userRole AS text) IS NULL OR :userRole = '' OR LOWER(aim.comma_separated_evaluation_roles) LIKE LOWER(CONCAT('%', CAST(:userRole AS text), '%')))\s
                     GROUP BY a.id, aim.subject_id, aim.assessment_url)
                     union (
                     SELECT DISTINCT a.id, a.name, a.play_mode, a.evaluation_type, a.submission_type, a.duration,\s
@@ -186,7 +186,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                     LEFT JOIN public.assessment_batch_registration abr ON a.id = abr.assessment_id\s
                     LEFT JOIN public.assessment_institute_mapping aim ON a.id = aim.assessment_id\s
                     LEFT JOIN public.assessment_user_access aua ON a.id = aua.assessment_id\s
-                    WHERE (:name IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%')))\s
+                    WHERE (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))\s
                     AND (:checkBatches IS NULL OR abr.batch_id IN :batchIds)\s
                     AND (:checkSubjects IS NULL OR aim.subject_id IN :subjectsIds)\s
                     AND (:instituteIds IS NULL OR aim.institute_id IN :instituteIds)\s
@@ -199,7 +199,7 @@ public interface AssessmentRepository extends CrudRepository<Assessment, String>
                     AND a.status <> 'DELETED'\s
                     AND a.evaluation_type = 'MANUAL'\s
                     AND (:assessmentTypes IS NULL OR a.assessment_type IN :assessmentTypes)
-                    and (:userId IS NULL OR :userId = '' OR LOWER(aim.comma_separated_evaluation_user_ids) LIKE LOWER(CONCAT('%', :userId, '%')))\s
+                    and (CAST(:userId AS text) IS NULL OR :userId = '' OR LOWER(aim.comma_separated_evaluation_user_ids) LIKE LOWER(CONCAT('%', CAST(:userId AS text), '%')))\s
                     GROUP BY a.id, aim.subject_id, aim.assessment_url
                     )
                     )

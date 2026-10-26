@@ -401,9 +401,9 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
                 CASE
                     WHEN LOWER(p.package_name) = LOWER(:query) THEN 100
                     WHEN LOWER(COALESCE(ps.name, '')) = LOWER(:query) THEN 100
-                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT(:query, '%')) THEN 90
-                    WHEN LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT(:query, '%')) THEN 90
-                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT('% ', :query, '%')) THEN 80
+                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT(CAST(:query AS text), '%')) THEN 90
+                    WHEN LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT(CAST(:query AS text), '%')) THEN 90
+                    WHEN LOWER(p.package_name) LIKE LOWER(CONCAT('% ', CAST(:query AS text), '%')) THEN 80
                     ELSE 70
                 END AS matchScore
             FROM package_session ps
@@ -413,8 +413,8 @@ public interface PackageSessionRepository extends JpaRepository<PackageSession, 
             JOIN session s ON ps.session_id = s.id
                         WHERE
                             pi.institute_id = :instituteId
-                            AND (LOWER(p.package_name) LIKE LOWER(CONCAT('%', :query, '%'))
-                                 OR LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT('%', :query, '%')))
+                            AND (LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+                                 OR LOWER(COALESCE(ps.name, '')) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')))
                             AND (:sessionId IS NULL OR :sessionId = '' OR ps.session_id = :sessionId)
                             AND (:levelId IS NULL OR :levelId = '' OR ps.level_id = :levelId)
                             AND ps.status IN ('ACTIVE', 'HIDDEN','DRAFT')

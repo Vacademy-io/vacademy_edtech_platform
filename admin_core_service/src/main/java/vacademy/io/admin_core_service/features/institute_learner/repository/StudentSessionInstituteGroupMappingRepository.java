@@ -853,7 +853,7 @@ public interface StudentSessionInstituteGroupMappingRepository
       FROM student_session_institute_group_mapping ssigm
       WHERE ssigm.sub_org_id = :subOrgId
         AND ssigm.package_session_id = :packageSessionId
-        AND ssigm.comma_separated_org_roles LIKE CONCAT('%', :role, '%')
+        AND ssigm.comma_separated_org_roles LIKE CONCAT('%', CAST(:role AS text), '%')
         AND ssigm.status = 'ACTIVE'
       """, nativeQuery = true)
   List<String> findAdminUserIdsForSubOrg(

@@ -291,7 +291,7 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
             ORDER BY lsp.session_id, ss.id, m.user_id, m.enrolled_date DESC NULLS LAST
         ) r
         JOIN student s ON s.user_id = r.user_id
-        WHERE (:name IS NULL OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', :name, '%')))
+        WHERE (CAST(:name AS text) IS NULL OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
           AND (:batchIdsSize = 0 OR r.package_session_id IN (:batchIds))
           AND (:liveSessionIdsSize = 0 OR r.session_id IN (:liveSessionIds))
         """,
@@ -323,7 +323,7 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
             ORDER BY lsp.session_id, ss.id, m.user_id, m.enrolled_date DESC NULLS LAST
         ) r
         JOIN student s ON s.user_id = r.user_id
-        WHERE (:name IS NULL OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', :name, '%')))
+        WHERE (CAST(:name AS text) IS NULL OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
           AND (:batchIdsSize = 0 OR r.package_session_id IN (:batchIds))
           AND (:liveSessionIdsSize = 0 OR r.session_id IN (:liveSessionIds))
         """,
@@ -610,9 +610,9 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
                   AND p.source_type = 'BATCH'
                   AND p.source_id IN (:batchIds)))
           AND (:subjectsSize = 0 OR ls.subject IN (:subjects))
-          AND (:search IS NULL
-                OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', :search, '%'))
-                OR LOWER(ls.title) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (CAST(:search AS text) IS NULL
+                OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                OR LOWER(ls.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
           AND (:hasRatingBelow = 0 OR (
                 SELECT CAST(CAST(fbl.details AS jsonb) ->> (q.value ->> 'id') AS numeric)
                 FROM jsonb_array_elements(
@@ -658,9 +658,9 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
                   AND p.source_type = 'BATCH'
                   AND p.source_id IN (:batchIds)))
           AND (:subjectsSize = 0 OR ls.subject IN (:subjects))
-          AND (:search IS NULL
-                OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', :search, '%'))
-                OR LOWER(ls.title) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (CAST(:search AS text) IS NULL
+                OR LOWER(s.full_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                OR LOWER(ls.title) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
           AND (:hasRatingBelow = 0 OR (
                 SELECT CAST(CAST(fbl.details AS jsonb) ->> (q.value ->> 'id') AS numeric)
                 FROM jsonb_array_elements(

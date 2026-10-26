@@ -797,14 +797,14 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
                     AND (
-                        :name IS NULL OR
-                        LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
-                        LOWER(l.level_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                        CAST(:name AS text) IS NULL OR
+                        LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
+                        LOWER(l.level_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
                         EXISTS (
                             SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
-                            WHERE LOWER(tag) LIKE LOWER(CONCAT('%', :name, '%'))
+                            WHERE LOWER(tag) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                         ) OR
-                        LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', :name, '%'))
+                        LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                     )
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
@@ -836,14 +836,14 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
                     AND (
-                        :name IS NULL OR
-                        LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
-                        LOWER(l.level_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                        CAST(:name AS text) IS NULL OR
+                        LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
+                        LOWER(l.level_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
                         EXISTS (
                             SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
-                            WHERE LOWER(tag) LIKE LOWER(CONCAT('%', :name, '%'))
+                            WHERE LOWER(tag) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                         ) OR
-                        LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', :name, '%'))
+                        LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                     )
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
                     AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
@@ -1013,12 +1013,12 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     )
                 )
                 AND (
-                    :name IS NULL OR
-                    LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
-                    LOWER(l.level_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                    CAST(:name AS text) IS NULL OR
+                    LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
+                    LOWER(l.level_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
                     EXISTS (
                         SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
-                        WHERE LOWER(tag) LIKE LOWER(CONCAT('%', :name, '%'))
+                        WHERE LOWER(tag) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                     )
                 )
                 AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
@@ -1078,12 +1078,12 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                                 )
                             )
                             AND (
-                                :name IS NULL OR
-                                LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
-                                LOWER(l.level_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                                CAST(:name AS text) IS NULL OR
+                                LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
+                                LOWER(l.level_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
                                 EXISTS (
                                     SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
-                                    WHERE LOWER(tag) LIKE LOWER(CONCAT('%', :name, '%'))
+                                    WHERE LOWER(tag) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                                 )
                             )
                             AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
@@ -1703,14 +1703,14 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     )
                 )
                 AND (
-                    :name IS NULL OR
-                    LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
-                    LOWER(l.level_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                    CAST(:name AS text) IS NULL OR
+                    LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
+                    LOWER(l.level_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
                     EXISTS (
                         SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
-                        WHERE LOWER(tag) LIKE LOWER(CONCAT('%', :name, '%'))
+                        WHERE LOWER(tag) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                     ) OR
-                    LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', :name, '%'))
+                    LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                 )
             GROUP BY p.id, p.created_at
             ORDER BY p.created_at DESC
@@ -1791,14 +1791,14 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     )
                 )
                 AND (
-                    :name IS NULL OR
-                    LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
-                    LOWER(l.level_name) LIKE LOWER(CONCAT('%', :name, '%')) OR
+                    CAST(:name AS text) IS NULL OR
+                    LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
+                    LOWER(l.level_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')) OR
                     EXISTS (
                         SELECT 1 FROM unnest(string_to_array(p.comma_separated_tags, ',')) AS tag
-                        WHERE LOWER(tag) LIKE LOWER(CONCAT('%', :name, '%'))
+                        WHERE LOWER(tag) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                     ) OR
-                    LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', :name, '%'))
+                    LOWER(COALESCE(fspm.name, '')) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%'))
                 )
             """, nativeQuery = true)
     long countDistinctPackages(
@@ -3165,7 +3165,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
-                    AND (:name IS NULL OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')))
+                    AND (CAST(:name AS text) IS NULL OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
                     AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))
@@ -3218,7 +3218,7 @@ public interface PackageRepository extends JpaRepository<PackageEntity, String> 
                     AND (:#{#levelStatus == null || #levelStatus.isEmpty()} = true OR l.status IN (:levelStatus))
                     AND (:#{#levelIds == null || #levelIds.isEmpty()} = true OR l.id IN (:levelIds))
                     AND (:#{#sessionIds == null || #sessionIds.isEmpty()} = true OR ps.session_id IN (:sessionIds))
-                    AND (:name IS NULL OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', :name, '%')))
+                    AND (CAST(:name AS text) IS NULL OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
                     AND (:#{#tags == null || #tags.isEmpty()} = true OR string_to_array(p.comma_separated_tags, ',') && CAST(ARRAY[:tags] AS text[]))
                     AND (:#{#createdByUserId == null || #createdByUserId.isEmpty()} = true OR p.created_by_user_id = :createdByUserId)
                     AND (:#{#packageIds == null || #packageIds.isEmpty()} = true OR p.id IN (:packageIds))

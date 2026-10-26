@@ -3,8 +3,10 @@ import { FitImage } from "@/components/common/fit-image/FitImage";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import {
   ArrowLeft,
+  BookOpen,
   CaretRight,
   Folder,
   MagnifyingGlass,
@@ -14,7 +16,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useCourseTerms } from "@/routes/$tagName/-utils/catalogue-naming";
 import { useSiteT } from "@/routes/$tagName/-utils/catalogue-locale";
+import { urlCourseDetails } from "@/constants/urls";
 import { ProductPageOfferComponent } from "./ProductPageOfferComponent";
+import { courseIdOf, courseSitePath, type CourseSearchRow } from "../header/header-search";
+import { RouteMatcher } from "../../-services/route-matcher";
+import { useSiteNavigate } from "../../-utils/catalogue-route-search";
+import { resolveCoursePageRoute } from "../../-utils/course-page-routing";
 import { isSiteCartEnabled } from "../../-utils/site-cart";
 import type { GlobalSettings } from "../../-types/course-catalogue-types";
 import {
@@ -76,6 +83,36 @@ interface FolderBrowserProps {
 const FOLDER_PARAM = "folder";
 /** Below this many nodes a search box is noise. */
 const SEARCH_MIN_NODES = 8;
+/** Courses are searched by name from this many characters (one letter matches half the catalogue). */
+const COURSE_SEARCH_MIN_CHARS = 2;
+const COURSE_SEARCH_LIMIT = 20;
+const COURSE_SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * Courses whose name contains `name`. The folder tree only knows folders and
+ * product pages, so without this a visitor typing a course's name finds
+ * nothing. Same open search as the catalogue grid and the header search.
+ */
+const searchCoursesByName = async (instituteId: string, name: string): Promise<CourseSearchRow[]> => {
+  const res = await axios.post(
+    urlCourseDetails,
+    {
+      status: [],
+      level_ids: [],
+      faculty_ids: [],
+      search_by_name: name,
+      tag: [],
+      min_percentage_completed: 0,
+      max_percentage_completed: 0,
+    },
+    {
+      params: { instituteId, page: 0, size: COURSE_SEARCH_LIMIT, sort: "createdAt,desc" },
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+  const raw = res.data?.content || [];
+  return Array.isArray(raw) ? raw : [];
+};
 
 const ASPECT: Record<Exclude<FolderImageShape, "none">, string> = {
   landscape: "catalogue-aspect-video",
@@ -158,6 +195,12 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
   const router = useRouter();
   const sectionRef = useRef<HTMLElement | null>(null);
   const [query, setQuery] = useState("");
+  const [courseQuery, setCourseQuery] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setCourseQuery(query.trim()), COURSE_SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [query]);
+  const siteNavigate = useSiteNavigate();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["FOLDER_LIBRARY_PUBLIC", instituteId, libraryId],
@@ -254,6 +297,43 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
         .some((s) => s.toLowerCase().includes(q)),
     );
   }, [query, searchable, siteT]);
+
+  // Courses by name, alongside the folder matches (search box only shows at the top level).
+  const courseSearchOn =
+    showSearch && !current && Boolean(instituteId) && courseQuery.length >= COURSE_SEARCH_MIN_CHARS;
+  const courseSearch = useQuery({
+    queryKey: ["FOLDER_BROWSER_COURSE_SEARCH", instituteId, courseQuery],
+    queryFn: () => searchCoursesByName(instituteId!, courseQuery),
+    enabled: courseSearchOn,
+    staleTime: 60_000,
+    // A failed search shows the folder matches at once, not after three retries.
+    retry: false,
+  });
+  const courseResults = useMemo(() => {
+    if (!courseSearchOn || query.trim() !== courseQuery) return [];
+    // One row per course: the search returns one per version (level / session).
+    const seen = new Set<string>();
+    return (courseSearch.data || []).filter((row) => {
+      const id = courseIdOf(row);
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }, [courseSearchOn, query, courseQuery, courseSearch.data]);
+  // Typing, waiting for the debounce, or fetching: not "no results" yet.
+  const courseSearchPending =
+    query.trim().length >= COURSE_SEARCH_MIN_CHARS && (query.trim() !== courseQuery || courseSearch.isFetching);
+
+  /** The course page link a catalogue card would open, as an app path. */
+  const coursePath = (row: CourseSearchRow): string | null => {
+    const sitePath = courseSitePath(
+      row,
+      resolveCoursePageRoute(globalSettings, { courseId: courseIdOf(row), packageSessionId: row.package_session_id }),
+    );
+    if (!sitePath) return null;
+    const [path, qs] = sitePath.split("?");
+    return `${RouteMatcher.pagePath(tagName || "", path)}${qs ? `?${qs}` : ""}`;
+  };
 
   const isCenter = align === "center";
   const homeLabel = base ? titleOf(base) : t("folderBrowser.home", "All");
@@ -569,14 +649,19 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
             ))}
           </div>
         ) : shownResults ? (
-          shownResults.length === 0 ? (
-            <p className="py-8 text-center text-sm text-catalogue-text-muted">
-              {t("folderBrowser.noResults", { query: query.trim(), defaultValue: "Nothing matches “{{query}}”." })}
+          shownResults.length + courseResults.length === 0 ? (
+            <p className="py-8 text-center text-sm text-catalogue-text-muted" aria-live="polite">
+              {courseSearchPending
+                ? t("folderBrowser.searching", "Searching…")
+                : t("folderBrowser.noResults", { query: query.trim(), defaultValue: "Nothing matches “{{query}}”." })}
             </p>
           ) : (
             <div className="catalogue-card divide-y divide-catalogue-border overflow-hidden">
               <p className="px-4 py-2 text-xs font-medium text-catalogue-text-muted" aria-live="polite">
-                {t("folderBrowser.resultCount", { count: shownResults.length, defaultValue: "{{count}} matches" })}
+                {t("folderBrowser.resultCount", {
+                  count: shownResults.length + courseResults.length,
+                  defaultValue: "{{count}} matches",
+                })}
               </p>
               {shownResults.map(({ node, trail: path }) => {
                 const isFolder = node.node_type === "FOLDER";
@@ -607,6 +692,32 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
                     </div>
                     <CaretRight className="size-4 shrink-0 text-catalogue-text-muted rtl:rotate-180" aria-hidden="true" />
                   </button>
+                );
+              })}
+              {courseResults.map((row) => {
+                const href = coursePath(row);
+                if (!href) return null;
+                return (
+                  <a
+                    key={`course-${courseIdOf(row)}`}
+                    href={href}
+                    onClick={(event) => {
+                      // A new tab / window keeps the browser's own behaviour.
+                      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                      event.preventDefault();
+                      void siteNavigate(href);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-start no-underline transition-colors hover:bg-catalogue-interactive-hover"
+                  >
+                    <BookOpen className="size-5 shrink-0 text-catalogue-brand-ink" weight="duotone" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-catalogue-text-primary">
+                        {siteT(row.package_name || "")}
+                      </p>
+                      <p className="truncate text-xs text-catalogue-text-muted">{terms.course}</p>
+                    </div>
+                    <CaretRight className="size-4 shrink-0 text-catalogue-text-muted rtl:rotate-180" aria-hidden="true" />
+                  </a>
                 );
               })}
             </div>

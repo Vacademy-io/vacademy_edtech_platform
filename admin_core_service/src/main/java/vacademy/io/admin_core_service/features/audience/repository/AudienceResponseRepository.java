@@ -391,9 +391,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (CAST(:activityTo AS timestamp) IS NULL OR act.last_activity_at <= CAST(:activityTo AS timestamp))
                               AND (:excludeDuplicates IS NULL OR :excludeDuplicates = FALSE OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
                               AND (COALESCE(:searchQuery, '') = '' OR
-                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   ar.parent_mobile LIKE CONCAT('%', :searchQuery, '%') OR
+                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%') OR
                                    (COALESCE(:searchUserIdsCsv, '') != ''
                                     AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
                               AND (:minLeadScore IS NULL OR COALESCE(ls.raw_score, 0) >= :minLeadScore)
@@ -776,9 +776,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (CAST(:activityTo AS timestamp) IS NULL OR act.last_activity_at <= CAST(:activityTo AS timestamp))
                               AND (:excludeDuplicates IS NULL OR :excludeDuplicates = FALSE OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
                               AND (COALESCE(:searchQuery, '') = '' OR
-                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   ar.parent_mobile LIKE CONCAT('%', :searchQuery, '%') OR
+                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%') OR
                                    (COALESCE(:searchUserIdsCsv, '') != ''
                                     AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
                               AND (:minLeadScore IS NULL OR COALESCE(ls.raw_score, 0) >= :minLeadScore)
@@ -1173,9 +1173,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (CAST(:activityFrom AS timestamp) IS NULL OR act.last_activity_at >= CAST(:activityFrom AS timestamp))
                               AND (CAST(:activityTo AS timestamp) IS NULL OR act.last_activity_at <= CAST(:activityTo AS timestamp))
                               AND (COALESCE(:searchQuery, '') = '' OR
-                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   ar.parent_mobile LIKE CONCAT('%', :searchQuery, '%') OR
+                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%') OR
                                    (COALESCE(:searchUserIdsCsv, '') != ''
                                     AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
                               AND (COALESCE(:leadTier, '') = '' OR
@@ -1594,9 +1594,9 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (CAST(:activityFrom AS timestamp) IS NULL OR act.last_activity_at >= CAST(:activityFrom AS timestamp))
                               AND (CAST(:activityTo AS timestamp) IS NULL OR act.last_activity_at <= CAST(:activityTo AS timestamp))
                               AND (COALESCE(:searchQuery, '') = '' OR
-                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', :searchQuery, '%')) OR
-                                   ar.parent_mobile LIKE CONCAT('%', :searchQuery, '%') OR
+                                   LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%')) OR
+                                   ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%') OR
                                    (COALESCE(:searchUserIdsCsv, '') != ''
                                     AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
                               AND (COALESCE(:leadTier, '') = '' OR
@@ -1920,7 +1920,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND cfv.value IS NOT NULL
                               AND cfv.value <> ''
                               AND opt.v <> ''
-                              AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                              AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                             ORDER BY opt.v ASC
                         """, countQuery = """
                             SELECT COUNT(DISTINCT opt.v)
@@ -1937,7 +1937,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND cfv.value IS NOT NULL
                               AND cfv.value <> ''
                               AND opt.v <> ''
-                              AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', :search, '%'))
+                              AND (COALESCE(:search, '') = '' OR opt.v ILIKE CONCAT('%', CAST(:search AS text), '%'))
                         """, nativeQuery = true)
         Page<String> findDistinctLeadCustomFieldValues(
                         @Param("instituteId") String instituteId,

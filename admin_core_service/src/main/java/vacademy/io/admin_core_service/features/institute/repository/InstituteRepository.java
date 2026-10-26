@@ -72,11 +72,11 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
     @Query(value = """
             SELECT id, name AS instituteName
             FROM institutes
-            WHERE LOWER(name) LIKE LOWER(CONCAT('%', :query, '%'))
-               OR LOWER(address_line) LIKE LOWER(CONCAT('%', :query, '%'))
-               OR LOWER(city) LIKE LOWER(CONCAT('%', :query, '%'))
-               OR LOWER(state) LIKE LOWER(CONCAT('%', :query, '%'))
-               OR LOWER(pin_code) LIKE LOWER(CONCAT('%', :query, '%'))
+            WHERE LOWER(name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+               OR LOWER(address_line) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+               OR LOWER(city) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+               OR LOWER(state) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+               OR LOWER(pin_code) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
             ORDER BY name ASC
             LIMIT 20
             """, nativeQuery = true)
@@ -120,10 +120,10 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
                 JOIN package_institute pi ON p.id = pi.package_id
                 WHERE pi.institute_id = i.id AND ps.status IN ('ACTIVE','HIDDEN')
             ) bc ON true
-            WHERE (:search IS NULL OR :search = ''
-                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', :search, '%')))
+            WHERE (CAST(:search AS text) IS NULL OR :search = ''
+                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
             ORDER BY i.created_at DESC
             LIMIT :size OFFSET :offset
             """, nativeQuery = true)
@@ -132,10 +132,10 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
 
     @Query(value = """
             SELECT COUNT(*) FROM institutes i
-            WHERE (:search IS NULL OR :search = ''
-                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', :search, '%')))
+            WHERE (CAST(:search AS text) IS NULL OR :search = ''
+                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
             """, nativeQuery = true)
     Long countAllInstitutes(@Param("search") String search);
 
@@ -219,8 +219,8 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
             ) bt ON true
             WHERE pi.institute_id = :instituteId
               AND p.status != 'DELETED'
-              AND (:search IS NULL OR :search = ''
-                   OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', :search, '%')))
+              AND (CAST(:search AS text) IS NULL OR :search = ''
+                   OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
             ORDER BY p.created_at DESC
             LIMIT :size OFFSET :offset
             """, nativeQuery = true)
@@ -233,8 +233,8 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
             JOIN package_institute pi ON p.id = pi.package_id
             WHERE pi.institute_id = :instituteId
               AND p.status != 'DELETED'
-              AND (:search IS NULL OR :search = ''
-                   OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', :search, '%')))
+              AND (CAST(:search AS text) IS NULL OR :search = ''
+                   OR LOWER(p.package_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
             """, nativeQuery = true)
     Long countCoursesByInstitute(@Param("instituteId") String instituteId, @Param("search") String search);
 
@@ -312,10 +312,10 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
                 WHERE ps.status IN ('ACTIVE','HIDDEN')
                 GROUP BY pi.institute_id
             ) bc ON bc.institute_id = i.id
-            WHERE (:search IS NULL OR :search = ''
-                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', :search, '%')))
+            WHERE (CAST(:search AS text) IS NULL OR :search = ''
+                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
               AND (:leadTag IS NULL OR :leadTag = '' OR i.lead_tag = :leadTag)
             ORDER BY
                 CASE WHEN :sortBy = 'student_count' AND :sortDirection = 'ASC' THEN COALESCE(sc.cnt, 0) END ASC,
@@ -335,10 +335,10 @@ public interface InstituteRepository extends CrudRepository<Institute, String> {
 
     @Query(value = """
             SELECT COUNT(*) FROM institutes i
-            WHERE (:search IS NULL OR :search = ''
-                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', :search, '%')))
+            WHERE (CAST(:search AS text) IS NULL OR :search = ''
+                   OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.city) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                   OR LOWER(i.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
               AND (:leadTag IS NULL OR :leadTag = '' OR i.lead_tag = :leadTag)
             """, nativeQuery = true)
     Long countAllInstitutesFiltered(@Param("search") String search, @Param("leadTag") String leadTag);

@@ -662,9 +662,9 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             JOIN assessment_institute_mapping aim ON aim.assessment_id = aur.assessment_id
             WHERE aim.assessment_id = :assessmentId
             AND aim.institute_id = :instituteId
-            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', :userId, '%')))
+            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', CAST(:userId AS text), '%')))
             AND (:evaluationStatus IS NULL OR sa.result_status IN (:evaluationStatus))
-            AND (:name IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', :name, '%')))
+            AND (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
             AND (sa.status = 'ENDED')
             """, countQuery = """
             SELECT count(*)
@@ -673,9 +673,9 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             JOIN assessment_institute_mapping aim ON aim.assessment_id = aur.assessment_id
             WHERE aim.assessment_id = :assessmentId
             AND aim.institute_id = :instituteId
-            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', :userId, '%')))
+            AND (LOWER(sa.comma_separated_evaluator_user_ids) LIKE LOWER(CONCAT('%', CAST(:userId AS text), '%')))
             AND (:evaluationStatus IS NULL OR sa.result_status IN (:evaluationStatus))
-            AND (:name IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', :name, '%')))
+            AND (CAST(:name AS text) IS NULL OR :name = '' OR LOWER(aur.participant_name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
             AND (sa.status = 'ENDED')
             """, nativeQuery = true)
     Page<ManualAttemptResponseDto> findAllAssignedAttemptForUserIdWithFilter(@Param("userId") String userId,
