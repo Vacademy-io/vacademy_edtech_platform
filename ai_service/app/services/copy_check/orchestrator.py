@@ -21,7 +21,7 @@ from ..ai_billing import UC, metering_api_key, metering_user, record_tool_billin
 from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
-from . import annotator, callbacks, cancellation, deduction_check, language_check, language_feedback, locate, math_reread, option_letter, typed_answers, vision_transcript
+from . import annotator, callbacks, cancellation, deduction_check, language_check, language_feedback, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -47,6 +47,9 @@ logger = logging.getLogger(__name__)
 # Every cut mark is re-checked against a picture of the answer (deduction_check.py)
 # unless this is "off".
 DEDUCTION_CHECK = os.getenv("COPY_CHECK_DEDUCTION_CHECK", "on").strip().lower() != "off"
+# Sideways pages are turned upright before OCR (orientation.py)
+# unless this is "off".
+ORIENTATION_ENABLED = os.getenv("COPY_CHECK_ORIENTATION", "on").strip().lower() != "off"
 # Token allowance on top of the per-question budget for the steps that work
 # per page (handwriting read, maths close-ups) and per cut (the image check).
 TOKENS_PER_PAGE_ALLOWANCE = 20_000
@@ -629,6 +632,19 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 **charge_metering(billing, req),
             )
             return RUN_BILLED
+
+        # 0b. Turn sideways pages the right way up. Everything
+        # below fetches the copy by URL, so swapping the URL is all it takes
+        # for OCR, the vision read and the checked copy to see upright pages.
+        cancellation.check(job_id, process_id)
+        if ORIENTATION_ENABLED:
+            await _progress("ORIENTATION_CHECK")
+            straightened = await orientation.straighten_copy(
+                pdf_url, llm, eval_model,
+                institute_id=institute_id, token_sink=grader,
+                label=str(req.get("attempt_id") or process_id),
+            )
+            pdf_url = straightened.pdf_url
 
         # 1. OCR via render_worker.
         cancellation.check(job_id, process_id)
