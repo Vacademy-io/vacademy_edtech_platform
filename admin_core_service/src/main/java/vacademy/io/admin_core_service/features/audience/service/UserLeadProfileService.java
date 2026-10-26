@@ -25,6 +25,10 @@ import vacademy.io.admin_core_service.features.audience.repository.LeadStatusHis
 import vacademy.io.admin_core_service.features.audience.repository.LeadStatusRepository;
 import vacademy.io.admin_core_service.features.audience.repository.UserLeadProfileRepository;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.course_settings.service.LeadConversionPolicyService;
+import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionLogsRepository;
 import vacademy.io.admin_core_service.features.timeline.repository.TimelineEventRepository;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
@@ -69,6 +73,13 @@ public class UserLeadProfileService {
     private final LeadSlaConfigService leadSlaConfigService;
     private final LeadStatusMirrorService leadStatusMirrorService;
     private final LeadTierService leadTierService;
+    private final StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
+    private final PackageSessionRepository packageSessionRepository;
+
+    /** @Lazy: the settings services behind the policy are far from this one; don't risk a cycle. */
+    @Autowired
+    @Lazy
+    private LeadConversionPolicyService leadConversionPolicyService;
 
     /**
      * @Lazy breaks the cycle with LeadScoringService (which already injects this
@@ -294,18 +305,43 @@ public class UserLeadProfileService {
      *
      * <p>Does NOT emit LEAD_STATUS_CHANGED — the caller (LeadStatusService.changeLeadStatus)
      * already emits it at the response grain, so emitting here would double-fire.</p>
+     *
+     * <p>An active enrolment in a course that counts as a conversion pins the profile to
+     * CONVERTED: a pipeline stage picked afterwards (e.g. a custom "Sales Won") must not wipe the
+     * stamp enrolment wrote, or the lead loses its Converted badge and drops out of the
+     * conversion/revenue reports. The per-response lead_status_id still takes the picked stage.</p>
      */
     @Transactional
     public void mirrorConversionStatusFromLead(String userId, String instituteId, String statusKey) {
         if (userId == null || instituteId == null || statusKey == null) return;
         userLeadProfileRepository.findByUserIdAndInstituteId(userId, instituteId).ifPresent(profile -> {
-            if (Objects.equals(profile.getConversionStatus(), statusKey)) return; // no-op
+            String effectiveKey = !"CONVERTED".equals(statusKey) && hasConvertingEnrollment(userId, instituteId)
+                    ? "CONVERTED" : statusKey;
+            if (Objects.equals(profile.getConversionStatus(), effectiveKey)) return; // no-op
             Timestamp now = new Timestamp(System.currentTimeMillis());
-            profile.setConversionStatus(statusKey);
-            profile.setConvertedAt("CONVERTED".equals(statusKey) ? now : null);
+            profile.setConversionStatus(effectiveKey);
+            profile.setConvertedAt("CONVERTED".equals(effectiveKey) ? now : null);
             profile.setUpdatedAt(now);
             userLeadProfileRepository.save(profile);
         });
+    }
+
+    /**
+     * Whether the user is ACTIVE-enrolled in at least one institute course whose enrolment counts
+     * as a conversion (LeadConversionPolicyService). No enrolment → false; the policy's
+     * empty-list institute fallback must not turn "not enrolled" into "converted".
+     */
+    private boolean hasConvertingEnrollment(String userId, String instituteId) {
+        List<String> packageSessionIds = studentSessionInstituteGroupMappingRepository
+                .findPackageSessionIdsByUserIdAndInstituteAndStatusIn(
+                        userId, instituteId, List.of(LearnerSessionStatusEnum.ACTIVE.name()));
+        if (packageSessionIds.isEmpty()) return false;
+        List<String> packageIds = packageSessionRepository.findAllById(packageSessionIds).stream()
+                .map(ps -> ps.getPackageEntity() != null ? ps.getPackageEntity().getId() : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        return !packageIds.isEmpty() && leadConversionPolicyService.anyCountsAsConversion(instituteId, packageIds);
     }
 
     /**
