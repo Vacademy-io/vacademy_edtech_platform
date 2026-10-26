@@ -39,6 +39,49 @@ class ScormPackageCompatibilityFixerTest {
             </script></body></html>
             """;
 
+    private static final String SCREEN_TEMPLATE_APP_JS = """
+            (function(){
+            function $(s){return document.querySelector(s)}
+            var visited={},count=document.querySelectorAll(".screen").length;
+            function show(id){visited[id]=1;$("#progress").textContent=Math.round(Object.keys(visited).length/count*100)+"%";SCORM.bookmark(id);}
+            window.addEventListener("beforeunload",function(){SCORM.commit();SCORM.finish()});
+            SCORM.init();var loc=SCORM.get("cmi.core.lesson_location");show(loc&&$("#"+loc)?loc:"welcome");
+            })();
+            """;
+
+    @Test
+    void screenTemplateReportsVisitedScreensAsProgress() {
+        Set<String> fixes = new LinkedHashSet<>();
+        String out = fixer.addScreenProgress(SCREEN_TEMPLATE_APP_JS, fixes);
+        assertEquals(Set.of(ScormPackageCompatibilityFixer.FIX_SCREEN_PROGRESS), fixes);
+        // Inserted once, after init and before the resume lookup, so the restored list is in place for the first show().
+        int init = out.indexOf("SCORM.init();");
+        int marker = out.indexOf("/*vacademy-screen-progress*/");
+        int resume = out.indexOf("var loc=SCORM.get(\"cmi.core.lesson_location\")");
+        assertTrue(init >= 0 && init < marker && marker < resume);
+        assertEquals(1, out.split("vacademy-screen-progress", -1).length - 1);
+        assertTrue(out.contains("SCORM.set('cmi.progress_measure',(Math.min(n,count)/(count+1)).toFixed(2))"));
+        // The rest of the package is unchanged.
+        assertEquals(SCREEN_TEMPLATE_APP_JS, out.replaceFirst("/\\*vacademy-screen-progress\\*/\\(function\\(\\)\\{.*?\\}\\)\\(\\);", ""));
+    }
+
+    @Test
+    void screenTemplateFixWorksOnMinifiedSingleLineFilesAndIsIdempotent() {
+        String minified = SCREEN_TEMPLATE_APP_JS.replace("\n", "");
+        String once = fixer.addScreenProgress(minified, new LinkedHashSet<>());
+        assertTrue(once.contains("/*vacademy-screen-progress*/"));
+        assertEquals(once, fixer.addScreenProgress(once, new LinkedHashSet<>()));
+    }
+
+    @Test
+    void screenTemplateAlreadyReportingProgressIsLeftAlone() {
+        String reporting = SCREEN_TEMPLATE_APP_JS.replace("SCORM.bookmark(id);",
+                "SCORM.bookmark(id);SCORM.set('cmi.progress_measure','0.5');");
+        Set<String> fixes = new LinkedHashSet<>();
+        assertEquals(reporting, fixer.addScreenProgress(reporting, fixes));
+        assertTrue(fixes.isEmpty());
+    }
+
     @Test
     void forwardsTheValueDroppedByASetValueHelper() {
         Set<String> fixes = new LinkedHashSet<>();
