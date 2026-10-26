@@ -262,7 +262,7 @@ function InstallPanel({
                     <ol className="list-decimal ps-5">
                         <li>
                             Get the <span className="font-semibold">lead-agent-extension</span>{' '}
-                            folder from your Vacademy contact.
+                            folder from your account manager.
                         </li>
                         <li>
                             Open{' '}

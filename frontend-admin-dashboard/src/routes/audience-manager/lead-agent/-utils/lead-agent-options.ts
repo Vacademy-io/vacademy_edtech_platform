@@ -7,19 +7,36 @@ import type {
     AgentBrief,
     AgentGate,
     AgentMode,
+    AgentOffer,
     AgentWindow,
     CandidateStatus,
+    CompetitorKind,
+    FitWeight,
     MinContact,
-    ProductKey,
     SourceKey,
 } from '../-types';
 
-export const PRODUCT_OPTIONS: { value: ProductKey; label: string }[] = [
-    { value: 'complete_vacademy', label: 'Complete Vacademy' },
+export const COMPETITOR_KIND_OPTIONS: { value: CompetitorKind; label: string }[] = [
+    { value: 'lms', label: 'LMS / course app' },
     { value: 'crm', label: 'CRM' },
-    { value: 'lms', label: 'LMS' },
-    { value: 'ai_calling', label: 'AI calling' },
+    { value: 'whatsapp', label: 'WhatsApp tool' },
+    { value: 'chat', label: 'Chat widget' },
+    { value: 'payments', label: 'Payments' },
+    { value: 'website', label: 'Website builder' },
 ];
+
+export const isCompetitorKind = (v: string): v is CompetitorKind =>
+    COMPETITOR_KIND_OPTIONS.some((o) => o.value === v);
+
+export const FIT_WEIGHT_OPTIONS: { value: FitWeight; label: string }[] = [
+    { value: 1, label: 'Low' },
+    { value: 2, label: 'Medium' },
+    { value: 3, label: 'High' },
+];
+
+/** Server limits for the offer (brief.offer). */
+export const MAX_FIT_SIGNALS = 8;
+export const MAX_COMPETITORS = 10;
 
 export const SOURCE_OPTIONS: { value: SourceKey; label: string; hint: string }[] = [
     {
@@ -32,15 +49,15 @@ export const SOURCE_OPTIONS: { value: SourceKey; label: string; hint: string }[]
     { value: 'keyword', label: 'Keyword posts', hint: 'Pages that use your keywords.' },
     {
         value: 'software_request',
-        label: 'Software requests',
-        hint: 'People asking for software like yours.',
+        label: 'Buying requests',
+        hint: 'People asking for something like what you sell.',
     },
     { value: 'new_centre', label: 'New centres', hint: 'Organisations opening a new branch.' },
 ];
 
 export const ALL_SOURCES: SourceKey[] = SOURCE_OPTIONS.map((s) => s.value);
 
-/** Common kinds to leave out; admins can type their own too. */
+/** Common kinds to leave out when selling into education; admins can type their own too. */
 export const EXCLUDE_PRESETS = ['Schools & playschools', 'Colleges & universities'];
 
 export const MODE_OPTIONS: { value: AgentMode; label: string; note: string }[] = [
@@ -52,7 +69,7 @@ export const MODE_OPTIONS: { value: AgentMode; label: string; note: string }[] =
     {
         value: 'REMOTE',
         label: 'Server',
-        note: 'Runs on Vacademy servers, more credits.',
+        note: 'Runs on our servers, more credits.',
     },
     {
         value: 'AUTO',
@@ -125,9 +142,21 @@ export const DEFAULT_WINDOW = (): AgentWindow => ({
     days: [1, 2, 3, 4, 5, 6],
 });
 
+export const emptyOffer = (): AgentOffer => ({
+    name: '',
+    seller: '',
+    website: null,
+    fit_signals: [],
+    competitors: [],
+    competitor_kinds: [],
+    education: false,
+    discovery_question: '',
+});
+
 export const emptyBrief = (): AgentBrief => ({
-    products: ['complete_vacademy'],
+    products: [],
     description: '',
+    offer: emptyOffer(),
     industries: [],
     buyer_roles: [],
     hiring_roles: [],

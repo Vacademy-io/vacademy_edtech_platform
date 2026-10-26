@@ -14,7 +14,7 @@ import {
     STEP_FIELDS,
     type AgentFormValues,
 } from '../-utils/agent-form';
-import { MODE_LABEL, PRODUCT_OPTIONS, WEEKDAYS } from '../-utils/lead-agent-options';
+import { MODE_LABEL, WEEKDAYS } from '../-utils/lead-agent-options';
 import { useCreateAgent } from '../-hooks/use-lead-agent';
 import { useLeadListOptions } from '../-hooks/use-lead-list-options';
 import {
@@ -30,13 +30,9 @@ function ReviewStep({ values, listName }: { values: AgentFormValues; listName: s
     const rows: [string, string][] = [
         ['Lead list', listName],
         ['Name', values.name],
-        [
-            'Products',
-            values.products
-                .map((p) => PRODUCT_OPTIONS.find((o) => o.value === p)?.label ?? p)
-                .join(', '),
-        ],
+        ['What you sell', values.offer_name],
         ['Industries', values.industries.map((i) => i.name).join(', ') || '—'],
+        ['Fit signals', values.fit_signals.map((f) => f.label).join(', ') || '—'],
         [
             'Markets',
             values.markets

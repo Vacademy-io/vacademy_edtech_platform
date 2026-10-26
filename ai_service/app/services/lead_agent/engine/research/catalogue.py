@@ -1,6 +1,8 @@
 """Buying signals and the fixed rules that turn them into product scores.
 
-This is a STARTER catalogue drawn from the spec's examples. The product team should replace
+This is the EDUCATION catalogue used for Vacademy's own products (briefs with product keys only);
+an agent with an offer uses the universal signals here plus its own (engine/offer.py).
+It is a STARTER catalogue drawn from the spec's examples. The product team should replace
 the descriptions and weights with Vacademy's approved feature catalogue (spec section 01).
 Platform port: these product scores are one input of scoring.score_lead (reported as `products`);
 the delivery decision is scoring.gate, not these numbers.
@@ -47,7 +49,7 @@ SIGNALS: dict[str, SignalType] = {
     ),
     "hiring_faculty": SignalType("Hiring faculty", "Hiring teachers, faculty or academic staff."),
     "multiple_branches": SignalType("Multiple branches", "Operates more than one centre, branch or campus."),
-    "new_centre": SignalType("New centre", "Opening or recently opened a new centre or branch.", True),
+    "new_centre": SignalType("New centre", "Opening or recently opened a new centre, branch, office or location.", True),
     "online_courses": SignalType("Online courses", "Offers online, hybrid or recorded classes, or courses through an app."),
     "test_series": SignalType("Test series", "Offers online tests, mock tests or a test series."),
     "large_scale": SignalType("Large student base", "States a large number of students, batches or results."),
@@ -181,12 +183,13 @@ _INTENT = re.compile(
 _SOFTWARE = re.compile(r"\b(software|app|application|platform|lms|crm|erp|system|portal|tool|solution)\b", re.IGNORECASE)
 
 
-def signal_holds(key: str, observation: str, quote: str) -> bool:
-    """Fixed checks on a quoted signal before it may count towards a score."""
+def signal_holds(key: str, observation: str, quote: str, offer=None) -> bool:
+    """Fixed checks on a quoted signal before it may count towards a score. offer (engine/offer.py)
+    says what an explicit request must name; without one, a software word."""
     if _ABSENCE.search(observation or ""):
         return False
     if key == "explicit_software_need":
-        return bool(_INTENT.search(quote) and _SOFTWARE.search(quote))
+        return bool(_INTENT.search(quote)) and (offer.need_holds(quote) if offer else bool(_SOFTWARE.search(quote)))
     return True
 
 

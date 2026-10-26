@@ -5,12 +5,16 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from . import pacing
+from . import engine_api, pacing
 
+# Vacademy's own product keys: briefs made before offers (2026-10-26). New briefs carry an Offer.
 ProductKey = Literal["complete_vacademy", "crm", "lms", "ai_calling", "tutezy"]
+CompetitorKind = Literal["lms", "crm", "whatsapp", "chat", "payments", "website"]
+FIT_KEYS = tuple(f"fit_{i}" for i in range(1, 9))  # engine.offer.CUSTOM_KEYS
 SourceKey = Literal["organisation_search", "maps", "hiring", "keyword", "software_request", "new_centre"]
 Mode = Literal["LOCAL", "REMOTE", "AUTO"]
 ContactLevel = Literal["direct", "likely", "general", "none"]
@@ -34,9 +38,69 @@ class Industry(BaseModel):
     buyer_roles: List[str] = Field(default_factory=list, max_length=5)
 
 
+class FitSignal(BaseModel):
+    """Something on a prospect's own website that shows it fits the offer."""
+    model_config = ConfigDict(extra="ignore")
+    key: Optional[str] = None  # fit_1 .. fit_8, given by position on save
+    label: str = Field(min_length=1, max_length=60)
+    description: str = Field(default="", max_length=200)
+    weight: Literal[1, 2, 3] = 2
+
+
+class Competitor(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str = Field(min_length=1, max_length=80)
+    domain: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("domain")
+    @classmethod
+    def _domain(cls, v: Optional[str]) -> Optional[str]:
+        v = (v or "").strip().lower()
+        if not v:
+            return None
+        host = urlparse(v if "://" in v else f"https://{v}").hostname or ""
+        host = host.removeprefix("www.")
+        if "." not in host:
+            raise ValueError("not a domain")
+        return host
+
+
+class Offer(BaseModel):
+    """What the institute sells (brief.offer): what research looks for and scores against."""
+    model_config = ConfigDict(extra="ignore")
+    name: str = Field(min_length=1, max_length=80)
+    seller: str = Field(default="", max_length=120)
+    website: Optional[str] = Field(default=None, max_length=1000)
+    fit_signals: List[FitSignal] = Field(default_factory=list, max_length=len(FIT_KEYS))
+    competitors: List[Competitor] = Field(default_factory=list, max_length=10)
+    competitor_kinds: List[CompetitorKind] = Field(default_factory=list, max_length=6)
+    education: bool = False
+    discovery_question: str = Field(default="", max_length=200)
+
+    @field_validator("name", "seller", "discovery_question")
+    @classmethod
+    def _squash(cls, v: str) -> str:
+        return " ".join(v.split())
+
+    @model_validator(mode="after")
+    def _keys(self) -> "Offer":
+        seen, signals = set(), []
+        for s in self.fit_signals:
+            label = " ".join(s.label.split())
+            if label and label.lower() not in seen:
+                seen.add(label.lower())
+                signals.append(s.model_copy(update={"label": label, "description": " ".join(s.description.split())}))
+        self.fit_signals = [s.model_copy(update={"key": key}) for key, s in zip(FIT_KEYS, signals)]
+        self.competitor_kinds = list(dict.fromkeys(self.competitor_kinds))
+        if not self.name:
+            raise ValueError("say what you sell")
+        return self
+
+
 class Brief(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    products: List[ProductKey] = Field(default_factory=lambda: ["complete_vacademy"], min_length=1, max_length=5)
+    products: List[ProductKey] = Field(default_factory=list, max_length=5)
+    offer: Optional[Offer] = None
     description: str = Field(default="", max_length=3000)
     industries: List[Industry] = Field(min_length=1, max_length=6)
     buyer_roles: List[str] = Field(default_factory=list, max_length=10)
@@ -58,6 +122,12 @@ class Brief(BaseModel):
     @classmethod
     def _medium(cls, v: List[str]) -> List[str]:
         return _clean_list(v, 160)
+
+    @model_validator(mode="after")
+    def _sold(self) -> "Brief":
+        if self.offer is None and not self.products:
+            raise ValueError("say what you sell (offer.name)")
+        return self
 
 
 class Market(BaseModel):
@@ -157,7 +227,9 @@ class BulkDecisionIn(DecisionIn):
 
 
 class SuggestIn(BaseModel):
-    products: List[ProductKey] = Field(default_factory=list, max_length=5)
+    products: List[ProductKey] = Field(default_factory=list, max_length=5)  # legacy; the form sends name
+    name: Optional[str] = Field(default=None, max_length=80)
+    seller: Optional[str] = Field(default=None, max_length=120)
     description: Optional[str] = Field(default=None, max_length=3000)
     url: Optional[str] = Field(default=None, max_length=1000)
 
@@ -213,7 +285,9 @@ def agent_out(row: Dict[str, Any], *, audience_name: Optional[str] = None, today
     _json suffix (brief, markets, gate, window), audience_name and live counters."""
     out = {k: _plain(row.get(k)) for k in AGENT_FIELDS}
     out["audience_name"] = audience_name
-    out["brief"] = row.get("brief_json") or {}
+    brief = dict(row.get("brief_json") or {})
+    brief["offer"] = engine_api.offer_dict(brief)  # older briefs: derived from their product keys
+    out["brief"] = brief
     out["markets"] = row.get("markets_json") or []
     out["gate"] = row.get("gate_json") or {}
     out["window"] = row.get("window_json") or {}

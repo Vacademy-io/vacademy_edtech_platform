@@ -132,7 +132,7 @@ export function LeadAgentListPage() {
                         icon={<Robot className="size-8 text-neutral-400" />}
                         title="Lead Agent is not on for your institute yet"
                     >
-                        {WHAT_IT_DOES} Ask your Vacademy contact to turn it on.
+                        {WHAT_IT_DOES} Ask your account manager to turn it on.
                     </EmptyState>
                 ) : (
                     <ErrorState

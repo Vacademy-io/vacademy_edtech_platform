@@ -5,7 +5,7 @@ name, at call time. That keeps the engine (built in parallel, pure functions,
 spec §3) swappable in one place, and lets tests replace any step with a fake
 (`monkeypatch.setattr(engine_api, "score_lead", fake)`).
 
-Engine modules used: schemas, config, planning, profiles, discovery.{pipeline,
+Engine modules used: schemas, config, offer, planning, profiles, discovery.{pipeline,
 domains, exclusions, sources}, research.{extract, contacts, lead, contact_search,
 social}, pagefetch, fingerprint, scoring.
 """
@@ -31,6 +31,21 @@ def config():
 
 def product_names() -> Dict[str, str]:
     return dict(_m("schemas").PRODUCT_NAMES)
+
+
+# ---- offer (what the agent sells) -------------------------------------------
+def resolve_offer(brief: Optional[dict]):
+    """engine.offer.Offer from a brief: its own offer, or Vacademy's product keys."""
+    return _m("offer").resolve_offer(brief)
+
+
+def offer_dict(brief: Optional[dict]) -> dict:
+    """brief["offer"] as stored, or derived from an older brief's product keys."""
+    return _m("offer").offer_dict(brief)
+
+
+def custom_keys() -> tuple:
+    return tuple(_m("offer").CUSTOM_KEYS)
 
 
 # ---- planning / profiles ---------------------------------------------------
@@ -74,8 +89,9 @@ def leave_out(guided: dict) -> List[str]:
     return _m("planning").leave_out(guided)
 
 
-def build_profile_prompt(products: List[str], brief: Optional[str], page_text: Optional[str]):
-    return _m("profiles").build_profile_prompt(products, brief, page_text)
+def build_profile_prompt(products: List[str], brief: Optional[str], page_text: Optional[str],
+                         name: Optional[str] = None, seller: Optional[str] = None):
+    return _m("profiles").build_profile_prompt(products, brief, page_text, name, seller)
 
 
 # ---- discovery -------------------------------------------------------------
@@ -128,8 +144,8 @@ def extraction_pages(pages: List[dict]) -> list:
     return _m("pagefetch").extraction_pages(pages)
 
 
-def parse_profile(reply, *, products=None, note=None) -> dict:
-    return _m("profiles").parse_profile(reply, products=products, note=note)
+def parse_profile(reply, *, products=None, note=None, name=None) -> dict:
+    return _m("profiles").parse_profile(reply, products=products, note=note, name=name)
 
 
 # ---- research --------------------------------------------------------------
@@ -181,8 +197,12 @@ def social_links(pages: List[dict]) -> dict:
     return _m("research.social").social_links(pages)
 
 
-def detect_platforms(pages: List[dict]) -> List[dict]:
-    return _m("fingerprint").detect_platforms(pages)
+def detect_platforms(pages: List[dict], offer=None) -> List[dict]:
+    """Platforms the pages run on; with an offer, its own competitors are looked for too and
+    "competitor" says whether each one competes with the offer."""
+    if offer is None:
+        return _m("fingerprint").detect_platforms(pages)
+    return offer.mark_competitors(_m("fingerprint").detect_platforms(pages, offer.extra_vendors()))
 
 
 def size_signals(pages: List[dict], social: dict) -> dict:

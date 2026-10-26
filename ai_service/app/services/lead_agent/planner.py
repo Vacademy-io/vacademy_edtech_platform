@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 PLAN_MAX_AGE = timedelta(days=7)
 PLAN_MAX_TOKENS = 6000  # reasoning counts as output (llm.REASONING_EFFORT)
-DEFAULT_PRODUCTS = ["complete_vacademy"]
 
 
 def brief_hash(agent: Dict[str, Any]) -> str:

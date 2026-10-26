@@ -77,6 +77,7 @@ router = APIRouter(prefix="/lead-agent/v1", tags=["lead-agent"], route_class=_Ex
 MANAGE_ROLES: FrozenSet[str] = frozenset({"ADMIN", "ADMIN_NON_ROOT", "SUPER_ADMIN", "OWNER"})
 MAX_HTML = 1_500_000
 SUGGEST_TIMEOUT_S = 60.0
+SUGGEST_MAX_TOKENS = 4000  # a profile is ~1,000 tokens + ~1,000 reasoning (counted as output); more only feeds a run-on
 THIN_TEXT_CHARS = 200
 POLL_INTERVAL_S = 30
 MAX_PARALLEL = 2
@@ -350,19 +351,21 @@ async def suggest_brief(body: models.SuggestIn, s: Staff = Depends(admin)):
         page_text = await _page_text(body.url)
         if not page_text:
             note = "The product page could not be read; the suggestion uses the description only."
-    if not (body.products or (body.description or "").strip() or page_text):
-        raise _err(status.HTTP_422_UNPROCESSABLE_ENTITY, "empty", "Give the products, a description or a page.")
-    system, user = engine_api.build_profile_prompt(list(body.products), body.description, page_text)
+    name = " ".join((body.name or "").split()) or None
+    if not (name or body.products or (body.description or "").strip() or page_text):
+        raise _err(status.HTTP_422_UNPROCESSABLE_ENTITY, "empty", "Say what you sell, describe it or give a page.")
+    system, user = engine_api.build_profile_prompt(list(body.products), body.description, page_text, name,
+                                                   body.seller)
     try:
         profile = await asyncio.wait_for(
             llm.ask(system, user, engine_api.schema("ProductProfile"), purpose="profile",
-                    ctx=llm.CallContext(institute_id=s.institute_id), max_tokens=3000),
+                    ctx=llm.CallContext(institute_id=s.institute_id), max_tokens=SUGGEST_MAX_TOKENS),
             timeout=SUGGEST_TIMEOUT_S)
     except asyncio.TimeoutError:
         raise _err(status.HTTP_504_GATEWAY_TIMEOUT, "timeout", "The suggestion took too long; try again.") from None
     except (llm.LLMUnavailable, llm.InvalidOutput) as exc:
         raise _err(status.HTTP_502_BAD_GATEWAY, "llm_failed", f"The suggestion failed: {exc}") from None
-    return engine_api.parse_profile(profile, products=list(body.products), note=note)
+    return engine_api.parse_profile(profile, products=list(body.products), note=note, name=name)
 
 
 # ==========================================================================

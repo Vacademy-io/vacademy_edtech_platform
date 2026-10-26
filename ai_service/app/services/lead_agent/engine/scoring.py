@@ -2,21 +2,22 @@
 
 A lead that passes the gate is called and messaged automatically, so the score asks four questions:
 
-  fit    (0-100)  does the organisation match the brief: the target segment, what it offers (online
-                  courses, test series, admissions, enquiry forms, branches), the markets, the brief's
-                  must-have phrases found in the evidence;
+  fit    (0-100)  does the organisation match the brief: the target segment, the offer's fit signals
+                  found on its site (engine/offer.py: an offer's own, or for Vacademy's product keys
+                  online courses, test series, admissions, enquiry forms), branches, the markets, the
+                  brief's must-have phrases found in the evidence;
   intent (0-100)  is it acting now: hiring for the brief's roles, asking for software, a keyword need,
                   a new centre; worth more when dated within RECENT_DAYS, much less after STALE_DAYS;
   reach  (0-100)  can a decision maker be reached: the best contact's tier (direct > likely > general);
-  risk   (0-100)  reasons not to sell: already on a competitor's LMS or CRM, too big to buy self-serve,
-                  a single tutor.
+  risk   (0-100)  reasons not to sell: already on a platform that competes with the offer, too big to
+                  buy self-serve, (education offers only) a single tutor.
 
   score = clamp(0.35 * fit + 0.30 * intent + 0.35 * reach - 0.5 * risk)
 
-Hard rejects (no usable contact, site not readable, not the target segment, an excluded kind or a
-deal-breaker) are flagged and always REJECT. Being a coaching institute with "admissions open", an
-enquiry form and "call us" is not enough to be delivered automatically: without a buying signal a lead
-reaches the auto bar only with a full fit and a direct contact.
+Hard rejects (no usable contact, site not readable, not the target segment, selling the offer itself,
+an excluded kind or a deal-breaker) are flagged and always REJECT. Fitting the brief is not enough to be delivered
+automatically: without a buying signal a lead reaches the auto bar only with a full fit and a direct
+contact.
 
 The engine's catalogue product scores are kept as ``products`` (research/catalogue.py).
 """
@@ -29,7 +30,8 @@ from typing import Any
 
 from .discovery.exclusions import _SCHOOL, _TRAINING_SCHOOL, _pattern, left_out
 from .fingerprint import VENDORS_BY_KEY
-from .research.catalogue import SIGNALS, score_products
+from .offer import LEGACY_FIT_POINTS, as_offer
+from .research.catalogue import SIGNALS
 from .research.contacts import phone_region
 from .research.lead import is_national_brand
 
@@ -43,10 +45,7 @@ WEIGHT_RISK = 0.5
 # Fit points (capped at 100).
 FIT_SEGMENT = 30  # the model read the site as the requested kind of organisation
 FIT_LOCATION = 10  # in one of the agent's markets
-FIT_SIGNALS = {
-    "online_courses": 15, "test_series": 10, "multiple_branches": 10, "admissions_open": 8, "enquiry_forms": 8,
-    "high_call_volume": 4, "own_app_or_portal": 3, "large_scale": 3, "hiring_faculty": 2,
-}
+FIT_SIGNALS = LEGACY_FIT_POINTS  # Vacademy's product keys; an offer has its own (Offer.fit_points)
 FIT_MUST_HAVE = 5  # per must-have phrase found in the evidence
 FIT_MUST_HAVE_MAX = 15
 
@@ -62,13 +61,14 @@ STALE_FACTOR = 0.35
 REACH_POINTS = {"direct": 100, "likely": 70, "general": 35, "none": 0}
 CONTACT_ORDER = {"none": 0, "general": 1, "likely": 2, "direct": 3}
 
-RISK_COMPETITOR = 40  # already runs on an LMS / app platform or CRM that competes with Vacademy's
+RISK_COMPETITOR = 40  # already runs on a platform that competes with the offer (Offer.is_competitor)
 RISK_ENTERPRISE = 30  # national-scale brand: not a self-serve buyer
 RISK_MICRO = 25  # a single tutor or home tuition
 
 # Flags that send a lead to a person (never AUTO), and flags that always reject it.
 REVIEW_FLAGS = ("competitor_platform", "enterprise")
-HARD_REJECT_FLAGS = ("no_contact", "site_unreadable", "not_target_segment", "excluded_kind", "deal_breaker")
+HARD_REJECT_FLAGS = ("no_contact", "site_unreadable", "not_target_segment", "excluded_kind", "deal_breaker",
+                     "sells_the_offer")
 
 DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False}
 
@@ -228,10 +228,12 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     "has_intent", "flags": [...], "reasons": [...], "reach_level"}.
 
     lead: research.lead.build_lead's record (after merge_lookup + apply_rules when a lookup ran).
-    brief: lead_agent.brief_json (spec §2.1), optionally with "markets": [{country, state?, city?}].
+    brief: lead_agent.brief_json (spec §2.1), optionally with "markets": [{country, state?, city?}];
+    its offer (or product keys) says which signals fit and which platforms compete.
     platforms: fingerprint.detect_platforms; size: fingerprint.size_signals.
     base_score is the score before the risk penalty (gate uses it for flagged leads)."""
     brief = brief or {}
+    offer = as_offer(brief)
     org = lead.get("organisation") or {}
     in_segment = bool(org.get("is_target_segment"))
     signals = [s for s in lead.get("signals") or [] if _live(s)]
@@ -252,10 +254,10 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
             fit_why.append(where)
     if len(org.get("branches") or []) >= 2:
         keys.add("multiple_branches")
-    for key, points in FIT_SIGNALS.items():
+    for key, points in offer.fit_points.items():
         if key in keys:
             fit += points
-            fit_why.append(SIGNALS[key].label.lower())
+            fit_why.append(offer.label(key).lower())
     corpus = _evidence_text(lead)
     matched = [p for p in brief.get("must_have") or [] if isinstance(p, str) and phrase_found(p, corpus)]
     if matched:
@@ -288,7 +290,7 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
 
     # Risk.
     risk = 0
-    competitors = [p for p in platforms or [] if p.get("competitor")]
+    competitors = [p for p in platforms or [] if offer.is_competitor(p)]
     for p in competitors:
         flags.append(f"competitor_platform:{p['key']}")
     if competitors:
@@ -296,14 +298,14 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
         names = ", ".join(f"{p['name']} ({p.get('kind', '')})" for p in competitors)
         reasons.append(f"Risk: already uses {names}, a competitor: needs a switch pitch ({competitors[0].get('evidence', '')})")
     tier = (size or {}).get("tier")
-    if tier == "enterprise" or is_national_brand(lead):
+    if tier == "enterprise" or (offer.education and is_national_brand(lead)):
         flags.append("enterprise")
         risk += RISK_ENTERPRISE
         figures = [f"{_fmt(size[f])} {f.replace('_', ' ')}" for f in ("youtube_subscribers", "app_downloads", "students",
                                                                        "selections", "branches") if (size or {}).get(f)]
         what = ", ".join(figures[:3]) if figures else "a national brand"
         reasons.append(f"Risk: very large ({what}): not a self-serve buyer")
-    elif tier == "micro":
+    elif tier == "micro" and offer.education:
         flags.append("micro")
         risk += RISK_MICRO
         reasons.append(f"Risk: looks like a single tutor or home tuition (\"{size.get('micro_hint') or ''}\")")
@@ -320,6 +322,9 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     if not in_segment:
         flags.append("not_target_segment")
         reasons.append("Not the kind of organisation (or place) the brief targets")
+    if org.get("sells_the_offer"):
+        flags.append("sells_the_offer")
+        reasons.append(f"Sells what is being sold ({offer.name}): a competitor or reseller, not a buyer")
     name, description = org.get("name") or org.get("listed_name") or "", f"{org.get('what_they_do') or ''} {lead.get('summary') or ''}"
     phrase = left_out(name, brief.get("exclude")) or (
         left_out(org.get("what_they_do") or "", brief.get("exclude")) if not in_segment else None)
@@ -342,7 +347,7 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     products = lead.get("products")
     if products is None:
         products = [{"key": s.key, "name": s.name, "score": s.score, "why": s.why}
-                    for s in score_products(list(brief.get("products") or []), keys)]
+                    for s in offer.score_products(keys)]
     return {
         "score": score, "base_score": _clamp(base), "fit": fit, "intent": intent, "reach": reach, "risk": risk,
         "products": products, "has_intent": has_intent, "flags": list(dict.fromkeys(flags)), "reasons": reasons,
@@ -400,6 +405,7 @@ _FLAG_WORDS = {
     "no_contact": "No usable contact (only helplines, support inboxes or an enquiry form)",
     "site_unreadable": "The organisation's website could not be read",
     "not_target_segment": "Not the kind of organisation the brief targets",
+    "sells_the_offer": "Sells what you sell: a competitor or reseller, not a buyer",
     "excluded_kind": "Left out by the brief: {detail}",
     "deal_breaker": "Deal-breaker in the brief: {detail}",
     "competitor_platform": "Already uses a competitor's platform ({detail}): needs a switch pitch",

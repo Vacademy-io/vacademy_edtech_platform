@@ -88,7 +88,7 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None) -> Dict[str, Any]:
     markets = agent.get("markets_json") or []
     country = (markets[0] or {}).get("country") if markets else None
     place = (plan.get("places") or [None])[0]
-    products = list(brief.get("products") or plan.get("target_products") or planner.DEFAULT_PRODUCTS)
+    offer = engine_api.resolve_offer(brief)  # what is sold: the brief's offer, or its product keys
     buyer_roles = list(brief.get("buyer_roles") or plan.get("buyer_roles") or [])
     hiring_roles = plan.get("hiring_roles") or list(brief.get("hiring_roles") or []) or None
     exclude = plan.get("exclude") or list(brief.get("exclude") or [])
@@ -128,9 +128,9 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None) -> Dict[str, Any]:
         segment += f"; must have: {'; '.join(map(str, brief['must_have']))}"
     system, user = engine_api.build_extraction_prompt(
         organisation=name, website=org.get("website") or home["url"], segment=segment,
-        locations=plan.get("locations") or [], products=products, pages=page_texts,
+        locations=plan.get("locations") or [], products=offer, pages=page_texts,
         max_input_chars=engine_api.config().max_input_chars,
-        hiring_roles=engine_api.run_hiring_roles(products, hiring_roles),
+        hiring_roles=engine_api.run_hiring_roles(offer, hiring_roles),
     )
     extraction = ask(system, user, engine_api.schema("AccountExtraction"), "extract", EXTRACT_MAX_TOKENS)
     phrase = engine_api.left_out(extraction.organisation_name or name, exclude) or (
@@ -141,13 +141,13 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None) -> Dict[str, Any]:
     discovery = cand.get("discovery_json") or {}
     lead = engine_api.build_lead(
         name=name, website=org.get("website") or home["url"], domain=site_domain, extraction=extraction,
-        pages=page_texts, contacts=contacts, products=products, buyer_roles=buyer_roles,
+        pages=page_texts, contacts=contacts, products=offer, buyer_roles=buyer_roles,
         external_signals=discovery.get("signals") or [], signal_checks=None, hiring_roles=hiring_roles,
         country=country,
     )
     social = engine_api.social_links(raw)
     lead["social"] = social
-    platforms = engine_api.detect_platforms(records)
+    platforms = engine_api.detect_platforms(records, offer)
     size = engine_api.size_signals(records, social)
     score_brief = {**brief, "markets": markets}
     scored = engine_api.score_lead(lead, score_brief, platforms, size)
@@ -163,7 +163,7 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None) -> Dict[str, Any]:
                                                  LOOKUP_MAX_TOKENS))
             lead = engine_api.merge_lookup(lead, found)
             lead["contacts"] = engine_api.check_mail_domains(lead["contacts"], mx)
-            lead = engine_api.apply_rules(lead, products, buyer_roles, hiring_roles)
+            lead = engine_api.apply_rules(lead, offer, buyer_roles, hiring_roles)
             lead["social"] = social
             scored = engine_api.score_lead(lead, score_brief, platforms, size)
             looked_up = True

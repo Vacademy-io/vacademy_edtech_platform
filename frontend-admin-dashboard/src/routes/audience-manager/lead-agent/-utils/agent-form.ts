@@ -3,11 +3,50 @@
  * to and from the API shape (LEAD_AGENT_BUILD_SPEC.md §4 POST/PUT /agents).
  */
 import { z } from 'zod';
-import type { AgentPayload, LeadAgent } from '../-types';
-import { DEFAULT_GATE, DEFAULT_WINDOW, emptyBrief } from './lead-agent-options';
+import type { AgentPayload, Competitor, FitWeight, LeadAgent } from '../-types';
+import {
+    DEFAULT_GATE,
+    DEFAULT_WINDOW,
+    emptyBrief,
+    MAX_COMPETITORS,
+    MAX_FIT_SIGNALS,
+} from './lead-agent-options';
 
 const textList = z.array(z.string().trim().min(1));
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** A link with or without the scheme; https:// is added on save. */
+const WEBSITE = /^(https?:\/\/)?[^\s/]+\.[^\s]+$/i;
+
+const cleanDomain = (raw: string) =>
+    raw
+        .trim()
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '')
+        .replace(/[/?#].*$/, '')
+        .toLowerCase();
+const looksLikeDomain = (raw: string) =>
+    /^(https?:\/\/)?(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(raw.trim());
+
+/** "Name", "name.com" or "Name (name.com)" → {name, domain}. A bare domain is also the name. */
+export function parseCompetitor(raw: string): Competitor | null {
+    const text = raw.trim();
+    if (!text) return null;
+    const paren = /^(.*?)\s*\(([^()]+)\)\s*$/.exec(text);
+    if (paren && looksLikeDomain(paren[2] ?? '')) {
+        const domain = cleanDomain(paren[2] ?? '').slice(0, 120);
+        const name = (paren[1] ?? '').trim() || domain;
+        return { name: name.slice(0, 80), domain: domain || null };
+    }
+    if (looksLikeDomain(text)) {
+        const domain = cleanDomain(text).slice(0, 120);
+        return { name: domain.slice(0, 80), domain };
+    }
+    return { name: text.slice(0, 80), domain: null };
+}
+
+/** The chip text for a competitor, the reverse of parseCompetitor. */
+export const formatCompetitor = (c: Competitor): string =>
+    c.domain && c.domain !== c.name ? `${c.name} (${c.domain})` : c.name;
 
 export const agentFormSchema = z
     .object({
@@ -17,21 +56,22 @@ export const agentFormSchema = z
             .trim()
             .min(1, 'Give the agent a name')
             .max(200, 'Keep it under 200 characters'),
-        products: z
-            .array(z.enum(['complete_vacademy', 'crm', 'lms', 'ai_calling']))
-            .min(1, 'Pick at least one product'),
+        offer_name: z
+            .string()
+            .trim()
+            .min(1, 'Say what you sell in a few words')
+            .max(80, 'Keep it under 80 characters'),
+        offer_seller: z.string().trim().max(120, 'Keep it under 120 characters'),
         description: z
             .string()
             .trim()
             .min(10, 'Describe what you sell in a sentence or two')
-            .max(4000, 'Keep it under 4000 characters'),
-        product_url: z
+            .max(3000, 'Keep it under 3000 characters'),
+        website: z
             .string()
             .trim()
-            .refine(
-                (v) => v === '' || /^https?:\/\/\S+\.\S+/i.test(v),
-                'Enter a full link, e.g. https://…'
-            ),
+            .max(1000, 'Keep it under 1000 characters')
+            .refine((v) => v === '' || WEBSITE.test(v), 'Enter a link, e.g. https://…'),
         industries: z
             .array(
                 z.object({
@@ -47,6 +87,30 @@ export const agentFormSchema = z
         must_have: textList,
         deal_breakers: textList,
         exclude: textList,
+        fit_signals: z
+            .array(
+                z.object({
+                    /** Server-assigned (fit_1 …); '' for a new row. */
+                    key: z.string(),
+                    label: z
+                        .string()
+                        .trim()
+                        .min(1, 'Name the signal')
+                        .max(60, 'Keep it under 60 characters'),
+                    description: z.string().trim().max(200, 'Keep it under 200 characters'),
+                    weight: z.enum(['1', '2', '3']),
+                })
+            )
+            .max(MAX_FIT_SIGNALS, `Up to ${MAX_FIT_SIGNALS} signals`),
+        /** Chip text: "Name", "name.com" or "Name (name.com)". */
+        competitors: z
+            .array(z.string().trim().min(1).max(200, 'Keep each one short'))
+            .max(MAX_COMPETITORS, `Up to ${MAX_COMPETITORS} competitors`),
+        competitor_kinds: z.array(
+            z.enum(['lms', 'crm', 'whatsapp', 'chat', 'payments', 'website'])
+        ),
+        education: z.boolean(),
+        discovery_question: z.string().trim().max(200, 'Keep it under 200 characters'),
         sources: z
             .array(
                 z.enum([
@@ -112,7 +176,7 @@ export type AgentFormValues = z.infer<typeof agentFormSchema>;
 
 /** Fields validated by each step of the create stepper. */
 export const STEP_FIELDS: (keyof AgentFormValues)[][] = [
-    ['audience_id', 'name', 'products', 'description', 'product_url'],
+    ['audience_id', 'name', 'offer_name', 'offer_seller', 'description', 'website'],
     [
         'industries',
         'buyer_roles',
@@ -121,6 +185,11 @@ export const STEP_FIELDS: (keyof AgentFormValues)[][] = [
         'must_have',
         'deal_breakers',
         'exclude',
+        'fit_signals',
+        'competitors',
+        'competitor_kinds',
+        'education',
+        'discovery_question',
         'markets',
         'sources',
     ],
@@ -145,9 +214,10 @@ export function defaultFormValues(audienceId = ''): AgentFormValues {
     return {
         audience_id: audienceId,
         name: '',
-        products: brief.products,
+        offer_name: '',
+        offer_seller: '',
         description: '',
-        product_url: '',
+        website: '',
         industries: [],
         buyer_roles: [],
         hiring_roles: [],
@@ -155,6 +225,11 @@ export function defaultFormValues(audienceId = ''): AgentFormValues {
         must_have: [],
         deal_breakers: [],
         exclude: [],
+        fit_signals: [],
+        competitors: [],
+        competitor_kinds: [],
+        education: brief.offer.education,
+        discovery_question: '',
         sources: brief.sources,
         markets: [{ country: 'India', state: '', city: '' }],
         daily_quota: 10,
@@ -173,12 +248,14 @@ export function defaultFormValues(audienceId = ''): AgentFormValues {
 
 export function formValuesFromAgent(agent: LeadAgent): AgentFormValues {
     const b = agent.brief;
+    const o = b.offer;
     return {
         audience_id: agent.audience_id,
         name: agent.name,
-        products: b.products.length ? b.products : ['complete_vacademy'],
+        offer_name: o.name,
+        offer_seller: o.seller,
         description: b.description,
-        product_url: '',
+        website: o.website ?? '',
         industries: b.industries,
         buyer_roles: b.buyer_roles,
         hiring_roles: b.hiring_roles,
@@ -186,6 +263,16 @@ export function formValuesFromAgent(agent: LeadAgent): AgentFormValues {
         must_have: b.must_have,
         deal_breakers: b.deal_breakers,
         exclude: b.exclude,
+        fit_signals: o.fit_signals.map((f) => ({
+            key: f.key ?? '',
+            label: f.label,
+            description: f.description,
+            weight: String(f.weight) as '1' | '2' | '3',
+        })),
+        competitors: o.competitors.map(formatCompetitor),
+        competitor_kinds: o.competitor_kinds,
+        education: o.education,
+        discovery_question: o.discovery_question,
         sources: b.sources,
         markets: agent.markets.length
             ? agent.markets.map((m) => ({
@@ -219,13 +306,50 @@ const dedupe = (list: string[]) => {
     });
 };
 
+const competitorsFromForm = (chips: string[]): Competitor[] => {
+    const seen = new Set<string>();
+    return chips
+        .map(parseCompetitor)
+        .filter((c): c is Competitor => {
+            if (!c) return false;
+            const k = (c.domain ?? c.name).toLowerCase();
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+        })
+        .slice(0, MAX_COMPETITORS);
+};
+
+const websiteFromForm = (raw: string): string | null => {
+    const v = raw.trim();
+    if (!v) return null;
+    return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+};
+
 export function payloadFromForm(v: AgentFormValues): AgentPayload {
     return {
         audience_id: v.audience_id,
         name: v.name.trim(),
         brief: {
-            products: v.products,
+            // Legacy product keys: always empty, the offer says what is sold.
+            products: [],
             description: v.description.trim(),
+            offer: {
+                name: v.offer_name.trim(),
+                seller: v.offer_seller.trim(),
+                website: websiteFromForm(v.website),
+                fit_signals: v.fit_signals.slice(0, MAX_FIT_SIGNALS).map((f) => ({
+                    // Only the server assigns keys; a new row goes without one.
+                    ...(f.key ? { key: f.key } : {}),
+                    label: f.label.trim(),
+                    description: f.description.trim(),
+                    weight: Number(f.weight) as FitWeight,
+                })),
+                competitors: competitorsFromForm(v.competitors),
+                competitor_kinds: v.competitor_kinds,
+                education: v.education,
+                discovery_question: v.discovery_question.trim(),
+            },
             industries: v.industries.map((i) => ({
                 name: i.name.trim(),
                 search_term: i.search_term.trim(),

@@ -150,11 +150,75 @@ def schema_instruction(output: Type[BaseModel]) -> str:
             + schema)
 
 
+SALVAGE_FIXES = 20
+
+
 def _parse(output: Type[M], content: str) -> M:
     from ...utils.json_extract import extract_and_sanitize_json
 
     raw = extract_and_sanitize_json(content) or content
-    return output.model_validate_json(raw) if isinstance(raw, str) else output.model_validate(raw)
+    try:
+        return output.model_validate_json(raw) if isinstance(raw, str) else output.model_validate(raw)
+    except ValidationError as exc:
+        try:
+            data = json.loads(raw) if isinstance(raw, str) else raw
+        except ValueError:
+            # Invalid JSON, mostly an unescaped quote copied from a page ("the "best" institute"):
+            # json-repair escapes it. Claims are still checked against the pages afterwards.
+            import json_repair
+
+            data = json_repair.loads(raw)
+            if not isinstance(data, dict):
+                raise exc from None
+        return _salvage(output, data, exc)
+
+
+def _salvage(output: Type[M], data: Any, first: ValidationError) -> M:
+    """A reply that is valid JSON but off the schema in small ways (GLM Flash, 2026-10-26: an extra
+    "cite2" key, a null text, one signal with a key outside the list) loses only what does not fit:
+    the extra key is dropped, a null text becomes "", and otherwise the list item holding the error
+    is dropped. Raises the first error when that does not make the reply valid."""
+    for _ in range(SALVAGE_FIXES):
+        try:
+            return output.model_validate(data)
+        except ValidationError as exc:
+            if not _fix(data, exc.errors()[0]):
+                raise first from None
+    raise first
+
+
+def _fix(data: Any, error: dict) -> bool:
+    loc, kind = list(error.get("loc") or ()), error.get("type")
+    if not loc:
+        return False
+
+    def at(path):
+        node = data
+        for part in path:
+            node = node[part]
+        return node
+
+    try:
+        parent = at(loc[:-1])
+        if kind == "extra_forbidden" and isinstance(parent, dict):
+            del parent[loc[-1]]
+            return True
+        if kind == "string_type" and error.get("input") is None and isinstance(parent, dict):
+            parent[loc[-1]] = ""
+            return True
+        for i in range(len(loc) - 1, -1, -1):
+            if isinstance(loc[i], int):
+                holder = at(loc[:i])
+                if isinstance(holder, list):
+                    del holder[loc[i]]
+                    return True
+    except (KeyError, IndexError, TypeError):
+        return False
+    return False
+
+
+def _ran_out(usage: Optional[dict], max_tokens: int) -> bool:
+    return int((usage or {}).get("completion_tokens") or 0) >= max_tokens * 0.95
 
 
 async def _chat(messages: list, max_tokens: int, purpose: str):
@@ -183,6 +247,15 @@ async def ask(system: str, user: str, output: Type[M], *, purpose: str, ctx: Opt
         return _parse(output, result.content)
     except (ValidationError, ValueError) as exc:
         first_error = str(exc)[:2000]
+    if _ran_out(result.usage, max_tokens):
+        # A reply cut off at the token cap is usually one that ran on (GLM Flash repeats a key until the
+        # cap): asking it to repair that text repeats it, so ask afresh instead.
+        result = await _chat(messages, max_tokens, purpose + ".retry")
+        await asyncio.to_thread(_account, ctx, result.model, result.usage, purpose + ".retry")
+        try:
+            return _parse(output, result.content)
+        except (ValidationError, ValueError) as exc:
+            raise InvalidOutput(f"{purpose}: reply unusable twice ({str(exc)[:300]})") from None
     repair = messages + [
         {"role": "assistant", "content": result.content[:20000]},
         {"role": "user", "content": ("That reply does not match the schema. Errors:\n" + first_error

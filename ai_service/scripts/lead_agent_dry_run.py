@@ -54,6 +54,10 @@ def load_env(path: str) -> None:
 
 
 async def main(args) -> int:
+    brief, markets = BRIEF, MARKETS
+    if args.brief_file:
+        given = json.loads(Path(args.brief_file).read_text())
+        brief, markets = given["brief"], given.get("markets") or MARKETS
     from sqlalchemy import text
 
     from la_pg import pg_session_factory
@@ -73,7 +77,7 @@ async def main(args) -> int:
             db.execute(text("INSERT INTO audience (id, institute_id, campaign_name) "
                             "VALUES ('dry-aud', 'dry-inst', 'Dry run list')"))
             agent = store.insert_agent(db, institute_id="dry-inst", audience_id="dry-aud", name="Dry run",
-                                       brief=BRIEF, markets=MARKETS, daily_quota=max(1, args.max // 3),
+                                       brief=brief, markets=markets, daily_quota=max(1, args.max // 3),
                                        monthly_credit_cap=None, mode="REMOTE", gate=None, window=None,
                                        created_by="dry-run")
             agent = store.update_agent(db, agent["id"], "dry-inst", {"status": "ACTIVE"})
@@ -151,6 +155,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--env-file")
     ap.add_argument("--max", type=int, default=8)
+    ap.add_argument("--brief-file", help='JSON {"brief": {...}, "markets": [...]} instead of the Vacademy brief above')
     ap.add_argument("--fetch-minutes", type=float, default=6)
     ap.add_argument("--dump", help="write the candidate rows as JSON here")
     a = ap.parse_args()

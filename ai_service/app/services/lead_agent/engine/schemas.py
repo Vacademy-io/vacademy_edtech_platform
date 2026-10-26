@@ -18,7 +18,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
-ProductKey = Literal["complete_vacademy", "crm", "lms", "ai_calling", "tutezy"]
+# "offer" = the agent's own offer (brief["offer"], engine/offer.py); the others are Vacademy's products.
+ProductKey = Literal["complete_vacademy", "crm", "lms", "ai_calling", "tutezy", "offer"]
 PRODUCT_NAMES: dict[str, str] = {
     "complete_vacademy": "Complete Vacademy",
     "crm": "CRM",
@@ -62,7 +63,7 @@ class ResearchPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     summary: Text300 = Field(min_length=1, description="One sentence restating what will be researched (max 300 characters).")
-    segment: Text120 = Field(min_length=1, description="Type of organisation, e.g. 'coaching institutes' (max 120 characters).")
+    segment: Text120 = Field(min_length=1, description="Type of organisation, e.g. 'coaching institutes', 'logistics companies' (max 120 characters).")
     locations: Annotated[list[Text80], _clip_list(10)] = Field(
         description="Cities or regions to cover; empty if none was given (max 10)."
     )
@@ -132,6 +133,8 @@ SignalKey = Literal[
     "explicit_software_need", "admissions_open", "enquiry_forms", "high_call_volume", "hiring",
     "hiring_faculty", "multiple_branches", "new_centre", "online_courses", "test_series", "large_scale",
     "own_app_or_portal",
+    # An offer's own fit signals (engine/offer.py CUSTOM_KEYS); the prompt lists the ones a run uses.
+    "fit_1", "fit_2", "fit_3", "fit_4", "fit_5", "fit_6", "fit_7", "fit_8",
 ]
 Text40 = Annotated[str, _clip_text(40)]
 
@@ -196,6 +199,11 @@ class AccountExtraction(BaseModel):
     organisation_name: Text120 = Field(description="The organisation's name as shown on its website.")
     is_target_segment: bool = Field(description="True if this organisation matches the requested segment and location.")
     what_they_do: Text240 = Field(description="What the organisation offers, in one sentence.")
+    sells_the_offer: bool = Field(
+        default=False,
+        description="True if the organisation itself sells, makes, installs or resells what is being sold: a "
+        "competitor or reseller, not a buyer.",
+    )
     city: Text80 | None = Field(description="Main city, if stated.")
     branches: Annotated[list[Branch], _clip_list(15)] = Field(description="Centres or branches named on the pages.")
     signals: Annotated[list[Signal], _clip_list(15)] = Field(description="Buying signals shown on the pages.")
@@ -267,8 +275,41 @@ class IndustrySuggestion(BaseModel):
     )
 
 
-class ProductProfile(BaseModel):
+CompetitorKind = Literal["lms", "crm", "whatsapp", "chat", "payments", "website"]
+COMPETITOR_KIND_KEYS = typing.get_args(CompetitorKind)
+
+
+def _known(allowed: tuple[str, ...]) -> BeforeValidator:
+    """Drops list items outside allowed, so one stray value does not fail the whole reply."""
+    return BeforeValidator(lambda value: [v for v in value if v in allowed] if isinstance(value, list) else value)
+
+
+class FitSignalSuggestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+    label: Text60 = Field(description="A short name, e.g. 'Runs a fleet', 'Online courses', 'Several factories'.")
+    description: Text200 = Field(
+        description="What on the organisation's own website shows it, in one sentence, so a reader can check a page "
+        "for it, e.g. 'The site says it operates its own trucks or a delivery fleet.'"
+    )
+    weight: Annotated[int, _clamp(1, 3)] = Field(description="How strongly it shows a fit: 1 low, 2 medium, 3 high.")
+
+
+class CompetitorSuggestion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Text80 = Field(description="A product or company that sells the same thing.")
+    domain: Text80 | None = Field(description="Its website domain, e.g. 'zoho.com', only if you are sure; else null.")
+
+
+def _all_required(schema: dict[str, Any]) -> None:
+    schema["required"] = list(schema.get("properties") or {})
+
+
+class ProductProfile(BaseModel):
+    # Every field is required in the schema the model sees (it skips optional ones), while parsing
+    # keeps the defaults for older replies.
+    model_config = ConfigDict(extra="forbid", json_schema_extra=_all_required)
 
     summary: Text300 = Field(description="What the product does, in one or two sentences, from the information given.")
     industries: Annotated[list[IndustrySuggestion], _clip_list(8)] = Field(
@@ -276,8 +317,29 @@ class ProductProfile(BaseModel):
     )
     keywords: Annotated[list[Text60], _clip_list(10)] = Field(
         default_factory=list,
-        description="8-10 short phrases a buyer (not a seller) writes when they need this product: requests, questions "
-        "and 1-2 tender or requirement phrases, e.g. 'looking for LMS', 'which LMS for coaching institute', 'LMS tender'.",
+        description="8-10 short phrases a buyer (not a seller) writes when they need this product, e.g. "
+        "'looking for LMS', 'rooftop solar tender'.",
+    )
+    # What the brief form stores as the offer (engine/offer.py). After the fields above: a reply that
+    # starts with them tends to run on (GLM Flash, 2026-10-26).
+    offer_name: Text80 = Field(default="", description="What is sold, as a short name, e.g. 'Rooftop solar installation'.")
+    fit_signals: Annotated[list[FitSignalSuggestion], _clip_list(8)] = Field(
+        default_factory=list,
+        description="4-8 things on a prospect's own website that show it fits what is sold (it has the problem "
+        "this solves). Not hiring, tenders or size.",
+    )
+    competitors: Annotated[list[CompetitorSuggestion], _clip_list(8)] = Field(
+        default_factory=list,
+        description="Real, named products or companies that sell the same thing (up to 8); empty if you know none.",
+    )
+    competitor_kinds: Annotated[list[CompetitorKind], _known(COMPETITOR_KIND_KEYS), _clip_list(6)] = Field(
+        default_factory=list,
+        description="Only if what is sold is software: which of lms, crm, whatsapp, chat, payments, website compete "
+        "with it. Empty otherwise.",
+    )
+    education: bool = Field(default=False, description="True only if most buyers are education providers.")
+    discovery_question: Text160 = Field(
+        default="", description="The first question to ask a prospect about how they handle this today."
     )
 
 

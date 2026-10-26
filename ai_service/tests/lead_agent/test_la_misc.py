@@ -133,6 +133,43 @@ def test_llm_repairs_once_then_gives_up(monkeypatch):
     assert seen == ["t", "t.repair", "t", "t.repair"]
 
 
+def test_a_reply_slightly_off_the_schema_keeps_what_fits():
+    from app.services.lead_agent.engine.schemas import AccountExtraction
+
+    cite = {"page": 1, "quote": "Indore"}
+    reply = {"organisation_name": "Kesar", "is_target_segment": True, "what_they_do": "Warehousing.", "city": None,
+             "branches": [{"name": "Indore", "city": "Indore", "cite": cite, "cite2": cite}],   # an extra key
+             "signals": [{"signal": "fit_1", "observation": "Warehouse.", "event_date": None, "cite": cite},
+                         {"signal": "big_roof", "observation": "Roof.", "event_date": None, "cite": cite}],  # unknown key
+             "people": [{"name": "A. Jain", "role": None, "cite": cite}],                      # a null text
+             "current_software": [], "unknowns": [], "discovery_question": "", "summary": ""}
+    out = llm._parse(AccountExtraction, json.dumps(reply))
+    assert [b.name for b in out.branches] == ["Indore"] and [s.signal for s in out.signals] == ["fit_1"]
+    assert out.people[0].role == ""
+    with pytest.raises(ValueError):
+        llm._parse(AccountExtraction, json.dumps({"organisation_name": "Kesar"}))  # missing fields: not salvaged
+    quoted = json.dumps({**reply, "summary": "QUOTE"}).replace("QUOTE", 'The "best" warehouse')  # unescaped quotes
+    assert llm._parse(AccountExtraction, quoted).summary == 'The "best" warehouse'
+    with pytest.raises(ValueError):
+        llm._parse(AccountExtraction, "not json at all")
+
+
+def test_llm_asks_afresh_when_a_reply_runs_to_the_token_cap(monkeypatch):
+    from types import SimpleNamespace
+
+    replies = iter([('{"n": "nnnnnnnnnnnn', 1000), ('{"n": 4}', 40)])
+    seen = []
+
+    async def fake_chat(messages, max_tokens, purpose):
+        seen.append((purpose, len(messages)))
+        content, used = next(replies)
+        return SimpleNamespace(content=content, model="z-ai/glm-5.3-flash", usage={"completion_tokens": used})
+    monkeypatch.setattr(llm, "_chat", fake_chat)
+    monkeypatch.setattr(llm, "_account", lambda *a, **k: 0.0)
+    assert asyncio.run(llm.ask("s", "u", Tiny, purpose="t", max_tokens=1000)).n == 4
+    assert seen == [("t", 2), ("t.retry", 2)]  # the run-on text is not sent back
+
+
 def test_tick_plans_discovers_and_delivers(la_db, monkeypatch):
     from app.services.lead_agent import delivery, discovery, planner
 

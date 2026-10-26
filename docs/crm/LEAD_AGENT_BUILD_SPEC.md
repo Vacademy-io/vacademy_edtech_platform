@@ -140,7 +140,14 @@ value (no CHECK change), `unit_field` leads, fixed price, **provisional** 2 and 
 
 ```json
 {
-  "products": ["complete_vacademy"],          // complete_vacademy | crm | lms | ai_calling (engine keys)
+  "products": [],                             // LEGACY Vacademy keys (complete_vacademy | crm | lms | ai_calling); new briefs send []
+  "offer": {                                  // what the institute sells (required unless products is set), see §5a
+    "name": "Rooftop solar installation", "seller": "SunGrid", "website": null,
+    "fit_signals": [{"key": "fit_1", "label": "Owns a warehouse", "description": "…", "weight": 3}],  // ≤8, keys by position
+    "competitors": [{"name": "Tata Power Solar", "domain": "tatapowersolar.com"}],                   // ≤10
+    "competitor_kinds": ["crm"],               // lms | crm | whatsapp | chat | payments | website
+    "education": false, "discovery_question": "How do you handle this today?"
+  },
   "description": "What we sell and to whom",
   "industries": [{"name": "Online coaching institutes", "search_term": "online coaching institute"}],  // 1..6
   "buyer_roles": ["founder", "director"],
@@ -211,7 +218,7 @@ institute ADMIN role required for writes. All responses JSON, snake_case.
 | `POST /candidates/{id}/decision` | `{action: APPROVE\|REJECT, reason?}` | `Candidate` |
 | `POST /candidates/bulk-decision` | `{ids:[], action, reason?}` | `{updated: n}` |
 | `GET /agents/{id}/stats` | `?days=14` | `[{day, discovered, researched, delivered, review, rejected, searches, pages, cost_usd, credits}]` |
-| `POST /brief/suggest` | `{products, description?, url?}` | `{summary, keywords[], industries:[{name, search_term, fit, why, products[], buyer_roles[], hiring_phrases[], need_phrases[]}]}` (sync, ≤60 s) |
+| `POST /brief/suggest` | `{name?, seller?, description?, url?}` (legacy `products`) | `{summary, keywords[], industries:[{name, search_term, fit, why, products[], buyer_roles[], hiring_phrases[], need_phrases[]}], offer:{name, fit_signals[], competitors[], competitor_kinds[], education, discovery_question}, note?}` (sync, ≤60 s) |
 | `GET /suppressions` · `POST /suppressions` · `DELETE /suppressions/{id}` | `{kind, value, reason, note?}` | |
 | `GET /workers` | | `[{id, label, user_id, last_seen_at, online, version, pages_today}]` |
 | `POST /workers/pair` | `{label?}` | `{token, worker_id}` — token shown once (32 random bytes, url-safe) |
@@ -274,6 +281,19 @@ automations run as for any lead. A row whose phone (last 10) or email already ex
   off and its reasoning counts as output (a 3,000 cap truncated signal batches).
 - Workflows receive `sourceType` / `sourceId` in the trigger context, so a condition can branch on
   `#ctx['sourceType'] == 'LEAD_AGENT'`.
+- **Offer-agnostic (2026-10-26).** What is sold is `brief.offer`, not Vacademy's product keys, resolved by
+  `engine/offer.py`: research looks for the universal signals (explicit request, hiring for the run's roles,
+  keyword need, new location, branches, size) plus the offer's own `fit_1..fit_8` (weight 1/2/3 = 5/10/15 fit
+  points); a platform counts as a competitor only if its kind is in `competitor_kinds` or it is a named competitor
+  (named competitors outside the vendor library are detected by their domain / "powered by"); the coaching-chain
+  and home-tutor checks run only when `offer.education`. Briefs with only `products` keep the education
+  catalogue exactly as before, and `GET` derives an editable `offer` for them. An organisation that itself
+  sells the offer (`AccountExtraction.sells_the_offer`) is a hard REJECT (`sells_the_offer` flag): with a
+  general offer, sellers of the same thing look like perfect fits. Plan searches are told to look for buyers,
+  never for sellers.
+- LLM replies: one cut off at the token cap is asked again fresh (not "repaired" from the run-on text), and a
+  reply that is valid JSON but slightly off the schema (an extra key, a null text, one list item with an unknown
+  value) keeps what fits (`llm._salvage`).
 - The extension pairs from a page only on `dash.vacademy.io` and localhost; elsewhere the code is pasted.
   `VACADEMY_LEAD_AGENT_PING` → `VACADEMY_LEAD_AGENT_PRESENT {version}` tells the dashboard it is installed.
 

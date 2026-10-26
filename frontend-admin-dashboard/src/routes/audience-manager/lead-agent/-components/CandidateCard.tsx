@@ -107,8 +107,8 @@ function Details({ candidateId, fallbackParts }: { candidateId: string; fallback
             )}
             {(c.score_json?.products ?? []).length > 0 && (
                 <div className="flex flex-wrap gap-2 text-caption text-neutral-600">
-                    {(c.score_json?.products ?? []).map((p) => (
-                        <span key={p.key} className="rounded-md bg-neutral-100 px-2 py-1">
+                    {(c.score_json?.products ?? []).map((p, i) => (
+                        <span key={`${p.key}-${i}`} className="rounded-md bg-neutral-100 px-2 py-1">
                             {p.name}: {p.score ?? '—'}
                         </span>
                     ))}

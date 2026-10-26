@@ -13,10 +13,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ..schemas import AccountExtraction
-from .catalogue import (
-    HIRING_SIGNALS, SIGNALS, WEIGHTS, ProductScore, hiring_label, matching_role, relevant_signals, score_products,
-    signal_holds, suggested_roles,
-)
+from ..offer import as_offer
+from .catalogue import HIRING_SIGNALS, SIGNALS, ProductScore, hiring_label, matching_role, signal_holds
 from .contacts import (
     TIERS, Contact, MxLookup, check_mail_domains, describe, email_person, is_person_name, link_people, phone_region,
     rate_contact,
@@ -42,7 +40,6 @@ ROLE_PRIORITY = (
 _JUNIOR_TITLE = re.compile(r"\b(?:vice|assistant|asst|deputy|associate|junior)\.?(?:\s+(?:vice|assistant|deputy))?\s+[\w-]+",
                            re.I)
 QUALIFIED_SCORE = 40
-DEFAULT_QUESTION = "How do you handle admissions enquiries and follow-ups today?"
 
 
 def role_rank(role: str, buyer_roles: list[str] | tuple[str, ...] = ()) -> int:
@@ -78,7 +75,7 @@ def build_lead(
     extraction: AccountExtraction,
     pages: list[PageText],
     contacts: list[Contact],
-    products: list[str],
+    products,
     buyer_roles: list[str],
     external_signals: list[dict[str, Any]] | None = None,
     signal_checks: dict[str, dict[str, str]] | None = None,
@@ -87,7 +84,9 @@ def build_lead(
 ) -> dict[str, Any]:
     """external_signals: signals found during discovery in search results (e.g. a job listing),
     already checked against the result they quote. signal_checks: whether each one's page was
-    opened and found live, removed or not openable automatically."""
+    opened and found live, removed or not openable automatically. products: product keys or an
+    Offer (engine/offer.py); a signal outside the offer's catalogue is dropped like an unquoted one."""
+    offer = as_offer(products)
     by_id = {p.id: p for p in pages}
     dropped = 0
 
@@ -111,9 +110,12 @@ def build_lead(
 
     signals = []
     for s in extraction.signals:
-        item = keep(f"Signal: {SIGNALS[s.signal].label}", s.observation or SIGNALS[s.signal].label, s.cite,
-                    {"key": s.signal, "label": SIGNALS[s.signal].label, "direct": SIGNALS[s.signal].direct,
-                     "event_date": s.event_date})
+        kind = offer.signals.get(s.signal)
+        if kind is None:
+            dropped += 1
+            continue
+        item = keep(f"Signal: {kind.label}", s.observation or kind.label, s.cite,
+                    {"key": s.signal, "label": kind.label, "direct": kind.direct, "event_date": s.event_date})
         if item:
             signals.append(item)
 
@@ -147,6 +149,7 @@ def build_lead(
             "city": extraction.city,
             "what_they_do": extraction.what_they_do,
             "is_target_segment": extraction.is_target_segment,
+            "sells_the_offer": extraction.sells_the_offer,
             "branches": branches,
             "identity": "Official website read" if any(p.page_type != "job_post" for p in pages) else (
                 "Found from a search result; website not found" if external_signals else "Website not read"
@@ -161,7 +164,7 @@ def build_lead(
         "current_software": software,
         "job_posts": job_posts,
         "model_unknowns": list(extraction.unknowns),
-        "discovery_question": extraction.discovery_question.strip() or DEFAULT_QUESTION,
+        "discovery_question": extraction.discovery_question.strip() or offer.discovery_question,
         "summary": extraction.summary,
         "pages": [{"url": p.url, "type": p.page_type, "title": p.title} for p in pages],
         "evidence": evidence + [
@@ -171,12 +174,13 @@ def build_lead(
         "dropped_claims": dropped,
         "researched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    return apply_rules(lead, products, buyer_roles, hiring_roles)
+    return apply_rules(lead, offer, buyer_roles, hiring_roles)
 
 
-def run_hiring_roles(products: list[str], hiring_roles: list[str] | None) -> list[str]:
-    """The run's roles, or for runs that named none, the starting suggestions for its products."""
-    return list(hiring_roles) if hiring_roles else suggested_roles(products)
+def run_hiring_roles(products, hiring_roles: list[str] | None) -> list[str]:
+    """The run's roles, or for runs that named none, the starting suggestions for its products
+    (product keys or an Offer; an offer has none: its roles come from the brief or the plan)."""
+    return as_offer(products).run_hiring_roles(hiring_roles)
 
 
 _COMPUTED_UNKNOWNS = ("Current software", "Budget", "Decision maker", "Local centre's decision maker")
@@ -272,14 +276,16 @@ def refresh_contacts(lead: dict[str, Any], texts: list[str], country: str | None
     return {**lead, "contacts": check_mail_domains(contacts, mx_lookup), "phone_region": region}
 
 
-def apply_rules(lead: dict[str, Any], products: list[str], buyer_roles: list[str],
+def apply_rules(lead: dict[str, Any], products, buyer_roles: list[str],
                 hiring_roles: list[str] | None = None) -> dict[str, Any]:
     """Everything decided by fixed rules rather than the model: which signals count, product
-    scores, decision maker, stage and confidence. Safe to re-run on a saved lead (rescoring)."""
+    scores, decision maker, stage and confidence. Safe to re-run on a saved lead (rescoring).
+    products: product keys or an Offer (engine/offer.py)."""
+    offer = as_offer(products)
     lead = dict(lead)
     # Hiring counts only when the post's role is one the run is looking for; other hiring stays
     # listed as "Hiring (other roles)" but never scores or headlines (also re-labels older leads).
-    roles = run_hiring_roles(products, hiring_roles)
+    roles = offer.run_hiring_roles(hiring_roles)
     relabel: dict[str, str] = {}
     normalised = []
     for s in lead["signals"]:
@@ -289,8 +295,8 @@ def apply_rules(lead: dict[str, Any], products: list[str], buyer_roles: list[str
             if label != s.get("label"):
                 relabel[s.get("quote") or ""] = label
             s = {**s, "key": key, "label": label}
-        if s["key"] in SIGNALS:  # buying or fit signal, as the catalogue says now (also for saved leads)
-            s = {**s, "direct": SIGNALS[s["key"]].direct}
+        if s["key"] in offer.signals:  # buying or fit signal, as the catalogue says now (also for saved leads)
+            s = {**s, "direct": offer.signals[s["key"]].direct}
         normalised.append(s)
     if relabel:
         lead["evidence"] = [
@@ -300,7 +306,7 @@ def apply_rules(lead: dict[str, Any], products: list[str], buyer_roles: list[str
         ]
     signals, rejected = [], []
     for s in normalised:
-        if s.get("derived") or signal_holds(s["key"], s["value"], s.get("quote") or ""):
+        if s.get("derived") or signal_holds(s["key"], s["value"], s.get("quote") or "", offer):
             signals.append(s)
         else:
             rejected.append(s)
@@ -323,7 +329,7 @@ def apply_rules(lead: dict[str, Any], products: list[str], buyer_roles: list[str
 
     # A job post found closed or removed no longer counts as a buying signal (it stays listed).
     live_keys = {s["key"] for s in signals if (s.get("verification") or {}).get("status") != "removed"}
-    scores: list[ProductScore] = score_products(products, live_keys)
+    scores: list[ProductScore] = offer.score_products(live_keys)
     assessed = [s for s in scores if s.score is not None]
     primary = assessed[0] if assessed and assessed[0].score else None
     secondary = [s for s in assessed[1:] if s.score and s.score >= 25]
@@ -341,7 +347,8 @@ def apply_rules(lead: dict[str, Any], products: list[str], buyer_roles: list[str
     # A national brand's founder or group director is named on its website but does not buy for a
     # local centre: kept and marked, but never "ask for" and never what makes a lead contact ready.
     # (A multi-branch institute's own founder is its buyer, so this is for national brands only.)
-    if decision_maker and is_national_brand(lead) and not _local_leader(decision_maker, lead["organisation"]):
+    if (decision_maker and offer.education and is_national_brand(lead)
+            and not _local_leader(decision_maker, lead["organisation"])):
         decision_maker["scope"] = "group"
     lead["decision_maker"] = decision_maker
     local_decision_maker = decision_maker if decision_maker and decision_maker.get("scope") != "group" else None
@@ -349,11 +356,10 @@ def apply_rules(lead: dict[str, Any], products: list[str], buyer_roles: list[str
     # Headline signal: only one that counts for the products being sold (a telecaller post is not
     # headlined for an LMS search). Explicit requests first, then signals found by search (the reason
     # the organisation was found), then dated events, then the heaviest.
-    relevant = relevant_signals(products)
-    weight = {key: max((WEIGHTS.get(p, {}).get(key, 0) for p in products), default=0) for key in SIGNALS}
+    relevant = offer.relevant_signals()
     ranked = sorted((s for s in signals if s["key"] in relevant), key=lambda s: (
         (s.get("verification") or {}).get("status") == "removed", not s["direct"], not s.get("external"),
-        s["event_date"] is None, -weight.get(s["key"], 0),
+        s["event_date"] is None, -offer.weight(s["key"]),
     ))
     lead["top_signal"] = ranked[0] if ranked else None
 

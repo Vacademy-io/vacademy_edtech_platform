@@ -14,6 +14,8 @@ New in the platform port (see docs/crm/LEAD_AGENT_BUILD_SPEC.md §3):
   pagefetch.py   - raw HTML (server fetcher or Chrome extension) -> page record; which pages to read
   fingerprint.py - platforms a site runs on (Appx, Classplus, LeadSquared, ...) and size signals
   scoring.py     - fit / intent / reach / risk score and the AUTO / REVIEW / REJECT gate
+  offer.py       - what an agent sells (its own offer, or Vacademy's product keys): signals, fit points,
+                   competitors and the education-only checks every step above reads
 """
 
 ENGINE_SOURCE = "himangkalal/vacademy-lead-engine@2e45c2f"

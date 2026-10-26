@@ -22,6 +22,7 @@ from .discovery.pipeline import (  # noqa: F401 - re-exported for callers of the
 )
 from .discovery.sources import SIGNAL_SOURCES
 from .research.catalogue import role_from_phrase
+from .offer import OFFER_KEY, as_offer
 from .research.lead import run_hiring_roles
 from .schemas import PRODUCT_NAMES, ResearchPlan
 
@@ -205,8 +206,14 @@ def build_plan_prompt(request_text: str, seed_count: int, cfg: EngineConfig = DE
                       guided: dict[str, Any] | None = None) -> tuple[str, str]:
     """(system, user) for the planning request; the reply model is ResearchPlan (PLAN_MAX_TOKENS out)."""
     queries = query_count(int(guided["lead_count"]), cfg) if guided else cfg.max_search_queries
-    products = "\n".join(f"- {key}: {name}" for key, name in PRODUCT_NAMES.items())
-    system = f"""You plan bounded lead-research runs for the sales team at Vacademy, an education-technology company.
+    offer = guided.get("offer") if guided else None
+    if offer:
+        team = f"the sales team of {offer['seller']}" if offer.get("seller") else "a sales team"
+        products = f"- {OFFER_KEY}: {offer['name']}" + (f" ({offer['summary'][:300]})" if offer.get("summary") else "")
+    else:
+        team = "the sales team at Vacademy, an education-technology company"
+        products = "\n".join(f"- {key}: {name}" for key, name in PRODUCT_NAMES.items())
+    system = f"""You plan bounded lead-research runs for {team}.
 
 Products (use these keys in target_products):
 {products}
@@ -219,10 +226,10 @@ Rules:
 - target_products: the products the request names. If it names none, choose the most plausible ones and say so in assumptions.
 - candidate_count: the number of organisations requested, or 20 if no number is given.
 - priority_signals and buyer_roles: take them from the request, adding only obvious ones for the chosen products.
-- keywords: 8-10 short phrases people write when they need what is being sold, written the way a buyer (not a seller) would write them: requests ('looking for LMS', 'need LMS for our coaching'), questions ('which LMS for coaching institute') and 1-2 tender or requirement phrases ('LMS tender', 'requirement for learning management system').
-- hiring_roles: the job titles whose hiring shows an organisation needs what is being sold, from the request (e.g. telecallers for an AI calling product, sales executives for a CRM, admission counsellors for an LMS); short role names only.
-- search_term: the organisation type as a short singular search term, e.g. "coaching institute", "school".
-- search_queries: up to {queries} different web searches that each find individual organisations' own websites in the requested location, e.g. "JEE coaching institute Bengaluru", "real estate developer Jaipur". Vary the angle (sub-types, services, areas of the city) and cover every requested industry; no search operators.
+- keywords: 8-10 short phrases people write when they need what is being sold, written the way a buyer (not a seller) would write them: requests ('looking for LMS', 'need solar panels for our factory'), questions ('which LMS for coaching institute') and 1-2 tender or requirement phrases ('LMS tender', 'requirement for rooftop solar').
+- hiring_roles: the job titles whose hiring shows an organisation needs what is being sold, from the request (e.g. telecallers for an AI calling product, sales executives for a CRM, admission counsellors for an LMS); short role names only. Leave it empty when no hiring shows the need.
+- search_term: the organisation type as a short singular search term, e.g. "coaching institute", "logistics company".
+- search_queries: up to {queries} different web searches that each find individual organisations' own websites in the requested location, e.g. "JEE coaching institute Bengaluru", "real estate developer Jaipur". Vary the angle (sub-types, services, areas of the city) and cover every requested industry; no search operators. Search for organisations that would BUY what is being sold, never for ones that sell it: do not put the product's own words (e.g. "solar", "CRM") in these searches.
 - page_types: website sections most likely to show the priority signals. Always include home.
 - not_possible: anything requested that this research cannot deliver, such as verified direct phone numbers or personal emails, guaranteed decision-maker contacts, private or premium-only information, budgets or confirmed purchase intent.
 - Never name specific organisations. Candidates come from sources, not from you."""
@@ -238,7 +245,7 @@ Organisations supplied with the request: {seed_count}. Research limit per run: {
         user += f"""
 
 Structured request (use exactly these):
-- Products: {", ".join(guided["products"])}
+- Products: {", ".join(guided["products"])}{f" ({offer['name']})" if offer else ""}
 - Industries:
 {industries}
 - Location(s): {"; ".join(", ".join(guided_locations(loc)) for loc in location_list(guided)) if not worldwide_run(guided) else "anywhere in the world"}
@@ -269,7 +276,8 @@ def finalise_plan(plan: ResearchPlan, cfg: EngineConfig = DEFAULT_CONFIG, guided
         if email_run(guided):
             count = email_site_count(lead_count, cfg)
             data["mode"] = EMAIL_MODE
-        data["hiring_roles"] = guided_hiring_roles(guided) or plan.hiring_roles or run_hiring_roles(list(guided["products"]), None)
+        data["hiring_roles"] = guided_hiring_roles(guided) or plan.hiring_roles or run_hiring_roles(
+            as_offer(list(guided["products"])), None)
         data["keywords"] = clean_phrases(guided.get("keywords"), 10) or list(plan.keywords)
         if email_run(guided):
             notes.append(f"Email list: reading up to {count} websites for up to {lead_count} emails. Websites are "
@@ -357,11 +365,14 @@ def engine_sources(brief_sources: list[str] | None) -> list[str]:
 
 
 def guided_from_brief(brief: dict[str, Any], markets: list[dict[str, Any]], lead_count: int) -> dict[str, Any]:
-    """The guided request the engine plans from: products, industries, roles, keywords, leave-outs
-    and sources from the brief; markets ([{country, state?, city?}]) as the locations."""
+    """The guided request the engine plans from: products (the brief's offer, or its product keys),
+    industries, roles, keywords, leave-outs and sources from the brief; markets ([{country, state?,
+    city?}]) as the locations."""
+    offer = as_offer(brief)
     return {
         "guided": True,
-        "products": [p for p in (brief.get("products") or []) if p in PRODUCT_NAMES] or ["complete_vacademy"],
+        "products": list(offer.products),
+        "offer": {"name": offer.name, "seller": offer.seller, "summary": offer.summary} if offer.custom else None,
         "industries": list(brief.get("industries") or []),
         "locations": [{k: v for k, v in m.items() if k in ("country", "state", "city") and v}
                       for m in markets or [] if isinstance(m, dict)],
@@ -377,11 +388,12 @@ def guided_from_brief(brief: dict[str, Any], markets: list[dict[str, Any]], lead
 
 def request_text_from_brief(brief: dict[str, Any]) -> str:
     """The free-text request the planning prompt wraps, written from the brief."""
-    parts = [brief.get("description") or ""]
+    offer = brief.get("offer") if isinstance(brief.get("offer"), dict) else {}
+    parts = [f"Selling: {offer['name']}" if offer.get("name") else "", brief.get("description") or ""]
     if brief.get("buyer_roles"):
         parts.append("Buyers: " + ", ".join(brief["buyer_roles"]))
     if brief.get("must_have"):
         parts.append("Must have: " + "; ".join(brief["must_have"]))
     if brief.get("deal_breakers"):
         parts.append("Not: " + "; ".join(brief["deal_breakers"]))
-    return "\n".join(p for p in parts if p).strip() or "Find organisations for the products listed."
+    return "\n".join(p for p in parts if p).strip() or "Find organisations that would buy what is being sold."

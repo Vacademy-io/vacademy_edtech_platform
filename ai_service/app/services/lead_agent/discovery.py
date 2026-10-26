@@ -170,7 +170,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
                     background=pool.submit, industries=industries, place=places,
                     match_place=plan.get("match_places"), hiring_roles=plan.get("hiring_roles"),
                     keywords=plan.get("keywords"), max_keyword_queries=MAX_KEYWORD_QUERIES,
-                    exclude=exclude, skip_domains=set(skip),
+                    exclude=exclude, skip_domains=set(skip), offer=engine_api.resolve_offer(brief),
                 )
 
         outcome = await asyncio.to_thread(run)

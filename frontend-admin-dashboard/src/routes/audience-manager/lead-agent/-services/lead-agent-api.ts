@@ -12,6 +12,7 @@ import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 import type {
     AgentBrief,
     AgentGate,
+    AgentOffer,
     AgentMode,
     AgentPayload,
     AgentStatsDay,
@@ -21,8 +22,11 @@ import type {
     CandidatePage,
     CandidateStatus,
     CandidateSummary,
+    Competitor,
     DecisionAction,
     EvidenceItem,
+    FitSignal,
+    FitWeight,
     LeadAgent,
     LeadAgentWorker,
     Market,
@@ -32,8 +36,16 @@ import type {
     SuggestRequest,
     SuggestResponse,
     SuggestedIndustry,
+    SuggestedOffer,
 } from '../-types';
-import { DEFAULT_GATE, DEFAULT_WINDOW, emptyBrief } from '../-utils/lead-agent-options';
+import {
+    DEFAULT_GATE,
+    DEFAULT_WINDOW,
+    emptyBrief,
+    isCompetitorKind,
+    MAX_COMPETITORS,
+    MAX_FIT_SIGNALS,
+} from '../-utils/lead-agent-options';
 
 export const LEAD_AGENT_BASE = `${AI_SERVICE_BASE_URL}/lead-agent/v1`;
 
@@ -96,12 +108,59 @@ const rowsOf = (data: unknown, ...keys: string[]): Raw[] => {
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────
 
+/** 1–3; anything else reads as medium. */
+const weightOf = (v: unknown): FitWeight => {
+    const n = Math.round(num(v) ?? 2);
+    return (n <= 1 ? 1 : n >= 3 ? 3 : 2) as FitWeight;
+};
+
+const normalizeFitSignals = (raw: unknown): FitSignal[] =>
+    asArray(raw)
+        .filter(isObject)
+        .map((f) => {
+            const key = str(f.key);
+            return {
+                ...(key ? { key } : {}),
+                label: str(f.label) ?? '',
+                description: str(f.description) ?? '',
+                weight: weightOf(f.weight),
+            };
+        })
+        .filter((f) => f.label)
+        .slice(0, MAX_FIT_SIGNALS);
+
+/** Competitors may be `{name, domain}` objects or bare names. */
+const normalizeCompetitors = (raw: unknown): Competitor[] =>
+    asArray(raw)
+        .map((c) =>
+            isObject(c)
+                ? { name: str(c.name) ?? str(c.domain) ?? '', domain: str(c.domain) }
+                : { name: str(c) ?? '', domain: null }
+        )
+        .filter((c) => c.name)
+        .slice(0, MAX_COMPETITORS);
+
+const normalizeOffer = (raw: unknown): AgentOffer => {
+    const o = asObject(raw);
+    return {
+        name: str(o.name) ?? '',
+        seller: str(o.seller) ?? '',
+        website: str(o.website),
+        fit_signals: normalizeFitSignals(o.fit_signals),
+        competitors: normalizeCompetitors(o.competitors),
+        competitor_kinds: strList(o.competitor_kinds).filter(isCompetitorKind),
+        education: o.education === true,
+        discovery_question: str(o.discovery_question) ?? '',
+    };
+};
+
 export const normalizeBrief = (raw: unknown): AgentBrief => {
     const b = asObject(raw);
     const base = emptyBrief();
     return {
-        products: strList(b.products) as AgentBrief['products'],
+        products: strList(b.products),
         description: str(b.description) ?? '',
+        offer: normalizeOffer(b.offer),
         industries: asArray(b.industries)
             .filter(isObject)
             .map((i) => ({ name: str(i.name) ?? '', search_term: str(i.search_term) ?? '' }))
@@ -254,7 +313,8 @@ const normalizeScore = (raw: unknown): ScoreBreakdown | null => {
             .filter(isObject)
             .map((p) => ({
                 key: str(p.key) ?? '',
-                name: str(p.name) ?? str(p.key) ?? '',
+                // New briefs score one "offer" product; it may come without a name.
+                name: str(p.name) ?? (str(p.key) === 'offer' ? 'Offer fit' : str(p.key)) ?? '',
                 score: num(p.score),
                 why: Array.isArray(p.why) ? strList(p.why) : str(p.why) ?? '',
             })),
@@ -428,12 +488,30 @@ export async function suggestBrief(body: SuggestRequest): Promise<SuggestRespons
         timeout: SUGGEST_TIMEOUT_MS,
     });
     const d = asObject(res.data);
+    let offer: SuggestedOffer | null = null;
+    if (isObject(d.offer)) {
+        const o = normalizeOffer(d.offer);
+        offer = {
+            name: o.name,
+            fit_signals: o.fit_signals.map(({ label, description, weight }) => ({
+                label,
+                description,
+                weight,
+            })),
+            competitors: o.competitors,
+            competitor_kinds: o.competitor_kinds,
+            education: o.education,
+            discovery_question: o.discovery_question,
+        };
+    }
     return {
         summary: str(d.summary) ?? '',
         keywords: strList(d.keywords),
         industries: rowsOf(d.industries)
             .map(normalizeSuggestedIndustry)
             .filter((i) => i.name),
+        note: str(d.note),
+        offer,
     };
 }
 

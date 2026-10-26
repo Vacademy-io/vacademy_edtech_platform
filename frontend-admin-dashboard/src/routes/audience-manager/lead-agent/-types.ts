@@ -3,7 +3,6 @@
  * ai_service API at /ai-service/lead-agent/v1). All payloads are snake_case.
  */
 
-export type ProductKey = 'complete_vacademy' | 'crm' | 'lms' | 'ai_calling';
 export type SourceKey =
     | 'organisation_search'
     | 'maps'
@@ -33,10 +32,45 @@ export interface Industry {
     search_term: string;
 }
 
+/** 1 = low, 2 = medium, 3 = high. */
+export type FitWeight = 1 | 2 | 3;
+
+/** What on a prospect's website shows they fit the offer. */
+export interface FitSignal {
+    /** Assigned by the server (fit_1 … fit_8); kept when present, never invented here. */
+    key?: string;
+    label: string;
+    description: string;
+    weight: FitWeight;
+}
+
+export interface Competitor {
+    name: string;
+    domain: string | null;
+}
+
+/** Kinds of software that compete with the offer (a prospect using one needs a switch pitch). */
+export type CompetitorKind = 'lms' | 'crm' | 'whatsapp' | 'chat' | 'payments' | 'website';
+
+/** What the tenant sells. GET always returns one (derived by the server for old briefs). */
+export interface AgentOffer {
+    name: string;
+    seller: string;
+    website: string | null;
+    fit_signals: FitSignal[];
+    competitors: Competitor[];
+    competitor_kinds: CompetitorKind[];
+    /** The target organisations are in education (turns on coaching-specific checks). */
+    education: boolean;
+    discovery_question: string;
+}
+
 /** brief_json, §2.1 */
 export interface AgentBrief {
-    products: ProductKey[];
+    /** Legacy product keys. The UI always sends []; `offer` replaces them. */
+    products: string[];
     description: string;
+    offer: AgentOffer;
     industries: Industry[];
     buyer_roles: string[];
     hiring_roles: string[];
@@ -205,7 +239,9 @@ export interface AgentStatsDay {
 }
 
 export interface SuggestRequest {
-    products: ProductKey[];
+    name?: string;
+    /** The seller's company, so the suggestion is written for its team. */
+    seller?: string;
     description?: string;
     url?: string;
 }
@@ -221,10 +257,22 @@ export interface SuggestedIndustry {
     need_phrases?: string[];
 }
 
+export interface SuggestedOffer {
+    name: string;
+    fit_signals: Omit<FitSignal, 'key'>[];
+    competitors: Competitor[];
+    competitor_kinds: CompetitorKind[];
+    education: boolean;
+    discovery_question: string;
+}
+
 export interface SuggestResponse {
     summary: string;
     keywords: string[];
     industries: SuggestedIndustry[];
+    note?: string | null;
+    /** Null when the server sends none. */
+    offer: SuggestedOffer | null;
 }
 
 export interface LeadAgentWorker {

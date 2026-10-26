@@ -75,9 +75,32 @@ def test_agent_crud_and_shape(client):
     {"window": {"tz": "Asia/Kolkata", "start": "9am", "end": "18:00", "days": [1]}},
     {"window": {"tz": "Asia/Kolkata", "start": "09:00", "end": "18:00", "days": [8]}},
     {"mode": "CLOUD"}, {"monthly_credit_cap": -1},
+    {"brief": {**BRIEF, "products": [], "offer": None}},                                # nothing said about what is sold
+    {"brief": {**BRIEF, "offer": {"name": "  "}}},
+    {"brief": {**BRIEF, "offer": {"name": "Solar", "competitors": [{"name": "X", "domain": "not a domain"}]}}},
+    {"brief": {**BRIEF, "offer": {"name": "Solar", "fit_signals": [{"label": "a", "weight": 5}]}}},
 ])
 def test_create_validation(client, over):
     assert client.post(f"{BASE}/agents", json=body(**over)).status_code == 422
+
+
+def test_an_offer_is_saved_with_keys_and_an_older_brief_reads_back_with_one(client):
+    offer = {"name": " Rooftop  solar ", "seller": "SunGrid",
+             "fit_signals": [{"label": "Owns a warehouse", "description": "Runs its own warehouse.", "weight": 3},
+                             {"label": "owns a warehouse", "weight": 1}, {"label": "Cold storage", "weight": 2}],
+             "competitors": [{"name": "Tata Power Solar", "domain": "https://www.TataPowerSolar.com/x"}],
+             "competitor_kinds": ["crm", "crm"]}
+    r = client.post(f"{BASE}/agents", json=body(brief={**BRIEF, "products": [], "offer": offer}))
+    assert r.status_code == 201, r.text
+    saved = r.json()["brief"]["offer"]
+    assert saved["name"] == "Rooftop solar" and saved["competitor_kinds"] == ["crm"]
+    assert [(s["key"], s["label"]) for s in saved["fit_signals"]] == [("fit_1", "Owns a warehouse"), ("fit_2", "Cold storage")]
+    assert saved["competitors"] == [{"name": "Tata Power Solar", "domain": "tatapowersolar.com"}]
+
+    r = client.put(f"{BASE}/agents/{r.json()['id']}", json={"brief": {**BRIEF, "products": ["lms"]}})
+    assert r.status_code == 200, r.text
+    derived = r.json()["brief"]["offer"]
+    assert derived["name"] == "LMS" and derived["education"] is True and derived["fit_signals"]
 
 
 def test_another_institutes_list_is_refused(client):

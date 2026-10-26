@@ -8,6 +8,7 @@ import pytest
 
 import la_engine_fixtures  # noqa: F401 - puts ai_service on sys.path
 
+from app.services.lead_agent.engine.offer import CUSTOM_KEYS
 from app.services.lead_agent.engine.research.catalogue import SIGNALS, score_products, signal_holds
 from app.services.lead_agent.engine.research.contacts import extract_contacts
 from app.services.lead_agent.engine.research.evidence import quote_is_supported
@@ -137,8 +138,9 @@ def test_scores_come_from_rules_and_unknown_products_are_not_assessed():
 
 
 def test_signal_keys_match_the_catalogue():
-    # hiring_other is set by the rules; keyword_need comes only from keyword-search results.
-    assert set(typing.get_args(SignalKey)) == set(SIGNALS) - {"hiring_other", "keyword_need"}
+    # hiring_other is set by the rules; keyword_need comes only from keyword-search results; fit_1..8
+    # are an offer's own fit signals (engine/offer.py).
+    assert set(typing.get_args(SignalKey)) == (set(SIGNALS) - {"hiring_other", "keyword_need"}) | set(CUSTOM_KEYS)
 
 
 def _extraction(**overrides) -> AccountExtraction:

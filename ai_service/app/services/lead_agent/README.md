@@ -14,6 +14,10 @@ admin_core Flyway `V612__lead_agent.sql`; this package only reads and writes the
 | Chrome extension | `lead-agent-extension/` (repo root) | the institute's browser: LOCAL + AUTO tasks via `/ext/*` |
 | Engine (pure research rules) | `engine/` | called through `engine_api.py` only |
 
+What is sold comes from the brief's `offer` (any business: signals, fit points, competitors and the
+education-only checks follow it, `engine/offer.py`); briefs from before 2026-10-26 with only Vacademy
+product keys keep the education catalogue.
+
 Flow: plan (`planner.py`, one LLM call, cached weekly in `plan_json`) -> discovery round (`discovery.py`:
 Serper web + Maps, Parallel for buying signals, LLM picks own-site results; dedup by registered domain;
 suppressed domains skipped) -> home-page fetch task in the agent's mode -> `choose_pages` adds <= 3
@@ -89,4 +93,5 @@ cd ai_service
 AI_LIMITS_PGDATA=/tmp/la_pgdata python -m pytest tests/lead_agent -q   # pgserver Postgres + real V612
 python scripts/lead_agent_smoke.py --query "JEE coaching institute" --city Indore --env-file <env>
 python scripts/lead_agent_dry_run.py --env-file <env> --max 8      # real plan->research, no delivery
+python scripts/lead_agent_dry_run.py --env-file <env> --brief-file brief.json   # {"brief": {...offer...}, "markets": [...]}
 ```

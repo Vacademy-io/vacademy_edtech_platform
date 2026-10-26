@@ -38,6 +38,13 @@ EXCLUDED_DOMAINS = frozenset({
     # news
     "indiatimes.com", "hindustantimes.com", "indianexpress.com", "thehindu.com", "ndtv.com",
     "deccanherald.com", "news18.com", "livemint.com", "economictimes.com", "thebetterindia.com",
+    "business-standard.com", "moneycontrol.com", "financialexpress.com", "businesstoday.in", "timesofindia.com",
+    "zeebiz.com", "theprint.in", "firstpost.com", "yourstory.com", "inc42.com", "entrackr.com", "outlookindia.com",
+    "freepressjournal.in", "dainikbhaskar.com", "bhaskar.com", "patrika.com", "naidunia.com", "reuters.com",
+    "bloomberg.com", "forbesindia.com", "khaleejtimes.com", "gulfnews.com", "thenationalnews.com", "arabianbusiness.com",
+    "zawya.com", "bbc.co.uk", "bbc.com", "theguardian.com", "abc.net.au", "smh.com.au",
+    # press releases
+    "prnewswire.com", "businesswire.com", "globenewswire.com", "einpresswire.com", "pib.gov.in", "newswire.com",
 })
 
 

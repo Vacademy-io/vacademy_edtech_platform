@@ -31,8 +31,8 @@ from urllib.parse import urlparse
 class Vendor:
     key: str
     name: str
-    kind: str  # lms | crm | whatsapp | chat | payments | website
-    competitor: bool  # competes with Vacademy's LMS / CRM: a "switch" pitch, never auto-delivered
+    kind: str  # lms | crm | whatsapp | chat | payments | website | competitor (an offer's own, offer.py)
+    competitor: bool  # competes with Vacademy's LMS / CRM; for an offer, Offer.is_competitor decides
     hosts: tuple[str, ...] = ()  # the vendor's domains (asset, widget and API hosts)
     host_prefixes: tuple[str, ...] = ()  # a host whose first label starts with this ("appx-content-v2.")
     tokens: tuple[str, ...] = ()  # vendor-specific names in the page code (attributes, assets, cookies)
@@ -141,11 +141,12 @@ def _host_matches(vendor: Vendor, host: str) -> bool:
     return any(first.startswith(p) for p in vendor.host_prefixes)
 
 
-_POWERED = {
-    v.key: re.compile(r"\b(?:powered|built|made|hosted|developed)\s+(?:by|with|on|using)\s+(?:the\s+)?(?:"
-                      + "|".join(re.escape(p) for p in v.powered) + r")(?:\.\w+)?\b", re.I)
-    for v in VENDORS if v.powered
-}
+def _powered_re(vendor: Vendor) -> re.Pattern:
+    return re.compile(r"\b(?:powered|built|made|hosted|developed)\s+(?:by|with|on|using)\s+(?:the\s+)?(?:"
+                      + "|".join(re.escape(p) for p in vendor.powered) + r")(?:\.\w+)?\b", re.I)
+
+
+_POWERED = {v.key: _powered_re(v) for v in VENDORS if v.powered}
 
 
 def _hint_host(hint: str) -> tuple[str, str] | None:
@@ -174,11 +175,14 @@ def _page_host(page: dict[str, Any]) -> str:
     return (urlparse(page.get("final_url") or page.get("url") or "").hostname or "").lower()
 
 
-def detect_platforms(pages: list[dict]) -> list[dict]:
+def detect_platforms(pages: list[dict], extra: tuple[Vendor, ...] = ()) -> list[dict]:
     """[{"key", "name", "kind", "competitor", "evidence", "url"}], one per platform found, in the
-    order of VENDORS (course platforms and CRMs first). evidence says where the marker was, e.g.
+    order of VENDORS (course platforms and CRMs first), then extra (an offer's own competitors,
+    Offer.extra_vendors). evidence says where the marker was, e.g.
     "live.example.in → Appx assets (appx-content-v2.classx.co.in)"."""
     found: dict[str, dict[str, Any]] = {}
+    vendors = VENDORS + tuple(extra)
+    powered = {**_POWERED, **{v.key: _powered_re(v) for v in extra if v.powered}}
 
     def add(vendor: Vendor, evidence: str, url: str) -> None:
         if vendor.key not in found:
@@ -193,14 +197,15 @@ def detect_platforms(pages: list[dict]) -> list[dict]:
         markers = {x.partition(":")[2] for x in hints if x.startswith("marker:")}
         generators = [x.partition(":")[2].lower() for x in hints if x.startswith("generator:")]
         paths = " ".join(x.lower() for x in hints if x.startswith(("script:", "link:")))
-        for vendor in VENDORS:
+        for vendor in vendors:
             if vendor.key in found:
                 continue
             hit = next(((kind, host) for kind, host in hosts if _host_matches(vendor, host)), None)
             if hit:
                 add(vendor, f"{where} → {vendor.name} {_SOURCE_WORDS.get(hit[0], hit[0])} ({hit[1]})", url)
                 continue
-            token = next((t for t in vendor.tokens if t in markers or _TOKEN_RES[t].search(paths)), None)
+            token = next((t for t in vendor.tokens if t in markers or _TOKEN_RES.get(t, _token_re(t)).search(paths)),
+                         None)
             if token:
                 add(vendor, f"{where} → {vendor.name} marker in the page code ({token})", url)
                 continue
@@ -214,12 +219,12 @@ def detect_platforms(pages: list[dict]) -> list[dict]:
                 if link:
                     add(vendor, f"{where} → links to {vendor.name} ({urlparse(link).hostname})", url)
                     continue
-            pattern = _POWERED.get(vendor.key)
+            pattern = powered.get(vendor.key)
             if pattern:
                 match = pattern.search(page.get("text") or "")
                 if match:
                     add(vendor, f"{where} → \"{' '.join(match.group(0).split())}\"", url)
-    order = {v.key: i for i, v in enumerate(VENDORS)}
+    order = {v.key: i for i, v in enumerate(vendors)}
     return sorted(found.values(), key=lambda p: order[p["key"]])
 
 

@@ -41,13 +41,16 @@ import { cn } from '@/lib/utils';
 import { COMMON_TIMEZONES } from '@/routes/meetings/-utils/meetings-utils';
 import { getBrowserTimezone } from '@/utils/timezone';
 import type { SuggestResponse } from '../-types';
-import { dedupe, type AgentFormValues } from '../-utils/agent-form';
+import { dedupe, formatCompetitor, type AgentFormValues } from '../-utils/agent-form';
 import {
+    COMPETITOR_KIND_OPTIONS,
     EXCLUDE_PRESETS,
+    FIT_WEIGHT_OPTIONS,
     GATE_PRESETS,
+    MAX_COMPETITORS,
+    MAX_FIT_SIGNALS,
     MIN_CONTACT_OPTIONS,
     MODE_OPTIONS,
-    PRODUCT_OPTIONS,
     SOURCE_OPTIONS,
     WEEKDAYS,
     presetFor,
@@ -79,7 +82,7 @@ export const AutomationWarning = () => (
     </div>
 );
 
-// ─── Step 1: list + product ──────────────────────────────────────────────────
+// ─── Step 1: list + what you sell ──────────────────────────────────────────────────
 
 export interface LeadListOption {
     id: string;
@@ -131,6 +134,42 @@ export function BasicsSection({
             dedupe([...v.keywords, ...res.keywords, ...flat('need_phrases')]).slice(0, 30),
             opts
         );
+        // The offer fields are only filled where the admin has not written anything yet.
+        const o = res.offer;
+        if (o) {
+            if (!v.offer_name.trim() && o.name) {
+                form.setValue('offer_name', o.name.slice(0, 80), opts);
+            }
+            if (v.fit_signals.length === 0 && o.fit_signals.length > 0) {
+                form.setValue(
+                    'fit_signals',
+                    o.fit_signals.slice(0, MAX_FIT_SIGNALS).map((f) => ({
+                        key: '',
+                        label: f.label.slice(0, 60),
+                        description: f.description.slice(0, 200),
+                        weight: String(f.weight) as '1' | '2' | '3',
+                    })),
+                    opts
+                );
+            }
+            if (v.competitors.length === 0 && o.competitors.length > 0) {
+                form.setValue(
+                    'competitors',
+                    dedupe(o.competitors.map(formatCompetitor)).slice(0, MAX_COMPETITORS),
+                    opts
+                );
+            }
+            if (v.competitor_kinds.length === 0 && o.competitor_kinds.length > 0) {
+                form.setValue('competitor_kinds', o.competitor_kinds, opts);
+            }
+            // A checkbox is never "empty": only turn it on, and only if nobody touched it.
+            if (o.education && !v.education && !form.getFieldState('education').isDirty) {
+                form.setValue('education', true, opts);
+            }
+            if (!v.discovery_question.trim() && o.discovery_question) {
+                form.setValue('discovery_question', o.discovery_question.slice(0, 200), opts);
+            }
+        }
         setSummary(
             res.summary ||
                 `Suggested ${res.industries.length} industries. Check them in the next step.`
@@ -138,14 +177,25 @@ export function BasicsSection({
     };
 
     const runSuggest = async () => {
-        const ok = await form.trigger(['products', 'description', 'product_url']);
-        if (!ok) return;
         const v = form.getValues();
+        const name = v.offer_name.trim();
+        const description = v.description.trim();
+        const url = v.website.trim();
+        if (!name && !description && !url) {
+            form.setError('offer_name', {
+                type: 'manual',
+                message: 'Say what you sell, describe it or add a website first',
+            });
+            return;
+        }
+        if (form.formState.errors.offer_name?.type === 'manual') form.clearErrors('offer_name');
+        if (url && !(await form.trigger('website'))) return;
         const res = await suggest
             .mutateAsync({
-                products: v.products,
-                description: v.description.trim() || undefined,
-                url: v.product_url.trim() || undefined,
+                name: name || undefined,
+                seller: v.offer_seller.trim() || undefined,
+                description: description || undefined,
+                url: url || undefined,
             })
             .catch(() => null);
         if (res) applySuggestion(res);
@@ -196,7 +246,7 @@ export function BasicsSection({
                                 input={field.value}
                                 onChangeFunction={field.onChange}
                                 onBlur={field.onBlur}
-                                inputPlaceholder="e.g. Coaching institutes in Rajasthan"
+                                inputPlaceholder="e.g. Factories in Gujarat"
                                 className="sm:w-full"
                             />
                         </FormControl>
@@ -204,46 +254,48 @@ export function BasicsSection({
                     </FormItem>
                 )}
             />
-            <FormField
-                control={form.control}
-                name="products"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>
-                            What you sell <span className="text-danger-600">*</span>
-                        </FormLabel>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            {PRODUCT_OPTIONS.map((p) => {
-                                const checked = field.value.includes(p.value);
-                                return (
-                                    <label
-                                        key={p.value}
-                                        className={cn(
-                                            'flex cursor-pointer items-center gap-2 rounded-md border p-3 text-body',
-                                            checked
-                                                ? 'border-primary-300 bg-primary-50'
-                                                : 'border-neutral-200'
-                                        )}
-                                    >
-                                        <Checkbox
-                                            checked={checked}
-                                            onCheckedChange={(on) =>
-                                                field.onChange(
-                                                    on
-                                                        ? [...field.value, p.value]
-                                                        : field.value.filter((x) => x !== p.value)
-                                                )
-                                            }
-                                        />
-                                        {p.label}
-                                    </label>
-                                );
-                            })}
-                        </div>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                    control={form.control}
+                    name="offer_name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>
+                                What you sell <span className="text-danger-600">*</span>
+                            </FormLabel>
+                            <FormControl>
+                                <MyInput
+                                    input={field.value}
+                                    onChangeFunction={field.onChange}
+                                    onBlur={field.onBlur}
+                                    inputPlaceholder="e.g. Rooftop solar installation"
+                                    className="sm:w-full"
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="offer_seller"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Your company (optional)</FormLabel>
+                            <FormControl>
+                                <MyInput
+                                    input={field.value}
+                                    onChangeFunction={field.onChange}
+                                    onBlur={field.onBlur}
+                                    inputPlaceholder="e.g. Sunrise Energy"
+                                    className="sm:w-full"
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
             <FormField
                 control={form.control}
                 name="description"
@@ -256,7 +308,7 @@ export function BasicsSection({
                             <Textarea
                                 {...field}
                                 rows={4}
-                                placeholder="What you sell and to whom. e.g. An all-in-one platform for coaching institutes: online classes, test series, admissions CRM and AI calling."
+                                placeholder="What you sell and to whom. e.g. Rooftop solar installation for factories and warehouses that want to cut power bills."
                             />
                         </FormControl>
                         <FormMessage />
@@ -265,10 +317,10 @@ export function BasicsSection({
             />
             <FormField
                 control={form.control}
-                name="product_url"
+                name="website"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Product page (optional)</FormLabel>
+                        <FormLabel>Website or product page (optional)</FormLabel>
                         <FormControl>
                             <MyInput
                                 input={field.value}
@@ -279,7 +331,9 @@ export function BasicsSection({
                                 className="sm:w-full"
                             />
                         </FormControl>
-                        <FormDescription>Only used for the AI suggestion below.</FormDescription>
+                        <FormDescription>
+                            The AI suggestion and the agent read it to learn what you sell.
+                        </FormDescription>
                         <FormMessage />
                     </FormItem>
                 )}
@@ -287,8 +341,8 @@ export function BasicsSection({
             <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-body text-neutral-600">
-                        Let AI suggest industries, buyer roles, hiring roles and keywords from your
-                        description.
+                        Let AI suggest industries, buyer roles, keywords and what a good fit looks
+                        like from what you sell, your description or your website.
                     </p>
                     <MyButton
                         type="button"
@@ -357,7 +411,7 @@ function IndustriesField({ form }: { form: Form }) {
                                         input={field.value}
                                         onChangeFunction={field.onChange}
                                         onBlur={field.onBlur}
-                                        inputPlaceholder="Online coaching institutes"
+                                        inputPlaceholder="Manufacturing companies"
                                         className="sm:w-full"
                                     />
                                 </FormControl>
@@ -376,7 +430,7 @@ function IndustriesField({ form }: { form: Form }) {
                                         input={field.value}
                                         onChangeFunction={field.onChange}
                                         onBlur={field.onBlur}
-                                        inputPlaceholder="online coaching institute"
+                                        inputPlaceholder="manufacturing company"
                                         className="sm:w-full"
                                     />
                                 </FormControl>
@@ -576,7 +630,233 @@ function ChipField({
     );
 }
 
+function FitSignalsField({ form }: { form: Form }) {
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: 'fit_signals',
+    });
+    const rootError =
+        form.formState.errors.fit_signals?.root?.message ??
+        form.formState.errors.fit_signals?.message;
+    const weightOptions = FIT_WEIGHT_OPTIONS.map((w) => ({
+        _id: w.value,
+        value: String(w.value),
+        label: w.label,
+    }));
+    return (
+        <div className="flex flex-col gap-2">
+            <Label className="text-body font-semibold text-neutral-700">Fit signals</Label>
+            <p className="text-caption text-neutral-500">
+                What on a prospect’s website shows they would buy, and how much it counts (up to{' '}
+                {MAX_FIT_SIGNALS}).
+            </p>
+            {fields.length === 0 && (
+                <p className="rounded-md border border-dashed border-neutral-300 p-3 text-caption text-neutral-500">
+                    No fit signals yet. Use “Suggest with AI” in step 1, or add one.
+                </p>
+            )}
+            {fields.map((f, idx) => (
+                <div
+                    key={f.id}
+                    className="grid grid-cols-1 gap-2 rounded-md border border-neutral-200 p-3 sm:grid-cols-12 sm:items-start"
+                >
+                    <FormField
+                        control={form.control}
+                        name={`fit_signals.${idx}.label`}
+                        render={({ field }) => (
+                            <FormItem className="sm:col-span-4">
+                                <FormLabel className="text-caption">Signal</FormLabel>
+                                <FormControl>
+                                    <MyInput
+                                        input={field.value}
+                                        onChangeFunction={field.onChange}
+                                        onBlur={field.onBlur}
+                                        inputPlaceholder="Large flat roof"
+                                        className="sm:w-full"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name={`fit_signals.${idx}.description`}
+                        render={({ field }) => (
+                            <FormItem className="sm:col-span-5">
+                                <FormLabel className="text-caption">What to look for</FormLabel>
+                                <FormControl>
+                                    <MyInput
+                                        input={field.value}
+                                        onChangeFunction={field.onChange}
+                                        onBlur={field.onBlur}
+                                        inputPlaceholder="Photos or mentions of a factory shed or warehouse"
+                                        className="sm:w-full"
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <div className="sm:col-span-2">
+                        <SelectField
+                            label="Weight"
+                            labelStyle="text-caption"
+                            name={`fit_signals.${idx}.weight`}
+                            options={weightOptions}
+                            control={form.control}
+                            className="w-full sm:w-full"
+                        />
+                    </div>
+                    <MyButton
+                        type="button"
+                        buttonType="text"
+                        layoutVariant="icon"
+                        scale="medium"
+                        onClick={() => remove(idx)}
+                        aria-label="Remove fit signal"
+                        className="self-end sm:col-span-1 sm:mt-6 sm:self-start"
+                    >
+                        <Trash className="size-4 text-danger-600" />
+                    </MyButton>
+                </div>
+            ))}
+            {rootError && <p className="text-caption text-danger-600">{rootError}</p>}
+            {fields.length < MAX_FIT_SIGNALS && (
+                <MyButton
+                    type="button"
+                    buttonType="text"
+                    scale="medium"
+                    onClick={() => append({ key: '', label: '', description: '', weight: '2' })}
+                    className="self-start"
+                >
+                    <Plus className="size-4" /> Add fit signal
+                </MyButton>
+            )}
+        </div>
+    );
+}
+
+/** What a good prospect looks like for the offer: fit signals, competitors, education. */
+function FitSection({ form }: { form: Form }) {
+    return (
+        <div className="flex flex-col gap-6 border-y border-neutral-200 py-6">
+            <SectionHeading
+                title="What a good fit looks like"
+                hint="The agent scores each prospect against these. All optional; “Suggest with AI” can fill them."
+            />
+            <FitSignalsField form={form} />
+            <FormField
+                control={form.control}
+                name="competitors"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Competitors</FormLabel>
+                        <FormDescription>
+                            Who else sells what you sell. Type a name, a website, or both, e.g.
+                            “Acme (acme.com)”.
+                        </FormDescription>
+                        <ChipListInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Type a competitor and press Enter"
+                            max={MAX_COMPETITORS}
+                            ariaLabel="Competitors"
+                        />
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="competitor_kinds"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Software that competes with you</FormLabel>
+                        <FormDescription>
+                            A prospect already using one of these needs a reason to switch.
+                        </FormDescription>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            {COMPETITOR_KIND_OPTIONS.map((k) => {
+                                const on = field.value.includes(k.value);
+                                return (
+                                    <label
+                                        key={k.value}
+                                        className={cn(
+                                            'flex cursor-pointer items-center gap-2 rounded-md border p-3 text-body',
+                                            on
+                                                ? 'border-primary-300 bg-primary-50'
+                                                : 'border-neutral-200'
+                                        )}
+                                    >
+                                        <Checkbox
+                                            checked={on}
+                                            onCheckedChange={(next) =>
+                                                field.onChange(
+                                                    next
+                                                        ? [...field.value, k.value]
+                                                        : field.value.filter((x) => x !== k.value)
+                                                )
+                                            }
+                                        />
+                                        {k.label}
+                                    </label>
+                                );
+                            })}
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="education"
+                render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 rounded-md border border-neutral-200 p-3">
+                        <FormControl>
+                            <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(next) => field.onChange(next === true)}
+                                className="mt-0.5"
+                            />
+                        </FormControl>
+                        <div className="flex flex-col gap-1">
+                            <FormLabel>Our buyers are in education</FormLabel>
+                            <FormDescription>
+                                Turns on checks for coaching chains and home tutors.
+                            </FormDescription>
+                        </div>
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="discovery_question"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>First question to ask (optional)</FormLabel>
+                        <FormControl>
+                            <MyInput
+                                input={field.value}
+                                onChangeFunction={field.onChange}
+                                onBlur={field.onBlur}
+                                inputPlaceholder="e.g. How much do you spend on electricity each month?"
+                                className="sm:w-full"
+                            />
+                        </FormControl>
+                        <FormDescription>
+                            What your salesperson asks first when they call a lead.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        </div>
+    );
+}
+
 export function AudienceSection({ form }: { form: Form }) {
+    const education = form.watch('education');
     return (
         <div className="flex flex-col gap-6">
             <IndustriesField form={form} />
@@ -591,7 +871,7 @@ export function AudienceSection({ form }: { form: Form }) {
                 form={form}
                 name="hiring_roles"
                 label="Hiring roles"
-                hint="Jobs that show they need you, e.g. telecaller, admission counsellor."
+                hint="Jobs that show they need you, e.g. facilities manager, sales executive."
                 placeholder="Type a role and press Enter"
             />
             <ChipField
@@ -599,13 +879,13 @@ export function AudienceSection({ form }: { form: Form }) {
                 name="keywords"
                 label="Keywords"
                 hint="Phrases people use when they need what you sell."
-                placeholder="e.g. looking for LMS for coaching"
+                placeholder="e.g. looking for a solar installer"
             />
             <ChipField
                 form={form}
                 name="must_have"
                 label="Must-haves"
-                hint="What a good lead must have, e.g. offers online courses."
+                hint="What a good lead must have, e.g. owns its premises."
                 placeholder="Type and press Enter"
             />
             <ChipField
@@ -621,8 +901,9 @@ export function AudienceSection({ form }: { form: Form }) {
                 label="Leave out"
                 hint="Kinds of organisations never to look at."
                 placeholder="Type a kind and press Enter"
-                presets={EXCLUDE_PRESETS}
+                presets={education ? EXCLUDE_PRESETS : undefined}
             />
+            <FitSection form={form} />
             <MarketsField form={form} />
             <FormField
                 control={form.control}
@@ -1026,7 +1307,7 @@ export function PacingSection({ form }: { form: Form }) {
                                         <FormLabel>Require a buying signal</FormLabel>
                                         <FormDescription>
                                             Only auto-deliver leads that are acting now, e.g. hiring
-                                            telecallers or asking for software.
+                                            the roles you list or asking for what you sell.
                                         </FormDescription>
                                     </div>
                                     <FormControl>
