@@ -2090,6 +2090,7 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
             instituteId={instituteId}
             tagName={tagName}
             globalSettings={catalogueData?.globalSettings}
+            packageSessionId={courseData.packageSessionId}
             actions={
               showCartActions ? (
                 <CourseCartActions

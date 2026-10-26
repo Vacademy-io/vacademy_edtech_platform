@@ -313,7 +313,8 @@
         },
         "copied": "Copied!",
         "copyLink": "Copy link",
-        "shareWhatsapp": "Share on WhatsApp"
+        "shareWhatsapp": "Share on WhatsApp",
+        "share": "Share"
     },
     "testimonial": {
         "ratedOutOf5": "Rated {{stars}} out of 5",

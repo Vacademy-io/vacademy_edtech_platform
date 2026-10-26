@@ -6,6 +6,7 @@ import { PriceWithMrp } from "@/components/common/price-with-mrp";
 import { cn, sanitizeHtml } from "@/lib/utils";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { CourseShowcaseComponent } from "../../-components/components/CourseShowcaseComponent";
+import { ShareButton } from "../../-components/components/ShareButton";
 import { RouteMatcher } from "../../-services/route-matcher";
 import { useSiteNavigate } from "../../-utils/catalogue-route-search";
 import { useSiteT } from "../../-utils/catalogue-locale";
@@ -49,9 +50,24 @@ export interface EbookDetailsViewProps {
   instituteId: string;
   tagName: string;
   globalSettings?: unknown;
+  /** The Share button's short link is kept per package session; absent, no button. */
+  packageSessionId?: string | null;
 }
 
 const PLACEHOLDER_PREFIX = "/api/placeholder";
+
+/** Ad-click and campaign params a visitor arrived with; a shared link shouldn't carry them on. */
+const TRACKING_PARAM = /^(utm_.+|fbclid|gclid|gbraid|wbraid|msclkid|igshid)$/i;
+
+/** This page's address to share: same path and invite, without tracking params. */
+const shareableUrl = () => {
+  const url = new URL(window.location.href);
+  [...url.searchParams.keys()].forEach((key) => {
+    if (TRACKING_PARAM.test(key)) url.searchParams.delete(key);
+  });
+  url.hash = "";
+  return url.toString();
+};
 
 const normalise = (text: string) => text.replace(/\s+/g, " ").trim().toLowerCase();
 
@@ -116,6 +132,7 @@ export const EbookDetailsView: React.FC<EbookDetailsViewProps> = ({
   instituteId,
   tagName,
   globalSettings,
+  packageSessionId,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const { url: coverUrl, failed: coverFailed } = useResolvedCover(coverFileId);
@@ -214,9 +231,21 @@ export const EbookDetailsView: React.FC<EbookDetailsViewProps> = ({
             </div>
 
             <div className="flex flex-col gap-5 lg:col-span-5">
-              <h1 className="text-2xl font-bold leading-tight text-catalogue-text-primary sm:text-3xl">
-                {title}
-              </h1>
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-2xl font-bold leading-tight text-catalogue-text-primary sm:text-3xl">
+                  {title}
+                </h1>
+                {packageSessionId && (
+                  <ShareButton
+                    variant="button"
+                    packageSessionId={packageSessionId}
+                    destinationUrl={shareableUrl()}
+                    instituteId={instituteId}
+                    title={title}
+                    className="mt-1"
+                  />
+                )}
+              </div>
 
               {showPrice && (
                 <div className="flex items-end gap-3">

@@ -1,0 +1,46 @@
+# short-link-domains: white-label short-link hosts added after the `vac` chart
+# froze its hardcoded u.* list (templates/ingress.yaml). Same routing as those:
+#
+#   https://u.<institute-domain>/s/<code>  ->  media-service:8075 /s/<code>  (302 to the destination)
+#
+# media_service builds `https://u.<base_url>/s/<code>` for an institute that has a
+# row in media_service.backend_base_url, so a host here needs that row as well.
+#
+# NOT part of the `vac` Helm release: nothing in CI applies this file, and adding a
+# host must never involve a `helm upgrade` of `vac`. Apply / roll back by hand:
+#   kubectl apply  -f vacademy_devops/short-link-domains-ingress.yaml
+#   kubectl delete -f vacademy_devops/short-link-domains-ingress.yaml
+#
+# Adding a host:
+#   1. DNS: `u` A record -> the ingress address (kubectl get ingress), DNS only
+#      (grey cloud): cert-manager's HTTP-01 challenge has to reach the origin.
+#   2. Add the host to tls[0].hosts AND to rules below, then kubectl apply.
+#      kubectl get certificate short-link-domains-tls -w   [READY True, ~2 min]
+#   3. curl -sI https://u.<domain>/s/<an existing code>     [302 to its destination]
+#   4. Only then insert the backend_base_url row (links start using the host).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: short-link-domains
+  namespace: default
+  labels:
+    app: short-link-domains
+  annotations:
+    cert-manager.io/cluster-issuer: vacademy-stage-letsencrypt-prod-cert-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - u.parchamclasses.in
+      secretName: short-link-domains-tls
+  rules:
+    - host: u.parchamclasses.in
+      http:
+        paths:
+          - path: /s
+            pathType: Prefix
+            backend:
+              service:
+                name: media-service
+                port:
+                  number: 8075

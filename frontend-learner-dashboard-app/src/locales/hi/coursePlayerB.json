@@ -313,7 +313,8 @@
         },
         "copied": "कॉपी हो गया!",
         "copyLink": "लिंक कॉपी करें",
-        "shareWhatsapp": "व्हाट्सएप पर साझा करें"
+        "shareWhatsapp": "व्हाट्सएप पर साझा करें",
+        "share": "साझा करें"
     },
     "testimonial": {
         "ratedOutOf5": "5 में से {{stars}} रेटिंग",
