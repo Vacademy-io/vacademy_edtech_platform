@@ -20,6 +20,7 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/page-navigation/lib/styles/index.css";
 import "@react-pdf-viewer/full-screen/lib/styles/index.css";
+import "./pdf-viewer-toolbar.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
@@ -84,14 +85,28 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
     EnterFullScreen: () => <EnterFullScreenButton />,
     // Download / Print are shown only when the institute allows this role to
     // download / print PDFs; otherwise those toolbar entries are hidden.
+    // When allowed, the marker keeps the toolbar button visible on phones too
+    // (pdf-viewer-toolbar.css); the ⋮ menu entries stay as a fallback.
     ...(allowDownload
-      ? {}
+      ? {
+          Download: () => (
+            <span data-pdf-toolbar-show className="contents">
+              <slot.Download />
+            </span>
+          ),
+        }
       : {
           Download: () => <></>,
           DownloadMenuItem: () => <></>,
         }),
     ...(allowPrint
-      ? {}
+      ? {
+          Print: () => (
+            <span data-pdf-toolbar-show className="contents">
+              <slot.Print />
+            </span>
+          ),
+        }
       : {
           Print: () => <></>,
           PrintMenuItem: () => <></>,

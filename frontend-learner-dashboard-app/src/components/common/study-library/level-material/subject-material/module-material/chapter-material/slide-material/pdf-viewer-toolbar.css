@@ -1,0 +1,9 @@
+/*
+ * react-pdf-viewer's default toolbar hides Download / Print below 768px and
+ * leaves them only in the ⋮ menu, where learners on phones miss them. Show the
+ * toolbar buttons on every width when pdf-viewer-component marks them as
+ * allowed. Browsers without :has() keep the library default (⋮ menu only).
+ */
+.rpv-core__display--hidden:has(> .rpv-toolbar__item > [data-pdf-toolbar-show]) {
+  display: block;
+}
