@@ -103,7 +103,14 @@
     "profilePage": {
         "cardTitle": "صفحة الملف الشخصي",
         "cardDescription": "ما يراه المتعلمون في علامة تبويب الملف الشخصي",
-        "showMembershipStatus": "إظهار حالة العضوية (أيام الوصول وانتهاء الصلاحية)"
+        "showMembershipStatus": "إظهار حالة العضوية (أيام الوصول وانتهاء الصلاحية)",
+        "hideProgressStats": "إخفاء بطاقة إحصائيات التقدم",
+        "hideBadgesRank": "إخفاء بطاقة الشارات والترتيب",
+        "hideLanguage": "إخفاء بطاقة اللغة",
+        "hideAcademicJourney": "إخفاء بطاقة المسيرة الأكاديمية",
+        "hideContactLocation": "إخفاء بطاقة التواصل والموقع",
+        "hideGuardianInfo": "إخفاء بطاقة معلومات ولي الأمر",
+        "hideTermsCard": "إخفاء بطاقة الشروط والأحكام"
     },
     "courseDetails": {
         "cardTitle": "تفاصيل الدورة",

@@ -103,7 +103,14 @@
     "profilePage": {
         "cardTitle": "प्रोफ़ाइल पेज",
         "cardDescription": "शिक्षार्थी अपने प्रोफ़ाइल टैब पर क्या देखते हैं",
-        "showMembershipStatus": "सदस्यता स्थिति दिखाएं (एक्सेस के दिन और समाप्ति)"
+        "showMembershipStatus": "सदस्यता स्थिति दिखाएं (एक्सेस के दिन और समाप्ति)",
+        "hideProgressStats": "प्रोग्रेस स्टैट्स कार्ड छिपाएं",
+        "hideBadgesRank": "बैज और रैंक कार्ड छिपाएं",
+        "hideLanguage": "भाषा कार्ड छिपाएं",
+        "hideAcademicJourney": "एकेडमिक जर्नी कार्ड छिपाएं",
+        "hideContactLocation": "संपर्क और लोकेशन कार्ड छिपाएं",
+        "hideGuardianInfo": "अभिभावक जानकारी कार्ड छिपाएं",
+        "hideTermsCard": "नियम और शर्तें कार्ड छिपाएं"
     },
     "courseDetails": {
         "cardTitle": "कोर्स विवरण",

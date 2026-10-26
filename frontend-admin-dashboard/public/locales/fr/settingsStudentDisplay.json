@@ -103,7 +103,14 @@
     "profilePage": {
         "cardTitle": "Page de profil",
         "cardDescription": "Ce que les apprenants voient dans leur onglet Profil",
-        "showMembershipStatus": "Afficher le statut d'adhésion (jours d'accès et expiration)"
+        "showMembershipStatus": "Afficher le statut d'adhésion (jours d'accès et expiration)",
+        "hideProgressStats": "Masquer la carte Statistiques de progression",
+        "hideBadgesRank": "Masquer la carte Badges et classement",
+        "hideLanguage": "Masquer la carte Langue",
+        "hideAcademicJourney": "Masquer la carte Parcours académique",
+        "hideContactLocation": "Masquer la carte Contact et localisation",
+        "hideGuardianInfo": "Masquer la carte Informations du tuteur",
+        "hideTermsCard": "Masquer la carte Conditions générales"
     },
     "courseDetails": {
         "cardTitle": "Détails du cours",

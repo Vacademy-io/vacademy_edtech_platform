@@ -230,6 +230,13 @@ function mergeWithDefaults(
         profile: {
             showMembershipStatus:
                 incoming?.profile?.showMembershipStatus ?? d.profile.showMembershipStatus,
+            hideProgressStats: incoming?.profile?.hideProgressStats ?? d.profile.hideProgressStats,
+            hideBadgesRank: incoming?.profile?.hideBadgesRank ?? d.profile.hideBadgesRank,
+            hideLanguage: incoming?.profile?.hideLanguage ?? d.profile.hideLanguage,
+            hideAcademicJourney: incoming?.profile?.hideAcademicJourney ?? d.profile.hideAcademicJourney,
+            hideContactLocation: incoming?.profile?.hideContactLocation ?? d.profile.hideContactLocation,
+            hideGuardianInfo: incoming?.profile?.hideGuardianInfo ?? d.profile.hideGuardianInfo,
+            hideTermsCard: incoming?.profile?.hideTermsCard ?? d.profile.hideTermsCard,
         },
         courseDetails: {
             tabs: mergeArrayById(incoming?.courseDetails?.tabs, d.courseDetails.tabs).map((t) => ({

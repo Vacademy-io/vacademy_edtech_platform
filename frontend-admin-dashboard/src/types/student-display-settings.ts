@@ -394,6 +394,15 @@ export interface StudentProfileSettings {
     // Whether the "Membership Status" card (Access Days + expiry date) is shown
     // on the learner's Profile tab. Default: false (hidden).
     showMembershipStatus: boolean;
+    // Per-card switches for the Profile tab. All default to false (shown); a
+    // card that already hides itself when empty still does.
+    hideProgressStats?: boolean;
+    hideBadgesRank?: boolean;
+    hideLanguage?: boolean;
+    hideAcademicJourney?: boolean;
+    hideContactLocation?: boolean;
+    hideGuardianInfo?: boolean;
+    hideTermsCard?: boolean;
 }
 
 // Certificate settings used to be duplicated here. Certificate Settings is now

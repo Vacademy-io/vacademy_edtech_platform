@@ -103,7 +103,14 @@
     "profilePage": {
         "cardTitle": "Profile Page",
         "cardDescription": "What learners see on their Profile tab",
-        "showMembershipStatus": "Show Membership Status (Access Days & expiry)"
+        "showMembershipStatus": "Show Membership Status (Access Days & expiry)",
+        "hideProgressStats": "Hide Progress Stats card",
+        "hideBadgesRank": "Hide Badges & Rank card",
+        "hideLanguage": "Hide Language card",
+        "hideAcademicJourney": "Hide Academic Journey card",
+        "hideContactLocation": "Hide Contact & Location card",
+        "hideGuardianInfo": "Hide Guardian Info card",
+        "hideTermsCard": "Hide Terms & Conditions card"
     },
     "courseDetails": {
         "cardTitle": "Course Details",

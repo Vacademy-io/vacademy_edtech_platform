@@ -18,6 +18,7 @@ import { cn, toTitleCase } from "@/lib/utils";
 import { useStudentPermissions } from "@/hooks/use-student-permissions";
 import { useSystemFieldVisibility } from "@/hooks/use-system-field-visibility";
 import ProgressStats from "./progress-stats";
+import type { StudentProfileSettings } from "@/types/student-display-settings";
 import { BadgesRankCard } from "./badges-rank-card";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { formatDate } from "@/lib/format-date";
@@ -110,6 +111,9 @@ export default function ProfilePage() {
     isLoading: permissionsLoading,
     settings: displaySettings,
   } = useStudentPermissions();
+  // Per-card hide switches from Student Display → Profile Page.
+  const profileCards: Partial<StudentProfileSettings> =
+    displaySettings?.profile ?? {};
   // Honor the admin's system-field toggles (Settings → Custom Fields). Fails open.
   const { isFieldVisible } = useSystemFieldVisibility();
   const { setNavHeading } = useNavHeadingStore();
@@ -527,41 +531,45 @@ export default function ProfilePage() {
                   {studentData && SessionExpiry({ studentData })}
                 </div>
               )}
-              {studentData && <ProgressStats userId={studentData.user_id} />}
-              <BadgesRankCard />
+              {studentData && !profileCards.hideProgressStats && (
+                <ProgressStats userId={studentData.user_id} />
+              )}
+              {!profileCards.hideBadgesRank && <BadgesRankCard />}
 
               {/* Language preference — bound to the persisted locale store.
                   Options are the institute's enabled locales (English plus
                   the current selection until an institute enables more). */}
-              <div className="bg-card rounded-xl border shadow p-6">
-                <h3 className="text-sm font-semibold text-foreground mb-1">
-                  {t("profile.language", "Language")}
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  {t(
-                    "profile.languageHint",
-                    "Choose the language for menus and buttons."
-                  )}
-                </p>
-                <Select value={locale} onValueChange={setLocale}>
-                  <SelectTrigger aria-label={t("profile.language", "Language")}>
-                    <SelectValue>{LOCALE_LABELS[locale]}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getEnabledLocales(locale).map((option) => (
-                      <SelectItem key={option} value={option}>
-                        <span lang={option}>{LOCALE_LABELS[option]}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!profileCards.hideLanguage && (
+                <div className="bg-card rounded-xl border shadow p-6">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">
+                    {t("profile.language", "Language")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {t(
+                      "profile.languageHint",
+                      "Choose the language for menus and buttons."
+                    )}
+                  </p>
+                  <Select value={locale} onValueChange={setLocale}>
+                    <SelectTrigger aria-label={t("profile.language", "Language")}>
+                      <SelectValue>{LOCALE_LABELS[locale]}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getEnabledLocales(locale).map((option) => (
+                        <SelectItem key={option} value={option}>
+                          <span lang={option}>{LOCALE_LABELS[option]}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Right Column - Details */}
             <div className="lg:col-span-8 xl:col-span-9 space-y-4 md:space-y-6">
               {/* Academic Journey Card */}
-              {showAcademicSection && (
+              {showAcademicSection && !profileCards.hideAcademicJourney && (
                 <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-primary-500 rounded-full"></span>
@@ -629,7 +637,7 @@ export default function ProfilePage() {
               )}
 
               {/* Contact & Location Card */}
-              {showContactSection && (
+              {showContactSection && !profileCards.hideContactLocation && (
                 <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-secondary-500 rounded-full"></span>
@@ -740,7 +748,7 @@ export default function ProfilePage() {
               )}
 
               {/* Guardian Info Card — hidden entirely when every guardian field is toggled off or empty */}
-              {showGuardianSection && (
+              {showGuardianSection && !profileCards.hideGuardianInfo && (
                 <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-tertiary-500 rounded-full"></span>
@@ -792,7 +800,7 @@ export default function ProfilePage() {
               )}
 
               {/* Terms & Conditions Card — only shown when TnC is enabled for the institute */}
-              {(tncAccepted || tncFileUrl) && (
+              {(tncAccepted || tncFileUrl) && !profileCards.hideTermsCard && (
                 <div className="bg-card rounded-xl border shadow p-6 md:p-8 space-y-section">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1 h-6 bg-teal-500 rounded-full"></span>
