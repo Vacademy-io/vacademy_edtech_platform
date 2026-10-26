@@ -616,6 +616,20 @@ export async function filterHamburgerMenuItemsWithPermissions(
     );
   }
 
+  // Onboarding is an institute-wide feature (ONBOARDING_SETTING, default off).
+  // The top-navbar menu already hid it when off; the sidebar and the website
+  // account sheet render this same list, so gate it here for all of them.
+  // Loaded on demand: the settings service pulls in the API base URL, which
+  // reads window at import time.
+  if (
+    HamBurgerSidebarItemsData.some((item) => item.id === "onboarding") &&
+    !(await (await import("@/services/onboarding-settings")).isOnboardingEnabled())
+  ) {
+    HamBurgerSidebarItemsData = HamBurgerSidebarItemsData.filter(
+      (item) => item.id !== "onboarding"
+    );
+  }
+
   return HamBurgerSidebarItemsData;
 }
 
