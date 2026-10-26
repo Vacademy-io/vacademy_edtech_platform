@@ -31,6 +31,15 @@ import { applyTabBranding } from "@/utils/branding";
 import { useInstituteFeatureStore } from "@/stores/insititute-feature-store";
 import { hasLearnerSession } from "@/lib/auth/session-guard";
 import { isPasswordlessLandingRoute } from "@/lib/auth/passwordless-landing-routes";
+import {
+  consumeLoginCodeLanding,
+  homeLinkTargetsSiteRoot,
+  isAppShell,
+  markLoginCodeLanding,
+  setRootSiteServed,
+  shouldServeRootSiteToSignedIn,
+  useRootSiteServed,
+} from "@/lib/auth/root-site-for-signed-in";
 import { getSubdomain } from "@/helpers/helper";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import { loadLearnerTrackingSettings } from "@/services/learner-tracking-settings";
@@ -42,6 +51,7 @@ import type { StudentUIType } from "@/types/student-display-settings";
 import {
   resolveDomainRouting,
   getCurrentDomainInfo,
+  getCachedInstituteBranding,
 } from "@/services/domain-routing";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 import { ChatbotPanel } from "@/components/chatbot/ChatbotPanel";
@@ -830,6 +840,7 @@ const RootComponent = () => {
   }, []);
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const rootSiteServed = useRootSiteServed((s) => s.served);
   const onCataloguePost = useRouterState({ select: (s) => matchesCataloguePost(s.matches) });
 
   // A live assessment attempt owns the viewport. The chatbot is suppressed for
@@ -865,7 +876,10 @@ const RootComponent = () => {
       {!suppressAppChrome && <GetAppBanner />}
       <Outlet />
       {/* Full-screen APP_OVERLAY announcements — authenticated app surfaces only */}
-      {!isPublicRoute(pathname) && !onCataloguePost && !suppressAppChrome && <AppOverlayHost />}
+      {!isPublicRoute(pathname) &&
+        !onCataloguePost &&
+        !suppressAppChrome &&
+        !(pathname === "/" && rootSiteServed) && <AppOverlayHost />}
       {!hideChatbot && <ChatbotPanel />}
       {!hideChatbot && isChatbotEnabled && <ChatbotFloatingButton />}
       <RevokedDeviceDialog />
@@ -1018,6 +1032,9 @@ export const Route = createRootRouteWithContext<{
               key: "selectedInstituteId",
               value: instituteId,
             });
+            // Tell the "/" check below this load came from a login link, so
+            // it keeps landing on the dashboard like before.
+            if (cleanUrl.pathname === "/") markLoginCodeLanding();
             console.log("[__root] Login code accepted, reloading:", cleanPath);
             window.location.replace(`${window.location.origin}${cleanPath}`);
             throw redirect({ to: cleanUrl.pathname as never });
@@ -1073,12 +1090,69 @@ export const Route = createRootRouteWithContext<{
 
     // Handle root path redirect
     if (location.pathname === "/") {
+      setRootSiteServed(false);
       try {
         // If already authenticated, redirect to settings.postLoginRedirectRoute
         const authenticated = await isAuthenticated();
         if (authenticated) {
+          // A host whose website is mounted at "/" (root catalogue), and whose
+          // institute points its logo link there, shows that site to signed-in
+          // learners too in a browser tab. Started alongside the settings fetch
+          // so other hosts' redirect is not delayed; never rejects, and any
+          // failure keeps the landing redirect below.
+          const appShell = isAppShell();
+          const readerMode = shouldHidePaidPurchaseUI();
+          // Any ?lc= on this request (accepted, rejected, or the re-run before
+          // its reload lands) keeps the old landing; the mark covers the reload.
+          const fromLoginCode = !!loginCode || consumeLoginCodeLanding();
+          // Cheap local gate first: only an institute whose cached logo link
+          // already points at this site's root goes on to the network check,
+          // so every other host's "/" runs exactly as before.
+          let cachedHomeLinksToSite = false;
+          try {
+            cachedHomeLinksToSite = homeLinkTargetsSiteRoot(
+              getCachedInstituteBranding()?.homeIconClickRoute,
+              window.location.origin,
+            );
+          } catch {
+            cachedHomeLinksToSite = false;
+          }
+          const serveRootSitePromise: Promise<boolean> =
+            appShell || readerMode || fromLoginCode || !cachedHomeLinksToSite
+              ? Promise.resolve(false)
+              : (async () => {
+                  try {
+                    const { getAccessToken, isTokenExpired } = await import(
+                      "@/lib/auth/sessionUtility"
+                    );
+                    const token = await getAccessToken();
+                    const accessTokenValid = !!token && !isTokenExpired(token);
+                    if (!accessTokenValid) return false;
+                    const { domain, subdomain } = await getCurrentDomainInfo();
+                    const routing = await resolveDomainRouting(
+                      domain,
+                      subdomain || "*",
+                    );
+                    return shouldServeRootSiteToSignedIn({
+                      rootCatalogueTag: routing?.rootCatalogueTag,
+                      homeLinksToSite: homeLinkTargetsSiteRoot(
+                        routing?.homeIconClickRoute,
+                        window.location.origin,
+                      ),
+                      appShell,
+                      readerMode,
+                      accessTokenValid,
+                    });
+                  } catch {
+                    return false;
+                  }
+                })();
           const settings = await getStudentDisplaySettings(true);
           await getChatbotSettings(true);
+          if (await serveRootSitePromise) {
+            setRootSiteServed(true);
+            return;
+          }
           const route = settings?.postLoginRedirectRoute || "/dashboard";
           // Support external absolute URLs
           if (/^https?:\/\//.test(route)) {
