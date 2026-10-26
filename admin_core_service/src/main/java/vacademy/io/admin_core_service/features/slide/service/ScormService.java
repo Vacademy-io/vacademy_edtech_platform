@@ -40,8 +40,12 @@ public class ScormService {
 
     private final ScormSlideRepository scormSlideRepository;
     private final MediaService mediaService;
+    private final ScormPackageCompatibilityFixer compatibilityFixer;
 
-    public ScormSlide uploadScormPackage(MultipartFile file) {
+    public record UploadResult(ScormSlide slide, ScormPackageCompatibilityFixer.Report compatibility) {
+    }
+
+    public UploadResult uploadScormPackage(MultipartFile file) {
         File tempDir = null;
         try {
             // 1. Create temp directory
@@ -53,6 +57,9 @@ public class ScormService {
             // 3. Parse manifest to find launch path
             String launchPath = parseLaunchPath(tempDir);
             String scormVersion = detectScormVersion(tempDir);
+
+            // Repair known package bugs before upload; see ScormPackageCompatibilityFixer
+            ScormPackageCompatibilityFixer.Report compatibility = compatibilityFixer.apply(tempDir);
 
             // 4. Generate the SCORM player wrapper HTML
             File wrapperFile = generatePlayerWrapper(tempDir, launchPath, scormVersion);
@@ -88,7 +95,7 @@ public class ScormService {
 
             slide = scormSlideRepository.save(slide);
 
-            return slide;
+            return new UploadResult(slide, compatibility);
 
         } catch (Exception e) {
             log.error("Failed to process SCORM package", e);

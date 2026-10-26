@@ -36,7 +36,10 @@
         "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
         "waitForUpload": "Veuillez attendre la fin du téléversement du package SCORM",
         "createSuccess": "Diapositive SCORM créée avec succès !",
-        "createFailed": "Échec de la création de la diapositive SCORM"
+        "createFailed": "Échec de la création de la diapositive SCORM",
+        "compatibilityFixed": "Nous avons ajusté ce package pour que la progression des apprenants soit correctement suivie.",
+        "noCompletionStatus": "Ce package ne signale jamais l'achèvement : les apprenants resteront à 0 %. Demandez à l'auteur de le réexporter avec le suivi d'achèvement SCORM.",
+        "completionOnly": "Ce package ne signale que l'achèvement : les apprenants verront 0 % jusqu'à ce qu'ils le terminent."
     },
     "actions": {
         "creatingSlide": "Création de la diapositive...",
