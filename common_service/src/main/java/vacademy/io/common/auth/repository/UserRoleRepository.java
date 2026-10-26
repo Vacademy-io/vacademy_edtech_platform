@@ -192,9 +192,9 @@ public interface UserRoleRepository extends CrudRepository<UserRole, String> {
                         WHERE ur.institute_id = :instituteId
                           AND ur.status IN ('ACTIVE','INVITED')
                           AND (:role IS NULL OR :role = '' OR r.role_name = :role)
-                          AND (:search IS NULL OR :search = ''
-                               OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :search, '%'))
-                               OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')))
+                          AND (CAST(:search AS text) IS NULL OR :search = ''
+                               OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                               OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
                         GROUP BY u.id, u.full_name, u.email, u.mobile_number, ur.status, u.last_login_time, u.created_at
                         ORDER BY u.created_at DESC
                         LIMIT :size OFFSET :offset
@@ -211,9 +211,9 @@ public interface UserRoleRepository extends CrudRepository<UserRole, String> {
                         WHERE ur.institute_id = :instituteId
                           AND ur.status IN ('ACTIVE','INVITED')
                           AND (:role IS NULL OR :role = '' OR r.role_name = :role)
-                          AND (:search IS NULL OR :search = ''
-                               OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :search, '%'))
-                               OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')))
+                          AND (CAST(:search AS text) IS NULL OR :search = ''
+                               OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%'))
+                               OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS text), '%')))
                         """, nativeQuery = true)
         Long countUsersByInstitute(@Param("instituteId") String instituteId,
                         @Param("role") String role, @Param("search") String search);

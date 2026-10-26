@@ -372,9 +372,9 @@ public interface UserRepository extends CrudRepository<User, String> {
                         AND ur.institute_id = :instituteId
                         AND (:roleNames IS NULL OR r.role_name IN (:roleNames))
                         AND (
-                            (:query IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR u.mobile_number LIKE CONCAT('%', :query, '%'))
+                            (CAST(:query AS text) IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR u.mobile_number LIKE CONCAT('%', CAST(:query AS text), '%'))
                         )
                         ORDER BY u.full_name ASC
                         LIMIT 10
@@ -390,9 +390,9 @@ public interface UserRepository extends CrudRepository<User, String> {
                         WHERE ur.status = 'ACTIVE'
                         AND ur.institute_id = :instituteId
                         AND (
-                            (:query IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))) OR
-                            (:query IS NULL OR u.mobile_number LIKE CONCAT('%', :query, '%'))
+                            (CAST(:query AS text) IS NULL OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))) OR
+                            (CAST(:query AS text) IS NULL OR u.mobile_number LIKE CONCAT('%', CAST(:query AS text), '%'))
                         )
                         ORDER BY u.full_name ASC
                         LIMIT 10
@@ -405,9 +405,9 @@ public interface UserRepository extends CrudRepository<User, String> {
                         LEFT JOIN user_role ur ON u.id = ur.user_id
                         WHERE (:instituteId IS NULL OR ur.institute_id = :instituteId)
                         AND (
-                            LOWER(COALESCE(u.full_name, '')) LIKE LOWER(CONCAT('%', :query, '%'))
-                            OR LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :query, '%'))
-                            OR COALESCE(u.mobile_number, '') LIKE CONCAT('%', :query, '%')
+                            LOWER(COALESCE(u.full_name, '')) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+                            OR LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%'))
+                            OR COALESCE(u.mobile_number, '') LIKE CONCAT('%', CAST(:query AS text), '%')
                         )
                         LIMIT 500
                         """, nativeQuery = true)

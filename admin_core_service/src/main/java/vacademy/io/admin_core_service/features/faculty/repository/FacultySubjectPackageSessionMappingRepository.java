@@ -46,7 +46,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       ORDER BY fm.user_id, fm.updated_at DESC
       """, countQuery = """
       SELECT COUNT(DISTINCT fm.user_id)
@@ -64,7 +64,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       """, nativeQuery = true)
   Page<FacultySubjectPackageSessionMapping> findByFilters(
       @Param("instituteId") String instituteId,
@@ -96,7 +96,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       ORDER BY fm.user_id, fm.updated_at DESC
       """, countQuery = """
       SELECT COUNT(DISTINCT fm.user_id)
@@ -114,7 +114,7 @@ public interface FacultySubjectPackageSessionMappingRepository
             (fm.package_session_id IN (:batchesIds))
         ))
         AND (CAST(:hasStatusList AS boolean) = false OR fm.status IN (:statusList))
-        AND (:name IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
+        AND (CAST(:name AS text) IS NULL OR CAST(:name AS text) = '' OR LOWER(fm.name) LIKE LOWER(CONCAT('%', CAST(:name AS text), '%')))
       """, nativeQuery = true)
   Page<FacultySubjectPackageSessionMapping> findByFiltersScopedToSubOrgs(
       @Param("instituteId") String instituteId,

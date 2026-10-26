@@ -679,6 +679,7 @@
         "searchLabel": "इस खंड में खोजें",
         "resultCount_one": "{{count}} परिणाम",
         "resultCount_other": "{{count}} परिणाम",
+        "searching": "खोज रहे हैं…",
         "noResults": "“{{query}}” से कुछ भी मेल नहीं खाता।",
         "inPath": "{{path}} में",
         "folderCount_one": "{{count}} फ़ोल्डर",

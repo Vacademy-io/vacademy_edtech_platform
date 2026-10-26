@@ -692,6 +692,7 @@
         "searchLabel": "Search this section",
         "resultCount_one": "{{count}} match",
         "resultCount_other": "{{count}} matches",
+        "searching": "Searching…",
         "noResults": "Nothing matches “{{query}}”.",
         "inPath": "in {{path}}",
         "folderCount_one": "{{count}} folder",

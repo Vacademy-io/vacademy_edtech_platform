@@ -40,7 +40,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             SELECT * FROM notification_log
             WHERE channel_id = :channelId
               AND notification_type = :notificationType
-              AND body LIKE CONCAT('%', :provider, '%')
+              AND body LIKE CONCAT('%', CAST(:provider AS text), '%')
             ORDER BY notification_date DESC
             LIMIT 1
             """, nativeQuery = true)
@@ -169,7 +169,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 WHERE 
                     -- 1. Match the Anchor (Outgoing Message)
                     anchor.notification_type = :anchorType
-                    AND anchor.body LIKE CONCAT('%', :anchorBody, '%')
+                    AND anchor.body LIKE CONCAT('%', CAST(:anchorBody AS text), '%')
             
                     -- 2. Match the Reaction (Delivered/Incoming)
                     AND reaction.notification_type = :reactionType
@@ -186,7 +186,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                         FROM notification_log intermediate
                         WHERE intermediate.channel_id = anchor.channel_id
                           AND intermediate.notification_type = :anchorType
-                          AND intermediate.body LIKE CONCAT('%', :anchorBody, '%')
+                          AND intermediate.body LIKE CONCAT('%', CAST(:anchorBody AS text), '%')
                           AND intermediate.created_at > anchor.created_at
                           AND intermediate.created_at < reaction.created_at
                     )
@@ -459,7 +459,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             SELECT * FROM notification_log nl
             WHERE nl.institute_id = :instituteId
               AND nl.notification_type = 'WHATSAPP_MESSAGE_OUTGOING'
-              AND nl.body LIKE CONCAT('%', :templatePrefix, '%')
+              AND nl.body LIKE CONCAT('%', CAST(:templatePrefix AS text), '%')
               AND (COALESCE(:channelId, '') = '' OR nl.sender_business_channel_id = :channelId)
               AND (COALESCE(:startDate, '') = '' OR nl.notification_date >= CAST(:startDate AS TIMESTAMP))
               AND (COALESCE(:endDate, '') = '' OR nl.notification_date <= CAST(:endDate AS TIMESTAMP))
@@ -901,7 +901,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 FROM notification_log
                WHERE notification_type = 'EMAIL_EVENT'
                  AND notification_date >= CAST(:since AS TIMESTAMP)
-                 AND left(body, 30) LIKE CONCAT('Email Event: ', :eventName, '%')
+                 AND left(body, 30) LIKE CONCAT('Email Event: ', CAST(:eventName AS text), '%')
             ), orig AS MATERIALIZED (
               SELECT id
                 FROM notification_log
@@ -925,7 +925,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 FROM notification_log
                WHERE notification_type = 'EMAIL_EVENT'
                  AND notification_date >= CAST(:since AS TIMESTAMP)
-                 AND left(body, 30) LIKE CONCAT('Email Event: ', :eventName, '%')
+                 AND left(body, 30) LIKE CONCAT('Email Event: ', CAST(:eventName AS text), '%')
             ), orig AS MATERIALIZED (
               SELECT id
                 FROM notification_log

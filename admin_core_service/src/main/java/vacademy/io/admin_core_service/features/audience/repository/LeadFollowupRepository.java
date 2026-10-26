@@ -76,9 +76,9 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
               AND (CAST(:closedTo AS timestamp) IS NULL
                    OR f.closed_at < CAST(:closedTo AS timestamp))
               AND (COALESCE(:searchQuery, '') = ''
-                   OR LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
-                   OR LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
-                   OR ar.parent_mobile LIKE CONCAT('%', :searchQuery, '%')
+                   OR LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%')
                    OR (COALESCE(:searchUserIdsCsv, '') <> ''
                        AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
               AND (COALESCE(:leadStatusCsv, '') = ''
@@ -113,9 +113,9 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
               AND (CAST(:closedTo AS timestamp) IS NULL
                    OR f.closed_at < CAST(:closedTo AS timestamp))
               AND (COALESCE(:searchQuery, '') = ''
-                   OR LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
-                   OR LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', :searchQuery, '%'))
-                   OR ar.parent_mobile LIKE CONCAT('%', :searchQuery, '%')
+                   OR LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%')
                    OR (COALESCE(:searchUserIdsCsv, '') <> ''
                        AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
               AND (COALESCE(:leadStatusCsv, '') = ''
