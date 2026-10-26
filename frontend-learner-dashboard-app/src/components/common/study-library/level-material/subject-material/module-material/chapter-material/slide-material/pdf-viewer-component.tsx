@@ -151,6 +151,56 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
     };
   }, []);
 
+  // react-pdf-viewer aligns toolbar popovers (e.g. the ⋮ "More actions" menu)
+  // to their button without checking bounds, so on phones the menu runs past
+  // the left edge and this container's overflow-x-hidden clips its labels.
+  // When a popover opens outside the visible area, nudge it back inside.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const MARGIN = 8;
+
+    const keepInside = (body: HTMLElement) => {
+      if (!body.isConnected) return;
+      const fullScreenEl = document.fullscreenElement;
+      const boundsEl =
+        fullScreenEl && fullScreenEl.contains(body) ? fullScreenEl : container;
+      const bounds = boundsEl.getBoundingClientRect();
+      const rect = body.getBoundingClientRect();
+      let shift = 0;
+      if (rect.left < bounds.left + MARGIN) {
+        shift = bounds.left + MARGIN - rect.left;
+      } else if (rect.right > bounds.right - MARGIN) {
+        shift = bounds.right - MARGIN - rect.right;
+      }
+      if (!shift) return;
+      body.style.left = `${(parseFloat(body.style.left) || 0) + shift}px`;
+      // The arrow no longer points at the button once the popover is moved
+      const arrow = body.querySelector<HTMLElement>(
+        ".rpv-core__popover-body-arrow"
+      );
+      if (arrow) arrow.style.display = "none";
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (
+            node instanceof HTMLElement &&
+            node.classList.contains("rpv-core__popover-body")
+          ) {
+            // The library positions it in a layout effect, which has run by
+            // now; re-check next frame in case layout was still settling.
+            keepInside(node);
+            requestAnimationFrame(() => keepInside(node));
+          }
+        });
+      }
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Worker workerUrl="/pdfjs/3.11.174/pdf.worker.min.js">
       <div
