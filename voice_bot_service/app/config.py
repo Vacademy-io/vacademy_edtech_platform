@@ -385,10 +385,27 @@ class Settings:
     # (call f58ca825, 2026-09-22: Sarvam 34 s → 49 s → 403 with nothing to
     # catch it). Empty = no waterfall. Same values as LLM_PROVIDER.
     llm_fallback_provider: str = field(default_factory=lambda: _env("LLM_FALLBACK_PROVIDER", ""))
+    # The Sarvam model that TALKS on calls (primary or fallback), apart from
+    # SARVAM_LLM_* — which post-call analysis also reads. Call 69de9464
+    # (2026-10-26): two Vertex 429s put the call on sarvam-105b, which answered
+    # "ठीक है." to every turn after that. Replayed with the call's real
+    # prompt: sarvam-105b said "ठीक है." 5 of 8 times, gemma4 asked the next
+    # question 8 of 8 (first word 0.1-0.3 s, ~99% of the prompt served from
+    # Sarvam's cache from the second turn). gemma4 is served on /v2 only (/v1
+    # lists the 105b models). Empty = SARVAM_LLM_*.
+    llm_call_sarvam_model: str = field(
+        default_factory=lambda: _env("LLM_CALL_SARVAM_MODEL", ""))
+    llm_call_sarvam_base_url: str = field(
+        default_factory=lambda: _env("LLM_CALL_SARVAM_BASE_URL", ""))
     # A reply whose first token has not arrived by then is a vendor failure,
     # not a slow reply: it errors, and the waterfall takes over. 0 = off.
     llm_first_token_timeout_secs: float = field(
         default_factory=lambda: float(_env("LLM_FIRST_TOKEN_TIMEOUT_SECS", "6.0")))
+    # The same deadline for an OpenAI-compatible PRIMARY that has a fallback
+    # to hand the turn to (as VERTEX_FIRST_TOKEN_TIMEOUT_SECS is for Gemini):
+    # gemma4's first token is 0.1-0.3 s, so 3 s with nothing is a failure.
+    llm_primary_first_token_timeout_secs: float = field(
+        default_factory=lambda: float(_env("LLM_PRIMARY_FIRST_TOKEN_TIMEOUT_SECS", "3.0")))
     # Vertex primary WITH a fallback: give up on Gemini after this long with no
     # first token and let the waterfall answer on the fallback. 23 Sep batch:
     # one 429 RESOURCE_EXHAUSTED (asia-south1 shared capacity) took 7.1 s to
@@ -772,6 +789,13 @@ class Settings:
     llm_return_to_primary: bool = field(default_factory=lambda: _env("LLM_RETURN_TO_PRIMARY", "1") == "1")
     llm_return_after_secs: float = field(default_factory=lambda: float(_env("LLM_RETURN_AFTER_SECS", "5")))
     llm_max_failovers: int = field(default_factory=lambda: int(_env("LLM_MAX_FAILOVERS", "2")))
+    # A 429 (RESOURCE_EXHAUSTED: Google's shared capacity in asia-south1, not
+    # our quota) is not a stalling primary — the next request usually goes
+    # through. Counted apart from the stalls above, so two of them no longer
+    # leave the call on the fallback (call 69de9464); after this many in one
+    # call the region is having a bad few minutes and the fallback keeps it.
+    llm_max_capacity_failovers: int = field(
+        default_factory=lambda: int(_env("LLM_MAX_CAPACITY_FAILOVERS", "4")))
     # Single-flight step 5: the bot's OWN runs (next-step cues, the noise
     # re-ask, the lost-resume cue) pass one door — RunGuard drops them when a
     # reply is already on its way or the call is ending, holds them while the

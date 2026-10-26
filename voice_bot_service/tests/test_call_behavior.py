@@ -5452,6 +5452,135 @@ async def test_vertex_first_token_guard_fails_fast_so_the_waterfall_can_answer()
     assert with_stream_first_token_timeout(_Gemini, 0) is _Gemini
 
 
+# ── call 69de9464 (2026-10-26): two Vertex 429s, then sarvam-105b said "ठीक है." ─
+class _Refused(Exception):
+    code = 429
+
+
+@pytest.mark.asyncio
+async def test_a_vertex_429_is_retried_once_inside_the_first_token_budget():
+    from app.providers import with_stream_first_token_timeout
+
+    class _Chunks:
+        def __init__(self): self.n = 0
+        def __aiter__(self): return self
+        async def __anext__(self):
+            self.n += 1
+            if self.n > 2: raise StopAsyncIteration
+            return f"c{self.n}"
+
+    class _Gemini:
+        def __init__(self):
+            self.calls = 0; self.refuse = 1
+            self.err = _Refused; self.msg = "Unknown error occurred: 429 RESOURCE_EXHAUSTED."
+        async def _stream_content(self, context):
+            self.calls += 1
+            if self.calls <= self.refuse:
+                raise self.err(self.msg)
+            return _Chunks()
+
+    G = with_stream_first_token_timeout(_Gemini, 3.0)
+    g = G()                                       # refused once, then served
+    assert [c async for c in await g._stream_content(None)] == ["c1", "c2"]
+    assert g.calls == 2
+    g = G(); g.refuse = 2                         # refused twice: fail over
+    with pytest.raises(_Refused):
+        await g._stream_content(None)
+    assert g.calls == 2
+    g = G(); g.err = RuntimeError; g.msg = "500 INTERNAL"   # not a 429: no retry
+    with pytest.raises(RuntimeError):
+        await g._stream_content(None)
+    assert g.calls == 1
+    g = with_stream_first_token_timeout(_Gemini, 1.1)()   # too little budget left to retry
+    with pytest.raises(_Refused):
+        await g._stream_content(None)
+    assert g.calls == 1
+
+
+def test_capacity_errors_are_told_apart_from_stalls():
+    from app.providers import is_capacity_error
+    assert is_capacity_error(_Refused("x"))
+    assert is_capacity_error("Unknown error occurred: 429 RESOURCE_EXHAUSTED. {'error': …}")
+    assert is_capacity_error("Unknown error occurred: 429 Too Many Requests. {'message': …}")
+    assert not is_capacity_error("LLM first token not received within 3.0s")
+    assert not is_capacity_error("403 PERMISSION_DENIED")
+    assert is_capacity_error("Error code: 429 - {'error': {'message': 'Rate limit'}}")
+    assert not is_capacity_error(None)
+
+
+def test_a_word_loop_is_a_stuck_model_not_speech():
+    from app.providers import word_loop
+    assert word_loop("our our our our")
+    assert word_loop("Okay, so our, our. Our our and then")
+    assert not word_loop("हाँ हाँ हाँ, बताइए।")
+    assert not word_loop("आप हर महीने कितना वॉल्यूम खरीदते हैं?")
+    assert not word_loop("")
+
+
+@pytest.mark.asyncio
+async def test_a_looping_reply_is_cut_before_the_loop_is_spoken():
+    from types import SimpleNamespace as NS
+    from app.providers import with_loop_guard
+
+    def chunk(text):
+        return NS(choices=[NS(delta=NS(content=text))])
+
+    class _Stream:
+        def __init__(self, parts): self.parts = list(parts); self.closed = False
+        def __aiter__(self): return self
+        async def __anext__(self):
+            if not self.parts: raise StopAsyncIteration
+            return self.parts.pop(0)
+        async def aclose(self): self.closed = True
+
+    class _Svc:
+        stream = None
+        async def get_chat_completions(self, context): return self.stream
+
+    S = with_loop_guard(_Svc)
+    s = S(); s.stream = _Stream([chunk("Our"), chunk(" our"), chunk(" our"),
+                                 chunk(" our"), chunk(" our"), chunk(" our")])
+    said = [c.choices[0].delta.content async for c in await s.get_chat_completions(None)]
+    assert "".join(said) == "Our our our", said
+    s = S(); s.stream = _Stream([chunk("ठीक है."), chunk(" आपका"), chunk(" मासिक वॉल्यूम?"),
+                                 NS(choices=[])])
+    out = [c async for c in await s.get_chat_completions(None)]
+    assert len(out) == 4, "a healthy reply passes through untouched"
+
+
+def test_calls_talk_on_their_own_sarvam_model_and_analysis_keeps_its_own(monkeypatch):
+    import dataclasses
+    from app import providers as pv, report
+    from app.config import Settings
+    s = dataclasses.replace(Settings(), llm_provider="sarvam",
+                            sarvam_llm_base_url="https://api.sarvam.ai/v1",
+                            sarvam_llm_model="sarvam-105b", sarvam_llm_api_key="k",
+                            llm_call_sarvam_base_url="https://api.sarvam.ai/v2",
+                            llm_call_sarvam_model="gemma4",
+                            llm_first_token_timeout_secs=6.0,
+                            llm_primary_first_token_timeout_secs=3.0)
+    monkeypatch.setattr(pv, "get_settings", lambda: s)
+    for fail_fast in (False, True):
+        llm = pv.build_llm("sarvam", fail_fast=fail_fast)
+        assert llm._settings.model == "gemma4" and "/v2" in str(llm._client.base_url)
+    assert pv.build_llm("sarvam", fail_fast=True).first_token_timeout_secs == 3.0
+    assert pv.build_llm("sarvam").first_token_timeout_secs == 6.0
+    base, _key, model = report._llm_target(s)
+    assert model == "sarvam-105b" and base.endswith("/v1"), "analysis stays on SARVAM_LLM_*"
+    s = dataclasses.replace(s, llm_call_sarvam_model="", llm_call_sarvam_base_url="")
+    assert pv.build_llm("sarvam")._settings.model == "sarvam-105b", "unset = SARVAM_LLM_* as before"
+
+
+def test_a_429_failover_still_returns_to_the_primary():
+    """The second 429 used to leave the call on the fallback for good."""
+    import inspect
+    from app import bot
+    src = inspect.getsource(bot.run_bot)
+    assert 'flags["llm_capacity_failovers_n"] += 1' in src
+    assert "is_capacity_error(getattr(frame, \"error\", \"\"))" in src
+    assert src.count("_llm_may_return()") >= 2
+
+
 def test_llm_waterfall_primary_gives_up_early_only_when_a_fallback_exists(monkeypatch):
     from app import providers as pv
     class _S:

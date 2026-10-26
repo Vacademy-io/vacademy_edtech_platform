@@ -714,11 +714,72 @@ def with_first_token_timeout(cls, secs: float):
     return _Guarded
 
 
+def is_capacity_error(error) -> bool:
+    """A vendor's "too busy right now" (HTTP 429 / RESOURCE_EXHAUSTED) — as
+    opposed to a stall or a broken request. Vertex raises it as
+    google.genai.errors.ClientError (code 429), and pipecat hands run_bot only
+    its text ("Unknown error occurred: 429 RESOURCE_EXHAUSTED…" or "…429 Too
+    Many Requests…"); the OpenAI SDK (Sarvam) raises RateLimitError
+    (status_code 429, "Error code: 429 - …"). Exception or string, both count."""
+    if getattr(error, "code", None) == 429 or getattr(error, "status_code", None) == 429:
+        return True
+    text = str(error or "")
+    return ("RESOURCE_EXHAUSTED" in text or "429 Too Many Requests" in text
+            or "Error code: 429" in text)
+
+
+class _Prefetched:
+    """A stream whose first chunk was already read (to see whether the request
+    went through): yields that chunk, then the rest of the stream."""
+
+    def __init__(self, first, it, stream):
+        self._first = first
+        self._it = it
+        self._stream = stream
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self._first is not None:
+            first, self._first = self._first, None
+            return first
+        return await self._it.__anext__()
+
+    async def aclose(self):
+        if hasattr(self._it, "aclose"):
+            await self._it.aclose()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+class _EmptyStream:
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        raise StopAsyncIteration
+
+
+# A 429 comes back fast (0.35-0.74 s after the request, 2026-10-26), so one
+# retry fits inside the first-token budget: wait this long, and retry only
+# when at least _CAPACITY_RETRY_MIN_SECS of the budget is left for it.
+_CAPACITY_RETRY_PAUSE_SECS = 0.25
+_CAPACITY_RETRY_MIN_SECS = 1.0
+
+
 def with_stream_first_token_timeout(cls, secs: float):
     """The same guard for pipecat's Google (Gemini/Vertex) service, which
     streams through _stream_content instead of get_chat_completions. A 429 or
     a stall before the first chunk raises inside _process_context, which
-    pipecat turns into a non-fatal ErrorFrame — the failover trigger."""
+    pipecat turns into a non-fatal ErrorFrame — the failover trigger.
+
+    A 429 before the first chunk is retried ONCE, within the same budget:
+    Google's shared capacity in asia-south1 refuses a request and takes the
+    next one (7 of the 10 days to 2026-10-26, 15 failovers that day). Nothing
+    has been spoken yet, so a retry cannot repeat a word. Any other error, a
+    second 429, or a 429 with too little budget left fails over as before."""
     if not secs or secs <= 0:
         return cls
 
@@ -727,14 +788,112 @@ def with_stream_first_token_timeout(cls, secs: float):
 
         async def _stream_content(self, context):
             t = self.first_token_timeout_secs
-            try:
-                stream = await asyncio.wait_for(super()._stream_content(context), timeout=t)
-            except asyncio.TimeoutError as e:
-                raise TimeoutError(f"LLM did not answer within {t:.1f}s (connect)") from e
-            return _FirstChunkGuard(stream, t)
+            t0 = time.monotonic()
+            for attempt in (1, 2):
+                stage = "connect"
+                try:
+                    stream = await asyncio.wait_for(super()._stream_content(context),
+                                                    timeout=max(0.01, t - (time.monotonic() - t0)))
+                    stage = "first token"
+                    it = stream.__aiter__()
+                    try:
+                        first = await asyncio.wait_for(
+                            it.__anext__(), timeout=max(0.01, t - (time.monotonic() - t0)))
+                    except StopAsyncIteration:
+                        return _EmptyStream()
+                    return _Prefetched(first, it, stream)
+                except asyncio.TimeoutError as e:
+                    if stage == "connect":
+                        raise TimeoutError(f"LLM did not answer within {t:.1f}s (connect)") from e
+                    raise TimeoutError(f"LLM first token not received within {t:.1f}s") from e
+                except Exception as e:
+                    spent = time.monotonic() - t0
+                    left = t - spent - _CAPACITY_RETRY_PAUSE_SECS
+                    if attempt == 2 or not is_capacity_error(e) or left < _CAPACITY_RETRY_MIN_SECS:
+                        raise
+                    logger.warning("llm: %s refused the request (429) after %.2fs — retrying once",
+                                   type(self).__name__, spent)
+                    await asyncio.sleep(_CAPACITY_RETRY_PAUSE_SECS)
     _Guarded.__name__ = cls.__name__
     _Guarded.__qualname__ = cls.__qualname__
     return _Guarded
+
+
+_LOOP_WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
+# The same word this many times in a row is a model stuck in a loop, never
+# speech ("हाँ हाँ हाँ" is three).
+LOOP_RUN = 4
+
+
+def word_loop(text: str, run: int = LOOP_RUN) -> bool:
+    """True when `text` has one word `run` times in a row ("our our our our")."""
+    words = [w.lower() for w in _LOOP_WORD_RE.findall(text or "")]
+    n = 1
+    for a, b in zip(words, words[1:]):
+        n = n + 1 if a == b else 1
+        if n >= run:
+            return True
+    return False
+
+
+class _LoopGuard:
+    """Ends a reply the moment the model starts repeating one word.
+
+    2026-10-24: Sarvam's gemma4 began answering "our our our…" (300 tokens in
+    ~10 s), and gemma4 is now the call fallback. The chunk that completes the
+    run is not passed on, so the caller hears at most the first repeats; the
+    rest of the reply is dropped and the next-step machinery asks again."""
+
+    def __init__(self, stream, label: str):
+        self._stream = stream
+        self._label = label
+        self._it = None
+        self._text = ""
+        self.cut = False
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.cut:
+            raise StopAsyncIteration
+        if self._it is None:
+            self._it = self._stream.__aiter__()
+        chunk = await self._it.__anext__()
+        try:
+            piece = chunk.choices[0].delta.content if chunk.choices else None
+        except Exception:
+            piece = None
+        if piece:
+            self._text = (self._text + piece)[-400:]
+            if word_loop(self._text):
+                self.cut = True
+                logger.warning("llm: %s is repeating itself (%r) — reply cut",
+                               self._label, self._text[-60:])
+                raise StopAsyncIteration
+        return chunk
+
+    async def aclose(self):
+        it = self._it if self._it is not None else self._stream
+        if hasattr(it, "aclose"):
+            await it.aclose()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+def with_loop_guard(cls):
+    """Subclass an OpenAI-compatible pipecat LLM service so a looping reply is
+    cut (see _LoopGuard)."""
+
+    class _Looped(cls):
+        async def get_chat_completions(self, context):
+            stream = await super().get_chat_completions(context)
+            model = getattr(getattr(self, "_settings", None), "model", "") or ""
+            return _LoopGuard(stream, "%s/%s" % (type(self).__name__, model))
+    _Looped.__name__ = cls.__name__
+    _Looped.__qualname__ = cls.__qualname__
+    return _Looped
 
 
 def with_retire(cls):
@@ -826,14 +985,22 @@ def build_llm_waterfall(provider: str | None = None):
     return switcher, primary, fallback
 
 
+def call_sarvam_model(s) -> str:
+    """The Sarvam model that talks on calls (LLM_CALL_SARVAM_MODEL), else the
+    one analysis uses (SARVAM_LLM_MODEL)."""
+    return s.llm_call_sarvam_model or s.sarvam_llm_model
+
+
 def build_llm(provider: str | None = None, fail_fast: bool = False):
     """`provider` overrides LLM_PROVIDER for one call (per-agent POC routing —
     see Settings.sarvam_llm_agents). None = the configured default.
     fail_fast: this service is the primary of a waterfall, so a slow first
-    token should hand the turn to the fallback sooner (Vertex only)."""
+    token should hand the turn to the fallback sooner."""
     s = get_settings()
     prov = (provider or s.llm_provider or "").strip().lower()
-    _Timed = with_first_token_timeout(OpenAILLMService, s.llm_first_token_timeout_secs)
+    _Timed = with_loop_guard(with_first_token_timeout(
+        OpenAILLMService,
+        s.llm_primary_first_token_timeout_secs if fail_fast else s.llm_first_token_timeout_secs))
     if fail_fast:
         _Timed = with_retire(_Timed)
     if prov == "vertex":
@@ -908,8 +1075,8 @@ def build_llm(provider: str | None = None, fail_fast: bool = False):
     # 0.14s median TTFT from Mumbai with null; 6-14s (or content=None) without.
     return _Timed(
         api_key=s.sarvam_llm_api_key,
-        base_url=s.sarvam_llm_base_url,
-        model=s.sarvam_llm_model,
+        base_url=s.llm_call_sarvam_base_url or s.sarvam_llm_base_url,
+        model=call_sarvam_model(s),
         params=OpenAILLMService.InputParams(
             temperature=0.35, max_tokens=300,
             extra={"extra_body": {"reasoning_effort": None}},

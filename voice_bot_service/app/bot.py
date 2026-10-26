@@ -94,7 +94,8 @@ from .voice_eq import build_voice_eq, make_voice_eq_processor
 from .prosody import build_prosody_shaper, make_prosody_processor
 from . import diagnostics as diag_mod
 from .providers import (build_stt_waterfall, build_llm, build_llm_waterfall, build_stt, build_tts, engine_of,
-                        normalize_for_rumik, rumik_term_map_version)
+                        normalize_for_rumik, rumik_term_map_version, is_capacity_error,
+                        call_sarvam_model)
 from . import ttscache
 from .turntake import (mid_reply_action, is_carrier_announcement,
                        is_audio_check, suppresses_opening, is_repeat,
@@ -6774,6 +6775,7 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
     flags["llm_failed_over"] = False
     flags["llm_failed_over_t"] = 0.0
     flags["llm_failovers_n"] = 0
+    flags["llm_capacity_failovers_n"] = 0
     if (llm_fallback is not None and settings.llm_retire_primary
             and hasattr(llm_primary, "retire_on_error")):
         llm_primary.retire_on_error = True
@@ -6782,7 +6784,7 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
     _eff_provider = _llm_provider or settings.llm_provider
     diag.llm_vendor = "%s/%s" % (
         _eff_provider,
-        {"sarvam": settings.sarvam_llm_model, "vertex": settings.vertex_model,
+        {"sarvam": call_sarvam_model(settings), "vertex": settings.vertex_model,
          "bedrock": settings.bedrock_model}.get(
             _eff_provider, getattr(llm_primary, "model_name", "") or ""))
     logger.info("llm: %s corr=%s%s", diag.llm_vendor, corr,
@@ -7486,6 +7488,15 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
         observers=[TtfbObserver(corr, diag).observer],
     )
 
+    def _llm_may_return():
+        """Whether a failed-over call still goes back to the primary: not after
+        LLM_MAX_FAILOVERS stalls, nor after more than LLM_MAX_CAPACITY_FAILOVERS
+        429s (Google's shared capacity refusing — the next request usually goes
+        through, so a 429 alone no longer counts as a stalling primary)."""
+        return (settings.llm_return_to_primary
+                and flags["llm_failovers_n"] < settings.llm_max_failovers
+                and flags["llm_capacity_failovers_n"] <= settings.llm_max_capacity_failovers)
+
     def _llm_return_frame():
         """After a failover, hand the caller's next turn back to the primary.
 
@@ -7499,10 +7510,7 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
         AHEAD of the run (RunGuard pushes it first); the switcher then hands
         the primary its metadata frame, which also un-retires it
         (providers.with_retire)."""
-        if not (settings.llm_return_to_primary and llm_fallback is not None
-                and flags["llm_failed_over"]):
-            return None
-        if flags["llm_failovers_n"] >= settings.llm_max_failovers:
+        if not (llm_fallback is not None and flags["llm_failed_over"] and _llm_may_return()):
             return None
         if time.time() - flags["llm_failed_over_t"] < settings.llm_return_after_secs:
             return None
@@ -7530,11 +7538,13 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
                 return
             flags["llm_failed_over"] = True
             flags["llm_failed_over_t"] = time.time()
-            flags["llm_failovers_n"] += 1
+            if is_capacity_error(getattr(frame, "error", "")):
+                flags["llm_capacity_failovers_n"] += 1
+            else:
+                flags["llm_failovers_n"] += 1
             diag.bump("llm_failovers")
             diag.llm_vendor_final = type(llm_fallback).__name__
-            back = (settings.llm_return_to_primary
-                    and flags["llm_failovers_n"] < settings.llm_max_failovers)
+            back = _llm_may_return()
             logger.warning("llm failover: %s — switching %s → %s %s corr=%s",
                            str(getattr(frame, "error", ""))[:90], type(llm_primary).__name__,
                            type(llm_fallback).__name__,
