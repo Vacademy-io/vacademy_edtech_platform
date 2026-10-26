@@ -5,6 +5,7 @@ import { StudentFilterRequest } from '@/types/student-table-types';
 import { toast } from 'sonner';
 import { getAccessiblePackageFilters } from '@/lib/auth/facultyAccessUtils';
 import type { TFunction } from 'i18next';
+import { normalizeStudentFilters } from '../-utils/normalizeStudentFilters';
 
 interface ExportParams {
     filters: StudentFilterRequest;
@@ -20,7 +21,7 @@ export const buildExportStudentsCsv = (t: TFunction) => async ({
     try {
         // Sub-org admin: restrict export to accessible package sessions only
         const accessibleFilters = getAccessiblePackageFilters();
-        const exportFilters = { ...filters };
+        const exportFilters = normalizeStudentFilters(filters);
         if (accessibleFilters?.package_session_ids?.length) {
             const allowed = new Set(accessibleFilters.package_session_ids);
             if (exportFilters.package_session_ids?.length) {

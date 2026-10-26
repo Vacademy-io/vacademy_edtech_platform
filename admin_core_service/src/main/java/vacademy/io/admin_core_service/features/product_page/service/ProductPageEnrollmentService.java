@@ -245,7 +245,7 @@ public class ProductPageEnrollmentService {
             PackageSession actualSession = packageSessionRepository.findById(packageSessionId)
                     .orElseThrow(() -> new VacademyException("PackageSession not found: " + packageSessionId));
 
-            learnerEnrollmentEntryService.markPreviousEntriesAsDeleted(
+            learnerEnrollmentEntryService.deletePreviousThrowawayEntries(
                     user.getId(), invitedSession.getId(), packageSessionId, request.getInstituteId());
 
             // Pass the full UserDTO so the ABANDONED_CART workflow's webhook gets
@@ -723,6 +723,13 @@ public class ProductPageEnrollmentService {
             enrollDTO.setCustomFieldValues(filterFieldsForInvite(request.getCustomFieldValues(), invite.getId()));
             enrollDTO.setPaymentInitiationRequest(invitePayReq);
 
+            // "INVITED" is intentional — see the note on provisionPendingEnrollments below.
+            // It is NOT a UserPlanStatusEnum value, which is a real wart (these plans fall
+            // outside every status-keyed query, including membership and finance filters),
+            // but switching it to PENDING_FOR_PAYMENT makes createUserPlan post a ledger
+            // DEBIT_ACCRUAL and makes findOutstandingLearners bill the row, so every
+            // abandoned checkout becomes phantom Due. Fixing the enum wart without that
+            // side effect needs a status that is neither accrued nor billed.
             vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan userPlan = userPlanService
                     .createUserPlan(
                             user.getId(), plan,

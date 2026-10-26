@@ -2,8 +2,8 @@ import { MyDialog } from '../../dialog';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { useDialogStore } from '../../../../routes/manage-students/students-list/-hooks/useDialogStore';
 import { MyButton } from '../../button';
-import { useTerminateStudentMutation } from '@/routes/manage-students/students-list/-services/useStudentOperations';
-import { useBulkTerminateStudentsMutation } from '@/routes/manage-students/students-list/-services/useBulkOperations';
+import { useDeactivateStudentMutation } from '@/routes/manage-students/students-list/-services/useStudentOperations';
+import { useBulkDeactivateStudentsMutation } from '@/routes/manage-students/students-list/-services/useBulkOperations';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -23,8 +23,8 @@ const TerminateRegistrationDialogContent = () => {
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
     const displayText = isBulkAction ? bulkActionInfo?.displayText : selectedStudent?.full_name;
 
-    const { mutate: terminateSingle, isPending: isSinglePending } = useTerminateStudentMutation();
-    const { mutate: terminateBulk, isPending: isBulkPending } = useBulkTerminateStudentsMutation();
+    const { mutate: terminateSingle, isPending: isSinglePending } = useDeactivateStudentMutation();
+    const { mutate: terminateBulk, isPending: isBulkPending } = useBulkDeactivateStudentsMutation();
 
     // Every package session the (single) selected learner is enrolled in. Falls back
     // to the row's current package_session_id when the fan-out list isn't present.
@@ -110,15 +110,23 @@ const TerminateRegistrationDialogContent = () => {
 
     return (
         <div className="flex flex-col gap-6 p-6 text-neutral-600">
+            {/*
+              * This action sends operation=MAKE_INACTIVE, which writes status INACTIVE — NOT
+              * TERMINATED, despite the menu item having historically been called "Terminate
+              * Registration". Naming the resulting status here is what lets an admin predict
+              * what they are about to write. (The TERMINATE operation, which writes TERMINATED,
+              * is not reachable from this menu at all — see delete-student-dialog.tsx.)
+              */}
             <div>
-                Registration for <span className="text-primary-500">{displayText}</span> will be
-                terminated
+                <span className="text-primary-500">{displayText}</span> will be marked{' '}
+                <span className="font-semibold">Inactive</span>
                 {showPicker
-                    ? ` from the selected ${getTerminology(
+                    ? ` in the selected ${getTerminology(
                           ContentTerms.Batch,
                           SystemTerms.Batch
                       ).toLowerCase()}(es)`
                     : ''}
+                . They stay on the roster and can be made active again later.
             </div>
 
             {showPicker && (
@@ -150,7 +158,7 @@ const TerminateRegistrationDialogContent = () => {
                 disable={submitDisabled}
                 onClick={handleSubmit}
             >
-                {isLoading ? 'Terminating...' : 'Terminate'}
+                {isLoading ? 'Marking Inactive...' : 'Make Inactive'}
             </MyButton>
         </div>
     );
@@ -164,7 +172,7 @@ export const TerminateRegistrationDialog = ({
     return (
         <MyDialog
             trigger={trigger}
-            heading="Terminate Registration"
+            heading="Make Inactive"
             dialogWidth="w-[400px] max-w-[400px]"
             content={<TerminateRegistrationDialogContent />}
             open={open}

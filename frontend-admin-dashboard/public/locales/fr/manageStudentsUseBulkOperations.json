@@ -13,14 +13,14 @@
     },
     "terminate": {
         "successTitle": "Succès",
-        "successDescription": "Inscriptions résiliées avec succès pour les étudiants sélectionnés",
+        "successDescription": "Apprenants sélectionnés marqués comme inactifs",
         "errorTitle": "Erreur",
-        "errorDescription": "Échec de la résiliation des inscriptions. Veuillez réessayer."
+        "errorDescription": "Impossible de marquer les apprenants sélectionnés comme inactifs. Veuillez réessayer."
     },
     "delete": {
         "successTitle": "Succès",
-        "successDescription": "Étudiants sélectionnés supprimés avec succès",
+        "successDescription": "Inscriptions résiliées pour les apprenants sélectionnés",
         "errorTitle": "Erreur",
-        "errorDescription": "Échec de la suppression des étudiants. Veuillez réessayer."
+        "errorDescription": "Impossible de résilier ces inscriptions. Veuillez réessayer."
     }
 }

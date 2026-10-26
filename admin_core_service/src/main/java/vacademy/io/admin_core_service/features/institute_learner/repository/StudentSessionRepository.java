@@ -425,7 +425,7 @@ public interface StudentSessionRepository extends CrudRepository<StudentSessionI
           "AND institute_id = :instituteId " +
           "AND type IN (:types) " +
           "AND status != 'DELETED'", nativeQuery = true)
-  int markEntriesAsDeleted(
+  int deleteThrowawayEntries(
           @Param("userId") String userId,
           @Param("packageSessionId") String packageSessionId,
           @Param("destinationPackageSessionId") String destinationPackageSessionId,

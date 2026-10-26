@@ -114,7 +114,10 @@ interface TerminateStudentRequest {
     }[];
 }
 
-const terminateStudent = async ({ students }: TerminateStudentRequest) => {
+// Sends operation=MAKE_INACTIVE -> writes ssigm.status = 'INACTIVE' (learner stays on the
+// roster and can be reactivated). Named for the operation rather than the historical
+// "Terminate Registration" wording, which every surface now renders as "Make Inactive".
+const deactivateStudent = async ({ students }: TerminateStudentRequest) => {
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
@@ -131,13 +134,13 @@ const terminateStudent = async ({ students }: TerminateStudentRequest) => {
     return response.data;
 };
 
-export const useTerminateStudentMutation = () => {
+export const useDeactivateStudentMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useTranslation('manageStudentsUseStudentOperations');
 
     return useMutation({
-        mutationFn: terminateStudent,
+        mutationFn: deactivateStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
@@ -163,7 +166,10 @@ interface DeleteStudentRequest {
     }[];
 }
 
-const deleteStudent = async ({ students }: DeleteStudentRequest) => {
+// Sends operation=TERMINATE -> the backend hardcodes ssigm.status = 'TERMINATED'
+// (StudentSessionManager.updateStudentStatus; the new_state we send is ignored on this
+// branch). Nothing is deleted despite the historical "delete" naming.
+const terminateEnrollment = async ({ students }: DeleteStudentRequest) => {
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
@@ -179,13 +185,13 @@ const deleteStudent = async ({ students }: DeleteStudentRequest) => {
     return response.data;
 };
 
-export const useDeleteStudentMutation = () => {
+export const useTerminateEnrollmentMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useTranslation('manageStudentsUseStudentOperations');
 
     return useMutation({
-        mutationFn: deleteStudent,
+        mutationFn: terminateEnrollment,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({

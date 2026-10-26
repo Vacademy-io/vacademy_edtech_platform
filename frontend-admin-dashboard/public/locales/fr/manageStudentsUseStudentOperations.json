@@ -5,8 +5,8 @@
     "updateBatchError": "Échec de la mise à jour du lot. Veuillez réessayer.",
     "extendSessionSuccess": "Session prolongée avec succès",
     "extendSessionError": "Échec de la prolongation de la session. Veuillez réessayer.",
-    "terminateStudentSuccess": "Inscription de l'étudiant résiliée avec succès",
-    "terminateStudentError": "Échec de la résiliation de l'inscription. Veuillez réessayer.",
-    "deleteStudentSuccess": "Étudiant supprimé avec succès",
-    "deleteStudentError": "Échec de la suppression de l'étudiant. Veuillez réessayer."
+    "terminateStudentSuccess": "Apprenant marqué comme inactif",
+    "terminateStudentError": "Impossible de marquer cet apprenant comme inactif. Veuillez réessayer.",
+    "deleteStudentSuccess": "Inscription résiliée. Le dossier de l'apprenant est conservé.",
+    "deleteStudentError": "Impossible de résilier cette inscription. Veuillez réessayer."
 }

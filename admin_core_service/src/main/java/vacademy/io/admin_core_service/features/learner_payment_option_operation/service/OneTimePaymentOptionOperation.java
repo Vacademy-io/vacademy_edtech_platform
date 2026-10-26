@@ -105,7 +105,7 @@ public class OneTimePaymentOptionOperation implements PaymentOptionOperationStra
         // Mark ABANDONED_CART entries as DELETED to clean up before creating actual
         // enrollment
         for (InstituteStudentDetails detail : instituteStudentDetails) {
-            learnerEnrollmentEntryService.markPreviousEntriesAsDeleted(
+            learnerEnrollmentEntryService.deletePreviousThrowawayEntries(
                     userDTO.getId(),
                     detail.getPackageSessionId(),
                     detail.getDestinationPackageSessionId(),

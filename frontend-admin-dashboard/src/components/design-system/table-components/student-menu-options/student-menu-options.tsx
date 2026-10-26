@@ -16,7 +16,7 @@ const getMenuOptions = (status?: string) => {
     return [
         'Change Batch',
         'Extend Course Access',
-        'Terminate Registration',
+        'Make Inactive',
         'Re-register for Next Session',
     ];
 };
@@ -58,9 +58,13 @@ export const StudentMenuOptions = ({ student }: { student: StudentTable }) => {
             case 'Re-register for Next Session':
                 openReRegisterDialog(student);
                 break;
-            case 'Terminate Registration':
+            case 'Make Inactive':
                 openTerminateRegistrationDialog(student);
                 break;
+            // Unreachable: 'Delete Student' is not returned by getMenuOptions(). Kept because
+            // the dialog + mutation behind it are complete; re-adding the menu entry is all it
+            // would take. Until then TERMINATED reaches the DB only via the deassign v3 and
+            // sub-org terminate-member endpoints, never from this screen.
             case 'Delete Student':
                 openDeleteDialog(student);
                 break;

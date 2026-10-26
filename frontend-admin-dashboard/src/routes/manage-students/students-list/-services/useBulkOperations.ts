@@ -117,7 +117,9 @@ interface BulkTerminateRequest {
     }[];
 }
 
-const bulkTerminateStudents = async ({ students }: BulkTerminateRequest) => {
+// Bulk MAKE_INACTIVE -> ssigm.status = 'INACTIVE'. See useStudentOperations for the
+// single-learner equivalent and why the naming differs from the menu label.
+const bulkDeactivateStudents = async ({ students }: BulkTerminateRequest) => {
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
@@ -133,13 +135,13 @@ const bulkTerminateStudents = async ({ students }: BulkTerminateRequest) => {
     return response.data;
 };
 
-export const useBulkTerminateStudentsMutation = () => {
+export const useBulkDeactivateStudentsMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useTranslation('manageStudentsUseBulkOperations');
 
     return useMutation({
-        mutationFn: bulkTerminateStudents,
+        mutationFn: bulkDeactivateStudents,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
@@ -165,7 +167,8 @@ interface BulkDeleteRequest {
     }[];
 }
 
-const bulkDeleteStudents = async ({ students }: BulkDeleteRequest) => {
+// Bulk TERMINATE -> ssigm.status = 'TERMINATED'. Not a delete.
+const bulkTerminateEnrollments = async ({ students }: BulkDeleteRequest) => {
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
@@ -181,13 +184,13 @@ const bulkDeleteStudents = async ({ students }: BulkDeleteRequest) => {
     return response.data;
 };
 
-export const useBulkDeleteStudentsMutation = () => {
+export const useBulkTerminateEnrollmentMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useTranslation('manageStudentsUseBulkOperations');
 
     return useMutation({
-        mutationFn: bulkDeleteStudents,
+        mutationFn: bulkTerminateEnrollments,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({

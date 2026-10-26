@@ -109,7 +109,7 @@ public class EnrollmentFormService {
                     .orElseThrow(() -> new VacademyException("Package session not found: " + actualPackageSessionId));
 
             // Mark previous ABANDONED_CART and PAYMENT_FAILED entries as DELETED
-            learnerEnrollmentEntryService.markPreviousEntriesAsDeleted(
+            learnerEnrollmentEntryService.deletePreviousThrowawayEntries(
                     createdUser.getId(),
                     invitedPackageSession.getId(),
                     actualPackageSessionId,

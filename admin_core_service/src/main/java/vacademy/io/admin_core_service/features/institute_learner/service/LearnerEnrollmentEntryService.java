@@ -75,29 +75,35 @@ public class LearnerEnrollmentEntryService {
     }
 
     /**
-     * Marks previous ABANDONED_CART and PAYMENT_FAILED entries as DELETED.
+     * Physically deletes previous ABANDONED_CART and PAYMENT_FAILED entries.
      * Called when a user re-submits the enrollment form.
+     *
+     * <p>This is a hard DELETE, not a status flip — soft-deleting tripped
+     * uq_dest_pkg_inst_user_status on a third enrollment attempt, because a row with
+     * status='DELETED' already existed from the previous cleanup. Side effect worth
+     * knowing: checkout-attempt history is not retained. Capturing it would need a
+     * separate append-only table, not a change here.
      *
      * @param userId                  The user ID
      * @param invitedPackageSessionId The INVITED package session ID
      * @param actualPackageSessionId  The actual (destination) package session ID
      * @param instituteId             The institute ID
-     * @return Number of entries marked as DELETED
+     * @return Number of rows physically deleted
      */
-    public int markPreviousEntriesAsDeleted(String userId, String invitedPackageSessionId,
+    public int deletePreviousThrowawayEntries(String userId, String invitedPackageSessionId,
             String actualPackageSessionId, String instituteId) {
         List<String> typesToDelete = List.of(
                 LearnerSessionTypeEnum.ABANDONED_CART.name(),
                 LearnerSessionTypeEnum.PAYMENT_FAILED.name());
 
-        int deletedCount = studentSessionRepository.markEntriesAsDeleted(
+        int deletedCount = studentSessionRepository.deleteThrowawayEntries(
                 userId,
                 invitedPackageSessionId,
                 actualPackageSessionId,
                 instituteId,
                 typesToDelete);
 
-        log.info("Marked {} previous entries as DELETED for user: {}, destination: {}",
+        log.info("Hard-deleted {} previous throwaway entries for user: {}, destination: {}",
                 deletedCount, userId, actualPackageSessionId);
         return deletedCount;
     }

@@ -4,6 +4,11 @@
 
 This document provides comprehensive testing guidelines for the **UserPlan-Centric Enrollment Policy System**. It covers all test scenarios, expected behaviors, and step-by-step testing procedures.
 
+> **Status note (verified against `FinalExpiryProcessor.java:303`):** final expiry marks the
+> lapsed mapping **`DELETED`**, not `TERMINATED`. This document previously said TERMINATED in
+> three places; the code has never produced that value on this path. `TERMINATED` is written by
+> the de-assign / terminate flows instead — see `docs/ENROLLMENT_LIFECYCLE_STATUS_FLOWS.md`.
+
 ---
 
 ## 📐 System Architecture
@@ -57,7 +62,7 @@ DAY N+1 (AFTER WAITING PERIOD):
 │  ├─ ❌ NO PAYMENT ATTEMPT (only in waiting period)
 │  ├─ Move expired mappings to INVITED
 │  │  ├─ Skip mappings with future expiryDate
-│  │  ├─ Soft delete (mark as TERMINATED)
+│  │  ├─ Soft delete (mark as DELETED — not TERMINATED)
 │  │  └─ Create/Update INVITED mapping
 │  └─ UserPlan: ACTIVE → EXPIRED ✅
 
@@ -94,7 +99,7 @@ PAYMENT SUCCESS (Webhook):
 | **PAY-007** | No payment for DONATION plan | • PaymentOption = DONATION<br>• endDate = TODAY | 1. Set endDate to TODAY<br>2. Run scheduler | • No payment attempted<br>• No payment_log entry | `COUNT(payment_log) = 0` |
 | **PAY-008** | No payment for ONE_TIME plan | • PaymentOption = ONE_TIME<br>• endDate = TODAY | 1. Set endDate to TODAY<br>2. Run scheduler | • No payment attempted<br>• No payment_log entry | `COUNT(payment_log) = 0` |
 | **PAY-009** | Payment with auto-renewal disabled | • PaymentOption = SUBSCRIPTION<br>• autoRenewal = false<br>• endDate = TODAY | 1. Set autoRenewal to false<br>2. Set endDate to TODAY<br>3. Run scheduler | • No payment attempted<br>• Notification sent | `COUNT(payment_log) = 0`<br>Notification sent |
-| **PAY-010** | Both payments fail, move to INVITED | • Day 0: FAILED<br>• Day 7: FAILED<br>• Day 8: after waiting period | 1. Simulate 2 failures<br>2. Set endDate to TODAY - 8 days<br>3. Run scheduler | • FinalExpiryProcessor runs<br>• Moves to INVITED<br>• UserPlan = EXPIRED | `user_plan.status = EXPIRED`<br>`mapping.status = TERMINATED`<br>`invited_mapping.status = INVITED` |
+| **PAY-010** | Both payments fail, move to INVITED | • Day 0: FAILED<br>• Day 7: FAILED<br>• Day 8: after waiting period | 1. Simulate 2 failures<br>2. Set endDate to TODAY - 8 days<br>3. Run scheduler | • FinalExpiryProcessor runs<br>• Moves to INVITED<br>• UserPlan = EXPIRED | `user_plan.status = EXPIRED`<br>`mapping.status = DELETED`<br>`invited_mapping.status = INVITED` |
 
 ---
 
@@ -291,7 +296,7 @@ WHERE status = 'PENDING'
 - [ ] Verify UserPlan stays ACTIVE until after waiting period
 - [ ] Verify mappings moved to INVITED after waiting period
 - [ ] Verify INVITED mapping created/updated correctly
-- [ ] Verify ACTIVE mapping marked as TERMINATED (soft delete)
+- [ ] Verify ACTIVE mapping marked as DELETED (soft delete)
 - [ ] Verify mappings with future dates are skipped
 - [ ] Verify re-enrollment policy respected
 - [ ] Verify SUB_ORG processed once per UserPlan

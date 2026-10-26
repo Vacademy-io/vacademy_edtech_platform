@@ -11,7 +11,10 @@ export interface StudentFilterRequest {
     payment_statuses?: string[];
     sources?: string[];
     types?: string[];
-    type?: string; // Single type filter (e.g., 'ABANDONED_CART')
+    // UI-only single-select learner-type pill (e.g. 'ABANDONED_CART'). The backend
+    // has no `type` field — normalizeStudentFilters() converts this to `types` at
+    // every call boundary. Never send it to the API directly.
+    type?: string;
     type_ids?: string[];
     destination_package_session_ids?: string[];
     level_ids?: string[];

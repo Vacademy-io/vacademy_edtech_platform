@@ -13,14 +13,14 @@
     },
     "terminate": {
         "successTitle": "تم بنجاح",
-        "successDescription": "تم إنهاء تسجيل الطلاب المحددين بنجاح",
+        "successDescription": "تم تعيين المتعلمين المحددين كغير نشطين",
         "errorTitle": "خطأ",
-        "errorDescription": "فشل إنهاء التسجيل. يرجى المحاولة مرة أخرى."
+        "errorDescription": "تعذر تعيين المتعلمين المحددين كغير نشطين. يرجى المحاولة مرة أخرى."
     },
     "delete": {
         "successTitle": "تم بنجاح",
-        "successDescription": "تم حذف الطلاب المحددين بنجاح",
+        "successDescription": "تم إنهاء تسجيل المتعلمين المحددين",
         "errorTitle": "خطأ",
-        "errorDescription": "فشل حذف الطلاب. يرجى المحاولة مرة أخرى."
+        "errorDescription": "تعذر إنهاء عمليات التسجيل هذه. يرجى المحاولة مرة أخرى."
     }
 }

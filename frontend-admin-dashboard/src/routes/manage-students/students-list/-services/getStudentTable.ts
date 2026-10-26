@@ -3,6 +3,7 @@ import { StudentFilterRequest, StudentListResponse } from '@/types/student-table
 import { GET_STUDENTS } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { useMemo } from 'react';
+import { normalizeStudentFilters } from '../-utils/normalizeStudentFilters';
 
 interface FetchStudentsParams {
     pageNo?: number;
@@ -17,7 +18,7 @@ export const fetchStudents = async ({
 }: FetchStudentsParams): Promise<StudentListResponse> => {
     const response = await authenticatedAxiosInstance.post<StudentListResponse>(
         `${GET_STUDENTS}?pageNo=${pageNo}&pageSize=${pageSize}`,
-        filters
+        normalizeStudentFilters(filters)
     );
     return response.data;
 };
@@ -48,6 +49,7 @@ export const useStudentList = (
             sub_org_user_types: filters.sub_org_user_types?.sort() || [],
             sub_org_ids: filters.sub_org_ids?.sort() || [],
             type: filters.type || '',
+            types: filters.types?.sort() || [],
             enroll_invite_ids: filters.enroll_invite_ids?.sort() || [],
             audience_ids: filters.audience_ids?.sort() || [],
             // Dropdown custom-field filters — sort both the field-id keys and each

@@ -682,10 +682,100 @@ public class StudentRegistrationManager {
             mapping.setExpiryDate(makeExpiryDate(baseDate, details.getAccessDays()));
         }
 
+        // --- 4. Revive a dormant row ---
+        // This method used to advance expiry_date and never touch status, so re-enrolling a
+        // learner whose row sat at TERMINATED/EXPIRED/INACTIVE gave them a fresh access window
+        // on a row every ACTIVE-only gate still refuses. The two other re-enrolment paths
+        // (LearnerSessionOperationService.reEnrollStudent and BulkAssignmentService.handleReEnroll)
+        // both flip the status; this one did not.
+        //
+        // Deliberately narrow:
+        //  - INVITED / PENDING_FOR_APPROVAL are NOT revived here. Those are pre-payment parking
+        //    states owned by the payment webhook (shiftStudentBatch / applyOperationsOnFirstPayment);
+        //    promoting them here would hand out access before the money arrived.
+        //  - ACTIVE is left alone — a repurchase only extends the window (handled above).
+        //  - The promotion is skipped when another row already occupies the target status for
+        //    this exact unique-constraint tuple, which would otherwise trip
+        //    uq_dest_pkg_inst_user_status and roll back the whole enrolment.
+        reviveDormantMapping(mapping, currentStatus, details);
+
         StudentSessionInstituteGroupMapping saved = studentSessionRepository.save(mapping);
         recordDetailsAccessGrant(details, saved.getId(), saved.getUserId(),
                 details.getPackageSessionId(), previousExpiry, saved.getExpiryDate());
         return saved.getId();
+    }
+
+    /**
+     * Statuses that represent "enrolment lapsed, learner may come back" — the only ones a
+     * re-enrolment is allowed to promote in place. INVITED and PENDING_FOR_APPROVAL are
+     * excluded on purpose: their promotion is the payment webhook's job.
+     */
+    private static final Set<LearnerSessionStatusEnum> REVIVABLE_STATUSES = Set.of(
+            LearnerSessionStatusEnum.TERMINATED,
+            LearnerSessionStatusEnum.EXPIRED,
+            LearnerSessionStatusEnum.INACTIVE);
+
+    /**
+     * Promotes a dormant mapping to the status this enrolment asked for, when it is safe to do
+     * so. No-ops (leaving the row exactly as it was) whenever the caller supplied no status, the
+     * row is not dormant, the status is unchanged, or another row already holds the target status
+     * for the same unique-constraint tuple.
+     */
+    private void reviveDormantMapping(StudentSessionInstituteGroupMapping mapping,
+                                      LearnerSessionStatusEnum currentStatus,
+                                      InstituteStudentDetails details) {
+        String requestedStatus = details.getEnrollmentStatus();
+        if (!StringUtils.hasText(requestedStatus)
+                || !REVIVABLE_STATUSES.contains(currentStatus)
+                || requestedStatus.equalsIgnoreCase(mapping.getStatus())) {
+            return;
+        }
+
+        // Never revive straight into another pre-payment parking state.
+        if (LearnerSessionStatusEnum.INVITED.name().equalsIgnoreCase(requestedStatus)
+                || LearnerStatusEnum.PENDING_FOR_APPROVAL.name().equalsIgnoreCase(requestedStatus)) {
+            return;
+        }
+
+        // The status column has no DB CHECK constraint, and production already carries values no
+        // enum lists ('Active', NULL, and worse) that every ACTIVE-only gate silently skips. This
+        // is a new write path, so it refuses to become another source of that drift: anything
+        // that does not parse as a LearnerSessionStatusEnum is dropped rather than persisted.
+        String canonicalStatus;
+        try {
+            canonicalStatus = LearnerSessionStatusEnum.valueOf(requestedStatus.trim().toUpperCase()).name();
+        } catch (IllegalArgumentException e) {
+            log.warn("Not reviving mapping {} — requested status '{}' is not a LearnerSessionStatusEnum value",
+                    mapping.getId(), requestedStatus);
+            return;
+        }
+
+        String destinationId = mapping.getDestinationPackageSession() != null
+                ? mapping.getDestinationPackageSession().getId()
+                : null;
+        String packageSessionId = mapping.getPackageSession() != null
+                ? mapping.getPackageSession().getId()
+                : null;
+        String instituteId = mapping.getInstitute() != null ? mapping.getInstitute().getId() : null;
+
+        // findCollidingMapping matches the exact uq_dest_pkg_inst_user_status tuple. A NULL
+        // destination never collides (SQL: NULL = NULL is not true), which mirrors the
+        // constraint's own behaviour, so the lookup is only meaningful for pre-enrolment rows.
+        if (destinationId != null) {
+            Optional<StudentSessionInstituteGroupMapping> collision = studentSessionRepository
+                    .findCollidingMapping(destinationId, packageSessionId, instituteId,
+                            mapping.getUserId(), canonicalStatus);
+            if (collision.isPresent() && !collision.get().getId().equals(mapping.getId())) {
+                log.warn("Not reviving mapping {} to {} — row {} already holds that status for the "
+                        + "same (destination, packageSession, institute, user)",
+                        mapping.getId(), canonicalStatus, collision.get().getId());
+                return;
+            }
+        }
+
+        log.info("Reviving mapping {} from {} to {} on re-enrollment",
+                mapping.getId(), mapping.getStatus(), canonicalStatus);
+        mapping.setStatus(canonicalStatus);
     }
 
     /**
@@ -961,22 +1051,6 @@ public class StudentRegistrationManager {
     private Date getExpiryDateBasedOnPaymentPlan(StudentSessionInstituteGroupMapping mapping, String userPlanId) {
         Date baseDate = mapping.getExpiryDate() != null ? mapping.getExpiryDate() : new Date();
         return calculateNewExpiryDate(baseDate, userPlanId, null);
-    }
-
-    private void updateMappingFields(
-            StudentSessionInstituteGroupMapping mappingToUse,
-            StudentSessionInstituteGroupMapping sourceMapping,
-            String newStatus) {
-        mappingToUse.setEnrolledDate(new Date());
-        mappingToUse.setStatus(newStatus);
-
-        if (sourceMapping.getInstituteEnrolledNumber() != null) {
-            mappingToUse.setInstituteEnrolledNumber(sourceMapping.getInstituteEnrolledNumber());
-        }
-
-        if (sourceMapping.getExpiryDate() != null) {
-            mappingToUse.setExpiryDate(sourceMapping.getExpiryDate());
-        }
     }
 
     /**

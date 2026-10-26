@@ -13,14 +13,14 @@
     },
     "terminate": {
         "successTitle": "Success",
-        "successDescription": "Successfully terminated registrations for selected students",
+        "successDescription": "Selected learners marked inactive",
         "errorTitle": "Error",
-        "errorDescription": "Failed to terminate registrations. Please try again."
+        "errorDescription": "Couldn't mark the selected learners inactive. Please try again."
     },
     "delete": {
         "successTitle": "Success",
-        "successDescription": "Successfully deleted selected students",
+        "successDescription": "Enrollments terminated for the selected learners",
         "errorTitle": "Error",
-        "errorDescription": "Failed to delete students. Please try again."
+        "errorDescription": "Couldn't terminate those enrollments. Please try again."
     }
 }

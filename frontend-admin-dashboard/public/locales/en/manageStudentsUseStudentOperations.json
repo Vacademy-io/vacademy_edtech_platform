@@ -5,8 +5,8 @@
     "updateBatchError": "Failed to update batch. Please try again.",
     "extendSessionSuccess": "Session extended successfully",
     "extendSessionError": "Failed to extend session. Please try again.",
-    "terminateStudentSuccess": "Student registration terminated successfully",
-    "terminateStudentError": "Failed to terminate registration. Please try again.",
-    "deleteStudentSuccess": "Student deleted successfully",
-    "deleteStudentError": "Failed to delete student. Please try again."
+    "terminateStudentSuccess": "Learner marked inactive",
+    "terminateStudentError": "Couldn't mark this learner inactive. Please try again.",
+    "deleteStudentSuccess": "Enrollment terminated. The learner's record is kept.",
+    "deleteStudentError": "Couldn't terminate this enrollment. Please try again."
 }

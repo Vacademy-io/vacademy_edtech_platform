@@ -2,8 +2,8 @@ import { MyDialog } from '../../dialog';
 import { ReactNode } from 'react';
 import { useDialogStore } from '../../../../routes/manage-students/students-list/-hooks/useDialogStore';
 import { MyButton } from '../../button';
-import { useDeleteStudentMutation } from '@/routes/manage-students/students-list/-services/useStudentOperations';
-import { useBulkDeleteStudentsMutation } from '@/routes/manage-students/students-list/-services/useBulkOperations';
+import { useTerminateEnrollmentMutation } from '@/routes/manage-students/students-list/-services/useStudentOperations';
+import { useBulkTerminateEnrollmentMutation } from '@/routes/manage-students/students-list/-services/useBulkOperations';
 
 interface DeleteStudentDialogProps {
     trigger: ReactNode;
@@ -15,8 +15,8 @@ const DeleteStudentDialogContent = () => {
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } = useDialogStore();
     const displayText = isBulkAction ? bulkActionInfo?.displayText : selectedStudent?.full_name;
 
-    const { mutate: deleteSingle, isPending: isSinglePending } = useDeleteStudentMutation();
-    const { mutate: deleteBulk, isPending: isBulkPending } = useBulkDeleteStudentsMutation();
+    const { mutate: terminateSingle, isPending: isSinglePending } = useTerminateEnrollmentMutation();
+    const { mutate: terminateBulk, isPending: isBulkPending } = useBulkTerminateEnrollmentMutation();
 
     const handleSubmit = () => {
         if (isBulkAction && bulkActionInfo?.selectedStudents) {
@@ -29,7 +29,7 @@ const DeleteStudentDialogContent = () => {
                 return;
             }
 
-            deleteBulk(
+            terminateBulk(
                 {
                     students: validStudents.map((student) => ({
                         userId: student.user_id,
@@ -41,7 +41,7 @@ const DeleteStudentDialogContent = () => {
                 }
             );
         } else if (selectedStudent?.user_id && selectedStudent?.package_session_id) {
-            deleteSingle(
+            terminateSingle(
                 {
                     students: [
                         {
@@ -61,9 +61,21 @@ const DeleteStudentDialogContent = () => {
 
     return (
         <div className="flex flex-col gap-6 p-6 text-neutral-600">
+            {/*
+              * Sends operation=TERMINATE, which writes status TERMINATED. Nothing is actually
+              * deleted — the row stays, the learner just drops off the active roster.
+              *
+              * NOTE: this dialog is currently unreachable. Nothing renders a menu item for it:
+              * 'Delete Student' is absent from getMenuOptions() in student-menu-options.tsx, and
+              * MENU_ACTION.DELETE has no entry in buildBulkActionDropdownList(). The store
+              * actions and mutation are wired, so re-adding a menu item is all it would take —
+              * but until then, TERMINATED reaches production only via the deassign v3 and
+              * sub-org terminate endpoints.
+              */}
             <div>
-                Are you sure you want to delete{' '}
-                <span className="text-primary-500">{displayText}</span>?
+                <span className="text-primary-500">{displayText}</span> will be marked{' '}
+                <span className="font-semibold">Terminated</span> and removed from the active
+                roster. Their record is kept, not deleted.
             </div>
             <MyButton
                 buttonType="primary"
@@ -72,7 +84,7 @@ const DeleteStudentDialogContent = () => {
                 disable={isLoading}
                 onClick={handleSubmit}
             >
-                {isLoading ? 'Deleting...' : 'Delete'}
+                {isLoading ? 'Terminating...' : 'Terminate'}
             </MyButton>
         </div>
     );
@@ -82,7 +94,7 @@ export const DeleteStudentDialog = ({ trigger, open, onOpenChange }: DeleteStude
     return (
         <MyDialog
             trigger={trigger}
-            heading="Delete"
+            heading="Terminate Enrollment"
             dialogWidth="w-[400px] max-w-[400px]"
             content={<DeleteStudentDialogContent />}
             open={open}
