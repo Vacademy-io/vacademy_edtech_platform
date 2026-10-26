@@ -25,8 +25,11 @@ vi.mock("@/services/upload_file", () => ({
   getPublicUrl: async () => "",
 }));
 
+const branding: { value: { homeIconClickRoute: string | null } | null } = {
+  value: null,
+};
 vi.mock("@/services/domain-routing", () => ({
-  getCachedInstituteBranding: () => null,
+  getCachedInstituteBranding: () => branding.value,
 }));
 
 const appleStore = { build: false };
@@ -49,6 +52,7 @@ const DETAILS = {
 describe("useSidebar app/portal links", () => {
   beforeEach(() => {
     appleStore.build = false;
+    branding.value = null;
     for (const key of Object.keys(prefs)) delete prefs[key];
     useStore.setState({
       playStoreAppLink: null,
@@ -70,6 +74,26 @@ describe("useSidebar app/portal links", () => {
     expect(state.appStoreAppLink).toBe(DETAILS.appStoreAppLink);
     expect(state.windowsAppLink).toBe(DETAILS.windowsAppLink);
     expect(state.macAppLink).toBe(DETAILS.macAppLink);
+  });
+
+  // The navbar passes the public institute-details payload, which never carries
+  // home_icon_click_route; a null there must not wipe the resolved logo link.
+  it("keeps the domain-routing logo link when the navbar passes null", async () => {
+    branding.value = { homeIconClickRoute: "https://example.com" };
+
+    await useStore.getState().setInstituteDetails("Shiksha Nation", "", null);
+
+    expect(useStore.getState().homeIconClickRoute).toBe("https://example.com");
+  });
+
+  it("prefers an explicit logo link over the cached one", async () => {
+    branding.value = { homeIconClickRoute: "https://example.com" };
+
+    await useStore
+      .getState()
+      .setInstituteDetails("Shiksha Nation", "", "https://other.example.com");
+
+    expect(useStore.getState().homeIconClickRoute).toBe("https://other.example.com");
   });
 
   it("populates the links on the no-argument fallback path too", async () => {

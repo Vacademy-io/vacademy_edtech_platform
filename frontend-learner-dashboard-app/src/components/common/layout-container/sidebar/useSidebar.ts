@@ -182,7 +182,13 @@ const useStore = create<StoreState>((set) => ({
         set({
           instituteName: name,
           instituteLogoFileUrl: logoUrl ?? "",
-          homeIconClickRoute: homeIconClickRoute ?? null,
+          // The navbar passes the public institute-details payload, which has
+          // no home_icon_click_route — fall back to the domain-routing value
+          // instead of wiping the logo link the resolve already cached.
+          homeIconClickRoute:
+            homeIconClickRoute ??
+            getCachedInstituteBranding()?.homeIconClickRoute ??
+            null,
           ...overrides,
         });
 
