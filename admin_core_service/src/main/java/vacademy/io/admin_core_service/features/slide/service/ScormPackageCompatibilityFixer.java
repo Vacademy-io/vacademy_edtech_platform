@@ -37,6 +37,11 @@ import java.util.regex.Pattern;
  *    and a Finish button are done. It never sends cmi.progress_measure, so
  *    partial progress shows as 0%. We report sections seen as progress.
  *
+ * 3. A screen-based template ({@code visited[id]=1}, {@code SCORM.bookmark(id)}) that
+ *    counts visited screens only for its own on-screen label. It sends just the
+ *    location until the final quiz, and keeps no visited list across launches.
+ *    We persist the visited list in suspend_data and report it as progress.
+ *
  * Fixing at upload means a re-upload of the same zip, or a new package from the
  * same tool, is repaired without anyone having to remember it.
  */
@@ -46,6 +51,7 @@ public class ScormPackageCompatibilityFixer {
 
     public static final String FIX_SET_VALUE_ARGUMENT = "SET_VALUE_ARGUMENT";
     public static final String FIX_SECTION_PROGRESS = "SECTION_PROGRESS";
+    public static final String FIX_SCREEN_PROGRESS = "SCREEN_PROGRESS";
     public static final String WARN_NO_COMPLETION_STATUS = "NO_COMPLETION_STATUS";
     public static final String WARN_COMPLETION_ONLY = "COMPLETION_ONLY";
 
@@ -72,6 +78,25 @@ public class ScormPackageCompatibilityFixer {
             + "var p=st.done?1:(Math.min(seen,n)+(st.quiz?1:0))/(n+1);"
             + "SCORM.set('cmi.progress_measure',p.toFixed(2))}catch(e){}}</script>";
 
+    // SCORM.init(); var loc = SCORM.get('cmi.core.lesson_location')   (start-up of the screen template)
+    private static final Pattern SCREEN_TEMPLATE_START = Pattern.compile(
+            "SCORM\\.init\\(\\s*\\)\\s*;(\\s*var\\s+loc\\s*=\\s*SCORM\\.get\\(\\s*['\"]cmi\\.core\\.lesson_location['\"]\\s*\\))");
+
+    private static final String SCREEN_PROGRESS_MARKER = "/*vacademy-screen-progress*/";
+
+    // Runs inside the template's own closure, so `visited` and `count` are in scope. Restores the
+    // visited list, then makes every bookmark also save it and report visited / (screens + 1);
+    // the package's own quiz still decides completion. One commit per bookmark, as before, and
+    // the original bookmark runs if anything here fails.
+    private static final String SCREEN_PROGRESS_JS = SCREEN_PROGRESS_MARKER + "(function(){try{"
+            + "var sd=SCORM.get('cmi.suspend_data');"
+            + "if(sd&&sd.charAt(0)==='{'){var v=JSON.parse(sd).v;if(v&&v.forEach)v.forEach(function(k){visited[k]=1})}"
+            + "var bm=SCORM.bookmark;SCORM.bookmark=function(l){try{var n=Object.keys(visited).length;"
+            + "SCORM.set('cmi.core.lesson_location',l);"
+            + "SCORM.set('cmi.suspend_data',JSON.stringify({l:l,v:Object.keys(visited)}));"
+            + "SCORM.set('cmi.progress_measure',(Math.min(n,count)/(count+1)).toFixed(2));SCORM.commit()"
+            + "}catch(e){bm(l)}}}catch(e){}})();";
+
     public record Report(List<String> fixes, List<String> warnings) {
     }
 
@@ -94,6 +119,7 @@ public class ScormPackageCompatibilityFixer {
                 }
                 Set<String> fileFixes = new LinkedHashSet<>();
                 String content = fixDroppedSetValue(original, fileFixes);
+                content = addScreenProgress(content, fileFixes);
                 if (isHtml(file)) {
                     content = addSectionProgress(content, fileFixes);
                 }
@@ -180,6 +206,22 @@ public class ScormPackageCompatibilityFixer {
         }
         fixes.add(FIX_SECTION_PROGRESS);
         return withCalls.substring(0, at) + PROGRESS_SCRIPT + withCalls.substring(at);
+    }
+
+    // Pure JS insertion (no markup), so it is safe in .js files and inline scripts alike.
+    String addScreenProgress(String content, Set<String> fixes) {
+        if (content.contains("progress_measure") || content.contains(SCREEN_PROGRESS_MARKER)
+                || !content.contains("visited[id]=1") || !content.contains("SCORM.bookmark(id)")
+                || !content.contains("document.querySelectorAll(\".screen\").length")) {
+            return content;
+        }
+        Matcher m = SCREEN_TEMPLATE_START.matcher(content);
+        if (!m.find()) {
+            return content;
+        }
+        fixes.add(FIX_SCREEN_PROGRESS);
+        return content.substring(0, m.start()) + "SCORM.init();" + SCREEN_PROGRESS_JS + m.group(1)
+                + content.substring(m.end());
     }
 
     static boolean reportsStatus(String text) {
