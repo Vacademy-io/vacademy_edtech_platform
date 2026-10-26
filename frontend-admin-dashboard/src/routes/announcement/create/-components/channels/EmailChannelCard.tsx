@@ -180,7 +180,7 @@ export function EmailChannelCard({
                 onChange={(referralInviteId) => onChange({ referralInviteId })}
                 hint={t('referralInviteHint', {
                     defaultValue:
-                        'Only used when the email contains a referral placeholder (short_referral_link, referral_link or referral_code). Members without a referral link are skipped.',
+                        'Only used when the email contains a referral placeholder (short_referral_link, referral_link or referral_code). Default: the invite each member enrolled through. A member with no invite gets the placeholder unfilled.',
                 })}
             />
         </div>

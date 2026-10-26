@@ -279,7 +279,7 @@ export function WhatsAppChannelCard({
                     onChange={(referralInviteId) => onChange({ referralInviteId })}
                     hint={t('referralInviteHint', {
                         defaultValue:
-                            'Pick the invite a friend should join (e.g. the trial). Members without a referral link are skipped.',
+                            'Pick the invite a friend should join (e.g. the trial). Default: the invite each member enrolled through. A member with no invite gets the placeholder unfilled.',
                     })}
                 />
             )}
