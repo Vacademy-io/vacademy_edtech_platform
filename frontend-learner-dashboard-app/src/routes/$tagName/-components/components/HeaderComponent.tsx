@@ -929,7 +929,9 @@ export const HeaderComponent: React.FC<HeaderProps & {
               <div className={`${bp.desktopFlex} items-center ${chrome.editorialNav ? 'gap-4' : 'gap-2'}`}>
                 {isAuthenticated ? (
                   <div className="flex items-center gap-3 shrink-0">
-                    <SystemAlertsBar />
+                    {/* Theme text colour, like the cart icon: the bell inherited the
+                        page's default ink and vanished on dark site headers. */}
+                    <SystemAlertsBar className="text-catalogue-text-secondary hover:text-catalogue-text-primary" />
                     <div className="w-px h-6 bg-primary-200/60 dark:bg-neutral-700"></div>
                     <button
                       className="group relative flex items-center justify-center w-8 h-8 md:w-9 md:h-9 rounded-catalogue-sm border border-primary-200/50 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-primary-100 dark:hover:bg-neutral-700 hover:border-primary-400 dark:hover:border-neutral-600 transition-all duration-200"
