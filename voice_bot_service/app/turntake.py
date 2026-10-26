@@ -304,6 +304,23 @@ _HOLD_PHRASES = (
     "जिस व्यक्ति से आप बात कर रहे हैं", "आप जिस व्यक्ति से बात कर रहे हो",
     "आप जिनसे बात कर रहे हैं", "hold पर रखा", "होल्ड पर रखा", "hold par rakha",
     "आपकी कॉल होल्ड पर", "आपका call hold पर", "आपकी call hold पर",
+    # The same recording as the STT writes it on other loops (calls 625a715e /
+    # 6f0cb50e, 2026-10-26): "…call को hold पे रखा है", "वह आपकी call hold में है".
+    "hold पे रख", "होल्ड पे रख", "hold में रख", "होल्ड में रख", "call hold में",
+    "कॉल होल्ड में",
+)
+# The THIRD language of the network's loop, Bengali — "আপনি যে ব্যক্তির সঙ্গে কথা
+# বলছেন, তিনি আপনার কল হোল্ডে রেখেছেন, দয়া করে লাইনে থাকুন" — which the Hindi STT
+# writes in Devanagari as no Hindi speaker talks: "आप मुझे जेब्ती शोंंगे कोथा बोल
+# छु", "तिनी अपना call की hold दे रखी छे", "दोया कुली लाइनि ठाकुर" (calls 625a715e
+# / 6f0cb50e, 2026-10-26). Some carry a person's word ("मुझे", "थी"), so each
+# such line read as the person back, the bot answered the recording, and the
+# hold re-started 80 times in two calls. Checked BEFORE sounds_like_person.
+_HOLD_REGIONAL = (
+    "कोथा बो", "कोथा बल", "दोया क", "दोयाक", "लाइनि ठाकुर", "लाइने थाकुन", "लाइन ठाकुर",
+    "की hold दे", "hold दे रखी", "होल्ड दे रखी", "hold ए रेखे", "आपनी जे", "के संग बात",
+    "संग में बात",
+    "शोंगे", "शुंगे", "शुंगी", "शोंंगे",
 )
 _HOLD_REQUESTS = (
     "stay on the line", "hold the line", "please hold", "please wait",
@@ -331,6 +348,10 @@ _HOLD_WORDS = frozenset({
     # "लाइन पे बने रहिए", "आप जिनसे…", "The person you are talking to", "The subscriber…".
     "हो", "पे", "रहिए", "रहिये", "जिनसे", "रखी", "करके", "talking", "subscriber",
     "connected", "being",
+    # The STT's cuts and mishearings of the same loop (2026-10-26): "दया करके line
+    # में रहें", "वह आपकी call hold में है", "The person you ask.", "lease stay on
+    # the line." (Please split across two finals), "The person you are s-".
+    "दया", "में", "ask", "asked", "lease", "s", "द", "के", "साथ",
 })
 # A whole final counts as the recording only when it carries one of the words
 # that ONLY the recordings say. Every word of "आप लाइन पर हैं", "वो अभी बात कर
@@ -387,10 +408,19 @@ def sounds_like_person(text: str) -> bool:
     return any(w in _HOLD_PERSON_WORDS or w in HELLO_VARIANTS for w in _words(t))
 
 
+def is_regional_hold_line(text: str) -> bool:
+    """A line of the hold loop's Bengali part as the STT writes it (_HOLD_REGIONAL).
+    Never a question."""
+    t = " ".join((text or "").casefold().split())
+    return bool(t) and "?" not in t and any(m in t for m in _HOLD_REGIONAL)
+
+
 def is_hold_announcement(text: str) -> bool:
     """A line that puts the call on hold: the network's hold recording or an IVR
     queue, never a person's own "he is on another call" / "please hold, …"."""
     t = " ".join((text or "").casefold().split())
+    if t and is_regional_hold_line(t):
+        return True
     if not t or sounds_like_person(t):
         return False
     if any(p in t for p in _HOLD_PHRASES):
@@ -439,6 +469,8 @@ def hold_absorbs(text: str, secs_since_hold_line: float) -> bool:
     ws = _words(text)
     if not ws:
         return True                        # "।" — nothing anybody said
+    if is_regional_hold_line(text):
+        return True
     if sounds_like_person(text):
         return False
     if is_hold_announcement(text) or is_hold_fragment(text):

@@ -707,3 +707,52 @@ async def test_rest_render_with_every_key_dead_returns_empty(monkeypatch):
         out = await m._navana_tts_wav("x", "ipsita", "hi", None)
     assert out == b"" and sorted(sess.calls) == ["k-a", "k-b"]
     p.NAVANA_KEYS._cool.clear()
+
+
+@pytest.mark.asyncio
+async def test_nothing_reconnects_once_the_call_is_stopping(monkeypatch):
+    """Call 625a715e (2026-10-26): the stop sent Navana its "end", Navana closed
+    the socket, pipecat's receive loop reconnected, and that socket's receive
+    task outlived the call — reconnecting every 180 s for two hours on one of
+    the account's two stream slots."""
+    pytest.importorskip("bodhi.integrations.pipecat_tts")
+    import asyncio
+    from bodhi.integrations.pipecat_tts import BodhiTTSService
+    connects = []
+
+    async def fake_connect(self):
+        connects.append(self._api_key)
+        self._websocket = object()
+
+    async def fake_disconnect(self):
+        self._websocket = None
+
+    async def fake_cancel_task(self, task, timeout=None):
+        task.cancel()
+
+    async def stop_that_races(self, frame):
+        # What happened inside the SDK's stop(): the server closed the socket
+        # after "end" (the receive loop asks to reconnect), a sentence still in
+        # run_tts reopened it, and a receive task was left running.
+        assert await self._maybe_try_reconnect("connection closed by server", None) is False
+        await self._connect_websocket()
+        self._receive_task = asyncio.get_running_loop().create_task(asyncio.sleep(3600))
+        self.leftover = self._receive_task
+
+    monkeypatch.setattr(BodhiTTSService, "_connect_websocket", fake_connect)
+    monkeypatch.setattr(BodhiTTSService, "_disconnect_websocket", fake_disconnect)
+    monkeypatch.setattr(BodhiTTSService, "cancel_task", fake_cancel_task)
+    monkeypatch.setattr(BodhiTTSService, "stop", stop_that_races)
+    monkeypatch.setattr(p, "NAVANA_KEYS", p.NavanaKeyPool())
+    cls = p._navana_seq_routing(BodhiTTSService)
+    with _keys("only"):
+        tts = cls(api_key="x", voice="ipsita", language="hi")
+        tts._websocket = None
+        await tts._connect_websocket()
+        assert connects == ["only"] and p.NAVANA_KEYS.load("only") == 1
+        await tts.stop(None)
+        await asyncio.sleep(0)
+        assert connects == ["only"], "a stop must never open a new socket"
+        assert tts.leftover.cancelled(), "the left-over receive task is cancelled"
+        assert tts._websocket is None and tts._receive_task is None
+        assert p.NAVANA_KEYS.load("only") == 0, "the stream slot is given back"

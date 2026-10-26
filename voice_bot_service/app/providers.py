@@ -1301,8 +1301,53 @@ def _navana_seq_routing(cls):
                 return
             await super().push_error(*args, **kwargs)
 
+        # NOTHING RECONNECTS ONCE THE CALL IS ENDING (call 625a715e, 2026-10-26).
+        # stop() sends Navana its "end", Navana closes the socket, and pipecat's
+        # receive loop took that for a dropped line and reconnected (it only
+        # stands down once _disconnect has run, which comes after); a sentence
+        # still in run_tts can reopen it too. The new socket's receive task was
+        # started after the stop had cancelled the old one, so nothing ever
+        # stopped it: the call ended at 12:39 and the socket reconnected every
+        # 180 s (Navana's idle timeout) for two hours, holding one of the
+        # account's two stream slots. From the first moment of a stop or cancel
+        # nothing reconnects, and whatever is left open afterwards is closed.
+        async def stop(self, frame):
+            self._nv_stopping = True
+            try:
+                await super().stop(frame)
+            finally:
+                await self._nv_close_leftovers()
+
+        async def cancel(self, frame):
+            self._nv_stopping = True
+            try:
+                await super().cancel(frame)
+            finally:
+                await self._nv_close_leftovers()
+
+        async def _nv_close_leftovers(self):
+            task = getattr(self, "_receive_task", None)
+            if task is not None:
+                self._receive_task = None
+                try:
+                    await self.cancel_task(task)
+                except Exception:
+                    logger.exception("navana: could not cancel the receive task at the end")
+            if getattr(self, "_websocket", None) is not None or getattr(self, "_nv_key", None):
+                logger.info("navana: a socket was still open after the stop — closing it")
+                await self._disconnect_websocket()
+
+        async def _maybe_try_reconnect(self, *args, **kwargs):
+            if getattr(self, "_nv_stopping", False):
+                return False
+            return await super()._maybe_try_reconnect(*args, **kwargs)
+
         async def _connect_websocket(self):
             from websockets.protocol import State as _State
+            if getattr(self, "_nv_stopping", False):
+                logger.info("navana: not reconnecting — the call is ending")
+                self._websocket = None
+                return
             if self._websocket is not None and getattr(self._websocket, "state", None) is _State.OPEN:
                 return                                  # already connected: keep the seq state
             # A fresh socket restarts seq at 1 (the SDK resets it on ready).

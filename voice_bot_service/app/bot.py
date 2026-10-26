@@ -117,6 +117,11 @@ logger = logging.getLogger(__name__)
 
 # How long the bot waits on hold before the usual idle nudges/hang-up apply again.
 HOLD_MAX_SECS = 300.0
+# A hold that starts again this soon after it "ended" is the same hold: the
+# recording said something that read as the person (calls 625a715e / 6f0cb50e,
+# 2026-10-26: 80 holds and 80 returns in two calls, none longer than 14 s, so
+# the HOLD_MAX_SECS clock restarted every loop and the calls ran 7-8 minutes).
+HOLD_REENTRY_SECS = 30.0
 # Said to the model when the person comes back from putting the call on hold.
 HOLD_RESUME_CUE = ("[They had put the call on hold and are back now. Do NOT introduce yourself "
                    "again and do not restart your pitch. Answer what they say next first. If "
@@ -515,6 +520,9 @@ class TranscriptCollector(FrameProcessor):
         # When the person put us on hold (0 = not on hold); see the hold branch in
         # process_frame and turntake.is_hold_announcement.
         self._hold_since = 0.0
+        # When this hold began, across returns that were followed by the hold
+        # again within HOLD_REENTRY_SECS (on_hold_for, the HOLD_MAX_SECS clock).
+        self._hold_episode_since = 0.0
         self._hold_line_t = 0.0
         # When the person last came back from a hold (0 = never): the silence
         # before it was the hold's, not dead air (run_bot.set_bot_speaking).
@@ -968,6 +976,9 @@ class TranscriptCollector(FrameProcessor):
             # spell a hold phrase that neither half is.
             if ((self._human_turns > 0 or self._bot_spoke_once()) and not back_from_hold
                     and (is_hold_announcement(text) or joined_hold)):
+                if not (self._hold_episode_since and self.hold_ended_t
+                        and now - self.hold_ended_t <= HOLD_REENTRY_SECS):
+                    self._hold_episode_since = now
                 self._hold_since = now
                 # Nobody has heard us yet: the bot has not spoken, the opening
                 # is still owed (it played into the IVR, cut before half of it),
@@ -1532,8 +1543,12 @@ class TranscriptCollector(FrameProcessor):
             await self.push_frame(frame, direction)
 
     def on_hold_for(self) -> float:
-        """Seconds the person has had us on hold (0 when not on hold)."""
-        return time.time() - self._hold_since if self._hold_since else 0.0
+        """Seconds the person has had us on hold (0 when not on hold), counted
+        from the start of the hold — a "return" followed by the hold again within
+        HOLD_REENTRY_SECS does not restart it."""
+        if not self._hold_since:
+            return 0.0
+        return time.time() - (self._hold_episode_since or self._hold_since)
 
     def on_hold(self) -> bool:
         """The person has us on hold right now. Not on_hold_for() > 0: on a

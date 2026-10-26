@@ -842,3 +842,85 @@ def test_on_hold_is_true_in_the_same_tick_the_hold_began(monkeypatch):
     assert tc.on_hold()
     tc._hold_since = 0.0
     assert not tc.on_hold()
+
+
+# ── calls 625a715e / 6f0cb50e (2026-10-26): a three-language loop, 80 re-starts ─
+# The network's loop has a Bengali part, which the Hindi STT writes in
+# Devanagari; some of its lines carry a person's word ("मुझे", "थी"), each read
+# as the person back, and the hold clock re-started every ~20 s for 7-8 minutes.
+BENGALI_LOOP = (
+    "आप निजी व्यक्ति शुंगी कोथा बोल छे।",
+    "आप मुझे जेब्ती शोंंगे कोथा बोल छु।",
+    "कि नहीं आपने call की hold दे रखी छि।",
+    "व्यक्ति ने अपना call की hold दे रखी थी।",
+    "तिनी आपर call की hold दे लिखी छिल।",
+    "दोया कुली लाइनि ठाकुर।",
+    "दोयाकुले लाइन ठाकुर",
+    "आपनी जे देखते।",
+    "व्यक्ति के संग बात बोल रहे हैं।",
+)
+STT_VARIANTS = (
+    "उसने आपकी call को hold पे रखा है।",
+    "वह आपकी call hold में है।",
+    "वह आपके call को hold में रखे हैं।",
+    "दया करके line में रहें।",
+    "द person you asked.",
+    "The person you ask.",
+    "lease stay on the line.",
+    "व्यक्ति के साथ बात कर रहे हैं।",
+)
+
+
+@pytest.mark.parametrize("line", BENGALI_LOOP)
+def test_the_bengali_part_of_the_loop_enters_and_stays_on_hold(line):
+    assert is_hold_announcement(line), line
+    assert hold_absorbs(line, 30.0), line
+
+
+@pytest.mark.parametrize("line", STT_VARIANTS)
+def test_other_stt_renderings_of_the_loop_stay_on_hold(line):
+    assert hold_absorbs(line, 30.0), line
+
+
+@pytest.mark.asyncio
+async def test_a_hold_that_resumes_at_once_keeps_its_clock(clock):
+    """The 5-minute limit counts from the start of the hold, not from the last
+    line that briefly read as the person."""
+    rec = _Rec()
+    tc = _collector(rec)
+    await _on_hold(tc, clock, rec, at=40.0)
+    await _say(tc, clock, 60.0, "हाँ तो।")                   # read as the person…
+    assert tc.on_hold_for() == 0
+    await _say(tc, clock, 75.0, "आप जिस व्यक्ति से बात कर रहे हैं।")   # …the loop again
+    assert tc.on_hold_for() == pytest.approx(75.0 - 40.0)
+    clock.t = 10_000.0 + 400.0
+    assert tc.on_hold_for() >= b.HOLD_MAX_SECS, "the limit is reached"
+
+
+@pytest.mark.asyncio
+async def test_a_new_hold_after_a_real_return_starts_its_own_clock(clock):
+    rec = _Rec()
+    tc = _collector(rec)
+    await _on_hold(tc, clock, rec, at=40.0)
+    await _say(tc, clock, 60.0, "Hello.")
+    await _say(tc, clock, 70.0, "हाँ जी, बताइए फीस कितनी है")
+    await _say(tc, clock, 60.0 + b.HOLD_REENTRY_SECS + 5.0, "आप जिस व्यक्ति से बात कर रहे हैं।")
+    assert tc.on_hold_for() == pytest.approx(0.0)
+
+
+@pytest.mark.asyncio
+async def test_the_three_language_loop_never_lets_the_hold_go(clock):
+    rec = _Rec()
+    tc = _collector(rec)
+    await _on_hold(tc, clock, rec, at=40.0)
+    at = 40.0
+    for _ in range(3):
+        for line in ("उसने आपकी call को hold पर रखा है। कृपया", "कृपया line पर बने रहें।",
+                     "The person you are speaking with has put your call on hold.",
+                     "Please stay on the line.", "आप मुझे जेब्ती शोंंगे कोथा बोल छु।",
+                     "व्यक्ति ने अपना call की hold दे रखी थी।", "दोया कुली लाइनि ठाकुर।",
+                     "आप जिस व्यक्ति से बात कर रहे हैं"):
+            at += 2.3
+            await _say(tc, clock, at, line)
+    assert rec.forwarded() == [], "none of the loop reaches the model"
+    assert tc.on_hold_for() == pytest.approx(at - 40.0)
