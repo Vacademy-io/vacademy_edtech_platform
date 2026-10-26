@@ -9,6 +9,7 @@ import svgr from 'vite-plugin-svgr';
 // import { VitePWA } from 'vite-plugin-pwa';
 import flowbiteReact from 'flowbite-react/plugin/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { leadAgentExtensionZip } from './scripts/lead-agent-extension-zip.mjs';
 
 // https://vitejs.dev/config https://vitest.dev/config
 export default defineConfig(({ mode }) => {
@@ -21,6 +22,8 @@ export default defineConfig(({ mode }) => {
             react(),
             tsconfigPaths(),
             TanStackRouterVite(),
+            // /downloads/lead-agent-extension.zip for the Lead Agent's Extension tab.
+            leadAgentExtensionZip(path.resolve(__dirname, '../lead-agent-extension')),
             // Temporarily disabled PWA plugin due to build error
             // VitePWA({
             //     registerType: 'autoUpdate',

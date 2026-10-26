@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Copy, Desktop, PuzzlePiece, WarningCircle } from '@phosphor-icons/react';
+import {
+    CheckCircle,
+    Copy,
+    Desktop,
+    DownloadSimple,
+    PuzzlePiece,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -21,6 +28,32 @@ import { EmptyState, ErrorState } from '@/routes/manage-pages/site-assistant/-co
 import type { LeadAgentWorker } from '../-types';
 import { usePairWorker, useRevokeWorker, useWorkers } from '../-hooks/use-lead-agent';
 import { apiErrorMessage } from '../-services/lead-agent-api';
+
+/** Built from lead-agent-extension/ with every dashboard build (scripts/lead-agent-extension-zip.mjs). */
+const EXTENSION_ZIP_URL = '/downloads/lead-agent-extension.zip';
+
+function downloadExtension() {
+    const a = document.createElement('a');
+    a.href = EXTENSION_ZIP_URL;
+    a.download = 'lead-agent-extension.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
+
+function DownloadButton({ label }: { label: string }) {
+    return (
+        <MyButton
+            type="button"
+            buttonType="secondary"
+            scale="small"
+            className="w-fit"
+            onClick={downloadExtension}
+        >
+            <DownloadSimple className="size-4" /> {label}
+        </MyButton>
+    );
+}
 
 // Message types of the extension's pairing bridge (lead-agent-extension/content-pair.js).
 const MSG = {
@@ -252,17 +285,22 @@ function InstallPanel({
             {installed === null ? (
                 <Skeleton className="h-5 w-48" />
             ) : installed ? (
-                <p className="flex items-center gap-2 text-body text-success-700">
-                    <CheckCircle className="size-4" weight="fill" />
-                    Extension installed{version ? ` (v${version})` : ''} in this browser.
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="flex items-center gap-2 text-body text-success-700">
+                        <CheckCircle className="size-4" weight="fill" />
+                        Extension installed{version ? ` (v${version})` : ''} in this browser.
+                    </p>
+                    <DownloadButton label="Download the latest version" />
+                </div>
             ) : (
                 <div className="flex flex-col gap-2 text-body text-neutral-700">
                     <p>Not found in this browser. To install it (Chrome 120 or newer):</p>
+                    <DownloadButton label="Download the extension" />
                     <ol className="list-decimal ps-5">
                         <li>
-                            Get the <span className="font-semibold">lead-agent-extension</span>{' '}
-                            folder from your account manager.
+                            Unzip <span className="font-semibold">lead-agent-extension.zip</span>:
+                            you get a <span className="font-semibold">lead-agent-extension</span>{' '}
+                            folder.
                         </li>
                         <li>
                             Open{' '}
@@ -277,6 +315,11 @@ function InstallPanel({
                         </li>
                         <li>Pin the extension, then reload this page.</li>
                     </ol>
+                    <p className="text-caption text-neutral-500">
+                        To update it later, download it again, replace the folder and click the
+                        reload icon on the extension in{' '}
+                        <code className="rounded-sm bg-neutral-100 px-1">chrome://extensions</code>.
+                    </p>
                 </div>
             )}
         </section>

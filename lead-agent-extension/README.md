@@ -45,6 +45,11 @@ minimized window is closed after 5 minutes without renders, and when you pause o
 
 Requires Chrome 120 or newer (30-second alarms).
 
+Institutes download it from the dashboard (Lead Agent → Extension → **Download the extension**):
+`/downloads/lead-agent-extension.zip` is built from this folder by every dashboard build
+(`frontend-admin-dashboard/scripts/lead-agent-extension-zip.mjs`; `test/` and `package.json` are left out), so
+a change here ships with the next dashboard deploy. Unzipped it is a `lead-agent-extension/` folder for step 3.
+
 ## Pairing
 
 The dashboard creates a worker token with `POST /ai-service/lead-agent/v1/workers/pair` (shown once). The
