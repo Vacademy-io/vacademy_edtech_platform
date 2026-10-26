@@ -81,6 +81,10 @@ interface CourseSidebarProps {
   overviewVisible: boolean;
   /** When true, hide the "Author" row in the Course Overview card. */
   hideAuthorName?: boolean;
+  /** When true, hide the Course Overview card; the Enroll button still shows. */
+  hideOverviewCard?: boolean;
+  /** When true, hide the Course Progress card. */
+  hideProgressCard?: boolean;
   processedSlideCounts: SlideCount[];
   moduleStats: ModuleStats;
   currentSubjects: unknown[];
@@ -113,6 +117,8 @@ export const CourseSidebar = ({
   slideCountQuery,
   overviewVisible,
   hideAuthorName = false,
+  hideOverviewCard = false,
+  hideProgressCard = false,
   processedSlideCounts,
   moduleStats,
   currentSubjects,
@@ -204,216 +210,224 @@ export const CourseSidebar = ({
     return undefined;
   })();
 
+  // Action Button — hidden entirely for learners already enrolled in this
+  // course, and in reader mode (iOS / reader-mode institutes, Apple 3.1.1).
+  // Kept outside the Overview card so hiding that card never hides enrolling.
+  const showEnrollCta =
+    selectedTab === "ALL" &&
+    !!selectedSession &&
+    !!selectedLevel &&
+    !isEnrolledInCourse &&
+    !isAlreadyEnrolled &&
+    !shouldHidePaidPurchaseUI();
+  const enrollCta = (
+    <div className="pt-2">
+      <Button
+        className={cn(
+          "w-full font-semibold",
+          // Vibrant — default Button already renders the tenant-primary CTA
+          "[.ui-vibrant_&]:shadow-md",
+          // Play Styles — solid, bold, Duolingo-style
+          "[.ui-play_&]:bg-play-success [.ui-play_&]:hover:bg-play-success-deep [.ui-play_&]:text-white [.ui-play_&]:font-extrabold [.ui-play_&]:uppercase [.ui-play_&]:tracking-wide",
+          "[.ui-play_&]:rounded-xl [.ui-play_&]:shadow-play-4d-success [.ui-play_&]:hover:shadow-play-2d-success [.ui-play_&]:active:shadow-none",
+        )}
+        onClick={onEnrollmentClick}
+      >
+        {t("sidebar.enrollNow")}
+      </Button>
+    </div>
+  );
+
   if (!hasRightSidebar) return null;
 
   return (
     <div className="space-y-3 pb-3">
       {/* Course Overview Card */}
-      <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-md border-border/60">
-        <CardHeader className="p-3 pb-2 border-b bg-muted/40">
-          <div className="flex items-center space-x-2">
-            <div className="p-1 bg-primary/10 rounded-md">
-              <Steps size={14} className="text-primary" weight="duotone" />
-            </div>
-            <CardTitle className="text-sm font-bold">
-              {t("sidebar.overview", {
-                course: (() => {
-                  const term = getTerminology(
-                    ContentTerms.Course,
-                    SystemTerms.Course,
-                  ).toLocaleLowerCase();
-                  return term.charAt(0).toUpperCase() + term.slice(1);
-                })(),
-              })}
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="p-3 pt-2.5 space-y-2.5">
-          {/* Author Name */}
-          {!hideAuthorName && (
-            <>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">{t("sidebar.author")}</span>
-                <span className="font-semibold">{displayAuthorName || "—"}</span>
+      {!hideOverviewCard && (
+        <Card className="animate-fade-in-up transition-all duration-300 hover:shadow-md border-border/60">
+          <CardHeader className="p-3 pb-2 border-b bg-muted/40">
+            <div className="flex items-center space-x-2">
+              <div className="p-1 bg-primary/10 rounded-md">
+                <Steps size={14} className="text-primary" weight="duotone" />
               </div>
-
-              <Separator />
-            </>
-          )}
-
-          {/* Level Badge */}
-          {levelOptions.length > 0 &&
-            selectedLevel &&
-            levelOptions.find((option) => option.value === selectedLevel)
-              ?.label !== "default" && (
+              <CardTitle className="text-sm font-bold">
+                {t("sidebar.overview", {
+                  course: (() => {
+                    const term = getTerminology(
+                      ContentTerms.Course,
+                      SystemTerms.Course,
+                    ).toLocaleLowerCase();
+                    return term.charAt(0).toUpperCase() + term.slice(1);
+                  })(),
+                })}
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 pt-2.5 space-y-2.5">
+            {/* Author Name */}
+            {!hideAuthorName && (
               <>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                    <Steps size={14} className="text-muted-foreground" />
-                    {capitalizeFirst(
-                      getTerminology(
-                        ContentTerms.Level,
-                        SystemTerms.Level,
-                      ).toLocaleLowerCase(),
-                    )}
-                  </span>
-                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-md">
-                    {capitalizeFirst(
-                      levelOptions.find(
-                        (option) => option.value === selectedLevel,
-                      )?.label || "",
-                    )}
-                  </span>
+                  <span className="text-muted-foreground font-medium">{t("sidebar.author")}</span>
+                  <span className="font-semibold">{displayAuthorName || "—"}</span>
                 </div>
+
                 <Separator />
               </>
             )}
 
-          {/* Course Time */}
-          {slideCountQuery.isLoading ? (
-            <div className="flex justify-between items-center animate-pulse">
-              <div className="h-4 w-20 bg-muted rounded"></div>
-              <div className="h-4 w-12 bg-muted rounded"></div>
-            </div>
-          ) : !slideCountQuery.error ? (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground font-medium">
-                {t("sidebar.courseTime", {
-                  course: getTerminology(ContentTerms.Course, SystemTerms.Course),
-                })}
-              </span>
-              <span className="font-semibold">{totalDuration}</span>
-            </div>
-          ) : null}
+            {/* Level Badge */}
+            {levelOptions.length > 0 &&
+              selectedLevel &&
+              levelOptions.find((option) => option.value === selectedLevel)
+                ?.label !== "default" && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                      <Steps size={14} className="text-muted-foreground" />
+                      {capitalizeFirst(
+                        getTerminology(
+                          ContentTerms.Level,
+                          SystemTerms.Level,
+                        ).toLocaleLowerCase(),
+                      )}
+                    </span>
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-semibold rounded-md">
+                      {capitalizeFirst(
+                        levelOptions.find(
+                          (option) => option.value === selectedLevel,
+                        )?.label || "",
+                      )}
+                    </span>
+                  </div>
+                  <Separator />
+                </>
+              )}
 
-          {/* Module Stats */}
-          {overviewVisible && (
-            <div className="space-y-3 pt-2">
-              {/* A course below the depth that shows modules/chapters still
-                  has one seeded "DEFAULT" row at each hidden level holding its
-                  slides, so counting those told the learner about a hierarchy
-                  they can't see ("Modules 1, Chapters 1" on a flat course).
-                  Only that single placeholder is suppressed — a course that
-                  genuinely has several keeps its count. */}
-              {(courseStructure >= 4 || moduleStats.totalModules > 1) &&
-                moduleStats.totalModules > 0 && (
-                <div className="flex items-center justify-between text-sm group/item">
-                  <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
-                    <FileText
-                      size={16}
-                      className="text-blue-500"
-                      weight="duotone"
-                    />
-                    <span>
-                      {capitalizeFirst(
-                        getTerminology(
-                          ContentTerms.Modules,
-                          SystemTerms.Modules,
-                        ).toLocaleLowerCase(),
-                      )}
-                    </span>
-                  </div>
-                  <span className="font-semibold">
-                    {moduleStats.totalModules}
-                  </span>
-                </div>
-              )}
-              {(courseStructure >= 3 || moduleStats.totalChapters > 1) &&
-                moduleStats.totalChapters > 0 && (
-                <div className="flex items-center justify-between text-sm group/item">
-                  <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
-                    <PresentationChart
-                      size={16}
-                      className="text-green-500"
-                      weight="duotone"
-                    />
-                    <span>
-                      {capitalizeFirst(
-                        getTerminology(
-                          ContentTerms.Chapters,
-                          SystemTerms.Chapters,
-                        ).toLocaleLowerCase(),
-                      )}
-                    </span>
-                  </div>
-                  <span className="font-semibold">
-                    {moduleStats.totalChapters}
-                  </span>
-                </div>
-              )}
-              {courseStructure === 5 && currentSubjects.length > 0 && (
-                <div className="flex items-center justify-between text-sm group/item">
-                  <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
-                    <Folder
-                      size={16}
-                      className="text-purple-500"
-                      weight="duotone"
-                    />
-                    <span>
-                      {capitalizeFirst(
-                        getTerminology(
-                          ContentTerms.Subjects,
-                          SystemTerms.Subjects,
-                        ).toLocaleLowerCase(),
-                      )}
-                    </span>
-                  </div>
-                  <span className="font-semibold">
-                    {currentSubjects.length}
-                  </span>
-                </div>
-              )}
-              {instructorsCount > 0 && (
-                <div className="flex items-center justify-between text-sm group/item">
-                  <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
-                    <ChalkboardTeacher
-                      size={16}
-                      className="text-orange-500"
-                      weight="duotone"
-                    />
-                    <span>
-                      {getTerminologyPlural(
-                        RoleTerms.Teacher,
-                        SystemTerms.Teacher,
-                      )}
-                    </span>
-                  </div>
-                  <span className="font-semibold">{instructorsCount}</span>
-                </div>
-              )}
-            </div>
-          )}
+            {/* Course Time */}
+            {slideCountQuery.isLoading ? (
+              <div className="flex justify-between items-center animate-pulse">
+                <div className="h-4 w-20 bg-muted rounded"></div>
+                <div className="h-4 w-12 bg-muted rounded"></div>
+              </div>
+            ) : !slideCountQuery.error ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium">
+                  {t("sidebar.courseTime", {
+                    course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                  })}
+                </span>
+                <span className="font-semibold">{totalDuration}</span>
+              </div>
+            ) : null}
 
-          {/* Action Button — hidden entirely for learners already enrolled in
-              this course, and in reader mode (iOS / reader-mode institutes,
-              Apple 3.1.1). */}
-          {selectedTab === "ALL" &&
-            selectedSession &&
-            selectedLevel &&
-            !isEnrolledInCourse &&
-            !isAlreadyEnrolled &&
-            !shouldHidePaidPurchaseUI() && (
-              <div className="pt-2">
-                <Button
-                  className={cn(
-                    "w-full font-semibold",
-                    // Vibrant — default Button already renders the tenant-primary CTA
-                    "[.ui-vibrant_&]:shadow-md",
-                    // Play Styles — solid, bold, Duolingo-style
-                    "[.ui-play_&]:bg-play-success [.ui-play_&]:hover:bg-play-success-deep [.ui-play_&]:text-white [.ui-play_&]:font-extrabold [.ui-play_&]:uppercase [.ui-play_&]:tracking-wide",
-                    "[.ui-play_&]:rounded-xl [.ui-play_&]:shadow-play-4d-success [.ui-play_&]:hover:shadow-play-2d-success [.ui-play_&]:active:shadow-none",
-                  )}
-                  onClick={onEnrollmentClick}
-                >
-                  {t("sidebar.enrollNow")}
-                </Button>
+            {/* Module Stats */}
+            {overviewVisible && (
+              <div className="space-y-3 pt-2">
+                {/* A course below the depth that shows modules/chapters still
+                    has one seeded "DEFAULT" row at each hidden level holding its
+                    slides, so counting those told the learner about a hierarchy
+                    they can't see ("Modules 1, Chapters 1" on a flat course).
+                    Only that single placeholder is suppressed — a course that
+                    genuinely has several keeps its count. */}
+                {(courseStructure >= 4 || moduleStats.totalModules > 1) &&
+                  moduleStats.totalModules > 0 && (
+                  <div className="flex items-center justify-between text-sm group/item">
+                    <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
+                      <FileText
+                        size={16}
+                        className="text-blue-500"
+                        weight="duotone"
+                      />
+                      <span>
+                        {capitalizeFirst(
+                          getTerminology(
+                            ContentTerms.Modules,
+                            SystemTerms.Modules,
+                          ).toLocaleLowerCase(),
+                        )}
+                      </span>
+                    </div>
+                    <span className="font-semibold">
+                      {moduleStats.totalModules}
+                    </span>
+                  </div>
+                )}
+                {(courseStructure >= 3 || moduleStats.totalChapters > 1) &&
+                  moduleStats.totalChapters > 0 && (
+                  <div className="flex items-center justify-between text-sm group/item">
+                    <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
+                      <PresentationChart
+                        size={16}
+                        className="text-green-500"
+                        weight="duotone"
+                      />
+                      <span>
+                        {capitalizeFirst(
+                          getTerminology(
+                            ContentTerms.Chapters,
+                            SystemTerms.Chapters,
+                          ).toLocaleLowerCase(),
+                        )}
+                      </span>
+                    </div>
+                    <span className="font-semibold">
+                      {moduleStats.totalChapters}
+                    </span>
+                  </div>
+                )}
+                {courseStructure === 5 && currentSubjects.length > 0 && (
+                  <div className="flex items-center justify-between text-sm group/item">
+                    <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
+                      <Folder
+                        size={16}
+                        className="text-purple-500"
+                        weight="duotone"
+                      />
+                      <span>
+                        {capitalizeFirst(
+                          getTerminology(
+                            ContentTerms.Subjects,
+                            SystemTerms.Subjects,
+                          ).toLocaleLowerCase(),
+                        )}
+                      </span>
+                    </div>
+                    <span className="font-semibold">
+                      {currentSubjects.length}
+                    </span>
+                  </div>
+                )}
+                {instructorsCount > 0 && (
+                  <div className="flex items-center justify-between text-sm group/item">
+                    <div className="flex items-center gap-2 text-muted-foreground group-hover/item:text-foreground transition-colors">
+                      <ChalkboardTeacher
+                        size={16}
+                        className="text-orange-500"
+                        weight="duotone"
+                      />
+                      <span>
+                        {getTerminologyPlural(
+                          RoleTerms.Teacher,
+                          SystemTerms.Teacher,
+                        )}
+                      </span>
+                    </div>
+                    <span className="font-semibold">{instructorsCount}</span>
+                  </div>
+                )}
               </div>
             )}
-        </CardContent>
-      </Card>
+
+            {showEnrollCta && enrollCta}
+          </CardContent>
+        </Card>
+      )}
+      {hideOverviewCard && showEnrollCta && enrollCta}
 
       {/* Course Progress Card */}
-      {selectedTab === "PROGRESS" &&
+      {!hideProgressCard &&
+        selectedTab === "PROGRESS" &&
         typeof percentageCompleted === "number" && (
           <Card
             className={cn(

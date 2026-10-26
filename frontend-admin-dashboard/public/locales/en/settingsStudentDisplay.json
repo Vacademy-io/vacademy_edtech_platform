@@ -117,6 +117,8 @@
         "selectMode": "Select mode",
         "ratingsReviewsVisible": "Ratings & Reviews Visible",
         "hideAuthorName": "Hide Author Name (Course Details Page)",
+        "hideOverviewCard": "Hide {{course}} Overview Card (Details Page)",
+        "hideProgressCard": "Hide {{course}} Progress Card (Details Page)",
         "showTeachers": "Show All Teachers (Course Details Page)",
         "showTeachersHint": "The first author is always shown with their photo, subtitle and bio. Turn this on to list every teacher assigned to the batch. Email addresses are never shown to learners.",
         "showCourseConfiguration": "Show Course Configuration",

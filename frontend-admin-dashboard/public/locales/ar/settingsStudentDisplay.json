@@ -117,6 +117,8 @@
         "selectMode": "اختر الوضع",
         "ratingsReviewsVisible": "التقييمات والمراجعات مرئية",
         "hideAuthorName": "إخفاء اسم المؤلف (صفحة تفاصيل الدورة)",
+        "hideOverviewCard": "إخفاء بطاقة نظرة عامة على {{course}} (صفحة التفاصيل)",
+        "hideProgressCard": "إخفاء بطاقة تقدم {{course}} (صفحة التفاصيل)",
         "showTeachers": "إظهار المعلمين (صفحة تفاصيل الدورة)",
         "showCourseConfiguration": "إظهار إعدادات الدورة",
         "hideTags": "إخفاء وسوم الدورة (ENGLISH, E-LEARNING…) فوق العنوان",

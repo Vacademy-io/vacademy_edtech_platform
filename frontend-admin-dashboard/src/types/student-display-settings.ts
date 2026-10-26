@@ -234,6 +234,10 @@ export interface StudentCourseDetailsSettings {
     ratingsAndReviewsVisible: boolean;
     /** Hide the "Author" row in the course-details Course Overview panel. Default false (author shown). */
     hideAuthorName?: boolean;
+    /** Hide the whole Course Overview card (author, time, counts) on course details. Default false (shown). */
+    hideOverviewCard?: boolean;
+    /** Hide the Course Progress card (completion %) on course details. Default false (shown). */
+    hideProgressCard?: boolean;
     /**
      * List EVERY teacher of the batch on the course-details page. Default false:
      * only the first author is shown (with photo, subtitle and bio). Learners
