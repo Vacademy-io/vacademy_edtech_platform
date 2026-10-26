@@ -50,6 +50,8 @@ const ACTION_VARIANT: Record<string, 'default' | 'destructive' | 'secondary' | '
     TERMINATE: 'destructive',
     UNASSIGN: 'destructive',
     REMOVE_MEMBER: 'destructive',
+    DISABLE_ACCESS: 'destructive',
+    ENABLE_ACCESS: 'default',
     VOID: 'destructive',
     DELETE_BLOCKED: 'destructive',
     SPLIT: 'secondary',
@@ -85,6 +87,7 @@ const RESOURCE_LABELS: Record<string, string> = {
     LEARNER_BADGE: 'Learner badge',
     STUDENT_REPORT: 'Progress report',
     ASSESSMENT: 'Assessment',
+    MEMBER_ACCESS: 'Member access',
 };
 
 const resourceLabel = (entityType: string): string =>
@@ -221,6 +224,13 @@ const NAMED_DESCRIPTION_PATTERNS: RegExp[] = [
     /^(made payment plan )(.+?)( the default)$/i,
     /^((?:created|updated|deleted|approved) (?:payment|fee) plan )(.+)$/i,
     /^(updated fee type )(.+)$/i,
+
+    // ── Member access ────────────────────────────────────────────────
+    // Member access (reported by auth_service): "deleted Asha Verma <asha@example.com> (TEACHER)".
+    // Last on purpose: "deleted " is generic, so every specific form above wins first.
+    // Case-sensitive on purpose: the trailing role list is upper case, so
+    // "deleted 3 course(s)" does not match.
+    /^(deleted |disabled access for |enabled access for |cancelled the invite for )(.+?)( \([A-Z_, ?]+\))$/,
 ];
 
 /**
