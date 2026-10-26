@@ -238,6 +238,7 @@ export const EbookDetailsView: React.FC<EbookDetailsViewProps> = ({
                 {packageSessionId && (
                   <ShareButton
                     variant="button"
+                    randomCode
                     packageSessionId={packageSessionId}
                     destinationUrl={shareableUrl()}
                     instituteId={instituteId}
