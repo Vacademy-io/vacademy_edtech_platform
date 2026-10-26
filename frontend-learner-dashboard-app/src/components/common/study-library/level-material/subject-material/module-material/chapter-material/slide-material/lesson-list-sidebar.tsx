@@ -22,6 +22,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import { CaretRight, CheckCircle, LockSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
@@ -479,6 +480,26 @@ export const LessonListSidebar = ({
       });
     }
   }, []);
+
+  // Sections are fetched once, outside react-query, so on their own they never
+  // see a later completion. Mark as Complete, submit refreshes and slide
+  // refetches all land on ["slides", chapterId]; mirror those into any section
+  // already shown, or its tick and the course count stay stale until reload.
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    return queryClient.getQueryCache().subscribe((event) => {
+      if (event.type !== "updated") return;
+      const [scope, chapterId] = event.query.queryKey;
+      const data = event.query.state.data;
+      if (scope !== "slides" || typeof chapterId !== "string") return;
+      if (!requestedChapters.current.has(chapterId) || !Array.isArray(data)) {
+        return;
+      }
+      setChapterSlidesMap((prev) =>
+        prev[chapterId] === data ? prev : { ...prev, [chapterId]: data }
+      );
+    });
+  }, [queryClient]);
 
   // Every subject's outline, up front: the list is flat, so there is no
   // expand step during which to fetch it. Chapters within it still stream.
