@@ -1,8 +1,11 @@
 import {
   DocumentLoadEvent,
+  LoadError,
   PageChangeEvent,
   Viewer,
   SpecialZoomLevel,
+  TextDirection,
+  ThemeContext,
 } from "@react-pdf-viewer/core";
 import { Worker } from "@react-pdf-viewer/core";
 
@@ -21,10 +24,42 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/page-navigation/lib/styles/index.css";
 import "@react-pdf-viewer/full-screen/lib/styles/index.css";
 import "./pdf-viewer-toolbar.css";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useSlideDownloadPermission } from "@/hooks/useSlideDownloadPermission";
+import { isRetryablePdfLoadError, toPublicBucketFallbackUrl } from "./pdf-cdn-fallback";
 import { SlideDownloadTypeKey } from "@/constants/slide-download-permission";
+
+/** Renders nothing visible but the loader; switches the viewer to the fallback on mount. */
+const SwitchToFallback = ({ onSwitch, label }: { onSwitch: () => void; label: string }) => {
+  useEffect(() => {
+    onSwitch();
+  }, [onSwitch]);
+  return (
+    <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
+      {label}
+    </div>
+  );
+};
+
+/** The viewer's own error box, markup for markup, for errors we do not retry. */
+const DefaultDocError = ({ message }: { message: string }) => {
+  const { direction } = useContext(ThemeContext);
+  const isRtl = direction === TextDirection.RightToLeft;
+  return (
+    <div className={`rpv-core__doc-error${isRtl ? " rpv-core__doc-error--rtl" : ""}`}>
+      <div className="rpv-core__doc-error-text">{message}</div>
+    </div>
+  );
+};
 
 export interface PdfViewerComponentRef {
   jumpToPage: (pageIndex: number) => void;
@@ -44,6 +79,19 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
   const { t } = useTranslation("libraryCommonB");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerHeight, setContainerHeight] = useState<string | undefined>(undefined);
+
+  // If the CDN copy fails to load, try the same file once straight from the
+  // public bucket (see pdf-cdn-fallback). Only for our public CDN URLs; for
+  // anything else, and if the fallback fails too, the viewer's own error shows
+  // exactly as before.
+  const fallbackUrl = toPublicBucketFallbackUrl(pdfUrl);
+  const [fallbackActiveFor, setFallbackActiveFor] = useState<string | null>(null);
+  const usingFallback = !!fallbackUrl && fallbackActiveFor === pdfUrl;
+  const sourceUrl = usingFallback ? (fallbackUrl as string) : pdfUrl;
+  const switchToFallback = useCallback(() => {
+    setFallbackActiveFor(pdfUrl);
+  }, [pdfUrl]);
+  const canFallBack = !!fallbackUrl && !usingFallback;
 
   // Whether this user's role is allowed to download / print the PDF
   // (admin-configured per role; defaults to today's behavior — Download and
@@ -238,7 +286,20 @@ export const PdfViewerComponent = forwardRef<PdfViewerComponentRef, {
             early would bake in the default and ignore an admin "enable". */}
         {isResolved ? (
           <Viewer
-            fileUrl={pdfUrl}
+            fileUrl={sourceUrl}
+            renderError={
+              canFallBack
+                ? (error: LoadError) =>
+                    isRetryablePdfLoadError(error.name) ? (
+                      <SwitchToFallback
+                        onSwitch={switchToFallback}
+                        label={t("pdfViewer.loading")}
+                      />
+                    ) : (
+                      <DefaultDocError message={error.message ?? ""} />
+                    )
+                : undefined
+            }
             onDocumentLoad={handleDocumentLoad}
             onPageChange={handlePageChange}
             plugins={[
