@@ -93,6 +93,8 @@ export interface AgentGate {
     review_score: number;
     min_contact: MinContact;
     require_intent: boolean;
+    /** Leads already on a competitor's product are judged like any other (no review hold). */
+    auto_competitor_users: boolean;
 }
 
 export interface AgentWindow {

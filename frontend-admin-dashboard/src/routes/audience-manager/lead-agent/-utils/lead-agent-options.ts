@@ -142,6 +142,7 @@ export const DEFAULT_GATE: AgentGate = {
     review_score: 45,
     min_contact: 'likely',
     require_intent: false,
+    auto_competitor_users: false,
 };
 
 /** The spec default window (09:30–19:00, Mon–Sat), in the admin's own time zone. */

@@ -189,6 +189,7 @@ const normalizeGate = (raw: unknown): AgentGate => {
                 ? minContact
                 : DEFAULT_GATE.min_contact,
         require_intent: g.require_intent === true,
+        auto_competitor_users: g.auto_competitor_users === true,
     };
 };
 

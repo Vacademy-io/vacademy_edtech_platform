@@ -1327,6 +1327,28 @@ export function PacingSection({ form }: { form: Form }) {
                                 </FormItem>
                             )}
                         />
+                        <FormField
+                            control={form.control}
+                            name="auto_competitor_users"
+                            render={({ field }) => (
+                                <FormItem className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
+                                    <div className="flex flex-col gap-1">
+                                        <FormLabel>Auto-deliver competitor users</FormLabel>
+                                        <FormDescription>
+                                            Leads already using a competitor&apos;s product wait for
+                                            your review by default. Turn this on to score them like
+                                            any other lead. Very large organisations still wait.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
                     </CollapsibleContent>
                 </Collapsible>
             </div>

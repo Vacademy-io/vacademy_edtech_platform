@@ -149,6 +149,7 @@ export const agentFormSchema = z
         review_score: z.number().int().min(0, '0 to 100').max(100, '0 to 100'),
         min_contact: z.enum(['direct', 'likely', 'general']),
         require_intent: z.boolean(),
+        auto_competitor_users: z.boolean(),
         monthly_credit_cap: z
             .string()
             .trim()
@@ -206,6 +207,7 @@ export const STEP_FIELDS: (keyof AgentFormValues)[][] = [
         'review_score',
         'min_contact',
         'require_intent',
+        'auto_competitor_users',
         'monthly_credit_cap',
     ],
 ];
@@ -244,6 +246,7 @@ export function defaultFormValues(audienceId = ''): AgentFormValues {
         review_score: DEFAULT_GATE.review_score,
         min_contact: DEFAULT_GATE.min_contact,
         require_intent: DEFAULT_GATE.require_intent,
+        auto_competitor_users: DEFAULT_GATE.auto_competitor_users,
         monthly_credit_cap: '',
     };
 }
@@ -293,6 +296,7 @@ export function formValuesFromAgent(agent: LeadAgent): AgentFormValues {
         review_score: agent.gate.review_score,
         min_contact: agent.gate.min_contact,
         require_intent: agent.gate.require_intent,
+        auto_competitor_users: agent.gate.auto_competitor_users,
         monthly_credit_cap:
             agent.monthly_credit_cap === null ? '' : String(agent.monthly_credit_cap),
     };
@@ -378,6 +382,7 @@ export function payloadFromForm(v: AgentFormValues): AgentPayload {
             review_score: v.review_score,
             min_contact: v.min_contact,
             require_intent: v.require_intent,
+            auto_competitor_users: v.auto_competitor_users,
         },
         window: { tz: v.tz, start: v.start, end: v.end, days: [...v.days].sort((a, b) => a - b) },
     };
