@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from ..constants.model_defaults import GLM_DEFAULT
 from .ai_video_constants import AI_VIDEO_PER_VIDEO_COST_CAP_USD
 from .credit_service import CreditService
+from .image_model_resolver import VIDEO_IMAGE, image_model_for
 from .provider_rates import IMAGE_FALLBACK_MODEL_ID, image_cost_usd, tts_cost_usd
 
 logger = logging.getLogger(__name__)
@@ -124,8 +125,9 @@ _TOKEN_VARIANCE = 0.30
 _IMAGE_VARIANCE = 0.20
 
 # Constants for unit costs not represented as token rates.
-# Support visuals use the pipeline's default image model; the avatar host's
-# per-shot identity images use Seedream (both priced from ai_models).
+# Images are priced at the admin's `video_image` model (what the pipeline
+# uses), this when unset; the avatar host's per-shot identity images use
+# Seedream (both priced from ai_models).
 _VIDEO_IMAGE_MODEL_ID: str = IMAGE_FALLBACK_MODEL_ID
 _HOST_IMAGE_MODEL_ID: str = "bytedance-seed/seedream-4.5"
 _BACKGROUND_MUSIC_FLAT_USD: float = 0.10  # Lyria call (rough) — our cost, not charged
@@ -385,7 +387,8 @@ def estimate_video_generation(
     else:
         dir_in_rate, dir_out_rate, _ = _rates(planning_model)
 
-    image_unit = _get_image_unit_price(db)
+    image_model = image_model_for(VIDEO_IMAGE, _VIDEO_IMAGE_MODEL_ID, db=db) or _VIDEO_IMAGE_MODEL_ID
+    image_unit = _get_image_unit_price(db, image_model)
     thumbnail_count = 1 if str(content_type or "VIDEO").upper() == "VIDEO" else 0
     host_image_unit = _get_image_unit_price(db, _HOST_IMAGE_MODEL_ID)
     tts_vendor = _resolve_tts_provider(tts_provider, language)
@@ -521,7 +524,7 @@ def estimate_video_generation(
         rows += [
             {
                 "component": "Image generation",
-                "detail": f"~{imgs} images · {_VIDEO_IMAGE_MODEL_ID.split('/')[-1]}",
+                "detail": f"~{imgs} images · {image_model.split('/')[-1]}",
                 "cost_usd": round(img_usd, 4),
                 # Per image: unit price × ratio (precomputed at runtime, no base).
                 "credits": float(_metered_credits(image_unit, rate_ratio) * imgs),
@@ -542,7 +545,7 @@ def estimate_video_generation(
             # as an image event like any other.
             rows.append({
                 "component": "Thumbnail",
-                "detail": f"{thumbnail_count} image · {_VIDEO_IMAGE_MODEL_ID.split('/')[-1]}",
+                "detail": f"{thumbnail_count} image · {image_model.split('/')[-1]}",
                 "cost_usd": round(thumbnail_count * image_unit, 4),
                 "credits": float(_metered_credits(image_unit, rate_ratio) * thumbnail_count),
             })

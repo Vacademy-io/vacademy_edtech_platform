@@ -175,7 +175,10 @@ def _pipeline(choice: Optional[str], *, tier_on: bool = False, override: Optiona
     want = {"_is_background_music_enabled", "_wants_generated_music", "_library_music_track", "_effective_music_volume"}
     body.append(ast.ClassDef(name="P", bases=[], keywords=[], decorator_list=[],
                              body=[n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in want]))
-    ns: Dict[str, Any] = {"Any": Any, "Dict": Dict, "Optional": Optional}
+    # The pipeline reaches music_library through _platform_module; hand it this
+    # file's copy so the monkeypatches below are the ones it sees.
+    ns: Dict[str, Any] = {"Any": Any, "Dict": Dict, "Optional": Optional,
+                          "_platform_module": lambda dotted: ml if dotted == "services.music_library" else None}
     exec(compile(ast.fix_missing_locations(ast.Module(body=body, type_ignores=[])), str(PIPELINE), "exec",
                  flags=_FUTURE, dont_inherit=True), ns)
     p = object.__new__(ns["P"])

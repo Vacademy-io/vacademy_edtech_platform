@@ -676,7 +676,10 @@ def pipeline(monkeypatch, tmp_path):
 
     import edge_tts
     monkeypatch.setattr(edge_tts, "Communicate", FakeCommunicate)
-    return SimpleNamespace(ap=ap, p=p, script=script, run_dir=tmp_path, edge_voices=edge_voices)
+    # The pipeline imports rest_tts by its production name when it can, which
+    # may be a different module object from this file's `app.services` import.
+    return SimpleNamespace(ap=ap, p=p, script=script, run_dir=tmp_path, edge_voices=edge_voices,
+                           rest_tts=ap._platform_module("services.rest_tts"))
 
 
 @pytest.mark.parametrize("provider, voice_id, gender, want_voice", [
@@ -687,7 +690,7 @@ def pipeline(monkeypatch, tmp_path):
 ])
 def test_pipeline_narrates_with_smallest_and_navana(pipeline, monkeypatch, provider, voice_id, gender, want_voice):
     calls = []
-    monkeypatch.setattr(rest_tts, "synthesize_mp3",
+    monkeypatch.setattr(pipeline.rest_tts, "synthesize_mp3",
                         lambda prov, text, lang, voice, pace=1.0: calls.append((prov, text, lang, voice)) or b"ID3x")
     out = pipeline.p._synthesize_voice(pipeline.script, pipeline.run_dir, language="English",
                                        voice_gender=gender, tts_provider=provider, voice_id=voice_id)
@@ -703,7 +706,7 @@ def test_pipeline_narrates_with_smallest_and_navana(pipeline, monkeypatch, provi
 def test_a_failing_smallest_run_falls_back_to_edge(pipeline, monkeypatch):
     def boom(*a, **k):
         raise RuntimeError("Smallest TTS 500")
-    monkeypatch.setattr(rest_tts, "synthesize_mp3", boom)
+    monkeypatch.setattr(pipeline.rest_tts, "synthesize_mp3", boom)
     with pytest.raises(Exception):
         pipeline.p._synthesize_voice(pipeline.script, pipeline.run_dir, language="Hindi",
                                      voice_gender="female", tts_provider="smallest", voice_id="nirupma")

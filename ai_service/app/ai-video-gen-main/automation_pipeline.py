@@ -109,12 +109,11 @@ def _normalize_music_choice(value: Optional[str]) -> Optional[str]:
     rejected it at the API, so this only guards older stored run requests."""
     if value is None or not str(value).strip():
         return None
-    try:
-        from app.services.music_library import normalize_choice
-    except ImportError:
+    _ml = _platform_module("services.music_library")
+    if _ml is None:
         return None
     try:
-        return normalize_choice(value)
+        return _ml.normalize_choice(value)
     except ValueError as exc:
         print(f"⚠️ background_music ignored: {exc}")
         return None
@@ -123,13 +122,12 @@ def _normalize_music_choice(value: Optional[str]) -> Optional[str]:
 def _registry_llm_price(model: str) -> Optional[Tuple[float, float]]:
     """(input, output) USD per token from ai_models — the prices billing uses —
     for pricing LLM events in cost_breakdown.json. None when unknown."""
-    try:
-        from app.db import db_session as _db_ctx
-        from app.services.usage_record_only import _registry_price
-    except ImportError:  # standalone / renderer image: no registry
+    _db = _platform_module("db")
+    _uro = _platform_module("services.usage_record_only")
+    if _db is None or _uro is None:  # standalone / renderer image: no registry
         return None
-    with _db_ctx() as _s:
-        return _registry_price(_s, model)
+    with _db.db_session() as _s:
+        return _uro._registry_price(_s, model)
 
 
 def _llm_stage_label() -> str:
@@ -334,6 +332,26 @@ except ImportError:  # pragma: no cover - module sits next to this file
 
     def _video_effort(level):  # type: ignore[misc]
         return _contextlib.nullcontext()
+
+def _platform_module(dotted: str):
+    """The ai_service module `dotted` (e.g. "services.music_library"), or None.
+
+    Production runs `uvicorn ai_service.main:app` from /app, so the package is
+    `ai_service.app` and a bare `from app.… import` raises ImportError there.
+    Sites that tried only `app.` and swallowed the error silently fell back:
+    the admin image models (2026-10-23 → 10-27 every video used Recraft and
+    Seedream whatever the portal said), the CC0 music library, registry LLM
+    prices. The production name is tried first; `app.` covers local runs and
+    tests; None means neither exists here (the render worker).
+    """
+    import importlib
+    for prefix in ("ai_service.app.", "app."):
+        try:
+            return importlib.import_module(prefix + dotted)
+        except ImportError:
+            continue
+    return None
+
 
 # Code-level model defaults (the DB is the source of truth; these are only the
 # safety net). Production runs `uvicorn ai_service.main:app` from /app, where a
@@ -1012,8 +1030,8 @@ _SCRIPT_RANGES: dict[str, tuple[int, int]] = {
 # `routers/external_video_generation.py` and the pipeline's runtime
 # `AiVideoCostTracker` never silently disagree on the limit.
 try:
-    from app.services.ai_video_constants import AI_VIDEO_PER_VIDEO_COST_CAP_USD
-except ImportError:
+    AI_VIDEO_PER_VIDEO_COST_CAP_USD = _platform_module("services.ai_video_constants").AI_VIDEO_PER_VIDEO_COST_CAP_USD
+except AttributeError:
     # Fallback when `app/` isn't on path (legacy / standalone). Keep the
     # numeric default in lockstep with `ai_video_constants.py`.
     AI_VIDEO_PER_VIDEO_COST_CAP_USD = 24.00
@@ -1875,10 +1893,8 @@ VIDEO_IMAGE_DEFAULT = "recraft/recraft-v4.1"
 VIDEO_SUPPORT_VISUAL_USE_CASE = "video_support_visual"
 VIDEO_SUPPORT_VISUAL_DEFAULT = "bytedance-seed/seedream-4.5"
 
-try:
-    from app.services import image_model_resolver as _IMAGE_RESOLVER_MODULE
-except ImportError:  # standalone / renderer image: no registry, literal defaults
-    _IMAGE_RESOLVER_MODULE = None
+# None in the standalone / renderer image: no registry, literal defaults.
+_IMAGE_RESOLVER_MODULE = _platform_module("services.image_model_resolver")
 
 
 def _image_model_for(use_case: str, hard_default: str) -> str:
@@ -3383,10 +3399,9 @@ class VideoGenerationPipeline:
         choice = getattr(self, "_background_music_choice", None)
         if choice in (None, "none"):
             return None
-        try:
-            from app.services import music_library as _ml
-        except ImportError:
-            print("⚠️ Library music unavailable (app.services.music_library not importable) — shipping silent")
+        _ml = _platform_module("services.music_library")
+        if _ml is None:
+            print("⚠️ Library music unavailable (services.music_library not importable) — shipping silent")
             return None
         try:
             _mode = self._resolve_visual_style_mode()
@@ -7433,10 +7448,10 @@ class VideoGenerationPipeline:
                         # ratio. Resolve via a short-lived session so we
                         # use the same rate the ledger used at charge time.
                         try:
-                            from app.db import db_session as _db_ctx
-                            from app.services.credit_rate_service import CreditRateService
+                            _db_ctx = _platform_module("db").db_session
+                            _crs = _platform_module("services.credit_rate_service")
                             with _db_ctx() as _db:
-                                _ratio = float(CreditRateService(_db).get_effective_ratio())
+                                _ratio = float(_crs.CreditRateService(_db).get_effective_ratio())
                             _cap_credits = float(_av_summary.get("cap_usd") or 0.0) * _ratio
                             _remaining_credits = max(0.0, _cap_credits - _spent_credits)
                         except Exception:
@@ -9950,11 +9965,13 @@ class VideoGenerationPipeline:
     def _seedance_ready(self) -> bool:
         """Lazy Seedance client + per-run dialogue budget. True when callable."""
         try:
-            try:
-                from app.services.fal_seedance_client import FalSeedanceClient
-                from app.services.fal_omni_client import FalOmniClient
-                from app.services.fal_veo_client import get_fal_api_key_from_env as _gk
-            except ImportError:
+            _sd = _platform_module("services.fal_seedance_client")
+            _om = _platform_module("services.fal_omni_client")
+            _veo = _platform_module("services.fal_veo_client")
+            if _sd is not None and _om is not None and _veo is not None:
+                FalSeedanceClient, FalOmniClient = _sd.FalSeedanceClient, _om.FalOmniClient
+                _gk = _veo.get_fal_api_key_from_env
+            else:
                 from fal_seedance_client import FalSeedanceClient  # type: ignore[no-redef]
                 from fal_omni_client import FalOmniClient  # type: ignore[no-redef]
                 from fal_veo_client import get_fal_api_key_from_env as _gk  # type: ignore[no-redef]
@@ -12076,7 +12093,9 @@ class VideoGenerationPipeline:
         per-vendor chunking, language codes, Navana's 2-streams-per-key limit),
         then Whisper alignment as for Sarvam. Raises on failure; the caller
         falls back to Edge."""
-        from app.services import rest_tts
+        rest_tts = _platform_module("services.rest_tts")
+        if rest_tts is None:
+            raise RuntimeError("services.rest_tts is not importable here")
 
         speaker = (voice_id or "").strip() or rest_tts.DEFAULT_VOICES[provider].get(voice_gender, "")
         if not speaker:
