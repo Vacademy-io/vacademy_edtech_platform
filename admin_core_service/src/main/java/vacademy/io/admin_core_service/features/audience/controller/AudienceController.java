@@ -3,7 +3,11 @@ package vacademy.io.admin_core_service.features.audience.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.audience.dto.*;
@@ -24,6 +28,7 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * REST Controller for Audience Management
@@ -128,7 +133,9 @@ public class AudienceController {
     public ResponseEntity<String> createCampaign(
             @RequestBody AudienceDTO audienceDTO,
             @RequestAttribute("user") CustomUserDetails user) {
-        
+        // The list is created in the body's institute, so the caller must be staff there.
+        requireListStaff(user, audienceDTO.getInstituteId());
+
         // Set created by user
         if (audienceDTO.getCreatedByUserId() == null) {
             audienceDTO.setCreatedByUserId(user.getUserId());
@@ -233,10 +240,51 @@ public class AudienceController {
             descriptionExpr = "'deleted audience ' + @crmAuditNarrator.nameFromSnapshot(#before, #audienceId)")
     public ResponseEntity<String> deleteCampaign(
             @PathVariable String instituteId,
-            @PathVariable String audienceId) {
+            @PathVariable String audienceId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        // deleteCampaign only finds the list inside instituteId; this makes sure
+        // the caller is staff of that institute.
+        requireListStaff(user, instituteId);
 
         audienceService.deleteCampaign(audienceId, instituteId);
         return ResponseEntity.ok("Campaign deleted successfully");
+    }
+
+    private static final Set<String> LEARNER_ROLES = Set.of("STUDENT", "PARENT", "GUARDIAN");
+
+    /**
+     * Staff of {@code instituteId} may create or delete its lead lists.
+     *
+     * <p>With a clientId header (the dashboard's axios instance, ai_service) this is
+     * {@link InstituteAccessValidator#requireInstituteStaff}. The website builder posted its
+     * "new form" and "Freebies" lists with a bare Authorization header, and a tab opened on an
+     * older bundle still does; without the header the principal's authorities are empty, so for
+     * those calls the roles are read from the (already verified) JWT's entry for
+     * {@code instituteId}, under the same staff rule: no role there, or only a learner role
+     * without ADMIN / COUNSELLOR, is refused.
+     */
+    private void requireListStaff(CustomUserDetails user, String instituteId) {
+        if (StringUtils.hasText(currentClientIdHeader())) {
+            instituteAccessValidator.requireInstituteStaff(user, instituteId);
+            return;
+        }
+        if (user == null || !StringUtils.hasText(instituteId)) {
+            throw new ForbiddenException("Access denied: user does not belong to institute " + instituteId);
+        }
+        Set<String> roles = audienceRoleAccessService.currentRequestRoles(instituteId);
+        boolean learnerOnly = roles.stream().anyMatch(LEARNER_ROLES::contains)
+                && !roles.contains("ADMIN") && !roles.contains("COUNSELLOR");
+        if (roles.isEmpty() || learnerOnly) {
+            throw new ForbiddenException("Access denied: staff role required");
+        }
+    }
+
+    private static String currentClientIdHeader() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        if (attributes instanceof ServletRequestAttributes servletAttributes) {
+            return servletAttributes.getRequest().getHeader("clientId");
+        }
+        return null;
     }
 
     /**
