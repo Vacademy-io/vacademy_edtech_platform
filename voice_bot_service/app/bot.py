@@ -4505,6 +4505,12 @@ class SentinelGate(FrameProcessor):
         self._buffer = ""          # marker hold-back across token chunks
         self._utterance = ""       # current assistant utterance (one transcript entry)
         self._raw_reply = ""       # the model's text for this response, unfiltered (replay)
+        # Text after <<END_CALL>> in this response: scanned for markers, never
+        # spoken (None until the marker arrives). gemma4 writes a disposition
+        # after it — "<<END_CALL>>\n\nOutcome: Bio_Data_Committed" — and the
+        # voice read it to the caller, twice (call 761a58c0, 2026-10-27).
+        self._post_end: Optional[str] = None
+        self._unspoken_after_end = ""
         self._spoke_this_response = False
         self._response_active = False  # LLM tokens still streaming for this response
         # A2 shield: a barge-in DURING streaming cancels the LLM task, but its
@@ -4583,6 +4589,8 @@ class SentinelGate(FrameProcessor):
             # Stale hold-back/utterance from the aborted response must not bleed
             # into the next one (deep-review B6).
             self._buffer = ""
+            self._post_end = None
+            self._unspoken_after_end = ""
             self._response_active = False
             # Disarm the audio-stall stamp. It is otherwise cleared ONLY on a
             # bot-speaking transition (set_bot_speaking), so a reply killed
@@ -4600,6 +4608,8 @@ class SentinelGate(FrameProcessor):
         if isinstance(frame, LLMFullResponseStartFrame):
             self._on_reply_start()
             self._raw_reply = ""
+            self._post_end = None
+            self._unspoken_after_end = ""
             # A bot generating a fresh reply is NOT closing. Live call ee8e2168:
             # the bot said goodbye, the caller re-engaged with "Yes, I can", the
             # bot asked "May I know a convenient date and time?" — and the stale
@@ -4623,8 +4633,12 @@ class SentinelGate(FrameProcessor):
         if isinstance(frame, LLMTextFrame):
             self._on_activity(user=False)
             self._response_active = True
-            self._buffer += frame.text or ""
             self._raw_reply += frame.text or ""
+            if self._post_end is not None:
+                # The goodbye is over: after <<END_CALL>> only markers count.
+                self._post_end = self._scan_after_end(self._post_end + (frame.text or ""))
+                return
+            self._buffer += frame.text or ""
             if "<" in self._buffer:
                 self._buffer = _canonical_markers(self._buffer)
                 if "<tool_call>" in self._buffer and "</tool_call>" in self._buffer:
@@ -4639,7 +4653,8 @@ class SentinelGate(FrameProcessor):
                 # this response ENDS — a marker seen mid-stream must not make a
                 # later, unrelated response close the call.
                 self._end_this_response = True
-                self._buffer = self._buffer.replace(END_MARKER, "")
+                self._buffer, _, tail = self._buffer.partition(END_MARKER)
+                self._post_end = self._scan_after_end(tail)
             if SEND_MARKER_OPEN in self._buffer:
                 self._buffer = self._extract_sends(self._buffer)
             emit, self._buffer = self._split_safe(self._buffer)
@@ -4654,6 +4669,13 @@ class SentinelGate(FrameProcessor):
             if _rp is not None and self._raw_reply.strip():
                 _rp["replies"].append([round(time.time() - self._outcome.connected_at, 2),
                                        self._raw_reply.strip()[:600]])
+            if self._post_end is not None:
+                if self._unspoken_after_end.strip():
+                    logger.info("sentinel: not speaking what the model wrote after "
+                                "<<END_CALL>> %r corr=%s",
+                                self._unspoken_after_end.strip()[:80], self._outcome.corr)
+                self._post_end = None
+                self._unspoken_after_end = ""
             # A leftover hold-back can only be a partial marker prefix (e.g. a
             # max_tokens cutoff mid-"<<END_CA") — never speak it; treat a partial
             # END prefix as intent to end so the call can't stall.
@@ -4798,6 +4820,21 @@ class SentinelGate(FrameProcessor):
             logger.warning("handoff registration timed out corr=%s", self._outcome.corr)
             registered = None
         self._outcome.transfer_registered = registered is not None
+
+    def _scan_after_end(self, text: str) -> str:
+        """Text after <<END_CALL>>: fire its markers, speak none of it. Returns
+        only a trailing partial marker, kept for the next chunk."""
+        if "<" in text:
+            text = _canonical_markers(text)
+        if TRANSFER_MARKER in text:
+            self._outcome.transfer_requested = True
+            text = text.replace(TRANSFER_MARKER, "")
+        text = text.replace(END_MARKER, "")
+        if SEND_MARKER_OPEN in text:
+            text = self._extract_sends(text)
+        unspoken, keep = self._split_safe(text)
+        self._unspoken_after_end += unspoken
+        return keep
 
     def _extract_sends(self, buffer: str) -> str:
         """Strip every COMPLETE send marker and fire it; leave a partial one in place.

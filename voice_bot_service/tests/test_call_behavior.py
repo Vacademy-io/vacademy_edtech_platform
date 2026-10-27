@@ -3491,6 +3491,87 @@ async def test_single_bracket_send_fires_and_is_never_spoken():
     assert "भेज दूँ?" in spoken and "ठीक है।" in spoken
 
 
+async def _spoken_by_sentinel(chunks, transcript=True):
+    """(spoken text, outcome, sends) for one streamed reply."""
+    from pipecat.frames.frames import (LLMFullResponseStartFrame, LLMFullResponseEndFrame,
+                                       LLMTextFrame, TTSSpeakFrame)
+    sent, out = [], []
+    o = FakeOutcome()
+    if transcript:
+        o.transcript = [{"role": "user", "text": "हाँ"}]
+    sg = b.SentinelGate(o, lambda user=True: None, lambda s: None, on_send=sent.append,
+                        end_closing="धन्यवाद, आपका दिन शुभ हो!")
+
+    async def _push(frame, direction=None):
+        if isinstance(frame, (LLMTextFrame, TTSSpeakFrame)) and frame.text:
+            out.append(frame.text)
+    sg.push_frame = _push
+    b.FrameProcessor.process_frame = _noop_super
+    d = b.FrameDirection.DOWNSTREAM
+    await sg.process_frame(LLMFullResponseStartFrame(), d)
+    for chunk in chunks:
+        await sg.process_frame(LLMTextFrame(chunk), d)
+    await sg.process_frame(LLMFullResponseEndFrame(), d)
+    return "".join(out), o, sent
+
+
+@pytest.mark.asyncio
+async def test_nothing_after_the_end_marker_is_spoken():
+    """Call 761a58c0 (2026-10-27, gemma4): "बहुत धन्यवाद। आपका दिन शुभ हो।
+    <<END_CALL>>\\n\\nOutcome: Bio_Data_Committed" — the marker was stripped and
+    the disposition after it went to the voice; the caller heard "Outcome: Bio
+    Data Committed" twice. ba62cb38 the same day: "Interest: Demo_Booked"."""
+    spoken, o, _ = await _spoken_by_sentinel(
+        ["बहुत धन्यवाद। आपका दिन शुभ हो। <<END", "_CALL>>\n\nOutcome: Bio_", "Data_Committed"])
+    assert spoken.strip() == "बहुत धन्यवाद। आपका दिन शुभ हो।", spoken
+    assert o.end_requested is True
+    spoken, o, _ = await _spoken_by_sentinel(
+        ["धन्यवाद राहुल जी। Thank you! <<END_CALL>>\n\nInterest: Demo_Booked"])
+    assert "Interest" not in spoken and "Demo" not in spoken, spoken
+    assert o.end_requested is True
+
+
+@pytest.mark.asyncio
+async def test_markers_after_the_end_marker_still_fire():
+    spoken, o, sent = await _spoken_by_sentinel(
+        ["ठीक है, धन्यवाद। <<END_CALL>> <<SEND:bro", "chure>> Outcome: Sent"])
+    assert sent == ["brochure"], sent
+    assert spoken.strip() == "ठीक है, धन्यवाद।", spoken
+    spoken, o, _ = await _spoken_by_sentinel(["<<END_CALL>> <<TRANSFER>>"])
+    assert o.transfer_requested is True
+
+
+@pytest.mark.asyncio
+async def test_a_marker_first_reply_still_says_goodbye():
+    """Nothing before the marker: the agent's closing line is spoken, not the
+    disposition the model wrote after it."""
+    spoken, o, _ = await _spoken_by_sentinel(["<<END_CALL>>\nOutcome: Not_Interested"])
+    assert spoken == "धन्यवाद, आपका दिन शुभ हो!", spoken
+    assert o.end_requested is True
+
+
+@pytest.mark.asyncio
+async def test_the_after_end_mute_does_not_outlive_its_reply():
+    from pipecat.frames.frames import (LLMFullResponseStartFrame, LLMFullResponseEndFrame,
+                                       LLMTextFrame, InterruptionFrame)
+    out = []
+    sg = b.SentinelGate(FakeOutcome(), lambda user=True: None, lambda s: None)
+
+    async def _push(frame, direction=None):
+        if isinstance(frame, LLMTextFrame) and frame.text:
+            out.append(frame.text)
+    sg.push_frame = _push
+    b.FrameProcessor.process_frame = _noop_super
+    d = b.FrameDirection.DOWNSTREAM
+    await sg.process_frame(LLMFullResponseStartFrame(), d)
+    await sg.process_frame(LLMTextFrame("धन्यवाद। <<END_CALL>> Outcome:"), d)
+    await sg.process_frame(InterruptionFrame(), d)          # the caller cut in mid-stream
+    await sg.process_frame(LLMFullResponseStartFrame(), d)
+    await sg.process_frame(LLMTextFrame("जी, बताइए।"), d)
+    await sg.process_frame(LLMFullResponseEndFrame(), d)
+    assert "".join(out).endswith("जी, बताइए।"), out
+
+
 # ── Bedrock (Mumbai) LLM POC, 2026-09-10 ───────────────────────────────────────
 # pipecat's stock AWSBedrockLLMService opens a NEW aiobotocore client inside
 # every generation: measured 2.0-2.2s per turn on the box vs 0.2-0.4s with one
