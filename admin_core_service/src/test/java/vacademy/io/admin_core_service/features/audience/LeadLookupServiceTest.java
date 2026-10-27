@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -72,7 +74,7 @@ class LeadLookupServiceTest {
         caller = mock(CustomUserDetails.class);
         when(caller.getUserId()).thenReturn(CALLER);
         when(scope.scopedCounsellorUserIds(INSTITUTE, CALLER)).thenReturn(List.of(CALLER));
-        when(responses.lookupMatchingResponseIds(anyString(), anyString(), any(), any(), eq(false)))
+        when(responses.lookupMatchingResponseIds(anyString(), anyString(), any(), any(), eq(false), any()))
                 .thenReturn(List.of("resp-1"));
         when(followUps.findByAudienceResponseIdInOrderByScheduleTimeDesc(anyList()))
                 .thenReturn(List.of(followUp()));
@@ -162,6 +164,42 @@ class LeadLookupServiceTest {
         assertEquals("PENDING", service.lookup(INSTITUTE, PHONE, null, null, caller).getStage());
     }
 
+    /**
+     * The searched number is someone's profile (login) number but none of their enquiries
+     * here: those people are passed to the lookup, after an exact re-check of the
+     * substring auth search (a longer number that merely contains it is dropped).
+     */
+    @Test
+    void profileNumberPassesOnlyExactProfileMatches() {
+        lead(OTHER, "NEW", "LEAD", "NONE");
+        when(authService.searchUserIdsByQuery(PHONE, null)).thenReturn(List.of("user-exact", "user-longer"));
+        UserDTO exact = new UserDTO();
+        exact.setId("user-exact");
+        exact.setMobileNumber("+91 98765 43210");
+        UserDTO longer = new UserDTO();
+        longer.setId("user-longer");
+        longer.setMobileNumber("98765432109");
+        when(authService.getUsersFromAuthServiceByUserIds(argThat(ids -> ids != null && ids.contains("user-exact"))))
+                .thenReturn(List.of(exact, longer));
+
+        service.lookup(INSTITUTE, PHONE, null, null, caller);
+
+        verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(),
+                eq("user-exact"));
+    }
+
+    /** Auth search down: the lookup still runs on enquiry numbers, exactly as before. */
+    @Test
+    void profileLookupFailureKeepsTheEnquiryMatch() {
+        lead(OTHER, "NEW", "LEAD", "NONE");
+        when(authService.searchUserIdsByQuery(PHONE, null)).thenThrow(new RuntimeException("auth down"));
+
+        LeadLookupResultDto result = service.lookup(INSTITUTE, PHONE, null, null, caller);
+
+        assertTrue(result.isFound());
+        verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(), isNull());
+    }
+
     private void lead(String assignee, String statusKey, String conversion, String enrolment) {
         AudienceResponseRepository.LeadLookupRow row = mock(AudienceResponseRepository.LeadLookupRow.class);
         when(row.getResponseId()).thenReturn("resp-1");
@@ -178,7 +216,7 @@ class LeadLookupServiceTest {
         when(row.getBranchValue()).thenReturn("Pune");
         when(row.getInterestLevel()).thenReturn("Hot");
         when(row.getCreatedAt()).thenReturn(Timestamp.valueOf("2026-10-01 09:00:00"));
-        when(responses.lookupByPhoneOrEmail(anyString(), anyString(), any(), any(), any(), any()))
+        when(responses.lookupByPhoneOrEmail(anyString(), anyString(), any(), any(), any(), any(), any()))
                 .thenReturn(Optional.of(row));
     }
 

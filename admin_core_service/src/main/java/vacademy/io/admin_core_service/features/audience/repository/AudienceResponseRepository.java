@@ -3317,6 +3317,10 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * A duplicate enquiry is never the answer itself, but when it is the one that
          * matches (a repeat that came with a new phone or email) the lead it repeats is:
          * the new number lives only on the duplicate row.
+         *
+         * {@code profileUserIdsCsv}: people whose own profile phone or email is the one
+         * searched (it can differ from every enquiry of theirs here); their enquiries are
+         * candidates too, ranked after a lead whose enquiry itself matches.
          */
         @Query(value = """
                             WITH matched AS (
@@ -3336,11 +3340,23 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                            AND LOWER(TRIM(m.parent_name)) = LOWER(TRIM(CAST(:name AS text))))
                                      )
                             ),
-                            targets AS (
+                            direct AS (
                                    SELECT id FROM matched
                                    UNION
                                    SELECT primary_response_id FROM matched
                                    WHERE matched.is_duplicate = true AND matched.primary_response_id IS NOT NULL
+                            ),
+                            by_profile AS (
+                                   SELECT p.id FROM audience_response p
+                                   JOIN audience pa ON pa.id = p.audience_id
+                                   WHERE pa.institute_id = :instituteId
+                                     AND CAST(:profileUserIds AS text) IS NOT NULL
+                                     AND p.user_id = ANY(STRING_TO_ARRAY(CAST(:profileUserIds AS text), ','))
+                            ),
+                            targets AS (
+                                   SELECT id FROM direct
+                                   UNION
+                                   SELECT id FROM by_profile
                             )
                             SELECT ar.id                     AS "responseId",
                                    ar.user_id                AS "userId",
@@ -3395,7 +3411,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE a.institute_id = :instituteId
                               AND ar.id = ANY(ARRAY(SELECT id FROM targets))
                               AND (ar.is_duplicate IS NULL OR ar.is_duplicate = false)
-                            ORDER BY (ar.audience_status = 'ACTIVE') DESC,
+                            ORDER BY (ar.id = ANY(ARRAY(SELECT id FROM direct))) DESC,
+                                     (ar.audience_status = 'ACTIVE') DESC,
                                      (COALESCE(ulp.assigned_counselor_id, '') <> '') DESC,
                                      ar.submitted_at DESC NULLS LAST, ar.created_at DESC
                             LIMIT 1
@@ -3406,7 +3423,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("email") String email,
                         @Param("name") String name,
                         @Param("courseFieldId") String courseFieldId,
-                        @Param("branchFieldId") String branchFieldId);
+                        @Param("branchFieldId") String branchFieldId,
+                        @Param("profileUserIds") String profileUserIdsCsv);
 
         /**
          * Every enquiry by the same person as {@link #lookupByPhoneOrEmail}, same
@@ -3435,11 +3453,23 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                            AND LOWER(TRIM(m.parent_name)) = LOWER(TRIM(CAST(:name AS text))))
                                      )
                             ),
-                            targets AS (
+                            direct AS (
                                    SELECT id FROM matched
                                    UNION
                                    SELECT primary_response_id FROM matched
                                    WHERE matched.is_duplicate = true AND matched.primary_response_id IS NOT NULL
+                            ),
+                            by_profile AS (
+                                   SELECT p.id FROM audience_response p
+                                   JOIN audience pa ON pa.id = p.audience_id
+                                   WHERE pa.institute_id = :instituteId
+                                     AND CAST(:profileUserIds AS text) IS NOT NULL
+                                     AND p.user_id = ANY(STRING_TO_ARRAY(CAST(:profileUserIds AS text), ','))
+                            ),
+                            targets AS (
+                                   SELECT id FROM direct
+                                   UNION
+                                   SELECT id FROM by_profile
                             )
                             SELECT ar.id FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
@@ -3455,7 +3485,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("last10") String last10,
                         @Param("email") String email,
                         @Param("name") String name,
-                        @Param("includeDuplicates") Boolean includeDuplicates);
+                        @Param("includeDuplicates") Boolean includeDuplicates,
+                        @Param("profileUserIds") String profileUserIdsCsv);
 
         /**
          * Projection for {@link #lookupByPhoneOrEmail}.
