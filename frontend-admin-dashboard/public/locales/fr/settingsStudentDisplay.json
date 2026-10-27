@@ -86,7 +86,7 @@
         "presentationPage": "page (accéder à /login)",
         "presentationModal": "fenêtre modale (ouverture sur place)",
         "loginPageAsModal": "Ouvrir la page de connexion en fenêtre modale",
-        "loginPageAsModalHint": "Activé : /login affiche la fenêtre Créer un compte (avec Se connecter en dessous) au lieu de la page de connexion complète."
+        "loginPageAsModalHint": "Activé : /login ouvre la fenêtre Se connecter (avec S'inscrire à l'intérieur) par-dessus le site au lieu de la page de connexion complète."
     },
     "courseSettings": {
         "cardTitle": "Paramètres des cours",

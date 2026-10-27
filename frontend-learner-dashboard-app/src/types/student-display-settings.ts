@@ -110,8 +110,8 @@ export interface StudentSignupSettings {
   passwordStrategy: PasswordStrategy;
   passwordDelivery: PasswordDelivery;
   presentation?: StudentAuthPresentation;
-  // /login opens the AuthModal (signup first, Sign in below) instead of the
-  // full login page. Default: false.
+  // /login opens the AuthModal (Sign in first, Sign up one tap away) instead
+  // of the full login page. Default: false.
   loginPageAsModal?: boolean;
 }
 

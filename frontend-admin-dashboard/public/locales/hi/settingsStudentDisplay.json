@@ -86,7 +86,7 @@
         "presentationPage": "पेज (/login पर जाएं)",
         "presentationModal": "मोडल (उसी स्थान पर खुले)",
         "loginPageAsModal": "लॉगिन पेज को पॉपअप में खोलें",
-        "loginPageAsModalHint": "चालू: /login पर पूरे लॉगिन पेज की जगह अकाउंट बनाएं पॉपअप (नीचे साइन इन के साथ) दिखेगा।"
+        "loginPageAsModalHint": "चालू: /login पर पूरे लॉगिन पेज की जगह साइट के ऊपर साइन इन पॉपअप (अंदर साइन अप के साथ) खुलेगा।"
     },
     "courseSettings": {
         "cardTitle": "कोर्स सेटिंग्स",
