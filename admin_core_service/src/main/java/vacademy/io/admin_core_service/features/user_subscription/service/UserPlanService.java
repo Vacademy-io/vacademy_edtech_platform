@@ -1688,14 +1688,27 @@ public class UserPlanService {
                 continue;
             }
 
-            newMappings.add(
+            StudentSessionInstituteGroupMapping invitedMapping =
                     StudentSessionInstituteGroupMapping.createInvitedMappingFromTerminated(
                             mapping,
                             invitedSession,
                             activePackageSession,
                             LearnerSessionSourceEnum.TERMINATED.name(),
                             LearnerSessionTypeEnum.PACKAGE_SESSION.name(),
-                            LearnerSessionStatusEnum.INVITED.name()));
+                            LearnerSessionStatusEnum.INVITED.name());
+            // A learner removed from this course before, then re-enrolled, still has the INVITED
+            // row from that first removal. Inserting a second one trips uq_dest_pkg_inst_user_status
+            // and rolls back the whole removal, so refresh the existing row instead.
+            if (mapping.getInstitute() != null) {
+                studentSessionRepository.findCollidingMapping(activePackageSession.getId(),
+                                invitedSession.getId(), mapping.getInstitute().getId(), mapping.getUserId(),
+                                LearnerSessionStatusEnum.INVITED.name())
+                        .ifPresent(existing -> {
+                            invitedMapping.setId(existing.getId());
+                            invitedMapping.setCreatedAt(existing.getCreatedAt());
+                        });
+            }
+            newMappings.add(invitedMapping);
         }
 
         // Bulk delete + bulk insert
