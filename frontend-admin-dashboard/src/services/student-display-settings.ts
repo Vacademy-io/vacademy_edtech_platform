@@ -416,6 +416,9 @@ function mergeWithDefaults(
             },
         },
         postLoginRedirectRoute: incoming?.postLoginRedirectRoute ?? d.postLoginRedirectRoute,
+        // Sparse on purpose: an absent layout field means the learner app's
+        // current behaviour, so never fill it in with defaults here.
+        ...(incoming?.layout ? { layout: incoming.layout } : {}),
     };
 
     // Sort

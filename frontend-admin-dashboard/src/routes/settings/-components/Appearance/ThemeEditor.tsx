@@ -15,6 +15,7 @@ import { getThemeRoleSettings, saveThemeRoleSettings } from '@/services/theme-ro
 import { getStudentDisplaySettings } from '@/services/student-display-settings';
 import type {
     NavRoleColors,
+    ThemeRoleSettings,
     StudentUiType,
     UiCorners,
     UiDensity,
@@ -242,7 +243,22 @@ const isBackgroundTooDark = (hex: string): boolean => {
  * settings. Rendered by Settings > Appearance and (via a button) from the
  * profile dialog.
  */
-export const ThemeEditor = ({ onSaved }: { onSaved?: () => void }) => {
+/** Unsaved theme, for the Student Display live preview. */
+export interface ThemeEditorDraft {
+    /** THEME_SETTING data exactly as Save would write it. */
+    theme: ThemeRoleSettings;
+    /** institute_theme_code as Save would write it (preset code or #hex). */
+    brand: string;
+}
+
+export const ThemeEditor = ({
+    onSaved,
+    onDraftChange,
+}: {
+    onSaved?: () => void;
+    /** Called with the unsaved theme after hydration and on every change. */
+    onDraftChange?: (draft: ThemeEditorDraft) => void;
+}) => {
     const { t } = useTranslation('settingsThemeEditor');
     const queryClient = useQueryClient();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
@@ -268,6 +284,9 @@ export const ThemeEditor = ({ onSaved }: { onSaved?: () => void }) => {
     // re-render or re-trigger the hydration effect.
     const legacySkinRef = useRef<StudentUiType | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    // Drafts are only reported once the saved theme has loaded, so the live
+    // preview never flashes the editor's built-in defaults.
+    const [hydrated, setHydrated] = useState(false);
 
     // Hydrate from the saved brand code + THEME_SETTING on mount.
     useEffect(() => {
@@ -291,6 +310,7 @@ export const ThemeEditor = ({ onSaved }: { onSaved?: () => void }) => {
             getStudentDisplaySettings().catch(() => null),
         ]).then(([saved, legacy]) => {
             if (cancelled) return;
+            setHydrated(true);
             legacySkinRef.current = legacy?.ui?.type ?? null;
             setSecondaryOverride(saved?.roles?.secondary ?? null);
             setTertiaryOverride(saved?.roles?.tertiary ?? null);
@@ -353,23 +373,22 @@ export const ThemeEditor = ({ onSaved }: { onSaved?: () => void }) => {
         }
     };
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            const brandHex = getPrimaryColorCode();
-            const brandCode =
-                selectedTheme === CUSTOM_THEME_ID
-                    ? (customBrandHex ?? brandHex)
-                    : selectedTheme;
+    // The theme exactly as Save writes it — shared by Save and the live preview.
+    const buildDraft = (): ThemeEditorDraft => {
+        const brandHex = getPrimaryColorCode();
+        const brandCode =
+            selectedTheme === CUSTOM_THEME_ID ? (customBrandHex ?? brandHex) : selectedTheme;
 
-            const nav =
-                selectedNavPresetId === CUSTOM_NAV_ID
-                    ? (customNav ?? buildDefaultCustomNav(brandHex))
-                    : (navPresets.find((p) => p.id === selectedNavPresetId) ?? navPresets[0]!).build(
-                          brandHex
-                      );
+        const nav =
+            selectedNavPresetId === CUSTOM_NAV_ID
+                ? (customNav ?? buildDefaultCustomNav(brandHex))
+                : (navPresets.find((p) => p.id === selectedNavPresetId) ?? navPresets[0]!).build(
+                      brandHex
+                  );
 
-            await saveThemeRoleSettings({
+        return {
+            brand: brandCode,
+            theme: {
                 version: 3,
                 mode: selectedNavPresetId === CUSTOM_NAV_ID ? 'custom' : nav ? 'preset' : 'legacy',
                 roles: {
@@ -387,7 +406,35 @@ export const ThemeEditor = ({ onSaved }: { onSaved?: () => void }) => {
                     gradient,
                     skin,
                 },
-            });
+            },
+        };
+    };
+
+    useEffect(() => {
+        if (hydrated && onDraftChange) onDraftChange(buildDraft());
+        // buildDraft reads exactly these values.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        hydrated,
+        selectedTheme,
+        customBrandHex,
+        selectedNavPresetId,
+        customNav,
+        secondaryOverride,
+        tertiaryOverride,
+        backgroundOverride,
+        fontFamily,
+        density,
+        corners,
+        gradient,
+        skin,
+    ]);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const { brand: brandCode, theme } = buildDraft();
+            await saveThemeRoleSettings(theme);
 
             // Persist the brand code onto the institute record — what every
             // other admin and every learner reads. Build the full update payload
