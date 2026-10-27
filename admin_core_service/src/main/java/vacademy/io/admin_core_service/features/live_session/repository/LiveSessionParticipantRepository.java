@@ -566,7 +566,7 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
      * engagement JSON and session timezone the tab needs to score each class and to drop the
      * ones that have not started yet.
      *
-     * <p>{@code batchId} (optional) narrows to that batch's classes only — sessions the learner was
+     * <p>{@code batchId} (optional) narrows to the classes of that batch only — sessions the learner was
      * added to individually belong to no batch, so they appear only when it is null.
      */
     @Query(value = """
@@ -623,10 +623,10 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
 
     /**
      * Upcoming (and in-progress) class occurrences for one learner — individually added, or via a
-     * batch they are ACTIVELY enrolled in (an expired batch's future classes are not theirs to
-     * join). Starts a day back so a class running past midnight in its own timezone is still
+     * batch they are ACTIVELY enrolled in (future classes of an expired batch are not theirs
+     * to join). Starts a day back so a class running past midnight in its own timezone is still
      * returned; the caller drops the ones that have already ended. Session status mirrors the
-     * learner portal's own upcoming list (DRAFT and LIVE). {@code batchId} narrows as in
+     * upcoming list of the learner portal (DRAFT and LIVE). {@code batchId} narrows as in
      * {@link #findLearnerLiveClasses}.
      */
     @Query(value = """
