@@ -92,7 +92,8 @@
             "followUpMode": "Mode de suivi",
             "nextAction": "Action suivante",
             "activityNotes": "Activité et notes",
-            "leadJourney": "Parcours du prospect (disposition et notes)"
+            "leadJourney": "Parcours du prospect (disposition et notes)",
+            "followUpHistory": "Historique des relances"
         },
         "progress": "Export des suivis… {{done}} sur {{total}}",
         "done_one": "{{count}} suivi exporté",

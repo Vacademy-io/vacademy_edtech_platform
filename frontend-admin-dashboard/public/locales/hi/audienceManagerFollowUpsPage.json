@@ -84,7 +84,8 @@
             "followUpMode": "फ़ॉलो-अप माध्यम",
             "nextAction": "अगला कदम",
             "activityNotes": "गतिविधि और नोट्स",
-            "leadJourney": "लीड यात्रा (निपटान व नोट्स)"
+            "leadJourney": "लीड यात्रा (निपटान व नोट्स)",
+            "followUpHistory": "फ़ॉलो-अप इतिहास"
         },
         "progress": "फ़ॉलो-अप एक्सपोर्ट हो रहे हैं… {{total}} में से {{done}}",
         "done_one": "{{count}} फ़ॉलो-अप एक्सपोर्ट हुआ",

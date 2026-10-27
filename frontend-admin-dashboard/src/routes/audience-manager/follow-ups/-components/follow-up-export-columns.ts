@@ -14,16 +14,21 @@
  *
  * Activity & Notes and the lead journey are the same two columns the Recent Leads
  * export carries: what the table's Activity column shows, and the full history of
- * calls, notes and status changes behind it.
+ * calls, notes and status changes behind it. Follow-up history is every follow-up
+ * on the lead with what the counsellor wrote — leads migrated from an old CRM have
+ * no timeline at all, so for them it is the only place their notes are.
  */
 import {
+    fmtWhen,
     formatJourneyForExport,
     type JourneyEvent,
 } from '@/components/shared/leads/lead-journey-export';
+import { parseHtmlToString } from '@/lib/utils';
 import type { LatestNoteSummary } from '@/hooks/use-latest-notes-batch';
 import type { CustomFieldSetupItem } from '@/routes/audience-manager/list/-services/get-custom-field-setup';
 import type { RecentLeadDetail } from '@/routes/audience-manager/list/-services/get-recent-leads';
 import type { CompletedFollowUp } from '../-services/get-completed-follow-ups';
+import type { FollowUpHistoryItem } from '../-services/get-follow-up-history-batch';
 
 /**
  * Fields that already have a dedicated column. Matched on field_key, which is
@@ -75,12 +80,14 @@ export interface ExportColumnLabels {
     nextAction: string;
     activityNotes: string;
     leadJourney: string;
+    followUpHistory: string;
 }
 
 /** A lead's timeline, fetched per export page alongside the rows. */
 export interface ExportLeadActivity {
     notes?: LatestNoteSummary;
     journey?: JourneyEvent[];
+    followUps?: FollowUpHistoryItem[];
 }
 
 /** Column titles, in order: the fixed ones, then one per custom field. */
@@ -102,15 +109,56 @@ export const buildExportHeader = (
     labels.nextAction,
     labels.activityNotes,
     labels.leadJourney,
+    labels.followUpHistory,
     ...customFields.map((f) => f.label),
 ];
 
 const cell = (value: string | null | undefined): string => value ?? '';
 
-/** The Activity column's recent entries (latest first), one line each. */
+const plain = (raw: string | null | undefined): string => {
+    if (!raw) return '';
+    const text = /<\/?[a-z][^>]*>/i.test(raw) ? parseHtmlToString(raw) : raw;
+    return text.replace(/\s+/g, ' ').trim();
+};
+
+/** Old-CRM imports write 1970 for "no date"; a due date that old is no date. */
+const dueWhen = (iso: string | null | undefined): string =>
+    iso && new Date(iso).getFullYear() > 1971 ? fmtWhen(iso) : '';
+
+/**
+ * One line per follow-up, oldest first:
+ *   "2026-10-13 09:28 · due 2026-10-13 16:27 · COMPLETED: cnr | Response: CNR |
+ *    Mode: Telephonic Call | Next: Send Course Details | Closed: will let us know (Simran)"
+ */
+export const formatFollowUpHistory = (items: FollowUpHistoryItem[] | undefined): string =>
+    (items ?? [])
+        .map((f) => {
+            const body = [
+                plain(f.content),
+                f.student_response && `Response: ${f.student_response}`,
+                f.follow_up_mode && `Mode: ${f.follow_up_mode}`,
+                f.next_action && `Next: ${f.next_action}`,
+                f.closer_reason && `Closed: ${plain(f.closer_reason)}`,
+            ]
+                .filter(Boolean)
+                .join(' | ');
+            const due = dueWhen(f.schedule_time);
+            const who = f.created_by_name || f.closed_by_name;
+            return [
+                f.created_at ? fmtWhen(f.created_at) : '',
+                due && `due ${due}`,
+                `${f.status ?? ''}: ${body}${who ? ` (${who})` : ''}`,
+            ]
+                .filter(Boolean)
+                .join(' · ');
+        })
+        .join('\n');
+
+/** The Activity column's recent entries (latest first), the journey, the follow-ups. */
 const activityCells = (activity: ExportLeadActivity | undefined): string[] => [
     formatJourneyForExport(activity?.notes?.recent),
     formatJourneyForExport(activity?.journey),
+    formatFollowUpHistory(activity?.followUps),
 ];
 
 /** A lead row from the pending / overdue / today queues. */

@@ -456,6 +456,8 @@ export const CLOSE_LEAD_FOLLOWUP = (id: string) => `${FOLLOWUP_BASE}/${id}/close
 // Caller's own open follow-ups (no instituteId → backend scopes to created_by=caller).
 export const MY_PENDING_LEAD_FOLLOWUPS = `${FOLLOWUP_BASE}/my-pending`;
 export const COMPLETED_LEAD_FOLLOWUPS = `${FOLLOWUP_BASE}/completed`;
+// Every follow-up per lead, keyed by audience response id — the follow-ups CSV.
+export const LEAD_FOLLOWUP_HISTORY_BATCH = `${FOLLOWUP_BASE}/history-batch`;
 export const UPDATE_LEAD_FOLLOWUP = (id: string) => `${FOLLOWUP_BASE}/${id}`;
 /** "Is this phone / email already ours?" — see routes/audience-manager/lead-lookup. */
 export const LEAD_LOOKUP = `${BASE_URL}/admin-core-service/v1/lead-lookup`;

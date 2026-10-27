@@ -33,6 +33,10 @@ public class LeadFollowupDto {
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
+    /** Who booked / closed it, by name - hydrated only for the CSV's follow-up history. */
+    private String createdByName;
+    private String closedByName;
+
     /**
      * Lead display fields, hydrated from audience_response on the list paths
      * (the reminder feed needs a name to show) - null on every other endpoint.

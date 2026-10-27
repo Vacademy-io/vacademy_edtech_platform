@@ -17,6 +17,7 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin-core-service/v1/lead-followup")
@@ -110,6 +111,18 @@ public class LeadFollowupController {
                         q.getLeadStatusId(), q.getLeadStatusExcludeId(),
                         audienceIdsCsv, q.getUtmFilters(), q.getInterestLevels(),
                         PageRequest.of(page, size), Boolean.TRUE.equals(q.getIncludeLeadDetail())));
+    }
+
+    /**
+     * Every follow-up of each lead, keyed by audience response id - the follow-ups
+     * CSV's "Follow-up history" column. One call per export page, never per lead.
+     */
+    @PostMapping("/history-batch")
+    public ResponseEntity<Map<String, List<LeadFollowupDto>>> historyBatch(
+            @RequestParam("instituteId") String instituteId,
+            @RequestBody List<String> audienceResponseIds,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(leadFollowupService.historyBatch(instituteId, audienceResponseIds, user));
     }
 
     /** ISO-8601 instant from the browser, or null when the range is open-ended. */
