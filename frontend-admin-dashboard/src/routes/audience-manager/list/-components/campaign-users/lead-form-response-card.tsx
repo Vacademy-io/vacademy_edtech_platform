@@ -44,7 +44,11 @@ import {
 } from '@/components/shared/leads';
 import { cn } from '@/lib/utils';
 import { useLeadActionVisibility } from '@/lib/display-settings/lead-actions';
-import { EditFormResponseDialog, type FormResponseSaved } from './edit-form-response-dialog';
+import {
+    EditFormResponseDialog,
+    isPhoneField,
+    type FormResponseSaved,
+} from './edit-form-response-dialog';
 import type { StudentTable } from '@/types/student-table-types';
 
 export interface LeadResponseField {
@@ -56,19 +60,6 @@ export interface LeadResponseField {
 
 const isUrlValue = (value: string | null) =>
     !!value && (value.startsWith('http://') || value.startsWith('https://'));
-
-/**
- * Returns true when this form-response row holds the lead's phone number —
- * either by field type or by a name that looks like phone/mobile. We accept
- * the loose name match because campaign authors sometimes pick a generic
- * "text" field for the phone column.
- */
-const isPhoneField = (field: LeadResponseField): boolean => {
-    const fieldType = (field.type ?? '').toLowerCase().trim();
-    if (fieldType === 'phone' || fieldType === 'mobile' || fieldType === 'telephone') return true;
-    const n = (field.name ?? '').toLowerCase();
-    return /\bphone\b|\bmobile\b|\btelephone\b/.test(n);
-};
 
 interface CallAction {
     /** Called when the counsellor picks an ExoPhone and clicks "Call now". */
