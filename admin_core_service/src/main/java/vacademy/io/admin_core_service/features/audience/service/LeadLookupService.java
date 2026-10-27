@@ -57,6 +57,9 @@ public class LeadLookupService {
     private final AuthService authService;
     private final LeadDedupSettingService leadDedupSettingService;
 
+    /** Auth hits checked for an exact profile match; a full phone or email has a handful. */
+    private static final int PROFILE_MATCH_LIMIT = 50;
+
     public LeadLookupResultDto lookup(String instituteId, String phone, String email, String name,
                                       CustomUserDetails caller) {
         if (instituteId == null || instituteId.isBlank()) {
@@ -92,9 +95,10 @@ public class LeadLookupService {
             throw new VacademyException("Search by a full phone number, an email address or a full name");
         }
 
+        String profileUserIds = profileUserIdsCsv(last10, normalisedEmail);
         Optional<AudienceResponseRepository.LeadLookupRow> match = audienceResponseRepository
                 .lookupByPhoneOrEmail(instituteId, last10, normalisedEmail, normalisedName,
-                        settings.courseFieldId(), settings.branchFieldId());
+                        settings.courseFieldId(), settings.branchFieldId(), profileUserIds);
 
         if (match.isEmpty()) {
             return LeadLookupResultDto.builder().found(false).build();
@@ -109,7 +113,7 @@ public class LeadLookupService {
         boolean followUpsVisible = isAdmin || ownLead;
 
         List<LeadFollowup> followUps = followUpsVisible
-                ? followUpsFor(instituteId, last10, normalisedEmail, normalisedName)
+                ? followUpsFor(instituteId, last10, normalisedEmail, normalisedName, profileUserIds)
                 : List.of();
         Map<String, UserDTO> users = usersById(row, fields, followUps);
         UserDTO leadUser = row.getUserId() != null ? users.get(row.getUserId()) : null;
@@ -161,9 +165,11 @@ public class LeadLookupService {
         return result.build();
     }
 
-    private List<LeadFollowup> followUpsFor(String instituteId, String last10, String email, String name) {
+    private List<LeadFollowup> followUpsFor(String instituteId, String last10, String email, String name,
+                                            String profileUserIds) {
         List<String> responseIds = audienceResponseRepository
-                .lookupMatchingResponseIds(instituteId, last10, email, name, reattemptsFlagged(instituteId));
+                .lookupMatchingResponseIds(instituteId, last10, email, name, reattemptsFlagged(instituteId),
+                        profileUserIds);
         return responseIds.isEmpty()
                 ? List.of()
                 : leadFollowupRepository.findByAudienceResponseIdInOrderByScheduleTimeDesc(responseIds);
@@ -175,6 +181,40 @@ public class LeadLookupService {
             return leadDedupSettingService.get(instituteId).repeatLead().reattempt().markDuplicate();
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * People whose own profile phone or email is exactly the one searched, as a CSV for
+     * the lookup queries; null when there are none. The profile (auth user) number is
+     * what the institute's Contacts page and the lead profile show, and it can differ
+     * from every enquiry the person made here, so without this a number the counsellor
+     * can see on screen says "No lead found". The queries keep only people with an
+     * enquiry in this institute. Auth search is a substring match, so each hit is
+     * checked again for an exact phone (last 10 digits) or email. Never for a name.
+     * A failure means no profile matches, as before.
+     */
+    private String profileUserIdsCsv(String last10, String email) {
+        if (last10 == null && email == null) return null;
+        try {
+            Set<String> candidates = new HashSet<>();
+            if (last10 != null) candidates.addAll(authService.searchUserIdsByQuery(last10, null));
+            if (email != null) candidates.addAll(authService.searchUserIdsByQuery(email, null));
+            if (candidates.isEmpty()) return null;
+            List<String> exact = authService.getUsersFromAuthServiceByUserIds(
+                            candidates.stream().limit(PROFILE_MATCH_LIMIT).toList()).stream()
+                    .filter(Objects::nonNull)
+                    .filter(u -> !isBlank(u.getId()))
+                    .filter(u -> (last10 != null && last10.equals(lastTenDigits(u.getMobileNumber())))
+                            || (email != null && u.getEmail() != null
+                                && email.trim().equalsIgnoreCase(u.getEmail().trim())))
+                    .map(UserDTO::getId)
+                    .distinct()
+                    .toList();
+            return exact.isEmpty() ? null : String.join(",", exact);
+        } catch (Exception e) {
+            log.warn("[leadLookup] profile phone/email lookup failed: {}", e.getMessage());
+            return null;
         }
     }
 
