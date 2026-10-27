@@ -225,6 +225,7 @@ def _attach_minimal_state(pipeline, *, video_width: int, video_height: int) -> N
     pipeline._progress_callback = None
     pipeline._background_music_enabled_override = None
     pipeline._background_music_volume_override = None
+    pipeline._background_music_choice = None
     # Thread-safe token accounting. The per-shot path acquires
     # `_token_lock` after the LLM call to bump cumulative totals — these
     # are normally created in `pipeline.generate()`, which we don't call.

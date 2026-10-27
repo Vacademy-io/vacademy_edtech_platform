@@ -107,6 +107,9 @@ class LmsVideoRequest(BaseModel):
     subject: Optional[str] = Field(default=None, max_length=80)
     captions_enabled: bool = True
     background_music_enabled: Optional[bool] = None
+    # Built-in CC0 music: None = the institute's AI-video policy default (itself
+    # None = today's behaviour), "none", "auto" or a track id (music_library).
+    background_music: Optional[str] = Field(default=None, max_length=40)
     source_slide_ids: List[str] = Field(default_factory=list, max_length=MAX_SOURCE_SLIDES)
     reference_files: List[LmsReferenceFile] = Field(default_factory=list, max_length=MAX_REFERENCE_FILES)
     context: Optional[LmsContext] = None
@@ -283,6 +286,7 @@ def build_video_request(
         reference_files=[ReferenceFileItem(**rf.model_dump()) for rf in req.reference_files] or None,
         orientation=plan.orientation,
         background_music_enabled=req.background_music_enabled,
+        background_music=req.background_music,
         lesson=(LessonConfig(**plan.lesson) if plan.lesson is not None else None),
     )
 
@@ -647,6 +651,9 @@ async def generate_lms_video(
 
     # 1. Policy: enabled, quality, teacher, length.
     policy, _ = policy_svc.load_policy(db, inst)
+    if payload.background_music is None and policy.get("background_music"):
+        # The institute's default music, when the dialog did not choose.
+        payload = payload.model_copy(update={"background_music": policy["background_music"]})
     blocked = policy_svc.static_block(
         policy, quality=payload.quality, teacher_requested=plan.teacher_used, duration=plan.duration)
     if blocked:

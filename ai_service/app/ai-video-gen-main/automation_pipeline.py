@@ -103,6 +103,23 @@ def _reads_on_dark_board(hex_color: Optional[str]) -> bool:
     return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2] >= 0.2
 
 
+def _normalize_music_choice(value: Optional[str]) -> Optional[str]:
+    """background_music as music_library validates it; an unknown value is
+    dropped (logged) rather than failing the run — the request schema already
+    rejected it at the API, so this only guards older stored run requests."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        from app.services.music_library import normalize_choice
+    except ImportError:
+        return None
+    try:
+        return normalize_choice(value)
+    except ValueError as exc:
+        print(f"⚠️ background_music ignored: {exc}")
+        return None
+
+
 def _registry_llm_price(model: str) -> Optional[Tuple[float, float]]:
     """(input, output) USD per token from ai_models — the prices billing uses —
     for pricing LLM events in cost_breakdown.json. None when unknown."""
@@ -3342,10 +3359,54 @@ class VideoGenerationPipeline:
             and getattr(self, "_dialogue_mode", "storybook") == "drama"
         ):
             return False
+        choice = getattr(self, "_background_music_choice", None)
+        if choice == "none":
+            return False
+        if choice is not None:
+            return True  # a library track was asked for
         override = getattr(self, "_background_music_enabled_override", None)
         if override is not None:
             return bool(override)
         return bool(self._tier_config.get("background_music_enabled", False))
+
+    def _wants_generated_music(self) -> bool:
+        """Music on AND generated (Lyria) — not a library track, which needs
+        no Director music plan."""
+        return self._is_background_music_enabled() and getattr(self, "_background_music_choice", None) is None
+
+    def _library_music_track(self) -> Optional[Dict[str, Any]]:
+        """The timeline audio track for a library-music run, or None (not a
+        library run, or the catalogue is unavailable in this process)."""
+        choice = getattr(self, "_background_music_choice", None)
+        if choice in (None, "none"):
+            return None
+        try:
+            from app.services import music_library as _ml
+        except ImportError:
+            print("⚠️ Library music unavailable (app.services.music_library not importable) — shipping silent")
+            return None
+        try:
+            _mode = self._resolve_visual_style_mode()
+        except Exception:
+            _mode = "educational"
+        track = _ml.pick_track(choice, lesson=bool(getattr(self, "_lesson_plan", None)), style_mode=_mode)
+        if track is None:
+            return None
+        return {
+            "id": "background-music",
+            "label": f"Background Music ({track.mood}, CC0)",
+            "url": _ml.playable_url(track, _ml.head_ok),
+            "volume": self._effective_music_volume(),
+            "delay": 0.0,
+            "fadeIn": 2.0,
+            "fadeOut": 3.0,
+            "bpm": track.bpm,
+            "provider": "library:" + track.id,
+            # Library files are 2–3 min seamless loops; the render worker's
+            # fallback mix repeats a "loop" track (the audio mix pass already
+            # loops it with aloop when it bakes the music in).
+            "loop": True,
+        }
 
     def _resolve_stage_model(self, stage: str) -> Optional[str]:
         """Return the resolved model_id for a pipeline stage, or None.
@@ -4052,6 +4113,7 @@ class VideoGenerationPipeline:
         mute_tts_on_source_clips: bool = False,
         background_music_enabled: Optional[bool] = None,
         background_music_volume: Optional[float] = None,
+        background_music: Optional[str] = None,
         sub_shots_enabled: bool = False,
         dialogue_scenes_enabled: bool = False,
         dialogue_mode: str = "storybook",
@@ -4207,6 +4269,10 @@ class VideoGenerationPipeline:
         # Volume is only used when a track is actually generated.
         self._background_music_enabled_override: Optional[bool] = background_music_enabled
         self._background_music_volume_override: Optional[float] = background_music_volume
+        # Built-in CC0 library music (app/services/music_library.py): None =
+        # not asked (the Lyria / tier behaviour above, unchanged), "none" = no
+        # music at all, "auto" or a track id = a library loop instead of Lyria.
+        self._background_music_choice: Optional[str] = _normalize_music_choice(background_music)
         # Experimental: split dense shots into 2 focused sub-shots before HTML gen.
         # DIALOGUE_SCENE (storybook/drama) mode — characters speak on camera in
         # Seedance-generated clips, lip-synced to OUR per-character TTS lines
@@ -7048,10 +7114,20 @@ class VideoGenerationPipeline:
             _music_plan_to_use: Optional[Dict[str, Any]] = None
             if _director_plan and _director_plan.get("music_plan"):
                 _music_plan_to_use = _director_plan["music_plan"]
-            elif self._is_background_music_enabled() and _seg_audio_dur > 0:
+            elif self._wants_generated_music() and _seg_audio_dur > 0:
                 _music_plan_to_use = self._build_default_music_plan(float(_seg_audio_dur))
 
-            if (
+            _lib_track = (
+                self._library_music_track()
+                if content_type == "VIDEO" and _seg_audio_dur > 0 else None
+            )
+            if _lib_track:
+                self._background_music_track = _lib_track
+                print(f"🎼 Library music: {_lib_track['provider']} → {_lib_track['url']}")
+            elif getattr(self, "_background_music_choice", None) is not None:
+                print(f"ℹ️ Library music skipped (choice={self._background_music_choice}, "
+                      f"content_type={content_type}, audio_dur={_seg_audio_dur:.1f}s)")
+            elif (
                 self._is_background_music_enabled()
                 and content_type == "VIDEO"
                 and _music_plan_to_use
@@ -15820,7 +15896,7 @@ class VideoGenerationPipeline:
             valid_template_ids=_tmpl_valid_ids,
             subject_domain=((getattr(self, "_lesson_plan", None) or {}).get("subject") or None),
             lesson=getattr(self, "_lesson_plan", None),
-            include_music_plan=self._is_background_music_enabled(),
+            include_music_plan=self._wants_generated_music(),
             music_plan_target_duration_s=target_duration_s,
             temperature=tier_config.get("concept_temperature") or 0.6,
             verbalized_sampling=bool(tier_config.get("shot_planner_verbalized_sampling")),
@@ -16440,7 +16516,7 @@ class VideoGenerationPipeline:
             target_shot_duration_s=getattr(self, '_target_shot_duration_s', None),
             quality_tier=self._quality_tier,
             target_audience=target_audience,
-            include_music_plan=self._is_background_music_enabled(),
+            include_music_plan=self._wants_generated_music(),
             video_type=getattr(self, '_video_type', None),
             article_context=_article_context,
             available_screenshots=_available_screenshots,
@@ -16705,7 +16781,7 @@ class VideoGenerationPipeline:
                 print(f"   ⚠️ shot_template_registry unavailable for Director ({_e})")
         if self._tier_config.get("director_few_shot"):
             director_system = director_system + SUPER_ULTRA_DIRECTOR_EXTENSION
-        if self._is_background_music_enabled():
+        if self._wants_generated_music():
             director_system = director_system + MUSIC_PLAN_EXTENSION
         # AI video teaching block (Phase 3b) — only appended when AI video is
         # enabled for this run, keeping the Director prompt clean otherwise.

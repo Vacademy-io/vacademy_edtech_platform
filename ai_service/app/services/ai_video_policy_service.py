@@ -100,6 +100,12 @@ def normalize_policy(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
                 out["monthly_credit_cap"] = cap_f if cap_f >= 0 else None
             except (TypeError, ValueError):
                 out["monthly_credit_cap"] = None
+    if raw.get("background_music") is not None:
+        from .music_library import normalize_choice
+        try:
+            out["background_music"] = normalize_choice(raw.get("background_music"))
+        except ValueError:
+            out["background_music"] = None
     for k in POLICY_AUDIT_FIELDS:
         if raw.get(k) is not None:
             out[k] = raw[k]
@@ -107,7 +113,7 @@ def normalize_policy(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def public_policy(policy: Dict[str, Any]) -> Dict[str, Any]:
-    """The six policy fields only (what the LMS dialog sees — no audit notes)."""
+    """The policy fields only (what the LMS dialog sees — no audit notes)."""
     return {k: policy.get(k, DEFAULT_AI_VIDEO_POLICY[k]) for k in POLICY_FIELDS}
 
 

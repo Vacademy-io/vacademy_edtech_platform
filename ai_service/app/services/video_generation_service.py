@@ -1973,6 +1973,7 @@ class VideoGenerationService:
         mute_tts_on_source_clips: bool = False,
         background_music_enabled: Optional[bool] = None,
         background_music_volume: Optional[float] = None,
+        background_music: Optional[str] = None,
         sub_shots_enabled: bool = False,
         dialogue_scenes_enabled: bool = False,
         dialogue_mode: str = "storybook",
@@ -2238,6 +2239,8 @@ class VideoGenerationService:
                     gen_metadata["background_music_enabled"] = bool(background_music_enabled)
                 if background_music_volume is not None:
                     gen_metadata["background_music_volume"] = float(background_music_volume)
+                if background_music:
+                    gen_metadata["background_music"] = str(background_music)
                 if sub_shots_enabled:
                     gen_metadata["sub_shots_enabled"] = True
                 if dialogue_scenes_enabled:
@@ -2565,6 +2568,7 @@ class VideoGenerationService:
                             mute_tts_on_source_clips=mute_tts_on_source_clips,
                             background_music_enabled=background_music_enabled,
                             background_music_volume=background_music_volume,
+                            background_music=background_music,
                             sub_shots_enabled=sub_shots_enabled,
                             dialogue_scenes_enabled=dialogue_scenes_enabled,
                             dialogue_mode=dialogue_mode,
@@ -2749,6 +2753,7 @@ class VideoGenerationService:
         mute_tts_on_source_clips: bool = False,
         background_music_enabled: Optional[bool] = None,
         background_music_volume: Optional[float] = None,
+        background_music: Optional[str] = None,
         sub_shots_enabled: bool = False,
         dialogue_scenes_enabled: bool = False,
         dialogue_mode: str = "storybook",
@@ -3536,6 +3541,7 @@ class VideoGenerationService:
                     "sound_effects_enabled": sound_effects_enabled,
                     "background_music_enabled": background_music_enabled,
                     "background_music_volume": background_music_volume,
+                    "background_music": background_music,
                     "sub_shots_enabled": sub_shots_enabled,
                     "dialogue_scenes_enabled": dialogue_scenes_enabled,
                     "dialogue_mode": dialogue_mode,
@@ -4106,6 +4112,7 @@ class VideoGenerationService:
                     mute_tts_on_source_clips=mute_tts_on_source_clips,
                     background_music_enabled=background_music_enabled,
                     background_music_volume=background_music_volume,
+                    background_music=background_music,
                     sub_shots_enabled=sub_shots_enabled,
                     dialogue_scenes_enabled=dialogue_scenes_enabled,
                     dialogue_mode=dialogue_mode,

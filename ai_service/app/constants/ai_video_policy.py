@@ -23,9 +23,13 @@ DEFAULT_AI_VIDEO_POLICY: Dict[str, Any] = {
     "max_minutes_per_video": 8,
     "monthly_credit_cap": None,   # None = no cap
     "max_concurrent": 3,
+    # Built-in CC0 background music for LMS videos when the dialog does not
+    # choose (services/music_library.py): None = today's behaviour, "none",
+    # "auto" or a track id.
+    "background_music": None,
 }
 
-# The six policy fields, in display order. Audit fields (updated_by / updated_at /
+# The policy fields, in display order. Audit fields (updated_by / updated_at /
 # reason) are stored beside them in the same data blob.
 POLICY_FIELDS: Tuple[str, ...] = tuple(DEFAULT_AI_VIDEO_POLICY)
 POLICY_AUDIT_FIELDS: Tuple[str, ...] = ("updated_by", "updated_at", "reason")

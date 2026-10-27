@@ -44,7 +44,14 @@ class AiVideoPolicyUpdate(BaseModel):
     max_minutes_per_video: Optional[int] = Field(default=None, ge=1, le=30)
     monthly_credit_cap: Optional[float] = Field(default=None, ge=0)
     max_concurrent: Optional[int] = Field(default=None, ge=1, le=20)
+    background_music: Optional[str] = Field(default=None, max_length=40)
     reason: str = Field(..., max_length=500)
+
+    @field_validator("background_music")
+    @classmethod
+    def _music_choice(cls, v: Optional[str]) -> Optional[str]:
+        from ..services.music_library import normalize_choice
+        return normalize_choice(v)
 
     @field_validator("reason")
     @classmethod
@@ -56,13 +63,14 @@ class AiVideoPolicyUpdate(BaseModel):
 
     def changes(self) -> Dict[str, Any]:
         """Fields the caller sent. A null keeps the value, except
-        monthly_credit_cap, where an explicit null removes the cap."""
+        monthly_credit_cap (null removes the cap) and background_music (null
+        goes back to today's behaviour)."""
         out: Dict[str, Any] = {}
         for k in POLICY_FIELDS:
             if k not in self.model_fields_set:
                 continue
             v = getattr(self, k)
-            if v is None and k != "monthly_credit_cap":
+            if v is None and k not in ("monthly_credit_cap", "background_music"):
                 continue
             out[k] = v
         return out

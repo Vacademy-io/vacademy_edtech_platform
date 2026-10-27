@@ -135,7 +135,8 @@ def test_put_stores_the_policy_beside_other_settings(portal):
     p = body["policy"]
     assert {k: p[k] for k in DEFAULT_AI_VIDEO_POLICY} == {
         "enabled": True, "allowed_qualities": ["standard", "premium"], "teacher_allowed": False,
-        "max_minutes_per_video": 5, "monthly_credit_cap": 2000.0, "max_concurrent": 2}
+        "max_minutes_per_video": 5, "monthly_credit_cap": 2000.0, "max_concurrent": 2,
+        "background_music": None}  # not sent → today's behaviour
     assert p["updated_by"] == OPS and p["reason"] == "Pilot limits" and p["updated_at"]
     stored = db.setting()
     assert stored["VIDEO_BRANDING"]["data"] == {"x": 1}                    # untouched

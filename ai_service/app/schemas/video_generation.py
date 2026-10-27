@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from typing import Optional, Dict, Any, List, Literal
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 _log = logging.getLogger(__name__)
 
@@ -680,6 +680,23 @@ class VideoGenerationRequest(BaseModel):
             "generation via the audio-tracks UI."
         )
     )
+    background_music: Optional[str] = Field(
+        default=None,
+        description=(
+            "Built-in background music (CC0 library, no Lyria). Omitted = today's "
+            "behaviour (background_music_enabled / tier default). 'none' = no music. "
+            "'auto' = a library track picked by tone (calm piano for lessons, bright "
+            "e-piano for promos, a steady explainer pulse otherwise). Or a track id: "
+            "calm_v1, calm_v3, warm_v2, explainer_v2, explainer_v3, bright_v1. The track "
+            "loops to length, fades, and ducks under the narration."
+        ),
+    )
+
+    @field_validator("background_music")
+    @classmethod
+    def _check_background_music(cls, v: Optional[str]) -> Optional[str]:
+        from ..services.music_library import normalize_choice
+        return normalize_choice(v)
     sub_shots_enabled: bool = Field(
         default=False,
         description=(
