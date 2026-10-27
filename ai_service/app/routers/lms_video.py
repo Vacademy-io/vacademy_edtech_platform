@@ -860,7 +860,7 @@ def render_state(video_id: str, institute_id: str, record: Any, db: Session) -> 
         if not meta.get("render_job_id"):
             return {"status": "none", "progress": 0.0, "video_url": None, "error": None, "updated_at": None}
     state, _ = ext.render_state_with_watchdog(
-        video_id, institute_id, record, db, job_id=meta.get("render_job_id"), refund=False)
+        video_id, institute_id, record, db, job_id=meta.get("render_job_id"))
     status_ = str(state.get("status") or "queued")
     if status_ not in RENDER_STATUSES or status_ == "none":
         status_ = "running"

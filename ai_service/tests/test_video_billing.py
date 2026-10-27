@@ -796,3 +796,70 @@ def test_ai_video_ledger_charge_replay_is_a_noop_but_a_refunded_shot_bills_again
     regen.regen_shots = {3}
     regen.charge(cost_usd=0.5, shot_idx=3, duration_s=6, audio_on=False)
     assert state.requests[-1].idempotency_key == "vid_1:aivideo:3:regen:x:c0:r0" and len(state.ledger) == 5
+
+
+# ── A fresh re-generation of the same video_id is a new billing run ─────────
+
+class _RunDB(_TeacherDB):
+    """Also answers the billing_run read (metadata of ai_gen_video)."""
+
+    def __init__(self, billing_run=0, refunds=0):
+        super().__init__(refunds=refunds)
+        self.billing_run = billing_run
+
+    def begin_nested(self):
+        import contextlib
+        return contextlib.nullcontext()
+
+    def execute(self, stmt, params=None):
+        if "FROM ai_gen_video" in str(stmt):
+            return SimpleNamespace(scalar=lambda: {"billing_run": self.billing_run} if self.billing_run else {})
+        return super().execute(stmt, params)
+
+
+def test_the_first_run_keeps_todays_keys():
+    ts = _KeyedTokenService()
+    usage = {"prompt_tokens": 10, "completion_tokens": 5, "image_count": 0, "tts_character_count": 0}
+    _bill_keyed(ts, _RunDB(billing_run=0), usage, {"stages": [_llm("z-ai/glm-5", 10, 5)]})
+    assert [d["idempotency_key"] for d in ts.deducted] == ["vid_1:stage:html:llm:z-ai/glm-5"]
+
+
+def test_a_re_generation_is_charged_again_and_its_resume_is_not():
+    """A client re-POSTing /generate with an existing video_id used to reuse
+    the first run's keys: every charge was an idempotent no-op — a free video."""
+    usage = {"prompt_tokens": 10, "completion_tokens": 5, "image_count": 0, "tts_character_count": 0}
+    bd = {"stages": [_llm("z-ai/glm-5", 10, 5)]}
+    ts = _KeyedTokenService()
+    _bill_keyed(ts, _RunDB(billing_run=0), usage, bd)            # first run
+    _bill_keyed(ts, _RunDB(billing_run=1), usage, bd)            # fresh re-generation
+    _bill_keyed(ts, _RunDB(billing_run=1), usage, bd)            # that run, resumed after a kill
+    assert [d["idempotency_key"] for d in ts.deducted] == [
+        "vid_1:stage:html:llm:z-ai/glm-5", "vid_1:run1:stage:html:llm:z-ai/glm-5"]
+    assert ts.noops == ["vid_1:run1:stage:html:llm:z-ai/glm-5"]
+
+
+def test_teacher_and_ai_video_clip_keys_carry_the_run_too():
+    from app.services import ai_video_ledger as led
+    assert vgs._video_charge_key(_RunDB(billing_run=2), "vid_1", INST, "lesson-teacher") == "vid_1:run2:lesson-teacher"
+    assert vgs._video_charge_key(_RunDB(billing_run=0), "vid_1", INST, "lesson-teacher") == "vid_1:lesson-teacher"
+    assert led.charge_idempotency_key(_RunDB(billing_run=1), "vid_1", INST, 3, 0) == "vid_1:run1:aivideo:3:0:c0:r0"
+
+
+def test_an_unreadable_run_number_falls_back_to_the_first_runs_keys():
+    class Broken(_RunDB):
+        def execute(self, stmt, params=None):
+            if "FROM ai_gen_video" in str(stmt):
+                raise RuntimeError("db hiccup")
+            return super().execute(stmt, params)
+
+    assert vgs._video_charge_key(Broken(), "vid_1", INST, "x") == "vid_1:x"
+
+
+def test_a_fresh_leg_on_an_existing_row_bumps_the_run_and_a_resume_does_not():
+    src = open(vgs.__file__, encoding="utf-8").read()
+    i = src.index("            elif not resume:\n                # Fresh leg on an existing row")
+    block = src[i:i + 1600]
+    assert '_upd["billing_run"] = int((_old_meta or {}).get("billing_run", 0) or 0) + 1' in block
+    assert "_mm(video_id, _upd)" in block
+    from app.repositories.ai_video_repository import OWNED_METADATA_KEYS
+    assert "billing_run" in OWNED_METADATA_KEYS   # a stale whole-column write cannot revert it

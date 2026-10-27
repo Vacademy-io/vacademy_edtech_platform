@@ -25,7 +25,10 @@ logger = logging.getLogger(__name__)
 # the single-statement atomic SQL below; the whole-column read-modify-write
 # writers copy the database's current value of each key into the dict they
 # write, so a stale in-memory copy can never revert a heartbeat / claim.
-OWNED_METADATA_KEYS = ("run_lease", "run_request", "checkpoint", "billing", "resume_history")
+OWNED_METADATA_KEYS = ("run_lease", "run_request", "checkpoint", "billing", "resume_history",
+                       # charge-key run number (ai_video_ledger.billing_run_suffix):
+                       # reverting it would re-collide a re-generation's charges
+                       "billing_run")
 
 
 def _preserve_owned_keys(db_meta: Optional[Dict[str, Any]], new_meta: Dict[str, Any]) -> Dict[str, Any]:

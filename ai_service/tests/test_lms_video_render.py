@@ -369,7 +369,7 @@ def test_external_render_503_when_render_server_unset(ext_client, stubs, monkeyp
     assert ext_client.post(EXT + "/render/theirs").status_code == 503
 
 
-def test_external_render_status_and_watchdog_unchanged(ext_client, stubs):
+def test_external_render_status_and_watchdog_never_refunds(ext_client, stubs):
     stubs.records["live"] = _rec(meta={"render_job_id": "j1", "render_status": {
         "status": "running", "progress": 40.0, "last_seen_at": _iso(10)}})
     assert ext_client.get(EXT + "/render/status/j1", params={"video_id": "live"}).json() == {
@@ -381,9 +381,10 @@ def test_external_render_status_and_watchdog_unchanged(ext_client, stubs):
                                            "status": "running", "progress": 5, "last_seen_at": _iso(5000)}})
     body = ext_client.get(EXT + "/render/status/j2", params={"video_id": "dead"}).json()
     assert body["status"] == "failed" and body["watchdog"] is True and body["video_url"] is None
-    assert body["progress"] == 5 and body["error"].endswith("Credits refunded; please retry.")
-    assert "(threshold 900s)" in body["error"]
-    assert stubs.refunds == [("dead", INST)]
+    assert body["progress"] == 5 and body["error"].endswith("Please retry.")
+    assert "(threshold 900s)" in body["error"] and "refund" not in body["error"].lower()
+    # Renders are not billed: refunding here returned the whole GENERATION's credits.
+    assert stubs.refunds == []
     meta = stubs.records["dead"].extra_metadata
     assert "render_job_id" not in meta and "render_started_at" not in meta
     assert meta["render_last_failure_reason"].startswith("watchdog timeout")

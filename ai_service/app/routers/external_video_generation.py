@@ -3372,7 +3372,6 @@ def render_state_with_watchdog(
     db: Session,
     *,
     job_id: Optional[str] = None,
-    refund: bool = True,
 ) -> "tuple[Dict[str, Any], bool]":
     """The cached render status of a video, with the stale-job watchdog applied.
 
@@ -3380,9 +3379,14 @@ def render_state_with_watchdog(
     /render-callback) — never the render server. Watchdog: when a queued /
     running render has had no callback for `timeout_seconds`
     (clamp(planned * 5 + 180, 900, 5400), env-overridable), the render is
-    marked failed in the DB, render_job_id / render_started_at are cleared
-    and — with `refund` — the video's credits are refunded (the external
-    API's long-standing behaviour).
+    marked failed in the DB and render_job_id / render_started_at are cleared
+    so the user can retry.
+
+    It never refunds. Renders are not billed (submit_video_render), and
+    TokenUsageService.refund_video_credits returns EVERY charge on the video's
+    batch — the whole generation (≈500 credits for a 10-minute lesson). The
+    external route used to call it here, so a stalled render gave the video
+    away; the LMS route already passed refund=False.
 
     Returns ({status, progress, video_url, error, last_seen_at}, fired) where
     `fired` is True when this call tripped the watchdog. A video with no
@@ -3408,7 +3412,7 @@ def render_state_with_watchdog(
 
     # Watchdog — fires on stale last_seen_at, not synchronous render polling.
     # If the render worker stops pushing (crashed / network partition), we
-    # detect via this and free the user's credits.
+    # detect via this and let the user retry.
     if cur_status not in ("completed", "failed") and last_seen:
         try:
             _floor = int(os.environ.get("RENDER_TIMEOUT_FLOOR", "900"))
@@ -3432,7 +3436,6 @@ def render_state_with_watchdog(
                         f"[render-watchdog] Job {job_id} for video {video_id} "
                         f"silent for {age_seconds:.0f}s (> {timeout_seconds}s) "
                         f"with status={cur_status} — marking failed"
-                        + (" and refunding credits" if refund else "")
                     )
                     new_meta = dict(meta)
                     new_meta.pop("render_job_id", None)
@@ -3445,19 +3448,10 @@ def render_state_with_watchdog(
                     new_rs["status"] = "failed"
                     new_rs["error"] = (
                         f"Render timed out after {age_seconds:.0f}s of silence "
-                        f"(threshold {timeout_seconds}s). "
-                        + ("Credits refunded; please retry." if refund else "Please retry.")
+                        f"(threshold {timeout_seconds}s). Please retry."
                     )
                     new_meta["render_status"] = new_rs
                     repo.update_metadata(video_id, new_meta)
-                    if refund:
-                        try:
-                            from ..services.token_usage_service import TokenUsageService
-                            TokenUsageService(db).refund_video_credits(video_id, institute_id)
-                        except Exception as _refund_err:
-                            logger.warning(
-                                f"[render-watchdog] Refund failed for {video_id}: {_refund_err}"
-                            )
                     return (
                         {
                             "status": "failed",

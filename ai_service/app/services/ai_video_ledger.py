@@ -305,6 +305,32 @@ class AiVideoLedger:
 _FULL_VIDEO_REFUND_PREFIX = "Full refund for failed video generation"
 
 
+def billing_run_suffix(db, video_id: Optional[str]) -> str:
+    """":run{n}" for the n-th fresh re-generation of a video (metadata
+    billing_run, bumped by generate_till_stage when a non-resume leg starts on
+    an existing row), "" for its first run — whose keys stay as they were.
+    Every charge key of a video carries it, so a full re-generation with a
+    client-supplied video_id is charged instead of colliding with the first
+    run's keys (and billing 0); resumes keep the number, so a replayed
+    charge is still a no-op."""
+    if not video_id:
+        return ""
+    try:
+        import json
+        from sqlalchemy import text
+
+        with db.begin_nested():   # a failure here never aborts the caller's transaction
+            raw = db.execute(
+                text("SELECT metadata FROM ai_gen_video WHERE video_id = :v"), {"v": video_id}
+            ).scalar()
+        meta = raw if isinstance(raw, dict) else (json.loads(raw) if isinstance(raw, str) and raw else {})
+        n = int((meta or {}).get("billing_run", 0) or 0)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[AiVideoLedger] billing_run read failed for %s (%s); using run 0", video_id, exc)
+        n = 0
+    return f":run{n}" if n > 0 else ""
+
+
 def charge_idempotency_key(
     db, video_id: Optional[str], institute_id: Optional[str], shot_idx: int, segment_idx: Optional[int],
     occurrence: int = 0, scope: Optional[str] = None,
@@ -346,7 +372,7 @@ def charge_idempotency_key(
         logger.warning("[AiVideoLedger] refund count failed for %s shot %s (%s); un-keyed charge",
                        video_id, shot_idx, exc)
         return None
-    return f"{video_id}:aivideo:{shot_idx}:{seg_key}:r{int(n)}"
+    return f"{video_id}{billing_run_suffix(db, video_id)}:aivideo:{shot_idx}:{seg_key}:r{int(n)}"
 
 
 def _format_description(

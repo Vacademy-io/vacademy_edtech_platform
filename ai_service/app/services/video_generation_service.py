@@ -681,13 +681,19 @@ def _refund_generation(db: Any, video_id: str, institute_id: str, key_prefix: st
     return int(n)
 
 
+def _billing_run_suffix(db: Any, video_id: str) -> str:
+    from .ai_video_ledger import billing_run_suffix
+
+    return billing_run_suffix(db, video_id)
+
+
 def _video_charge_key(db: Any, video_id: str, institute_id: str, suffix: str) -> str:
     """Idempotency key of one video charge: ``{video_id}:{suffix}``, plus a
     refund generation once the video was fully refunded (that refund includes
     this charge, so the re-run must be billable again). A resume after a kill
     (no refund) reuses the key → the replayed charge is a no-op. Per-shot
     AiVideoLedger refunds are not counted here."""
-    key = f"{video_id}:{suffix}"
+    key = f"{video_id}{_billing_run_suffix(db, video_id)}:{suffix}"
     n = _refund_generation(db, video_id, institute_id, key)
     return f"{key}:refund{n}" if n > 0 else key
 
@@ -696,7 +702,7 @@ def _stage_charge_key_fn(db: Any, video_id: str, institute_id: Optional[str], st
     """``sub -> key`` for _bill_video_stage_usage: ``{vid}:stage:{stage}:{sub}``
     with ONE refund generation for the whole stage (computed once, so every
     row of a stage run shares it). Returns (fn, generation)."""
-    prefix = f"{video_id}:stage:{stage}"
+    prefix = f"{video_id}{_billing_run_suffix(db, video_id)}:stage:{stage}"
     n = _refund_generation(db, video_id, institute_id, prefix + ":") if institute_id else 0
     gen = f":refund{n}" if n > 0 else ""
     return (lambda sub: f"{prefix}:{sub}{gen}"), n
@@ -2318,13 +2324,25 @@ class VideoGenerationService:
                     "content_type": content_type,
                     "percentage": 0
                 }
-            elif not resume and isinstance(run_request, dict) and run_request:
+            elif not resume:
                 # Fresh leg on an existing row (client-supplied video_id): a new
                 # run of the video — its request replaces the old one, or an
                 # auto-resume of THIS run would rebuild the previous run's kwargs.
+                # It is also a new BILLING run: charge keys carry the run number
+                # (see _billing_run_suffix), so a full re-generation is charged
+                # instead of colliding with the first run's keys and billing 0.
+                # Resumes keep the number — a replayed charge stays a no-op.
+                _upd: Dict[str, Any] = {}
+                if isinstance(run_request, dict) and run_request:
+                    _upd["run_request"] = run_request
+                _old_meta = getattr(video_record, "extra_metadata", None) or {}
+                try:
+                    _upd["billing_run"] = int((_old_meta or {}).get("billing_run", 0) or 0) + 1
+                except (TypeError, ValueError, AttributeError):
+                    _upd["billing_run"] = 1
                 _mm = getattr(self.repository, "merge_metadata", None)
                 if _mm is not None:
-                    _mm(video_id, {"run_request": run_request})
+                    _mm(video_id, _upd)
 
             # ── Run lease: one live leg per video across every pod ──────────
             _prev_meta = getattr(video_record, "extra_metadata", None) or {}
