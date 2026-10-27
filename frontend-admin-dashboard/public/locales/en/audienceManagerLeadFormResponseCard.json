@@ -35,6 +35,7 @@
         "updateSuccess": "Form response updated",
         "updateError": "Failed to update form response",
         "invalid": {
+            "phoneFormat": "Enter a valid phone number for the selected country.",
             "phone": "Enter a full phone number (at least 10 digits) — this is the lead's own number.",
             "email": "Enter a valid email — this is the lead's own email.",
             "name": "Name can't be empty — this is the lead's own name."

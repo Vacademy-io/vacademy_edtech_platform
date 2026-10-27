@@ -35,6 +35,7 @@
         "updateSuccess": "Réponses du formulaire mises à jour",
         "updateError": "Échec de la mise à jour des réponses du formulaire",
         "invalid": {
+            "phoneFormat": "Saisissez un numéro de téléphone valide pour le pays sélectionné.",
             "phone": "Saisissez un numéro complet (au moins 10 chiffres) — c'est le numéro du prospect.",
             "email": "Saisissez un e-mail valide — c'est l'e-mail du prospect.",
             "name": "Le nom ne peut pas être vide — c'est le nom du prospect."

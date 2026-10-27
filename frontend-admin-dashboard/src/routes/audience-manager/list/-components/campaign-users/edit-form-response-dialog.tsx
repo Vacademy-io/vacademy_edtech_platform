@@ -11,7 +11,7 @@
  * left out of the request are untouched by the backend.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,11 +19,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { PencilSimple } from '@phosphor-icons/react';
+import { getCountryCallingCode, type CountryCode } from 'libphonenumber-js';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { UPDATE_LEAD_PROFILE } from '@/constants/urls';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyInput } from '@/components/design-system/input';
+import PhoneNumberInput from '@/components/design-system/phone-number-input';
+import { getPreferredPhoneCountries } from '@/services/domain-routing';
+import { isBlankPhone, isValidPhoneValue } from '@/lib/phone-validation';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
 import { studentDetailsKey } from '@/services/get-student-details';
@@ -42,6 +46,36 @@ type FormValues = z.infer<typeof formSchema>;
 export const isEditableResponseField = (field: LeadResponseField) => {
     const type = (field.type ?? '').toLowerCase();
     return type !== 'file' && !isMultiSelectType(field.type);
+};
+
+/**
+ * Returns true when this form-response row holds a phone number — either by
+ * field type or by a name that looks like phone/mobile. We accept the loose name
+ * match because campaign authors sometimes pick a generic "text" field for the
+ * phone column.
+ */
+export const isPhoneField = (field: LeadResponseField): boolean => {
+    const fieldType = (field.type ?? '').toLowerCase().trim();
+    if (fieldType === 'phone' || fieldType === 'mobile' || fieldType === 'telephone') return true;
+    const n = (field.name ?? '').toLowerCase();
+    return /\bphone\b|\bmobile\b|\btelephone\b/.test(n);
+};
+
+const phoneDigits = (value?: string | null) => (value ?? '').replace(/\D/g, '');
+
+/**
+ * Seeds a stored phone answer into the country-code input. The widget reads the
+ * dial code from the value's own leading digits, so a bare "9876543210" would
+ * show as +98 — give a bare 10-digit number the institute's default dial code.
+ */
+const toPhoneInputValue = (raw: string | null, defaultCountry: string): string => {
+    const digits = phoneDigits(raw);
+    if (digits.length !== 10 || (raw ?? '').trim().startsWith('+')) return digits;
+    try {
+        return `${getCountryCallingCode(defaultCountry.toUpperCase() as CountryCode)}${digits}`;
+    } catch {
+        return digits;
+    }
 };
 
 export interface FormResponseSaved {
@@ -71,6 +105,8 @@ export const EditFormResponseDialog = ({
     const [checking, setChecking] = useState(false);
 
     const editable = fields.filter(isEditableResponseField);
+    // What each box opened with — a phone box shows its number with a dial code.
+    const seeded = useRef<Record<string, string>>({});
     const hasReadOnly = editable.length < fields.length;
 
     const form = useForm<FormValues>({
@@ -81,10 +117,14 @@ export const EditFormResponseDialog = ({
     // Re-seed on every open so a cancelled edit never lingers.
     useEffect(() => {
         if (!open) return;
+        const { defaultCountry } = getPreferredPhoneCountries();
         const answers: Record<string, string> = {};
         editable.forEach((f) => {
-            answers[f.id] = f.rawValue ?? '';
+            answers[f.id] = isPhoneField(f)
+                ? toPhoneInputValue(f.rawValue, defaultCountry)
+                : f.rawValue ?? '';
         });
+        seeded.current = answers;
         form.reset({ answers });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
@@ -128,10 +168,28 @@ export const EditFormResponseDialog = ({
 
     const onSubmit = async (values: FormValues) => {
         const changed: Record<string, string> = {};
+        const badPhones: string[] = [];
         editable.forEach((f) => {
-            const next = (values.answers[f.id] ?? '').trim();
-            if (next !== (f.rawValue ?? '')) changed[f.id] = next;
+            const value = (values.answers[f.id] ?? '').trim();
+            if (!isPhoneField(f)) {
+                if (value !== (f.rawValue ?? '')) changed[f.id] = value;
+                return;
+            }
+            // Saved as dial code + number ("919876543210"), the stored format.
+            // A box left with only the dial code is an empty answer.
+            const next = isBlankPhone(value) ? '' : phoneDigits(value);
+            if (next === phoneDigits(seeded.current[f.id])) return;
+            if (next && !isValidPhoneValue(next)) badPhones.push(f.id);
+            changed[f.id] = next;
         });
+        if (badPhones.length > 0) {
+            badPhones.forEach((fieldId) =>
+                form.setError(`answers.${fieldId}` as const, {
+                    message: t('editDialog.invalid.phoneFormat'),
+                })
+            );
+            return;
+        }
         if (Object.keys(changed).length === 0) {
             setOpen(false);
             return;
@@ -220,16 +278,39 @@ export const EditFormResponseDialog = ({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <MyInput
-                                            label={f.name}
-                                            inputType="text"
-                                            inputPlaceholder={f.name}
-                                            input={field.value ?? ''}
-                                            onChangeFunction={(e) => field.onChange(e.target.value)}
-                                            error={form.formState.errors.answers?.[f.id]?.message}
-                                            size="large"
-                                            className="w-full"
-                                        />
+                                        {isPhoneField(f) ? (
+                                            <PhoneNumberInput
+                                                name={f.id}
+                                                label={f.name}
+                                                placeholder={f.name}
+                                                value={field.value ?? ''}
+                                                onChange={(_name, phone) => {
+                                                    form.clearErrors(`answers.${f.id}` as const);
+                                                    field.onChange(phone);
+                                                }}
+                                                error={
+                                                    form.formState.errors.answers?.[f.id]?.message
+                                                }
+                                                // Checked on save, against changed answers only —
+                                                // an untouched legacy number must not block saving.
+                                                validate={false}
+                                            />
+                                        ) : (
+                                            <MyInput
+                                                label={f.name}
+                                                inputType="text"
+                                                inputPlaceholder={f.name}
+                                                input={field.value ?? ''}
+                                                onChangeFunction={(e) =>
+                                                    field.onChange(e.target.value)
+                                                }
+                                                error={
+                                                    form.formState.errors.answers?.[f.id]?.message
+                                                }
+                                                size="large"
+                                                className="w-full"
+                                            />
+                                        )}
                                     </FormControl>
                                 </FormItem>
                             )}
