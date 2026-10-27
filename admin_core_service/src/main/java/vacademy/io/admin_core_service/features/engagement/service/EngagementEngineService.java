@@ -92,6 +92,7 @@ public class EngagementEngineService {
     public EngagementPromptVersion editPrompt(String engineId, String instituteId,
                                               PromptEditRequest req, String editedBy) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
+        requireAdminManaged(engine);
         if (req.getDeltaText() == null || req.getDeltaText().isBlank()) {
             throw new VacademyException("deltaText is required");
         }
@@ -221,6 +222,14 @@ public class EngagementEngineService {
     @Transactional
     public EngagementEngine transition(String engineId, String instituteId, String toStatus) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
+        if (engine.isSystemManaged()) {
+            // It must stay ACTIVE: the dispatch job only sends for ACTIVE engines. Setting it back
+            // to ACTIVE is the one change allowed, without the audience and template gates — its
+            // members are PAUSED by design and it sends only templates an admin put on a rule.
+            if (!"ACTIVE".equals(toStatus)) requireAdminManaged(engine);
+            engine.setStatus("ACTIVE");
+            return engineRepository.save(engine);
+        }
         List<String> allowed = List.of("DRAFT", "TEMPLATES_PENDING", "DRY_RUN", "ACTIVE", "PAUSED", "ARCHIVED");
         if (!allowed.contains(toStatus)) throw new VacademyException("Unknown status: " + toStatus);
         boolean goingLive = "ACTIVE".equals(toStatus) || "DRY_RUN".equals(toStatus);
@@ -259,8 +268,17 @@ public class EngagementEngineService {
     @Transactional
     public EngagementEngine setAutonomyKilled(String engineId, String instituteId, boolean killed) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
+        requireAdminManaged(engine);
         engine.setAutoSendKilled(killed);
         return engineRepository.save(engine);
+    }
+
+    /** Refuses an admin change to an engine the platform runs (see EngagementEngine#isSystemManaged). */
+    public void requireAdminManaged(EngagementEngine engine) {
+        if (engine.isSystemManaged()) {
+            throw new VacademyException("\"" + engine.getName() + "\" is run by AI calling and can't be "
+                    + "changed here. To stop what an AI agent sends after its calls, turn the rule off on that agent.");
+        }
     }
 
     public EngagementEngine requireEngine(String engineId, String instituteId) {

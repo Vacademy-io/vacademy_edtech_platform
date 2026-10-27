@@ -91,7 +91,7 @@ public class AiCallEngagementProvisioner {
         e.setAudience("[]");
         e.setQuietHours("{}");
         e.setNextDueAt(NEVER);
-        e.setCreatedBy("SYSTEM_AI_CALL");
+        e.setCreatedBy(EngagementEngine.CREATED_BY_SYSTEM_AI_CALL);
         try {
             return engineRepository.save(e).getId();
         } catch (DataIntegrityViolationException race) {

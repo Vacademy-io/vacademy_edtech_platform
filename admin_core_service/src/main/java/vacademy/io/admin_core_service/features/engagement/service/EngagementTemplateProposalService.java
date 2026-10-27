@@ -69,6 +69,7 @@ public class EngagementTemplateProposalService {
     @Transactional
     public List<EngagementTemplateProposal> recommend(String engineId, String instituteId, String createdBy, Integer count) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
+        refuseSystemEngine(engine);
         List<EngagementTemplateProposal> created = generate(engine, null, clampCount(count), createdBy);
         // Signal the wizard the engine is mid-negotiation — but NEVER pause a live engine (D8):
         // a prompt edit on an ACTIVE engine that needs a new template keeps running on approved ones.
@@ -84,6 +85,7 @@ public class EngagementTemplateProposalService {
     public List<EngagementTemplateProposal> requestAlternatives(String engineId, String instituteId,
                                                                 TemplateAlternativesRequest req, String createdBy) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
+        refuseSystemEngine(engine);
         String feedback = req != null ? req.getFeedback() : null;
         int count = clampCount(req != null ? req.getCount() : null);
         return generate(engine, feedback, count, createdBy);
@@ -467,6 +469,14 @@ public class EngagementTemplateProposalService {
     private static int clampCount(Integer count) {
         if (count == null) return 2;
         return Math.max(1, Math.min(count, 3));
+    }
+
+    /** The AI-call engine sends the templates admins put on agents' rules; it has no brief to propose from. */
+    private static void refuseSystemEngine(EngagementEngine engine) {
+        if (engine.isSystemManaged()) {
+            throw new VacademyException("\"" + engine.getName() + "\" sends the templates set on your AI agents' "
+                    + "rules; it doesn't take template proposals.");
+        }
     }
 
     private EngagementEngine requireEngine(String engineId, String instituteId) {

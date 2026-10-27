@@ -107,6 +107,7 @@ public class EngagementEngineController {
             @RequestParam String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
+        engineService.requireAdminManaged(engineService.requireEngine(engineId, instituteId));
         return ResponseEntity.ok(engineService.enrollAndReconcile(engineId, instituteId));
     }
 
