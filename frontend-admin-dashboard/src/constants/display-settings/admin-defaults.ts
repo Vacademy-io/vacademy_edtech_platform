@@ -308,6 +308,8 @@ const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
         workflowsTab: false,
         parentTab: false,
         onboardingTab: false,
+        // Read-only (links, attendance, scores) — on by default, unlike Workflows.
+        liveSessionTab: true,
         // Default rendering order. Tabs render left-to-right by ascending number.
         // The keys match `StudentSideViewTabId` and the side-view's category strings.
         tabOrders: {
@@ -330,6 +332,7 @@ const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
             fullHistory: 17,
             parent: 18,
             workflows: 19,
+            liveSession: 20,
         },
         defaultTab: 'overview',
     },

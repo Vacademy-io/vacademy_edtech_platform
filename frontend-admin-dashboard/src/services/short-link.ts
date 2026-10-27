@@ -21,6 +21,12 @@ export const SHORT_LINK_SOURCE = {
     ENQUIRY_CAMPAIGN: 'ENQUIRY_CAMPAIGN',
     /** A platform training video (Assist Dock → Training). sourceId = training_video id. */
     TRAINING_VIDEO: 'TRAINING_VIDEO',
+    /**
+     * A live class's learner-portal join link. sourceId = whichever id that link is keyed on
+     * (the schedule id for private classes, the session id for public ones — see
+     * `getSessionJoinLink`), so every learner shares one code per class.
+     */
+    LIVE_SESSION: 'LIVE_SESSION',
 } as const;
 
 export interface GetOrCreateShortLinkRequest {

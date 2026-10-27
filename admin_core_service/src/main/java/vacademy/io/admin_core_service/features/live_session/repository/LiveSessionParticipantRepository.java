@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vacademy.io.admin_core_service.features.live_session.dto.AttendanceReportDTO;
 import vacademy.io.admin_core_service.features.live_session.dto.AttendanceReportProjection;
+import vacademy.io.admin_core_service.features.live_session.dto.LearnerLiveClassProjection;
+import vacademy.io.admin_core_service.features.live_session.dto.LearnerUpcomingClassProjection;
 import vacademy.io.admin_core_service.features.live_session.dto.LiveClassFeedbackProjection;
 import vacademy.io.admin_core_service.features.live_session.dto.ScheduleAttendanceProjection;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionParticipants;
@@ -554,6 +556,117 @@ public interface LiveSessionParticipantRepository extends JpaRepository<LiveSess
             @Param("batchId") String batchId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
+    );
+
+    /**
+     * Learner-profile Live Sessions tab: every class occurrence one learner was expected at in the
+     * range, across all their batches plus individually-added sessions, with their latest
+     * attendance log. Enrolment semantics match {@link #findAttendanceForUserAcrossBatches} (past,
+     * non-ACTIVE enrolments still count — this is history) and additionally return the duration,
+     * engagement JSON and session timezone the tab needs to score each class and to drop the
+     * ones that have not started yet.
+     *
+     * <p>{@code batchId} (optional) narrows to the classes of that batch only — sessions the learner was
+     * added to individually belong to no batch, so they appear only when it is null.
+     */
+    @Query(value = """
+    SELECT DISTINCT ON (ss.id, ls.id)
+        ss.id AS scheduleId,
+        ss.meeting_date AS meetingDate,
+        ss.start_time AS startTime,
+        ss.last_entry_time AS lastEntryTime,
+        ls.id AS sessionId,
+        ls.title AS sessionTitle,
+        ls.subject AS subject,
+        ls.access_level AS accessLevel,
+        COALESCE(NULLIF(ls.timezone, ''), 'Asia/Kolkata') AS timezone,
+        COALESCE(lsl.status, 'UNMARKED') AS attendanceStatus,
+        lsl.status_type AS statusType,
+        lsl.provider_total_duration_minutes AS durationMinutes,
+        lsl.engagement_data AS engagementData
+    FROM live_session_participants lsp
+    JOIN session_schedules ss ON ss.session_id = lsp.session_id
+    JOIN live_session ls ON ls.id = lsp.session_id
+    LEFT JOIN student_session_institute_group_mapping m
+        ON lsp.source_type = 'BATCH'
+       AND m.package_session_id = lsp.source_id
+       AND m.user_id = :userId
+       AND m.status NOT IN ('INVITED', 'DELETED')
+    LEFT JOIN LATERAL (
+        SELECT status, status_type, provider_total_duration_minutes, engagement_data
+        FROM live_session_logs
+        WHERE session_id = lsp.session_id
+          AND schedule_id = ss.id
+          AND user_source_type = 'USER'
+          AND user_source_id = :userId
+          AND log_type = 'ATTENDANCE_RECORDED'
+        ORDER BY created_at DESC
+        LIMIT 1
+    ) lsl ON TRUE
+    WHERE (
+            (lsp.source_type = 'USER' AND lsp.source_id = :userId)
+            OR (lsp.source_type = 'BATCH' AND m.user_id IS NOT NULL)
+          )
+      AND (:batchId IS NULL OR (lsp.source_type = 'BATCH' AND lsp.source_id = :batchId))
+      AND ls.status <> 'DELETED'
+      AND ss.status <> 'DELETED'
+      AND ss.meeting_date BETWEEN :startDate AND :endDate
+      AND (m.enrolled_date IS NULL OR ss.meeting_date >= m.enrolled_date)
+    ORDER BY ss.id, ls.id
+    """, nativeQuery = true)
+    List<LearnerLiveClassProjection> findLearnerLiveClasses(
+            @Param("userId") String userId,
+            @Param("batchId") String batchId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    /**
+     * Upcoming (and in-progress) class occurrences for one learner — individually added, or via a
+     * batch they are ACTIVELY enrolled in (future classes of an expired batch are not theirs
+     * to join). Starts a day back so a class running past midnight in its own timezone is still
+     * returned; the caller drops the ones that have already ended. Session status mirrors the
+     * upcoming list of the learner portal (DRAFT and LIVE). {@code batchId} narrows as in
+     * {@link #findLearnerLiveClasses}.
+     */
+    @Query(value = """
+    SELECT DISTINCT ON (ss.meeting_date, ss.start_time, ss.id)
+        ss.id AS scheduleId,
+        ls.id AS sessionId,
+        ls.title AS title,
+        ls.subject AS subject,
+        ss.meeting_date AS meetingDate,
+        ss.start_time AS startTime,
+        ss.last_entry_time AS lastEntryTime,
+        ls.access_level AS accessLevel,
+        COALESCE(NULLIF(ls.timezone, ''), 'Asia/Kolkata') AS timezone,
+        CASE
+            WHEN ss.custom_meeting_link IS NOT NULL AND ss.custom_meeting_link <> '' THEN ss.custom_meeting_link
+            ELSE ls.default_meet_link
+        END AS meetingLink
+    FROM live_session_participants lsp
+    JOIN session_schedules ss ON ss.session_id = lsp.session_id
+    JOIN live_session ls ON ls.id = lsp.session_id
+    LEFT JOIN student_session_institute_group_mapping m
+        ON lsp.source_type = 'BATCH'
+       AND m.package_session_id = lsp.source_id
+       AND m.user_id = :userId
+       AND m.status = 'ACTIVE'
+    WHERE (
+            (lsp.source_type = 'USER' AND lsp.source_id = :userId)
+            OR (lsp.source_type = 'BATCH' AND m.user_id IS NOT NULL)
+          )
+      AND (:batchId IS NULL OR (lsp.source_type = 'BATCH' AND lsp.source_id = :batchId))
+      AND ls.status IN ('DRAFT', 'LIVE')
+      AND ss.status <> 'DELETED'
+      AND ss.meeting_date >= CURRENT_DATE - INTERVAL '1 day'
+    ORDER BY ss.meeting_date, ss.start_time, ss.id
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<LearnerUpcomingClassProjection> findLearnerUpcomingClasses(
+            @Param("userId") String userId,
+            @Param("batchId") String batchId,
+            @Param("limit") int limit
     );
 
     /**

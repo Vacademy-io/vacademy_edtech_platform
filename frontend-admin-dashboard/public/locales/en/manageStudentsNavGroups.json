@@ -20,6 +20,7 @@
         "subOrg": "Sub-Org",
         "reports": "Reports",
         "fullHistory": "Full History",
-        "workflows": "Workflows"
+        "workflows": "Workflows",
+        "liveSession": "Live Sessions"
     }
 }

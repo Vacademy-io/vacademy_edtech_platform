@@ -178,7 +178,8 @@
         "fullHistoryTab": "पूर्ण इतिहास टैब",
         "workflowsTab": "वर्कफ़्लो टैब",
         "parentTab": "अभिभावक टैब",
-        "onboardingTab": "ऑनबोर्डिंग टैब"
+        "onboardingTab": "ऑनबोर्डिंग टैब",
+        "liveSessionTab": "लाइव सत्र टैब"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "शिक्षार्थी पोर्टल एक्सेस की अनुमति दें",

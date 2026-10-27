@@ -178,7 +178,8 @@
         "fullHistoryTab": "Onglet Historique complet",
         "workflowsTab": "Onglet Workflows",
         "parentTab": "Onglet Tuteur",
-        "onboardingTab": "Onglet Intégration"
+        "onboardingTab": "Onglet Intégration",
+        "liveSessionTab": "Onglet Sessions en direct"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "Autoriser l'accès au portail apprenant",

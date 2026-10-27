@@ -300,6 +300,8 @@ const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
         workflowsTab: false,
         parentTab: false,
         onboardingTab: false,
+        // Read-only (links, attendance, scores) — on by default, unlike Workflows.
+        liveSessionTab: true,
         tabOrders: {
             overview: 1,
             courses: 2,
@@ -320,6 +322,7 @@ const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
             fullHistory: 17,
             parent: 18,
             workflows: 19,
+            liveSession: 20,
         },
         defaultTab: 'overview',
     },

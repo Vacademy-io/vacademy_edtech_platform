@@ -20,6 +20,7 @@ import vacademy.io.admin_core_service.features.common.dto.request.CustomFieldVal
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionParticipantRepository;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
+import vacademy.io.admin_core_service.features.live_session.util.LiveClassEngagementScore;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionParticipants;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
@@ -2640,84 +2641,40 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                             String engagementColor = "#94a3b8";
 
                             if (eng != null) {
-                                int providerMinutes = 0;
                                 boolean hasProviderDuration = eng.get("providerTotalDurationMinutes") instanceof Number;
-                                if (hasProviderDuration) {
-                                    providerMinutes = ((Number) eng.get("providerTotalDurationMinutes")).intValue();
-                                    durationStr = providerMinutes + " min";
-                                }
+                                Integer providerMinutes = hasProviderDuration
+                                        ? ((Number) eng.get("providerTotalDurationMinutes")).intValue() : null;
+                                if (hasProviderDuration) durationStr = providerMinutes + " min";
 
-                                // Compute engagement score (0-100):
-                                //   80 pts from attendance duration: (providerMinutes / meetingMinutes) * 80
-                                //   20 pts from interactions (chats, talks, talkTime, raisehand, emojis, pollVotes)
+                                // Engagement score (0-100) — formula lives in LiveClassEngagementScore,
+                                // shared with the learner-profile Live Sessions tab.
                                 String scheduleId = eng.get("scheduleId") != null ? String.valueOf(eng.get("scheduleId")) : null;
                                 Integer meetingMinutes = scheduleId != null ? scheduleDurationMins.get(scheduleId) : null;
-
-                                double attendancePts = 0.0;
-                                if (hasProviderDuration && meetingMinutes != null && meetingMinutes > 0) {
-                                    attendancePts = Math.min(80.0, ((double) providerMinutes / meetingMinutes) * 80.0);
-                                } else if (hasProviderDuration && providerMinutes > 0) {
-                                    // No schedule duration known — award partial based on raw minutes (cap at 80)
-                                    attendancePts = Math.min(80.0, providerMinutes * 1.5);
-                                }
-
-                                // Parse engagement JSON — BBB reports: chats, talks, talkTime, raisehand, emojis, pollVotes
                                 String engJson = eng.get("engagementData") != null ? String.valueOf(eng.get("engagementData")) : null;
-                                int chats = 0, raises = 0, talks = 0, talkTime = 0, emojis = 0, pollVotes = 0;
-                                boolean hasEngagementJson = false;
-
-                                if (engJson != null && !engJson.isEmpty() && !"null".equals(engJson)) {
-                                    try {
-                                        var engNode = objectMapper.readTree(engJson);
-                                        chats = engNode.path("chats").asInt(0);
-                                        raises = engNode.path("raisehand").asInt(0);
-                                        talks = engNode.path("talks").asInt(0);
-                                        talkTime = engNode.path("talkTime").asInt(0);
-                                        emojis = engNode.path("emojis").asInt(0);
-                                        pollVotes = engNode.path("pollVotes").asInt(0);
-                                        // The opt-in activeness score lands in the same JSON during
-                                        // the class; on its own it is not BBB engagement and must not
-                                        // read as "0/100" before the analytics callback arrives.
-                                        hasEngagementJson = engNode.has("chats") || engNode.has("raisehand")
-                                                || engNode.has("talks") || engNode.has("talkTime")
-                                                || engNode.has("emojis") || engNode.has("pollVotes");
-                                    } catch (Exception ignored) {}
-                                }
-
-                                // Interaction score out of 20:
-                                //   chats up to 4, raises up to 4, talks up to 5, talkTime up to 3, emojis up to 2, polls up to 2
-                                double interactionPts = 0.0;
-                                interactionPts += Math.min(4.0, chats * 0.4);        // 10+ chats = 4pts
-                                interactionPts += Math.min(4.0, raises * 0.8);       // 5+ raises = 4pts
-                                interactionPts += Math.min(5.0, talks * 0.25);       // 20+ talks = 5pts
-                                interactionPts += Math.min(3.0, talkTime / 60.0 * 0.6); // 5+ min talk = 3pts
-                                interactionPts += Math.min(2.0, emojis * 0.2);       // 10+ emojis = 2pts
-                                interactionPts += Math.min(2.0, pollVotes * 0.4);    // 5+ polls = 2pts
-                                interactionPts = Math.min(20.0, interactionPts);
-
-                                double totalScore = Math.min(100.0, attendancePts + interactionPts);
-                                int scoreInt = (int) Math.round(totalScore);
+                                LiveClassEngagementScore.Result score =
+                                        LiveClassEngagementScore.compute(providerMinutes, meetingMinutes, engJson, objectMapper);
+                                int scoreInt = score.score();
 
                                 // Persist score breakdown on the engagement log map so the
                                 // report page (and any downstream consumer) can show a
                                 // per-session breakdown without re-implementing the formula.
-                                if (hasProviderDuration || hasEngagementJson) {
+                                if (score.scorable()) {
                                     eng.put("engagementScore", scoreInt);
-                                    eng.put("attendancePoints", Math.round(attendancePts * 10.0) / 10.0);
-                                    eng.put("interactionPoints", Math.round(interactionPts * 10.0) / 10.0);
+                                    eng.put("attendancePoints", Math.round(score.attendancePoints() * 10.0) / 10.0);
+                                    eng.put("interactionPoints", Math.round(score.interactionPoints() * 10.0) / 10.0);
                                     if (meetingMinutes != null) eng.put("meetingDurationMinutes", meetingMinutes);
                                     eng.put("interactionBreakdown", Map.of(
-                                            "chats", chats,
-                                            "raisehand", raises,
-                                            "talks", talks,
-                                            "talkTime", talkTime,
-                                            "emojis", emojis,
-                                            "pollVotes", pollVotes
+                                            "chats", score.chats(),
+                                            "raisehand", score.raiseHands(),
+                                            "talks", score.talks(),
+                                            "talkTime", score.talkTime(),
+                                            "emojis", score.emojis(),
+                                            "pollVotes", score.pollVotes()
                                     ));
                                 }
 
                                 // Build display string — score + asterisk; footer explains the formula
-                                if (hasProviderDuration || hasEngagementJson) {
+                                if (score.scorable()) {
                                     engagementStr = scoreInt + "/100*";
                                     // Color by score
                                     engagementColor = scoreInt >= 70 ? "#16a34a"

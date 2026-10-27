@@ -18,6 +18,7 @@ import {
     Users,
     Path,
     Robot,
+    VideoCamera,
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import type { TFunction } from 'i18next';
@@ -96,6 +97,8 @@ export const SECTION_REGISTRY: readonly SectionMeta[] = [
     { id: 'courses', label: 'Courses', icon: BookOpen, group: 'Learning' },
     { id: 'learningProgress', label: 'Progress', icon: TrendUp, group: 'Learning' },
     { id: 'testRecord', label: 'Tests', icon: Trophy, group: 'Learning' },
+    // Join link, attendance streak and past live classes for this learner.
+    { id: 'liveSession', label: 'Live Sessions', icon: VideoCamera, group: 'Learning' },
 
     // Finance — "Are they paid up?"
     { id: 'paymentHistory', label: 'Payment History', icon: Wallet, group: 'Finance' },

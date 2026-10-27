@@ -20,6 +20,7 @@
         "subOrg": "المؤسسة الفرعية",
         "reports": "التقارير",
         "fullHistory": "السجل الكامل",
-        "workflows": "سير العمل"
+        "workflows": "سير العمل",
+        "liveSession": "الجلسات المباشرة"
     }
 }

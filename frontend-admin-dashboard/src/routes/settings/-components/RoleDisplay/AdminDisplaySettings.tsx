@@ -97,6 +97,7 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     fullHistoryTab: false,
     workflowsTab: false,
     parentTab: false,
+    liveSessionTab: true,
     onboardingTab: false,
 };
 
@@ -247,6 +248,11 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
             key: 'onboardingTab',
             label: t('studentSideView.onboardingTab'),
             defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.onboardingTab ?? false,
+        },
+        {
+            key: 'liveSessionTab',
+            label: t('studentSideView.liveSessionTab'),
+            defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.liveSessionTab ?? false,
         },
     ];
 

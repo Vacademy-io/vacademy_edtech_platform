@@ -143,7 +143,8 @@
         "fullHistoryTab": "تبويب السجل الكامل",
         "workflowsTab": "تبويب سير العمل",
         "parentTab": "تبويب ولي الأمر",
-        "onboardingTab": "تبويب التهيئة"
+        "onboardingTab": "تبويب التهيئة",
+        "liveSessionTab": "علامة تبويب الجلسات المباشرة"
     },
     "learnerManagement": {
         "title": "إدارة المتعلمين",

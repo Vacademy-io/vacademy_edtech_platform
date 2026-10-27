@@ -143,7 +143,8 @@
         "fullHistoryTab": "Full History Tab",
         "workflowsTab": "Workflows Tab",
         "parentTab": "Guardian Tab",
-        "onboardingTab": "Onboarding Tab"
+        "onboardingTab": "Onboarding Tab",
+        "liveSessionTab": "Live Sessions Tab"
     },
     "learnerManagement": {
         "title": "Learner Management",
