@@ -5283,7 +5283,13 @@ const useFreebiesList = () => {
                     status: 'ACTIVE',
                     institute_custom_fields: websiteFormFields(instituteId, true),
                 },
-                { headers: { Authorization: `Bearer ${getTokenFromCookie(TokenKey.accessToken)}` } },
+                {
+                    headers: {
+                        Authorization: `Bearer ${getTokenFromCookie(TokenKey.accessToken)}`,
+                        // The list is created in this institute; admin-core checks the caller is staff there.
+                        ...(instituteId ? { clientId: instituteId } : {}),
+                    },
+                }
             );
             queryClient.invalidateQueries({ queryKey: ['campaignsList'] });
             return { id: String(newId).replace(/^"|"$/g, ''), name: FREEBIES_LIST_NAME };
