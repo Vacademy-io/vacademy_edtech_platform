@@ -25,6 +25,7 @@ import logging
 import os
 import socket
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -38,6 +39,15 @@ HEARTBEAT_INTERVAL_S = 15.0
 # A lease whose heartbeat is older than this is dead (find_resumable uses the
 # same 180 s; acquire_lease lets a user leg take a lease this stale).
 LEASE_STALE_S = 180
+
+# Graceful drain (pod shutdown): how long running legs get to unwind on their
+# own before their leases are marked interrupted for them. Raise it together
+# with terminationGracePeriodSeconds to let more in-flight shots finish.
+try:
+    DRAIN_WAIT_S = max(0.0, float(os.environ.get("AI_VIDEO_DRAIN_WAIT_S", "20")))
+except ValueError:
+    DRAIN_WAIT_S = 20.0
+DRAIN_FLUSH_S = 5.0
 
 # Identity of this process: a new value per boot, so a restarted pod never
 # mistakes its predecessor's lease for its own.
@@ -201,6 +211,67 @@ def end_leg(
     return ok
 
 
+# ── graceful drain ───────────────────────────────────────────────────────────
+
+_draining = threading.Event()
+
+
+def is_draining() -> bool:
+    """True once this process started shutting down (drain called)."""
+    return _draining.is_set()
+
+
+def drain(wait_s: Optional[float] = None, *, flush_s: float = DRAIN_FLUSH_S) -> Dict[str, str]:
+    """Hand every leased leg on this process back for a resume, for a pod
+    shutdown (preStop hook / lifespan shutdown).
+
+    Without it a deploy SIGKILLs the in-process run after the 30 s grace: the
+    lease is only noticed 180 s later as a dead heartbeat and the resume is
+    counted as a crash (capped, backed off). Here each leg is:
+
+      1. told to stop with reason ``drain`` — it exits silently at its next
+         safe point (no CANCELLED, no refund) and its own finish marks the
+         lease ``interrupted`` (reason drain);
+      2. given ``wait_s`` (default AI_VIDEO_DRAIN_WAIT_S, 20 s) to unwind;
+      3. if still running: its checkpoint uploads are flushed (``flush_s``)
+         and the lease is marked ``interrupted`` (reason drain) for it — a
+         compare-and-set on its leg_id, so a lease another pod already took
+         is left alone. The leg's later finish cannot overwrite it (the
+         handle is ended).
+
+    The resumer on a pod that booted after the interruption claims it on its
+    next scan, as a drain resume. Idempotent; returns {video_id: outcome}
+    with outcome unwound | marked | not_owner | fenced."""
+    _draining.set()
+    budget = DRAIN_WAIT_S if wait_s is None else max(0.0, float(wait_s))
+    deadline = time.monotonic() + budget
+    legs = [h for h in active_legs() if h.leased and not h.ended]
+    out: Dict[str, str] = {}
+    for h in legs:
+        if h.stop_reason is None:
+            h.stop_reason = "drain"
+        cancellation_registry.signal_stop(h.video_id, reason="drain")
+    for h in legs:
+        left = deadline - time.monotonic()
+        if left > 0 and not h.ended:
+            h.done_event.wait(left)
+    for h in legs:
+        if h.ended:
+            out[h.video_id] = "fenced" if h.stop_reason == "fenced" else "unwound"
+            continue
+        if h.uploader is not None:
+            try:
+                h.uploader.flush(timeout=flush_s)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("[RunLease] drain: checkpoint flush failed for %s: %s", h.video_id, exc)
+        ok = end_leg(h, "interrupted", outcome="interrupted", reason="drain",
+                     interrupted_at=now_iso(), interrupt_reason="drain")
+        out[h.video_id] = "marked" if ok else ("fenced" if h.stop_reason == "fenced" else "not_owner")
+    if out:
+        logger.warning("[RunLease] drained %d leg(s): %s", len(out), out)
+    return out
+
+
 # ── heartbeat ────────────────────────────────────────────────────────────────
 
 def heartbeat_once(repository_factory: Optional[Callable[[], Any]] = None) -> Dict[str, Optional[str]]:
@@ -253,7 +324,7 @@ def ensure_heartbeat_thread() -> None:
 
 
 __all__ = [
-    "BOOT_ID", "BOOT_AT", "HEARTBEAT_INTERVAL_S", "LEASE_STALE_S", "LegHandle",
-    "active_leg", "active_legs", "begin_leg", "count_active", "end_leg",
-    "ensure_heartbeat_thread", "heartbeat_once", "new_lease", "now_iso", "pod_name",
+    "BOOT_ID", "BOOT_AT", "DRAIN_WAIT_S", "HEARTBEAT_INTERVAL_S", "LEASE_STALE_S", "LegHandle",
+    "active_leg", "active_legs", "begin_leg", "count_active", "drain", "end_leg",
+    "ensure_heartbeat_thread", "heartbeat_once", "is_draining", "new_lease", "now_iso", "pod_name",
 ]

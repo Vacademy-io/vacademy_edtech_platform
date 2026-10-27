@@ -39,9 +39,10 @@ logger = logging.getLogger(__name__)
 FIRST_SCAN_DELAY_S = 30.0
 SCAN_INTERVAL_S = 90.0
 SCAN_JITTER_S = 20.0
-# Until the graceful drain ships, a deploy kill looks like a crash (30 s grace,
-# no preStop), and deploys land several times a day — so allow a few more
-# resumes than a true crash loop needs. The backoff still spaces them out.
+# A deploy now drains (preStop → drain resume, its own cap below); this cap is
+# for real crashes (OOM, node loss) and for a pod killed before it could
+# drain. Deploys land several times a day, so it stays a little generous;
+# the backoff still spaces crash resumes out.
 MAX_CRASH_RESUMES = int(os.environ.get("AI_VIDEO_RESUME_MAX_CRASH", "4"))
 MAX_DRAIN_RESUMES = 8
 CRASH_BACKOFF_S = 300
@@ -208,8 +209,8 @@ async def scan_once(*, repo: Any = None, start=None, now: Optional[datetime] = N
     repo = repo or _default_repo()
     out: Dict[str, List[str]] = {"resumed": [], "gave_up": [], "waiting": [], "skipped": []}
     cap = max_concurrent()
-    if cap <= 0:
-        return out
+    if cap <= 0 or run_lease.is_draining():
+        return out  # a pod that is shutting down takes on no new legs
     try:
         rows = await asyncio.to_thread(repo.find_resumable, SCAN_LIMIT, run_lease.BOOT_AT)
     except Exception as exc:  # noqa: BLE001

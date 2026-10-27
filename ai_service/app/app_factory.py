@@ -37,6 +37,7 @@ from .routers.metering_admin import router as metering_admin_router
 from .routers.credits_limits import router as credits_limits_router
 from .routers.metering_limits_admin import router as metering_limits_admin_router
 from .routers.metering_internal import router as metering_internal_router
+from .routers.ai_video_drain_internal import router as ai_video_drain_internal_router
 from .routers.plans_admin import router as plans_admin_router
 from .routers.plans_internal import router as plans_internal_router
 from .routers.plans_billing_internal import router as plans_billing_internal_router
@@ -229,6 +230,7 @@ async def _lifespan(app: FastAPI):
         try:
             yield
         finally:
+            await _drain_ai_video_legs(_logger)
             await _stop_course_knowledge_worker(_logger)
             await _stop_lead_agent_workers(_logger)
         return
@@ -266,8 +268,24 @@ async def _lifespan(app: FastAPI):
         async with mcp_server.session_manager.run():
             yield
     finally:
+        await _drain_ai_video_legs(_logger)
         await _stop_course_knowledge_worker(_logger)
         await _stop_lead_agent_workers(_logger)
+
+
+async def _drain_ai_video_legs(logger: logging.Logger) -> None:
+    """Shutdown: hand this pod's running AI-video legs back as interrupted so a
+    fresh pod resumes them at once (ai_video_run_lease.drain). The preStop hook
+    normally did this already — then there is nothing left and it returns at
+    once. Bounded; a crash here must not block shutdown."""
+    import asyncio
+
+    try:
+        from .services import ai_video_run_lease
+
+        await asyncio.wait_for(asyncio.to_thread(ai_video_run_lease.drain), timeout=ai_video_run_lease.DRAIN_WAIT_S + 15)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("ai_gen_video drain at shutdown skipped: %s", exc)
 
 
 async def _stop_course_knowledge_worker(logger: logging.Logger) -> None:
@@ -431,6 +449,7 @@ def create_app() -> FastAPI:
     app.include_router(metering_limits_admin_router, prefix=settings.api_base_path)
     # AI usage limits, service-to-service: /internal/metering/v1/authorize + counters/rebuild
     app.include_router(metering_internal_router, prefix=settings.api_base_path)
+    app.include_router(ai_video_drain_internal_router, prefix=settings.api_base_path)
     # AI subscription plans: super admin (/super-admin/v1/plans), tenant view
     # (/credits/v2/institutes/{id}/plan) and the renewal job (/internal/plans/v1/roll)
     app.include_router(plans_admin_router, prefix=settings.api_base_path)

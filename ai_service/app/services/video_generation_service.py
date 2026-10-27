@@ -1900,6 +1900,14 @@ class VideoGenerationService:
                 handle.stop_reason = "fenced"
                 _run_lease.end_leg(handle, "fenced", outcome="fenced")
                 return
+            if handle.stop_reason == "drain" or cancellation_registry.reason(video_id) == "drain":
+                # The pod is shutting down (graceful drain): hand the run back
+                # as interrupted so a fresh pod resumes it as a drain resume.
+                _run_lease.end_leg(
+                    handle, "interrupted", outcome="interrupted", reason="drain",
+                    interrupted_at=_run_lease.now_iso(), interrupt_reason="drain",
+                )
+                return
             exc = leg.exc
             if leg.interrupted or (exc is not None and isinstance(exc, asyncio.CancelledError)):
                 reason = leg.interrupted or "task_cancelled"
@@ -3916,14 +3924,21 @@ class VideoGenerationService:
             logger.warning(f"[VideoGenService] resume hooks not wired: {_rk_err}")
 
         def _fenced_exit() -> Dict[str, Any]:
-            """Another pod took this run over: stop silently (no CANCELLED, no
-            refund, no error event)."""
+            """The run is moving to another leg — another pod took it over
+            ("fenced") or this pod is shutting down ("drain"): stop silently
+            (no CANCELLED, no refund, no error event). A drained leg's finish
+            marks the lease interrupted so a fresh pod resumes it."""
+            why = cancellation_registry.reason(video_id) or "fenced"
+            if why not in cancellation_registry.TAKEOVER_REASONS:
+                why = "fenced"
             if leg is not None:
-                leg.interrupted = None
-                if leg.handle is not None:
-                    leg.handle.stop_reason = "fenced"
-            logger.warning(f"[VideoGenService] {video_id}: lease fenced — leaving the run to its new owner")
-            return {"type": "interrupted", "video_id": video_id, "reason": "fenced", "resuming": True}
+                leg.interrupted = "drain" if why == "drain" else None
+                if leg.handle is not None and leg.handle.stop_reason != "fenced":
+                    leg.handle.stop_reason = why
+            logger.warning(
+                f"[VideoGenService] {video_id}: lease {why} — leaving the run to its next leg"
+            )
+            return {"type": "interrupted", "video_id": video_id, "reason": why, "resuming": True}
 
         # ── PHASE B COMBINE (2026-05-14) ──────────────────────────────────
         # Phase B's per-shot TTS reorder requires the pipeline.run() call to
@@ -3963,7 +3978,7 @@ class VideoGenerationService:
             # Check the stop flag at the start of each stage — cheapest
             # checkpoint, catches the case where the user cancelled while
             # we were uploading the previous stage's outputs to S3.
-            if stop_event.is_set() and cancellation_registry.reason(video_id) == "fenced":
+            if stop_event.is_set() and cancellation_registry.is_takeover(video_id):
                 yield _fenced_exit()
                 return
             if stop_event.is_set():
@@ -4725,7 +4740,7 @@ class VideoGenerationService:
                 # Detect PipelineCancelled by class name — the pipeline class
                 # lives outside `app.*` so we can't catch the type directly
                 # (see `_is_pipeline_cancelled` near the top of this module).
-                if _is_pipeline_cancelled(e) and cancellation_registry.reason(video_id) == "fenced":
+                if _is_pipeline_cancelled(e) and cancellation_registry.is_takeover(video_id):
                     yield _fenced_exit()
                     return
                 if _is_pipeline_cancelled(e):

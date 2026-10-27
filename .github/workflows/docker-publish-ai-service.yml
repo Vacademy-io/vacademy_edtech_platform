@@ -161,16 +161,34 @@ jobs:
 
             # Apply resource limits from deployment YAML (helm upgrade not used in CI,
             # so patch directly to keep requests/limits in sync with the checked-in values).
+            # Graceful drain of in-flight AI-video runs (ai_video_run_lease.drain):
+            # preStop hands this pod's running legs back as "interrupted" so the
+            # replacement pod resumes them at once (a drain resume, not a crash);
+            # uvicorn then gets --timeout-graceful-shutdown 60 (Dockerfile). The
+            # 120 s grace covers both (drain <= ~30 s + 60 s + shutdown).
+            # POD_NAME labels the run lease with the real pod name.
             kubectl patch deployment "$DEPLOYMENT_NAME" --namespace "$NAMESPACE" --type=strategic \
               --patch '{
                 "spec": {
                   "template": {
                     "spec": {
+                      "terminationGracePeriodSeconds": 120,
                       "containers": [{
                         "name": "ai-service",
                         "resources": {
                           "requests": { "cpu": "500m", "memory": "1Gi" },
                           "limits":   { "cpu": "1500m", "memory": "3Gi" }
+                        },
+                        "env": [{
+                          "name": "POD_NAME",
+                          "valueFrom": { "fieldRef": { "fieldPath": "metadata.name" } }
+                        }],
+                        "lifecycle": {
+                          "preStop": {
+                            "exec": {
+                              "command": ["python", "-c", "import os,urllib.request as u;u.urlopen(u.Request(\"http://127.0.0.1:8077/ai-service/internal/ai-video/v1/drain?wait_s=20\",method=\"POST\",headers={\"X-Internal-Service-Token\":os.environ.get(\"INTERNAL_SERVICE_TOKEN\",\"\")}),timeout=45)"]
+                            }
+                          }
                         }
                       }]
                     }

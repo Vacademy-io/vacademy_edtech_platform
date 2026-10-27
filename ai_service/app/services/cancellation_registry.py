@@ -21,9 +21,11 @@ logger = logging.getLogger(__name__)
 
 _stop_flags: Dict[str, threading.Event] = {}
 # Why the flag was raised: "user" (cancel endpoint / cross-pod cancel seen by
-# the heartbeat) or "fenced" (another pod took the run over — the leg must
-# exit silently: no CANCELLED status, no refund).
+# the heartbeat), "fenced" (another pod took the run over) or "drain" (this
+# pod is shutting down and hands the run back for a resume). The last two are
+# takeovers: the leg must exit silently — no CANCELLED status, no refund.
 _reasons: Dict[str, str] = {}
+TAKEOVER_REASONS = ("fenced", "drain")
 _lock = threading.Lock()
 
 
@@ -64,6 +66,12 @@ def reason(video_id: str) -> Optional[str]:
     reason was recorded)."""
     with _lock:
         return _reasons.get(video_id)
+
+
+def is_takeover(video_id: str) -> bool:
+    """The stop flag was raised because the run is moving to another leg
+    (fenced / drain), not because anyone cancelled it."""
+    return reason(video_id) in TAKEOVER_REASONS
 
 
 def clear(video_id: str) -> None:

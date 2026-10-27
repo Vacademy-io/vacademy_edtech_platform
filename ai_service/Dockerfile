@@ -58,6 +58,9 @@ COPY . /app/ai_service
 
 EXPOSE 8077
 
-CMD ["uvicorn", "ai_service.main:app", "--host", "0.0.0.0", "--port", "8077", "--timeout-keep-alive", "1200"]
+# --timeout-graceful-shutdown: on SIGTERM wait at most 60 s for open requests
+# (long SSE streams would otherwise hold the pod until SIGKILL), then run the
+# lifespan shutdown, which drains any AI-video leg the preStop hook missed.
+CMD ["uvicorn", "ai_service.main:app", "--host", "0.0.0.0", "--port", "8077", "--timeout-keep-alive", "1200", "--timeout-graceful-shutdown", "60"]
 
 
