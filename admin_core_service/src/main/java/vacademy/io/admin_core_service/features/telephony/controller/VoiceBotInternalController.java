@@ -292,8 +292,13 @@ public class VoiceBotInternalController {
                 : userMobileResolver.findDisplayName(row.getUserId()).orElse(null);
         String leadPhone = (row.getUserId() == null || "UNKNOWN".equals(row.getUserId())) ? null
                 : userMobileResolver.findMobile(row.getUserId()).orElse(null);
+        // The caller agreed to "this WhatsApp number": the one this call is on (also the only
+        // number an unknown caller has). The account mobile is only the fallback.
+        String calledNumber = "INBOUND".equalsIgnoreCase(row.getDirection())
+                ? row.getFromNumber() : row.getToNumber();
+        String phone = calledNumber != null && !calledNumber.isBlank() ? calledNumber : leadPhone;
         int created = aiCallActionService.applyMidCall(agent, row.getInstituteId(), row.getId(),
-                row.getUserId(), row.getResponseId(), artefact, leadName, leadPhone, null);
+                row.getUserId(), row.getResponseId(), artefact, leadName, phone, null);
         log.info("vacademy-ai: mid-call action corr={} artefact={} created={}",
                 corr, artefact, created);
         return ResponseEntity.ok(Map.of("ok", true, "created", created));

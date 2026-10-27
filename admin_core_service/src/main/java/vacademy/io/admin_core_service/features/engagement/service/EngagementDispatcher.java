@@ -43,6 +43,16 @@ public class EngagementDispatcher {
 
     public static final String SOURCE = "ENGAGEMENT_ENGINE";
 
+    /**
+     * variables_json key AiCallActionService stamps with the number the call was on, so an
+     * AI-call promise ("shall I send it on this WhatsApp number?") goes to that number even when
+     * the lead row and the student row hold none — 44 of the first 106 promises had no phone
+     * ContactResolver could find. Trusted ONLY on source=AI_CALL rows: a brain-drafted row's
+     * variables come from the model, and a model-written "_toPhone" must never redirect a send.
+     * Always stripped before the variables go to Meta.
+     */
+    public static final String VAR_TO_PHONE = "_toPhone";
+
     private final NotificationService notificationService;
     private final EngagementActionRepository actionRepository;
     private final EngagementMemberRepository memberRepository;
@@ -176,7 +186,12 @@ public class EngagementDispatcher {
     }
 
     private void sendWhatsApp(EngagementAction action, Subject subject, String body) {
-        if (subject.getPhone() == null || subject.getPhone().isBlank()) {
+        Map<String, String> variables = new java.util.HashMap<>(parseVariables(action.getVariablesJson()));
+        String calledNumber = variables.remove(VAR_TO_PHONE);
+        String phone = EngagementAction.SOURCE_AI_CALL.equals(action.getSource())
+                && calledNumber != null && !calledNumber.isBlank()
+                ? calledNumber : subject.getPhone();
+        if (phone == null || phone.isBlank()) {
             throw new SendRejectedException("No phone number on file for this person");
         }
         // A REPLY is a free-form WhatsApp SESSION message (they messaged us first), NOT a template.
@@ -196,7 +211,6 @@ public class EngagementDispatcher {
                     "WhatsApp needs a Meta-approved template. Send this on email/in-app, or wait for "
                     + "template approval. (The AI draft is a preview of intent, not a sendable WhatsApp message.)");
         }
-        Map<String, String> variables = parseVariables(action.getVariablesJson());
         // A media header is only rendered as an IMAGE if headerType is literally "image".
         // WhatsAppService.buildHeaderConfig decides with
         //     "image".equalsIgnoreCase(headerType) ? "image" : "document"
@@ -217,7 +231,7 @@ public class EngagementDispatcher {
                 .languageCode(action.getTemplateLanguage() != null && !action.getTemplateLanguage().isBlank()
                         ? action.getTemplateLanguage() : "en")
                 .recipients(List.of(UnifiedSendRequest.Recipient.builder()
-                        .phone(subject.getPhone())
+                        .phone(phone)
                         .userId(subject.getUserId())
                         .name(subject.getName())
                         .variables(variables)

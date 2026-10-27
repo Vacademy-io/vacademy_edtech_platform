@@ -77,7 +77,7 @@ class EngagementDispatchUsageLimitTest {
         when(members.findById("m1")).thenReturn(Optional.of(member));
         when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
         when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
-        when(credits.hasActiveCredits("i1")).thenReturn(true);
+        when(credits.readBalance("i1")).thenReturn(Optional.of(100.0));
     }
 
     @Test
@@ -123,7 +123,7 @@ class EngagementDispatchUsageLimitTest {
 
     @Test
     void outOfCreditsStillDemotesBeforeTheGate() {
-        when(credits.hasActiveCredits("i1")).thenReturn(false);
+        when(credits.readBalance("i1")).thenReturn(Optional.of(0.0));
         job.dispatch();
         verify(actions).demoteSendToTask(eq("a1"), argThat(s -> s.startsWith("Out of credits")), any());
         verify(credits, never()).authorize(any(), any(), any(), any(), any(), any(),

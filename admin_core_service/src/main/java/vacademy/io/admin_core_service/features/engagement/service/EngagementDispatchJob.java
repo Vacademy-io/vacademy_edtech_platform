@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Phase 2 — the autonomous dispatcher. The decision service creates a {@code kind=SEND} action when
@@ -32,7 +33,8 @@ import java.util.List;
  *
  * Order per send (all guards fail SAFE — a doubtful send becomes a copilot task, never a wrong send):
  *   1. re-check engine liveness + kill switch + channel `auto` intent → demote to TASK if revoked
- *   2. affordability (real balance, fail-CLOSED) → demote to TASK if unaffordable/unreachable
+ *   2. affordability (real balance, fail-CLOSED) → demote to TASK if unaffordable; an unreadable
+ *      balance holds the send and retries (demoted only when it is about to expire)
  *   3. claimForDispatch CAS (send-once) → dispatchClaimed → SENT/FAILED
  *   4. on SENT: charge one credit (idempotency = action id) and stamp billed
  * A separate reconciliation pass re-charges any SENT send whose deduct HTTP call was lost.
@@ -53,6 +55,10 @@ public class EngagementDispatchJob {
      * 72 h expiry still applies.
      */
     static final Duration LIMIT_RETRY_DELAY = Duration.ofMinutes(30);
+    /** A send held because the credit balance could not be read is tried again this much later... */
+    static final Duration UNKNOWN_BALANCE_RETRY_DELAY = Duration.ofMinutes(10);
+    /** ...unless it expires within this window: then it goes to the inbox rather than lapse unseen. */
+    static final Duration UNKNOWN_BALANCE_GIVE_UP = Duration.ofHours(2);
 
     private final EngagementActionRepository actionRepository;
     private final EngagementEngineRepository engineRepository;
@@ -110,10 +116,12 @@ public class EngagementDispatchJob {
         // a week ahead, so they may have opted out or left the audience since the decision. Withdrawn,
         // not demoted — a copilot task would invite a human to message someone who said no.
         EngagementMember member = memberRepository.findById(action.getMemberId()).orElse(null);
-        if (member == null || !"ACTIVE".equals(member.getStatus())) {
-            actionRepository.withdrawDueSend(action.getId(),
-                    "Not sent: this person is no longer active in the engine (opted out, paused or left the audience).",
-                    now);
+        String notSendable = notSendableReason(member, action);
+        if (notSendable != null) {
+            log.warn("Auto-send withdrawn for action {} (engine {}, source {}, member status {}): {}",
+                    action.getId(), action.getEngineId(), action.getSource(),
+                    member == null ? "missing" : member.getStatus(), notSendable);
+            actionRepository.withdrawDueSend(action.getId(), notSendable, now);
             return false;
         }
         if (member.getUserId() != null
@@ -147,15 +155,30 @@ public class EngagementDispatchJob {
             return false;
         }
 
-        // 2b. Affordability — fail CLOSED (hasActiveCredits returns false when the balance can't be
-        // read), so an unreachable credits service never lets an autonomous send slip through unpriced.
-        boolean affordable;
+        // 2b. Affordability — fail CLOSED, so an unreachable credits service never lets an autonomous
+        // send slip through unpriced. But "couldn't read the balance" (an ai_service deploy, a 401/5xx
+        // blip) is not "out of credits": demoting would turn a minute-long blip into a send nobody
+        // makes, and an AI-call promise only lives 24 h. So an unknown balance holds the send and
+        // tries again shortly; only one about to expire goes to the inbox, labelled honestly.
+        Optional<Double> balance;
         try {
-            affordable = creditClient.hasActiveCredits(instituteId);
+            balance = creditClient.readBalance(instituteId);
         } catch (Exception e) {
-            affordable = false;
+            balance = Optional.empty();
         }
-        if (!affordable) {
+        if (balance.isEmpty()) {
+            if (action.getExpiresAt() != null
+                    && action.getExpiresAt().isBefore(now.plus(UNKNOWN_BALANCE_GIVE_UP))) {
+                actionRepository.demoteSendToTask(action.getId(),
+                        "Couldn't check the credit balance — sent to the inbox so you can send it manually.", now);
+            } else {
+                log.info("Auto-send for action {} held: credit balance for institute {} could not be read",
+                        action.getId(), instituteId);
+                actionRepository.rescheduleDueSend(action.getId(), now.plus(UNKNOWN_BALANCE_RETRY_DELAY), now);
+            }
+            return false;
+        }
+        if (balance.get() <= 0.0) {
             actionRepository.demoteSendToTask(action.getId(),
                     "Out of credits — sent to the inbox so you can top up or send manually.", now);
             return false;
@@ -209,6 +232,35 @@ public class EngagementDispatchJob {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Why this person must not get this send now, or null when they may.
+     *
+     * <p>An allow-list, so a status added later fails safe: ACTIVE members, plus PAUSED ones on
+     * an AI-call row. The AI-call system engine keeps every member PAUSED on purpose — that is
+     * what keeps its leads out of the LLM sweep (see AiCallEngagementProvisioner) — and the
+     * caller asked for this send on the call. Requiring ACTIVE here withdrew every AI-call
+     * promise from 2026-09-29. Opt-outs still stop it: OPTED_OUT/EXITED here, and the consent
+     * store check right after.
+     */
+    static String notSendableReason(EngagementMember member, EngagementAction action) {
+        if (member == null) {
+            return "Not sent: this person is no longer in the engine.";
+        }
+        String status = member.getStatus();
+        if ("ACTIVE".equals(status)) {
+            return null;
+        }
+        if ("PAUSED".equals(status) && EngagementAction.SOURCE_AI_CALL.equals(action.getSource())) {
+            return null;
+        }
+        return switch (status == null ? "" : status) {
+            case "OPTED_OUT" -> "Not sent: this person opted out.";
+            case "EXITED" -> "Not sent: this person left the engine's audience.";
+            case "PAUSED" -> "Not sent: this person is paused in the engine.";
+            default -> "Not sent: this person is no longer active in the engine (" + status + ").";
+        };
     }
 
     /** Charge one credit for a sent message; stamp billed on success. Idempotency key = action id. */

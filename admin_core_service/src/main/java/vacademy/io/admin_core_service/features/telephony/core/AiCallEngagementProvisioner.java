@@ -37,8 +37,10 @@ import java.util.Optional;
  *       {@code status = 'ACTIVE'}, so members are created PAUSED (and, belt and braces,
  *       also stamped {@link #NEVER}). PAUSED specifically, not EXITED: the sweep's
  *       enrolment upsert RESURRECTS an EXITED row to ACTIVE, which would hand these leads
- *       straight to the brain. {@code EngagementDispatcher} only does {@code findById},
- *       so a paused member dispatches exactly as well as an active one.
+ *       straight to the brain. A paused member still dispatches: {@code EngagementDispatcher}
+ *       refuses only OPTED_OUT/EXITED, and {@code EngagementDispatchJob} accepts PAUSED for
+ *       source=AI_CALL rows only. Its send-time check once required ACTIVE and withdrew every
+ *       promise from 2026-09-29 to 10-17 — keep the two in step if either changes.
  * </ol>
  *
  * The engine must still be status ACTIVE — {@code EngagementDispatchJob} refuses to

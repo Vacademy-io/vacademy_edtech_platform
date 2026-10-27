@@ -120,6 +120,9 @@ public class EngagementAction {
     @Column(name = "llm_tokens_out")
     private Integer llmTokensOut;
 
+    /** {@link #source} of a row an AI voice call produced (AiCallActionService). */
+    public static final String SOURCE_AI_CALL = "AI_CALL";
+
     /**
      * Who created this row. NULL for everything the engine itself decided (every row that
      * existed before V462); AI_CALL for a row an AI voice call produced.
