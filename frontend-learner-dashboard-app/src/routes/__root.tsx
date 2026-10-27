@@ -68,6 +68,11 @@ import { RevokedDeviceDialog } from "@/components/common/offline/revoked-device-
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
+import {
+  installStudentPreviewBridge,
+  notifyStudentPreviewRoute,
+  readStudentPreviewDraft,
+} from "@/lib/student-preview";
 
 // Define public routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -258,6 +263,15 @@ const RootComponent = () => {
   // and without a re-check after login the offline subsystem would stay
   // dormant until the next full app restart. Identical ids are a no-op.
   const offlinePathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Admin live preview (Settings → Student Display): accept unsaved drafts and
+  // report the current page back. Both are no-ops outside the preview iframe.
+  useEffect(() => {
+    installStudentPreviewBridge();
+  }, []);
+  useEffect(() => {
+    notifyStudentPreviewRoute(offlinePathname);
+  }, [offlinePathname]);
   useEffect(() => {
     let cancelled = false;
     getUserId().then((id) => {
@@ -286,7 +300,11 @@ const RootComponent = () => {
     const themeCode = parsedDetails?.institute_theme_code;
     const instituteId = parsedDetails?.id;
     setInstituteId(instituteId);
-    if (instituteId === HOLISTIC_INSTITUTE_ID) {
+    // Admin live-preview frame: the unsaved brand colour wins.
+    const previewBrand = readStudentPreviewDraft()?.brand;
+    if (previewBrand) {
+      setPrimaryColor(previewBrand);
+    } else if (instituteId === HOLISTIC_INSTITUTE_ID) {
       setPrimaryColor("holistic");
     } else {
       setPrimaryColor(

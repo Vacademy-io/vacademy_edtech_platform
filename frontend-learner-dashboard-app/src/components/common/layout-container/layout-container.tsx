@@ -11,6 +11,9 @@ import { usePlayTheme } from "@/hooks/use-play-theme";
 import { PlayBottomNav, PlayNavRail } from "./PlayBottomNav";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
+import { useStudentLayout } from "@/hooks/use-student-layout";
+import { useRouterState } from "@tanstack/react-router";
+import { StudentWallpaper } from "./StudentWallpaper";
 
 interface LayoutContainerProps {
     children?: React.ReactNode;
@@ -63,6 +66,17 @@ export const LayoutContainer = ({
     const [isMobile, setIsMobile] = useState(false);
     const isPlayTheme = usePlayTheme();
     const isCleanerPlayTheme = useCleanerPlayTheme();
+    // Institute layout (Settings → Student Display → Layout). Unconfigured =
+    // today's behaviour: bottom bar on phones for the play skins only.
+    const layout = useStudentLayout();
+    const pathname = useRouterState({ select: (s) => s.location.pathname });
+    // A route-owned sidebar (course slides) is content navigation, never hidden.
+    const hideAppSidebar = layout.hideSidebar && !sidebarComponent;
+    const wallpaper =
+        layout.wallpaper &&
+        (!layout.wallpaper.dashboardOnly || pathname.startsWith("/dashboard"))
+            ? layout.wallpaper
+            : null;
     // Display settings can hide the standard sidebar app-wide
     // (sidebar.visible === false makes MySidebar render null). Track that
     // here so play mode can fill the desktop nav gap with PlayNavRail.
@@ -126,19 +140,36 @@ export const LayoutContainer = ({
     const showPlayRail =
         (isPlayTheme || isCleanerPlayTheme) &&
         standardSidebarHidden &&
-        !sidebarComponent;
+        !sidebarComponent &&
+        !layout.showBottomBar &&
+        !layout.showRail;
+    // The institute's layout chose a rail on this screen size: it carries the
+    // footer-bar tabs in place of the sidebar (route-owned sidebars win).
+    const showLayoutRail = layout.showRail && !sidebarComponent;
 
     return (
         <>
-            {!immersive && (
+            {wallpaper && !immersive && <StudentWallpaper wallpaper={wallpaper} />}
+            {!immersive && !hideAppSidebar && (
                 <MySidebar
                     sidebarComponent={sidebarComponent}
                     hideBrandingHeader={hideBrandingHeader}
                 />
             )}
             {showPlayRail && !immersive && <PlayNavRail />}
+            {showLayoutRail && !immersive && (
+                <PlayNavRail
+                    forced
+                    items={layout.bottomBar.items}
+                    showLabels={layout.bottomBar.showLabels}
+                />
+            )}
             <SidebarInset
-                className={cn("overflow-x-hidden w-full", fillViewport && "h-svh max-h-svh overflow-hidden")}
+                className={cn(
+                    "overflow-x-hidden w-full",
+                    fillViewport && "h-svh max-h-svh overflow-hidden",
+                    wallpaper && !immersive && "bg-transparent"
+                )}
                 style={{
                     // Reduce content width when chatbot panel is open (desktop only)
                     marginRight: showDockedPanel ? `${panelWidth}px` : "0",
@@ -152,6 +183,7 @@ export const LayoutContainer = ({
                     win via twMerge/!important, and fullWidth keeps the legacy
                     spacing for split-pane/embed surfaces. */}
                 <div
+                    data-vx-wallpaper={wallpaper && !immersive ? "" : undefined}
                     className={cn(
                         "overflow-x-hidden",
                         fillViewport
@@ -159,7 +191,15 @@ export const LayoutContainer = ({
                             : fullWidth
                               ? "m-3 md:m-5 max-w-full"
                               : "mx-auto w-full max-w-screen-xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6",
-                        (isPlayTheme || isCleanerPlayTheme) && isMobile && "pb-20",
+                        // Room for the bar (more for the floating bar and the
+                        // raised center button, which both sit higher).
+                        layout.showBottomBar &&
+                            (layout.bottomBar.style === "floating" ||
+                            (layout.placement === "both" && layout.device !== "mobile")
+                                ? "pb-28"
+                                : layout.bottomBar.items?.some((i) => i.highlight)
+                                  ? "pb-24"
+                                  : "pb-20"),
                         className
                     )}
                 >
@@ -190,8 +230,23 @@ export const LayoutContainer = ({
                     </div>
                 </div>
             )}
-            {/* Play + Cleaner Play: mobile bottom tab bar (skin-aware inside) */}
-            {(isPlayTheme || isCleanerPlayTheme) && isMobile && <PlayBottomNav />}
+            {/* Bottom tab bar: play skins on phones by default, or wherever the
+                institute's layout puts it (skin-aware inside) */}
+            {layout.showBottomBar && (
+                <PlayBottomNav
+                    showOnLargeScreens={layout.device !== "mobile"}
+                    items={layout.bottomBar.items}
+                    maxVisible={layout.bottomBar.maxVisible}
+                    showLabels={layout.bottomBar.showLabels}
+                    // Beside a sidebar (tablet / desktop "both") an edge-to-edge
+                    // bar would cover the sidebar's footer; float it instead.
+                    barStyle={
+                        layout.placement === "both" && layout.device !== "mobile"
+                            ? "floating"
+                            : layout.bottomBar.style
+                    }
+                />
+            )}
         </>
     );
 };

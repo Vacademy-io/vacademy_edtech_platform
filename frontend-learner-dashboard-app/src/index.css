@@ -1679,3 +1679,18 @@ html, body {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* Institute wallpaper (Student Display → Layout): a route's full-page canvas
+   would hide the wallpaper, so the page root goes see-through while it shows.
+   Cards and inputs keep their own surfaces. */
+[data-vx-wallpaper] > .bg-background {
+  background-color: transparent;
+}
+/* The Play skins pin the dashboard canvas with an !important rule in
+   @layer components; an important declaration in the same layer with higher
+   specificity is the one thing that outranks it. */
+@layer components {
+  [data-vx-wallpaper][data-vx-wallpaper] > .dashboard-container {
+    background-color: transparent !important;
+  }
+}

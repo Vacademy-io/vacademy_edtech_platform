@@ -9,7 +9,8 @@
         "layoutNav": "Layout & Navigation",
         "loginAccount": "Login & Account",
         "learningExperience": "Learning Experience",
-        "notificationsRedirect": "Notifications & Redirect"
+        "notificationsRedirect": "Notifications & Redirect",
+        "themeLayout": "Theme & Layout"
     },
     "common": {
         "label": "Label",
@@ -272,5 +273,109 @@
         "theIntegerLine": "The integer line",
         "minutesShort": "{{count}}m",
         "questionsCount": "{{count}} questions"
+    },
+    "toolbar": {
+        "livePreview": "Live preview",
+        "hidePreview": "Hide preview"
+    },
+    "layoutBuilder": {
+        "cardTitle": "App layout",
+        "cardDescription": "Choose where navigation sits on each screen size, what the header shows, the footer tab bar and a wallpaper. Anything you leave untouched keeps today's look.",
+        "devices": {
+            "mobile": "Mobile",
+            "tablet": "Tablet",
+            "desktop": "Website / Windows app"
+        },
+        "placements": {
+            "auto": "Automatic (current)",
+            "sidebar": "Side menu only",
+            "bottomBar": "Footer bar only",
+            "both": "Side menu + footer bar",
+            "rail": "Icon rail (modern app)"
+        },
+        "navigation": {
+            "title": "Navigation",
+            "description": "Automatic keeps today's behaviour: side menu everywhere, plus the footer bar on phones for the Play skins."
+        },
+        "header": {
+            "title": "Header",
+            "description": "Switch off what learners should not see in the top bar.",
+            "items": {
+                "showLogo": "Logo",
+                "showPageTitle": "Page title",
+                "showBackHome": "Back & Home buttons",
+                "showAchievements": "Badges & points",
+                "showLanguage": "Language switcher",
+                "showHelp": "Help & raise a query",
+                "showNotifications": "Notifications bell"
+            },
+            "avatarNote": "The profile picture always stays — it holds logout and the profile."
+        },
+        "bottomBar": {
+            "title": "Footer tab bar",
+            "description": "The tab bar at the bottom of the screen. By default it shows the side menu's tabs.",
+            "customTabs": "Custom tabs",
+            "mirrorsSidebar": "Showing the side menu's tabs. Turn on Custom tabs to pick tabs, icons and links.",
+            "iconLetter": "First letter",
+            "iconUpload": "Upload icon…",
+            "label": "Label",
+            "route": "Page (/dashboard) or https:// link",
+            "newTab": "New tab",
+            "addTab": "Add tab",
+            "maxVisible": "Tabs before \"More\"",
+            "showLabels": "Show labels",
+            "style": "Bar style",
+            "styles": {
+                "classic": "Classic (edge to edge)",
+                "floating": "Floating (modern app)"
+            },
+            "center": "Big center",
+            "centerHelp": "Show this tab as the big round button in the middle of the bar (e.g. Live Class)"
+        },
+        "wallpaper": {
+            "title": "Wallpaper",
+            "description": "A background image behind the learner pages. Cards stay white on top of it.",
+            "imageUrl": "Website / tablet image",
+            "mobileImageUrl": "Phone image (optional)",
+            "none": "No image",
+            "upload": "Upload",
+            "overlay": "Overlay tint",
+            "opacity": "Overlay strength",
+            "scope": "Show on",
+            "scopeAll": "Every page",
+            "scopeDashboard": "Dashboard only"
+        },
+        "upload": {
+            "notImage": "Please choose an image file.",
+            "failed": "Upload failed. Please try again."
+        },
+        "moveUp": "Move up",
+        "moveDown": "Move down"
+    },
+    "livePreview": {
+        "title": "Live preview",
+        "close": "Close preview",
+        "reload": "Reload",
+        "openSite": "Open the learner site",
+        "pages": {
+            "dashboard": "Dashboard",
+            "courses": "Courses",
+            "liveClasses": "Live classes",
+            "assessments": "Assessments",
+            "attendance": "Attendance",
+            "login": "Login page"
+        },
+        "sessionNote": "This is the real learner site showing your unsaved changes — learners see nothing until you save. It uses the learner login of this browser: sign in once inside the preview with a test learner account to see their courses.",
+        "devices": {
+            "mobile": "Phone",
+            "tablet": "Tablet",
+            "windows": "Windows app",
+            "website": "Website"
+        },
+        "expand": "Expand",
+        "shrink": "Shrink"
+    },
+    "themeSection": {
+        "separateSave": "Theme changes are saved with the \"Save theme\" button below. The bar at the bottom of the page saves everything else."
     }
 }

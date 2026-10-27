@@ -18,6 +18,7 @@ import { handleFetchUserRoleDetails } from "@/routes/study-library/courses/-serv
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { TokenKey } from "@/constants/auth/tokens";
 import { NotificationsBell } from "./NotificationsBell";
+import { useStudentLayout } from "@/hooks/use-student-layout";
 import { AchievementsPill } from "@/routes/dashboard/-components/AchievementsPill";
 import { TutorialsHelpButton } from "@/components/tutorials/TutorialsHelpButton";
 import { UserMenu } from "./UserMenu";
@@ -168,6 +169,7 @@ export function Navbar() {
   }
 
   const [showSidebarControls, setShowSidebarControls] = useState(true);
+  const studentLayout = useStudentLayout();
   const { isMobile, openMobile } = useSidebar();
 
   useEffect(() => {
@@ -239,6 +241,14 @@ export function Navbar() {
     };
   }, []);
 
+  // Institute layout (Settings → Student Display → Layout): header items an
+  // institute switched off, and no sidebar toggle when the layout removed the
+  // app sidebar on this screen size (route-owned sidebars keep theirs).
+  const { header, hideSidebar } = studentLayout;
+  const sidebarControls =
+    showSidebarControls && !(hideSidebar && !hasCustomSidebar);
+  const showLanguageInHeader = showLanguageSwitcher && header.showLanguage;
+
   if (isLoading) return <DashboardLoader />;
 
   // Handle error gracefully
@@ -252,7 +262,7 @@ export function Navbar() {
       <div className={`navbar sticky ${isChildViewActive() ? "top-10" : "top-0"} z-50 border-b border-primary-200/40 dark:border-neutral-800 flex h-12 md:h-14 items-center justify-between bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm px-2 md:px-5 py-1.5 md:py-2 transition-all duration-300 w-full overflow-x-auto flex-nowrap [.ui-play_&]:border-b [.ui-play_&]:border-border [.ui-play_&]:bg-white [.ui-play_&]:backdrop-blur-none`}>
         {/* Left Section */}
         <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-          {canGoBack && !isDashboard && (
+          {header.showBackHome && canGoBack && !isDashboard && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <button
@@ -270,7 +280,7 @@ export function Navbar() {
               </TooltipContent>
             </Tooltip>
           )}
-          {!isDashboard && (
+          {header.showBackHome && !isDashboard && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <button
@@ -288,7 +298,7 @@ export function Navbar() {
               </TooltipContent>
             </Tooltip>
           )}
-          {showSidebarControls && (
+          {sidebarControls && (
             <SidebarTrigger>
               <div
                 onClick={() => {}}
@@ -299,8 +309,8 @@ export function Navbar() {
             </SidebarTrigger>
           )}
 
-          {!(
-            (showSidebarControls && (isMobile ? openMobile : true)) ||
+          {header.showLogo && !(
+            (sidebarControls && (isMobile ? openMobile : true)) ||
             hasCustomSidebar
           ) && (
             <div className="flex shrink-0 items-center gap-3">
@@ -403,9 +413,9 @@ export function Navbar() {
 
         {/* Right Section */}
         <div className="flex shrink-0 items-center gap-1">
-          {showLanguageSwitcher && <LanguageDropdown className="relative hidden sm:block" />}
-          <TutorialsHelpButton className="h-9 w-9" />
-          <NotificationsBell className="h-9 w-9" />
+          {showLanguageInHeader && <LanguageDropdown className="relative hidden sm:block" />}
+          {header.showHelp && <TutorialsHelpButton className="h-9 w-9" />}
+          {header.showNotifications && <NotificationsBell className="h-9 w-9" />}
           <UserMenu showLanguage={showLanguageSwitcher} />
         </div>
       </div>
@@ -418,7 +428,7 @@ export function Navbar() {
     >
       {/* Left Section */}
       <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-        {showSidebarControls && (
+        {sidebarControls && (
           <SidebarTrigger>
             <div
               onClick={() => {}}
@@ -428,7 +438,7 @@ export function Navbar() {
             </div>
           </SidebarTrigger>
         )}
-        {canGoBack && !isDashboard && (
+        {header.showBackHome && canGoBack && !isDashboard && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
@@ -443,7 +453,7 @@ export function Navbar() {
             </TooltipContent>
           </Tooltip>
         )}
-        {!isDashboard && (
+        {header.showBackHome && !isDashboard && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
@@ -459,8 +469,8 @@ export function Navbar() {
           </Tooltip>
         )}
 
-        {!(
-          (showSidebarControls && (isMobile ? openMobile : true)) ||
+        {header.showLogo && !(
+          (sidebarControls && (isMobile ? openMobile : true)) ||
           hasCustomSidebar
         ) && (
           <div className="flex shrink-0 items-center gap-3">
@@ -496,7 +506,7 @@ export function Navbar() {
 
         {/* Page title: identity + location. Dropped on phones on the dashboard,
             where the greeting already says where you are and the bar is full. */}
-        {navHeading ? (
+        {navHeading && header.showPageTitle ? (
           <h1 className={`min-w-0 truncate text-sm md:text-base font-semibold leading-tight text-neutral-900 dark:text-neutral-100 [.ui-play_&]:font-bold${isDashboard ? " hidden sm:block" : ""}`}>
             {navHeading}
           </h1>
@@ -531,15 +541,15 @@ export function Navbar() {
           </Tooltip>
         )}
         {/* Achievements — badge count + points, opens the achievements popup */}
-        <AchievementsPill className="hidden xs:flex" />
+        {header.showAchievements && <AchievementsPill className="hidden xs:flex" />}
         {/* Language switcher — only when the institute enabled >1 language */}
-        {showLanguageSwitcher && <LanguageDropdown className="relative hidden sm:block" />}
+        {showLanguageInHeader && <LanguageDropdown className="relative hidden sm:block" />}
         {/* Help & tutorials */}
-        <TutorialsHelpButton className="h-9 w-9" />
+        {header.showHelp && <TutorialsHelpButton className="h-9 w-9" />}
         {/* Notifications */}
-        <NotificationsBell className="h-9 w-9" />
+        {header.showNotifications && <NotificationsBell className="h-9 w-9" />}
 
-        {showTopbarIcon && (
+        {showTopbarIcon && header.showHelp && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
