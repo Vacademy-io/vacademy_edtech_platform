@@ -50,30 +50,13 @@ TTS baseline) × the live USD→credits ratio, to one decimal.
 If Smallest or Navana fails during a video, that video's narration falls back
 to Edge, as Sarvam's does, and billing records the engine that actually spoke.
 
-## Deploy: putting `NAVANA_API_KEY` on ai-service (one-time)
+## Deploy: `NAVANA_API_KEY` on ai-service
 
-The GitHub secret `NAVANA_API_KEY` lives in the `voice-bot` environment, because
-the repo is at GitHub's 100-secret limit. The ai-service deploy job therefore
-can't read it. Instead, the deploy copies the key from a k8s secret named
-`ai-navana-tts`, the same way it handles `ai-llm-key-encryption`.
-
-Create that secret once, from the value already on the voice bot. The commands
-never print the key:
-
-```bash
-KEY=$(kubectl -n default get deploy voice-bot-service \
-  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="NAVANA_API_KEY")].value}')
-kubectl -n default create secret generic ai-navana-tts --from-literal=NAVANA_API_KEY="$KEY"
-unset KEY
-```
-
-The next ai-service deploy picks it up. To turn it on right away instead:
-
-```bash
-kubectl -n default set env deployment/ai-service --from=secret/ai-navana-tts --keys=NAVANA_API_KEY
-```
-
-Until then, the picker lists Navana as unavailable.
+The ai-service deploy job sets `NAVANA_API_KEY` from the GitHub organization
+secret of the same name, which holds the keys the voice bot uses. The repo is
+public, so it can read organization secrets. If that secret is empty, the job
+falls back to a k8s secret named `ai-navana-tts` when one exists. With neither,
+the picker lists Navana as unavailable.
 
 Each Navana key allows 2 concurrent streams, and the voice bot shares the
 same keys. ai-service keeps itself to 2 streams per key on each pod and

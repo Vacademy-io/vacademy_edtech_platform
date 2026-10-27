@@ -84,6 +84,7 @@ jobs:
           YT_CAPTIONS_PROXY_HTTP_URL: ${{ secrets.YT_CAPTIONS_PROXY_HTTP_URL }}
           YT_CAPTIONS_PROXY_HTTPS_URL: ${{ secrets.YT_CAPTIONS_PROXY_HTTPS_URL }}
           SUPADATA_API_KEY: ${{ secrets.SUPADATA_API_KEY }}
+          NAVANA_API_KEY: ${{ secrets.NAVANA_API_KEY }}
         run: |
           if kubectl get deployment "$DEPLOYMENT_NAME" --namespace "$NAMESPACE" >/dev/null 2>&1; then
             kubectl set env deployment/"$DEPLOYMENT_NAME" \
@@ -129,12 +130,14 @@ jobs:
                 SMALLEST_API_KEY=${{ secrets.SMALLEST_API_KEY }}
             fi
 
-            # Navana (Bodhi) TTS for LMS AI video narration. The GitHub secret lives
-            # in the `voice-bot` ENVIRONMENT (the repo is at the 100-secret limit), so
-            # this job cannot read it: the keys come from a k8s secret created once
-            # by hand (docs/lms/AI_VIDEO_VOICES.md). Absent → Navana is shown
-            # as unavailable in the voice picker.
-            if kubectl get secret ai-navana-tts --namespace "$NAMESPACE" >/dev/null 2>&1; then
+            # Navana (Bodhi) TTS for LMS AI video narration: the org secret (the same
+            # keys the voice bot uses), passed via env so it is never echoed. Without
+            # it, a hand-made k8s secret `ai-navana-tts` is the fallback; with neither,
+            # Navana is shown as unavailable in the voice picker.
+            if [ -n "$NAVANA_API_KEY" ]; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                NAVANA_API_KEY="$NAVANA_API_KEY" >/dev/null
+            elif kubectl get secret ai-navana-tts --namespace "$NAMESPACE" >/dev/null 2>&1; then
               kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
                 --from=secret/ai-navana-tts --keys=NAVANA_API_KEY
             fi
