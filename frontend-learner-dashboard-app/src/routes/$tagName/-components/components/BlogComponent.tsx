@@ -44,6 +44,8 @@ export interface BlogComponentProps {
   pageSize?: number;
   /** '' = every category. */
   category?: string;
+  /** Categories this section leaves out (e.g. exam guides kept off the blog). */
+  excludeCategories?: string[];
   showCoverImage?: boolean;
   showExcerpt?: boolean;
   showDate?: boolean;
@@ -84,6 +86,7 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
   columns = 3,
   pageSize = 9,
   category = "",
+  excludeCategories,
   showCoverImage = true,
   showExcerpt = true,
   showDate = true,
@@ -175,6 +178,7 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
       columns={columns}
       pageSize={pageSize}
       category={category}
+      excludeCategories={excludeCategories}
       showCoverImage={showCoverImage}
       showExcerpt={showExcerpt}
       showDate={showDate}
@@ -213,6 +217,7 @@ interface BlogListProps {
   columns: 2 | 3;
   pageSize: number;
   category: string;
+  excludeCategories?: string[];
   showCoverImage: boolean;
   showExcerpt: boolean;
   showDate: boolean;
@@ -234,7 +239,7 @@ interface BlogListProps {
 }
 
 const BlogList: React.FC<BlogListProps> = ({
-  heading, subheading, layout, columns, pageSize, category,
+  heading, subheading, layout, columns, pageSize, category, excludeCategories,
   showCoverImage, showExcerpt, showDate, showAuthor, showCategory, showReadingTime, showCategoryFilter,
   readMoreLabel, emptyMessage, sectionStyle, instituteId, postPath, onOpenPost, isPreviewMode, onHome, locale,
   viewMore,
@@ -249,12 +254,18 @@ const BlogList: React.FC<BlogListProps> = ({
   const [failed, setFailed] = useState(false);
 
   const effectiveCategory = category || pickedCategory;
+  const excludeKey = Array.isArray(excludeCategories) ? excludeCategories.join(",") : "";
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setFailed(false);
-    BlogService.listPosts(instituteId, { page, size: pageSize, category: effectiveCategory })
+    BlogService.listPosts(instituteId, {
+      page,
+      size: pageSize,
+      category: effectiveCategory,
+      excludeCategories: excludeKey,
+    })
       .then((res) => {
         if (!cancelled) setData(res);
       })
@@ -267,7 +278,7 @@ const BlogList: React.FC<BlogListProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [instituteId, page, pageSize, effectiveCategory]);
+  }, [instituteId, page, pageSize, effectiveCategory, excludeKey]);
 
   const posts = data?.content || [];
   const totalPages = data?.total_pages || 0;

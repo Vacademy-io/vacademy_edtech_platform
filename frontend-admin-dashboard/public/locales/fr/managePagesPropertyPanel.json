@@ -1383,6 +1383,8 @@
     "category": "Afficher uniquement cette catégorie",
     "allCategories": "Toutes les catégories",
     "categoryHelp": "Limitez la section à une catégorie, par ex. une page Actualités et une page Conseils séparée.",
+    "excludeCategories": "Masquer ces catégories",
+    "excludeCategoriesHelp": "Les articles des catégories activées n'apparaîtront pas dans cette section, par ex. garder les guides d'examen hors du blog principal.",
     "showCoverImage": "Afficher l’image de couverture",
     "showExcerpt": "Afficher l’extrait",
     "showDate": "Afficher la date",

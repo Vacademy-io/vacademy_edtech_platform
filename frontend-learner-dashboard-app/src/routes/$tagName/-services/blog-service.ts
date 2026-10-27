@@ -46,7 +46,7 @@ export interface BlogPostPage {
 export class BlogService {
   static async listPosts(
     instituteId: string,
-    opts: { page?: number; size?: number; category?: string } = {}
+    opts: { page?: number; size?: number; category?: string; excludeCategories?: string } = {}
   ): Promise<BlogPostPage> {
     const params: Record<string, string | number> = {
       instituteId,
@@ -54,6 +54,8 @@ export class BlogService {
       size: opts.size ?? 12,
     };
     if (opts.category) params.category = opts.category;
+    // Comma-separated, sent as one plain param (no array brackets).
+    if (opts.excludeCategories) params.excludeCategories = opts.excludeCategories;
     const res = await publicAxios.get<BlogPostPage>(`${API_BASE}/posts`, { params });
     return res.data;
   }

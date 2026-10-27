@@ -25,9 +25,10 @@ public class PublicCatalogueBlogController {
     @ClientCacheable(maxAgeSeconds = 300, scope = CacheScope.PUBLIC)
     public ResponseEntity<BlogPostPageResponse> list(@RequestParam String instituteId,
                                                      @RequestParam(required = false) String category,
+                                                     @RequestParam(required = false) String excludeCategories,
                                                      @RequestParam(defaultValue = "0") int page,
                                                      @RequestParam(defaultValue = "12") int size) {
-        return ResponseEntity.ok(service.publicList(instituteId, category, page, size));
+        return ResponseEntity.ok(service.publicList(instituteId, category, excludeCategories, page, size));
     }
 
     @GetMapping("/post")
