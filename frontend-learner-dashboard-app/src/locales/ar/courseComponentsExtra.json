@@ -74,7 +74,11 @@
         "enterFullscreen": "الدخول في وضع ملء الشاشة",
         "previous": "السابق",
         "next": "التالي",
-        "sourceVideoAudio": "صوت الفيديو المصدر"
+        "sourceVideoAudio": "صوت الفيديو المصدر",
+        "captionsOn": "الترجمة مفعّلة",
+        "captionsOff": "الترجمة متوقفة",
+        "showCaptions": "إظهار الترجمة",
+        "hideCaptions": "إخفاء الترجمة"
     },
     "errors": {
         "failedToLoadTimeline": "تعذّر تحميل الخط الزمني",

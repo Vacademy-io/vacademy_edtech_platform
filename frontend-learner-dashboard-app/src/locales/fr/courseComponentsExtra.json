@@ -74,7 +74,11 @@
         "enterFullscreen": "Passer en plein écran",
         "previous": "Précédent",
         "next": "Suivant",
-        "sourceVideoAudio": "Audio de la vidéo source"
+        "sourceVideoAudio": "Audio de la vidéo source",
+        "captionsOn": "ST ACTIVÉS",
+        "captionsOff": "ST DÉSACTIVÉS",
+        "showCaptions": "Afficher les sous-titres",
+        "hideCaptions": "Masquer les sous-titres"
     },
     "errors": {
         "failedToLoadTimeline": "Échec du chargement de la chronologie",

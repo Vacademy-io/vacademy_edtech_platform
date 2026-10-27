@@ -193,3 +193,73 @@ def test_proper_nouns_never_shield_formulas_shouted_words_or_real_errors():
         '"H2SO4" — subscripts missing → write: "H₂SO₄"',
         '"ITRC: 2 + 2 = 5" — 2 + 2 is 4 → write: "2 + 2 = 4"',
     ]
+
+
+# ── text over text, and the last-resort fit (video feadce4b, 2026-10-27) ─────
+
+OVERLAP = (
+    '<div id="shot-root" style="position:absolute;inset:0;width:100%;height:100%;background:#fff">'
+    '<div style="position:absolute;left:200px;top:300px;font:700 60px sans-serif">RESPECT THE JOURNEY</div>'
+    '<div style="position:absolute;left:260px;top:310px;font:italic 56px serif">now you can read it</div>'
+    '<div style="position:absolute;left:200px;top:600px;font:700 40px sans-serif">A line on its own</div>'
+    '<div style="position:absolute;left:200px;top:600px;opacity:0"><span style="font:700 40px sans-serif">faded out</span></div>'
+    '<div style="position:absolute;left:900px;top:100px;font:700 40px sans-serif">Glow</div>'
+    '<div style="position:absolute;left:902px;top:102px;font:700 40px sans-serif;color:#999">Glow</div>'
+    "</div>"
+)
+
+
+def test_the_walker_reports_text_drawn_over_text_only_when_both_are_visible():
+    """The recap printed its closing quote over the takeaway list. A child of a
+    faded-out group and same-text glow copies are not collisions."""
+    rows = _run(lambda w: w.bbox_check_shot(html=OVERLAP, width=1920, height=842, timestamps=[0.5],
+                                            background="#fff", check_overlap=True))
+    hits = [r for r in rows if r.get("zone") == "overlap"]
+    assert len(hits) == 1
+    assert "RESPECT THE JOURNEY" in hits[0]["text"] and "now you can read it" in hits[0]["text"]
+    # off by default (non-lesson runs are unchanged)
+    assert _run(lambda w: w.bbox_check_shot(html=OVERLAP, width=1920, height=842, timestamps=[0.5],
+                                            background="#fff")) == []
+
+
+CLIPPED = (
+    '<style>#shot-root > .list{position:absolute;left:1700px;top:300px;}</style>'
+    '<div id="shot-root" style="position:relative;width:100%;height:100%;overflow:hidden;background:#fff">'
+    '<div style="position:absolute;left:80px;top:60px;font:800 70px sans-serif">BENEATH ONE MOMENT</div>'
+    '<div class="list"><span style="font:700 28px sans-serif;white-space:nowrap">03 LIMITED COMMUNICATION</span></div>'
+    "</div>"
+)
+
+
+def test_text_still_past_the_edge_is_scaled_to_fit_and_verified():
+    import overflow_fit as of
+    rows = _run(lambda w: w.bbox_check_shot(html=CLIPPED, width=1920, height=842, timestamps=[0.5],
+                                            background="#fff", check_overlap=True))
+    rects = of.edge_rects(rows)
+    assert rects and "LIMITED COMMUNICATION" in rows[0]["text"]
+    k, tx, ty = of.fit_transform(rects, 1920, 842)
+    assert of.MIN_SCALE <= k < 1
+    fitted = of.apply_fit(CLIPPED, k, tx, ty)
+    assert "#shot-root > [data-fit-wrap] > .list" in fitted       # child selectors step through the wrapper
+    after = _run(lambda w: w.bbox_check_shot(html=fitted, width=1920, height=842, timestamps=[0.5],
+                                             background="#fff", check_overlap=True))
+    assert of.edge_rects(after) == []
+
+
+def test_fit_math_and_its_limits():
+    import overflow_fit as of
+    assert of.fit_transform([], 1920, 842) is None                                   # nothing overflows
+    assert of.fit_transform([{"l": 100, "t": 100, "r": 1900, "b": 800}], 1920, 842) is None
+    k, tx, ty = of.fit_transform([{"l": 1700, "t": 400, "r": 2000, "b": 440}], 1920, 842)
+    assert abs(k - 1920 * 0.96 / 2000) < 1e-3
+    assert of.fit_transform([{"l": 0, "t": 0, "r": 3000, "b": 100}], 1920, 842) is None   # < 75 %: no postage stamps
+    media = [{"zone": "", "is_media": True, "rect": {"l": -60, "t": 0, "r": 1800, "b": 10}}]
+    zoned = [{"zone": "overlap", "is_media": False, "rect": {"l": 0, "t": 0, "r": 9999, "b": 10}}]
+    assert of.edge_rects(media + zoned) == []                       # bled photos / overlaps are not scaled
+    assert of.apply_fit("<div class='x'>no root</div>", 0.9, 0, 0) is None
+    nested = "<div id='shot-root'><div><div>a</div></div><p>b</p></div><script>gsap.set('#shot-root > p',{})</script>"
+    out = of.apply_fit(nested, 0.9, 1, 2)
+    assert out.startswith("<div id='shot-root'><div data-fit-wrap")
+    assert out.count("</div>") == nested.count("</div>") + 1
+    assert out.index("</div><script>") > out.index("<p>b</p>")
+    assert "'#shot-root > [data-fit-wrap] > p'" in out

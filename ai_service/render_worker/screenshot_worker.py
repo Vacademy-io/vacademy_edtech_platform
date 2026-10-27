@@ -258,6 +258,7 @@ class ScreenshotWorker:
         background: str = "#0a0e27",
         keep_out: Optional[List[Dict[str, object]]] = None,
         check_squeeze: bool = False,
+        check_overlap: bool = False,
     ) -> List[Dict[str, object]]:
         """Render `html` in the harness and check whether any visible text or
         media overflows the viewport at each timestamp.
@@ -270,6 +271,11 @@ class ScreenshotWorker:
         `check_squeeze`: also report text squeezed into a column so narrow its
         words break letter by letter (zone="squeezed") — a lesson recap once
         shipped "Veri / fy / the / 90°" one syllable per line.
+
+        `check_overlap`: also report visible text drawn over other visible
+        text (zone="overlap") — a lesson recap once printed its closing quote
+        on top of the takeaway list. Opacity counts every ancestor, so text
+        inside a faded-out group is not "visible".
 
         Returns a list of violation dicts:
             {"t": float, "selector": str, "rect": {l, t, r, b}, "text": str}
@@ -419,7 +425,7 @@ class ScreenshotWorker:
             # EVERY shot of the run). Pack both dimensions into a single
             # object argument and destructure on the JS side.
             walker_js = """
-                ({W, H, KO, SQ}) => {
+                ({W, H, KO, SQ, OV}) => {
                     function cssPath(el) {
                         if (!el) return '?';
                         if (el.id) return '#' + el.id;
@@ -431,6 +437,18 @@ class ScreenshotWorker:
                         return p;
                     }
                     const out = [];
+                    const texts = [];  // visible leaf text, for the overlap check
+                    function effOpacity(el, view) {
+                        let o = 1;
+                        for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+                            const c = view.getComputedStyle(n);
+                            if (!c) break;
+                            if (c.display === 'none' || c.visibility === 'hidden') return 0;
+                            const v = parseFloat(c.opacity);
+                            if (!isNaN(v)) o *= v;
+                        }
+                        return o;
+                    }
                     const hosts = document.querySelectorAll('[id="bbox-check-shot"]');
                     hosts.forEach(host => {
                         const root = host.shadowRoot;
@@ -497,6 +515,9 @@ class ScreenshotWorker:
                                     return;
                                 }
                             }
+                            if (OV && isLeafText && r.height >= 8 && effOpacity(el, view) >= 0.3) {
+                                texts.push({el: el, r: r, text: text});
+                            }
                             // Keep-out zones (lesson teacher area / caption strip).
                             const area = r.width * r.height;
                             if (KO && KO.length && area < 0.5 * W * H) {
@@ -535,6 +556,39 @@ class ScreenshotWorker:
                             }
                         });
                     });
+                    // Text drawn over text: two visible leaf text boxes sharing
+                    // a meaningful area. Same-text pairs are layered effects
+                    // (shadow / outline copies), not collisions.
+                    if (OV) {
+                        const seen = new Set();
+                        for (let i = 0; i < texts.length; i++) {
+                            for (let j = i + 1; j < texts.length; j++) {
+                                const a = texts[i], b = texts[j];
+                                if (a.text === b.text) continue;
+                                if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+                                const ix = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+                                const iy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+                                if (ix <= 6 || iy <= 6) continue;
+                                const small = Math.min(a.r.width * a.r.height, b.r.width * b.r.height);
+                                if (ix * iy < 0.2 * small) continue;
+                                const key = a.text + '|' + b.text;
+                                if (seen.has(key)) continue;
+                                seen.add(key);
+                                out.push({
+                                    selector: cssPath(a.el) + ' × ' + cssPath(b.el),
+                                    rect: {
+                                        l: Math.round(Math.max(a.r.left, b.r.left) * 10) / 10,
+                                        t: Math.round(Math.max(a.r.top, b.r.top) * 10) / 10,
+                                        r: Math.round(Math.min(a.r.right, b.r.right) * 10) / 10,
+                                        b: Math.round(Math.min(a.r.bottom, b.r.bottom) * 10) / 10,
+                                    },
+                                    text: (a.text.slice(0, 38) + ' × ' + b.text.slice(0, 38)),
+                                    is_media: false,
+                                    zone: 'overlap',
+                                });
+                            }
+                        }
+                    }
                     return out;
                 }
             """
@@ -553,7 +607,7 @@ class ScreenshotWorker:
                     )
                     rows = await page.evaluate(
                         walker_js, {"W": width, "H": height, "KO": list(keep_out or []),
-                                    "SQ": bool(check_squeeze)}
+                                    "SQ": bool(check_squeeze), "OV": bool(check_overlap)}
                     )
                     for row in rows or []:
                         violations.append({

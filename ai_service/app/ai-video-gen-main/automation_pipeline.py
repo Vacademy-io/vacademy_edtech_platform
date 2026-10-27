@@ -13195,7 +13195,9 @@ class VideoGenerationPipeline:
                 "Your previous shot HTML has layout defects measured by a headless-Chromium "
                 f"bounding-box walk ({', '.join(names)}). `teacher`: board content inside the area the "
                 "teacher video is composited over (hidden / collides). `squeezed`: text forced into a "
-                "column so narrow its words break letter by letter (e.g. \"Veri / fy / the\"):",
+                "column so narrow its words break letter by letter (e.g. \"Veri / fy / the\"). "
+                "`overlap`: two visible pieces of text drawn on top of each other (rect = where they "
+                "collide):",
             ]
             for v in zoned[:6]:
                 r = v.get("rect") or {}
@@ -13210,6 +13212,9 @@ class VideoGenerationPipeline:
                 "sizes, reflow into fewer columns; keep that area plain background). Give every text "
                 "column room for at least ~12 characters per line — `min-width`, `flex:1 1 auto`, "
                 "`flex-wrap:wrap`, or fewer columns; never let a flex child shrink a text block to a sliver.",
+                "For `overlap`: give each text group its own space (stack them in normal flow, or reserve "
+                "a separate region), or fade the earlier group OUT before the later one fades in — text "
+                "must never sit on top of other visible text.",
                 "",
             ]
             if len(zoned) == len(violations):
@@ -13750,6 +13755,7 @@ class VideoGenerationPipeline:
                 background=bg,
                 keep_out=_lesson_zones or None,
                 check_squeeze=_lesson_on,
+                check_overlap=_lesson_on,
             )
         except ScreenshotClientError as exc:
             print(f"   ⚠️ Shot {shot_idx + 1}: bbox-lint SKIPPED — render worker /bbox-check failed: {exc}")
@@ -13787,6 +13793,24 @@ class VideoGenerationPipeline:
             verdict="fail", reason=f"{len(violations)} overflow violations",
         )
 
+        def _finish() -> Dict[str, Any]:
+            # Text still past the canvas edge after the regen (or the regen
+            # failed) → scale the shot's content to fit rather than ship it
+            # clipped (video feadce4b: a list read "LIMITED COMMUN" at the right
+            # edge). Kept only if the re-lint confirms the text overflow is gone.
+            shipped_regen = record.get("shipped") == "regen"
+            remaining = record.get("post_violations") if shipped_regen else record.get("pre_violations")
+            if remaining:
+                self._fit_overflowing_shot(
+                    record,
+                    html=record.get("regen_html") or html,
+                    remaining=list(remaining),
+                    client=client, canvas_w=canvas_w, canvas_h=canvas_h,
+                    timestamps=timestamps, bg=bg, shot_idx=shot_idx,
+                    keep_out=_lesson_zones or None, lesson_on=_lesson_on,
+                )
+            return record
+
         corrective = self._build_bbox_corrective_prompt(
             record["pre_violations"], canvas_w, canvas_h,
         )
@@ -13813,7 +13837,7 @@ class VideoGenerationPipeline:
             except Exception as exc:
                 print(f"   ⚠️ Shot {shot_idx + 1} bbox-lint regen failed ({exc}) — shipping original")
                 record["regen_error"] = str(exc)
-                return record
+                return _finish()
         finally:
             _llm_phase.reset(_phase_tok)
             _llm_stage.reset(_stage_tok)
@@ -13825,7 +13849,7 @@ class VideoGenerationPipeline:
             # down with it — the exception killed the shot task and it
             # shipped as a blank fallback frame.
             record["regen_error"] = f"unparseable regen: {str(exc)[:120]}"
-            return record
+            return _finish()
         html2 = (data2 or {}).get("html", "")
         if usage2:
             usage["prompt_tokens"] = usage.get("prompt_tokens", 0) + usage2.get("prompt_tokens", 0)
@@ -13834,7 +13858,7 @@ class VideoGenerationPipeline:
 
         if not html2:
             record["regen_error"] = "regen returned empty html"
-            return record
+            return _finish()
 
         candidate = self._sanitize_html_content(html2)
         candidate = self._clamp_entry_animations(candidate, duration_s)
@@ -13851,11 +13875,12 @@ class VideoGenerationPipeline:
                 background=bg,
                 keep_out=_lesson_zones or None,
                 check_squeeze=_lesson_on,
+                check_overlap=_lesson_on,
             )
         except ScreenshotClientError as exc:
             print(f"   ⚠️ Shot {shot_idx + 1} bbox-lint regen re-check failed ({exc}) — shipping original")
             record["regen_error"] = f"regen re-check failed: {exc}"
-            return record
+            return _finish()
 
         record["post_violations"] = [
             {
@@ -13890,7 +13915,58 @@ class VideoGenerationPipeline:
                 f"({len(violations)} → {len(violations2)}) — shipping best attempt"
             )
 
-        return record
+        return _finish()
+
+    def _fit_overflowing_shot(
+        self,
+        record: Dict[str, Any],
+        *,
+        html: str,
+        remaining: List[Any],
+        client: Any,
+        canvas_w: int,
+        canvas_h: int,
+        timestamps: List[float],
+        bg: str,
+        shot_idx: int,
+        keep_out: Optional[List[Dict[str, Any]]],
+        lesson_on: bool,
+    ) -> None:
+        """Scale the shot's content so text stays inside the canvas (see
+        overflow_fit). Sets record["regen_html"] / ["fit"] on success."""
+        try:
+            import overflow_fit
+        except ImportError:
+            return
+        rects = overflow_fit.edge_rects(remaining)
+        if not rects:
+            return
+        transform = overflow_fit.fit_transform(rects, canvas_w, canvas_h)
+        if transform is None:
+            record["fit"] = {"applied": False, "reason": "would shrink below "
+                             f"{overflow_fit.MIN_SCALE:.0%} or nothing to fit"}
+            return
+        fitted = overflow_fit.apply_fit(html, *transform)
+        if not fitted:
+            record["fit"] = {"applied": False, "reason": "no #shot-root to wrap"}
+            return
+        try:
+            after = client.check_shot_bbox(
+                html=self._ensure_fonts(fitted),
+                width=canvas_w, height=canvas_h, timestamps=timestamps, background=bg,
+                keep_out=keep_out, check_squeeze=lesson_on, check_overlap=lesson_on,
+            )
+        except Exception as exc:  # noqa: BLE001 - unverified fit is not shipped
+            record["fit"] = {"applied": False, "reason": f"re-check failed: {exc}"}
+            return
+        if overflow_fit.edge_rects(after):
+            record["fit"] = {"applied": False, "reason": "text still overflows after fit",
+                             "scale": transform[0]}
+            return
+        record["regen_html"] = fitted
+        record["shipped"] = "fit"
+        record["fit"] = {"applied": True, "scale": transform[0], "translate": list(transform[1:])}
+        print(f"   📐 Shot {shot_idx + 1}: text overflow fixed by scaling the shot to {transform[0]:.0%}")
 
     def _validate_shot_animation_density(
         self,
@@ -14588,12 +14664,18 @@ class VideoGenerationPipeline:
             "error_pre": review.get("error"),
         }
 
-        # Severity-3 → fire one corrective regen, then re-screenshot + re-review.
+        # Severity-3 → corrective regen(s), each re-screenshotted + re-reviewed.
         # Pillar 2.8 — gated by tier knob. When `vision_review_regen_enabled`
         # is False (default on ultra after Met-Gala audit), detection still
         # runs and issues are persisted, but the corrective LLM call is
         # skipped. Net: save ~$0.85/run while shipping the same output the
         # regen would have rejected anyway.
+        #
+        # Lessons get a second attempt that starts from the first attempt's
+        # HTML, screenshots and remaining issues: with one attempt, a regen
+        # that was still severity 3 meant shipping the ORIGINAL, which the
+        # reviewer had already called broken (video feadce4b, 2026-10-27:
+        # a list clipped at the right edge, a quote printed over the recap).
         if (
             review.get("severity_max", 0) >= 3
             and review.get("issues")
@@ -14604,86 +14686,99 @@ class VideoGenerationPipeline:
                 or bool(getattr(self, "_lesson_plan", None))
             )
         ):
-            _issue_codes = ",".join(
-                str(i.get("code") or i.get("type") or "issue")
-                for i in (review.get("issues") or [])[:3]
+            _lesson_on = bool(getattr(self, "_lesson_plan", None))
+            _max_attempts = int(self._tier_config.get("vision_review_regen_attempts") or (2 if _lesson_on else 1))
+            _bg = str(
+                shot.get("background")
+                or shot.get("bg")
+                or ((getattr(self, "_current_style_guide", None) or {}).get("palette") or {}).get("background")
+                or "#0a0e27"
             )
-            self._emit_shot_regen(
-                shot_idx, "vision", attempt=1,
-                verdict="fail",
-                reason=f"severity {review.get('severity_max')} [{_issue_codes}]",
-            )
-            corrective = self._build_vision_corrective_prompt(
-                review.get("issues") or [],
-                html=html,
-            )
-            # Pillar 1 — stamp the corrective LLM call as phase=regen so it
-            # lands in the regen bucket of cost_breakdown.json. The reset
-            # happens whether the chat() call succeeds OR raises; any
-            # subsequent chat() inside the post-processing block (e.g. the
-            # internal `review_shot` LLM call) is back to default phase=base.
-            _phase_tok = _llm_phase.set("regen")
-            _stage_tok = _llm_stage.set(f"vision_review_regen_shot_{shot_idx}")
-            # ── Phase C: MULTIMODAL corrective regen ──
-            # The failing render's PNG bytes are live locals here — attach up
-            # to two frames so the fixer SEES the defect instead of guessing
-            # from a text description of it (the craft review's highest
-            # impact/effort fix). The model is pinned to the vision-capable
-            # reviewer model: the un-pinned stage route could resolve to a
-            # text-only executor that errors on image parts.
-            _regen_user_content: Any = corrective
-            try:
-                if screenshots_pre:
-                    from shot_visual_reviewer import _png_to_data_url as _to_data_url
-                    _regen_user_content = [{
-                        "type": "text",
-                        "text": corrective + (
-                            "\n\nScreenshots of YOUR FAILING RENDER are attached "
-                            "(in shot-time order) — look at them and fix exactly "
-                            "what is visually wrong."
-                        ),
-                    }]
-                    for _png in screenshots_pre[:2]:
-                        _regen_user_content.append(
-                            {"type": "image_url", "image_url": {"url": _to_data_url(_png)}}
-                        )
-            except Exception:
-                _regen_user_content = corrective
-            try:
-                raw2, usage2 = self.html_client.chat(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                        {"role": "assistant", "content": (last_raw_response or "")[:4000]},
-                        {"role": "user", "content": _regen_user_content},
-                    ],
-                    temperature=0.4,
-                    max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
-                    expect_json=True,
-                    # With screenshots attached: the vision reviewer's model
-                    # (else the registry default, which takes images).
-                    model=(
-                        self._resolve_vision_stage_model("vision_review")
-                    ) if not isinstance(_regen_user_content, str) else None,
+            _sev_original = int(review.get("severity_max", 0) or 0)
+            cur_review, cur_html, cur_pngs = review, html, screenshots_pre
+            cur_raw = last_raw_response or ""
+            for _attempt in range(1, max(1, _max_attempts) + 1):
+                _issue_codes = ",".join(
+                    str(i.get("code") or i.get("type") or "issue")
+                    for i in (cur_review.get("issues") or [])[:3]
                 )
-            except Exception as _re_exc:
+                self._emit_shot_regen(
+                    shot_idx, "vision", attempt=_attempt,
+                    verdict="fail",
+                    reason=f"severity {cur_review.get('severity_max')} [{_issue_codes}]",
+                )
+                corrective = self._build_vision_corrective_prompt(
+                    cur_review.get("issues") or [],
+                    html=cur_html,
+                )
+                # Pillar 1 — stamp the corrective LLM call as phase=regen so it
+                # lands in the regen bucket of cost_breakdown.json. The reset
+                # happens whether the chat() call succeeds OR raises; any
+                # subsequent chat() inside the post-processing block (e.g. the
+                # internal `review_shot` LLM call) is back to default phase=base.
+                _phase_tok = _llm_phase.set("regen")
+                _stage_tok = _llm_stage.set(
+                    f"vision_review_regen_shot_{shot_idx}" + (f"_try{_attempt}" if _attempt > 1 else ""))
+                # ── Phase C: MULTIMODAL corrective regen ──
+                # The failing render's PNG bytes are live locals here — attach up
+                # to two frames so the fixer SEES the defect instead of guessing
+                # from a text description of it (the craft review's highest
+                # impact/effort fix). The model is pinned to the vision-capable
+                # reviewer model: the un-pinned stage route could resolve to a
+                # text-only executor that errors on image parts.
+                _regen_user_content: Any = corrective
+                try:
+                    if cur_pngs:
+                        from shot_visual_reviewer import _png_to_data_url as _to_data_url
+                        _regen_user_content = [{
+                            "type": "text",
+                            "text": corrective + (
+                                "\n\nScreenshots of YOUR FAILING RENDER are attached "
+                                "(in shot-time order) — look at them and fix exactly "
+                                "what is visually wrong."
+                            ),
+                        }]
+                        for _png in cur_pngs[:2]:
+                            _regen_user_content.append(
+                                {"type": "image_url", "image_url": {"url": _to_data_url(_png)}}
+                            )
+                except Exception:
+                    _regen_user_content = corrective
+                try:
+                    raw2, usage2 = self.html_client.chat(
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                            {"role": "assistant", "content": cur_raw[:4000]},
+                            {"role": "user", "content": _regen_user_content},
+                        ],
+                        temperature=0.4,
+                        max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                        expect_json=True,
+                        # With screenshots attached: the vision reviewer's model
+                        # (else the registry default, which takes images).
+                        model=(
+                            self._resolve_vision_stage_model("vision_review")
+                        ) if not isinstance(_regen_user_content, str) else None,
+                    )
+                except Exception as _re_exc:
+                    _llm_phase.reset(_phase_tok)
+                    _llm_stage.reset(_stage_tok)
+                    print(f"   ⚠️ Shot {shot_idx + 1} vision corrective regen failed: {_re_exc}")
+                    record["regen_error"] = str(_re_exc)
+                    break
                 _llm_phase.reset(_phase_tok)
                 _llm_stage.reset(_stage_tok)
-                print(f"   ⚠️ Shot {shot_idx + 1} vision corrective regen failed: {_re_exc}")
-                record["shipped"] = "ship_original"
-                record["regen_error"] = str(_re_exc)
-                return record
-            _llm_phase.reset(_phase_tok)
-            _llm_stage.reset(_stage_tok)
-            try:
-                data2 = _extract_json_blob(raw2)
-                html2 = (data2 or {}).get("html", "")
-                if usage2:
-                    usage["prompt_tokens"] = usage.get("prompt_tokens", 0) + usage2.get("prompt_tokens", 0)
-                    usage["completion_tokens"] = usage.get("completion_tokens", 0) + usage2.get("completion_tokens", 0)
-                    usage["total_tokens"] = usage.get("total_tokens", 0) + usage2.get("total_tokens", 0)
-
-                if html2:
+                try:
+                    data2 = _extract_json_blob(raw2)
+                    html2 = (data2 or {}).get("html", "")
+                    if usage2:
+                        usage["prompt_tokens"] = usage.get("prompt_tokens", 0) + usage2.get("prompt_tokens", 0)
+                        usage["completion_tokens"] = usage.get("completion_tokens", 0) + usage2.get("completion_tokens", 0)
+                        usage["total_tokens"] = usage.get("total_tokens", 0) + usage2.get("total_tokens", 0)
+                    if not html2:
+                        record["regen_error"] = "regen returned empty html"
+                        break
                     candidate = self._sanitize_html_content(html2)
                     # Compute the shot's runtime to scale the entry-animation clamp.
                     try:
@@ -14695,6 +14790,7 @@ class VideoGenerationPipeline:
                     # shipping the original, the case bank shows what the
                     # corrective regen attempted. Critical for prompt-tuning.
                     record["regen_html_attempt"] = candidate
+                    record["regen_attempts"] = _attempt
                     # Re-screenshot + re-review. A regen that replaces the original
                     # severity-3 with a fresh severity-3 is a regression — ship
                     # original. Mirrors the animation-validator policy.
@@ -14704,64 +14800,59 @@ class VideoGenerationPipeline:
                             width=self._lesson_canvas(shot)[0],
                             height=self._lesson_canvas(shot)[1],
                             timestamps=timestamps,
-                            background=str(
-                    shot.get("background")
-                    or shot.get("bg")
-                    or ((getattr(self, "_current_style_guide", None) or {}).get("palette") or {}).get("background")
-                    or "#0a0e27"
-                ),
+                            background=_bg,
                         )
-                        screenshots_post = [f.image_bytes for f in frames2]
-                        review2 = review_shot(
-                            screenshots=screenshots_post,
-                            shot=shot,
-                            shot_pack=getattr(self, "_current_shot_pack", None),
-                            canvas=canvas,
-                            timestamps=[float(t) for t in timestamps],
-                            host_meta=host_meta,
-                            palette=_palette,
-                            prior_shot_screenshot=_prior_thumb,
-                            llm_chat=self.html_client.chat,
-                            # Same reviewer model as the first pass.
-                            model=self._resolve_vision_stage_model("vision_review"),
-                            visual_style_mode=self._resolve_visual_style_mode(),
-                        )
+                    except ScreenshotClientError as exc:
+                        record["regen_screenshot_error"] = str(exc)
+                        break
+                    screenshots_post = [f.image_bytes for f in frames2]
+                    review2 = review_shot(
+                        screenshots=screenshots_post,
+                        shot=shot,
+                        shot_pack=getattr(self, "_current_shot_pack", None),
+                        canvas=canvas,
+                        timestamps=[float(t) for t in timestamps],
+                        host_meta=host_meta,
+                        palette=_palette,
+                        prior_shot_screenshot=_prior_thumb,
+                        llm_chat=self.html_client.chat,
+                        # Same reviewer model as the first pass.
+                        model=self._resolve_vision_stage_model("vision_review"),
+                        visual_style_mode=self._resolve_visual_style_mode(),
+                    )
+                    self._vision_review_run_cost_usd += float(review2.get("cost_usd") or 0.0)
+                    record["issues_post"] = list(review2.get("issues") or [])
+                    record["severity_max_post"] = int(review2.get("severity_max") or 0)
+                    record["review_ms_post"] = int(review2.get("review_ms") or 0)
+                    record["review_cost_usd_post"] = float(review2.get("cost_usd") or 0.0)
+                    record["raw_post"] = review2.get("raw")
+                    record["error_post"] = review2.get("error")
+                    record["_screenshots_post_bytes"] = screenshots_post
+
+                    _sev2 = int(review2.get("severity_max", 0) or 0)
+                    if (_sev2 < 3 and review2.get("passes", False)) or _sev2 < _sev_original:
+                        record["regen_html"] = candidate
+                        record["shipped"] = "regen"
                         # If regen ships, overwrite the cached thumbnail with
                         # the post-regen mid-frame so the next shot's
                         # BG_DISCONTINUITY check reads against what actually
                         # shipped — not the rejected first-pass HTML.
                         if screenshots_post:
                             self._review_thumbnails[shot_idx] = screenshots_post[len(screenshots_post) // 2]
-                        self._vision_review_run_cost_usd += float(review2.get("cost_usd") or 0.0)
-                        record["issues_post"] = list(review2.get("issues") or [])
-                        record["severity_max_post"] = int(review2.get("severity_max") or 0)
-                        record["review_ms_post"] = int(review2.get("review_ms") or 0)
-                        record["review_cost_usd_post"] = float(review2.get("cost_usd") or 0.0)
-                        record["raw_post"] = review2.get("raw")
-                        record["error_post"] = review2.get("error")
-                        record["_screenshots_post_bytes"] = screenshots_post
-
-                        if review2.get("severity_max", 0) < 3 and review2.get("passes", False):
-                            record["regen_html"] = candidate
-                            record["shipped"] = "regen"
-                            print(f"   👁️  Shot {shot_idx + 1} vision regen passed.")
-                        elif review2.get("severity_max", 0) < review.get("severity_max", 0):
-                            record["regen_html"] = candidate
-                            record["shipped"] = "regen"
-                            print(f"   👁️  Shot {shot_idx + 1} vision regen improved severity — shipping regen.")
-                        else:
-                            record["shipped"] = "ship_original"
-                            print(f"   ⏪ Shot {shot_idx + 1} vision regen no better — shipping original.")
-                    except ScreenshotClientError as exc:
-                        record["shipped"] = "ship_original"
-                        record["regen_screenshot_error"] = str(exc)
-                else:
-                    record["shipped"] = "ship_original"
-                    record["regen_error"] = "regen returned empty html"
-            except Exception as exc:
-                print(f"   ⚠️ Shot {shot_idx + 1} vision corrective regen failed: {exc}")
+                        print(f"   👁️  Shot {shot_idx + 1} vision regen "
+                              f"{'passed' if _sev2 < 3 else 'improved severity'} (attempt {_attempt}).")
+                        break
+                    print(f"   ⏪ Shot {shot_idx + 1} vision regen attempt {_attempt} no better.")
+                    # The next attempt fixes what is still wrong in THIS version.
+                    cur_review, cur_html, cur_pngs = review2, candidate, screenshots_post
+                    cur_raw = json.dumps({"html": candidate})
+                except Exception as exc:
+                    print(f"   ⚠️ Shot {shot_idx + 1} vision corrective regen failed: {exc}")
+                    record["regen_error"] = str(exc)
+                    break
+            if record.get("shipped") != "regen":
                 record["shipped"] = "ship_original"
-                record["regen_error"] = str(exc)
+                print(f"   ⏪ Shot {shot_idx + 1} vision regen no better — shipping original.")
 
         return record
 

@@ -20,7 +20,15 @@ import {
   Question,
   CheckCircle,
   XCircle,
+  ClosedCaptioning,
 } from "@phosphor-icons/react";
+import {
+  LessonBandCaptions,
+  isLessonBand,
+  readLessonCaptionsOn,
+  saveLessonCaptionsOn,
+  wordsUrlForTimeline,
+} from "./lesson-band-captions";
 import type {
   ContentType,
   NavigationType,
@@ -117,6 +125,9 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
 
   // MCQ quiz state
   const [questionsEnabled, setQuestionsEnabled] = useState(true);
+  // Lessons reserve a caption band under the board; captions fill it unless
+  // the learner turns them off.
+  const [lessonCaptionsOn, setLessonCaptionsOn] = useState<boolean>(readLessonCaptionsOn);
   const [activeQuestion, setActiveQuestion] = useState<MCQQuestion | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const answeredQuestionsRef = useRef<Set<number>>(new Set());
@@ -987,6 +998,14 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
               {t("noFrameContent")}
             </div>
           )}
+          {isTimeDriven && lessonCaptionsOn && frames.some(isLessonBand) && (
+            <LessonBandCaptions
+              frames={frames}
+              timelineTime={currentTime}
+              audioTime={Math.max(0, currentTime - (meta.audio_start_at || 0))}
+              wordsUrl={wordsUrlForTimeline(timelineUrl)}
+            />
+          )}
         {/* MCQ Question Overlay */}
         {activeQuestion && (
           <div
@@ -1214,6 +1233,28 @@ export const AIVideoPlayer: React.FC<AIVideoPlayerProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Captions toggle (lessons with a caption band) */}
+                {isTimeDriven && frames.some(isLessonBand) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      saveLessonCaptionsOn(!lessonCaptionsOn);
+                      setLessonCaptionsOn(!lessonCaptionsOn);
+                    }}
+                    className={`h-8 px-3 border-gray-700 text-xs font-semibold transition-colors ${
+                      lessonCaptionsOn
+                        ? 'bg-gray-700 text-white hover:bg-gray-600'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                    }`}
+                    title={lessonCaptionsOn ? t("controls.hideCaptions") : t("controls.showCaptions")}
+                    aria-pressed={lessonCaptionsOn}
+                  >
+                    <ClosedCaptioning className="h-3.5 w-3.5 me-1" />
+                    {lessonCaptionsOn ? t("controls.captionsOn") : t("controls.captionsOff")}
+                  </Button>
+                )}
 
                 {/* Quiz Toggle (only when video has questions) */}
                 {meta.questions && meta.questions.length > 0 && (

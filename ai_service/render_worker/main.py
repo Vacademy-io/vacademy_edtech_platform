@@ -438,6 +438,7 @@ class BboxCheckRequest(BaseModel):
         description="Canvas rects {l,t,r,b,name} the shot must leave empty (lesson teacher area, caption strip).",
     )
     check_squeeze: bool = Field(default=False, description="Also report text squeezed into a too-narrow column")
+    check_overlap: bool = Field(default=False, description="Also report visible text drawn over other visible text")
 
 
 class BboxViolationRect(BaseModel):
@@ -494,6 +495,7 @@ async def bbox_check(
             background=request.background,
             keep_out=request.keep_out,
             check_squeeze=request.check_squeeze,
+            check_overlap=request.check_overlap,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

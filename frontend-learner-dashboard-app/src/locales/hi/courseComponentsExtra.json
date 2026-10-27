@@ -74,7 +74,11 @@
         "enterFullscreen": "फ़ुलस्क्रीन में जाएं",
         "previous": "पिछला",
         "next": "अगला",
-        "sourceVideoAudio": "सोर्स वीडियो का ऑडियो"
+        "sourceVideoAudio": "सोर्स वीडियो का ऑडियो",
+        "captionsOn": "CC चालू",
+        "captionsOff": "CC बंद",
+        "showCaptions": "कैप्शन दिखाएँ",
+        "hideCaptions": "कैप्शन छिपाएँ"
     },
     "errors": {
         "failedToLoadTimeline": "टाइमलाइन लोड नहीं हो सकी",

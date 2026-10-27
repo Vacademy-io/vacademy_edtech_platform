@@ -74,7 +74,11 @@
         "enterFullscreen": "Enter Fullscreen",
         "previous": "Previous",
         "next": "Next",
-        "sourceVideoAudio": "Source video audio"
+        "sourceVideoAudio": "Source video audio",
+        "captionsOn": "CC ON",
+        "captionsOff": "CC OFF",
+        "showCaptions": "Show captions",
+        "hideCaptions": "Hide captions"
     },
     "errors": {
         "failedToLoadTimeline": "Failed to load timeline",

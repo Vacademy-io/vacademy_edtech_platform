@@ -55,6 +55,7 @@ import {
 } from './html-processor';
 import { initializeLibraries } from './library-loader';
 import { useCaptions } from './hooks/useCaptions';
+import { wordsUrlForTimeline } from './captions-source';
 import { useWebAudioMixer } from './hooks/useWebAudioMixer';
 import { useSoundScheduler, collectCuesFromEntries } from './hooks/useSoundScheduler';
 import { CaptionDisplay, CaptionSettingsPopover } from './components';
@@ -187,6 +188,15 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
     // Extra compact for very small screens (phones in portrait)
     const isMini = containerWidth > 0 && containerWidth < 400;
 
+    // A lesson "board" layout reserves a caption band under the board.
+    const hasLessonBand = useMemo(
+        () => entries.some((e) => e.entry_meta?.kind === 'lesson_band'),
+        [entries]
+    );
+    // Callers that only pass the timeline (the slide preview) still get
+    // captions: the pipeline writes the words next to it.
+    const effectiveWordsUrl = wordsUrl ?? wordsUrlForTimeline(timelineUrl);
+
     // Captions hook (only for time-driven content with audio)
     const {
         words: allWords, // Get all words for range calculation
@@ -203,11 +213,12 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
             contentType === 'STORYBOOK' ||
             contentType === 'FLASHCARDS' ||
             contentType === 'TIMELINE'
-                ? wordsUrl
+                ? effectiveWordsUrl
                 : undefined,
         currentTime,
         audioStartAt: meta.audio_start_at,
         playbackRate,
+        lessonBand: hasLessonBand,
     });
 
     // Web Audio mixer for extra tracks (background music, SFX, etc.)
@@ -1769,7 +1780,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                     contentType === 'STORYBOOK' ||
                     contentType === 'FLASHCARDS' ||
                     contentType === 'TIMELINE') &&
-                    wordsUrl && (
+                    effectiveWordsUrl && (
                         <CaptionDisplay
                             words={currentWords}
                             currentTime={currentTime}
@@ -2294,7 +2305,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                                                 : 'not-allowed',
                                         }}
                                         title={
-                                            !wordsUrl
+                                            !effectiveWordsUrl
                                                 ? 'Narration unavailable (no audio words provided)'
                                                 : !pageAudioRanges.has(currentIndex)
                                                   ? 'No narration for this page'
@@ -2557,7 +2568,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                         )}
 
                         {/* Captions toggle (CC button) - only for time-driven with words */}
-                        {navigationMode === 'time_driven' && wordsUrl && (
+                        {navigationMode === 'time_driven' && effectiveWordsUrl && (
                             <>
                                 <button
                                     onClick={(e) => {
