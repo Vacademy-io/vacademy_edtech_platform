@@ -9,7 +9,8 @@
         "layoutNav": "Mise en page et navigation",
         "loginAccount": "Connexion et compte",
         "learningExperience": "Expérience d'apprentissage",
-        "notificationsRedirect": "Notifications et redirection"
+        "notificationsRedirect": "Notifications et redirection",
+        "themeLayout": "Thème et mise en page"
     },
     "common": {
         "label": "Libellé",
@@ -263,5 +264,109 @@
         "theIntegerLine": "La droite numérique",
         "minutesShort": "{{count}} min",
         "questionsCount": "{{count}} questions"
+    },
+    "toolbar": {
+        "livePreview": "Aperçu en direct",
+        "hidePreview": "Masquer l'aperçu"
+    },
+    "layoutBuilder": {
+        "cardTitle": "Mise en page de l'application",
+        "cardDescription": "Choisissez où se trouve la navigation selon la taille d'écran, ce que montre l'en-tête, la barre d'onglets du bas et un fond d'écran. Ce que vous ne modifiez pas garde l'apparence actuelle.",
+        "devices": {
+            "mobile": "Mobile",
+            "tablet": "Tablette",
+            "desktop": "Site web / app Windows"
+        },
+        "placements": {
+            "auto": "Automatique (actuel)",
+            "sidebar": "Menu latéral seul",
+            "bottomBar": "Barre du bas seule",
+            "both": "Menu latéral + barre du bas",
+            "rail": "Barre d'icônes (app moderne)"
+        },
+        "navigation": {
+            "title": "Navigation",
+            "description": "Automatique conserve le comportement actuel : menu latéral partout, plus la barre du bas sur téléphone pour les thèmes Play."
+        },
+        "header": {
+            "title": "En-tête",
+            "description": "Désactivez ce que les apprenants ne doivent pas voir dans la barre du haut.",
+            "items": {
+                "showLogo": "Logo",
+                "showPageTitle": "Titre de la page",
+                "showBackHome": "Boutons Retour et Accueil",
+                "showAchievements": "Badges et points",
+                "showLanguage": "Choix de la langue",
+                "showHelp": "Aide et question",
+                "showNotifications": "Cloche de notifications"
+            },
+            "avatarNote": "La photo de profil reste toujours affichée — elle contient la déconnexion et le profil."
+        },
+        "bottomBar": {
+            "title": "Barre d'onglets du bas",
+            "description": "La barre d'onglets en bas de l'écran. Par défaut, elle reprend les onglets du menu latéral.",
+            "customTabs": "Onglets personnalisés",
+            "mirrorsSidebar": "Les onglets du menu latéral sont affichés. Activez Onglets personnalisés pour choisir onglets, icônes et liens.",
+            "iconLetter": "Première lettre",
+            "iconUpload": "Importer une icône…",
+            "label": "Libellé",
+            "route": "Page (/dashboard) ou lien https://",
+            "newTab": "Nouvel onglet",
+            "addTab": "Ajouter un onglet",
+            "maxVisible": "Onglets avant « Plus »",
+            "showLabels": "Afficher les libellés",
+            "style": "Style de barre",
+            "styles": {
+                "classic": "Classique (bord à bord)",
+                "floating": "Flottante (app moderne)"
+            },
+            "center": "Grand central",
+            "centerHelp": "Afficher cet onglet comme le grand bouton rond au centre de la barre (ex. cours en direct)"
+        },
+        "wallpaper": {
+            "title": "Fond d'écran",
+            "description": "Une image d'arrière-plan derrière les pages apprenant. Les cartes restent blanches par-dessus.",
+            "imageUrl": "Image site web / tablette",
+            "mobileImageUrl": "Image téléphone (facultatif)",
+            "none": "Aucune image",
+            "upload": "Importer",
+            "overlay": "Teinte de superposition",
+            "opacity": "Intensité de la superposition",
+            "scope": "Afficher sur",
+            "scopeAll": "Toutes les pages",
+            "scopeDashboard": "Tableau de bord uniquement"
+        },
+        "upload": {
+            "notImage": "Choisissez un fichier image.",
+            "failed": "Échec de l'import. Réessayez."
+        },
+        "moveUp": "Monter",
+        "moveDown": "Descendre"
+    },
+    "livePreview": {
+        "title": "Aperçu en direct",
+        "close": "Fermer l'aperçu",
+        "reload": "Recharger",
+        "openSite": "Ouvrir le site apprenant",
+        "pages": {
+            "dashboard": "Tableau de bord",
+            "courses": "Cours",
+            "liveClasses": "Cours en direct",
+            "assessments": "Évaluations",
+            "attendance": "Présence",
+            "login": "Page de connexion"
+        },
+        "sessionNote": "C'est le vrai site apprenant avec vos modifications non enregistrées — les apprenants ne voient rien avant l'enregistrement. Il utilise la connexion apprenant de ce navigateur : connectez-vous une fois dans l'aperçu avec un compte apprenant de test pour voir ses cours.",
+        "devices": {
+            "mobile": "Téléphone",
+            "tablet": "Tablette",
+            "windows": "App Windows",
+            "website": "Site web"
+        },
+        "expand": "Agrandir",
+        "shrink": "Réduire"
+    },
+    "themeSection": {
+        "separateSave": "Les modifications du thème s'enregistrent avec le bouton « Save theme » ci-dessous. La barre en bas de page enregistre tout le reste."
     }
 }
