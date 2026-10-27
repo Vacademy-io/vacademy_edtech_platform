@@ -88,6 +88,8 @@
         "renewPromptNoDate": "Pay once and your membership carries on.",
         "reactivatePrompt": "Reactivate this membership — same plan, same courses, no re-enrollment needed.",
         "alsoEnableAutopay": "Also turn auto-pay back on — one approval pays now and sets up future renewals.",
+        "autopayRequiredHint": "Auto-pay is required to continue your membership.",
+        "autopayRequiredBlocked": "Tick auto-pay above to continue your membership.",
         "mandateMethod": {
             "heading": "How should auto-pay be set up?",
             "upiLabel": "UPI Autopay",

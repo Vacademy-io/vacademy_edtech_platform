@@ -110,6 +110,18 @@ public class SubscriptionDTO {
     private boolean autopayDefault;
 
     /**
+     * The institute requires autopay on a manual renewal
+     * (PAYMENT_SETTING.autopayRequiredOnManualRenewal) -- the learner may not pay to
+     * continue with the autopay option cleared. Implies {@code autopayDefault}.
+     *
+     * <p>The client keeps the box ticked and DISABLES the pay button while it is clear,
+     * rather than letting the learner submit a choice the server would overrule: on a
+     * checkout gateway the renewal arms autopay whenever the institute default is on, so a
+     * cleared box was already being ignored. This makes that visible instead of silent.
+     */
+    private boolean autopayRequired;
+
+    /**
      * True when the plan's invite has AUTOPAY_SETTING.ENABLED — gates the
      * "also enable auto-pay for future renewals" option on manual renewal.
      */

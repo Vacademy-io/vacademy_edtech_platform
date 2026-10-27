@@ -75,6 +75,14 @@ export interface Subscription {
    */
   autopay_default?: boolean;
   /**
+   * The institute REQUIRES autopay on a manual renewal
+   * (PAYMENT_SETTING.autopayRequiredOnManualRenewal). Implies autopay_default. Keep the
+   * box ticked and disable the pay button while it is clear — on a checkout gateway the
+   * server arms autopay whenever the institute default is on, so a cleared box was already
+   * being ignored. Blocking is honest; accepting it silently is not.
+   */
+  autopay_required?: boolean;
+  /**
    * At least one other plan is flagged switchable for this membership. Gates the
    * "Change plan" entry point so we never open an empty picker.
    */

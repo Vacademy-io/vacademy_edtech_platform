@@ -589,7 +589,9 @@
         "cta": "Pay {{amount}} and renew now",
         "secureNote": "Secure card payment. We'll email your receipt straight away.",
         "support": "Questions about your renewal? Email <mail>{{email}}</mail> and we'll sort it out."
-      }
+      },
+      "autopayRequiredHint": "अपनी सदस्यता जारी रखने के लिए ऑटो-पे आवश्यक है।",
+      "autopayRequiredBlocked": "अपनी सदस्यता जारी रखने के लिए ऊपर ऑटो-पे चुनें।"
     },
     "paymentReturn": {
       "confirmingTitle": "आपका भुगतान सत्यापित किया जा रहा है…",
