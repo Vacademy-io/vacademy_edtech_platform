@@ -3321,6 +3321,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * {@code profileUserIdsCsv}: people whose own profile phone or email is the one
          * searched (it can differ from every enquiry of theirs here); their enquiries are
          * candidates too, ranked after a lead whose enquiry itself matches.
+         * {@code matchReplacedNumbers}: also an enquiry whose phone a lead profile edit
+         * replaced (lead_contact_history), ranked the same way.
          */
         @Query(value = """
                             WITH matched AS (
@@ -3353,10 +3355,19 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                      AND CAST(:profileUserIds AS text) IS NOT NULL
                                      AND p.user_id = ANY(STRING_TO_ARRAY(CAST(:profileUserIds AS text), ','))
                             ),
+                            by_history AS (
+                                   SELECT h.audience_response_id AS id FROM lead_contact_history h
+                                   WHERE COALESCE(CAST(:history AS boolean), FALSE) = TRUE
+                                     AND CAST(:last10 AS text) IS NOT NULL
+                                     AND h.institute_id = :instituteId
+                                     AND h.old_phone_last10 = CAST(:last10 AS text)
+                            ),
                             targets AS (
                                    SELECT id FROM direct
                                    UNION
                                    SELECT id FROM by_profile
+                                   UNION
+                                   SELECT id FROM by_history
                             )
                             SELECT ar.id                     AS "responseId",
                                    ar.user_id                AS "userId",
@@ -3424,7 +3435,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("name") String name,
                         @Param("courseFieldId") String courseFieldId,
                         @Param("branchFieldId") String branchFieldId,
-                        @Param("profileUserIds") String profileUserIdsCsv);
+                        @Param("profileUserIds") String profileUserIdsCsv,
+                        @Param("history") Boolean matchReplacedNumbers);
 
         /**
          * Every enquiry by the same person as {@link #lookupByPhoneOrEmail}, same
@@ -3466,10 +3478,19 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                      AND CAST(:profileUserIds AS text) IS NOT NULL
                                      AND p.user_id = ANY(STRING_TO_ARRAY(CAST(:profileUserIds AS text), ','))
                             ),
+                            by_history AS (
+                                   SELECT h.audience_response_id AS id FROM lead_contact_history h
+                                   WHERE COALESCE(CAST(:history AS boolean), FALSE) = TRUE
+                                     AND CAST(:last10 AS text) IS NOT NULL
+                                     AND h.institute_id = :instituteId
+                                     AND h.old_phone_last10 = CAST(:last10 AS text)
+                            ),
                             targets AS (
                                    SELECT id FROM direct
                                    UNION
                                    SELECT id FROM by_profile
+                                   UNION
+                                   SELECT id FROM by_history
                             )
                             SELECT ar.id FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
@@ -3486,7 +3507,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("email") String email,
                         @Param("name") String name,
                         @Param("includeDuplicates") Boolean includeDuplicates,
-                        @Param("profileUserIds") String profileUserIdsCsv);
+                        @Param("profileUserIds") String profileUserIdsCsv,
+                        @Param("history") Boolean matchReplacedNumbers);
 
         /**
          * Projection for {@link #lookupByPhoneOrEmail}.

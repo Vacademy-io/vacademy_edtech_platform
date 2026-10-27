@@ -40,6 +40,9 @@ import java.util.List;
  *                                     // lead still counts as a repeat when its email does
  *     "discardedToNewCounsellor": false, // a repeat of a LOST (Discarded) lead goes to the next
  *                                     // pool counsellor, never the one who discarded it
+ *     "enquiryNumberPrimary": false,  // the lead's number is its enquiry's (parent_mobile): the
+ *                                     // profile shows and edits it there, and Check Lead also
+ *                                     // finds a lead by numbers it had before an edit
  *     "reattempt": {                  // what a repeat enquiry leaves behind; all off by default
  *       "markDuplicate": false,       // flag the new enquiry as a duplicate of the lead it repeats
  *       "duplicateOpenOnly": true,    // ...only while that lead is open (not converted / LOST);
@@ -146,15 +149,27 @@ public class LeadDedupSettingService {
      * unflagged lead. {@code discardedToNewCounsellor} (default off): when the lead a repeat
      * matches is LOST, the list's pool picks a counsellor other than its earlier owner, ahead
      * of {@code counsellorMode}; a list with no pool, or a pool with nobody else on it, keeps
-     * {@code counsellorMode}.
+     * {@code counsellorMode}. {@code enquiryNumberPrimary} (default off): the lead's
+     * number is the one on its enquiry, not the login account's; the admin UI shows and
+     * edits that one, and Check Lead also matches numbers a lead had before an edit.
      */
     public record RepeatLeadSettings(CounsellorMode counsellorMode, String specificCounsellorId,
             String specificCounsellorName, StatusMode statusMode, boolean samePersonByPhone,
             boolean blockOwnedManualAdd, ReattemptSettings reattempt, boolean blockOpenLeadManualAdd,
-            boolean alsoMatchEmail, boolean discardedToNewCounsellor) {
+            boolean alsoMatchEmail, boolean discardedToNewCounsellor, boolean enquiryNumberPrimary) {
 
         public RepeatLeadSettings {
             if (reattempt == null) reattempt = ReattemptSettings.OFF;
+        }
+
+        /** {@code enquiryNumberPrimary} off. */
+        public RepeatLeadSettings(CounsellorMode counsellorMode, String specificCounsellorId,
+                String specificCounsellorName, StatusMode statusMode, boolean samePersonByPhone,
+                boolean blockOwnedManualAdd, ReattemptSettings reattempt, boolean blockOpenLeadManualAdd,
+                boolean alsoMatchEmail, boolean discardedToNewCounsellor) {
+            this(counsellorMode, specificCounsellorId, specificCounsellorName, statusMode, samePersonByPhone,
+                    blockOwnedManualAdd, reattempt, blockOpenLeadManualAdd, alsoMatchEmail,
+                    discardedToNewCounsellor, false);
         }
 
         /** {@code discardedToNewCounsellor} off. */
@@ -334,7 +349,8 @@ public class LeadDedupSettingService {
                 parseReattempt(node.path("reattempt")),
                 node.path("blockOpenLeadManualAdd").asBoolean(false),
                 node.path("alsoMatchEmail").asBoolean(false),
-                node.path("discardedToNewCounsellor").asBoolean(false));
+                node.path("discardedToNewCounsellor").asBoolean(false),
+                node.path("enquiryNumberPrimary").asBoolean(false));
     }
 
     private ReattemptSettings parseReattempt(JsonNode node) {

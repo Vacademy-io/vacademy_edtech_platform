@@ -13,6 +13,7 @@
         "heading": "Contact",
         "rows": {
             "mobileNo": "Mobile No.",
+            "loginNumber": "Login number",
             "email": "Email"
         }
     }

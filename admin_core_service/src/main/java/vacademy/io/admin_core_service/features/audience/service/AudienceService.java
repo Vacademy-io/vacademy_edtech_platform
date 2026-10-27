@@ -98,6 +98,9 @@ public class AudienceService {
     @Autowired
     private AudienceRepository audienceRepository;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.audience.repository.LeadContactHistoryRepository leadContactHistoryRepository;
+
     // Repositories only (never CounselorPoolService) — the pool service already
     // depends on this one, so injecting it back would close a bean cycle.
     @Autowired
@@ -5048,6 +5051,8 @@ public class AudienceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
 
         UserDTO updates = request.getUserDetails();
+        String previousLoginMobile = null;
+        String newLoginMobile = null;
 
         // 1) The lead's identity lives on the auth user — merge the edits over the
         // existing record so unsent fields aren't blanked.
@@ -5096,6 +5101,8 @@ public class AudienceService {
             UserDTO merged = (existing != null) ? mergeUserDTO(existing, updates) : updates;
             merged.setId(leadUserId);
             authService.updateUser(merged, leadUserId);
+            previousLoginMobile = existing != null ? existing.getMobileNumber() : null;
+            newLoginMobile = merged.getMobileNumber();
         }
 
         // 2) Parent/guardian fields on the audience_response row. A cleared field arrives
@@ -5108,11 +5115,13 @@ public class AudienceService {
         if (request.getParentEmail() != null) {
             response.setParentEmail(blankToNull(request.getParentEmail()));
         }
+        String previousEnquiryMobile = response.getParentMobile();
         if (request.getParentMobile() != null) {
             response.setParentMobile(blankToNull(request.getParentMobile()));
         }
         // dedupe_key may also have changed above.
         audienceResponseRepository.save(response);
+        recordReplacedPhones(response, leadUserId, previousEnquiryMobile, previousLoginMobile, newLoginMobile);
 
         // 3) The lead's form answers.
         if (!CollectionUtils.isEmpty(request.getCustomFieldValues())) {
@@ -5130,6 +5139,52 @@ public class AudienceService {
         }
 
         logger.info("Lead profile updated for response {}", responseId);
+    }
+
+    /**
+     * Keeps the numbers a lead profile edit replaced, on the enquiry and on the login
+     * account, so Check Lead can still find the lead by them (Lead Settings
+     * repeatLead.enquiryNumberPrimary). Best-effort: never fails the edit.
+     */
+    private void recordReplacedPhones(AudienceResponse response, String leadUserId, String previousEnquiryMobile,
+            String previousLoginMobile, String newLoginMobile) {
+        try {
+            String instituteId = response.getAudienceId() == null ? null
+                    : audienceRepository.findById(response.getAudienceId())
+                            .map(Audience::getInstituteId).orElse(null);
+            if (!StringUtils.hasText(instituteId)) return;
+            List<vacademy.io.admin_core_service.features.audience.entity.LeadContactHistory> rows = new ArrayList<>();
+            addReplacedPhone(rows, instituteId, leadUserId, response.getId(), previousEnquiryMobile,
+                    response.getParentMobile());
+            addReplacedPhone(rows, instituteId, leadUserId, response.getId(), previousLoginMobile, newLoginMobile);
+            if (!rows.isEmpty()) leadContactHistoryRepository.saveAll(rows);
+        } catch (Exception e) {
+            logger.warn("Lead {}: could not keep the replaced phone number: {}", response.getId(), e.getMessage());
+        }
+    }
+
+    private static void addReplacedPhone(
+            List<vacademy.io.admin_core_service.features.audience.entity.LeadContactHistory> rows,
+            String instituteId, String userId, String responseId, String oldValue, String newValue) {
+        String oldLast10 = phoneLast10(oldValue);
+        if (oldLast10 == null || oldLast10.equals(phoneLast10(newValue))) return;
+        if (rows.stream().anyMatch(r -> oldLast10.equals(r.getOldPhoneLast10()))) return;
+        rows.add(vacademy.io.admin_core_service.features.audience.entity.LeadContactHistory.builder()
+                .instituteId(instituteId)
+                .userId(userId)
+                .audienceResponseId(responseId)
+                .contactType(vacademy.io.admin_core_service.features.audience.entity.LeadContactHistory.PHONE)
+                .oldValue(oldValue.trim())
+                .newValue(StringUtils.hasText(newValue) ? newValue.trim() : null)
+                .oldPhoneLast10(oldLast10)
+                .build());
+    }
+
+    /** Last 10 digits of a phone, as every lead phone match compares; null below 10 digits. */
+    static String phoneLast10(String phone) {
+        if (phone == null) return null;
+        String digits = phone.replaceAll("[^0-9]", "");
+        return digits.length() < 10 ? null : digits.substring(digits.length() - 10);
     }
 
     /** Trim a form-supplied value, mapping "" (a cleared field) to NULL. */

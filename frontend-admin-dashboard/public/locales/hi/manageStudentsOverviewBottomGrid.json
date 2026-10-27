@@ -13,6 +13,7 @@
         "heading": "संपर्क",
         "rows": {
             "mobileNo": "मोबाइल नंबर",
+            "loginNumber": "लॉगिन नंबर",
             "email": "ईमेल"
         }
     }

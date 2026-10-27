@@ -96,9 +96,10 @@ public class LeadLookupService {
         }
 
         String profileUserIds = profileUserIdsCsv(last10, normalisedEmail);
+        boolean replacedNumbers = matchReplacedNumbers(instituteId);
         Optional<AudienceResponseRepository.LeadLookupRow> match = audienceResponseRepository
                 .lookupByPhoneOrEmail(instituteId, last10, normalisedEmail, normalisedName,
-                        settings.courseFieldId(), settings.branchFieldId(), profileUserIds);
+                        settings.courseFieldId(), settings.branchFieldId(), profileUserIds, replacedNumbers);
 
         if (match.isEmpty()) {
             return LeadLookupResultDto.builder().found(false).build();
@@ -113,7 +114,7 @@ public class LeadLookupService {
         boolean followUpsVisible = isAdmin || ownLead;
 
         List<LeadFollowup> followUps = followUpsVisible
-                ? followUpsFor(instituteId, last10, normalisedEmail, normalisedName, profileUserIds)
+                ? followUpsFor(instituteId, last10, normalisedEmail, normalisedName, profileUserIds, replacedNumbers)
                 : List.of();
         Map<String, UserDTO> users = usersById(row, fields, followUps);
         UserDTO leadUser = row.getUserId() != null ? users.get(row.getUserId()) : null;
@@ -166,13 +167,25 @@ public class LeadLookupService {
     }
 
     private List<LeadFollowup> followUpsFor(String instituteId, String last10, String email, String name,
-                                            String profileUserIds) {
+                                            String profileUserIds, boolean replacedNumbers) {
         List<String> responseIds = audienceResponseRepository
                 .lookupMatchingResponseIds(instituteId, last10, email, name, reattemptsFlagged(instituteId),
-                        profileUserIds);
+                        profileUserIds, replacedNumbers);
         return responseIds.isEmpty()
                 ? List.of()
                 : leadFollowupRepository.findByAudienceResponseIdInOrderByScheduleTimeDesc(responseIds);
+    }
+
+    /**
+     * Lead Settings repeatLead.enquiryNumberPrimary: a lead is also found by a phone number a
+     * lead profile edit replaced. Off (or unreadable) = only current numbers, as before.
+     */
+    private boolean matchReplacedNumbers(String instituteId) {
+        try {
+            return leadDedupSettingService.get(instituteId).repeatLead().enquiryNumberPrimary();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** The institute's repeat-lead handling flags reattempts as duplicates (Lead Settings). */

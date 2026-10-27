@@ -478,6 +478,27 @@ export default function LeadDedupSettings() {
                                             </div>
                                         </div>
 
+                                        <div className="flex items-start gap-3">
+                                            <Switch
+                                                id="repeat-enquiry-number-primary"
+                                                checked={repeatLead.enquiryNumberPrimary}
+                                                onCheckedChange={(v) =>
+                                                    updateRepeatLead({ enquiryNumberPrimary: v })
+                                                }
+                                            />
+                                            <div className="flex flex-col gap-0.5">
+                                                <Label
+                                                    htmlFor="repeat-enquiry-number-primary"
+                                                    className="cursor-pointer"
+                                                >
+                                                    {t('repeatLead.enquiryNumberPrimary.label')}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t('repeatLead.enquiryNumberPrimary.hint')}
+                                                </p>
+                                            </div>
+                                        </div>
+
                                         <div className="flex flex-col gap-1.5">
                                             <Label htmlFor="repeat-status-mode">
                                                 {t('repeatLead.statusMode.label')}

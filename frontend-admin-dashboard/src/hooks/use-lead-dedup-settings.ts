@@ -8,7 +8,7 @@
  *                     "specificCounsellorName": null, "statusMode": "KEEP_EXISTING",
  *                     "samePersonByPhone": false, "blockOwnedManualAdd": false,
  *                     "blockOpenLeadManualAdd": false, "alsoMatchEmail": false,
- *                     "discardedToNewCounsellor": false,
+ *                     "discardedToNewCounsellor": false, "enquiryNumberPrimary": false,
  *                     "reattempt": { "markDuplicate": false, "journeyEntry": false,
  *                                    "notifyOwner": false, "showBadge": false,
  *                                    "followUp": false, "tier": null,
@@ -71,6 +71,7 @@ export interface RepeatLeadSettingsSubtree {
     blockOpenLeadManualAdd?: boolean;
     alsoMatchEmail?: boolean;
     discardedToNewCounsellor?: boolean;
+    enquiryNumberPrimary?: boolean;
     reattempt?: Partial<ReattemptSettings>;
 }
 
@@ -90,6 +91,11 @@ export interface RepeatLeadSettings {
     alsoMatchEmail: boolean;
     /** A repeat of a discarded (LOST) lead goes to the next pool counsellor, not its earlier owner. */
     discardedToNewCounsellor: boolean;
+    /**
+     * A lead's number is the one on its enquiry: the lead profile shows and edits that
+     * number (not the login account's), and Check Lead also finds numbers replaced by an edit.
+     */
+    enquiryNumberPrimary: boolean;
     reattempt: ReattemptSettings;
 }
 
@@ -135,6 +141,7 @@ export const REPEAT_LEAD_SETTINGS_DEFAULTS: RepeatLeadSettings = {
     blockOpenLeadManualAdd: false,
     alsoMatchEmail: false,
     discardedToNewCounsellor: false,
+    enquiryNumberPrimary: false,
     reattempt: REATTEMPT_SETTINGS_DEFAULTS,
 };
 
@@ -169,6 +176,7 @@ function withRepeatLeadDefaults(subtree: RepeatLeadSettingsSubtree | undefined):
         blockOpenLeadManualAdd: subtree?.blockOpenLeadManualAdd === true,
         alsoMatchEmail: subtree?.alsoMatchEmail === true,
         discardedToNewCounsellor: subtree?.discardedToNewCounsellor === true,
+        enquiryNumberPrimary: subtree?.enquiryNumberPrimary === true,
         reattempt: {
             markDuplicate: subtree?.reattempt?.markDuplicate === true,
             journeyEntry: subtree?.reattempt?.journeyEntry === true,
