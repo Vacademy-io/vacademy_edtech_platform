@@ -49,6 +49,9 @@ function RouteComponent() {
   const [modalView, setModalView] = useState<boolean | null>(
     keepPage ? false : null,
   );
+  // Same rule as the page's "Sign up here": the portal allows signup, it is on,
+  // and it has a provider the signup screen can render.
+  const [signupLink, setSignupLink] = useState(false);
 
   useEffect(() => {
     if (keepPage || modalView !== null || domainRouting.isLoading) return;
@@ -56,7 +59,15 @@ function RouteComponent() {
     // Fresh read: the 24h local copy would hide a newly enabled popup.
     getPublicStudentDisplaySettings(domainRouting.instituteId, { skipLocalCache: true })
       .then((settings) => {
-        if (!cancelled) setModalView(settings?.signup?.loginPageAsModal === true);
+        if (cancelled) return;
+        const signup = settings?.signup;
+        const providers = signup?.providers;
+        setSignupLink(
+          domainRouting.allowSignup !== false &&
+            signup?.enabled !== false &&
+            (!providers || !!(providers.google || providers.github || providers.emailOtp)),
+        );
+        setModalView(signup?.loginPageAsModal === true);
       })
       .catch(() => {
         if (!cancelled) setModalView(false);
@@ -64,7 +75,7 @@ function RouteComponent() {
     return () => {
       cancelled = true;
     };
-  }, [keepPage, modalView, domainRouting.isLoading, domainRouting.instituteId]);
+  }, [keepPage, modalView, domainRouting.isLoading, domainRouting.instituteId, domainRouting.allowSignup]);
 
   useEffect(() => {
     if (modalView !== null) return;
@@ -133,6 +144,7 @@ function RouteComponent() {
           onSignupSuccess={handleSignupSuccess}
           onClose={handleModalClose}
           blurBackdrop={!!rootTag}
+          showSignupLink={signupLink}
           trigger={<span style={{ display: "none" }} aria-hidden="true" />}
         />
       </div>

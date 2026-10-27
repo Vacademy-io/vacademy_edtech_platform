@@ -22,6 +22,8 @@ interface AuthModalProps {
     onClose?: () => void;
     // Blur whatever sits behind the dialog (e.g. the site under /login).
     blurBackdrop?: boolean;
+    // Show "Don't have an account? Sign up here" on the Sign in screen.
+    showSignupLink?: boolean;
     initialMode?: 'login' | 'signup' | 'forgot-password';
 }
 
@@ -38,6 +40,7 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
     onSignupSuccess,
     onClose,
     blurBackdrop = false,
+    showSignupLink = false,
     initialMode = 'login'
 }, ref) => {
     const { t } = useTranslation("auth");
@@ -528,6 +531,7 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
                             onSwitchToSignup={handleSwitchToSignup}
                             onSwitchToForgotPassword={handleSwitchToForgotPassword}
                             onLoginSuccess={handleLoginSuccess}
+                            showSignupLink={showSignupLink}
                         />
                                          ) : currentMode === 'signup' ? (
                          (() => {
