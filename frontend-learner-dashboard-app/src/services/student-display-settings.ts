@@ -568,15 +568,20 @@ const inFlightPublicSettingsByInstitute = new Map<
  * settings read did.
  */
 export async function getPublicStudentDisplaySettings(
-  instituteId: string | null | undefined
+  instituteId: string | null | undefined,
+  // Skip the 24h localStorage copy (a setting just switched on must reach
+  // visitors who loaded the site earlier). The fresh result refreshes it.
+  opts?: { skipLocalCache?: boolean }
 ): Promise<StudentDisplaySettingsData> {
   if (!instituteId) return DEFAULT_STUDENT_DISPLAY_SETTINGS;
 
   const memo = publicSettingsByInstitute.get(instituteId);
   if (memo) return memo;
 
-  const cached = readCacheForInstitute(instituteId);
-  if (cached) return mergeWithDefaults(cached);
+  if (!opts?.skipLocalCache) {
+    const cached = readCacheForInstitute(instituteId);
+    if (cached) return mergeWithDefaults(cached);
+  }
 
   const inFlight = inFlightPublicSettingsByInstitute.get(instituteId);
   if (inFlight) return inFlight;

@@ -53,7 +53,8 @@ function RouteComponent() {
   useEffect(() => {
     if (keepPage || modalView !== null || domainRouting.isLoading) return;
     let cancelled = false;
-    getPublicStudentDisplaySettings(domainRouting.instituteId)
+    // Fresh read: the 24h local copy would hide a newly enabled popup.
+    getPublicStudentDisplaySettings(domainRouting.instituteId, { skipLocalCache: true })
       .then((settings) => {
         if (cancelled) return;
         const signup = settings?.signup;
