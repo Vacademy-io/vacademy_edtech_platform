@@ -18,6 +18,8 @@ interface AuthModalProps {
     onModalOpen?: () => void;
     onLoginSuccess?: () => void;
     onSignupSuccess?: () => void;
+    // Fires after the modal closes for any reason (×, Esc, backdrop, success).
+    onClose?: () => void;
     initialMode?: 'login' | 'signup' | 'forgot-password';
 }
 
@@ -32,6 +34,7 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
     onModalOpen,
     onLoginSuccess,
     onSignupSuccess,
+    onClose,
     initialMode = 'login'
 }, ref) => {
     const { t } = useTranslation("auth");
@@ -398,6 +401,7 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
             setCurrentMode(initialMode);
             setPrefilledEmail("");
             setAutoSendOtp(false);
+            onClose?.();
         }, 200);
     };
 

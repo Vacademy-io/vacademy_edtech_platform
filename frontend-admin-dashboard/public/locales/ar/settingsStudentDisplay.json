@@ -84,7 +84,9 @@
         "catalogueHeaderAuth": "المصادقة في رأس الكتالوج",
         "selectPresentation": "اختر طريقة العرض",
         "presentationPage": "صفحة (الانتقال إلى /login)",
-        "presentationModal": "نافذة منبثقة (تُفتح في المكان نفسه)"
+        "presentationModal": "نافذة منبثقة (تُفتح في المكان نفسه)",
+        "loginPageAsModal": "فتح صفحة تسجيل الدخول كنافذة منبثقة",
+        "loginPageAsModalHint": "عند التفعيل: تعرض ‎/login نافذة إنشاء حساب (مع تسجيل الدخول بالأسفل) بدلاً من صفحة تسجيل الدخول الكاملة."
     },
     "courseSettings": {
         "cardTitle": "إعدادات الدورة",

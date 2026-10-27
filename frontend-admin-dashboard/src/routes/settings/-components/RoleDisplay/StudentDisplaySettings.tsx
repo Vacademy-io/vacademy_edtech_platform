@@ -879,6 +879,18 @@ export default function StudentDisplaySettings(): JSX.Element {
                             </SelectContent>
                         </Select>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={settings.signup.loginPageAsModal ?? false}
+                            onCheckedChange={(v) =>
+                                update('signup', { ...settings.signup, loginPageAsModal: v })
+                            }
+                        />
+                        <Label className="text-xs">{t('loginSignup.loginPageAsModal')}</Label>
+                        <span className="text-2xs text-muted-foreground">
+                            {t('loginSignup.loginPageAsModalHint')}
+                        </span>
+                    </div>
                 </div>
             </Card>
 

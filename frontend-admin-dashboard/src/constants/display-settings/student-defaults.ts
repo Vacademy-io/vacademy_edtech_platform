@@ -145,6 +145,7 @@ export const DEFAULT_STUDENT_DISPLAY_SETTINGS: StudentDisplaySettingsData = {
         passwordStrategy: 'manual',
         passwordDelivery: 'none',
         presentation: 'page',
+        loginPageAsModal: false,
     },
     permissions: {
         canViewProfile: true,

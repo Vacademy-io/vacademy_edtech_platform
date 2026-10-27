@@ -84,7 +84,9 @@
         "catalogueHeaderAuth": "Authentification dans l'en-tête du catalogue",
         "selectPresentation": "Sélectionner la présentation",
         "presentationPage": "page (accéder à /login)",
-        "presentationModal": "fenêtre modale (ouverture sur place)"
+        "presentationModal": "fenêtre modale (ouverture sur place)",
+        "loginPageAsModal": "Ouvrir la page de connexion en fenêtre modale",
+        "loginPageAsModalHint": "Activé : /login affiche la fenêtre Créer un compte (avec Se connecter en dessous) au lieu de la page de connexion complète."
     },
     "courseSettings": {
         "cardTitle": "Paramètres des cours",
