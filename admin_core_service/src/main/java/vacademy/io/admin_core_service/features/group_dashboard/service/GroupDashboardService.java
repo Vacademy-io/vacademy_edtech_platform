@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import vacademy.io.admin_core_service.features.live_session.util.TimezoneNormalizer;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.DateTimeException;
@@ -137,12 +138,20 @@ public class GroupDashboardService {
                 utc(now.minus(1, ChronoUnit.DAYS)));
     }
 
+    /**
+     * The user's zone, in a form Postgres accepts — the id goes into {@code AT TIME ZONE :tz}.
+     * Browsers on older ICU still report the legacy "Asia/Calcutta", which Java accepts but prod
+     * Postgres's tzdata does not, so every daily chart failed with 'time zone "Asia/Calcutta" not
+     * recognized'. Region names (and UTC) only: Postgres reads a bare offset such as "+05:30" with
+     * the POSIX sign, the opposite of Java, which would shift every day boundary.
+     */
     private static ZoneId zone(String tz) {
-        if (tz == null || tz.isBlank()) return ZoneId.of("Asia/Kolkata");
+        String name = TimezoneNormalizer.normalize(tz);
+        if (!name.contains("/") && !"UTC".equals(name)) name = TimezoneNormalizer.DEFAULT_TIMEZONE;
         try {
-            return ZoneId.of(tz.trim());
+            return ZoneId.of(name);
         } catch (DateTimeException e) {
-            return ZoneId.of("Asia/Kolkata");
+            return ZoneId.of(TimezoneNormalizer.DEFAULT_TIMEZONE);
         }
     }
 

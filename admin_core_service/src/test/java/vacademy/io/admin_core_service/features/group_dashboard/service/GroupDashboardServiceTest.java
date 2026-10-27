@@ -32,6 +32,17 @@ class GroupDashboardServiceTest {
     }
 
     @Test
+    void legacyAndOffsetZonesBecomeNamesPostgresAccepts() {
+        Instant now = Instant.parse("2026-10-27T08:00:00Z");
+        // Chrome on older ICU reports this; prod Postgres rejects it.
+        assertEquals("Asia/Kolkata", GroupDashboardService.window(30, "Asia/Calcutta", now).tz().getId());
+        // Postgres would read "+05:30" as UTC-05:30 (POSIX sign).
+        assertEquals("Asia/Kolkata", GroupDashboardService.window(30, "+05:30", now).tz().getId());
+        assertEquals("UTC", GroupDashboardService.window(30, "UTC", now).tz().getId());
+        assertEquals("Europe/London", GroupDashboardService.window(30, "Europe/London", now).tz().getId());
+    }
+
+    @Test
     void everyGroupHasSections() {
         assertEquals(3, GroupDashboardService.sectionsOf("contacts").size());
         assertEquals(3, GroupDashboardService.sectionsOf("automations").size());
