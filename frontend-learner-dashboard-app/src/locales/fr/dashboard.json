@@ -92,6 +92,8 @@
         "renewPromptNoDate": "Payez une fois et votre abonnement se poursuit.",
         "reactivatePrompt": "Réactivez cet abonnement — même forfait, mêmes cours, sans nouvelle inscription.",
         "alsoEnableAutopay": "Réactivez aussi le paiement automatique — une seule approbation paie maintenant et configure les renouvellements futurs.",
+        "autopayRequiredHint": "Le paiement automatique est requis pour poursuivre votre abonnement.",
+        "autopayRequiredBlocked": "Cochez le paiement automatique ci-dessus pour poursuivre votre abonnement.",
         "mandateMethod": {
             "heading": "Comment configurer le paiement automatique ?",
             "upiLabel": "UPI Autopay",

@@ -126,6 +126,20 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
         return null;
     }
 
+    /**
+     * The institute requires autopay on a manual renewal, and this plan can take it. Same
+     * gate as the /subscriptions page -- this widget has its own pay button, so without it
+     * the requirement is bypassable from the dashboard.
+     */
+    const autopayRequired = (sub: Subscription) =>
+        Boolean(sub.autopay_required) && Boolean(sub.autopay_available);
+
+    /** Blocked from paying because a required autopay option has been cleared. */
+    const autopayBlocks = (sub: Subscription) =>
+        autopayRequired(sub)
+        && !sub.instant_renewal
+        && !(autopayChoice[sub.user_plan_id] ?? Boolean(sub.autopay_default));
+
     const confirmCancel = async () => {
         if (!toCancel) return;
         try {
@@ -438,7 +452,14 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
                                                     }))
                                                 }
                                             />
-                                            <span>{t("membership.alsoEnableAutopay")}</span>
+                                            <span>
+                                                {t("membership.alsoEnableAutopay")}
+                                                {autopayRequired(sub) && (
+                                                    <span className="block text-caption text-subtle">
+                                                        {t("membership.autopayRequiredHint")}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </label>
                                     )}
                                     {sub.autopay_available && !sub.instant_renewal
@@ -468,7 +489,7 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
                                                 mandateMethodChoice[sub.user_plan_id] ?? DEFAULT_MANDATE_METHOD
                                             )
                                         }
-                                        disabled={renewingPlanId === sub.user_plan_id}
+                                        disabled={renewingPlanId === sub.user_plan_id || autopayBlocks(sub)}
                                         className="w-full gap-2"
                                     >
                                         <CreditCard size={16} weight="duotone" />
@@ -476,6 +497,11 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
                                             ? t("membership.startingPayment")
                                             : t("membership.payToContinue", { amount: price })}
                                     </Button>
+                                    {autopayBlocks(sub) && (
+                                        <p className="text-caption text-subtle">
+                                            {t("membership.autopayRequiredBlocked")}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>

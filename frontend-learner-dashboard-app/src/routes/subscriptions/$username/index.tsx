@@ -314,6 +314,21 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
   const autopayWanted = (sub: Subscription) =>
     autopayChoice[sub.user_plan_id] ?? Boolean(sub.autopay_default);
 
+  /**
+   * The institute requires autopay, and this plan can actually take it. A plan whose invite
+   * does not offer autopay is never blocked — the requirement is about the choice, and
+   * there is no choice to make here.
+   */
+  const autopayRequired = (sub: Subscription) =>
+    Boolean(sub.autopay_required) && Boolean(sub.autopay_available);
+
+  /**
+   * Blocked from paying because a required autopay option has been cleared. Stored-token
+   * gateways show no checkbox at all, so there is nothing to clear and nothing to block.
+   */
+  const autopayBlocks = (sub: Subscription) =>
+    autopayRequired(sub) && !sub.instant_renewal && !autopayWanted(sub);
+
 
   const refetchSoon = () => {
     // The gateway webhook reactivates the plan asynchronously — refetch a few
@@ -728,6 +743,11 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
                     />
                     <span>
                       {t("subscriptions.manage.autopayCheckbox")}
+                      {autopayRequired(sub) && (
+                        <span className="block text-xs text-gray-500">
+                          {t("subscriptions.manage.autopayRequiredHint")}
+                        </span>
+                      )}
                     </span>
                   </label>
                 )}
@@ -751,7 +771,7 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
                     layoutVariant="default"
                     className="w-full"
                     onClick={() => startRenewal(sub)}
-                    disable={renewingPlanId === sub.user_plan_id}
+                    disable={renewingPlanId === sub.user_plan_id || autopayBlocks(sub)}
                   >
                     <CreditCard className="me-1.5 size-4" />
                     {renewingPlanId === sub.user_plan_id
@@ -759,7 +779,9 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
                       : t("subscriptions.manage.renew.cta", { amount: priceLabel })}
                   </MyButton>
                   <p className="text-center text-xs text-gray-500">
-                    {t("subscriptions.manage.renew.secureNote")}
+                    {autopayBlocks(sub)
+                      ? t("subscriptions.manage.autopayRequiredBlocked")
+                      : t("subscriptions.manage.renew.secureNote")}
                   </p>
                 </div>
 

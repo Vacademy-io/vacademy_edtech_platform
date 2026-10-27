@@ -251,6 +251,7 @@ public class SubscriptionService {
                 .instantRenewal(renewalGateway != null && isStoredTokenGateway(renewalGateway.getVendor()))
                 .renewalVendor(renewalGateway != null ? renewalGateway.getVendor() : null)
                 .autopayDefault(autopayDefaultOnRenewal(instituteId))
+                .autopayRequired(autopayRequiredOnRenewal(instituteId))
                 .autopayAvailable(isAutopayAvailable(plan))
                 .canChangePlan(planChange.canChangePlan())
                 .scheduledPlanChange(planChange.scheduledChange())
@@ -808,11 +809,28 @@ public class SubscriptionService {
      * failure to read the setting must degrade to "no autopay", never to charging a member
      * on a recurring basis they did not ask for.
      */
+    /**
+     * Whether a manual renewal pre-selects autopay. Required implies default: an institute
+     * that mandates autopay has necessarily opted into pre-selecting it, so it sets one key
+     * rather than two that must agree.
+     */
     private boolean autopayDefaultOnRenewal(String instituteId) {
         try {
-            return paymentSettingService.isAutopayDefaultOnManualRenewal(instituteId);
+            return paymentSettingService.isAutopayDefaultOnManualRenewal(instituteId)
+                    || paymentSettingService.isAutopayRequiredOnManualRenewal(instituteId);
         } catch (Exception e) {
             log.warn("Could not read the autopay-on-renewal default for institute {} — "
+                    + "treating as off: {}", instituteId, e.getMessage());
+            return false;
+        }
+    }
+
+    /** Whether autopay is mandatory for a manual renewal. Off on any read failure. */
+    private boolean autopayRequiredOnRenewal(String instituteId) {
+        try {
+            return paymentSettingService.isAutopayRequiredOnManualRenewal(instituteId);
+        } catch (Exception e) {
+            log.warn("Could not read the autopay-on-renewal requirement for institute {} — "
                     + "treating as off: {}", instituteId, e.getMessage());
             return false;
         }

@@ -636,7 +636,9 @@
         "cta": "Pay {{amount}} and renew now",
         "secureNote": "Secure card payment. We'll email your receipt straight away.",
         "support": "Questions about your renewal? Email <mail>{{email}}</mail> and we'll sort it out."
-      }
+      },
+      "autopayRequiredHint": "Auto-pay is required to continue your membership.",
+      "autopayRequiredBlocked": "Tick auto-pay above to continue your membership."
     },
     "paymentReturn": {
       "confirmingTitle": "Confirming your payment…",

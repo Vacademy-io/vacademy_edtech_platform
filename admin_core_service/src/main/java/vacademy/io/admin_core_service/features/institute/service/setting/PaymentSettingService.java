@@ -57,6 +57,29 @@ public class PaymentSettingService {
      */
     public static final String AUTOPAY_CHARGE_SCHEDULER_ENABLED_KEY = "autopayChargeSchedulerEnabled";
 
+    /**
+     * Flag inside PAYMENT_SETTING.data that makes autopay MANDATORY on a manual renewal:
+     * the learner cannot pay to continue without also arming recurring billing.
+     *
+     * <p>Distinct from {@link #AUTOPAY_DEFAULT_ON_RENEWAL_KEY}, which only pre-selects the
+     * choice. This one removes the choice, and it implies the default -- a required box is
+     * necessarily a ticked one, so an institute turns on exactly this one key rather than
+     * having to set both and keep them consistent.
+     *
+     * <p>It describes what the server already does rather than adding new enforcement. On a
+     * checkout gateway {@code SubscriptionService} computes
+     * {@code withAutopay || autopayDefaultOnRenewal(instituteId)}, so once the institute
+     * default is on, clearing the box changes nothing -- the renewal arms autopay anyway.
+     * That is enforcement by silence: the learner unticks, pays, and is enrolled into
+     * recurring billing regardless. This flag lets the client say so plainly, by keeping the
+     * box ticked and disabling the pay button while it is clear, instead of accepting a
+     * choice the server will overrule.
+     *
+     * <p>Opt-in, like everything else here. Absent means the learner keeps a real choice
+     * wherever the {@code autopayDefaultOnManualRenewal} default is also off.
+     */
+    public static final String AUTOPAY_REQUIRED_ON_RENEWAL_KEY = "autopayRequiredOnManualRenewal";
+
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper;
 
@@ -125,6 +148,19 @@ public class PaymentSettingService {
      */
     public boolean isAutopayDefaultOnManualRenewal(String instituteId) {
         return readFlag(instituteId, AUTOPAY_DEFAULT_ON_RENEWAL_KEY);
+    }
+
+    /**
+     * Whether autopay is MANDATORY for a manual renewal at this institute -- the learner
+     * cannot pay to continue with the autopay option cleared.
+     *
+     * <p>Callers should treat this as implying {@link #isAutopayDefaultOnManualRenewal}: a
+     * required option is a pre-selected one.
+     *
+     * @see #AUTOPAY_REQUIRED_ON_RENEWAL_KEY
+     */
+    public boolean isAutopayRequiredOnManualRenewal(String instituteId) {
+        return readFlag(instituteId, AUTOPAY_REQUIRED_ON_RENEWAL_KEY);
     }
 
     /** Reads one boolean out of PAYMENT_SETTING.data. False on anything unexpected. */
