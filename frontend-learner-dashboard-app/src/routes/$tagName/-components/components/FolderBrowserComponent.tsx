@@ -335,6 +335,13 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
     return `${RouteMatcher.pagePath(tagName || "", path)}${qs ? `?${qs}` : ""}`;
   };
 
+  /** A course link opens in-app; a new tab / window keeps the browser's own behaviour. */
+  const onCourseLinkClick = (href: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    void siteNavigate(href);
+  };
+
   const isCenter = align === "center";
   const homeLabel = base ? titleOf(base) : t("folderBrowser.home", "All");
   const heading = current ? titleOf(current) : title;
@@ -655,6 +662,71 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
                 ? t("folderBrowser.searching", "Searching…")
                 : t("folderBrowser.noResults", { query: query.trim(), defaultValue: "Nothing matches “{{query}}”." })}
             </p>
+          ) : view.layout !== "list" ? (
+            // Results as the section's own cards, the way its folders show.
+            <div>
+              <p className="pb-3 text-xs font-medium text-catalogue-text-muted" aria-live="polite">
+                {t("folderBrowser.resultCount", {
+                  count: shownResults.length + courseResults.length,
+                  defaultValue: "{{count}} matches",
+                })}
+              </p>
+              <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6", COLUMN_CLASSES[view.columns])}>
+                {shownResults.map(({ node, trail: path }) => {
+                  if (node.node_type === "FOLDER") return folderCard(node);
+                  // A product page opens the folder that holds it.
+                  const target = path.length ? path[path.length - 1].id : null;
+                  return (
+                    <button
+                      key={node.id}
+                      type="button"
+                      onClick={() => openFolder(target)}
+                      className="catalogue-card-elevated group flex h-full w-full flex-col text-start"
+                    >
+                      {media(node)}
+                      <div className="flex flex-1 flex-col gap-1 p-4">
+                        <p className="line-clamp-2 text-base font-semibold leading-snug text-catalogue-text-primary">
+                          {titleOf(node)}
+                        </p>
+                        {path.length > 0 && (
+                          <p className="line-clamp-1 text-xs text-catalogue-text-muted">
+                            {t("folderBrowser.inPath", {
+                              path: [homeLabel, ...path.map(titleOf)].join(" › "),
+                              defaultValue: "in {{path}}",
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+                {courseResults.map((row) => {
+                  const href = coursePath(row);
+                  if (!href) return null;
+                  return (
+                    <a
+                      key={`course-${courseIdOf(row)}`}
+                      href={href}
+                      onClick={onCourseLinkClick(href)}
+                      className="catalogue-card-elevated group flex h-full w-full flex-col text-start no-underline"
+                    >
+                      {view.imageShape !== "none" && (
+                        <CourseThumbnail
+                          image={courseImageOf(row)}
+                          className={cn("w-full rounded-none", ASPECT[view.imageShape])}
+                        />
+                      )}
+                      <div className="flex flex-1 flex-col gap-1 p-4">
+                        <p className="line-clamp-2 text-base font-semibold leading-snug text-catalogue-text-primary">
+                          {siteT(row.package_name || "")}
+                        </p>
+                        <p className="text-xs text-catalogue-text-muted">{terms.course}</p>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
           ) : (
             <div className="catalogue-card divide-y divide-catalogue-border overflow-hidden">
               <p className="px-4 py-2 text-xs font-medium text-catalogue-text-muted" aria-live="polite">
@@ -703,12 +775,7 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
                   <a
                     key={`course-${courseIdOf(row)}`}
                     href={href}
-                    onClick={(event) => {
-                      // A new tab / window keeps the browser's own behaviour.
-                      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                      event.preventDefault();
-                      void siteNavigate(href);
-                    }}
+                    onClick={onCourseLinkClick(href)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-start no-underline transition-colors hover:bg-catalogue-interactive-hover"
                   >
                     <CourseThumbnail image={courseImageOf(row)} className="catalogue-aspect-video w-16" />
