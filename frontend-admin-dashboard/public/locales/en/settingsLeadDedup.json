@@ -68,6 +68,10 @@
                 "resetClosedToNew": "Reset to New only if converted or discarded"
             }
         },
+        "discardedToNewCounsellor": {
+            "label": "Discarded lead goes to a new counsellor",
+            "hint": "When a discarded lead enquires again, the list's pool assigns it to the next counsellor, not the one who discarded it. That counsellor gets the follow-up."
+        },
         "alsoMatchEmail": {
             "label": "Also match on email",
             "hint": "An enquiry with a new phone number still counts as a repeat when its email matches an existing lead (e.g. a Google form prefilled with another number)."

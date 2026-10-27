@@ -854,7 +854,7 @@ public class AudienceService {
         // policy this is pure pool routing (previously catalogue leads never got an owner).
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
-                audience.getCampaignName());
+                audience.getCampaignName(), dto.getEmail(), dto.getMobileNumber());
         recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 dto.getEmail(), dto.getMobileNumber(),
                 createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
@@ -1065,7 +1065,7 @@ public class AudienceService {
         // policy this is pure pool routing.
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 null, null, createdUser != null ? createdUser.getFullName() : null,
-                audience.getCampaignName());
+                audience.getCampaignName(), email, mobileNumber);
         recordReattempt(repeatLeadSettings, savedResponse, userId, audience.getInstituteId(),
                 email, mobileNumber,
                 createdUser != null ? createdUser.getFullName() : null, audience.getCampaignName());
@@ -1610,7 +1610,8 @@ public class AudienceService {
                 // submission still succeeds if routing fails.
                 applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
-                        userForNotification.getFullName(), audience.getCampaignName());
+                        userForNotification.getFullName(), audience.getCampaignName(),
+                        userDTO.getEmail(), userDTO.getMobileNumber());
                 recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                         userDTO.getEmail(), userDTO.getMobileNumber(),
                         userForNotification.getFullName(), audience.getCampaignName());
@@ -1949,25 +1950,26 @@ public class AudienceService {
         // column renders a name (an id without a name shows up as Unassigned).
         try {
             counselorAssignmentService.assignCounselorOnIntake(savedResponse.getAudienceId())
-                    .ifPresent(counselorUserId -> {
-                        String counselorName = null;
-                        try {
-                            List<UserDTO> fetched = authService
-                                    .getUsersFromAuthServiceByUserIds(List.of(counselorUserId));
-                            if (!fetched.isEmpty() && fetched.get(0) != null) {
-                                counselorName = fetched.get(0).getFullName();
-                            }
-                        } catch (Exception nameLookupFailure) {
-                            logger.warn("Could not fetch counselor name for {}: {}",
-                                    counselorUserId, nameLookupFailure.getMessage());
-                        }
-                        userLeadProfileService.assignCounselor(
-                                leadUserId, instituteId, counselorUserId, counselorName);
-                    });
+                    .ifPresent(counselorUserId -> assignPoolCounsellor(leadUserId, instituteId, counselorUserId));
         } catch (Exception e) {
             logger.error("Failed to auto-assign counselor for response {}: {}",
                     savedResponse.getId(), e.getMessage());
         }
+    }
+
+    /** Owner = the pool's pick, with the name the Counsellor column renders. */
+    private void assignPoolCounsellor(String leadUserId, String instituteId, String counselorUserId) {
+        String counselorName = null;
+        try {
+            List<UserDTO> fetched = authService.getUsersFromAuthServiceByUserIds(List.of(counselorUserId));
+            if (!fetched.isEmpty() && fetched.get(0) != null) {
+                counselorName = fetched.get(0).getFullName();
+            }
+        } catch (Exception nameLookupFailure) {
+            logger.warn("Could not fetch counselor name for {}: {}",
+                    counselorUserId, nameLookupFailure.getMessage());
+        }
+        userLeadProfileService.assignCounselor(leadUserId, instituteId, counselorUserId, counselorName);
     }
 
     /**
@@ -1980,11 +1982,13 @@ public class AudienceService {
      * @param repeatLeadSettings null for a first-time lead (unchanged prior behaviour);
      *                           non-null when this submission matched an existing lead and
      *                           the institute's dedup action is ALLOW_REASSIGN.
+     * @param email the submission's email, as passed to the dedup check
+     * @param phone the submission's phone, as passed to the dedup check
      */
     private void applyCounsellorAssignment(LeadDedupSettingService.RepeatLeadSettings repeatLeadSettings,
             AudienceResponse savedResponse, String leadUserId, String instituteId,
             String requestManualCounsellorId, String requestManualCounsellorName,
-            String leadFullName, String campaignName) {
+            String leadFullName, String campaignName, String email, String phone) {
         if (StringUtils.hasText(requestManualCounsellorId)) {
             autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId,
                     requestManualCounsellorId, requestManualCounsellorName, leadFullName, campaignName);
@@ -1993,6 +1997,10 @@ public class AudienceService {
         if (repeatLeadSettings == null) {
             autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId, null, null,
                     leadFullName, campaignName);
+            return;
+        }
+        if (repeatLeadSettings.discardedToNewCounsellor()
+                && assignNewCounsellorForDiscardedRepeat(savedResponse, leadUserId, instituteId, email, phone)) {
             return;
         }
         switch (repeatLeadSettings.counsellorMode()) {
@@ -2012,6 +2020,80 @@ public class AudienceService {
             case ROUND_ROBIN -> autoAssignCounsellorOnIntake(savedResponse, leadUserId, instituteId, null, null,
                     leadFullName, campaignName);
         }
+    }
+
+    /**
+     * Repeat-lead discardedToNewCounsellor: when the lead this enquiry repeats was discarded
+     * (LOST), the list's pool picks the next counsellor other than its earlier owner, and that
+     * counsellor replaces the owner (so the reattempt follow-up and bell go to them too). The
+     * earlier owner's open follow-ups on this lead are closed: the status reset would bring
+     * them back to their list, on a lead they no longer have access to.
+     * It runs before the status reset, so LOST is still the earlier lead's status here.
+     *
+     * @return false when it did not assign (earlier lead not LOST, lookup failed, no pool pick),
+     *         so the caller applies the counsellorMode as before
+     */
+    private boolean assignNewCounsellorForDiscardedRepeat(AudienceResponse savedResponse, String leadUserId,
+            String instituteId, String email, String phone) {
+        if (savedResponse == null || savedResponse.getId() == null) {
+            return false;
+        }
+        try {
+            AudienceResponseRepository.PrimaryLeadRow primary = leadDeduplicationService.findPrimaryLead(
+                    instituteId, savedResponse.getAudienceId(), email, phone, savedResponse.getId()).orElse(null);
+            if (primary == null || !isLostLeadStatus(primary.getStatusKey())) {
+                return false;
+            }
+            Set<String> previousOwners = new HashSet<>();
+            if (StringUtils.hasText(primary.getCounsellorId())) {
+                previousOwners.add(primary.getCounsellorId());
+            }
+            String currentOwner = userLeadProfileRepository.findByUserIdAndInstituteId(leadUserId, instituteId)
+                    .map(p -> p.getAssignedCounselorId())
+                    .filter(StringUtils::hasText)
+                    .orElse(null);
+            if (currentOwner != null) {
+                previousOwners.add(currentOwner);
+            }
+            String picked = counselorAssignmentService
+                    .assignCounselorOnIntake(savedResponse.getAudienceId(), previousOwners).orElse(null);
+            if (picked == null) {
+                return false;
+            }
+            if (!picked.equals(currentOwner)) {
+                assignPoolCounsellor(leadUserId, instituteId, picked);
+            }
+            if (!previousOwners.contains(picked)) {
+                closeEarlierOwnersFollowUps(savedResponse.getId(), instituteId, leadUserId, previousOwners);
+            }
+            logger.info("Repeat lead {} of discarded lead {}: assigned to {} (earlier owner {})",
+                    savedResponse.getId(), primary.getResponseId(), picked, previousOwners);
+            return true;
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: new counsellor for the discarded lead failed: {}",
+                    savedResponse.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private void closeEarlierOwnersFollowUps(String repeatResponseId, String instituteId, String leadUserId,
+            Set<String> earlierOwners) {
+        try {
+            int closed = leadFollowupRepository.closeOpenByCreatorsForLeadUsers(instituteId, earlierOwners,
+                    List.of(leadUserId), "Lead enquired again after it was discarded and moved to a new counsellor",
+                    new Timestamp(System.currentTimeMillis()));
+            if (closed > 0) {
+                logger.info("Repeat lead {}: closed {} open follow-up(s) of the earlier owner", repeatResponseId, closed);
+            }
+        } catch (Exception e) {
+            logger.error("Repeat lead {}: could not close the earlier owner's follow-ups: {}",
+                    repeatResponseId, e.getMessage());
+        }
+    }
+
+    /** A discarded lead: status key LOST. */
+    static boolean isLostLeadStatus(String statusKey) {
+        return StringUtils.hasText(statusKey) && "LOST".equals(statusKey.trim().toUpperCase());
     }
 
     /**
@@ -2502,7 +2584,8 @@ public class AudienceService {
                 // repeat-lead policy. Same centralised path as v1 submitLead.
                 applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
                         requestDTO.getCounsellorId(), requestDTO.getCounsellorName(),
-                        createdUser.getFullName(), audience.getCampaignName());
+                        createdUser.getFullName(), audience.getCampaignName(),
+                        userDTO.getEmail(), userDTO.getMobileNumber());
                 recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                         userDTO.getEmail(), userDTO.getMobileNumber(),
                         createdUser.getFullName(), audience.getCampaignName());
@@ -5847,7 +5930,8 @@ public class AudienceService {
         // through the campaign's counselor pool. Runs before the workflow trigger so
         // downstream workflow nodes see an owned lead.
         applyCounsellorAssignment(repeatLeadSettings, savedResponse, userId, instituteId,
-                null, null, createdUser.getFullName(), audience.getCampaignName());
+                null, null, createdUser.getFullName(), audience.getCampaignName(),
+                processedData.getEmail(), processedData.getPhone());
         recordReattempt(repeatLeadSettings, savedResponse, userId, instituteId,
                 processedData.getEmail(), processedData.getPhone(),
                 createdUser.getFullName(), audience.getCampaignName());

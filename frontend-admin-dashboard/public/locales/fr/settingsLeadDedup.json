@@ -68,6 +68,10 @@
                 "resetClosedToNew": "Remettre à Nouveau seulement si converti ou écarté"
             }
         },
+        "discardedToNewCounsellor": {
+            "label": "Prospect écarté : nouveau conseiller",
+            "hint": "Quand un prospect écarté fait une nouvelle demande, le pool de la liste l'attribue au conseiller suivant, pas à celui qui l'a écarté. Ce conseiller reçoit le suivi."
+        },
         "alsoMatchEmail": {
             "label": "Comparer aussi l'e-mail",
             "hint": "Une demande avec un nouveau numéro compte quand même comme une répétition si son e-mail correspond à un prospect existant (par ex. un formulaire Google prérempli avec un autre numéro)."
