@@ -40,14 +40,57 @@ describe('showAddLead merge', () => {
     });
 });
 
-describe('resolveLeadActions', () => {
-    it('hides the button on a cold cache or an absent flag', () => {
-        expect(resolveLeadActions(undefined)).toEqual({ canAddLead: false });
-        expect(resolveLeadActions({})).toEqual({ canAddLead: false });
+describe('allowEditFormResponses merge', () => {
+    const editFlag = (role: string, incoming?: Partial<DisplaySettingsData>) =>
+        mergeDisplayWithDefaults(incoming, role as never).leadActions?.allowEditFormResponses;
+
+    it('is on for admin and off for other roles when never saved', () => {
+        expect(editFlag(ADMIN_DISPLAY_SETTINGS_KEY)).toBe(true);
+        expect(editFlag(ADMIN_DISPLAY_SETTINGS_KEY, savedBeforeTheFlag())).toBe(true);
+        for (const role of [TEACHER_DISPLAY_SETTINGS_KEY, CUSTOM_KEY]) {
+            expect(editFlag(role)).toBe(false);
+            expect(editFlag(role, savedBeforeTheFlag())).toBe(false);
+        }
     });
 
-    it('shows it only for an explicit true', () => {
-        expect(resolveLeadActions({ showAddLead: true }).canAddLead).toBe(true);
-        expect(resolveLeadActions({ showAddLead: false }).canAddLead).toBe(false);
+    it('keeps a saved choice', () => {
+        for (const role of ROLES) {
+            expect(editFlag(role, { leadActions: { allowEditFormResponses: true } })).toBe(true);
+            expect(editFlag(role, { leadActions: { allowEditFormResponses: false } })).toBe(false);
+        }
+    });
+});
+
+describe('resolveLeadActions', () => {
+    it('hides Add New Lead on a cold cache or an absent flag', () => {
+        for (const role of ROLES) {
+            expect(resolveLeadActions(undefined, role).canAddLead).toBe(false);
+            expect(resolveLeadActions({}, role).canAddLead).toBe(false);
+        }
+    });
+
+    it('shows Add New Lead only for an explicit true', () => {
+        expect(resolveLeadActions({ showAddLead: true }, CUSTOM_KEY).canAddLead).toBe(true);
+        expect(resolveLeadActions({ showAddLead: false }, CUSTOM_KEY).canAddLead).toBe(false);
+    });
+
+    it('falls back to the role default for form-answer editing', () => {
+        expect(resolveLeadActions(undefined, ADMIN_DISPLAY_SETTINGS_KEY).canEditFormResponses).toBe(
+            true
+        );
+        expect(
+            resolveLeadActions(undefined, TEACHER_DISPLAY_SETTINGS_KEY).canEditFormResponses
+        ).toBe(false);
+        expect(resolveLeadActions({}, CUSTOM_KEY).canEditFormResponses).toBe(false);
+    });
+
+    it('lets a saved flag override the role default', () => {
+        expect(
+            resolveLeadActions({ allowEditFormResponses: false }, ADMIN_DISPLAY_SETTINGS_KEY)
+                .canEditFormResponses
+        ).toBe(false);
+        expect(
+            resolveLeadActions({ allowEditFormResponses: true }, CUSTOM_KEY).canEditFormResponses
+        ).toBe(true);
     });
 });

@@ -268,9 +268,11 @@ const ADMIN_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
     liveClassActions: {
         allowDeletePastSessions: true,
     },
-    // Off for every role — an institute opts a role in from Display Settings.
+    // Add New Lead is off for every role — an institute opts a role in from
+    // Display Settings. Editing form answers is on for admin.
     leadActions: {
         showAddLead: false,
+        allowEditFormResponses: true,
     },
     courseCreation: {
         showCreateCourseWithAI: false,

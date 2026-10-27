@@ -1448,6 +1448,7 @@ export default function TeacherDisplaySettings({ onDirtyChange }: RoleDisplayPan
                     onChange={(next) =>
                         updateSettings((prev) => ({ ...prev, leadActions: next }))
                     }
+                    defaultAllowEditFormResponses={false}
                 />
             )}
             </section>

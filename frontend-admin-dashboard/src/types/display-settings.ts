@@ -432,6 +432,10 @@ export interface LeadActionSettings {
     // fill that audience's form. OFF for every role, admin included, until an
     // institute opts a role in, so read sites must resolve `=== true`.
     showAddLead?: boolean;
+    // Edit the answers on a lead's Form Response card (Lead Profile tab). ON for
+    // admin, OFF for teacher and custom roles, so read sites must resolve
+    // `?? isAdmin`, never `?? true`.
+    allowEditFormResponses?: boolean;
 }
 
 // Per-role control over which roles this role can see/select in the Team tab —
@@ -787,8 +791,8 @@ export interface DisplaySettingsData {
     //         LiveClassActionSettings — ON for admin, OFF for other roles.
     liveClassActions?: LiveClassActionSettings;
 
-    // 13b-iii) Lead page actions (All Leads → Add New Lead). See
-    //          LeadActionSettings — OFF for every role by default.
+    // 13b-iii) Lead page actions (All Leads → Add New Lead, Form Response edit).
+    //          See LeadActionSettings for each flag's role default.
     leadActions?: LeadActionSettings;
 
     // 13c) Team tab role-visibility controls. Restricts which roles the
