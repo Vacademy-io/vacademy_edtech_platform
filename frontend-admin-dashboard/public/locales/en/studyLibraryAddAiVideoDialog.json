@@ -120,8 +120,36 @@
         },
         "voice": {
             "label": "Voice",
+            "helper": "Who narrates the video. Press play to hear a voice.",
             "female": "Female",
-            "male": "Male"
+            "male": "Male",
+            "gender": "Voice type",
+            "play": "Play {{name}}",
+            "stop": "Stop {{name}}",
+            "previewFailed": "Couldn't play this voice. Try again.",
+            "provider": {
+                "label": "Voice provider",
+                "free": "Free",
+                "perMinute": "≈ {{value}} credits/min",
+                "unavailable": "Not available right now"
+            },
+            "list": {
+                "label": "Voices",
+                "loading": "Loading voices…",
+                "failed": "Couldn't load the voice list. A voice matching your choice above will be used.",
+                "auto": "Automatic",
+                "autoHelper": "best match for {{language}}",
+                "empty": "This provider has no voices of this type in {{language}} — the closest match will be used."
+            },
+            "default": {
+                "badge": "Default",
+                "current": "Institute default: {{voice}}",
+                "set": "Set {{name}} as institute default",
+                "clear": "Clear default",
+                "saved": "{{name}} is now the default voice for new AI videos.",
+                "cleared": "Default voice cleared.",
+                "failed": "Couldn't save the default voice."
+            }
         },
         "duration": {
             "label": "Length",
@@ -167,6 +195,15 @@
                 "landscape": "Landscape 16:9",
                 "portrait": "Portrait 9:16"
             }
+        },
+        "estimate": {
+            "label": "Estimated cost:",
+            "single": "~{{value}} credits",
+            "range": "{{low}}–{{high}} credits",
+            "narration": "narration ~{{value}}",
+            "narrationFree": "narration free",
+            "loading": "working it out…",
+            "failed": "couldn't estimate yet — you'll see it on the next step."
         },
         "errors": {
             "subjectTooLong": "Keep the subject under {{max}} characters"

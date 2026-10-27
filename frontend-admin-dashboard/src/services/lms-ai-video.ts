@@ -14,6 +14,11 @@
  *
  * MP4 export: POST /render/{id} starts (or returns) a render of a finished
  * video to an MP4 file; GET /render/{id} reads its state. Renders aren't billed.
+ *
+ * Voices: GET /voices lists the narration providers and their voices for a
+ * language, plus the institute's default voice; POST /voices/preview returns a
+ * short MP3 sample; PUT / DELETE /voices/default set or clear the default
+ * (institute admins only — `can_set_default` says whether the caller may).
  */
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
@@ -42,6 +47,9 @@ export type LmsVideoOrientation = 'landscape' | 'portrait';
 export type LmsVideoLayout = 'auto' | 'corner' | 'bubble' | 'side' | 'presenter' | 'board';
 
 export type LmsVideoVoiceGender = 'female' | 'male';
+
+/** Narration (TTS) providers. "edge" is the free one. */
+export type LmsVoiceProviderId = 'edge' | 'sarvam' | 'smallest' | 'navana';
 
 export interface LmsVideoTeacher {
     /** Spatius avatar id (TutorAsset.external_id from GET /tutor/v1/options). */
@@ -81,6 +89,9 @@ export interface LmsVideoRequest {
     teacher?: LmsVideoTeacher | null;
     layout?: LmsVideoLayout | null;
     voice_gender?: LmsVideoVoiceGender | null;
+    /** Omitted → the institute default, else the server's default provider. */
+    tts_provider?: LmsVoiceProviderId;
+    /** A voice of `tts_provider`; omitted → the server picks one for `voice_gender`. */
     voice_id?: string | null;
     include_worked_example?: boolean | null;
     include_recap?: boolean | null;
@@ -167,6 +178,51 @@ const TERMINAL_STATUSES = new Set(['COMPLETED', 'FAILED', 'CANCELLED']);
 export const isTerminalLmsVideoStatus = (status: string | null | undefined): boolean =>
     !!status && TERMINAL_STATUSES.has(status.toUpperCase());
 
+// ── voices ───────────────────────────────────────────────────────────────────
+
+export interface LmsVoiceOption {
+    id: string;
+    name: string;
+    gender: LmsVideoVoiceGender | null;
+    accent: string | null;
+    /** A ready-made sample; null → fetch one from POST /voices/preview. */
+    sample_url: string | null;
+}
+
+export interface LmsVoiceProvider {
+    id: LmsVoiceProviderId;
+    label: string;
+    description: string;
+    available: boolean;
+    unavailable_reason: string | null;
+    /** Narration cost; 0 for the free provider. */
+    credits_per_minute: number;
+    voices: LmsVoiceOption[];
+}
+
+export interface LmsVoiceDefault {
+    tts_provider: LmsVoiceProviderId;
+    voice_id: string;
+    voice_gender: LmsVideoVoiceGender | null;
+}
+
+export interface LmsVoicesResponse {
+    language: string;
+    providers: LmsVoiceProvider[];
+    /** The institute's default voice, when one is set. */
+    default: LmsVoiceDefault | null;
+    /** True for institute admins — only they may set or clear the default. */
+    can_set_default: boolean;
+}
+
+export interface LmsVoicePreviewRequest {
+    tts_provider: LmsVoiceProviderId;
+    voice_id: string;
+    language: string;
+    /** Server default: a short sample sentence in `language`. */
+    text?: string;
+}
+
 // ── calls ────────────────────────────────────────────────────────────────────
 
 export const estimateLmsVideo = async (
@@ -208,6 +264,40 @@ export const cancelLmsVideo = async (videoId: string): Promise<LmsVideoCancelRes
         `${LMS_VIDEO_BASE}/cancel/${encodeURIComponent(videoId)}`
     );
     return res.data;
+};
+
+export const getLmsVideoVoices = async (
+    language: string,
+    signal?: AbortSignal
+): Promise<LmsVoicesResponse> => {
+    const res = await authenticatedAxiosInstance.get<LmsVoicesResponse>(
+        `${LMS_VIDEO_BASE}/voices`,
+        { params: { language }, signal }
+    );
+    return res.data;
+};
+
+/** An audio/mpeg sample of the voice, fetched with the caller's auth. */
+export const previewLmsVoice = async (
+    request: LmsVoicePreviewRequest,
+    signal?: AbortSignal
+): Promise<Blob> => {
+    const res = await authenticatedAxiosInstance.post<Blob>(
+        `${LMS_VIDEO_BASE}/voices/preview`,
+        request,
+        { responseType: 'blob', signal }
+    );
+    return res.data;
+};
+
+/** 403 for anyone but an institute admin. */
+export const setLmsVoiceDefault = async (voice: LmsVoiceDefault): Promise<void> => {
+    await authenticatedAxiosInstance.put(`${LMS_VIDEO_BASE}/voices/default`, voice);
+};
+
+/** 403 for anyone but an institute admin. */
+export const clearLmsVoiceDefault = async (): Promise<void> => {
+    await authenticatedAxiosInstance.delete(`${LMS_VIDEO_BASE}/voices/default`);
 };
 
 // ── MP4 render ───────────────────────────────────────────────────────────────

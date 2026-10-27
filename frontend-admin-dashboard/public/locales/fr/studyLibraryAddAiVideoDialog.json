@@ -120,8 +120,36 @@
         },
         "voice": {
             "label": "Voix",
+            "helper": "Qui raconte la vidéo. Appuyez sur lecture pour écouter une voix.",
             "female": "Féminine",
-            "male": "Masculine"
+            "male": "Masculine",
+            "gender": "Type de voix",
+            "play": "Écouter {{name}}",
+            "stop": "Arrêter {{name}}",
+            "previewFailed": "Impossible de lire cette voix. Réessayez.",
+            "provider": {
+                "label": "Fournisseur de voix",
+                "free": "Gratuit",
+                "perMinute": "≈ {{value}} crédits/min",
+                "unavailable": "Indisponible pour le moment"
+            },
+            "list": {
+                "label": "Voix",
+                "loading": "Chargement des voix…",
+                "failed": "Impossible de charger la liste des voix. Une voix correspondant à votre choix sera utilisée.",
+                "auto": "Automatique",
+                "autoHelper": "la plus adaptée au {{language}}",
+                "empty": "Ce fournisseur n'a pas de voix de ce type en {{language}} — la plus proche sera utilisée."
+            },
+            "default": {
+                "badge": "Par défaut",
+                "current": "Voix par défaut de l'établissement : {{voice}}",
+                "set": "Définir {{name}} par défaut pour l'établissement",
+                "clear": "Retirer la voix par défaut",
+                "saved": "{{name}} est désormais la voix par défaut des nouvelles vidéos IA.",
+                "cleared": "Voix par défaut retirée.",
+                "failed": "Impossible d'enregistrer la voix par défaut."
+            }
         },
         "duration": {
             "label": "Durée",
@@ -167,6 +195,15 @@
                 "landscape": "Paysage 16:9",
                 "portrait": "Portrait 9:16"
             }
+        },
+        "estimate": {
+            "label": "Coût estimé :",
+            "single": "~{{value}} crédits",
+            "range": "{{low}}–{{high}} crédits",
+            "narration": "narration ~{{value}}",
+            "narrationFree": "narration gratuite",
+            "loading": "calcul en cours…",
+            "failed": "pas encore d'estimation — vous la verrez à l'étape suivante."
         },
         "errors": {
             "subjectTooLong": "La matière ne doit pas dépasser {{max}} caractères"

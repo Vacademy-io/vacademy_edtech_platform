@@ -15,13 +15,18 @@ import {
     isWorkedExampleForced,
     isDurationAllowed,
     isQualityAllowed,
+    isVoiceDefault,
+    narrationCredits,
+    reconcileVoice,
     selectFormat,
+    selectVoice,
+    selectVoiceProvider,
     summariseEstimate,
     topicFromChapterName,
     validateFormat,
     validateWhatToTeach,
 } from '../ai-video-form';
-import type { LmsVideoPolicy } from '@/services/lms-ai-video';
+import type { LmsVideoPolicy, LmsVoicesResponse } from '@/services/lms-ai-video';
 
 const slide = (over: Partial<Slide>): Slide => ({
     id: 'id',
@@ -271,5 +276,229 @@ describe('lesson switch defaults (mirror ai_service lms_video.FORMATS)', () => {
             includeWorkedExample: true,
         };
         expect(effectiveWorkedExample(state)).toBe(true);
+    });
+});
+
+const voices = (over: Partial<LmsVoicesResponse> = {}): LmsVoicesResponse => ({
+    language: 'English',
+    providers: [
+        {
+            id: 'edge',
+            label: 'Free',
+            description: 'Good everyday voices',
+            available: true,
+            unavailable_reason: null,
+            credits_per_minute: 0,
+            voices: [
+                {
+                    id: 'edge-f1',
+                    name: 'Neerja',
+                    gender: 'female',
+                    accent: 'Indian',
+                    sample_url: null,
+                },
+                {
+                    id: 'edge-m1',
+                    name: 'Prabhat',
+                    gender: 'male',
+                    accent: 'Indian',
+                    sample_url: null,
+                },
+            ],
+        },
+        {
+            id: 'sarvam',
+            label: 'Sarvam',
+            description: 'Natural Indian voices',
+            available: true,
+            unavailable_reason: null,
+            credits_per_minute: 1.5,
+            voices: [
+                {
+                    id: 'anushka',
+                    name: 'Anushka',
+                    gender: 'female',
+                    accent: null,
+                    sample_url: null,
+                },
+                {
+                    id: 'abhilash',
+                    name: 'Abhilash',
+                    gender: 'male',
+                    accent: null,
+                    sample_url: null,
+                },
+                { id: 'any', name: 'Any', gender: null, accent: null, sample_url: null },
+            ],
+        },
+        {
+            id: 'navana',
+            label: 'Navana',
+            description: 'Studio voices',
+            available: false,
+            unavailable_reason: 'Not set up for your institute',
+            credits_per_minute: 2,
+            voices: [
+                { id: 'nv-1', name: 'Nila', gender: 'female', accent: null, sample_url: null },
+            ],
+        },
+    ],
+    default: null,
+    can_set_default: false,
+    ...over,
+});
+
+const providerAt = (catalog: LmsVoicesResponse, index: number) => {
+    const provider = catalog.providers[index];
+    if (!provider) throw new Error(`no provider ${index}`);
+    return provider;
+};
+
+const voiceAt = (catalog: LmsVoicesResponse, providerIndex: number, index: number) => {
+    const voice = providerAt(catalog, providerIndex).voices[index];
+    if (!voice) throw new Error(`no voice ${providerIndex}/${index}`);
+    return voice;
+};
+
+describe('voice selection', () => {
+    it('sends the provider and voice with the request', () => {
+        const s = selectVoice(
+            selectVoiceProvider(createInitialFormState('Cells'), 'sarvam'),
+            voiceAt(voices(), 1, 1)
+        );
+        expect(buildLmsVideoRequest(s)).toMatchObject({
+            tts_provider: 'sarvam',
+            voice_id: 'abhilash',
+            voice_gender: 'male',
+        });
+    });
+
+    it('leaves the provider to the server until the voice list has loaded', () => {
+        const req = buildLmsVideoRequest(createInitialFormState('Cells'));
+        expect(req.tts_provider).toBeUndefined();
+        expect(req.voice_id).toBeNull();
+        expect(JSON.parse(JSON.stringify(req))).not.toHaveProperty('tts_provider');
+    });
+
+    it('falls back to the first available provider when none is chosen', () => {
+        const s = reconcileVoice(createInitialFormState('Cells'), voices());
+        expect(s.ttsProvider).toBe('edge');
+        expect(s.voiceId).toBeNull();
+    });
+
+    it('preselects the institute default until the teacher chooses', () => {
+        const catalog = voices({
+            default: { tts_provider: 'sarvam', voice_id: 'abhilash', voice_gender: 'male' },
+        });
+        const s = reconcileVoice(createInitialFormState('Cells'), catalog);
+        expect(s).toMatchObject({
+            ttsProvider: 'sarvam',
+            voiceId: 'abhilash',
+            voiceGender: 'male',
+        });
+        expect(isVoiceDefault(catalog, s.ttsProvider, s.voiceId)).toBe(true);
+        // Idempotent: nothing changes on the next pass.
+        expect(reconcileVoice(s, catalog)).toBe(s);
+
+        // An explicit choice is never overridden.
+        const chosen = selectVoiceProvider(createInitialFormState('Cells'), 'edge');
+        expect(reconcileVoice(chosen, catalog)).toMatchObject({
+            ttsProvider: 'edge',
+            voiceId: null,
+            voiceGender: 'female',
+        });
+    });
+
+    it("keeps an on-screen teacher's gender over the default voice's", () => {
+        const catalog = voices({
+            default: { tts_provider: 'sarvam', voice_id: 'anushka', voice_gender: 'female' },
+        });
+        const withMaleTeacher = {
+            ...createInitialFormState('Cells'),
+            teacher: { avatar_id: 'avatar-1' },
+            voiceGender: 'male' as const,
+        };
+        expect(reconcileVoice(withMaleTeacher, catalog)).toMatchObject({
+            ttsProvider: 'sarvam',
+            voiceId: null,
+            voiceGender: 'male',
+        });
+    });
+
+    it('ignores a default whose provider is unavailable or voice is gone', () => {
+        const unavailable = voices({
+            default: { tts_provider: 'navana', voice_id: 'nv-1', voice_gender: 'female' },
+        });
+        expect(reconcileVoice(createInitialFormState('Cells'), unavailable)).toMatchObject({
+            ttsProvider: 'edge',
+            voiceId: null,
+        });
+        const gone = voices({
+            default: { tts_provider: 'sarvam', voice_id: 'retired', voice_gender: 'female' },
+        });
+        expect(reconcileVoice(createInitialFormState('Cells'), gone).voiceId).toBeNull();
+    });
+
+    it('clears a voice the provider or gender no longer offers, and keeps a valid one', () => {
+        const catalog = voices();
+        const picked = reconcileVoice(
+            selectVoice(selectVoiceProvider(createInitialFormState('Cells'), 'sarvam'), {
+                id: 'anushka',
+                name: 'Anushka',
+                gender: 'female',
+                accent: null,
+                sample_url: null,
+            }),
+            catalog
+        );
+        expect(picked.voiceId).toBe('anushka');
+
+        // Gender switch → the female voice is stale.
+        expect(reconcileVoice({ ...picked, voiceGender: 'male' }, catalog).voiceId).toBeNull();
+        // Provider switch resets the voice right away.
+        expect(selectVoiceProvider(picked, 'edge').voiceId).toBeNull();
+        expect(selectVoiceProvider(picked, 'sarvam').voiceId).toBe('anushka');
+        // A teacher of the same gender keeps the explicit voice.
+        const sameGenderTeacher = {
+            ...picked,
+            teacher: { avatar_id: 'a' },
+            voiceGender: 'female' as const,
+        };
+        expect(reconcileVoice(sameGenderTeacher, catalog).voiceId).toBe('anushka');
+        // A gender-less voice fits either gender.
+        const anyVoice = selectVoice(picked, voiceAt(catalog, 1, 2));
+        expect(reconcileVoice({ ...anyVoice, voiceGender: 'male' }, catalog).voiceId).toBe('any');
+        // Language change → the new list doesn't have it.
+        const hindi = voices({
+            language: 'Hindi',
+            providers: [{ ...providerAt(catalog, 1), voices: [voiceAt(catalog, 1, 1)] }],
+        });
+        expect(reconcileVoice(picked, hindi).voiceId).toBeNull();
+    });
+
+    it('moves off a provider that became unavailable', () => {
+        const s = {
+            ...createInitialFormState('Cells'),
+            ttsProvider: 'navana' as const,
+            voiceId: 'nv-1',
+        };
+        expect(reconcileVoice(s, voices())).toMatchObject({ ttsProvider: 'edge', voiceId: null });
+    });
+
+    it('estimates narration from the server row, else the provider rate', () => {
+        const sarvam = providerAt(voices(), 1);
+        const estimate = {
+            expected_credits: 20,
+            low_credits: 18,
+            high_credits: 24,
+            rows: [{ label: 'Narration (Sarvam)', credits: 4.44 }],
+        };
+        expect(narrationCredits(estimate, sarvam, '2-3 minutes')).toBe(4.4);
+        expect(narrationCredits({ ...estimate, rows: [] }, sarvam, '2-3 minutes')).toBe(4.5);
+        expect(
+            narrationCredits({ ...estimate, rows: [] }, providerAt(voices(), 0), '5-8 minutes')
+        ).toBe(0);
+        expect(narrationCredits(estimate, null, '2-3 minutes')).toBe(4.4);
+        expect(narrationCredits(null, null, '2-3 minutes')).toBeNull();
     });
 });

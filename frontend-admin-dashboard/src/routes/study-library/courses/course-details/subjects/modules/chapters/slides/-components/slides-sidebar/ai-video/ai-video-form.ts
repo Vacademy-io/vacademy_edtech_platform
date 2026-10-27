@@ -21,6 +21,10 @@ import type {
     LmsVideoRequest,
     LmsVideoTeacher,
     LmsVideoVoiceGender,
+    LmsVoiceOption,
+    LmsVoiceProvider,
+    LmsVoiceProviderId,
+    LmsVoicesResponse,
 } from '@/services/lms-ai-video';
 
 // ── limits (match the server's LmsVideoRequest) ─────────────────────────────
@@ -148,6 +152,12 @@ export interface AiVideoFormState {
     teacher: LmsVideoTeacher | null;
     layout: LmsVideoLayout;
     voiceGender: LmsVideoVoiceGender;
+    /** null until the voice list loads (the server then uses its default provider). */
+    ttsProvider: LmsVoiceProviderId | null;
+    /** null → the server picks a voice of `voiceGender`. */
+    voiceId: string | null;
+    /** The teacher picked a provider, voice or gender themselves — the institute default stops applying. */
+    voiceTouched: boolean;
     duration: LmsVideoDuration;
     /** The teacher picked a length themselves — format changes stop overriding it. */
     durationTouched: boolean;
@@ -180,6 +190,9 @@ export const createInitialFormState = (chapterName?: string | null): AiVideoForm
     teacher: null,
     layout: 'corner',
     voiceGender: 'female',
+    ttsProvider: null,
+    voiceId: null,
+    voiceTouched: false,
     duration: '2-3 minutes',
     durationTouched: false,
     quality: 'standard',
@@ -240,6 +253,123 @@ export const effectiveOrientation = (state: AiVideoFormState): LmsVideoOrientati
     state.orientation === 'auto'
         ? getFormatOption(state.format).defaultOrientation
         : state.orientation;
+
+// ── voice ────────────────────────────────────────────────────────────────────
+
+export const findVoiceProvider = (
+    catalog: LmsVoicesResponse | null | undefined,
+    id: LmsVoiceProviderId | null
+): LmsVoiceProvider | null => catalog?.providers.find((p) => p.id === id) ?? null;
+
+/** A provider's voices that fit the chosen gender (a voice with no gender fits both). */
+export const voicesForGender = (
+    provider: LmsVoiceProvider | null | undefined,
+    gender: LmsVideoVoiceGender
+): LmsVoiceOption[] => (provider?.voices || []).filter((v) => !v.gender || v.gender === gender);
+
+export const isVoiceDefault = (
+    catalog: LmsVoicesResponse | null | undefined,
+    providerId: LmsVoiceProviderId | null,
+    voiceId: string | null
+): boolean =>
+    !!catalog?.default &&
+    catalog.default.tts_provider === providerId &&
+    catalog.default.voice_id === voiceId;
+
+/** The institute default voice, when its provider still offers it for this language. */
+const usableVoiceDefault = (
+    catalog: LmsVoicesResponse
+): { provider: LmsVoiceProvider; voice: LmsVoiceOption } | null => {
+    const provider = findVoiceProvider(catalog, catalog.default?.tts_provider ?? null);
+    if (!provider?.available) return null;
+    const voice = provider.voices.find((v) => v.id === catalog.default?.voice_id);
+    return voice ? { provider, voice } : null;
+};
+
+/**
+ * Bring the voice choice in line with what the voice list offers for the
+ * current language:
+ * - until the teacher picks a voice themselves, the institute default is
+ *   preselected (with its gender, unless an on-screen teacher already set one);
+ * - an unavailable provider falls back to the default's, else the first
+ *   available one;
+ * - a voice the provider doesn't offer for the chosen gender is cleared, so
+ *   the server picks one for that gender.
+ * Returns `state` itself when nothing changes, so it is safe to run after
+ * every change.
+ */
+export const reconcileVoice = (
+    state: AiVideoFormState,
+    catalog: LmsVoicesResponse | null | undefined
+): AiVideoFormState => {
+    if (!catalog) return state;
+    let { ttsProvider, voiceId, voiceGender } = state;
+    const preferred = usableVoiceDefault(catalog);
+    if (!state.voiceTouched && preferred) {
+        const gender = preferred.voice.gender ?? catalog.default?.voice_gender ?? null;
+        if (gender && !effectiveTeacher(state)) voiceGender = gender;
+        ttsProvider = preferred.provider.id;
+        voiceId = preferred.voice.id;
+    }
+    const available = catalog.providers.filter((p) => p.available);
+    if (!available.some((p) => p.id === ttsProvider)) {
+        ttsProvider = preferred?.provider.id ?? available[0]?.id ?? null;
+    }
+    if (
+        voiceId &&
+        !voicesForGender(findVoiceProvider(catalog, ttsProvider), voiceGender).some(
+            (v) => v.id === voiceId
+        )
+    ) {
+        voiceId = null;
+    }
+    if (
+        ttsProvider === state.ttsProvider &&
+        voiceId === state.voiceId &&
+        voiceGender === state.voiceGender
+    ) {
+        return state;
+    }
+    return { ...state, ttsProvider, voiceId, voiceGender };
+};
+
+/** The teacher picked a provider; its voices differ, so the voice resets. */
+export const selectVoiceProvider = (
+    state: AiVideoFormState,
+    ttsProvider: LmsVoiceProviderId
+): AiVideoFormState => ({
+    ...state,
+    ttsProvider,
+    voiceId: ttsProvider === state.ttsProvider ? state.voiceId : null,
+    voiceTouched: true,
+});
+
+/** The teacher picked a voice (null = let the server pick one for the gender). */
+export const selectVoice = (
+    state: AiVideoFormState,
+    voice: LmsVoiceOption | null
+): AiVideoFormState => ({
+    ...state,
+    voiceId: voice?.id ?? null,
+    voiceGender: voice?.gender ?? state.voiceGender,
+    voiceTouched: true,
+});
+
+/**
+ * Narration credits for the chosen voice: the estimate's narration row when
+ * the server sends one, else the provider's per-minute rate at the top of the
+ * length range. null when neither is known; 0 for the free provider.
+ */
+export const narrationCredits = (
+    estimate: LmsVideoEstimate | null | undefined,
+    provider: LmsVoiceProvider | null | undefined,
+    duration: LmsVideoDuration
+): number | null => {
+    const row = estimate?.rows.find((r) => /narrat|voice/i.test(r.label));
+    if (row) return roundCredits(row.credits);
+    if (!provider) return null;
+    return roundCredits(provider.credits_per_minute * durationUpperMinutes(duration));
+};
 
 // ── validation ───────────────────────────────────────────────────────────────
 
@@ -323,6 +453,8 @@ export const buildLmsVideoRequest = (
         teacher,
         layout: teacher ? state.layout : null,
         voice_gender: state.voiceGender,
+        tts_provider: state.ttsProvider ?? undefined,
+        voice_id: state.ttsProvider ? state.voiceId : null,
         include_worked_example: option.lesson ? state.includeWorkedExample : null,
         include_recap: option.lesson ? state.includeRecap : null,
         subject: blankToNull(state.subject),

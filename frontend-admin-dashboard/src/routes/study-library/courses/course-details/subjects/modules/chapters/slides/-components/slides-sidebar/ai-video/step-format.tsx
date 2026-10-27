@@ -8,6 +8,7 @@ import {
     ChatsCircle,
     CircleNotch,
     Code,
+    Coins,
     DeviceMobile,
     Lightning,
     MathOperations,
@@ -27,10 +28,12 @@ import { cn } from '@/lib/utils';
 import type { TutorAsset } from '@/services/tutor';
 import type {
     LmsVideoDuration,
+    LmsVideoEstimateResponse,
     LmsVideoFormat,
     LmsVideoOrientation,
     LmsVideoPolicy,
     LmsVideoQuality,
+    LmsVoicesResponse,
 } from '@/services/lms-ai-video';
 import {
     AI_VIDEO_FORMATS,
@@ -40,15 +43,19 @@ import {
     TEACHER_LAYOUTS,
     effectiveRecap,
     effectiveWorkedExample,
+    findVoiceProvider,
     isWorkedExampleForced,
     getFormatOption,
     isDurationAllowed,
     isQualityAllowed,
+    narrationCredits,
     selectFormat,
+    summariseEstimate,
     type AiVideoFormState,
     type FormatError,
 } from './ai-video-form';
 import { ChoiceGroup, LayoutThumbnail, SectionHeading, TeacherCard } from './ai-video-ui';
+import { VoicePicker } from './voice-picker';
 
 const NS = 'studyLibraryAddAiVideoDialog';
 
@@ -78,6 +85,8 @@ export function StepFormat({
     avatars,
     avatarsFailed,
     policy,
+    voices,
+    estimate,
 }: {
     state: AiVideoFormState;
     onChange: (next: AiVideoFormState) => void;
@@ -87,6 +96,8 @@ export function StepFormat({
     avatarsFailed: boolean;
     /** Institute policy from the last estimate, when one has been fetched. */
     policy: LmsVideoPolicy | null;
+    voices: { catalog: LmsVoicesResponse | undefined; loading: boolean; failed: boolean };
+    estimate: { data: LmsVideoEstimateResponse | undefined; loading: boolean; failed: boolean };
 }) {
     const { t } = useTranslation(NS);
     const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -241,35 +252,28 @@ export function StepFormat({
                 </section>
             )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="flex flex-col gap-2">
-                    <SectionHeading title={t('format.voice.label')} />
-                    <ChoiceGroup
-                        label={t('format.voice.label')}
-                        value={state.voiceGender}
-                        columns="two"
-                        options={[
-                            { value: 'female', label: t('format.voice.female') },
-                            { value: 'male', label: t('format.voice.male') },
-                        ]}
-                        onChange={(voiceGender) => patch({ voiceGender })}
-                    />
-                </div>
-                <div className="flex flex-col gap-2 sm:col-span-2">
-                    <SectionHeading title={t('format.duration.label')} />
-                    <ChoiceGroup<LmsVideoDuration>
-                        label={t('format.duration.label')}
-                        value={state.duration}
-                        columns="four"
-                        options={DURATIONS.map((d) => ({
-                            value: d,
-                            label: t(`format.duration.options.${DURATION_KEY[d]}`),
-                            disabled: !isDurationAllowed(d, policy),
-                            disabledReason: t('format.duration.notAllowed'),
-                        }))}
-                        onChange={(duration) => patch({ duration, durationTouched: true })}
-                    />
-                </div>
+            <VoicePicker
+                state={state}
+                onChange={onChange}
+                catalog={voices.catalog}
+                loading={voices.loading}
+                failed={voices.failed}
+            />
+
+            <div className="flex flex-col gap-2">
+                <SectionHeading title={t('format.duration.label')} />
+                <ChoiceGroup<LmsVideoDuration>
+                    label={t('format.duration.label')}
+                    value={state.duration}
+                    columns="four"
+                    options={DURATIONS.map((d) => ({
+                        value: d,
+                        label: t(`format.duration.options.${DURATION_KEY[d]}`),
+                        disabled: !isDurationAllowed(d, policy),
+                        disabledReason: t('format.duration.notAllowed'),
+                    }))}
+                    onChange={(duration) => patch({ duration, durationTouched: true })}
+                />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -290,6 +294,19 @@ export function StepFormat({
                     onChange={(quality) => patch({ quality })}
                 />
             </div>
+
+            <EstimateLine
+                estimate={estimate}
+                narration={
+                    estimate.data
+                        ? narrationCredits(
+                              estimate.data.estimate,
+                              findVoiceProvider(voices.catalog, state.ttsProvider),
+                              state.duration
+                          )
+                        : null
+                }
+            />
 
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                 <CollapsibleTrigger asChild>
@@ -382,6 +399,50 @@ export function StepFormat({
                 </CollapsibleContent>
             </Collapsible>
         </div>
+    );
+}
+
+/** "Estimated cost: ~12 credits · narration ~1.5" — the full breakdown is on the review step. */
+function EstimateLine({
+    estimate,
+    narration,
+}: {
+    estimate: { data: LmsVideoEstimateResponse | undefined; loading: boolean; failed: boolean };
+    narration: number | null;
+}) {
+    const { t } = useTranslation(NS);
+    let text: string;
+    if (estimate.loading) {
+        text = t('format.estimate.loading');
+    } else if (estimate.failed || !estimate.data) {
+        text = t('format.estimate.failed');
+    } else {
+        const cost = summariseEstimate(estimate.data.estimate);
+        text = cost.isRange
+            ? t('format.estimate.range', { low: cost.low, high: cost.high })
+            : t('format.estimate.single', { value: cost.expected });
+        if (narration !== null) {
+            text += ` · ${
+                narration > 0
+                    ? t('format.estimate.narration', { value: narration })
+                    : t('format.estimate.narrationFree')
+            }`;
+        }
+    }
+    return (
+        <p
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground"
+        >
+            {estimate.loading ? (
+                <CircleNotch className="size-4 shrink-0 animate-spin text-muted-foreground" />
+            ) : (
+                <Coins className="size-4 shrink-0 text-muted-foreground" />
+            )}
+            <span className="min-w-0">
+                <span className="font-medium">{t('format.estimate.label')}</span> {text}
+            </span>
+        </p>
     );
 }
 

@@ -20,6 +20,7 @@ import { getTutorOptions } from '@/services/tutor';
 import {
     estimateLmsVideo,
     generateLmsVideo,
+    getLmsVideoVoices,
     parseLmsVideoError,
     type LmsVideoContext,
     type LmsVideoPolicy,
@@ -30,6 +31,7 @@ import {
     buildLmsVideoRequest,
     createInitialFormState,
     getSourceSlideOptions,
+    reconcileVoice,
     selectFormat,
     validateFormat,
     validateWhatToTeach,
@@ -42,6 +44,7 @@ import { StepIndicator } from './ai-video-ui';
 import { StepWhatToTeach } from './step-what-to-teach';
 import { StepFormat } from './step-format';
 import { StepReview } from './step-review';
+import { VOICES_QUERY_KEY } from './voice-picker';
 
 const NS = 'studyLibraryAddAiVideoDialog';
 const ESTIMATE_DEBOUNCE_MS = 500;
@@ -187,6 +190,21 @@ function AddAiVideoDialogBody({ onOpenChange }: { onOpenChange: (open: boolean) 
         });
     }, [avatars]);
 
+    // Voices depend on the language. Until the teacher picks one, the institute
+    // default is preselected; a voice the new language/provider/gender doesn't
+    // offer is dropped (reconcileVoice returns the same state when nothing changes).
+    const voicesQuery = useQuery({
+        queryKey: [VOICES_QUERY_KEY, state.language],
+        queryFn: ({ signal }) => getLmsVideoVoices(state.language, signal),
+        staleTime: 10 * 60 * 1000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+    });
+    const voiceCatalog = voicesQuery.data;
+    useEffect(() => {
+        setState((s) => reconcileVoice(s, voiceCatalog));
+    }, [state, voiceCatalog]);
+
     const context: LmsVideoContext = useMemo(
         () => ({
             course_id: courseId || undefined,
@@ -205,7 +223,8 @@ function AddAiVideoDialogBody({ onOpenChange }: { onOpenChange: (open: boolean) 
     const estimateQuery = useQuery({
         queryKey: ['lms-ai-video-estimate', debouncedKey],
         queryFn: ({ signal }) => estimateLmsVideo(JSON.parse(debouncedKey), signal),
-        enabled: step === 2 && !startedVideo,
+        // From the Format step on, so the cost of the voice/length/quality shows as they change.
+        enabled: step >= 1 && !startedVideo,
         staleTime: 60 * 1000,
         retry: false,
         refetchOnWindowFocus: false,
@@ -414,6 +433,16 @@ function AddAiVideoDialogBody({ onOpenChange }: { onOpenChange: (open: boolean) 
                         avatars={avatars}
                         avatarsFailed={tutorOptions.isError}
                         policy={policy}
+                        voices={{
+                            catalog: voiceCatalog,
+                            loading: voicesQuery.isLoading,
+                            failed: voicesQuery.isError,
+                        }}
+                        estimate={{
+                            data: estimateQuery.data,
+                            loading: !estimateIsCurrent || estimateQuery.isLoading,
+                            failed: !!estimateError,
+                        }}
                     />
                 )}
                 {step === 2 && (
